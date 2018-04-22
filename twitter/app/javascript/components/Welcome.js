@@ -40,13 +40,15 @@ class Welcome extends Component {
 	constructor(props) {
 		super(props);
 
-		this.state = {value: ''};
-
 		this.handleClick = this.handleClick.bind(this);
 	}
 
 	handleClick(event) {
-		this.setState({value: event.target.value});
+		if (event.target.value == "Login") {
+			window.location = 'http://localhost:3000/pages/login';
+		} else {
+			window.location = 'http://localhost:3000/pages/signUp';
+		}
 	}
 
 	render() {		
@@ -55,11 +57,8 @@ class Welcome extends Component {
 			<div>
 				<h1>See what’s happening in the world right now</h1>
 				<h3>Join Twitter Today.</h3>
-				<form action="http://localhost:3000/pages/loginOrSignUp">
-					<input type="hidden" name="userAction" value={this.state.value} /><br/>
-					<input type="submit" value="Sign Up" onClick={this.handleClick} /><br/>
-					<input type="submit" value="Login" onClick={this.handleClick} />
-				</form>
+				<input type="button" value="Login" onClick={this.handleClick}  />
+				<input type="button" value="Sign Up" onClick={this.handleClick} />
 			</div>
 			</Grid>
 	  	);
