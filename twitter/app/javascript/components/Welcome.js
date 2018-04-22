@@ -5,21 +5,24 @@ class Welcome extends Component {
 	constructor(props) {
 		super(props);
 
-		this.handleSubmit = this.handleSubmit.bind(this);
+		this.state = {value: ''};
+
+		this.handleClick = this.handleClick.bind(this);
 	}
-  
-	handleSubmit(event) {
-		event.preventDefault();
+
+	handleClick(event) {
+		this.setState({value: event.target.value});
 	}
-  
+
 	render() {		
 		return (
 			<div>
 				<h1>See what’s happening in the world right now</h1>
 				<h3>Join Twitter Today.</h3>
-				<form action="http://localhost:3000/pages/index" onSubmit={this.handleSubmit}>
-					<input type="submit" value="Sign Up" /><br/>
-					<input type="submit" value="Login" />
+				<form action="/pages/loginOrSignUp">
+					<input type="hidden" name="userAction" value={this.state.value} /><br/>
+					<input type="submit" value="Sign Up" onClick={this.handleClick} /><br/>
+					<input type="submit" value="Login" onClick={this.handleClick} />
 				</form>
 			</div>
 	  	);
