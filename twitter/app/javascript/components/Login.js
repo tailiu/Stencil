@@ -1,7 +1,5 @@
 import React, {Component, Fragment} from "react";
 
-import { Link } from 'react-router';
-
 import PropTypes from 'prop-types';
 import { withStyles } from 'material-ui/styles';
 import MenuItem from 'material-ui/Menu/MenuItem';
@@ -28,6 +26,7 @@ const styles = {
     },
     title: {
       color: "#fff",
+      cursor: "pointer",
     }
   },
   card: {
@@ -54,32 +53,46 @@ const styles = {
 
 class Login extends Component {
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      email : '',
-      password : '',
-      name : '',
-      value : '',
-    }
-  }
+    constructor(props) {
+        super(props);
+        this.state = {
+            email : '',
+            password : '',
+            name : '',
+            value : '',
+        }
 
-  handleSignUp(event) {
+        this.handleSignUp = this.handleSignUp.bind(this);
+        this.getValidationState = this.getValidationState.bind(this);
+        this.handleChange = this.handleChange.bind(this);
+        this.goToSignUp = this.goToSignUp.bind(this);
+        this.goToHome = this.goToHome.bind(this);
+    }
+
+    handleSignUp(event) {
     console.log("sign me up, bozo!");
     event.preventDefault();
-  }
+    }
 
-  getValidationState() {
+    getValidationState() {
     const length = this.state.value.length;
     if (length > 10) return 'success';
     else if (length > 5) return 'warning';
     else if (length > 0) return 'error';
     return null;
-  }
+    }
 
-  handleChange(e) {
+    handleChange(e) {
     // this.setState({ value: e.target.value });
-  }
+    }
+
+    goToSignUp(e) {
+        window.location = 'http://localhost:3000/pages/signUp';
+    }
+
+    goToHome(e) {
+		window.location = 'http://localhost:3000/pages/index';
+	}
 
   render () {
     return (
@@ -88,8 +101,8 @@ class Login extends Component {
         <Grid item xs>
           <AppBar style={styles.navbar.navbar} position="static" color="default">
             <Toolbar>
-              <Typography variant="title" style={styles.navbar.title}>
-                Twitter
+            <Typography variant="title" style={styles.navbar.title} onClick = {this.goToHome}>
+              Twitter
               </Typography>
             </Toolbar>
           </AppBar>
@@ -136,7 +149,7 @@ class Login extends Component {
                 </form>
               </CardContent>
               <CardActions>
-                <Button size="small">New to Twitter? Sign Up!</Button>
+                <Button size="small" onClick={this.goToSignUp} >New to Twitter? Sign Up!</Button>
               </CardActions>
             </Card>
           </Grid>

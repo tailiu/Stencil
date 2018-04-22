@@ -1,7 +1,5 @@
 import React, {Component, Fragment} from "react";
 
-import { Link } from 'react-router';
-
 import PropTypes from 'prop-types';
 import { withStyles } from 'material-ui/styles';
 import MenuItem from 'material-ui/Menu/MenuItem';
@@ -17,6 +15,7 @@ import Toolbar from 'material-ui/Toolbar';
 import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
 
+
 const styles = {
   grid : {
     // background: "#c0deed",
@@ -28,6 +27,7 @@ const styles = {
     },
     title: {
       color: "#fff",
+      cursor: "pointer",
     }
   },
   card: {
@@ -67,6 +67,8 @@ class SignUp extends Component {
     this.handleSignUp = this.handleSignUp.bind(this);
     this.getValidationState = this.getValidationState.bind(this);
     this.handleChange = this.handleChange.bind(this);
+    this.goToLogin = this.goToLogin.bind(this);
+    this.goToHome = this.goToHome.bind(this);
   }
 
   handleSignUp(e) {
@@ -92,6 +94,14 @@ class SignUp extends Component {
     // this.setState({ value: e.target.value });
   }
 
+  goToLogin(e) {
+		window.location = 'http://localhost:3000/pages/login';
+  }
+
+  goToHome(e) {
+		window.location = 'http://localhost:3000/pages/index';
+	}
+
   render () {
     return (
       <Grid container style={styles.grid} spacing={24} >
@@ -99,8 +109,8 @@ class SignUp extends Component {
         <Grid item xs>
           <AppBar style={styles.navbar.navbar} position="static" color="default">
             <Toolbar>
-              <Typography variant="title" style={styles.navbar.title}>
-                Twitter
+              <Typography variant="title" style={styles.navbar.title} onClick = {this.goToHome}>
+              Twitter
               </Typography>
             </Toolbar>
           </AppBar>
@@ -154,7 +164,9 @@ class SignUp extends Component {
                 </form>
               </CardContent>
               <CardActions>
-                <Button size="small">Already signed up? Login!</Button>
+                <Button size="small" onClick={this.goToLogin}>
+                Already signed up? Login!
+                </Button>
               </CardActions>
             </Card>
           </Grid>
