@@ -55,18 +55,29 @@ const styles = {
 class SignUp extends Component {
 
   constructor(props) {
+    
     super(props);
+
     this.state = {
-      email : '',
-      password : '',
-      name : '',
-      value : '',
+      email : 'tai',
+      password : 'cow',
+      name : 'taicow  ',
     }
+
+    this.handleSignUp = this.handleSignUp.bind(this);
+    this.getValidationState = this.getValidationState.bind(this);
+    this.handleChange = this.handleChange.bind(this);
   }
 
-  handleSignUp(event) {
-    console.log("sign me up, bozo!");
-    event.preventDefault();
+  handleSignUp(e) {
+    console.log("Called: 'handleSignUp'");
+
+    this.state.name = e.target.name.value;
+    this.state.email = e.target.email.value;
+    this.state.password = e.target.password.value;
+    
+    console.log(this.state);
+    e.preventDefault();
   }
 
   getValidationState() {
