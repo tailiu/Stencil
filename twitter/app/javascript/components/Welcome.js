@@ -19,7 +19,7 @@ class Welcome extends Component {
 			<div>
 				<h1>See what’s happening in the world right now</h1>
 				<h3>Join Twitter Today.</h3>
-				<form action="/pages/loginOrSignUp">
+				<form action="http://localhost:3000/pages/loginOrSignUp">
 					<input type="hidden" name="userAction" value={this.state.value} /><br/>
 					<input type="submit" value="Sign Up" onClick={this.handleClick} /><br/>
 					<input type="submit" value="Login" onClick={this.handleClick} />
