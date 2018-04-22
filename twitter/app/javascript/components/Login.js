@@ -101,7 +101,7 @@ class Login extends Component {
         <Grid container spacing={24} direction="column" align="center">
           <Grid item xs>
           <Typography variant="headline" gutterBottom>
-            Log In To Twitter!
+          <strong>Log In To Twitter!</strong>
           </Typography>
           </Grid>
 
