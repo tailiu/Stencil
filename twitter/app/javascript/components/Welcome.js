@@ -46,9 +46,9 @@ class Welcome extends Component {
 
 	handleClick(event) {
 		if (event.target.value == "Login") {
-			window.location = 'http://localhost:3000/pages/login';
+			window.location = '/pages/login';
 		} else {
-			window.location = 'http://localhost:3000/pages/signUp';
+			window.location = '/pages/signUp';
 		}
 	}
 

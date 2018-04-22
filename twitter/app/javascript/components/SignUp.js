@@ -59,24 +59,24 @@ class SignUp extends Component {
     super(props);
 
     this.state = {
-      email : 'tai',
-      password : 'cow',
-      name : 'taicow  ',
+      email : '',
+      password : '',
+      name : ''
     }
 
-    this.handleSignUp = this.handleSignUp.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
     this.getValidationState = this.getValidationState.bind(this);
     this.handleChange = this.handleChange.bind(this);
   }
 
-  handleSignUp(e) {
+  handleSubmit(e) {
     console.log("Called: 'handleSignUp'");
 
-    this.state.name = e.target.name.value;
-    this.state.email = e.target.email.value;
-    this.state.password = e.target.password.value;
+    // this.state.name = e.target.name.value;
+    // this.state.email = e.target.email.value;
+    // this.state.password = e.target.password.value;
     
-    console.log(this.state);
+    alert(this.state.name);
     e.preventDefault();
   }
 
@@ -89,7 +89,7 @@ class SignUp extends Component {
   }
 
   handleChange(e) {
-    // this.setState({ value: e.target.value });
+    this.setState({ value: e.target.value });
   }
 
   render () {
@@ -123,13 +123,14 @@ class SignUp extends Component {
               /> 
               <hr/> */}
               <CardContent>
-                <form onSubmit={this.handleSignUp}>
+                <form action="/users/new" onSubmit={this.handleSubmit}>
 
                   <TextField
                     id="name"
                     label="Name"
                     margin="normal"
                     style={styles.card.input}
+                    onChange={this.handleChange}
                   />
                   <br/>
                   <TextField
@@ -137,6 +138,7 @@ class SignUp extends Component {
                     label="Email"
                     margin="normal"
                     style={styles.card.input}
+                    onChange={this.handleChange}
                   />
                   <br/>
                   <TextField
@@ -145,6 +147,7 @@ class SignUp extends Component {
                     margin="normal"
                     type="password"
                     style={styles.card.input}
+                    onChange={this.handleChange}
                   />
                   <br/>
                   <br/>
