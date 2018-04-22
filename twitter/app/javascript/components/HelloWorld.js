@@ -1,11 +1,27 @@
 import React from "react"
 import PropTypes from "prop-types"
+import TaiCow from './TaiCow.js'
+import SignUp from './SignUp.js'
+
+const styles = {
+  "background" : {
+    backgroundColor: "#c0deed"
+  }
+}
+
 class HelloWorld extends React.Component {
+
+  handleClick() {
+    console.log("something here");
+
+  }
+
   render () {
     return (
-      <React.Fragment>
-        Greeting: {this.props.greeting}
-      </React.Fragment>
+      <div style={styles.background} >
+        <SignUp />
+
+      </div>
     );
   }
 }
