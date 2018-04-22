@@ -19,7 +19,7 @@ import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
 
 const styles = {
   grid : {
-    background: "#c0deed",
+    // background: "#c0deed",
     height: "100%"
   },
   navbar : {
@@ -34,12 +34,22 @@ const styles = {
     card:{
       minWidth: 375,
     },
+    input:{
+      width: "95%",
+    },
     button: {
       width: "100%",
       backgroundColor: "#00aced",
       color: "#fff",
     }
   },
+  paper: {
+    height: "100%",
+    width: "100%",
+    // margin: 20,
+    textAlign: 'center',
+    display: 'inline-block',
+  }
 };
 
 class SignUp extends Component {
@@ -73,8 +83,6 @@ class SignUp extends Component {
 
   render () {
     return (
-
-      
       <Grid container style={styles.grid} spacing={24} >
 
         <Grid item xs>
@@ -86,6 +94,9 @@ class SignUp extends Component {
             </Toolbar>
           </AppBar>
         </Grid>
+
+        <Grid item xs={12}>
+        </Grid>
         
         <Grid container spacing={24} direction="column" align="center">
           <Grid item xs>
@@ -96,11 +107,10 @@ class SignUp extends Component {
 
           <Grid item xs>
             <Card style={styles.card.card}>
-              <CardHeader>
-                <Typography variant="headline" gutterBottom>
-                  Join Twitter Today!
-                </Typography>
-            </CardHeader>
+              {/* <CardHeader
+                title="Join Twitter Today!"
+              /> 
+              <hr/> */}
               <CardContent>
                 <form onSubmit={this.handleSignUp}>
 
@@ -108,19 +118,23 @@ class SignUp extends Component {
                     id="name"
                     label="Name"
                     margin="normal"
+                    style={styles.card.input}
                   />
                   <br/>
                   <TextField
                     id="email"
                     label="Email"
                     margin="normal"
+                    style={styles.card.input}
                   />
                   <br/>
                   <TextField
                     id="password"
                     label="Password"
                     margin="normal"
+                    style={styles.card.input}
                   />
+                  <br/>
                   <br/>
                   <Button type="submit" variant="raised" style={styles.card.button}>
                     Sign Up
