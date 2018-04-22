@@ -1,5 +1,7 @@
 import React, {Component, Fragment} from "react";
 
+import { Link } from 'react-router';
+
 import PropTypes from 'prop-types';
 import { withStyles } from 'material-ui/styles';
 import MenuItem from 'material-ui/Menu/MenuItem';
@@ -12,14 +14,32 @@ import Typography from 'material-ui/Typography';
 import AppBar from 'material-ui/AppBar';
 import Toolbar from 'material-ui/Toolbar';
 
+import Button from 'material-ui/Button';
+import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
+
 const styles = {
-  "background" : {
-    backgroundColor: "#c0deed"
+  grid : {
+    background: "#c0deed",
+    height: "100%"
   },
-  "navbar" : {
-    backgroundColor: "#00aced",
-    color: "#fff"
-  }
+  navbar : {
+    navbar: {
+      backgroundColor: "#00aced",
+    },
+    title: {
+      color: "#fff",
+    }
+  },
+  card: {
+    card:{
+      minWidth: 375,
+    },
+    button: {
+      width: "100%",
+      backgroundColor: "#00aced",
+      color: "#fff",
+    }
+  },
 };
 
 class SignUp extends Component {
@@ -55,12 +75,12 @@ class SignUp extends Component {
     return (
 
       
-      <Grid styles={styles.background}>
+      <Grid container style={styles.grid} spacing={24} >
 
         <Grid item xs>
-          <AppBar style={styles.navbar} position="static" color="default">
+          <AppBar style={styles.navbar.navbar} position="static" color="default">
             <Toolbar>
-              <Typography variant="title" >
+              <Typography variant="title" style={styles.navbar.title}>
                 Twitter
               </Typography>
             </Toolbar>
@@ -75,27 +95,42 @@ class SignUp extends Component {
           </Grid>
 
           <Grid item xs>
-          <form onSubmit={this.handleSignUp}>
+            <Card style={styles.card.card}>
+              <CardHeader>
+                <Typography variant="headline" gutterBottom>
+                  Join Twitter Today!
+                </Typography>
+            </CardHeader>
+              <CardContent>
+                <form onSubmit={this.handleSignUp}>
 
-            <TextField
-              id="name"
-              label="Name"
-              margin="normal"
-            />
-            <br/>
-            <TextField
-              id="email"
-              label="Email"
-              margin="normal"
-            />
-            <br/>
-            <TextField
-              id="password"
-              label="Password"
-              margin="normal"
-            />
-
-          </form>
+                  <TextField
+                    id="name"
+                    label="Name"
+                    margin="normal"
+                  />
+                  <br/>
+                  <TextField
+                    id="email"
+                    label="Email"
+                    margin="normal"
+                  />
+                  <br/>
+                  <TextField
+                    id="password"
+                    label="Password"
+                    margin="normal"
+                  />
+                  <br/>
+                  <Button type="submit" variant="raised" style={styles.card.button}>
+                    Sign Up
+                  </Button>
+                </form>
+              </CardContent>
+              <CardActions>
+                <Button size="small">Already signed up? Login!</Button>
+              </CardActions>
+            </Card>
           </Grid>
         </Grid>
       </Grid>

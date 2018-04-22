@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <%= javascript_pack_tag 'application' %>
-        <title>Twitter</title>
+        <% content_for :title, "Twitter. It is what is happening." %>
     </head>
     <body>
-        <%= react_component("HelloWorld", { greeting: "Hello" }) %>
+        <%= react_component("SignUp") %>
     </body>
 </html>
