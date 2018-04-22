@@ -132,6 +132,7 @@ class SignUp extends Component {
                     id="password"
                     label="Password"
                     margin="normal"
+                    type="password"
                     style={styles.card.input}
                   />
                   <br/>
