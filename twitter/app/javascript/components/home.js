@@ -1,88 +1,163 @@
-import React, {Component} from "react";
-import PropTypes from "prop-types";
+import React, {Component, Fragment} from "react";
+
+import PropTypes from 'prop-types';
+import { withStyles } from 'material-ui/styles';
+import MenuItem from 'material-ui/Menu/MenuItem';
+import TextField from 'material-ui/TextField';
+
+import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
-import TwitterLogo from 'images/Twitter_Logo_Blue.png';
 import Typography from 'material-ui/Typography';
+
 import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
 
+import NavBar from './NavBar';
+
+import Avatar from 'material-ui/Avatar';
+
+import Collapse from 'material-ui/transitions/Collapse';
+import IconButton from 'material-ui/IconButton';
+import red from 'material-ui/colors/red';
+
+import FavoriteIcon from 'images/Twitter_Logo_Blue.png';
+import ShareIcon from 'images/Twitter_Logo_Blue.png';
+import ExpandMoreIcon from 'images/Twitter_Logo_Blue.png';
+import MoreVertIcon from 'images/Twitter_Logo_Blue.png';
 
 const styles = {
-	
-	logo: {
-		height: 150,
-	},
-	button: {
-		// width: "100%",
-		backgroundColor: "#00aced",
-		color: "#fff",
-		margin: 5
-	  }
-  };
+    grid : {
+        container : {
+            marginTop: 50
+        }
+    },
+    card: {
+        card:{
+            minWidth: 375,
+        },
+        input:{
+            width: "95%",
+        },
+        button: {
+            width: "100%",
+            backgroundColor: "#00aced",
+            color: "#fff",
+        }
+    },
+    paper: {
+        height: "100%",
+        width: "100%",
+        // margin: 20,
+        textAlign: 'center',
+        display: 'inline-block',
+    },
+    tweet: {
+        main_input: {
+            minWidth: 400       
+        },
+        container: {
 
-class Welcome extends Component {
-	constructor(props) {
-		super(props);
+        },
+        card: {
 
-		this.handleClick = this.handleClick.bind(this);
-	}
+        }
+    }
+};
 
-	handleClick(val, e) {
+class Home extends Component {
 
-		if (val.toLowerCase() == "login") {
-			window.location = '/pages/login';
-		} else {
-			window.location = '/pages/signUp';
-		}
-	}
+  constructor(props) {
+    
+    super(props);
 
-	render() {		
-		return (
-			<Grid container spacing={24} direction="column" align="center">
-				
-				<Grid item xs>
-					<img style={styles.logo} src={TwitterLogo} /> 
-				</Grid>
-				
-				<Grid item xs>
-					<Typography variant="display1" gutterBottom>
-							<strong>see what’s happening in the world right now</strong>
-					</Typography>
-				</Grid>
+    this.state = {
+      email : '',
+      password : '',
+      name : '',
+      tweet_value : '',
+      value : '',
+    }
 
-				<Grid item xs>
-				</Grid>
-
-				<Grid item xs>
-					<Typography variant="headline" gutterBottom>
-						<strong>Join Twitter Today!</strong>
-					</Typography>
-				</Grid>
-
-				<Grid item xs>
-
-					<Button 
-						style={styles.button}
-						type="submit" 
-						variant="raised" 
-						value="Login" 
-						onClick={this.handleClick.bind(this, "login")}>
-						Login
-					</Button>
-
-					<Button 
-						style={styles.button}
-						type="submit" 
-						variant="raised" 
-						value="Sign Up" 
-						onClick={this.handleClick.bind(this, "signup")}>
-						Sign Up HOME
-					</Button>
-				</Grid>
-
-			</Grid>
-	  	);
-	}
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.getValidationState = this.getValidationState.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+    this.handleChangeToTweetField = this.handleChangeToTweetField.bind(this);
+    this.goToLogin = this.goToLogin.bind(this);
   }
 
-export default Welcome
+  handleSubmit(e) {
+    console.log("Called: 'handleSignUp'");
+
+    // this.state.name = e.target.name.value;
+    // this.state.email = e.target.email.value;
+    // this.state.password = e.target.password.value;
+    
+    alert(this.state.name);
+    e.preventDefault();
+  }
+
+  getValidationState() {
+    const length = this.state.value.length;
+    if (length > 10) return 'success';
+    else if (length > 5) return 'warning';
+    else if (length > 0) return 'error';
+    return null;
+  }
+
+  handleChange(e) {
+    this.setState({ value: e.target.value });
+  }
+
+  handleChangeToTweetField(e) {
+    this.setState({ tweet_value: e.target.value });
+  }
+
+  goToLogin(e) {
+		window.location = 'http://localhost:3000/pages/login';
+  }
+
+  render () {
+    return (
+        <Fragment>
+            <NavBar />
+            <Grid style={styles.grid.container} container spacing={24} direction="column" align="center">
+
+                <Grid item xs>
+                    
+                </Grid>
+                
+                <Grid item xs>
+
+                    <TextField
+                    id="tweet"
+                    label="  What's on your mind?"
+                    margin="normal"
+                    style={styles.tweet.main_input}
+                    onChange={this.handleChangeToTweetField}
+                  />
+
+                </Grid>
+
+                <Grid item xs>
+                    <Card style={styles.card.card}>
+                        {/* <CardHeader
+                        title="Join Twitter Today!"
+                        /> 
+                        <hr/> */}
+                        <CardContent>
+                        
+                        </CardContent>
+                        <CardActions>
+                            <Button size="small" onClick={this.goToLogin}>
+                                something
+                            </Button>
+                        </CardActions>
+                    </Card>
+                </Grid>
+            </Grid>
+        </Fragment>
+    );
+  }
+}
+
+export default withStyles(styles)(Home);
