@@ -56,3 +56,5 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 gem 'react-rails'
 
 gem 'webpacker'
+
+gem 'carrierwave', '~> 1.0'

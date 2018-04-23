@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180418130728) do
+ActiveRecord::Schema.define(version: 20180423104905) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -20,19 +20,71 @@ ActiveRecord::Schema.define(version: 20180418130728) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "credentials", force: :cascade do |t|
+    t.string "email"
+    t.string "password"
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_credentials_on_user_id"
+  end
+
+  create_table "likes", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "tweet_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tweet_id"], name: "index_likes_on_tweet_id"
+    t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
   create_table "messages", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
+  create_table "retweets", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "tweet_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tweet_id"], name: "index_retweets_on_tweet_id"
+    t.index ["user_id"], name: "index_retweets_on_user_id"
+  end
+
+  create_table "tweet_media", force: :cascade do |t|
+    t.bigint "tweet_id"
+    t.string "media_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tweet_id"], name: "index_tweet_media_on_tweet_id"
+  end
+
   create_table "tweets", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "type"
+    t.text "content"
+    t.integer "reply_to"
+    t.bigint "user_id"
+    t.index ["user_id"], name: "index_tweets_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name"
+    t.text "handle"
+    t.text "bio"
+    t.boolean "protected"
+    t.boolean "account_active"
   end
 
+  add_foreign_key "credentials", "users"
+  add_foreign_key "likes", "tweets"
+  add_foreign_key "likes", "users"
+  add_foreign_key "retweets", "tweets"
+  add_foreign_key "retweets", "users"
+  add_foreign_key "tweet_media", "tweets"
+  add_foreign_key "tweets", "users"
 end

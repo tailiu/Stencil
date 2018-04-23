@@ -95,11 +95,11 @@ class SignUp extends Component {
   }
 
   goToLogin(e) {
-		window.location = 'http://localhost:3000/pages/login';
+		window.location = '/pages/login';
   }
 
   goToHome(e) {
-		window.location = 'http://localhost:3000/pages/index';
+		window.location = '/';
 	}
 
   render () {
