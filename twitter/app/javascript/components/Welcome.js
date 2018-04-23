@@ -32,7 +32,7 @@ class Welcome extends Component {
 		if (val.toLowerCase() == "login") {
 			window.location = 'http://localhost:3000/pages/login';
 		} else {
-			window.location = 'http://localhost:3000/pages/signUp';
+			window.location = '/pages/signUp';
 		}
 	}
 
