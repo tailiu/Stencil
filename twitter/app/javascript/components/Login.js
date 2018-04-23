@@ -9,25 +9,15 @@ import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
 
-import AppBar from 'material-ui/AppBar';
-import Toolbar from 'material-ui/Toolbar';
-
 import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
+
+import TitleBar from './TitleBar';
 
 const styles = {
   grid : {
     // background: "#c0deed",
     height: "100%"
-  },
-  navbar : {
-    navbar: {
-      backgroundColor: "#00aced",
-    },
-    title: {
-      color: "#fff",
-      cursor: "pointer",
-    }
   },
   card: {
     card:{
@@ -66,7 +56,6 @@ class Login extends Component {
         this.getValidationState = this.getValidationState.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.goToSignUp = this.goToSignUp.bind(this);
-        this.goToHome = this.goToHome.bind(this);
     }
 
     handleSignUp(event) {
@@ -87,25 +76,15 @@ class Login extends Component {
     }
 
     goToSignUp(e) {
-        window.location = '/pages/signUp';
+        window.location = 'http://localhost:3000/pages/signUp';
     }
-
-    goToHome(e) {
-		window.location = '/';
-	}
 
   render () {
     return (
       <Grid container style={styles.grid} spacing={24} >
 
         <Grid item xs>
-          <AppBar style={styles.navbar.navbar} position="static" color="default">
-            <Toolbar>
-            <Typography variant="title" style={styles.navbar.title} onClick = {this.goToHome}>
-              Twitter
-              </Typography>
-            </Toolbar>
-          </AppBar>
+          <TitleBar />
         </Grid>
 
         <Grid item xs={12}>

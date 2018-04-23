@@ -4,6 +4,7 @@ Rails.application.routes.draw do
 
 	get 'pages/login', to: 'pages#login'
 	get 'pages/signUp', to: 'pages#signUp'
+	get 'pages/home', to: 'pages#home'
 
 	resources :users
 
