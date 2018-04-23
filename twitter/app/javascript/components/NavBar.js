@@ -20,7 +20,7 @@ const styles = {
     navbar: {
         height: 60,
         backgroundColor: "#fff",
-        overflow: "scroll"
+        overflow: "hidden"
     },
     title: {
         color: "#00aced",
