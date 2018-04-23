@@ -28,6 +28,7 @@ class Welcome extends Component {
 	}
 
 	handleClick(event) {
+		alert(event.target.value)
 		if (event.target.value == "Login") {
 			window.location = '/pages/login';
 		} else {
