@@ -27,8 +27,9 @@ class Welcome extends Component {
 		this.handleClick = this.handleClick.bind(this);
 	}
 
-	handleClick(event) {
-		if (event.target.value == "Login") {
+	handleClick(val, e) {
+
+		if (val.toLowerCase() == "login") {
 			window.location = 'http://localhost:3000/pages/login';
 		} else {
 			window.location = 'http://localhost:3000/pages/signUp';
@@ -65,7 +66,7 @@ class Welcome extends Component {
 						type="submit" 
 						variant="raised" 
 						value="Login" 
-						onClick={this.handleClick}>
+						onClick={this.handleClick.bind(this, "login")}>
 						Login
 					</Button>
 
@@ -74,7 +75,7 @@ class Welcome extends Component {
 						type="submit" 
 						variant="raised" 
 						value="Sign Up" 
-						onClick={this.handleClick}>
+						onClick={this.handleClick.bind(this, "signup")}>
 						Sign Up
 					</Button>
 				</Grid>
