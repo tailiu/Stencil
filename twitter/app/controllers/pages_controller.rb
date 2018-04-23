@@ -9,4 +9,8 @@ class PagesController < ApplicationController
     def signUp
         render "signUp"
     end
+
+    def home
+        render "home"
+    end
 end
