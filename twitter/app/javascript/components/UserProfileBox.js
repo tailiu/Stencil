@@ -33,12 +33,17 @@ class Tweet extends Component{
                     title="Tai Big Fat Cow"
                     subheader="Followers:49, Following:51, Tweets:90"
                 />
+                <CardContent>
+                    <Typography>
+                        Your bio here!
+                    </Typography>
+                </CardContent>
                 <CardActions>
                     <Button size="small" onClick={this.like}>
                         Change Photo
                     </Button>
                     <Button size="small" onClick={this.like}>
-                        Settings
+                        Change Bio
                     </Button>
                 </CardActions>
             </Card>

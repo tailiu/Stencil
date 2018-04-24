@@ -9,6 +9,7 @@ Rails.application.routes.draw do
 	get 'pages/notifications', to: 'pages#notifs'
 	get 'pages/search', to: 'pages#search'
 	get 'pages/profile', to: 'pages#profile'
+	get 'pages/settings', to: 'pages#settings'
 
 	resources :users
 

@@ -39,7 +39,8 @@ const styles = {
     },
     messages: {
         input: {
-            marginLeft: 22,
+            marginTop: 20,
+            marginLeft: 20,
             width: "90%"
         }
     }

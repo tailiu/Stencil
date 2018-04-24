@@ -122,6 +122,14 @@ class SignUp extends Component {
                   />
                   <br/>
                   <TextField
+                    id="handle"
+                    label="Handle"
+                    margin="normal"
+                    style={styles.card.input}
+                    onChange={this.handleChange}
+                  />
+                  <br/>
+                  <TextField
                     id="email"
                     label="Email"
                     margin="normal"
