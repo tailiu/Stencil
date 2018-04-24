@@ -50,6 +50,7 @@ class SignUp extends Component {
     this.state = {
       email : '',
       password : '',
+      handle : '',
       name : ''
     }
 
@@ -122,6 +123,8 @@ class SignUp extends Component {
                     id="handle"
                     label="Handle"
                     margin="normal"
+                    name="handle"
+                    value={this.state.handle.value}
                     style={styles.card.input}
                     onChange={this.handleChange}
                   />
