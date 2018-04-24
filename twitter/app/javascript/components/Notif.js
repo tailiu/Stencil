@@ -20,17 +20,21 @@ import Collapse from 'material-ui/transitions/Collapse';
 import IconButton from 'material-ui/IconButton';
 import red from 'material-ui/colors/red';
 
-import SearchIcon from 'images/search_icon.svg';
+import SearchIcon from 'images/search_icon.png';
+import TwitterLogo from 'images/Twitter_Logo_Blue.png';
+import ReplyIcon from 'images/reply_icon.png';
+import FavIcon from 'images/fav_icon.png';
+import RetweetIcon from 'images/retweet_icon.png';
+import FollowIcon from 'images/follow_icon.png';
 
 import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
 import Divider from 'material-ui/Divider';
 
-import TwitterLogo from 'images/Twitter_Logo_Blue.png';
-
 const styles = {
     grid : {
         container : {
-            marginTop: 80
+            marginTop: 80,
+            height: 200
         }
     },
 };
@@ -56,11 +60,13 @@ class Home extends Component {
     return (
         <Fragment>
             <NavBar />
-            <Grid style={styles.grid.container} direction="column" container spacing={24} align="center">
-
+            <Grid style={styles.grid.container} direction="column" container spacing={24} >
+                
+                <Grid item xs={2}>
+                </Grid>
                 <Grid item xs={8}>
-                    <Grid container direction="column" align="left">
-                        <Grid item>
+
+
                             <Card>
                                 <CardHeader
                                     title="Notifications"
@@ -69,23 +75,43 @@ class Home extends Component {
                                 <CardContent>
 
                                     <List dense={true}>
-                                        {generate(
                                         <ListItem>
                                             <ListItemIcon>
-                                            <img style={styles.logo} src={TwitterLogo} /> 
+                                            <img style={styles.logo} src={RetweetIcon} /> 
                                             {/* <FolderIcon /> */}
                                             </ListItemIcon>
                                             <ListItemText
-                                            primary="Single-line item"
+                                            primary="Tai retweeted your tweet"
                                             //   secondary={secondary ? 'Secondary text' : null}
                                             />
-                                        </ListItem>,
-                                        )}
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemIcon>
+                                            <img style={styles.logo} src={FavIcon} /> 
+                                            {/* <FolderIcon /> */}
+                                            </ListItemIcon>
+                                            <ListItemText
+                                            primary="Miro favorited your tweet"
+                                            //   secondary={secondary ? 'Secondary text' : null}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemIcon>
+                                            <img style={styles.logo} src={FollowIcon} /> 
+                                            {/* <FolderIcon /> */}
+                                            </ListItemIcon>
+                                            <ListItemText
+                                            primary="Major Tom followed you"
+                                            //   secondary={secondary ? 'Secondary text' : null}
+                                            />
+                                        </ListItem>
                                     </List>
                                 </CardContent>
                             </Card>
-                        </Grid>
-                    </Grid>
+
+
+                </Grid>
+                <Grid item xs={2}>
                 </Grid>
             </Grid>
         </Fragment>

@@ -20,7 +20,7 @@ import Collapse from 'material-ui/transitions/Collapse';
 import IconButton from 'material-ui/IconButton';
 import red from 'material-ui/colors/red';
 
-import SearchIcon from 'images/search_icon.svg';
+import SearchIcon from 'images/search_icon.png';
 import Tweet from './Tweet';
 import UserInfo from './UserInfo';
 
@@ -96,19 +96,36 @@ class Home extends Component {
     return (
         <Fragment>
             <NavBar />
-            <Grid style={styles.grid.container} container spacing={24} align="center">
+            <Grid style={styles.grid.container} container spacing={16}>
                 
-                <Grid item xs={4}>
+                <Grid item xs={1}>
+                </Grid>
+
+                <Grid item xs={3}>
                     <UserInfo />
 
                 </Grid>
 
-                <Grid item xs={8}>
-                    <Grid container direction="column" align="left">
+                <Grid item xs={7}>
+                    <Grid container spacing={8} direction="column" align="left">
+                        <Grid item>
+                            <Tweet />
+                        </Grid>
+                        <Grid item>
+                            <Tweet />
+                        </Grid>
+                        <Grid item>
+                            <Tweet />
+                        </Grid>
+                        <Grid item>
+                            <Tweet />
+                        </Grid>
                         <Grid item>
                             <Tweet />
                         </Grid>
                     </Grid>
+                </Grid>
+                <Grid item xs={1}>
                 </Grid>
             </Grid>
         </Fragment>

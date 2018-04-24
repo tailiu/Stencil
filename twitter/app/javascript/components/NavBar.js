@@ -55,7 +55,7 @@ const styles = {
         marginRight: 5
     },
     input: {
-
+        marginRight: 5
     },
 };
 
@@ -145,7 +145,7 @@ class NavBar extends Component {
                     </div>
                     <Button 
                         style={styles.tweetButton} 
-                        onClick={this.handleTweetBoxOpen}>Tweet Now</Button>
+                        onClick={this.handleTweetBoxOpen}>Tweet</Button>
                     <Dialog
                         open={this.state.tweet_box_open}
                         onClose={this.handleTweetBoxClose}

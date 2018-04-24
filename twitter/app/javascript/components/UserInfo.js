@@ -10,7 +10,8 @@ const styles = {
 
         },
         container: {
-
+            // backgroundColor: "#00aced",
+            // color: "#fff"
         },
         card: {
 
@@ -22,7 +23,7 @@ class Tweet extends Component{
 
     render(){
         return(
-            <Card align="left">
+            <Card align="left" style={styles.user_info.container}>
                 <CardHeader
                     avatar={
                         <Avatar aria-label="Recipe" style={styles.user_info.avatar}>
