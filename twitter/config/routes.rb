@@ -8,6 +8,7 @@ Rails.application.routes.draw do
 	get 'pages/messages', to: 'pages#messages'
 	get 'pages/notifications', to: 'pages#notifs'
 	get 'pages/search', to: 'pages#search'
+	get 'pages/profile', to: 'pages#profile'
 
 	resources :users
 

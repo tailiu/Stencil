@@ -25,4 +25,8 @@ class PagesController < ApplicationController
     def search
         render "search"
     end
+
+    def profile
+        render "profile"
+    end
 end
