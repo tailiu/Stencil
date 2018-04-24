@@ -59,7 +59,7 @@ const styles = {
     }
 };
 
-class Home extends Component {
+class Profile extends Component {
 
     constructor(props) {
 
@@ -133,4 +133,4 @@ class Home extends Component {
   }
 }
 
-export default withStyles(styles)(Home);
+export default withStyles(styles)(Profile);
