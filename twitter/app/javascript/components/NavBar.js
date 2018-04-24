@@ -138,7 +138,7 @@ class NavBar extends Component {
                         aria-haspopup="true"
                         onClick={this.handleClick}
                         >
-                        User
+                        Tai Cow
                         </Button>
                         <Menu
                         id="simple-menu"

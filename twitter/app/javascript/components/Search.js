@@ -20,12 +20,14 @@ import Collapse from 'material-ui/transitions/Collapse';
 import IconButton from 'material-ui/IconButton';
 import red from 'material-ui/colors/red';
 
-import SearchIcon from 'images/search_icon.svg';
+import SearchIcon from 'images/search_icon.png';
 
 import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
 import Divider from 'material-ui/Divider';
 
 import TwitterLogo from 'images/Twitter_Logo_Blue.png';
+
+import Tweet from './Tweet';
 
 const styles = {
     grid : {
@@ -56,36 +58,32 @@ class Search extends Component {
     return (
         <Fragment>
             <NavBar />
-            <Grid style={styles.grid.container} direction="column" container spacing={24} align="center">
+            <Grid style={styles.grid.container} container spacing={16}>
+                
+                <Grid item xs={2}>
+                </Grid>
 
                 <Grid item xs={8}>
-                    <Grid container direction="column" align="left">
+                    <Grid container spacing={8} direction="column" align="left">
                         <Grid item>
-                            <Card>
-                                <CardHeader
-                                    title="Search"
-                                />
-                                <hr />
-                                <CardContent>
-
-                                    <List dense={true}>
-                                        {generate(
-                                        <ListItem>
-                                            <ListItemIcon>
-                                            <img style={styles.logo} src={TwitterLogo} /> 
-                                            {/* <FolderIcon /> */}
-                                            </ListItemIcon>
-                                            <ListItemText
-                                            primary="Single-line item"
-                                            //   secondary={secondary ? 'Secondary text' : null}
-                                            />
-                                        </ListItem>,
-                                        )}
-                                    </List>
-                                </CardContent>
-                            </Card>
+                            <Tweet />
+                        </Grid>
+                        <Grid item>
+                            <Tweet />
+                        </Grid>
+                        <Grid item>
+                            <Tweet />
+                        </Grid>
+                        <Grid item>
+                            <Tweet />
+                        </Grid>
+                        <Grid item>
+                            <Tweet />
                         </Grid>
                     </Grid>
+                </Grid>
+
+                <Grid item xs={2}>
                 </Grid>
             </Grid>
         </Fragment>

@@ -68,14 +68,26 @@ class Settings extends Component {
 
     handleProtectedCheck = (e) => {
 
+        const isProtected = this.state.protected;
+
         this.setState({
-            protected: false
+            protected: !isProtected
         })
     }
 
     handleEmailChange = (e) => {
         
-        console.log("something")
+        console.log("Change Email")
+    }
+
+    handlePasswordChange = (e) => {
+        
+        console.log("Change Password")
+    }
+
+    handleHandleChange = (e) => {
+        
+        console.log("Change Handle")
     }
 
     render () {
@@ -117,7 +129,7 @@ class Settings extends Component {
                                             margin="normal"
                                             value={this.state.email}
                                         />
-                                        <Button type="submit" styles={styles.button}>
+                                        <Button type="submit" style={styles.button} onClick={this.handleEmailChange}>
                                             Change Email
                                         </Button>
                                     </div>
@@ -130,7 +142,7 @@ class Settings extends Component {
                                             margin="normal"
                                             value={this.state.handle}
                                         />
-                                        <Button type="submit" styles={styles.button}>
+                                        <Button type="submit" style={styles.button} onClick={this.handleHandleChange}>
                                             Change Handle
                                         </Button>
                                     </div>
@@ -144,7 +156,7 @@ class Settings extends Component {
                                             type="password"
                                             value={this.state.password}
                                         />
-                                        <Button type="submit" styles={styles.button}>
+                                        <Button type="submit" style={styles.button} onClick={this.handlePasswordChange}>
                                             Change Password
                                         </Button>
                                     </div>
