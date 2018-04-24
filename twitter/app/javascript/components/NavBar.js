@@ -87,6 +87,14 @@ class NavBar extends Component {
     goToMessages = e => {
 		window.location = 'http://localhost:3000/pages/messages';
     }
+    
+    goToProfile = e => {
+		window.location = 'http://localhost:3000/pages/profile';
+    }
+
+    goToSettings = e => {
+		window.location = 'http://localhost:3000/pages/settings';
+    }
 
     goToNotif = e => {
 		window.location = 'http://localhost:3000/pages/notifications';
@@ -138,8 +146,8 @@ class NavBar extends Component {
                         open={Boolean(this.state.anchorEl)}
                         onClose={this.handleClose}
                         >
-                            <MenuItem onClick={this.handleClose}>Profile</MenuItem>
-                            <MenuItem onClick={this.handleClose}>Settings</MenuItem>
+                            <MenuItem onClick = {this.goToProfile}>Profile</MenuItem>
+                            <MenuItem onClick={this.goToSettings}>Settings</MenuItem>
                             <MenuItem onClick={this.handleClose}>Logout</MenuItem>
                         </Menu>
                     </div>
