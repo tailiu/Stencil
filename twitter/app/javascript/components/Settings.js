@@ -26,6 +26,9 @@ import ReplyIcon from 'images/reply_icon.png';
 import FavIcon from 'images/fav_icon.png';
 import RetweetIcon from 'images/retweet_icon.png';
 import FollowIcon from 'images/follow_icon.png';
+import Checkbox from 'material-ui/Checkbox';
+
+import { FormGroup, FormControlLabel } from 'material-ui/Form';
 
 import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
 import Divider from 'material-ui/Divider';
@@ -37,6 +40,9 @@ const styles = {
             height: 200
         }
     },
+    button : {
+        marginLeft: 5
+    }
 };
 
 function generate(element) {
@@ -47,16 +53,44 @@ function generate(element) {
     );
   }
 
-class Home extends Component {
+class Settings extends Component {
 
     constructor(props) {
 
         super(props);
         this.state = {
+            protected: true,
+            email: 'taicow@gmail.com',
+            handle: 'taicow',
+            password: '123',
         }
     }
 
-  render () {
+    handleProtectedCheck = (e) => {
+
+        const isProtected = this.state.protected;
+
+        this.setState({
+            protected: !isProtected
+        })
+    }
+
+    handleEmailChange = (e) => {
+        
+        console.log("Change Email")
+    }
+
+    handlePasswordChange = (e) => {
+        
+        console.log("Change Password")
+    }
+
+    handleHandleChange = (e) => {
+        
+        console.log("Change Handle")
+    }
+
+    render () {
     return (
         <Fragment>
             <NavBar />
@@ -73,7 +107,59 @@ class Home extends Component {
                                 />
                                 <hr />
                                 <CardContent>
+                                    <FormGroup row>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                checked={this.state.protected}
+                                                onChange={this.handleProtectedCheck}
+                                                name="protected"
+                                                value="checked"
+                                                />
+                                            }
+                                            label="Protected Account"
+                                        />
+                                    </FormGroup>
 
+                                    <div>
+                                        <TextField
+                                            id="email"
+                                            name="email"
+                                            label="Email"
+                                            margin="normal"
+                                            value={this.state.email}
+                                        />
+                                        <Button type="submit" style={styles.button} onClick={this.handleEmailChange}>
+                                            Change Email
+                                        </Button>
+                                    </div>
+
+                                    <div>
+                                        <TextField
+                                            id="handle"
+                                            name="handle"
+                                            label="Handle"
+                                            margin="normal"
+                                            value={this.state.handle}
+                                        />
+                                        <Button type="submit" style={styles.button} onClick={this.handleHandleChange}>
+                                            Change Handle
+                                        </Button>
+                                    </div>
+
+                                    <div>
+                                        <TextField
+                                            id="password"
+                                            name="password"
+                                            label="Password"
+                                            margin="normal"
+                                            type="password"
+                                            value={this.state.password}
+                                        />
+                                        <Button type="submit" style={styles.button} onClick={this.handlePasswordChange}>
+                                            Change Password
+                                        </Button>
+                                    </div>
                                 </CardContent>
                             </Card>
 
@@ -87,4 +173,4 @@ class Home extends Component {
   }
 }
 
-export default withStyles(styles)(Home);
+export default withStyles(styles)(Settings);

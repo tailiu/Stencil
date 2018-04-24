@@ -19,7 +19,7 @@ const styles = {
     }
 }
 
-class Tweet extends Component{
+class UserInfo extends Component{
 
     render(){
         return(
@@ -38,4 +38,4 @@ class Tweet extends Component{
     }
 }
 
-export default Tweet;
+export default UserInfo;

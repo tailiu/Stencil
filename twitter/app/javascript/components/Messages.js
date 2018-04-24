@@ -54,7 +54,7 @@ function generate(element) {
     );
   }
 
-class Home extends Component {
+class Messages extends Component {
 
     constructor(props) {
 
@@ -157,4 +157,4 @@ class Home extends Component {
   }
 }
 
-export default withStyles(styles)(Home);
+export default withStyles(styles)(Messages);

@@ -47,7 +47,7 @@ function generate(element) {
     );
   }
 
-class Home extends Component {
+class Notif extends Component {
 
     constructor(props) {
 
@@ -119,4 +119,4 @@ class Home extends Component {
   }
 }
 
-export default withStyles(styles)(Home);
+export default withStyles(styles)(Notif);
