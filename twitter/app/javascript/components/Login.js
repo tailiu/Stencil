@@ -76,7 +76,7 @@ class Login extends Component {
     }
 
     goToSignUp(e) {
-        window.location = 'http://localhost:3000/pages/signUp';
+        window.location = '/pages/signUp';
     }
 
   render () {

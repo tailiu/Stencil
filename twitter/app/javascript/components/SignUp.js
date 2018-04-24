@@ -60,14 +60,9 @@ class SignUp extends Component {
   }
 
   handleSubmit(e) {
-    console.log("Called: 'handleSignUp'");
-
     // this.state.name = e.target.name.value;
     // this.state.email = e.target.email.value;
     // this.state.password = e.target.password.value;
-    
-    alert(this.state.name);
-    e.preventDefault();
   }
 
   getValidationState() {
@@ -83,7 +78,7 @@ class SignUp extends Component {
   }
 
   goToLogin(e) {
-		window.location = 'http://localhost:3000/pages/login';
+		window.location = '/pages/login';
   }
 
   render () {
@@ -118,6 +113,8 @@ class SignUp extends Component {
                     label="Name"
                     margin="normal"
                     style={styles.card.input}
+                    name="name"
+                    value={this.state.name.value}
                     onChange={this.handleChange}
                   />
                   <br/>
@@ -126,6 +123,8 @@ class SignUp extends Component {
                     label="Email"
                     margin="normal"
                     style={styles.card.input}
+                    name="email"
+                    value={this.state.email.value}
                     onChange={this.handleChange}
                   />
                   <br/>
@@ -135,6 +134,8 @@ class SignUp extends Component {
                     margin="normal"
                     type="password"
                     style={styles.card.input}
+                    name="password"
+                    value={this.state.password.value}
                     onChange={this.handleChange}
                   />
                   <br/>

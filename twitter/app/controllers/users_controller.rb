@@ -1,5 +1,8 @@
 class UsersController < ApplicationController
     def new
-        render "home"
+        @user = User.new(params)
+        puts params[:a]
+
+        render "pages/home"
     end
 end

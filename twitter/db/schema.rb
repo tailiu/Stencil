@@ -10,26 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180424092701) do
+ActiveRecord::Schema.define(version: 20180424110850) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
-
-  create_table "articles", force: :cascade do |t|
-    t.string "title"
-    t.text "text"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "comments", force: :cascade do |t|
-    t.string "commenter"
-    t.text "body"
-    t.bigint "article_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["article_id"], name: "index_comments_on_article_id"
-  end
 
   create_table "conversations", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -42,7 +26,7 @@ ActiveRecord::Schema.define(version: 20180424092701) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["user_id"], name: "index_credentials_on_user_id", unique: true
+    t.index ["user_id"], name: "index_credentials_on_user_id"
   end
 
   create_table "likes", force: :cascade do |t|
@@ -99,13 +83,12 @@ ActiveRecord::Schema.define(version: 20180424092701) do
     t.datetime "updated_at", null: false
     t.string "name"
     t.text "handle"
-    t.text "bio"
-    t.boolean "protected"
-    t.boolean "account_active"
+    t.text "bio", default: ""
+    t.boolean "protected", default: false
+    t.boolean "account_active", default: true
     t.string "avatar"
   end
 
-  add_foreign_key "comments", "articles"
   add_foreign_key "credentials", "users"
   add_foreign_key "likes", "tweets"
   add_foreign_key "likes", "users"
