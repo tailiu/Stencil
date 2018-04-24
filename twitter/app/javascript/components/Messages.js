@@ -21,8 +21,6 @@ import IconButton from 'material-ui/IconButton';
 import red from 'material-ui/colors/red';
 
 import SearchIcon from 'images/search_icon.svg';
-import Tweet from './Tweet';
-import UserInfo from './UserInfo';
 
 const styles = {
     grid : {
@@ -30,83 +28,41 @@ const styles = {
             marginTop: 80
         }
     },
-    card: {
-        card:{
-            // minWidth: 400,
-        },
-        input:{
-            width: "95%",
-        },
-        button: {
-            width: "100%",
-            backgroundColor: "#00aced",
-            color: "#fff",
-        }
-    },
-    tweet: {
-        avatar: {
-
-        },
-        main_input: {
-
-        },
-        container: {
-
-        },
-        card: {
-
-        }
-    }
 };
 
 class Home extends Component {
 
     constructor(props) {
 
-    super(props);
+        super(props);
 
-    this.state = {
-        email : '',
-        password : '',
-        name : '',
-        tweet_value : '',
-        value : '',
+        this.state = {
+        }
     }
 
-        this.handleChange = this.handleChange.bind(this);
-        this.handleChangeToTweetField = this.handleChangeToTweetField.bind(this);
-        this.goToLogin = this.goToLogin.bind(this);
+    handleSubmit = e => {
+        e.preventDefault();
     }
-
-    handleChange(e) {
-        this.setState({ value: e.target.value });
-    }
-
-    handleChangeToTweetField(e) {
-        this.setState({ tweet_value: e.target.value });
-    }
-
-    goToLogin(e) {
-        window.location = 'http://localhost:3000/pages/login';
-    }
-
-    
 
   render () {
     return (
         <Fragment>
             <NavBar />
-            <Grid style={styles.grid.container} container spacing={24} align="center">
+            <Grid style={styles.grid.container} container spacing={24}direction="column"  align="center">
                 
-                <Grid item xs={4}>
-                    <UserInfo />
-
-                </Grid>
-
                 <Grid item xs={8}>
                     <Grid container direction="column" align="left">
                         <Grid item>
-                            <Tweet />
+                        <Card>
+                            <CardHeader
+                                title="Messages"
+                            />
+                            <hr />
+                            <CardContent>
+
+                                
+                            </CardContent>
+                            </Card>
                         </Grid>
                     </Grid>
                 </Grid>

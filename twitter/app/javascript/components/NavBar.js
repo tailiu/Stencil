@@ -9,6 +9,14 @@ import Button from 'material-ui/Button';
 
 import Menu, { MenuItem } from 'material-ui/Menu';
 import Input from 'material-ui/Input';
+import TextField from 'material-ui/TextField';
+
+import Dialog, {
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+  } from 'material-ui/Dialog';
 
 const styles = {
     root: {
@@ -59,15 +67,29 @@ class NavBar extends Component {
         this.state = {
             value : 0,
             anchorEl: null,
+            tweet_box_open: false,
         }
-
-        this.goToHome = this.goToHome.bind(this);
-        this.handleChange = this.handleChange.bind(this);
     }
 
+    handleTweetBoxOpen = () => {
+        console.log("HERE!");
+        this.setState({tweet_box_open: true });
+    };
 
-    goToHome(e) {
+    handleTweetBoxClose = () => {
+        this.setState({ tweet_box_open: false });
+    };
+
+    goToHome = e => {
 		window.location = 'http://localhost:3000/pages/home';
+    }
+
+    goToMessages = e => {
+		window.location = 'http://localhost:3000/pages/messages';
+    }
+
+    goToNotif = e => {
+		window.location = 'http://localhost:3000/pages/notifications';
     }
     
     handleChange = (event, value) => {
@@ -75,8 +97,8 @@ class NavBar extends Component {
         event.preventDefault();
     };
 
-    handleClick = event => {
-        this.setState({ anchorEl: event.currentTarget });
+    handleClick = e => {
+        this.setState({ anchorEl: e.currentTarget });
     };
 
     handleClose = () => {
@@ -95,8 +117,8 @@ class NavBar extends Component {
                     </Typography>
                     <div style={styles.buttonGroup} >
                         <Button onClick = {this.goToHome}>Home</Button>
-                        <Button>Notifications</Button>
-                        <Button>Messages</Button>
+                        <Button onClick = {this.goToNotif}>Notifications</Button>
+                        <Button onClick = {this.goToMessages}>Messages</Button>
                     </div>
                     <Input
                         placeholder="Search Twitter"
@@ -121,7 +143,40 @@ class NavBar extends Component {
                             <MenuItem onClick={this.handleClose}>Logout</MenuItem>
                         </Menu>
                     </div>
-                    <Button style={styles.tweetButton}>Tweet</Button>
+                    <Button 
+                        style={styles.tweetButton} 
+                        onClick={this.handleTweetBoxOpen}>Tweet Now</Button>
+                    <Dialog
+                        open={this.state.tweet_box_open}
+                        onClose={this.handleTweetBoxClose}
+                        aria-labelledby="form-dialog-title"
+                        >
+                        <DialogTitle id="form-dialog-title">New Tweet</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>
+                            {/* What's on your mind? */}
+                            </DialogContentText>
+                            <TextField
+                            autoFocus
+                            margin="dense"
+                            id="tweet"
+                            label="What's on your mind?"
+                            type="email"
+                            fullWidth
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={this.handleTweetBoxClose} color="primary">
+                            Video/Photo
+                            </Button>
+                            <Button onClick={this.handleTweetBoxClose} color="primary">
+                            Cancel
+                            </Button>
+                            <Button onClick={this.handleTweetBoxClose} color="primary">
+                            Tweet!
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                 </Toolbar>
             </AppBar>
         );

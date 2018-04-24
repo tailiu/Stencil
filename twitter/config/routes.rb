@@ -5,6 +5,9 @@ Rails.application.routes.draw do
 	get 'pages/login', to: 'pages#login'
 	get 'pages/signUp', to: 'pages#signUp'
 	get 'pages/home', to: 'pages#home'
+	get 'pages/messages', to: 'pages#messages'
+	get 'pages/notifications', to: 'pages#notifs'
+	get 'pages/search', to: 'pages#search'
 
 	resources :users
 
