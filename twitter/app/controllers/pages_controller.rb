@@ -13,4 +13,16 @@ class PagesController < ApplicationController
     def home
         render "home"
     end
+
+    def notifs
+        render "notifs"
+    end
+
+    def messages
+        render "messages"
+    end
+
+    def search
+        render "search"
+    end
 end
