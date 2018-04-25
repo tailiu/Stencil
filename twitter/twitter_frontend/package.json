@@ -3,10 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "material-ui": "^1.0.0-beta.43",
     "react": "^16.3.2",
     "react-dom": "^16.3.2",
+<<<<<<< HEAD
     "react-router-dom": "^4.2.2",
     "react-scripts": "^1.1.4"
+=======
+    "react-router": "^4.2.0",
+    "react-router-dom": "^4.2.2",
+    "react-scripts": "1.1.4"
+>>>>>>> fc806c37ebbd28f7996977a9d9bb995844b53db4
   },
   "scripts": {
     "start": "PORT=3001 react-scripts start",

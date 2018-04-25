@@ -1,11 +1,6 @@
 import React, {Component, Fragment} from "react";
 
-import PropTypes from 'prop-types';
-import { withStyles } from 'material-ui/styles';
-import MenuItem from 'material-ui/Menu/MenuItem';
 import TextField from 'material-ui/TextField';
-
-import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
 
@@ -14,24 +9,9 @@ import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
 
 import NavBar from './NavBar';
 
-import Avatar from 'material-ui/Avatar';
-
-import Collapse from 'material-ui/transitions/Collapse';
-import IconButton from 'material-ui/IconButton';
-import red from 'material-ui/colors/red';
-
-import SearchIcon from 'images/search_icon.png';
-import TwitterLogo from 'images/Twitter_Logo_Blue.png';
-import ReplyIcon from 'images/reply_icon.png';
-import FavIcon from 'images/fav_icon.png';
-import RetweetIcon from 'images/retweet_icon.png';
-import FollowIcon from 'images/follow_icon.png';
 import Checkbox from 'material-ui/Checkbox';
 
 import { FormGroup, FormControlLabel } from 'material-ui/Form';
-
-import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
-import Divider from 'material-ui/Divider';
 
 const styles = {
     grid : {
@@ -173,4 +153,4 @@ class Settings extends Component {
   }
 }
 
-export default withStyles(styles)(Settings);
+export default Settings;

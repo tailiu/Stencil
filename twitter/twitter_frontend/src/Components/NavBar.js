@@ -1,8 +1,8 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 
 import Typography from 'material-ui/Typography';
 
-import {AppBar, Tabs, Tab} from 'material-ui';
+import {AppBar} from 'material-ui';
 import Toolbar from 'material-ui/Toolbar';
 
 import Button from 'material-ui/Button';
@@ -81,23 +81,23 @@ class NavBar extends Component {
     };
 
     goToHome = e => {
-		window.location = 'http://localhost:3000/pages/home';
+		window.location = '/home';
     }
 
     goToMessages = e => {
-		window.location = 'http://localhost:3000/pages/messages';
+		window.location = '/messages';
     }
     
     goToProfile = e => {
-		window.location = 'http://localhost:3000/pages/profile';
+		window.location = '/profile';
     }
 
     goToSettings = e => {
-		window.location = 'http://localhost:3000/pages/settings';
+		window.location = '/settings';
     }
 
     goToNotif = e => {
-		window.location = 'http://localhost:3000/pages/notifications';
+		window.location = '/notifications';
     }
     
     handleChange = (event, value) => {

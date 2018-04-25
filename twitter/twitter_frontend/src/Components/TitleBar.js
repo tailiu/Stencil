@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 
 import Typography from 'material-ui/Typography';
 
@@ -24,7 +24,7 @@ class TitleBar extends Component {
 
 
     goToHome(e) {
-		window.location = 'http://localhost:3000/pages/index';
+		window.location = '/index';
 	}
 
     render() {

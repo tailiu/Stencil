@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import Button from 'material-ui/Button';
 import Avatar from 'material-ui/Avatar';
 import Typography from 'material-ui/Typography';

@@ -20,13 +20,6 @@ import Collapse from 'material-ui/transitions/Collapse';
 import IconButton from 'material-ui/IconButton';
 import red from 'material-ui/colors/red';
 
-import SearchIcon from 'images/search_icon.png';
-import TwitterLogo from 'images/Twitter_Logo_Blue.png';
-import ReplyIcon from 'images/reply_icon.png';
-import FavIcon from 'images/fav_icon.png';
-import RetweetIcon from 'images/retweet_icon.png';
-import FollowIcon from 'images/follow_icon.png';
-
 import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
 import Divider from 'material-ui/Divider';
 
@@ -77,8 +70,7 @@ class Notif extends Component {
                                     <List dense={true}>
                                         <ListItem>
                                             <ListItemIcon>
-                                            <img style={styles.logo} src={RetweetIcon} /> 
-                                            {/* <FolderIcon /> */}
+                                            <img style={styles.logo} src={require('../Assets/Images/retweet_icon.png')} /> 
                                             </ListItemIcon>
                                             <ListItemText
                                             primary="Tai retweeted your tweet"
@@ -87,8 +79,7 @@ class Notif extends Component {
                                         </ListItem>
                                         <ListItem>
                                             <ListItemIcon>
-                                            <img style={styles.logo} src={FavIcon} /> 
-                                            {/* <FolderIcon /> */}
+                                            <img style={styles.logo} src={require('../Assets/Images/fav_icon.png')} /> 
                                             </ListItemIcon>
                                             <ListItemText
                                             primary="Miro favorited your tweet"
@@ -97,7 +88,7 @@ class Notif extends Component {
                                         </ListItem>
                                         <ListItem>
                                             <ListItemIcon>
-                                            <img style={styles.logo} src={FollowIcon} /> 
+                                            <img style={styles.logo} src={require('../Assets/Images/follow_icon.png')} /> 
                                             {/* <FolderIcon /> */}
                                             </ListItemIcon>
                                             <ListItemText
