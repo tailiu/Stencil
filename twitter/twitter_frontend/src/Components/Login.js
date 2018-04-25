@@ -6,7 +6,7 @@ import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
 
 import Button from 'material-ui/Button';
-import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
+import Card, { CardActions, CardContent } from 'material-ui/Card';
 
 import TitleBar from './TitleBar';
 

@@ -1,27 +1,8 @@
 import React, {Component, Fragment} from "react";
-
-import PropTypes from 'prop-types';
-import { withStyles } from 'material-ui/styles';
-import MenuItem from 'material-ui/Menu/MenuItem';
-import TextField from 'material-ui/TextField';
-
-import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
-import Typography from 'material-ui/Typography';
-
-import Button from 'material-ui/Button';
-import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
-
+import Card, { CardContent, CardHeader } from 'material-ui/Card';
 import NavBar from './NavBar';
-
-import Avatar from 'material-ui/Avatar';
-
-import Collapse from 'material-ui/transitions/Collapse';
-import IconButton from 'material-ui/IconButton';
-import red from 'material-ui/colors/red';
-
 import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
-import Divider from 'material-ui/Divider';
 
 const styles = {
     grid : {
@@ -31,14 +12,6 @@ const styles = {
         }
     },
 };
-
-function generate(element) {
-    return [0, 1, 2].map(value =>
-      React.cloneElement(element, {
-        key: value,
-      }),
-    );
-  }
 
 class Notif extends Component {
 
@@ -70,7 +43,7 @@ class Notif extends Component {
                                     <List dense={true}>
                                         <ListItem>
                                             <ListItemIcon>
-                                            <img style={styles.logo} src={require('../Assets/Images/retweet_icon.png')} /> 
+                                            <img style={styles.logo} alt="retweet" src={require('../Assets/Images/retweet_icon.png')} /> 
                                             </ListItemIcon>
                                             <ListItemText
                                             primary="Tai retweeted your tweet"
@@ -79,7 +52,7 @@ class Notif extends Component {
                                         </ListItem>
                                         <ListItem>
                                             <ListItemIcon>
-                                            <img style={styles.logo} src={require('../Assets/Images/fav_icon.png')} /> 
+                                            <img style={styles.logo} alt="favourite" src={require('../Assets/Images/fav_icon.png')} /> 
                                             </ListItemIcon>
                                             <ListItemText
                                             primary="Miro favorited your tweet"
@@ -88,7 +61,7 @@ class Notif extends Component {
                                         </ListItem>
                                         <ListItem>
                                             <ListItemIcon>
-                                            <img style={styles.logo} src={require('../Assets/Images/follow_icon.png')} /> 
+                                            <img style={styles.logo} alt="follow" src={require('../Assets/Images/follow_icon.png')} /> 
                                             {/* <FolderIcon /> */}
                                             </ListItemIcon>
                                             <ListItemText
@@ -110,4 +83,4 @@ class Notif extends Component {
   }
 }
 
-export default withStyles(styles)(Notif);
+export default Notif;

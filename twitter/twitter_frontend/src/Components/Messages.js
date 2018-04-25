@@ -1,28 +1,11 @@
 import React, {Component, Fragment} from "react";
-
 import TextField from 'material-ui/TextField';
-
 import Grid from 'material-ui/Grid';
-import Typography from 'material-ui/Typography';
 import Divider from 'material-ui/Divider';
-
-import Button from 'material-ui/Button';
-import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
-
+import Card, { CardContent, CardHeader } from 'material-ui/Card';
 import NavBar from './NavBar';
-
 import Avatar from 'material-ui/Avatar';
-
-import Collapse from 'material-ui/transitions/Collapse';
-import IconButton from 'material-ui/IconButton';
-
-import List, {
-    ListItem,
-    ListItemAvatar,
-    ListItemIcon,
-    ListItemSecondaryAction,
-    ListItemText,
-  } from 'material-ui/List';
+import List, { ListItem, ListItemText, } from 'material-ui/List';
 
 const styles = {
     grid : {

@@ -1,6 +1,5 @@
 import React, {Component} from "react";
 import Avatar from 'material-ui/Avatar';
-import Typography from 'material-ui/Typography';
 import Card, { CardHeader } from 'material-ui/Card';
 
 const styles = {

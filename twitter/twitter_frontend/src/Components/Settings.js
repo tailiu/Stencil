@@ -2,10 +2,9 @@ import React, {Component, Fragment} from "react";
 
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
-import Typography from 'material-ui/Typography';
 
 import Button from 'material-ui/Button';
-import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
+import Card, {CardContent, CardHeader } from 'material-ui/Card';
 
 import NavBar from './NavBar';
 
@@ -24,14 +23,6 @@ const styles = {
         marginLeft: 5
     }
 };
-
-function generate(element) {
-    return [0, 1, 2].map(value =>
-      React.cloneElement(element, {
-        key: value,
-      }),
-    );
-  }
 
 class Settings extends Component {
 
