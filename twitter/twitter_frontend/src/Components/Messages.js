@@ -1,11 +1,7 @@
 import React, {Component, Fragment} from "react";
 
-import PropTypes from 'prop-types';
-import { withStyles } from 'material-ui/styles';
-import MenuItem from 'material-ui/Menu/MenuItem';
 import TextField from 'material-ui/TextField';
 
-import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
 import Divider from 'material-ui/Divider';
@@ -19,9 +15,6 @@ import Avatar from 'material-ui/Avatar';
 
 import Collapse from 'material-ui/transitions/Collapse';
 import IconButton from 'material-ui/IconButton';
-import red from 'material-ui/colors/red';
-
-import UserIcon from 'images/user_icon.png';
 
 import List, {
     ListItem,
@@ -90,7 +83,7 @@ class Messages extends Component {
                                         <List>
                                             <ListItem>
                                             <Avatar
-                                            src={UserIcon}
+                                            src={require('../Assets/Images/user_icon.png')}
                                             />
                                             <ListItemText primary="Tai Cow" secondary="Jan 9, 2014" />
                                             </ListItem>
@@ -99,7 +92,7 @@ class Messages extends Component {
                                             </li>
                                             <ListItem>
                                             <Avatar
-                                            src={UserIcon}
+                                            src={require('../Assets/Images/user_icon.png')}
                                             />
                                             <ListItemText primary="Miro Pasta" secondary="Jan 9, 2014" />
                                             </ListItem>
@@ -108,7 +101,7 @@ class Messages extends Component {
                                             </li>
                                             <ListItem>
                                             <Avatar
-                                            src={UserIcon}
+                                            src={require('../Assets/Images/user_icon.png')}
                                             />
                                             <ListItemText primary="Major Tom" secondary="Jan 9, 2014" />
                                             </ListItem>
@@ -157,4 +150,4 @@ class Messages extends Component {
   }
 }
 
-export default withStyles(styles)(Messages);
+export default Messages;

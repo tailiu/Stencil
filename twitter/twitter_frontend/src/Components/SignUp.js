@@ -1,11 +1,6 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 
-import PropTypes from 'prop-types';
-import { withStyles } from 'material-ui/styles';
-import MenuItem from 'material-ui/Menu/MenuItem';
 import TextField from 'material-ui/TextField';
-
-import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
 
@@ -79,7 +74,7 @@ class SignUp extends Component {
   }
 
   goToLogin(e) {
-		window.location = '/pages/login';
+		window.location = '/login';
   }
 
   render () {
@@ -169,4 +164,4 @@ class SignUp extends Component {
   }
 }
 
-export default withStyles()(SignUp);
+export default SignUp;

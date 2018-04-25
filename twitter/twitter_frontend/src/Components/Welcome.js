@@ -29,9 +29,9 @@ class Welcome extends Component {
 	handleClick(val, e) {
 
 		if (val.toLowerCase() == "login") {
-			window.location = '/pages/login';
+			window.location = '/login';
 		} else {
-			window.location = '/pages/signUp';
+			window.location = '/signUp';
 		}
 	}
 

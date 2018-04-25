@@ -1,8 +1,7 @@
-import React, {Component, Fragment} from "react";
-import Button from 'material-ui/Button';
+import React, {Component} from "react";
 import Avatar from 'material-ui/Avatar';
 import Typography from 'material-ui/Typography';
-import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
+import Card, { CardHeader } from 'material-ui/Card';
 
 const styles = {
     user_info: {

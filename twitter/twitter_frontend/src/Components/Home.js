@@ -20,7 +20,6 @@ import Collapse from 'material-ui/transitions/Collapse';
 import IconButton from 'material-ui/IconButton';
 import red from 'material-ui/colors/red';
 
-import SearchIcon from 'images/search_icon.png';
 import Tweet from './Tweet';
 import UserInfo from './UserInfo';
 
@@ -75,7 +74,6 @@ class Home extends Component {
 
         this.handleChange = this.handleChange.bind(this);
         this.handleChangeToTweetField = this.handleChangeToTweetField.bind(this);
-        this.goToLogin = this.goToLogin.bind(this);
     }
 
     handleChange(e) {
@@ -84,15 +82,9 @@ class Home extends Component {
 
     handleChangeToTweetField(e) {
         this.setState({ tweet_value: e.target.value });
-    }
+    }   
 
-    goToLogin(e) {
-        window.location = 'http://localhost:3000/pages/login';
-    }
-
-    
-
-  render () {
+    render () {
     return (
         <Fragment>
             <NavBar />
