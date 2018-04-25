@@ -11,7 +11,9 @@ class UsersController < ApplicationController
             puts @new_user.errors.messages
             puts @new_credential.errors.messages
             render "pages/err"
+
         end
 
     end
+
 end

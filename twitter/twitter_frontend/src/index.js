@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
 import Welcome from './Components/Welcome';
 import Home from './Components/Home';
 import SignUp from './Components/SignUp';
@@ -22,7 +21,6 @@ import {
 ReactDOM.render(
     <Router>
         <Switch>
-            <Route path="/index" component={Welcome} />
             <Route path="/home" component={Home} />
             <Route path="/signup" component={SignUp} />
             <Route path="/login" component={Login} />
@@ -31,6 +29,7 @@ ReactDOM.render(
             <Route path="/messages" component={Messages} />
             <Route path="/notifications" component={Notif} />
             <Route path="/settings" component={Settings} />
+            <Route path="" component={Welcome} />
         </Switch>
   </Router>,
     document.getElementById('root')

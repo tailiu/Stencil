@@ -1,5 +1,7 @@
 import React, {Component} from "react";
 
+import { AxiosProvider, Request, Get, Delete, Head, Post, Put, Patch, withAxios } from 'react-axios'
+
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
@@ -59,6 +61,29 @@ class SignUp extends Component {
     // this.state.name = e.target.name.value;
     // this.state.email = e.target.email.value;
     // this.state.password = e.target.password.value;
+
+    alert(e.target.name.value)
+
+    e.preventDefault()
+
+    return (
+      <div>
+        <Get url="/users/new" params={{id: "12345"}}>
+          {(error, response, isLoading, onReload) => {
+            if(error) {
+              return (<div>Something bad happened: {error.message} <button onClick={() => onReload({ params: { reload: true } })}>Retry</button></div>)
+            }
+            else if(isLoading) {
+              return (<div>Loading...</div>)
+            }
+            else if(response !== null) {
+              return (<div>{response.data.message} <button onClick={() => onReload({ params: { refresh: true } })}>Refresh</button></div>)
+            }
+            return (<div>Default message before request is made.</div>)
+          }}
+        </Get>
+      </div>
+    )
   }
 
   getValidationState() {
@@ -102,7 +127,7 @@ class SignUp extends Component {
               /> 
               <hr/> */}
               <CardContent>
-                <form action="/users/new" onSubmit={this.handleSubmit}>
+                <form onSubmit={this.handleSubmit}>
 
                   <TextField
                     id="name"
