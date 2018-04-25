@@ -1,7 +1,6 @@
 import React, {Component} from "react";
 import PropTypes from "prop-types";
 import Grid from 'material-ui/Grid';
-// import TwitterLogo from './Assets/Images/Twitter_Logo_Blue.png';
 import Typography from 'material-ui/Typography';
 import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
@@ -41,7 +40,7 @@ class Welcome extends Component {
 			<Grid container spacing={24} direction="column" align="center">
 				
 				<Grid item xs>
-					<img style={styles.logo} src={TwitterLogo} /> 
+					<img style={styles.logo} src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
 				</Grid>
 				
 				<Grid item xs>
