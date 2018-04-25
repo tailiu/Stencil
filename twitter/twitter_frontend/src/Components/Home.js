@@ -1,25 +1,6 @@
 import React, {Component, Fragment} from "react";
-
-import PropTypes from 'prop-types';
-import { withStyles } from 'material-ui/styles';
-import MenuItem from 'material-ui/Menu/MenuItem';
-import TextField from 'material-ui/TextField';
-
-import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
-import Typography from 'material-ui/Typography';
-
-import Button from 'material-ui/Button';
-import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
-
 import NavBar from './NavBar';
-
-import Avatar from 'material-ui/Avatar';
-
-import Collapse from 'material-ui/transitions/Collapse';
-import IconButton from 'material-ui/IconButton';
-import red from 'material-ui/colors/red';
-
 import Tweet from './Tweet';
 import UserInfo from './UserInfo';
 
@@ -125,4 +106,4 @@ class Home extends Component {
   }
 }
 
-export default withStyles(styles)(Home);
+export default Home;

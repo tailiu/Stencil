@@ -1,6 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+<<<<<<< HEAD
 import './index.css';
+=======
+>>>>>>> 75a7459aa47eb3241052b0628d5f274aaa5115ba
 import Welcome from './Components/Welcome';
 import Home from './Components/Home';
 import SignUp from './Components/SignUp';
@@ -13,7 +16,6 @@ import Settings from './Components/Settings';
 import registerServiceWorker from './registerServiceWorker';
 import {
     BrowserRouter as Router,
-    Link,
     Route,
     Switch,
   } from 'react-router-dom';

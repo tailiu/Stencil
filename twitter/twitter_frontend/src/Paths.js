@@ -1,1 +1,0 @@
-ASSETS_BASE_PATH = "";

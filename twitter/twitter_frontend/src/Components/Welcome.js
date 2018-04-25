@@ -1,10 +1,7 @@
 import React, {Component} from "react";
-import PropTypes from "prop-types";
 import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
 import Button from 'material-ui/Button';
-import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
-
 
 const styles = {
 	
@@ -28,7 +25,7 @@ class Welcome extends Component {
 
 	handleClick(val, e) {
 
-		if (val.toLowerCase() == "login") {
+		if (val.toLowerCase() === "login") {
 			window.location = '/login';
 		} else {
 			window.location = '/signUp';
@@ -40,7 +37,7 @@ class Welcome extends Component {
 			<Grid container spacing={24} direction="column" align="center">
 				
 				<Grid item xs>
-					<img style={styles.logo} src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
+					<img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
 				</Grid>
 				
 				<Grid item xs>
