@@ -1,7 +1,6 @@
 import React, {Component} from "react";
-import axios from 'axios';
 
-import axios from "axios"
+import axios from 'axios';
 
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
