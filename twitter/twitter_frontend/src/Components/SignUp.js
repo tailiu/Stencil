@@ -1,10 +1,7 @@
 import React, {Component} from "react";
 
-<<<<<<< HEAD
 import axios from 'axios';
 
-=======
->>>>>>> 1fad7579571c741090940b19a5d69bd2fe5f0ccb
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
