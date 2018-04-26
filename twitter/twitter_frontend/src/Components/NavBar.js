@@ -1,4 +1,6 @@
 import React, {Component} from "react";
+import axios from 'axios';
+import { withCookies, Cookies } from 'react-cookie';
 
 import Typography from 'material-ui/Typography';
 
@@ -80,6 +82,10 @@ class NavBar extends Component {
         this.setState({ tweet_box_open: false });
     };
 
+    goToIndex = e => {
+		window.location = '/';
+    }
+
     goToHome = e => {
 		window.location = '/home';
     }
@@ -112,6 +118,17 @@ class NavBar extends Component {
     handleClose = () => {
         this.setState({ anchorEl: null });
     };
+
+    handleLogout = () =>  {
+        const { cookies } = this.props;
+        axios.get(
+        'http://localhost:3000/users/logout'
+        ).then(response => {
+            console.log(response);
+            cookies.remove('session_id');
+            this.goToIndex();
+        })
+      }
 
     render() {
         return (
@@ -148,7 +165,7 @@ class NavBar extends Component {
                         >
                             <MenuItem onClick = {this.goToProfile}>Profile</MenuItem>
                             <MenuItem onClick={this.goToSettings}>Settings</MenuItem>
-                            <MenuItem onClick={this.handleClose}>Logout</MenuItem>
+                            <MenuItem onClick={this.handleLogout}>Logout</MenuItem>
                         </Menu>
                     </div>
                     <Button 
@@ -191,4 +208,4 @@ class NavBar extends Component {
     }
 }
 
-export default NavBar;
+export default withCookies(NavBar);
