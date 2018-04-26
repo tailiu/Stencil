@@ -16,6 +16,8 @@ class UsersController < ApplicationController
             @new_credential.save
             @result["success"] = true
             @result["user"] = @new_user
+
+            session[:user_id] = @new_user.id
         else 
             puts @new_user.errors.messages
             puts @new_credential.errors.messages
@@ -37,7 +39,7 @@ class UsersController < ApplicationController
     end
 
     def verify
-        @credentials = Credential.find_by(email: params[:email], password: params[:password])
+        @credential = Credential.find_by(email: params[:email], password: params[:password])
 
         @result = {
             # params: params,
@@ -47,22 +49,17 @@ class UsersController < ApplicationController
             }
         }
 
-        if @credentials.valid?
-            @user = User.find(id: @credentials.user_id)
-            if @user.valid?
-                @result["success"] = true
-                @result["user"]  = @user
-            else
-                puts @user.errors.messages
-                @result["success"] = false
-                @result["message"] = "User doesn't exist!"
-            end
+        if @credential != nil
+            @result["success"] = true
+            @result["user"]  = @credential.user
+
+            session[:user_id] = @credential.user.id
         else
-            puts @credentials.errors.messages
             @result["success"] = false
             @result["message"] = "Invalid credentials!"
         end
-        render json: @result
+
+        render json: {result: @result}
     end
 
 end

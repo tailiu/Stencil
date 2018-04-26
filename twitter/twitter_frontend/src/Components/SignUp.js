@@ -122,6 +122,8 @@ class SignUp extends Component {
     }, () => this.handleSignup())
 
     e.preventDefault();
+
+    window.location = '/home'
   }
 
   handleChange = e => {

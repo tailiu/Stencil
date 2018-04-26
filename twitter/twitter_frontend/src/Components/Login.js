@@ -95,9 +95,10 @@ class Login extends Component {
             this.showSnackbar(response.data.result.error.message)
           }else{
             this.showSnackbar("Login Successful!");
-            setTimeout(function() { 
-              this.goToLogin();
-            }.bind(this), 3000);
+            // setTimeout(function() { 
+            //   this.goToLogin();
+            // }.bind(this), 3000);
+            window.location = '/home'
           }
         })
       }
