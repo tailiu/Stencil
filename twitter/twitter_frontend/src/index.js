@@ -15,8 +15,10 @@ import {
     Route,
     Switch,
   } from 'react-router-dom';
+import { CookiesProvider } from 'react-cookie';
 
 ReactDOM.render(
+    <CookiesProvider>
     <Router>
         <Switch>
             <Route path="/home" component={Home} />
@@ -29,7 +31,8 @@ ReactDOM.render(
             <Route path="/settings" component={Settings} />
             <Route path="" component={Welcome} />
         </Switch>
-  </Router>,
+  </Router>
+  </CookiesProvider>,
     document.getElementById('root')
 );
 
