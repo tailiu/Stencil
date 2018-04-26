@@ -9,6 +9,8 @@ import Typography from 'material-ui/Typography';
 import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent } from 'material-ui/Card';
 
+import Snackbar from 'material-ui/Snackbar';
+
 const styles = {
   logo: {
 		height: 150,
@@ -38,6 +40,8 @@ const styles = {
     display: 'inline-block',
   }
 };
+
+// const cookies = new Cookies(req.headers.cookie);
 
 class Login extends Component {
 
@@ -95,9 +99,11 @@ class Login extends Component {
             this.showSnackbar(response.data.result.error.message)
           }else{
             this.showSnackbar("Login Successful!");
+            this.goToHome();
+            // cookies.set('session_id', data.result.session_id);
             setTimeout(function() { 
-              this.goToLogin();
-            }.bind(this), 3000);
+              // this.goToLogin();
+            }, 3000);
           }
         })
       }
@@ -116,6 +122,10 @@ class Login extends Component {
     goToSignUp= (e) => {
         window.location = '/signup';
     }
+
+    goToHome= (e) => {
+      window.location = '/home';
+  }
 
   render () {
     return (
@@ -164,6 +174,21 @@ class Login extends Component {
                     Log In
                   </Button>
                 </form>
+                <Snackbar
+                  anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'center',
+                  }}
+                  open={this.state.snackbar.show}
+                  autoHideDuration={6000}
+                  // onClose={this.handleClose}
+                  SnackbarContentProps={{
+                    'aria-describedby': 'message-id',
+                  }}
+                  message={<span id="message-id">{this.state.snackbar.message}</span>}
+                  action={[
+                  ]}
+                />
               </CardContent>
               <CardActions>
                 <Button size="small" onClick={this.goToSignUp} >New to Twitter? Sign Up!</Button>

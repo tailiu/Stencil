@@ -7,7 +7,6 @@ class UsersController < ApplicationController
             # params: params,
             "success" => false,
             "error" => {
-                "message": "",
             }
         }
 
@@ -37,32 +36,35 @@ class UsersController < ApplicationController
     end
 
     def verify
+
+        reset_session
+
         @credentials = Credential.find_by(email: params[:email], password: params[:password])
 
         @result = {
             # params: params,
             "success" => false,
             "error" => {
-                "message": "",
             }
         }
 
-        if @credentials.valid?
-            @user = User.find(id: @credentials.user_id)
-            if @user.valid?
-                @result["success"] = true
-                @result["user"]  = @user
-            else
-                puts @user.errors.messages
-                @result["success"] = false
-                @result["message"] = "User doesn't exist!"
-            end
+        if @credentials != nil
+            @result["success"] = true
+            @result["user"]  = @credentials.user
+            session[@credentials.user.id]
+            @result["session_id"]  = session.id
+
         else
-            puts @credentials.errors.messages
             @result["success"] = false
-            @result["message"] = "Invalid credentials!"
+            @result["error"]["message"] = "Invalid credentials!"
         end
-        render json: @result
+
+        render json: {result: @result}
     end
+
+    def logout
+        session.clear
+    end
+
 
 end

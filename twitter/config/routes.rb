@@ -13,6 +13,7 @@ Rails.application.routes.draw do
 
 	get 'users/new', to: 'users#new'
 	get 'users/verify', to: 'users#verify'
+	get 'users/logout', to: 'users#logout'
 
 	resources :users
 
