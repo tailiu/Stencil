@@ -46,36 +46,70 @@ class Login extends Component {
         this.state = {
             email : '',
             password : '',
-            name : '',
-            value : '',
+            snackbar: {
+              message: 'Some Error!',
+              show: false
+            }
         }
     }
 
-    getValidationState = () => {
-    const length = this.state.value.length;
-    if (length > 10) return 'success';
-    else if (length > 5) return 'warning';
-    else if (length > 0) return 'error';
-    return null;
+    validateForm = () => {
+      if(this.state.email &&
+        this.state.password
+      ) return true;
+      else return false;
     }
 
-    handleChange = (e) => {
-    // this.setState({ value: e.target.value });
-    }
-
-    handleLogin = e => {
-      console.log("Handle login!");
-
-      axios.get(
-        'http://localhost:3000/users/new',
-        {
-          params: {'name':'tai', 'email':'tai@cow.com', 'handle':'taicow'}
+    showSnackbar = message => {
+      this.setState({
+        snackbar: {
+          message: message,
+          show: true
         }
-      ).then(response => {
-        console.log(response)
-        this.setState({username: response.data.name})
       })
-
+      setTimeout(function() { 
+        this.setState({
+          snackbar: {
+            message: "",
+            show: false
+          }
+        }); 
+      }.bind(this), 5000);
+    }
+  
+    handleLogin = () =>  {
+      if(!this.validateForm()){
+        this.showSnackbar("Some fields are left empty!")
+      }else{
+        axios.get(
+          'http://localhost:3000/users/verify',
+          {
+            params: {
+              'email':this.state.email, 
+              'password': this.state.password
+            }
+          }
+        ).then(response => {
+          console.log(response)
+          if(!response.data.result.success){
+            this.showSnackbar(response.data.result.error.message)
+          }else{
+            this.showSnackbar("Login Successful!");
+            setTimeout(function() { 
+              this.goToLogin();
+            }.bind(this), 3000);
+          }
+        })
+      }
+    }
+  
+    handleSubmit = e => {
+  
+      this.setState({
+        email:e.target.email.value,
+        password:e.target.password.value,
+      }, () => this.handleLogin())
+  
       e.preventDefault();
     }
 
@@ -108,7 +142,7 @@ class Login extends Component {
               /> 
               <hr/> */}
               <CardContent>
-                <form onSubmit={this.handleLogin}>
+                <form onSubmit={this.handleSubmit}>
 
                   <TextField
                     id="email"

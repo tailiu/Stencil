@@ -13,7 +13,8 @@
     "react-dom": "^16.3.2",
     "react-router": "^4.2.0",
     "react-router-dom": "^4.2.2",
-    "react_ujs": "^2.4.4"
+    "react_ujs": "^2.4.4",
+    "universal-cookie": "^2.1.2"
   },
   "devDependencies": {
     "webpack-dev-server": "2.11.2"
