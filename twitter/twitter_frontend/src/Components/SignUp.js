@@ -1,4 +1,5 @@
 import React, {Component} from "react";
+import axios from 'axios';
 
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
@@ -6,6 +7,7 @@ import Typography from 'material-ui/Typography';
 
 import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent } from 'material-ui/Card';
+import Snackbar from 'material-ui/Snackbar';
 
 import TitleBar from './TitleBar';
 
@@ -48,32 +50,48 @@ class SignUp extends Component {
       handle : '',
       name : ''
     }
-
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.getValidationState = this.getValidationState.bind(this);
-    this.handleChange = this.handleChange.bind(this);
-    this.goToLogin = this.goToLogin.bind(this);
   }
 
-  handleSubmit(e) {
-    // this.state.name = e.target.name.value;
-    // this.state.email = e.target.email.value;
-    // this.state.password = e.target.password.value;
+  validateForm = () => {
+
   }
 
-  getValidationState() {
-    const length = this.state.value.length;
-    if (length > 10) return 'success';
-    else if (length > 5) return 'warning';
-    else if (length > 0) return 'error';
-    return null;
+  handleSubmit = e => {
+
+    this.setState({
+      name:e.target.name.value,
+      email:e.target.email.value,
+      password:e.target.password.value,
+      handle:e.target.handle.value
+    })
+
+    if(!this.validateForm()){
+
+    }else{
+      axios.get(
+        'http://localhost:3000/users/new',
+        {
+          params: {
+            'name':this.state.name, 
+            'email':this.state.email, 
+            'handle':this.state.handle,
+            'password': this.state.password
+          }
+        }
+      ).then(response => {
+        console.log(response)
+        this.setState({username: response.data.name})
+      })
+    }
+
+    e.preventDefault();
   }
 
-  handleChange(e) {
+  handleChange = e => {
     this.setState({ value: e.target.value });
   }
 
-  goToLogin(e) {
+  goToLogin = e => {
 		window.location = '/login';
   }
 
@@ -102,7 +120,7 @@ class SignUp extends Component {
               /> 
               <hr/> */}
               <CardContent>
-                <form action="/users/new" onSubmit={this.handleSubmit}>
+                <form onSubmit={this.handleSubmit}>
 
                   <TextField
                     id="name"

@@ -1,4 +1,5 @@
 import React, {Component} from "react";
+import axios from 'axios';
 
 import TextField from 'material-ui/TextField';
 
@@ -47,19 +48,9 @@ class Login extends Component {
             name : '',
             value : '',
         }
-
-        this.handleSignUp = this.handleSignUp.bind(this);
-        this.getValidationState = this.getValidationState.bind(this);
-        this.handleChange = this.handleChange.bind(this);
-        this.goToSignUp = this.goToSignUp.bind(this);
     }
 
-    handleSignUp(event) {
-    console.log("sign me up, bozo!");
-    event.preventDefault();
-    }
-
-    getValidationState() {
+    getValidationState = () => {
     const length = this.state.value.length;
     if (length > 10) return 'success';
     else if (length > 5) return 'warning';
@@ -67,11 +58,27 @@ class Login extends Component {
     return null;
     }
 
-    handleChange(e) {
+    handleChange = (e) => {
     // this.setState({ value: e.target.value });
     }
 
-    goToSignUp(e) {
+    handleLogin = e => {
+      console.log("Handle login!");
+
+      axios.get(
+        'http://localhost:3000/users/new',
+        {
+          params: {'name':'tai', 'email':'tai@cow.com', 'handle':'taicow'}
+        }
+      ).then(response => {
+        console.log(response)
+        this.setState({username: response.data.name})
+      })
+
+      e.preventDefault();
+    }
+
+    goToSignUp= (e) => {
         window.location = '/signup';
     }
 
@@ -100,7 +107,7 @@ class Login extends Component {
               /> 
               <hr/> */}
               <CardContent>
-                <form onSubmit={this.handleSignUp}>
+                <form onSubmit={this.handleLogin}>
 
                   <TextField
                     id="email"
