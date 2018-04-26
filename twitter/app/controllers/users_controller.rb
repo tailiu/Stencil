@@ -37,7 +37,7 @@ class UsersController < ApplicationController
     end
 
     def verify
-        @credentials = Credential.find(email: params[:email], password: params[:password])
+        @credentials = Credential.find_by(email: params[:email], password: params[:password])
 
         @result = {
             # params: params,
