@@ -106,7 +106,7 @@ class SignUp extends Component {
           this.showSnackbar("Signup Successful! Login Now!");
           setTimeout(function() { 
             this.goToLogin();
-          }.bind(this), 3000);
+          }, 3000);
         }
       })
     }
