@@ -9,9 +9,10 @@ import Typography from 'material-ui/Typography';
 import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent } from 'material-ui/Card';
 
-import TitleBar from './TitleBar';
-
 const styles = {
+  logo: {
+		height: 150,
+	},
   grid : {
     // background: "#c0deed",
     height: "100%"
@@ -84,11 +85,11 @@ class Login extends Component {
 
   render () {
     return (
-      <Grid container style={styles.grid} spacing={24} >
+      <Grid container style={styles.grid} spacing={24} align="center">
 
         <Grid item xs>
-          <TitleBar />
-        </Grid>
+					<img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
+				</Grid>
 
         <Grid item xs={12}>
         </Grid>

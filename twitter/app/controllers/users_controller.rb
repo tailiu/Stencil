@@ -5,6 +5,10 @@ class UsersController < ApplicationController
 
         @result = {
             # params: params,
+            "success" => false,
+            "error" => {
+                "message": "",
+            }
         }
 
         if @new_user.valid? && @new_credential.valid?
@@ -16,7 +20,7 @@ class UsersController < ApplicationController
             puts @new_user.errors.messages
             puts @new_credential.errors.messages
             @result["success"] = false
-            @result["message"] = "Email already exists!"
+            @result["error"]["message"] = "Email already exists!"
         end
 
         render json: {result: @result}
