@@ -103,8 +103,10 @@ class SignUp extends Component {
         if(!response.data.result.success){
           this.showSnackbar(response.data.result.error.message)
         }else{
-          this.setState({username: response.data.result.user.name})
-          this.showSnackbar("Signup Successful!");
+          this.showSnackbar("Signup Successful! Login Now!");
+          setTimeout(function() { 
+            this.goToLogin();
+          }.bind(this), 3000);
         }
       })
     }
