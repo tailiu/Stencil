@@ -64,6 +64,13 @@ class UsersController < ApplicationController
 
     def logout
         session.clear
+        @result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        render json: {result: @result}
     end
 
 

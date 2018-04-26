@@ -48,9 +48,9 @@ const styles = {
 
 class Login extends Component {
 
-  static propTypes = {
-    cookies: instanceOf(Cookies).isRequired
-  };
+    static propTypes = {
+      cookies: instanceOf(Cookies).isRequired
+    };
 
     constructor(props) {
         super(props);
@@ -135,7 +135,7 @@ class Login extends Component {
     }
 
   render () {
-    const { cookies } = this.props;
+
     return (
       <Grid container style={styles.grid} spacing={24} align="center">
 
