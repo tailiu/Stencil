@@ -10,6 +10,7 @@ import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent } from 'material-ui/Card';
 
 import Snackbar from 'material-ui/Snackbar';
+import TitleBar from './TitleBar';
 
 import { withCookies, Cookies } from 'react-cookie';
 
@@ -139,7 +140,8 @@ class Login extends Component {
       <Grid container style={styles.grid} spacing={24} align="center">
 
         <Grid item xs>
-					<img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
+          <TitleBar />
+					{/* <img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} />  */}
 				</Grid>
 
         <Grid item xs={12}>

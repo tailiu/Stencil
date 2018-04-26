@@ -34,7 +34,7 @@ class TitleBar extends Component {
     render() {
         return (
             <a href="/index">
-                <img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
+                <img style={styles.title_logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
             </a>
             // <AppBar 
             //     style={styles.titlebar} 

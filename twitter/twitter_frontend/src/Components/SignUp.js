@@ -10,6 +10,8 @@ import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent } from 'material-ui/Card';
 import Snackbar from 'material-ui/Snackbar';
 
+import TitleBar from './TitleBar';
+
 const styles = {
   logo: {
 		height: 150,
@@ -137,7 +139,7 @@ class SignUp extends Component {
       <Grid container style={styles.grid} spacing={24} align="center">
 
         <Grid item xs>
-					<img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
+          <TitleBar />
 				</Grid>
 
         <Grid item xs={12}>
