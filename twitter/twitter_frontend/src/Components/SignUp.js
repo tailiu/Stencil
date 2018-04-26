@@ -1,6 +1,8 @@
 import React, {Component} from "react";
 import axios from 'axios';
 
+import { AxiosProvider, Request, Get, Delete, Head, Post, Put, Patch, withAxios } from 'react-axios'
+
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
 import Typography from 'material-ui/Typography';
