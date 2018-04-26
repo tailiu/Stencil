@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 
-import { AxiosProvider, Request, Get, Delete, Head, Post, Put, Patch, withAxios } from 'react-axios'
+import axios from "axios"
 
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
@@ -62,28 +62,14 @@ class SignUp extends Component {
     // this.state.email = e.target.email.value;
     // this.state.password = e.target.password.value;
 
-    alert(e.target.name.value)
-
     e.preventDefault()
 
-    return (
-      <div>
-        <Get url="/users/new" params={{id: "12345"}}>
-          {(error, response, isLoading, onReload) => {
-            if(error) {
-              return (<div>Something bad happened: {error.message} <button onClick={() => onReload({ params: { reload: true } })}>Retry</button></div>)
-            }
-            else if(isLoading) {
-              return (<div>Loading...</div>)
-            }
-            else if(response !== null) {
-              return (<div>{response.data.message} <button onClick={() => onReload({ params: { refresh: true } })}>Refresh</button></div>)
-            }
-            return (<div>Default message before request is made.</div>)
-          }}
-        </Get>
-      </div>
-    )
+    axios.get("http://localhost:3000/users/new?")
+      .then(res => {
+        const persons = res.data;
+        console.log(persons)
+    })
+
   }
 
   getValidationState() {
