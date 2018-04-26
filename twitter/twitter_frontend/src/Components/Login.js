@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import axios from 'axios';
-
+import { instanceOf } from 'prop-types';
 import TextField from 'material-ui/TextField';
 
 import Grid from 'material-ui/Grid';
@@ -10,6 +10,9 @@ import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent } from 'material-ui/Card';
 
 import Snackbar from 'material-ui/Snackbar';
+import TitleBar from './TitleBar';
+
+import { withCookies, Cookies } from 'react-cookie';
 
 const styles = {
   logo: {
@@ -44,6 +47,10 @@ const styles = {
 // const cookies = new Cookies(req.headers.cookie);
 
 class Login extends Component {
+
+  static propTypes = {
+    cookies: instanceOf(Cookies).isRequired
+  };
 
     constructor(props) {
         super(props);
@@ -80,8 +87,13 @@ class Login extends Component {
         }); 
       }.bind(this), 5000);
     }
+
+    goToHome = (e) => {
+      window.location = '/home';
+    }
   
     handleLogin = () =>  {
+      const { cookies } = this.props;
       if(!this.validateForm()){
         this.showSnackbar("Some fields are left empty!")
       }else{
@@ -99,11 +111,10 @@ class Login extends Component {
             this.showSnackbar(response.data.result.error.message)
           }else{
             this.showSnackbar("Login Successful!");
-            this.goToHome();
-            // cookies.set('session_id', data.result.session_id);
+            cookies.set('session_id', response.data.result.session_id);
             setTimeout(function() { 
-              // this.goToLogin();
-            }, 3000);
+              this.goToHome();
+            }.bind(this), 1000);
           }
         })
       }
@@ -119,20 +130,18 @@ class Login extends Component {
       e.preventDefault();
     }
 
-    goToSignUp= (e) => {
+    goToSignUp = (e) => {
         window.location = '/signup';
     }
 
-    goToHome= (e) => {
-      window.location = '/home';
-  }
-
   render () {
+    const { cookies } = this.props;
     return (
       <Grid container style={styles.grid} spacing={24} align="center">
 
         <Grid item xs>
-					<img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
+          <TitleBar />
+					{/* <img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} />  */}
 				</Grid>
 
         <Grid item xs={12}>
@@ -201,4 +210,4 @@ class Login extends Component {
   }
 }
 
-export default Login;
+export default withCookies(Login);

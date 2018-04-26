@@ -1,9 +1,9 @@
 import React, {Component} from "react";
 
-import Typography from 'material-ui/Typography';
+// import Typography from 'material-ui/Typography';
 
-import AppBar from 'material-ui/AppBar';
-import Toolbar from 'material-ui/Toolbar';
+// import AppBar from 'material-ui/AppBar';
+// import Toolbar from 'material-ui/Toolbar';
 
 const styles = {
     titlebar: {
@@ -12,6 +12,10 @@ const styles = {
     title: {
         color: "#fff",
         cursor: "pointer",
+    },
+    title_logo: {
+        cursor: "pointer",
+        height: 150,
     }
 };
 
@@ -29,19 +33,22 @@ class TitleBar extends Component {
 
     render() {
         return (
-            <AppBar 
-                style={styles.titlebar} 
-                position="static" 
-                color="default">
-                <Toolbar>
-                    <Typography 
-                        variant="title" 
-                        style={styles.title} 
-                        onClick = {this.goToHome}>
-                        Twitter
-                    </Typography>
-                </Toolbar>
-            </AppBar>
+            <a href="/index">
+                <img style={styles.title_logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
+            </a>
+            // <AppBar 
+            //     style={styles.titlebar} 
+            //     position="static" 
+            //     color="default">
+            //     <Toolbar>
+            //         <Typography 
+            //             variant="title" 
+            //             style={styles.title} 
+            //             onClick = {this.goToHome}>
+            //             Twitter
+            //         </Typography>
+            //     </Toolbar>
+            // </AppBar>
         );
     }
 }
