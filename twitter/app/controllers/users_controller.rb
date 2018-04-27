@@ -72,8 +72,22 @@ class UsersController < ApplicationController
             "error" => {
             }
         }
+        puts session
+        # render json: {result: @result}
         render json: {result: @result}
     end
 
+    def getFollowers
+        puts '*******************'
+        puts params[:userID]
+        puts '*******************'
+
+        @result = {
+            # params: params,
+            "follower_num" => 0
+        }
+
+        render json: {result: @result}
+    end
 
 end

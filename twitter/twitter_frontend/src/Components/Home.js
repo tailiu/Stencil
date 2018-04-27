@@ -43,18 +43,20 @@ class Home extends Component {
 
     constructor(props) {
 
-    super(props);
+        super(props);
 
-    this.state = {
-        email : '',
-        password : '',
-        name : '',
-        tweet_value : '',
-        value : '',
-    }
+        // console.log(JSON.stringify(this.props.location.state.user))
+
+        this.state = {
+            email : '',
+            name : '',
+            tweet_value : '',
+            value : '',
+        }
 
         this.handleChange = this.handleChange.bind(this);
         this.handleChangeToTweetField = this.handleChangeToTweetField.bind(this);
+
     }
 
     handleChange(e) {
@@ -75,7 +77,7 @@ class Home extends Component {
                 </Grid>
 
                 <Grid item xs={3}>
-                    <UserInfo />
+                    <UserInfo user={this.props.location.state.user}/>
 
                 </Grid>
 

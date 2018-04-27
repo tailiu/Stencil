@@ -13,7 +13,7 @@ import registerServiceWorker from './registerServiceWorker';
 import {
     BrowserRouter as Router,
     Route,
-    Switch,
+    Switch
   } from 'react-router-dom';
 import { CookiesProvider } from 'react-cookie';
 
@@ -21,7 +21,10 @@ ReactDOM.render(
     <CookiesProvider>
     <Router>
         <Switch>
-            <Route path="/home" component={Home} />
+            <Route
+                path='/home'
+                render={(props) => <Home {...props} />}
+            />
             <Route path="/signup" component={SignUp} />
             <Route path="/login" component={Login} />
             <Route path="/search" component={Search} />

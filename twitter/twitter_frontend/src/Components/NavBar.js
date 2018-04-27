@@ -71,6 +71,7 @@ class NavBar extends Component {
             anchorEl: null,
             tweet_box_open: false,
         }
+
     }
 
     handleTweetBoxOpen = () => {
@@ -124,9 +125,9 @@ class NavBar extends Component {
         axios.get(
         'http://localhost:3000/users/logout'
         ).then(response => {
-            console.log(response);
+            console.log(response.data.result.success);
             cookies.remove('session_id');
-            this.goToIndex();
+            // this.goToIndex();
         })
       }
 
