@@ -6,5 +6,5 @@ Rails.application.routes.draw do
 	get 'users/getFollowers', to: 'users#getFollowers'
 
 	resources :users
-
+	resources :user_actions
 end

@@ -39,20 +39,22 @@ class UserInfo extends Component{
 
     componentDidMount() {
         this.setState({
-            followers: this.getFollowers()
+            followers: this.getFollowingRelationship()
         })
     }
 
-    getFollowers = () => {
+    getFollowingRelationship = () => {
         axios.get(
-            'http://localhost:3000/users/getFollowers',
+            'http://localhost:3000/user_actions/',
             {
                 params: {
-                    'userID':this.props.user.id
+                    'id': this.props.user.id,
+                    "type": 'following_relationship'
                 }
             }
             ).then(response => {
-                console.log('goooooooood')
+                console.log(response.data.result.following_num)
+                console.log(response.data.result.followed_num)
                 // console.log(response)
                 // if(!response.data.result.success){
                 //     this.showSnackbar(response.data.result.error.message)
@@ -79,7 +81,9 @@ class UserInfo extends Component{
                     }
                     title={this.props.user.name}
 
-                    subheader={this.getFollowers}
+                    subheader={this.state.followers}
+
+                    // subheader="Followers:49, Following:51, Tweets:90"
                 />
             </Card>
         );
