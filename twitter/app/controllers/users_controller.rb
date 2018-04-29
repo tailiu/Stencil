@@ -39,8 +39,6 @@ class UsersController < ApplicationController
 
     def verify
 
-        reset_session
-
         @credentials = Credential.find_by(email: params[:email], password: params[:password])
 
         @result = {
@@ -53,7 +51,9 @@ class UsersController < ApplicationController
         if @credentials != nil
             @result["success"] = true
             @result["user"]  = @credentials.user
-            session[@credentials.user.id]
+            reset_session
+            session[:current_user_id] = @credentials.user
+            # session[@credentials.user.id]
             @result["session_id"]  = session.id
 
         else
@@ -65,7 +65,7 @@ class UsersController < ApplicationController
     end
 
     def logout
-        session.clear
+        reset_session
         @result = {
             # params: params,
             "success" => true,
@@ -76,5 +76,28 @@ class UsersController < ApplicationController
         # render json: {result: @result}
         render json: {result: @result}
     end
+
+    def userInfo
+    end
+
+    def checkSession
+
+        @result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            },
+            "session_id" => session.id
+        }
+        puts session, params[:session_id]
+        # render json: {result: @result}
+        if session.id.to_s == params[:session_id].to_s
+            @result["session_active"] = true
+        else
+            @result["session_active"] = false
+        end
+        render json: {result: @result}
+    end
+
 
 end

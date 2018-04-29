@@ -127,7 +127,7 @@ class NavBar extends Component {
         ).then(response => {
             console.log(response.data.result.success);
             cookies.remove('session_id');
-            // this.goToIndex();
+            this.goToIndex();
         })
       }
 
