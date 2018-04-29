@@ -84,7 +84,7 @@ class NavBar extends Component {
     };
 
     goToIndex = e => {
-		this.props.history.push({pathname: '/home'});
+		window.location = '/';
     }
 
     goToHome = e => {

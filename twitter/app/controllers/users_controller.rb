@@ -76,9 +76,6 @@ class UsersController < ApplicationController
         render json: {result: @result}
     end
 
-    def userInfo
-    end
-
     def checkSession
 
         @result = {
@@ -98,5 +95,7 @@ class UsersController < ApplicationController
         render json: {result: @result}
     end
 
+    def userInfo
+    end
 
 end

@@ -42,7 +42,7 @@ function isLoggedIn(){
     if (session_id)
         return true;
     else return false;
-  }
+}
 
 ReactDOM.render(
     <CookiesProvider>
