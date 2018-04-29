@@ -35,6 +35,7 @@ class UserInfo extends Component{
 
     componentDidMount() {
         this.getFollowRelationship()
+        this.getTweets()
     }
 
     getTweets = () => {
@@ -86,7 +87,7 @@ class UserInfo extends Component{
                     }
                     title={this.props.user.name}
 
-                    subheader={"Follwers: " + this.state.followers + " Following: " +  this.state.following}
+                    subheader={"Follwers: " + this.state.followers + " Following: " +  this.state.following + " Tweets: " + this.state.tweets}
 
                     // subheader="Followers:49, Following:51, Tweets:90"
                 />
