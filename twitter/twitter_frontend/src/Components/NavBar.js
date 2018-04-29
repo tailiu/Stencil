@@ -84,7 +84,7 @@ class NavBar extends Component {
     };
 
     goToIndex = e => {
-		window.location = '/';
+		this.props.history.push({pathname: '/home'});
     }
 
     goToHome = e => {
@@ -125,9 +125,8 @@ class NavBar extends Component {
         axios.get(
         'http://localhost:3000/users/logout'
         ).then(response => {
-            console.log(response.data.result.success);
             cookies.remove('session_id');
-            // this.goToIndex();
+            this.goToIndex();
         })
       }
 

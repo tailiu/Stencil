@@ -72,7 +72,6 @@ class UsersController < ApplicationController
             "error" => {
             }
         }
-        puts session
         # render json: {result: @result}
         render json: {result: @result}
     end

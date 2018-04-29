@@ -90,6 +90,7 @@ class Login extends Component {
 
     goToHome = (user) => {
       this.props.history.push({pathname: '/home', state: {user: user}});
+      
     }
   
     handleLogin = () =>  {

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180428162120) do
+ActiveRecord::Schema.define(version: 20180429064722) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -98,4 +98,5 @@ ActiveRecord::Schema.define(version: 20180428162120) do
   add_foreign_key "retweets", "tweets"
   add_foreign_key "retweets", "users"
   add_foreign_key "tweets", "users"
+  add_foreign_key "user_actions", "users", column: "from_user_id"
 end

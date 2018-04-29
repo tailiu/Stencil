@@ -53,6 +53,7 @@ class Home extends Component {
             tweet_value : '',
             value : '',
         }
+        
 
         this.handleChange = this.handleChange.bind(this);
         this.handleChangeToTweetField = this.handleChangeToTweetField.bind(this);
