@@ -15,6 +15,22 @@ ActiveRecord::Schema.define(version: 20180429064722) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
+  create_table "articles", force: :cascade do |t|
+    t.string "title"
+    t.text "text"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "comments", force: :cascade do |t|
+    t.string "commenter"
+    t.text "body"
+    t.bigint "article_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["article_id"], name: "index_comments_on_article_id"
+  end
+
   create_table "conversations", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -26,7 +42,7 @@ ActiveRecord::Schema.define(version: 20180429064722) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["user_id"], name: "index_credentials_on_user_id"
+    t.index ["user_id"], name: "index_credentials_on_user_id", unique: true
   end
 
   create_table "likes", force: :cascade do |t|
@@ -91,6 +107,7 @@ ActiveRecord::Schema.define(version: 20180429064722) do
     t.string "avatar"
   end
 
+  add_foreign_key "comments", "articles"
   add_foreign_key "credentials", "users"
   add_foreign_key "likes", "tweets"
   add_foreign_key "likes", "users"
