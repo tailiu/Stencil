@@ -1,6 +1,7 @@
 import React, {Component} from "react";
 import axios from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
+import { instanceOf } from 'prop-types';
 
 import Typography from 'material-ui/Typography';
 
@@ -12,6 +13,7 @@ import Button from 'material-ui/Button';
 import Menu, { MenuItem } from 'material-ui/Menu';
 import Input from 'material-ui/Input';
 import TextField from 'material-ui/TextField';
+import MessageBar from './MessageBar';
 
 import Dialog, {
     DialogActions,
@@ -63,6 +65,10 @@ const styles = {
 
 class NavBar extends Component {
 
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+      };
+
     constructor(props) {
         super(props);
 
@@ -70,6 +76,7 @@ class NavBar extends Component {
             value : 0,
             anchorEl: null,
             tweet_box_open: false,
+            tweet_content: "",
         }
 
     }
@@ -131,9 +138,47 @@ class NavBar extends Component {
         })
       }
 
+    validateForm = () => {
+        if(this.state.tweet_content) 
+            return true;
+        else return false;
+      }
+
+    handleNewTweet = (reply_to, e) => {
+        if(!this.validateForm()){
+          this.MessageBar.showSnackbar("Tweet box can't be empty!")
+        }else{
+          axios.get(
+            'http://localhost:3000/tweets/new',
+            {
+              params: {
+                'tweet':this.state.email, 
+                'handle': this.state.password
+              }
+            }
+          ).then(response => {
+            console.log(response)
+            if(!response.data.result.success){
+              this.MessageBar.showSnackbar(response.data.result.error.message)
+            }else{
+              this.MessageBar.showSnackbar("Tweet Posted!");
+              this.handleTweetBoxClose();
+            }
+          })
+        }
+        e.preventDefault();
+    }
+
+    updateTweetContent = (e) => {
+        this.setState({
+            tweet_content: e.target.value
+        })
+    }
+
     render() {
         return (
             <AppBar style={styles.navbar}>
+                <MessageBar ref={instance => { this.MessageBar = instance; }}/>
                 <Toolbar>
                     <Typography 
                         variant="title" 
@@ -188,6 +233,9 @@ class NavBar extends Component {
                             id="tweet"
                             label="What's on your mind?"
                             type="email"
+                            ref="tweetcontent"
+                            value={this.state.tweet_content}
+                            onChange={this.updateTweetContent}
                             fullWidth
                             />
                         </DialogContent>
@@ -198,7 +246,7 @@ class NavBar extends Component {
                             <Button onClick={this.handleTweetBoxClose} color="primary">
                             Cancel
                             </Button>
-                            <Button onClick={this.handleTweetBoxClose} color="primary">
+                            <Button onClick={this.handleNewTweet} color="primary">
                             Tweet!
                             </Button>
                         </DialogActions>
