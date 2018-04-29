@@ -17,13 +17,6 @@ import {
   } from 'react-router-dom';
 import { CookiesProvider } from 'react-cookie';
 
-function isLoggedIn(){
-    // return true;
-    const session_id = getCookie("session_id");
-    if (session_id)
-        return true;
-    else return false;
-  }
 
 ReactDOM.render(
     <CookiesProvider>
@@ -31,13 +24,7 @@ ReactDOM.render(
         <Switch>
             <Route
                 path='/home'
-                render={(props) => (
-                    isLoggedIn() ? (
-                        <Home {...props} />
-                    ) : (
-                        <Welcome />
-                    )
-                    )
+                render={(props) => <Home {...props} />
                 }
             />
             <Route path="/signup" component={SignUp} />
