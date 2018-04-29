@@ -26,45 +26,50 @@ class UserInfo extends Component{
         super(props);
 
         this.state = {
-            followers: 0,
-            following: 0,
-            tweets: 0
+            followers: '',
+            following: '',
+            tweets: ''
         };
-
-        // console.log(JSON.stringify(props.user.id))
-
-        // console.log(this.state.followers)
 
     }
 
     componentDidMount() {
-        this.setState({
-            followers: this.getFollowingRelationship()
-        })
+        this.getFollowRelationship()
     }
 
-    getFollowingRelationship = () => {
+    getTweets = () => {
+        axios.get(
+            'http://localhost:3000/tweets/',
+            {
+                params: {
+                    'id': this.props.user.id,
+                    "type": 'tweet_num'
+                }
+            }
+            ).then(response => {
+                this.setState({
+                    tweets: response.data.result.tweet_num,
+                })
+
+            }
+        )
+    }
+
+    getFollowRelationship = () => {
         axios.get(
             'http://localhost:3000/user_actions/',
             {
                 params: {
                     'id': this.props.user.id,
-                    "type": 'following_relationship'
+                    "type": 'follow'
                 }
             }
             ).then(response => {
-                console.log(response.data.result.following_num)
-                console.log(response.data.result.followed_num)
-                // console.log(response)
-                // if(!response.data.result.success){
-                //     this.showSnackbar(response.data.result.error.message)
-                // }else{
-                //     this.showSnackbar("Login Successful!");
-                //     cookies.set('session_id', response.data.result.session_id);
-                //     setTimeout(function() { 
-                //         this.goToHome(response.data.result.user);
-                //     }.bind(this), 1000);
-                // }
+                this.setState({
+                    followers: response.data.result.followed_num,
+                    following: response.data.result.following_num
+                })
+
             }
         )
     }
@@ -81,7 +86,7 @@ class UserInfo extends Component{
                     }
                     title={this.props.user.name}
 
-                    subheader={this.state.followers}
+                    subheader={"Follwers: " + this.state.followers + " Following: " +  this.state.following}
 
                     // subheader="Followers:49, Following:51, Tweets:90"
                 />

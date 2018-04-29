@@ -1,14 +1,10 @@
 class UserActionsController < ApplicationController
     def index
-        puts '*******************'
-        puts params[:id]
-        puts "gogogogoog"
-        puts '*******************'
 
-        if params[:type] == "following_relationship"
+        if params[:type] == "follow"
             @user = User.find(params[:id])
-            @following_num = @user.user_actions.where(action_type: "following").count
-            @followed_num = User.joins("INNER JOIN user_actions ON user_actions.to_user_id = users.id").where("user_actions.action_type" => "following").count
+            @following_num = @user.user_actions.where(action_type: "follow").count
+            @followed_num = User.joins("INNER JOIN user_actions ON user_actions.to_user_id = users.id").where("user_actions.action_type" => "follow").count
 
             @result = {
                 # params: params,
