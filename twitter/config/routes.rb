@@ -3,10 +3,8 @@ Rails.application.routes.draw do
 
 	get 'users/verify', to: 'users#verify'
 	get 'users/logout', to: 'users#logout'
-	get 'users/getFollowers', to: 'users#getFollowers'
-	get 'users/userInfo', to: 'users#userInfo'
-	get 'users/checkSession', to: 'users#checkSession'
 
 	resources :users
 	resources :user_actions
+	resources :tweets
 end
