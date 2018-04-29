@@ -52,7 +52,7 @@ class UsersController < ApplicationController
             @result["success"] = true
             @result["user"]  = @credentials.user
             reset_session
-            session[:current_user_id] = @credentials.user
+            session[:user] = @credentials.user
             # session[@credentials.user.id]
             @result["session_id"]  = session.id
 
@@ -61,6 +61,7 @@ class UsersController < ApplicationController
             @result["error"]["message"] = "Invalid credentials!"
         end
 
+        @result[:session] = session
         render json: {result: @result}
     end
 

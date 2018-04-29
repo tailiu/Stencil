@@ -18,15 +18,21 @@ class TweetsController < ApplicationController
             # params: params,
             "success" => false,
             "error" => {
-            }
+            },
+            "user" => session[:user]
         }
 
-        @user = User.find_by(handle: params[:handle])
+        puts session
+
+        # @user = User.find_by(handle: params[:handle])
         # @result["user"] = @user
 
+        @user = session[:user]
+
         if @user != nil
-            @new_tweet = Tweet.new(content: params[:content], reply_to: params[:reply_to], user_id: @user.id)
+            @new_tweet = Tweet.new(content: params[:tweet], reply_to: params[:reply_to], user_id: @user["id"])
             if @new_tweet.valid?
+                @new_tweet.save
                 @result["success"] = true
                 @result["tweet"] = @new_tweet
             else
@@ -39,6 +45,7 @@ class TweetsController < ApplicationController
             @result["error"]["params"] = params
         end
 
+        @result[:session] = session
         render json: {result: @result}
     end
 

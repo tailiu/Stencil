@@ -70,7 +70,10 @@ class NavBar extends Component {
       };
 
     constructor(props) {
+        
         super(props);
+        
+        const { cookies } = this.props;
 
         this.state = {
             value : 0,
@@ -144,7 +147,8 @@ class NavBar extends Component {
         else return false;
       }
 
-    handleNewTweet = (reply_to, e) => {
+    handleNewTweet = (e, reply_to) => {
+        
         if(!this.validateForm()){
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
@@ -152,8 +156,8 @@ class NavBar extends Component {
             'http://localhost:3000/tweets/new',
             {
               params: {
-                'tweet':this.state.email, 
-                'handle': this.state.password
+                'tweet':this.state.tweet_content, 
+                'reply_to': reply_to,
               }
             }
           ).then(response => {
@@ -233,7 +237,6 @@ class NavBar extends Component {
                             id="tweet"
                             label="What's on your mind?"
                             type="email"
-                            ref="tweetcontent"
                             value={this.state.tweet_content}
                             onChange={this.updateTweetContent}
                             fullWidth
