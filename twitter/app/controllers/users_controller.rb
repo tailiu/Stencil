@@ -54,7 +54,6 @@ class UsersController < ApplicationController
             
             session[:user] = nil
             session[:user] = @credentials.user
-            # session[@credentials.user.id]
             @result["session_id"]  = session.id
 
         else
@@ -74,7 +73,6 @@ class UsersController < ApplicationController
             "error" => {
             }
         }
-        # render json: {result: @result}
         render json: {result: @result}
     end
 
