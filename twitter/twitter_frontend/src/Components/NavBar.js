@@ -144,7 +144,7 @@ class NavBar extends Component {
         if(this.state.tweet_content) 
             return true;
         else return false;
-      }
+    }
 
     handleNewTweet = (e, reply_to) => {
         

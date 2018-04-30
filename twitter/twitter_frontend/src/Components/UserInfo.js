@@ -25,7 +25,7 @@ class UserInfo extends Component{
 
     static propTypes = {
         cookies: instanceOf(Cookies).isRequired
-      };
+    };
 
     constructor(props) {
 
@@ -40,8 +40,6 @@ class UserInfo extends Component{
     }
 
     componentWillMount(){
-
-        const { cookies } = this.props;
         
           axios.get(
             'http://localhost:3000/users/getUserInfo',
@@ -51,7 +49,6 @@ class UserInfo extends Component{
               }
             }
           ).then(response => {
-            console.log(response)
             if(response.data.result.success){
               this.setState({
                   user: response.data.result.user,
