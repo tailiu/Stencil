@@ -9,8 +9,8 @@ import Typography from 'material-ui/Typography';
 import Button from 'material-ui/Button';
 import Card, { CardActions, CardContent } from 'material-ui/Card';
 
-import Snackbar from 'material-ui/Snackbar';
 import TitleBar from './TitleBar';
+import MessageBar from './MessageBar';
 
 import { withCookies, Cookies } from 'react-cookie';
 
@@ -71,33 +71,17 @@ class Login extends Component {
       else return false;
     }
 
-    showSnackbar = message => {
-      this.setState({
-        snackbar: {
-          message: message,
-          show: true
-        }
-      })
-      setTimeout(function() { 
-        this.setState({
-          snackbar: {
-            message: "",
-            show: false
-          }
-        }); 
-      }.bind(this), 5000);
-    }
-
     goToHome = (user) => {
-      this.props.history.push({pathname: '/home', state: {user: user}});
+      this.props.history.push({pathname: '/home'});
       
     }
   
     handleLogin = () =>  {
       const { cookies } = this.props;
       if(!this.validateForm()){
-        this.showSnackbar("Some fields are left empty!")
+        this.MessageBar.showSnackbar("Some fields are left empty!")
       }else{
+        
         axios.get(
           'http://localhost:3000/users/verify',
           {
@@ -107,11 +91,11 @@ class Login extends Component {
             }
           }
         ).then(response => {
-          console.log(response)
+          // console.log(response)
           if(!response.data.result.success){
-            this.showSnackbar(response.data.result.error.message)
+            this.MessageBar.showSnackbar(response.data.result.error.message)
           }else{
-            this.showSnackbar("Login Successful!");
+            this.MessageBar.showSnackbar("Login Successful!");
             cookies.set('session_id', response.data.result.session_id);
             setTimeout(function() { 
               this.goToHome(response.data.result.user);
@@ -142,7 +126,7 @@ class Login extends Component {
 
         <Grid item xs>
           <TitleBar />
-					{/* <img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} />  */}
+					<MessageBar ref={instance => { this.MessageBar = instance; }}/>
 				</Grid>
 
         <Grid item xs={12}>
@@ -184,21 +168,6 @@ class Login extends Component {
                     Log In
                   </Button>
                 </form>
-                <Snackbar
-                  anchorOrigin={{
-                    vertical: 'top',
-                    horizontal: 'center',
-                  }}
-                  open={this.state.snackbar.show}
-                  autoHideDuration={6000}
-                  // onClose={this.handleClose}
-                  SnackbarContentProps={{
-                    'aria-describedby': 'message-id',
-                  }}
-                  message={<span id="message-id">{this.state.snackbar.message}</span>}
-                  action={[
-                  ]}
-                />
               </CardContent>
               <CardActions>
                 <Button size="small" onClick={this.goToSignUp} >New to Twitter? Sign Up!</Button>

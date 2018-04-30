@@ -16,7 +16,7 @@ class UsersController < ApplicationController
             @result["success"] = true
             @result["user"] = @new_user
 
-            session[:user_id] = @new_user.id
+            session[:current_user_id] = @new_user.id
         else 
             puts @new_user.errors.messages
             puts @new_credential.errors.messages
@@ -51,9 +51,15 @@ class UsersController < ApplicationController
         if @credentials != nil
             @result["success"] = true
             @result["user"]  = @credentials.user
-            reset_session
-            session[:current_user_id] = @credentials.user
-            # session[@credentials.user.id]
+
+            session[:current_user_id] = nil
+            session[:current_user_id] = @credentials.user.id
+
+            puts "**************************"
+            puts session[:current_user_id]
+            puts session.id
+            puts "**************************"
+
             @result["session_id"]  = session.id
 
         else
@@ -76,24 +82,24 @@ class UsersController < ApplicationController
         render json: {result: @result}
     end
 
-    def checkSession
+    # def checkSession
 
-        @result = {
-            # params: params,
-            "success" => true,
-            "error" => {
-            },
-            "session_id" => session.id
-        }
-        puts session, params[:session_id]
-        # render json: {result: @result}
-        if session.id.to_s == params[:session_id].to_s
-            @result["session_active"] = true
-        else
-            @result["session_active"] = false
-        end
-        render json: {result: @result}
-    end
+    #     @result = {
+    #         # params: params,
+    #         "success" => true,
+    #         "error" => {
+    #         },
+    #         "session_id" => session.id
+    #     }
+    #     puts session, params[:session_id]
+    #     # render json: {result: @result}
+    #     if session.id.to_s == params[:session_id].to_s
+    #         @result["session_active"] = true
+    #     else
+    #         @result["session_active"] = false
+    #     end
+    #     render json: {result: @result}
+    # end
 
     def userInfo
     end

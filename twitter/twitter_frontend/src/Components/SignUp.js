@@ -11,6 +11,7 @@ import Card, { CardActions, CardContent } from 'material-ui/Card';
 import Snackbar from 'material-ui/Snackbar';
 
 import TitleBar from './TitleBar';
+import MessageBar from './MessageBar';
 
 const styles = {
   logo: {
@@ -69,26 +70,9 @@ class SignUp extends Component {
     else return false;
   }
 
-  showSnackbar = message => {
-    this.setState({
-      snackbar: {
-        message: message,
-        show: true
-      }
-    })
-    setTimeout(function() { 
-      this.setState({
-        snackbar: {
-          message: "",
-          show: false
-        }
-      }); 
-    }.bind(this), 5000);
-  }
-
   handleSignup = () =>  {
     if(!this.validateForm()){
-      this.showSnackbar("Some fields are left empty!")
+      this.MessageBar.showSnackbar("Some fields are left empty!")
     }else{
       axios.get(
         'http://localhost:3000/users/new',
@@ -103,9 +87,9 @@ class SignUp extends Component {
       ).then(response => {
         console.log(response)
         if(!response.data.result.success){
-          this.showSnackbar(response.data.result.error.message)
+          this.MessageBar.showSnackbar(response.data.result.error.message)
         }else{
-          this.showSnackbar("Signup Successful! Login Now!");
+          this.MessageBar.showSnackbar("Signup Successful! Login Now!");
           setTimeout(function() { 
             this.goToLogin();
           }.bind(this), 3000);
@@ -124,8 +108,6 @@ class SignUp extends Component {
     }, () => this.handleSignup())
 
     e.preventDefault();
-
-    window.location = '/home'
   }
 
   handleChange = e => {
@@ -142,6 +124,7 @@ class SignUp extends Component {
 
         <Grid item xs>
           <TitleBar />
+          <MessageBar ref={instance => { this.MessageBar = instance; }}/>
 				</Grid>
 
         <Grid item xs={12}>

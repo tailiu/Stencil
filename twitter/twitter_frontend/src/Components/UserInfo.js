@@ -2,7 +2,8 @@ import React, {Component} from "react";
 import Avatar from 'material-ui/Avatar';
 import Card, { CardHeader } from 'material-ui/Card';
 import axios from 'axios';
-
+import { withCookies, Cookies } from 'react-cookie';
+import { instanceOf } from 'prop-types';
 
 const styles = {
     user_info: {
@@ -21,6 +22,10 @@ const styles = {
 
 class UserInfo extends Component{
 
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+    };
+
     constructor(props) {
 
         super(props);
@@ -34,16 +39,25 @@ class UserInfo extends Component{
     }
 
     componentDidMount() {
-        this.getFollowRelationship()
-        this.getTweets()
+        const { cookies } = this.props;
+        
+        const session_id = cookies.get("session_id")
+
+        this.getFollowRelationship(session_id)
+        // this.getTweets(session_id)
+        // this.getUsernameAndHandle(session_id)
     }
 
-    getTweets = () => {
+    getUsernameAndHandle = (session_id) => {
+
+    }
+
+    getTweets = (session_id) => {
         axios.get(
             'http://localhost:3000/tweets/',
             {
                 params: {
-                    'id': this.props.user.id,
+                    'id': session_id,
                     "type": 'tweet_num'
                 }
             }
@@ -56,16 +70,18 @@ class UserInfo extends Component{
         )
     }
 
-    getFollowRelationship = () => {
+    getFollowRelationship = (session_id) => {
+        
         axios.get(
             'http://localhost:3000/user_actions/',
             {
                 params: {
-                    'id': this.props.user.id,
+                    'id': session_id,
                     "type": 'follow'
                 }
             }
             ).then(response => {
+                console.log(JSON.stringify(response))
                 this.setState({
                     followers: response.data.result.followed_num,
                     following: response.data.result.following_num
@@ -73,6 +89,7 @@ class UserInfo extends Component{
 
             }
         )
+      
     }
     
 
@@ -85,7 +102,7 @@ class UserInfo extends Component{
                         TC 
                         </Avatar>
                     }
-                    title={this.props.user.name}
+                    title={"good man"}
 
                     subheader={"Follwers: " + this.state.followers + " Following: " +  this.state.following + " Tweets: " + this.state.tweets}
 
@@ -96,4 +113,4 @@ class UserInfo extends Component{
     }
 }
 
-export default UserInfo;
+export default withCookies(UserInfo);
