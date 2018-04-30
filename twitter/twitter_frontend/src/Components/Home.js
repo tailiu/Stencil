@@ -1,8 +1,12 @@
 import React, {Component, Fragment} from "react";
 import Grid from 'material-ui/Grid';
 import NavBar from './NavBar';
+import MessageBar from './MessageBar';
 import Tweet from './Tweet';
 import UserInfo from './UserInfo';
+import axios from 'axios';
+import { instanceOf } from 'prop-types';
+import { withCookies, Cookies } from 'react-cookie';
 
 const styles = {
     grid : {
@@ -41,28 +45,38 @@ const styles = {
 
 class Home extends Component {
 
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+      };
+
     constructor(props) {
 
         super(props);
+        const { cookies } = this.props;
 
         this.state = {
+            user_id: cookies.get('user_id'),
             email : '',
             name : '',
             tweet_value : '',
             value : '',
-        }
-
-
-        this.handleChange = this.handleChange.bind(this);
-        this.handleChangeToTweetField = this.handleChangeToTweetField.bind(this);
-
+            user: ''
+        } 
     }
 
-    handleChange(e) {
+    componentDidMount(){
+        
+    }
+
+    goToIndex = () => {
+        this.props.history.push({pathname: '/'});
+      }
+
+    handleChange =(e)=> {
         this.setState({ value: e.target.value });
     }
 
-    handleChangeToTweetField(e) {
+    handleChangeToTweetField =(e)=> {
         this.setState({ tweet_value: e.target.value });
     }   
 
@@ -70,13 +84,14 @@ class Home extends Component {
     return (
         <Fragment>
             <NavBar />
+            <MessageBar ref={instance => { this.MessageBar = instance; }}/>
             <Grid style={styles.grid.container} container spacing={16}>
                 
                 <Grid item xs={1}>
                 </Grid>
 
                 <Grid item xs={3}>
-                    <UserInfo />
+                    <UserInfo user={this.state.user}/>
 
                 </Grid>
 
@@ -107,4 +122,4 @@ class Home extends Component {
   }
 }
 
-export default Home;
+export default withCookies(Home);

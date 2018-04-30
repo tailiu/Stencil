@@ -52,8 +52,8 @@ class UsersController < ApplicationController
             @result["success"] = true
             @result["user"]  = @credentials.user
             
-            session[:user] = nil
-            session[:user] = @credentials.user
+            session[:current_user_id] = nil
+            session[:current_user_id] = @credentials.user.id
             @result["session_id"]  = session.id
 
         else
@@ -66,7 +66,7 @@ class UsersController < ApplicationController
     end
 
     def logout
-        reset_session
+        session[:current_user_id] = nil
         @result = {
             # params: params,
             "success" => true,
@@ -76,26 +76,49 @@ class UsersController < ApplicationController
         render json: {result: @result}
     end
 
-    # def checkSession
-
-    #     @result = {
-    #         # params: params,
-    #         "success" => true,
-    #         "error" => {
-    #         },
-    #         "session_id" => session.id
-    #     }
-    #     puts session, params[:session_id]
-    #     # render json: {result: @result}
-    #     if session.id.to_s == params[:session_id].to_s
-    #         @result["session_active"] = true
-    #     else
-    #         @result["session_active"] = false
-    #     end
-    #     render json: {result: @result}
-    # end
+    def getUserInfo
+        @user = User.find_by_id(params[:user_id])
+        @result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        if @user != nil
+            @result["user"] = @user
+            @result["user_stats"] = {
+                "following" => @user.user_actions.where(action_type: "follow").count,
+                "followed" => User.joins("INNER JOIN user_actions ON user_actions.to_user_id = users.id").where("user_actions.action_type" => "follow").count,
+                "tweets" => @user.tweets.size
+            }
+            @result["success"] = true
+        else
+            @result["success"] = false
+            @result["error"]["message"] = "User doesn't exist!"
+        end
+        
+        render json: {result: @result}
+    end
 
     def userInfo
+    end
+
+    def updateBio
+    end
+
+    def updatePhoto
+    end
+
+    def updateEmail
+    end
+
+    def updateHandle
+    end
+
+    def updatePassword
+    end
+
+    def markAsProtected
     end
 
 end
