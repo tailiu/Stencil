@@ -33,16 +33,15 @@ class UserInfo extends Component{
         const { cookies } = this.props;
         this.state = {
             user_id : cookies.get('user_id'),
-            user: '',
-            user_stats: ''
+            user: [],
+            user_stats: [],
+            avatar_symbol: ''
         };
 
     }
 
     componentWillMount(){
 
-        const { cookies } = this.props;
-        
           axios.get(
             'http://localhost:3000/users/getUserInfo',
             {
@@ -51,11 +50,11 @@ class UserInfo extends Component{
               }
             }
           ).then(response => {
-            console.log(response)
             if(response.data.result.success){
               this.setState({
                   user: response.data.result.user,
                   user_stats: response.data.result.user_stats,
+                  avatar_symbol: response.data.result.user.name[0]
               })
             }else{
               this.MessageBar.showSnackbar("User doesn't exist!");
@@ -66,57 +65,21 @@ class UserInfo extends Component{
           })
       }
 
-    // getTweetsNumber = () => {
-    //     axios.get(
-    //         'http://localhost:3000/tweets/',
-    //         {
-    //             params: {
-    //                 'id': this.props.user.id,
-    //                 "type": 'tweet_num'
-    //             }
-    //         }
-    //         ).then(response => {
-    //             this.setState({
-    //                 tweets: response.data.result.tweet_num,
-    //             })
-
-    //         }
-    //     )
-    // }
-
-    // getFollowRelationship = () => {
-    //     axios.get(
-    //         'http://localhost:3000/user_actions/',
-    //         {
-    //             params: {
-    //                 'id': this.props.user.id,
-    //                 "type": 'follow'
-    //             }
-    //         }
-    //         ).then(response => {
-    //             this.setState({
-    //                 followers: response.data.result.followed_num,
-    //                 following: response.data.result.following_num
-    //             })
-
-    //         }
-    //     )
-    // }
-    
-
     render(){
         return(
             <Card align="left" style={styles.user_info.container}>
                 <CardHeader
                     avatar={
                         <Avatar aria-label="Recipe" style={styles.user_info.avatar}>
-                        TC 
+                        {this.state.avatar_symbol}
                         </Avatar>
                     }
                     title={this.state.user.name}
-
-                    subheader={"Followers: " + this.state.user_stats.followed + " Following: " +  this.state.user_stats.following + " Tweets: " + this.state.user_stats.tweets}
-
+                    subheader={
+                        "@"+this.state.user.handle + "  |  " +
+                        "Followers: " + this.state.user_stats.followers + " Following: " +  this.state.user_stats.following + " Tweets: " + this.state.user_stats.tweets
+                    }
+                    // subheader={"Followers: " + this.state.user_stats.followed + " Following: " +  this.state.user_stats.following + " Tweets: " + this.state.user_stats.tweets}
                     // subheader="Followers:49, Following:51, Tweets:90"
                 />
                 <MessageBar ref={instance => { this.MessageBar = instance; }}/>

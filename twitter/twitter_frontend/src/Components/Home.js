@@ -2,11 +2,11 @@ import React, {Component, Fragment} from "react";
 import Grid from 'material-ui/Grid';
 import NavBar from './NavBar';
 import MessageBar from './MessageBar';
-import Tweet from './Tweet';
 import UserInfo from './UserInfo';
 import axios from 'axios';
 import { instanceOf } from 'prop-types';
 import { withCookies, Cookies } from 'react-cookie';
+import TweetList from './TweetList';
 
 const styles = {
     grid : {
@@ -60,13 +60,38 @@ class Home extends Component {
             name : '',
             tweet_value : '',
             value : '',
-            user: ''
+            user: '',
+            tweets : []
         } 
     }
 
-    componentDidMount(){
-        
+    fetchTweets =()=> {
+        axios.get(
+            'http://localhost:3000/tweets/mainPageTweets',
+            {
+                params: {
+                'user_id': this.state.user_id, 
+                }
+            }
+            ).then(response => {
+                if(response.data.result.success){
+                    this.setState({
+                        tweets: response.data.result.tweets,
+                    })
+                }else{
+                    // this.MessageBar.showSnackbar("User doesn't exist!");
+                }
+            })
     }
+
+    componentWillMount(){
+        this.fetchTweets();
+        this.timer = setInterval(()=> this.fetchTweets(), 30000);
+    }
+
+    componentWillUnmount() {
+        this.timer = null;
+      }
 
     goToIndex = () => {
         this.props.history.push({pathname: '/'});
@@ -97,21 +122,7 @@ class Home extends Component {
 
                 <Grid item xs={7}>
                     <Grid container spacing={8} direction="column" align="left">
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
+                        <TweetList tweets={this.state.tweets}/>
                     </Grid>
                 </Grid>
                 <Grid item xs={1}>

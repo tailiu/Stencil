@@ -15,98 +15,101 @@ class TweetsController < ApplicationController
 
     def new
         @result = {
-            # params: params,
+            "params" => params,
             "success" => false,
             "error" => {
             },
-            "user" => session[:user]
-        }
-<<<<<<< HEAD
-        @result[:user_session]  = session[:current_user_id]
-        # @result["user"] = @user
-
-        # if @user != nil
-        #     @new_tweet = Tweet.new(content: params[:content], reply_to: params[:reply_to], user_id: @user["id"])
-        #     if @new_tweet.valid?
-        #         @result["success"] = true
-        #         @result["tweet"] = @new_tweet
-        #     else
-        #         @result["success"] = false
-        #         @result["error"]["message"] = "Couldn't create new tweet. Check params."
-        #     end
-        # else
-        #     @result["success"] = false
-        #     @result["error"]["message"] = "User doesn't exist!"
-        #     @result["error"]["params"] = params
-        # end
-=======
-
-        puts session
-
-        # @user = User.find_by(handle: params[:handle])
-        # @result["user"] = @user
-
-        @user = session[:user]
-
-        # if @user != nil
-        #     @new_tweet = Tweet.new(content: params[:tweet], reply_to: params[:reply_to], user_id: @user["id"])
-        #     if @new_tweet.valid?
-        #         @new_tweet.save
-        #         @result["success"] = true
-        #         @result["tweet"] = @new_tweet
-        #     else
-        #         @result["success"] = false
-        #         @result["error"]["message"] = "Couldn't create new tweet. Check params."
-        #     end
-        # else
-        #     @result["success"] = false
-        #     @result["error"]["message"] = "User doesn't exist!"
-        #     @result["error"]["params"] = params
-        # end
-
-        @result[:session] = session
-        @result[:session_id] = request.session_options[:id]
-        render json: {result: @result}
-    end
-
-    def fetchall
-        @result = {
-            "success" => true,
-            "error" => {
-            },
         }
 
-        @tweets = Tweet.all
-        @result["tweets"] = @tweets
-        
-        render json: {result: @result}
-    end
-
-
-    def fetchallbyuser
-        
-        @user = User.find_by_id(params[:user_id])
-        
-        @result = {
-            "success" => true,
-            "error" => {
-            },
-        }
-
-        if @user == nil
-            @result["error"]["message"] = "User doesn't exist!"
+        if params[:content].nil? || params[:user_id].nil?
             @result["success"] = false
+            @result["error"]["message"] = "Incomplete params!"
+        elsif params[:content].empty?
+            @result["success"] = false
+            @result["error"]["message"] = "Tweet can't be empty!"
         else
-            @result["success"] = true
-            @tweets = Tweet.where(:user_id => params[:user_id])
-            @result["tweets"] = @tweets
+            @user = User.find_by_id(params[:user_id])
+            if @user != nil
+                @new_tweet = Tweet.new(content: params[:content], user_id: params[:user_id], reply_to_id: nil)
+                if @new_tweet.valid?
+                    @new_tweet.save
+                    @result["success"] = true
+                    @result["tweet"] = @new_tweet
+                else
+                    puts @new_tweet.errors.messages
+                    @result["success"] = false
+                    @result["error"]["message"] = @new_tweet.errors.messages
+                end
+            else
+                @result["success"] = false
+                @result["error"]["message"] = "User doesn't exist!"
+            end
         end
->>>>>>> 1d0d6ce4f60aebb8db3c19773327fe5ac4fee1cd
 
-        
         render json: {result: @result}
     end
 
+
+    def fetchUserTweets
+
+        @result = {
+            "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:user_id].nil?
+            @result["success"] = false
+            @result["error"]["message"] = "Incomplete params!"
+        elsif !User.where(id: params[:user_id]).exists?
+            @result["success"] = false
+            @result["error"]["message"] = "User doesn't exist!"
+        else
+            @user = User.where(id: params[:user_id]).first
+            @tweets = Tweet.where(user_id: params[:user_id]).order('created_at DESC')
+            @result["success"] = true
+            @tweets_set = []
+            for tweet in @tweets do
+                @tweets_set.push({"tweet": tweet, "creator": @user})
+            end
+            @result["tweets"] = @tweets_set
+        end
+
+        render json: {result: @result}
+
+    end
+
+
+    def mainPageTweets
+        @result = {
+            "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:user_id].nil?
+            @result["success"] = false
+            @result["error"]["message"] = "Incomplete params!"
+        elsif !User.where(id: params[:user_id]).exists?
+            @result["success"] = false
+            @result["error"]["message"] = "User doesn't exist!"
+        else
+            @tweets_set = []
+            @user = User.where(id: params[:user_id]).first
+            @following_users = UserAction.where(from_user_id: @user.id, action_type: "follow").pluck(:to_user_id)
+            @allusers = @following_users + [@user.id]
+            @alltweets = Tweet.where(:user_id => @allusers).order('created_at DESC')
+            for tweet in @alltweets do
+                @tweets_set.push({"tweet": tweet, "creator": User.where(id: tweet.user_id).first})
+            end
+            @result["success"] = true
+            @result["tweets"] = @tweets_set
+        end
+
+        render json: {result: @result}
+    end
 
     def like
     end

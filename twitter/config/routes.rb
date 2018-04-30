@@ -4,7 +4,8 @@ Rails.application.routes.draw do
 	get 'users/verify', to: 'users#verify'
 	get 'users/logout', to: 'users#logout'
 	get 'tweets/fetchall', to: 'tweets#fetchall'
-	get 'tweets/fetchallbyuser', to: 'tweets#fetchallbyuser'
+	get 'tweets/fetchUserTweets', to: 'tweets#fetchUserTweets'
+	get 'tweets/mainPageTweets', to: 'tweets#mainPageTweets'
 	get 'users/getUserInfo', to: 'users#getUserInfo'
 
 	resources :users

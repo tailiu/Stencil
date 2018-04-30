@@ -10,6 +10,9 @@ import Dialog, {
     DialogContentText,
     DialogTitle,
   } from 'material-ui/Dialog';
+  import axios from 'axios';
+import { instanceOf } from 'prop-types';
+import { withCookies, Cookies } from 'react-cookie';
 
 const styles = {
     user_info: {
@@ -30,8 +33,14 @@ class UserProfileBox extends Component{
 
     constructor(props){
         super(props);
+        const { cookies } = this.props;
         this.state = {
-            bio_box_open : false
+            bio_box_open : false,
+            user_id : cookies.get('user_id'),
+            user: [],
+            user_stats: [],
+            avatar_symbol: '',
+            user_bio: ''
         }
     }
 
@@ -44,6 +53,31 @@ class UserProfileBox extends Component{
         this.setState({ bio_box_open: false });
     };
 
+    componentWillMount(){
+
+        axios.get(
+          'http://localhost:3000/users/getUserInfo',
+          {
+            params: {
+              'user_id': this.state.user_id, 
+            }
+          }
+        ).then(response => {
+          if(response.data.result.success){
+            this.setState({
+                user: response.data.result.user,
+                user_stats: response.data.result.user_stats,
+                avatar_symbol: response.data.result.user.name[0]
+            })
+          }else{
+            this.MessageBar.showSnackbar("User doesn't exist!");
+            setTimeout(function() { 
+            //   this.goToIndex(response.data.result.user);
+            }.bind(this), 1000);
+          }
+        })
+    }
+
     render(){
         return(
             <Fragment>
@@ -51,15 +85,18 @@ class UserProfileBox extends Component{
                 <CardHeader
                     avatar={
                         <Avatar aria-label="Recipe" style={styles.user_info.avatar}>
-                        TC
+                        {this.state.avatar_symbol}
                         </Avatar>
                     }
-                    title="Tai Big Fat Cow"
-                    subheader="Followers:49, Following:51, Tweets:90"
+                    title={this.state.user.name}
+                    subheader={
+                        "@"+this.state.user.handle + "  |  " +
+                        "Followers: " + this.state.user_stats.followers + " Following: " +  this.state.user_stats.following + " Tweets: " + this.state.user_stats.tweets
+                    }
                 />
                 <CardContent>
                     <Typography>
-                        Your bio here!
+                        {this.state.user.bio}
                     </Typography>
                 </CardContent>
                 <CardActions>
@@ -103,4 +140,4 @@ class UserProfileBox extends Component{
     }
 }
 
-export default UserProfileBox;
+export default withCookies(UserProfileBox);
