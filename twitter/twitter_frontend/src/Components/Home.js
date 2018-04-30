@@ -64,6 +64,10 @@ class Home extends Component {
         } 
     }
 
+    componentDidMount(){
+        
+    }
+
     goToIndex = () => {
         this.props.history.push({pathname: '/'});
       }

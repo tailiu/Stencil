@@ -22,7 +22,11 @@ ReactDOM.render(
     <CookiesProvider>
     <Router>
         <Switch>
+<<<<<<< HEAD
             <Route path='/home' component={Home}/>
+=======
+            <Route path="/home" component={Home}/>
+>>>>>>> cac4e53ca4506e16e75f317e071093631f3f4b1c
             <Route path="/signup" component={SignUp} />
             <Route path="/login" component={Login} />
             <Route path="/search" component={Search} />
@@ -32,8 +36,8 @@ ReactDOM.render(
             <Route path="/settings" component={Settings} />
             <Route path="" component={Welcome} />
         </Switch>
-  </Router>
-  </CookiesProvider>,
+    </Router>
+    </CookiesProvider>,
     document.getElementById('root')
 );
 
@@ -42,4 +46,4 @@ registerServiceWorker();
 
 if (module.hot) {
     module.hot.accept();
-  }
+}

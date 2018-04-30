@@ -1,6 +1,5 @@
 class UserActionsController < ApplicationController
     def index
-
         if params[:type] == "follow"
             @user = User.find(params[:id])
             @following_num = @user.user_actions.where(action_type: "follow").count
@@ -12,10 +11,12 @@ class UserActionsController < ApplicationController
                 "following_num" => @following_num
             }
 
+<<<<<<< HEAD
             @result[:session] = session
+=======
+>>>>>>> cac4e53ca4506e16e75f317e071093631f3f4b1c
             render json: {result: @result}
         end
-
     end
 
     def follow

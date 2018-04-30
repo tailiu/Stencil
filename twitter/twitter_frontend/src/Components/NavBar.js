@@ -135,7 +135,6 @@ class NavBar extends Component {
         axios.get(
         'http://localhost:3000/users/logout'
         ).then(response => {
-            console.log(response.data.result.success);
             cookies.remove('session_id');
             this.goToIndex();
         })
