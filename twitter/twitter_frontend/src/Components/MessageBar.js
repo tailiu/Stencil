@@ -12,7 +12,7 @@ class MessageBar extends Component {
     }
 
     showSnackbar = message => {
-        console.log("HERE SNACKS!");
+
         this.setState({
             message: message,
             show: true

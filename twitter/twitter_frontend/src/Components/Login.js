@@ -89,7 +89,6 @@ class Login extends Component {
     // }
 
     goToHome = (user) => {
-      console.log(this.props);
       this.props.history.push({pathname: '/home', state: {user: user}});
     }
   
@@ -114,7 +113,7 @@ class Login extends Component {
             this.MessageBar.showSnackbar("Login Successful!");
             // this.showSnackbar("Login Successful!");
             cookies.set('session_id', response.data.result.session_id);
-            cookies.set('user_handle', response.data.result.user.handle);
+            cookies.set('user_id', response.data.result.user.id);
             setTimeout(function() { 
               this.goToHome(response.data.result.user);
             }.bind(this), 1000);

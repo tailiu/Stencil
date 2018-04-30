@@ -11,10 +11,17 @@ class UserActionsController < ApplicationController
                 "followed_num" => @followed_num,
                 "following_num" => @following_num
             }
-            
+
             @result[:session] = session
             render json: {result: @result}
         end
 
     end
+
+    def follow
+    end
+
+    def unfollow
+    end
+    
 end

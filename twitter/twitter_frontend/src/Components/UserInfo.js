@@ -2,7 +2,9 @@ import React, {Component} from "react";
 import Avatar from 'material-ui/Avatar';
 import Card, { CardHeader } from 'material-ui/Card';
 import axios from 'axios';
-
+import { instanceOf } from 'prop-types';
+import { withCookies, Cookies } from 'react-cookie';
+import MessageBar from './MessageBar';
 
 const styles = {
     user_info: {
@@ -21,59 +23,85 @@ const styles = {
 
 class UserInfo extends Component{
 
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+      };
+
     constructor(props) {
 
         super(props);
-
+        const { cookies } = this.props;
         this.state = {
-            followers: '',
-            following: '',
-            tweets: ''
+            user_id : cookies.get('user_id'),
+            user: '',
+            user_stats: ''
         };
 
     }
 
-    componentDidMount() {
-        this.getFollowRelationship()
-        this.getTweets()
-    }
+    componentWillMount(){
 
-    getTweets = () => {
-        axios.get(
-            'http://localhost:3000/tweets/',
+        const { cookies } = this.props;
+        
+          axios.get(
+            'http://localhost:3000/users/getUserInfo',
             {
-                params: {
-                    'id': this.props.user.id,
-                    "type": 'tweet_num'
-                }
+              params: {
+                'user_id': this.state.user_id, 
+              }
             }
-            ).then(response => {
-                this.setState({
-                    tweets: response.data.result.tweet_num,
-                })
+          ).then(response => {
+            console.log(response)
+            if(response.data.result.success){
+              this.setState({
+                  user: response.data.result.user,
+                  user_stats: response.data.result.user_stats,
+              })
+            }else{
+              this.MessageBar.showSnackbar("User doesn't exist!");
+              setTimeout(function() { 
+              //   this.goToIndex(response.data.result.user);
+              }.bind(this), 1000);
+            }
+          })
+      }
 
-            }
-        )
-    }
+    // getTweetsNumber = () => {
+    //     axios.get(
+    //         'http://localhost:3000/tweets/',
+    //         {
+    //             params: {
+    //                 'id': this.props.user.id,
+    //                 "type": 'tweet_num'
+    //             }
+    //         }
+    //         ).then(response => {
+    //             this.setState({
+    //                 tweets: response.data.result.tweet_num,
+    //             })
 
-    getFollowRelationship = () => {
-        axios.get(
-            'http://localhost:3000/user_actions/',
-            {
-                params: {
-                    'id': this.props.user.id,
-                    "type": 'follow'
-                }
-            }
-            ).then(response => {
-                this.setState({
-                    followers: response.data.result.followed_num,
-                    following: response.data.result.following_num
-                })
+    //         }
+    //     )
+    // }
 
-            }
-        )
-    }
+    // getFollowRelationship = () => {
+    //     axios.get(
+    //         'http://localhost:3000/user_actions/',
+    //         {
+    //             params: {
+    //                 'id': this.props.user.id,
+    //                 "type": 'follow'
+    //             }
+    //         }
+    //         ).then(response => {
+    //             this.setState({
+    //                 followers: response.data.result.followed_num,
+    //                 following: response.data.result.following_num
+    //             })
+
+    //         }
+    //     )
+    // }
     
 
     render(){
@@ -85,15 +113,16 @@ class UserInfo extends Component{
                         TC 
                         </Avatar>
                     }
-                    title={this.props.user.name}
+                    title={this.state.user.name}
 
-                    subheader={"Follwers: " + this.state.followers + " Following: " +  this.state.following + " Tweets: " + this.state.tweets}
+                    subheader={"Followers: " + this.state.user_stats.followed + " Following: " +  this.state.user_stats.following + " Tweets: " + this.state.user_stats.tweets}
 
                     // subheader="Followers:49, Following:51, Tweets:90"
                 />
+                <MessageBar ref={instance => { this.MessageBar = instance; }}/>
             </Card>
         );
     }
 }
 
-export default UserInfo;
+export default withCookies(UserInfo);

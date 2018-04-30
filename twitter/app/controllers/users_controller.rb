@@ -53,6 +53,7 @@ class UsersController < ApplicationController
             @result["user"]  = @credentials.user
             reset_session
             session[:user] = @credentials.user
+            session[:current_user_id] = @credentials.user.id
             # session[@credentials.user.id]
             @result["session_id"]  = session.id
 
@@ -78,7 +79,28 @@ class UsersController < ApplicationController
         render json: {result: @result}
     end
 
-    def userInfo
+    def getUserInfo
+        @user = User.find_by_id(params[:user_id])
+        @result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        if @user != nil
+            @result["user"] = @user
+            @result["user_stats"] = {
+                "following" => @user.user_actions.where(action_type: "follow").count,
+                "followed" => User.joins("INNER JOIN user_actions ON user_actions.to_user_id = users.id").where("user_actions.action_type" => "follow").count,
+                "tweets" => @user.tweets.size
+            }
+            @result["success"] = true
+        else
+            @result["success"] = false
+            @result["error"]["message"] = "User doesn't exist!"
+        end
+        
+        render json: {result: @result}
     end
 
     def checkSession
@@ -100,5 +122,22 @@ class UsersController < ApplicationController
         render json: {result: @result}
     end
 
+    def updateBio
+    end
+
+    def updatePhoto
+    end
+
+    def updateEmail
+    end
+
+    def updateHandle
+    end
+
+    def updatePassword
+    end
+
+    def markAsProtected
+    end
 
 end

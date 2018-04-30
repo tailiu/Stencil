@@ -152,6 +152,17 @@ class NavBar extends Component {
         if(!this.validateForm()){
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
+            
+
+            // fetch('http://localhost:3000/tweets/new?tweet=sasdsad&reply_to=12312', {
+            //     headers: new Headers({
+            //         'Content-Type': 'application/json'
+            //       }), 
+            //   })
+            // .then(response => response.json())
+            // .then(result => console.log("fetch: "+result));
+
+
           axios.get(
             'http://localhost:3000/tweets/new',
             {
@@ -161,7 +172,7 @@ class NavBar extends Component {
               }
             }
           ).then(response => {
-            console.log(response)
+            console.log("axios:"+JSON.stringify(response))
             if(!response.data.result.success){
               this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{

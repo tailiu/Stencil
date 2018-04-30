@@ -22,11 +22,7 @@ ReactDOM.render(
     <CookiesProvider>
     <Router>
         <Switch>
-            <Route
-                path='/home'
-                render={(props) => <Home {...props} />
-                }
-            />
+            <Route path='/home' component={Home}/>
             <Route path="/signup" component={SignUp} />
             <Route path="/login" component={Login} />
             <Route path="/search" component={Search} />
