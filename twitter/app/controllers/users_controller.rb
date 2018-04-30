@@ -51,15 +51,10 @@ class UsersController < ApplicationController
         if @credentials != nil
             @result["success"] = true
             @result["user"]  = @credentials.user
-
-            session[:current_user_id] = nil
-            session[:current_user_id] = @credentials.user.id
-
-            puts "**************************"
-            puts session[:current_user_id]
-            puts session.id
-            puts "**************************"
-
+            
+            session[:user] = nil
+            session[:user] = @credentials.user
+            # session[@credentials.user.id]
             @result["session_id"]  = session.id
 
         else
@@ -67,6 +62,7 @@ class UsersController < ApplicationController
             @result["error"]["message"] = "Invalid credentials!"
         end
 
+        @result[:session] = session
         render json: {result: @result}
     end
 
