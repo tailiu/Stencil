@@ -76,6 +76,7 @@ class NavBar extends Component {
         const { cookies } = this.props;
 
         this.state = {
+            user_id: cookies.get('user_id'),
             value : 0,
             anchorEl: null,
             tweet_box_open: false,
@@ -152,22 +153,12 @@ class NavBar extends Component {
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
             
-
-            // fetch('http://localhost:3000/tweets/new?tweet=sasdsad&reply_to=12312', {
-            //     headers: new Headers({
-            //         'Content-Type': 'application/json'
-            //       }), 
-            //   })
-            // .then(response => response.json())
-            // .then(result => console.log("fetch: "+result));
-
-
           axios.get(
             'http://localhost:3000/tweets/new',
             {
               params: {
-                'tweet':this.state.tweet_content, 
-                'reply_to': reply_to,
+                'content':this.state.tweet_content, 
+                'user_id': this.state.user_id
               }
             }
           ).then(response => {

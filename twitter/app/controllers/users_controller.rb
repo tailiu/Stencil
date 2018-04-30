@@ -87,9 +87,9 @@ class UsersController < ApplicationController
         if @user != nil
             @result["user"] = @user
             @result["user_stats"] = {
-                "following" => @user.user_actions.where(action_type: "follow").count,
-                "followed" => User.joins("INNER JOIN user_actions ON user_actions.to_user_id = users.id").where("user_actions.action_type" => "follow").count,
-                "tweets" => @user.tweets.size
+                "tweets" => @user.tweets.size,
+                "followers" => UserAction.where(to_user_id: @user.id, action_type: "follow").count,
+                "following" => UserAction.where(from_user_id: @user.id, action_type: "follow").count
             }
             @result["success"] = true
         else

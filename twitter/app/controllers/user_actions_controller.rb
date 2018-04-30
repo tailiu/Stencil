@@ -11,6 +11,7 @@ class UserActionsController < ApplicationController
                 "following_num" => @following_num
             }
 
+            @result[:session] = session
             render json: {result: @result}
         end
     end

@@ -1,8 +1,12 @@
 import React, {Component, Fragment} from "react";
 import Grid from 'material-ui/Grid';
 import NavBar from './NavBar';
-import Tweet from './Tweet';
 import UserProfileBox from './UserProfileBox';
+import axios from 'axios';
+import { withCookies, Cookies } from 'react-cookie';
+import { instanceOf } from 'prop-types';
+import MessageBar from './MessageBar';
+import TweetList from './TweetList';
 
 const styles = {
     grid : {
@@ -41,27 +45,67 @@ const styles = {
 
 class Profile extends Component {
 
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+    };
+
     constructor(props) {
 
-    super(props);
+        super(props);
 
-    this.state = {
-        email : '',
-        password : '',
-        name : '',
-        tweet_value : '',
-        value : '',
+        const { cookies } = this.props;
+
+        this.state = {
+            user_id: cookies.get('user_id'),
+            email : '',
+            password : '',
+            name : '',
+            tweet_value : '',
+            value : '',
+            tweets: []
+        }
+
     }
 
-        this.handleChange = this.handleChange.bind(this);
-        this.handleChangeToTweetField = this.handleChangeToTweetField.bind(this);
+    componentWillMount(){
+        this.fetchTweets();
+        this.timer = setInterval(()=> this.fetchTweets(), 30000);
     }
 
-    handleChange(e) {
+    componentWillUnmount() {
+        this.timer = null;
+      }
+
+    fetchTweets =()=> {
+
+        axios.get(
+        'http://localhost:3000/tweets/fetchUserTweets',
+        {
+            params: {
+            'user_id': this.state.user_id, 
+            }
+        }
+        ).then(response => {
+            console.log("RESULT");
+            console.log(response);
+            if(response.data.result.success){
+                this.setState({
+                    tweets: response.data.result.tweets,
+                })
+            }else{
+                this.MessageBar.showSnackbar("User doesn't exist!");
+                setTimeout(function() { 
+                //   this.goToIndex(response.data.result.user);
+                }.bind(this), 1000);
+            }
+        })
+    }
+
+    handleChange =(e)=> {
         this.setState({ value: e.target.value });
     }
 
-    handleChangeToTweetField(e) {
+    handleChangeToTweetField =(e)=> {
         this.setState({ tweet_value: e.target.value });
     }
 
@@ -69,6 +113,7 @@ class Profile extends Component {
     return (
         <Fragment>
             <NavBar />
+            <MessageBar ref={instance => { this.MessageBar = instance; }}/>
             <Grid style={styles.grid.container} container spacing={16}>
                 
                 <Grid item xs={1}>
@@ -81,21 +126,7 @@ class Profile extends Component {
 
                 <Grid item xs={7}>
                     <Grid container spacing={8} direction="column" align="left">
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
-                        <Grid item>
-                            <Tweet />
-                        </Grid>
+                        <TweetList tweets={this.state.tweets} />
                     </Grid>
                 </Grid>
                 <Grid item xs={1}>
@@ -106,4 +137,4 @@ class Profile extends Component {
   }
 }
 
-export default Profile;
+export default withCookies(Profile);

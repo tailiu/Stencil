@@ -3,6 +3,7 @@ import Button from 'material-ui/Button';
 import Avatar from 'material-ui/Avatar';
 import Typography from 'material-ui/Typography';
 import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
+import Moment from 'moment';
 
 const styles = {
     tweet: {
@@ -17,6 +18,9 @@ const styles = {
         },
         card: {
 
+        },
+        actions: {
+            flex: 1
         }
     }
 }
@@ -44,34 +48,39 @@ class Tweet extends Component{
     }
 
     render(){
+        Moment.locale('en');
         return(
             <Card>
                 <CardHeader
                     avatar={
                         <Avatar aria-label="Recipe" style={styles.tweet.avatar}>
-                        ZT
+                        {this.props.tweet.creator.name[0]}
                         </Avatar>
                     }
-                    title="Tai Cow"
-                    subheader="September 14, 2016"
+                    title={this.props.tweet.creator.name}
+                    subheader={"@"+this.props.tweet.creator.handle}
                 />
                 <CardContent>
                     <Typography component="p">
-                        This impressive paella is a perfect party dish and a fun meal to cook together with
-                    your guests. Add 1 cup of frozen peas along with the mussels, if you like.
+                        {this.props.tweet.tweet.content}
                     </Typography>
                 
                 </CardContent>
                 <CardActions>
-                    <Button size="small" onClick={this.like}>
-                        Like
-                    </Button>
-                    <Button size="small" onClick={this.retweet}>
-                        Retweet
-                    </Button>
-                    <Button size="small" onClick={this.reply}>
-                        Reply
-                    </Button>
+                    <div style={styles.tweet.actions}>
+                        <Button size="small" onClick={this.like}>
+                            Like
+                        </Button>
+                        <Button size="small" onClick={this.retweet}>
+                            Retweet
+                        </Button>
+                        <Button size="small" onClick={this.reply}>
+                            Reply
+                        </Button>
+                    </div>
+                    <Typography component="p">
+                        {Moment(this.props.tweet.tweet.created_at).format('MMMM Do, YYYY - h:mm A')}
+                    </Typography>
                 </CardActions>
             </Card>
         );
