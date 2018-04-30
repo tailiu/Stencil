@@ -80,7 +80,7 @@ class Login extends Component {
       if(!this.validateForm()){
         this.MessageBar.showSnackbar("Some fields are left empty!")
       }else{
-        
+
         axios.get(
           'http://localhost:3000/users/verify',
           {
@@ -95,6 +95,7 @@ class Login extends Component {
             this.MessageBar.showSnackbar(response.data.result.error.message)
           }else{
             this.MessageBar.showSnackbar("Login Successful!");
+            cookies.set('user_id',  response.data.result.user.id);
             cookies.set('session_id', response.data.result.session_id);
             cookies.set('user_id', response.data.result.user.id);
             setTimeout(function() { 

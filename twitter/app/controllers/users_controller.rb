@@ -52,10 +52,8 @@ class UsersController < ApplicationController
             @result["success"] = true
             @result["user"]  = @credentials.user
             
-            session[:user] = nil
-            session[:user] = @credentials.user
+            session[:current_user_id] = nil
             session[:current_user_id] = @credentials.user.id
-            # session[@credentials.user.id]
             @result["session_id"]  = session.id
 
         else
@@ -68,14 +66,13 @@ class UsersController < ApplicationController
     end
 
     def logout
-        reset_session
+        session[:current_user_id] = nil
         @result = {
             # params: params,
             "success" => true,
             "error" => {
             }
         }
-        # render json: {result: @result}
         render json: {result: @result}
     end
 
