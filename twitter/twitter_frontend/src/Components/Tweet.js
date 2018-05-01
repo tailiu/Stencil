@@ -4,6 +4,7 @@ import Avatar from 'material-ui/Avatar';
 import Typography from 'material-ui/Typography';
 import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
 import Moment from 'moment';
+import renderHTML from 'react-render-html';
 
 const styles = {
     tweet: {
@@ -30,6 +31,7 @@ class Tweet extends Component{
 
     constructor(props){
         super(props);
+        console.log(props);
         this.state = {
 
         }
@@ -57,9 +59,12 @@ class Tweet extends Component{
                         {this.props.tweet.creator.name[0]}
                         </Avatar>
                     }
-                    title={this.props.tweet.creator.name}
+                    // onClick={this.goToProfile(this.props.tweet.creator.id)}
+                    // title={this.props.tweet.creator.name}
+                    title={renderHTML('<a style="text-decoration: none;" href="/profile/'+this.props.tweet.creator.id+'">'+this.props.tweet.creator.name+'</a>' )}
                     subheader={"@"+this.props.tweet.creator.handle}
                 />
+                
                 <CardContent>
                     <Typography component="p">
                         {this.props.tweet.tweet.content}

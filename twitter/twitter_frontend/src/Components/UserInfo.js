@@ -5,6 +5,7 @@ import axios from 'axios';
 import { instanceOf } from 'prop-types';
 import { withCookies, Cookies } from 'react-cookie';
 import MessageBar from './MessageBar';
+import renderHTML from 'react-render-html';
 
 const styles = {
     user_info: {

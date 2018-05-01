@@ -96,8 +96,9 @@ class Login extends Component {
           }else{
             this.MessageBar.showSnackbar("Login Successful!");
             cookies.set('user_id',  response.data.result.user.id);
+            cookies.set('user_name', response.data.result.user.name);
+            cookies.set('user_handle', response.data.result.user.handle);
             cookies.set('session_id', response.data.result.session_id);
-            cookies.set('user_id', response.data.result.user.id);
             setTimeout(function() { 
               this.goToHome(response.data.result.user);
             }.bind(this), 1000);

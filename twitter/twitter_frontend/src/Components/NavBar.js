@@ -77,6 +77,8 @@ class NavBar extends Component {
 
         this.state = {
             user_id: cookies.get('user_id'),
+            user_name: cookies.get('user_name'),
+            user_handle: cookies.get('user_handle'),
             value : 0,
             anchorEl: null,
             tweet_box_open: false,
@@ -206,7 +208,7 @@ class NavBar extends Component {
                         aria-haspopup="true"
                         onClick={this.handleClick}
                         >
-                        Tai Cow
+                        {this.state.user_name}
                         </Button>
                         <Menu
                         id="simple-menu"
