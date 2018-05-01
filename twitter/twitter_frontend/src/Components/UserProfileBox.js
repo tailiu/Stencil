@@ -13,6 +13,7 @@ import Dialog, {
   import axios from 'axios';
 import { instanceOf } from 'prop-types';
 import { withCookies, Cookies } from 'react-cookie';
+import MessageBar from './MessageBar';
 
 const styles = {
     user_info: {
@@ -34,9 +35,10 @@ class UserProfileBox extends Component{
     constructor(props){
         super(props);
         const { cookies } = this.props;
+        console.log("profile:"+JSON.stringify(props));
         this.state = {
             bio_box_open : false,
-            user_id : cookies.get('user_id'),
+            user_id : props.user_id,
             user: [],
             user_stats: [],
             avatar_symbol: '',
@@ -52,6 +54,10 @@ class UserProfileBox extends Component{
     handleBioBoxClose = () => {
         this.setState({ bio_box_open: false });
     };
+
+    goToHome = e => {
+		window.location = '/home';
+    }
 
     componentWillMount(){
 
@@ -72,7 +78,7 @@ class UserProfileBox extends Component{
           }else{
             this.MessageBar.showSnackbar("User doesn't exist!");
             setTimeout(function() { 
-            //   this.goToIndex(response.data.result.user);
+              this.goToHome();
             }.bind(this), 1000);
           }
         })
@@ -135,6 +141,7 @@ class UserProfileBox extends Component{
                     </Button>
                 </DialogActions>
             </Dialog>
+            <MessageBar ref={instance => { this.MessageBar = instance; }}/>
             </Fragment>
         );
     }

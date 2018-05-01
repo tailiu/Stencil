@@ -26,6 +26,7 @@ ReactDOM.render(
             <Route path="/signup" component={SignUp} />
             <Route path="/login" component={Login} />
             <Route path="/search" component={Search} />
+            <Route path="/profile/:user_id" component={Profile} />
             <Route path="/profile" component={Profile} />
             <Route path="/messages" component={Messages} />
             <Route path="/notifications" component={Notif} />

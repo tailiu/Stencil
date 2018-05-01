@@ -53,10 +53,19 @@ class Profile extends Component {
 
         super(props);
 
+        console.log("oaram: "+JSON.stringify(props))
+        console.log("oaram: "+JSON.stringify(props.match.params))
+
         const { cookies } = this.props;
 
+        let user_id = cookies.get('user_id');
+
+        if (props.match.params.user_id){
+            user_id = props.match.params.user_id
+        }
+
         this.state = {
-            user_id: cookies.get('user_id'),
+            user_id: user_id,
             email : '',
             password : '',
             name : '',
@@ -120,7 +129,7 @@ class Profile extends Component {
                 </Grid>
 
                 <Grid item xs={3}>
-                    <UserProfileBox />
+                    <UserProfileBox user_id={this.state.user_id}/>
 
                 </Grid>
 
