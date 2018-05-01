@@ -14,6 +14,7 @@ import Dialog, {
 import { instanceOf } from 'prop-types';
 import { withCookies, Cookies } from 'react-cookie';
 import MessageBar from './MessageBar';
+import renderHTML from 'react-render-html';
 
 const styles = {
     user_info: {
@@ -27,6 +28,16 @@ const styles = {
         card: {
 
         }
+    },
+    follow_button: {
+        backgroundColor: "#00aced",
+        color: "#fff",
+        marginBottom: 5
+    },
+    unfollow_button: {
+        backgroundColor: "#F94877",
+        color: "#fff",
+        marginBottom: 5
     }
 }
 
@@ -35,14 +46,16 @@ class UserProfileBox extends Component{
     constructor(props){
         super(props);
         const { cookies } = this.props;
-        console.log("profile:"+JSON.stringify(props));
+
         this.state = {
             bio_box_open : false,
             user_id : props.user_id,
+            logged_in_user: cookies.get("user_id"),
             user: [],
             user_stats: [],
             avatar_symbol: '',
-            user_bio: ''
+            user_bio: '',
+            does_follow: false
         }
     }
 
@@ -59,29 +72,76 @@ class UserProfileBox extends Component{
 		window.location = '/home';
     }
 
-    componentWillMount(){
-
+    checkDoesFollow =()=> {
         axios.get(
-          'http://localhost:3000/users/getUserInfo',
-          {
-            params: {
-              'user_id': this.state.user_id, 
+            'http://localhost:3000/users/checkFollow',
+            {
+              params: {
+                'from_user_id': this.state.logged_in_user, 
+                'to_user_id': this.state.user_id, 
+              }
             }
-          }
+          ).then(response => {
+            if(response.data.result.success){
+              this.setState({
+                  does_follow: response.data.result.follow,
+              })
+            }else{
+              
+            }
+          })
+    }
+
+    getUserInfo =()=> {
+        axios.get(
+        'http://localhost:3000/users/getUserInfo',
+        {
+            params: {
+            'user_id': this.state.user_id, 
+            }
+        }
         ).then(response => {
-          if(response.data.result.success){
+        if(response.data.result.success){
             this.setState({
                 user: response.data.result.user,
                 user_stats: response.data.result.user_stats,
                 avatar_symbol: response.data.result.user.name[0]
             })
-          }else{
+        }else{
             this.MessageBar.showSnackbar("User doesn't exist!");
             setTimeout(function() { 
-              this.goToHome();
+            this.goToHome();
             }.bind(this), 1000);
-          }
+        }
         })
+    }
+
+    componentWillMount(){
+        this.getUserInfo();
+        this.checkDoesFollow();
+    }
+
+    handleFollow =(follow, e)=> {
+        console.log("her:", follow);
+        axios.get(
+            'http://localhost:3000/users/handleFollow',
+            {
+              params: {
+                'from_user_id': this.state.logged_in_user, 
+                'to_user_id': this.state.user_id, 
+                'follow' : follow
+              }
+            }
+          ).then(response => {
+            if(response.data.result.success){
+                this.setState({
+                  does_follow: response.data.result.follow,
+                })
+                this.getUserInfo();
+            }else{
+                
+            }
+          })
     }
 
     render(){
@@ -96,8 +156,10 @@ class UserProfileBox extends Component{
                     }
                     title={this.state.user.name}
                     subheader={
-                        "@"+this.state.user.handle + "  |  " +
-                        "Followers: " + this.state.user_stats.followers + " Following: " +  this.state.user_stats.following + " Tweets: " + this.state.user_stats.tweets
+                        renderHTML(
+                            "<strong> @"+this.state.user.handle + "</strong>  <br>  <i>" +
+                            "Followers: " + this.state.user_stats.followers + ", Following: " +  this.state.user_stats.following + ", Tweets: " + this.state.user_stats.tweets + "</i>"
+                        )
                     }
                 />
                 <CardContent>
@@ -105,14 +167,28 @@ class UserProfileBox extends Component{
                         {this.state.user.bio}
                     </Typography>
                 </CardContent>
-                <CardActions>
-                    <Button size="small" onClick={this.like}>
-                        Change Photo
-                    </Button>
-                    <Button size="small" onClick={this.handleBioBoxOpen}>
-                        Change Bio
-                    </Button>
-                </CardActions>
+                {this.state.logged_in_user === this.state.user_id ?
+                    <CardActions>
+                        <Button size="small" onClick={this.like}>
+                            Change Photo
+                        </Button>
+                        <Button size="small" onClick={this.handleBioBoxOpen}>
+                            Change Bio
+                        </Button>
+                    </CardActions>
+                :
+                    <CardActions>
+                        {this.state.does_follow ?
+                            <Button onClick={this.handleFollow.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
+                                Unfollow
+                            </Button>
+                        :
+                            <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
+                                Follow
+                            </Button>
+                        }
+                    </CardActions>
+                }
             </Card>
             <Dialog
                 open={this.state.bio_box_open}

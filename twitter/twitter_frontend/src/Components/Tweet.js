@@ -5,6 +5,7 @@ import Typography from 'material-ui/Typography';
 import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
 import Moment from 'moment';
 import renderHTML from 'react-render-html';
+import IconButton from 'material-ui/IconButton';
 
 const styles = {
     tweet: {
@@ -22,6 +23,10 @@ const styles = {
         },
         actions: {
             flex: 1
+        },
+        goto_icon:{
+            height:15,
+            opacity:0.7
         }
     }
 }
@@ -31,7 +36,6 @@ class Tweet extends Component{
 
     constructor(props){
         super(props);
-        console.log(props);
         this.state = {
 
         }
@@ -51,6 +55,7 @@ class Tweet extends Component{
 
     render(){
         Moment.locale('en');
+
         return(
             <Card>
                 <CardHeader
@@ -63,8 +68,12 @@ class Tweet extends Component{
                     // title={this.props.tweet.creator.name}
                     title={renderHTML('<a style="text-decoration: none;" href="/profile/'+this.props.tweet.creator.id+'">'+this.props.tweet.creator.name+'</a>' )}
                     subheader={"@"+this.props.tweet.creator.handle}
+                    action={
+                        <IconButton>
+                            <a href={"/tweet/"+this.props.tweet.tweet.id}><img style={styles.tweet.goto_icon} alt="Logo" src={require('../Assets/Images/goto-link-icon.png')} /> </a>
+                        </IconButton>
+                    }
                 />
-                
                 <CardContent>
                     <Typography component="p">
                         {this.props.tweet.tweet.content}

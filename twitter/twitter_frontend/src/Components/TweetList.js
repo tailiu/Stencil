@@ -28,8 +28,8 @@ function TweetList(props) {
     }
     else{
         const tweetObjs = tweetList.map((tweet) =>
-            <Grid item key={tweet.id}>
-                <Tweet tweet={tweet}/>
+            <Grid key={tweet.id} item>
+                <Tweet key={tweet.id} tweet={tweet}/>
             </Grid>
         );
         return (
