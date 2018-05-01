@@ -45,7 +45,7 @@ function generate(element) {
     );
 }
 
-class ConversationOverview extends Component {
+class Conversation extends Component {
 
     constructor(props) {
 
@@ -55,17 +55,44 @@ class ConversationOverview extends Component {
         }
     }
 
+    handleChange(e) {
+        this.props.onConversationChange(e.target.value)
+    }
+
     render () {
         return (
             <div>
                 <ListItem>
                     <Avatar src={require('../Assets/Images/user_icon.png')} />
-                <ListItemText primary="Tai Cow" secondary="Jan 9, 2014" />
+                <ListItemText primary="Tai Cow" secondary="Jan 9, 2014" onChange={this.handleChange}/>
                 </ListItem>
                 <li>
                     <Divider inset />
                 </li>
             </div>
+        )
+    }
+
+}
+
+
+class ConversationList extends Component {
+
+    constructor(props) {
+
+        super(props);
+
+        this.state = {
+        }
+        
+        console.log(this.props.conversations)
+    }
+
+    render () {
+        return (
+            <List>
+                <Conversation />
+            </List>
         )
     }
 
@@ -86,8 +113,10 @@ class Messages extends Component {
 
         this.state = {
             user_id : cookies.get('user_id'),
+            user_handle: cookies.get('user_handle'),
             new_message_box_open: false,
-            message_to: ''
+            message_to: '',
+            conversations: ''
         }
     }
 
@@ -100,11 +129,12 @@ class Messages extends Component {
                 }
             }
         ).then(response => {
-            // console.log(response)
             if(!response.data.result.success){
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
-
+                this.setState({
+                    'conversations': response.data.result.conversations
+                })
             }
         })
     }
@@ -141,17 +171,16 @@ class Messages extends Component {
             raw_data[i] = raw_data[i].replace(/\s/g,''); // replace all spaces in handles
             participants.push(raw_data[i])
         }
+        participants.push(this.state.user_handle)
 
         axios.get(
             'http://localhost:3000/conversations/new',
             {
                 params: {
-                    'id': this.state.user_id,
                     'participants': participants
                 }
             }
         ).then(response => {
-            // console.log(response)
             if(!response.data.result.success){
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
@@ -221,29 +250,30 @@ class Messages extends Component {
                                 <CardContent>
                                     <Grid container direction="row" spacing={8} align="left">
                                         <Grid item xs={4}>
-                                            <List>
-                                                <ConversationOverview />
 
-                                                {/* <ListItem>
-                                                <Avatar
-                                                src={require('../Assets/Images/user_icon.png')}
-                                                />
-                                                <ListItemText primary="Miro Pasta" secondary="Jan 9, 2014" />
-                                                </ListItem>
-                                                <li>
-                                                <Divider inset />
-                                                </li>
+                                            <ConversationList conversations = {this.state.conversations} />
+                                            
 
-                                                <ListItem>
-                                                <Avatar
-                                                src={require('../Assets/Images/user_icon.png')}
-                                                />
-                                                <ListItemText primary="Major Tom" secondary="Jan 9, 2014" />
-                                                </ListItem>
-                                                <li>
-                                                <Divider inset />
-                                                </li> */}
-                                            </List>
+                                            {/* <ListItem>
+                                            <Avatar
+                                            src={require('../Assets/Images/user_icon.png')}
+                                            />
+                                            <ListItemText primary="Miro Pasta" secondary="Jan 9, 2014" />
+                                            </ListItem>
+                                            <li>
+                                            <Divider inset />
+                                            </li>
+
+                                            <ListItem>
+                                            <Avatar
+                                            src={require('../Assets/Images/user_icon.png')}
+                                            />
+                                            <ListItemText primary="Major Tom" secondary="Jan 9, 2014" />
+                                            </ListItem>
+                                            <li>
+                                            <Divider inset />
+                                            </li> */}
+                                            
                                         </Grid>
                                         <Grid item xs={8} >
                                             <Grid container direction="column">

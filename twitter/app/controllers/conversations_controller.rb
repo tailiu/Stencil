@@ -1,43 +1,46 @@
 class ConversationsController < ApplicationController
-    def index 
-        @user = User.find(params[:id])
-
-        @conversation_participants = @user.conversation_participants
-
-        for conversation_participant in @conversation_participants do
-            @conversation = conversation_participant.conversation
-            puts @conversation.id
-        end
-
+    def initialize
         @result = {
             # params: params,
             "success" => true,
             "error" => {
             }
         }
+    end
+
+    def index 
+        user = User.find(params[:id])
+
+        conversation_participants = user.conversation_participants
+
+        conversations = []
+
+        for conversation_participant in conversation_participants do
+            specific_conversation = conversation_participant.conversation
+            specific_conversation_participants = specific_conversation.conversation_participants
+            one_conversation = {
+                "conversation" => specific_conversation,
+                "conversation_participants" => specific_conversation_participants
+            }
+            conversations.push(one_conversation)
+        end
+
+        @result["conversations"] = conversations
         
         render json: {result: @result}
     end
 
     def new
-        @user = User.find(params[:id])
-        @participants = params[:participants]
+        participants = params[:participants]
 
         # @conversation_participants = @user.conversation_participants
 
-        @conversation = Conversation.create()
+        conversation = Conversation.create()
 
-        for participant in @participants do
-            @user = User.find_by(handle: participant)
-            @conversation_participant = @user.conversation_participants.create(conversation_id: @conversation.id)
+        for participant in participants do
+            user = User.find_by(handle: participant)
+            conversation_participant = user.conversation_participants.create(conversation_id: conversation.id)
         end
-
-        @result = {
-            # params: params,
-            "success" => true,
-            "error" => {
-            }
-        }
 
         render json: {result: @result}
     end
