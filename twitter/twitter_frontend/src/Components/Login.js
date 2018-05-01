@@ -71,8 +71,8 @@ class Login extends Component {
       else return false;
     }
 
-    goToHome = (user) => {
-      this.props.history.push({pathname: '/home', state: {user: user}});
+    goToHome = () => {
+      this.props.history.push({pathname: '/home'});
     }
   
     handleLogin = () =>  {
@@ -97,9 +97,8 @@ class Login extends Component {
             this.MessageBar.showSnackbar("Login Successful!");
             cookies.set('user_id',  response.data.result.user.id);
             cookies.set('session_id', response.data.result.session_id);
-            cookies.set('user_id', response.data.result.user.id);
             setTimeout(function() { 
-              this.goToHome(response.data.result.user);
+              this.goToHome();
             }.bind(this), 1000);
           }
         })

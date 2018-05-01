@@ -91,6 +91,24 @@ class Messages extends Component {
         }
     }
 
+    componentDidMount() {
+        axios.get(
+            'http://localhost:3000/conversations/',
+            {
+                params: {
+                    'id': this.state.user_id
+                }
+            }
+        ).then(response => {
+            // console.log(response)
+            if(!response.data.result.success){
+                this.MessageBar.showSnackbar(response.data.result.error.message)
+            }else{
+
+            }
+        })
+    }
+
     handleNewMessageBoxOpen = e => {
         this.setState({new_message_box_open: true });
     }
