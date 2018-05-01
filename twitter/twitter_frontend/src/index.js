@@ -9,6 +9,7 @@ import Profile from './Components/Profile';
 import Messages from './Components/Messages';
 import Notif from './Components/Notif';
 import Settings from './Components/Settings';
+import TweetPage from './Components/TweetPage';
 import registerServiceWorker from './registerServiceWorker';
 import {
     BrowserRouter as Router,
@@ -28,6 +29,7 @@ ReactDOM.render(
             <Route path="/search" component={Search} />
             <Route path="/profile/:user_id" component={Profile} />
             <Route path="/profile" component={Profile} />
+            <Route path="/tweet/:tweet_id" component={TweetPage} />
             <Route path="/messages" component={Messages} />
             <Route path="/notifications" component={Notif} />
             <Route path="/settings" component={Settings} />

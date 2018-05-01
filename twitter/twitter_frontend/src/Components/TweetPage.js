@@ -7,6 +7,7 @@ import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import MessageBar from './MessageBar';
 import TweetList from './TweetList';
+import Tweet from './Tweet';
 
 const styles = {
     grid : {
@@ -53,22 +54,14 @@ class Profile extends Component {
 
         super(props);
 
+        console.log("oaram: "+JSON.stringify(props))
+        console.log("oaram: "+JSON.stringify(props.match.params))
+
         const { cookies } = this.props;
-
-        let user_id = cookies.get('user_id');
-
-        if (props.match.params.user_id){
-            user_id = props.match.params.user_id
-        }
-
+        
         this.state = {
-            user_id: user_id,
-            email : '',
-            password : '',
-            name : '',
-            tweet_value : '',
-            value : '',
-            tweets: []
+            tweets: [],
+            tweet_id: props.match.params.tweet_id
         }
 
     }
@@ -85,23 +78,21 @@ class Profile extends Component {
     fetchTweets =()=> {
 
         axios.get(
-        'http://localhost:3000/tweets/fetchUserTweets',
+        'http://localhost:3000/tweets/getTweet',
         {
             params: {
-            'user_id': this.state.user_id, 
+            'tweet_id': this.state.tweet_id, 
             }
         }
         ).then(response => {
-
+            console.log("RESULT");
+            console.log(response);
             if(response.data.result.success){
                 this.setState({
-                    tweets: response.data.result.tweets,
-                })
+                    tweets: response.data.result.replies,
+                  }, () => console.log("AJAHSAHDAKSBDASBK:"+JSON.stringify(this.state)))
             }else{
-                this.MessageBar.showSnackbar("User doesn't exist!");
-                setTimeout(function() { 
-                //   this.goToIndex(response.data.result.user);
-                }.bind(this), 1000);
+                
             }
         })
     }
@@ -120,21 +111,14 @@ class Profile extends Component {
             <NavBar />
             <MessageBar ref={instance => { this.MessageBar = instance; }}/>
             <Grid style={styles.grid.container} container spacing={16}>
-                
-                <Grid item xs={1}>
+                <Grid item xs={2}>
                 </Grid>
-
-                <Grid item xs={3}>
-                    <UserProfileBox user_id={this.state.user_id}/>
-
-                </Grid>
-
-                <Grid item xs={7}>
+                <Grid item xs={8}>
                     <Grid container spacing={8} direction="column" align="left">
                         <TweetList tweets={this.state.tweets} />
                     </Grid>
                 </Grid>
-                <Grid item xs={1}>
+                <Grid item xs={2}>
                 </Grid>
             </Grid>
         </Fragment>

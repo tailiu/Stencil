@@ -76,8 +76,10 @@ class UserInfo extends Component{
                     }
                     title={this.state.user.name}
                     subheader={
-                        "@"+this.state.user.handle + "  |  " +
-                        "Followers: " + this.state.user_stats.followers + " Following: " +  this.state.user_stats.following + " Tweets: " + this.state.user_stats.tweets
+                        renderHTML(
+                        "<strong> @"+this.state.user.handle + "</strong>  <br>  <i>" +
+                        "Followers: " + this.state.user_stats.followers + ", Following: " +  this.state.user_stats.following + ", Tweets: " + this.state.user_stats.tweets + "</i>"
+                        )
                     }
                     // subheader={"Followers: " + this.state.user_stats.followed + " Following: " +  this.state.user_stats.following + " Tweets: " + this.state.user_stats.tweets}
                     // subheader="Followers:49, Following:51, Tweets:90"

@@ -111,6 +111,30 @@ class TweetsController < ApplicationController
         render json: {result: @result}
     end
 
+    def getTweet
+        result = {
+            "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+        tweet = Tweet.find_by_id(params[:tweet_id])
+        if !tweet.nil?
+            tweets = Tweet.where(reply_to_id: tweet.id)
+            tweets_set = [{"tweet": tweet, "creator": User.where(id: tweet.user_id).first}]
+            for tweet in tweets do
+                tweets_set.push({"tweet": tweet, "creator": User.where(id: tweet.user_id).first})
+            end
+            result["replies"] = tweets_set
+            result["success"] = true
+        else
+            result["success"] = false
+            result["error"]["message"] = "Tweet doesn't exist!"
+        end
+        render json: {result: result}
+    end
+
+
     def like
     end
 

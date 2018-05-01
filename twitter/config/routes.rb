@@ -6,7 +6,10 @@ Rails.application.routes.draw do
 	get 'tweets/fetchall', to: 'tweets#fetchall'
 	get 'tweets/fetchUserTweets', to: 'tweets#fetchUserTweets'
 	get 'tweets/mainPageTweets', to: 'tweets#mainPageTweets'
+	get 'tweets/getTweet', to: 'tweets#getTweet'
 	get 'users/getUserInfo', to: 'users#getUserInfo'
+	get 'users/checkFollow', to: 'user_actions#checkFollow'
+	get 'users/handleFollow', to: 'user_actions#handleFollow'
 
 	resources :users
 	resources :user_actions
