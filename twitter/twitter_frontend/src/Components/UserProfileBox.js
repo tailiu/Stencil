@@ -55,6 +55,7 @@ class UserProfileBox extends Component{
             user_stats: [],
             avatar_symbol: '',
             user_bio: '',
+            new_bio: '',
             does_follow: false
         }
     }
@@ -144,6 +145,35 @@ class UserProfileBox extends Component{
           })
     }
 
+    handleBio =(e)=> {
+        console.log("her:", this.state.new_bio);
+        axios.get(
+            'http://localhost:3000/users/updateBio',
+            {
+              params: {
+                'user_id': this.state.logged_in_user, 
+                'bio': this.state.new_bio
+              }
+            }
+          ).then(response => {
+            if(response.data.result.success){
+                this.setState({
+                  user: response.data.result.user,
+                })
+                this.handleBioBoxClose();
+                this.MessageBar.showSnackbar("Bio updated!");
+            }else{
+                this.MessageBar.showSnackbar("Bio can't be updated!");
+            }
+          })
+    }
+
+    changeBioContent = (e) => {
+        this.setState({
+            new_bio: e.target.value
+        })
+    }
+
     render(){
         return(
             <Fragment>
@@ -204,7 +234,7 @@ class UserProfileBox extends Component{
                     autoFocus
                     id="bio"
                     name="bio"
-                    // label="What's on your mind?"
+                    onChange={this.changeBioContent}
                     fullWidth
                     />
                 </DialogContent>
@@ -212,7 +242,7 @@ class UserProfileBox extends Component{
                     <Button onClick={this.handleBioBoxClose} color="primary">
                     Cancel
                     </Button>
-                    <Button onClick={this.handleBioBoxClose} color="primary">
+                    <Button onClick={this.handleBio.bind(this)} color="primary">
                     Change
                     </Button>
                 </DialogActions>

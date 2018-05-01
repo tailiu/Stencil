@@ -8,6 +8,7 @@ Rails.application.routes.draw do
 	get 'tweets/mainPageTweets', to: 'tweets#mainPageTweets'
 	get 'tweets/getTweet', to: 'tweets#getTweet'
 	get 'users/getUserInfo', to: 'users#getUserInfo'
+	get 'users/updateBio', to: 'users#updateBio'
 	get 'users/checkFollow', to: 'user_actions#checkFollow'
 	get 'users/handleFollow', to: 'user_actions#handleFollow'
 

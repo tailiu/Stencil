@@ -141,4 +141,7 @@ class TweetsController < ApplicationController
     def retweet
     end
 
+    def reply 
+    end
+
 end

@@ -104,18 +104,110 @@ class UsersController < ApplicationController
     end
 
     def updateBio
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        if params[:user_id].nil? || params[:bio].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.find_by_id(params[:user_id])
+            if user != nil
+                result["user"] = user
+                result["success"] = true
+                user.bio = params[:bio]
+                user.save
+            else
+                result["success"] = false
+                result["error"]["message"] = "User doesn't exist!"
+            end
+        end
+        
+        render json: {result: result}
     end
 
     def updatePhoto
     end
 
     def updateEmail
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        if params[:user_id].nil? || params[:email].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = Credential.where(user_id: params[:user_id]).first
+            if user != nil
+                result["user"] = user
+                result["success"] = true
+                user.email = params[:email]
+                user.save
+            else
+                result["success"] = false
+                result["error"]["message"] = "User doesn't exist!"
+            end
+        end
+        
+        render json: {result: result}
     end
 
     def updateHandle
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        if params[:user_id].nil? || params[:handle].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.find_by_id(params[:user_id])
+            if user != nil
+                result["user"] = user
+                result["success"] = true
+                user.handle = params[:handle]
+                user.save
+            else
+                result["success"] = false
+                result["error"]["message"] = "User doesn't exist!"
+            end
+        end
+        
+        render json: {result: result}
     end
 
     def updatePassword
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        if params[:user_id].nil? || params[:password].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = Credential.where(user_id: params[:user_id]).first
+            if user != nil
+                result["user"] = user
+                result["success"] = true
+                user.password = params[:password]
+                user.save
+            else
+                result["success"] = false
+                result["error"]["message"] = "User doesn't exist!"
+            end
+        end
+        
+        render json: {result: result}
     end
 
     def markAsProtected
