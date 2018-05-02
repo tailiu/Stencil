@@ -16,7 +16,7 @@ class ConversationList extends Component {
     }
 
     handleClick = e => {
-        console.log(e.target.value.primary)
+        console.log("clicked")
     };
 
     formConversationList = conversations => {
