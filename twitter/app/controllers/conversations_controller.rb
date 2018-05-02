@@ -16,13 +16,19 @@ class ConversationsController < ApplicationController
         conversations = []
 
         for conversation_participant in conversation_participants do
-            specific_conversation = conversation_participant.conversation
-            specific_conversation_participants = specific_conversation.conversation_participants
-            one_conversation = {
-                "conversation" => specific_conversation,
-                "conversation_participants" => specific_conversation_participants
+            one_conversation = conversation_participant.conversation
+            one_conversation_participants = one_conversation.conversation_participants
+
+            conversation = {
+                "conversation" => one_conversation,
+                "conversation_participants" => []
             }
-            conversations.push(one_conversation)
+            for one_conversation_participant in one_conversation_participants do
+                user = one_conversation_participant.user
+                conversation["conversation_participants"].push(user)
+            end
+
+            conversations.push(conversation)
         end
 
         @result["conversations"] = conversations

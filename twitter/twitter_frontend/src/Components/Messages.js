@@ -17,6 +17,7 @@ import MessageBar from './MessageBar';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import axios from 'axios';
+import ConversationList from './ConversationList'
 
 const styles = {
     grid : {
@@ -45,58 +46,6 @@ function generate(element) {
     );
 }
 
-class Conversation extends Component {
-
-    constructor(props) {
-
-        super(props);
-
-        this.state = {
-        }
-    }
-
-    handleChange(e) {
-        this.props.onConversationChange(e.target.value)
-    }
-
-    render () {
-        return (
-            <div>
-                <ListItem>
-                    <Avatar src={require('../Assets/Images/user_icon.png')} />
-                <ListItemText primary="Tai Cow" secondary="Jan 9, 2014" onChange={this.handleChange}/>
-                </ListItem>
-                <li>
-                    <Divider inset />
-                </li>
-            </div>
-        )
-    }
-
-}
-
-
-class ConversationList extends Component {
-
-    constructor(props) {
-
-        super(props);
-
-        this.state = {
-        }
-        
-        console.log(this.props.conversations)
-    }
-
-    render () {
-        return (
-            <List>
-                <Conversation />
-            </List>
-        )
-    }
-
-}
 
 
 class Messages extends Component {
@@ -116,7 +65,7 @@ class Messages extends Component {
             user_handle: cookies.get('user_handle'),
             new_message_box_open: false,
             message_to: '',
-            conversations: ''
+            conversations: []
         }
     }
 
@@ -252,27 +201,6 @@ class Messages extends Component {
                                         <Grid item xs={4}>
 
                                             <ConversationList conversations = {this.state.conversations} />
-                                            
-
-                                            {/* <ListItem>
-                                            <Avatar
-                                            src={require('../Assets/Images/user_icon.png')}
-                                            />
-                                            <ListItemText primary="Miro Pasta" secondary="Jan 9, 2014" />
-                                            </ListItem>
-                                            <li>
-                                            <Divider inset />
-                                            </li>
-
-                                            <ListItem>
-                                            <Avatar
-                                            src={require('../Assets/Images/user_icon.png')}
-                                            />
-                                            <ListItemText primary="Major Tom" secondary="Jan 9, 2014" />
-                                            </ListItem>
-                                            <li>
-                                            <Divider inset />
-                                            </li> */}
                                             
                                         </Grid>
                                         <Grid item xs={8} >
