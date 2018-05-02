@@ -39,7 +39,7 @@ const styles = {
 };
 
 function generate(element) {
-    return [0, 1, 2].map(value =>
+    return [0, 1, 2, 3, 4].map(value =>
       React.cloneElement(element, {
         key: value,
       }),
@@ -70,6 +70,10 @@ class Messages extends Component {
     }
 
     componentDidMount() {
+        this.getConversationList()
+    }
+
+    getConversationList = callback => {
         axios.get(
             'http://localhost:3000/conversations/',
             {
@@ -83,7 +87,8 @@ class Messages extends Component {
             }else{
                 this.setState({
                     'conversations': response.data.result.conversations
-                })
+                });
+                if (callback) callback()
             }
         })
     }
@@ -133,7 +138,7 @@ class Messages extends Component {
             if(!response.data.result.success){
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
-
+                this.getConversationList(this.handleNewMessageBoxClose)
             }
         })
 

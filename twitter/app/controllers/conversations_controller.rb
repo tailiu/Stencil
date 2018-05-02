@@ -39,8 +39,6 @@ class ConversationsController < ApplicationController
     def new
         participants = params[:participants]
 
-        # @conversation_participants = @user.conversation_participants
-
         conversation = Conversation.create()
 
         for participant in participants do

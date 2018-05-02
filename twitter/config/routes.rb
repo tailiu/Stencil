@@ -15,5 +15,8 @@ Rails.application.routes.draw do
 	resources :users
 	resources :user_actions
 	resources :tweets
-	resources :conversations
+	resources :conversations do
+		resources :messages
+	end
+	
 end
