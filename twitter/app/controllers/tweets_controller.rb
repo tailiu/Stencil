@@ -52,7 +52,7 @@ class TweetsController < ApplicationController
 
     def fetchUserTweets
 
-        @result = {
+        result = {
             "params" => params,
             "success" => false,
             "error" => {
@@ -60,29 +60,37 @@ class TweetsController < ApplicationController
         }
 
         if params[:user_id].nil?
-            @result["success"] = false
-            @result["error"]["message"] = "Incomplete params!"
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
         elsif !User.where(id: params[:user_id]).exists?
-            @result["success"] = false
-            @result["error"]["message"] = "User doesn't exist!"
+            result["success"] = false
+            result["error"]["message"] = "User doesn't exist!"
         else
-            @user = User.where(id: params[:user_id]).first
-            @tweets = Tweet.where(user_id: params[:user_id]).order('created_at DESC')
-            @result["success"] = true
-            @tweets_set = []
-            for tweet in @tweets do
-                @tweets_set.push({"tweet": tweet, "creator": @user})
+            user = User.find(params[:user_id])
+            # @user = User.where(id: params[:user_id]).first
+            retweets = user.retweets.pluck(:tweet_id)
+            tweets = user.tweets.pluck(:id)
+            alltweets = Tweet.where(:id => retweets+tweets).order('created_at DESC')
+            # tweets = user.tweets
+            # tweets = user.tweets.or(retweets)
+            # tweets = tweets.concat(retweets)
+            # tweets = tweets.order('created_at DESC')
+            # @tweets = Tweet.where(user_id: params[:user_id]).order('created_at DESC')
+            result["success"] = true
+            tweets_set = []
+            for tweet in alltweets do
+                tweets_set.push({"tweet": tweet, "creator": tweet.user, "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count})
             end
-            @result["tweets"] = @tweets_set
+            result["tweets"] = tweets_set
         end
 
-        render json: {result: @result}
+        render json: {result: result}
 
     end
 
 
     def mainPageTweets
-        @result = {
+        result = {
             "params" => params,
             "success" => false,
             "error" => {
@@ -90,26 +98,35 @@ class TweetsController < ApplicationController
         }
 
         if params[:user_id].nil?
-            @result["success"] = false
-            @result["error"]["message"] = "Incomplete params!"
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
         elsif !User.where(id: params[:user_id]).exists?
-            @result["success"] = false
-            @result["error"]["message"] = "User doesn't exist!"
+            result["success"] = false
+            result["error"]["message"] = "User doesn't exist!"
         else
-            @tweets_set = []
-            @user = User.where(id: params[:user_id]).first
-            @following_users = UserAction.where(from_user_id: @user.id, action_type: "follow").pluck(:to_user_id)
-            @allusers = @following_users + [@user.id]
-            @alltweets = Tweet.where(:user_id => @allusers).order('created_at DESC')
-            for tweet in @alltweets do
-                @tweets_set.push({"tweet": tweet, "creator": User.where(id: tweet.user_id).first})
+            tweets_set = []
+            user = User.find(params[:user_id])
+            retweets = user.retweets.order('created_at DESC').pluck(:tweet_id)
+            following_users = UserAction.where(from_user_id: user.id, action_type: "follow").pluck(:to_user_id)
+            allusers = following_users + [user.id]
+            alltweets = Tweet.where(:user_id => allusers).or(Tweet.where(:id => retweets))
+            alltweets = alltweets.order('created_at DESC')
+            for tweet in alltweets do
+                tweets_set.push({"tweet": tweet, "creator": tweet.user,  "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count})
             end
-            @result["success"] = true
-            @result["tweets"] = @tweets_set
+            result["success"] = true
+            result["tweets"] = tweets_set
         end
 
-        render json: {result: @result}
+        render json: {result: result}
     end
+
+    def getRetweets(user_id)
+        user = User.find_by_id(user_id)
+        retweets = user.retweets.order('created_at DESC').pluck(:tweet_id)
+        return retweets
+    end
+
 
     def getTweet
         result = {
@@ -120,10 +137,11 @@ class TweetsController < ApplicationController
         }
         tweet = Tweet.find_by_id(params[:tweet_id])
         if !tweet.nil?
-            tweets = Tweet.where(reply_to_id: tweet.id)
-            tweets_set = [{"tweet": tweet, "creator": User.where(id: tweet.user_id).first}]
+            # tweets = Tweet.where(reply_to_id: tweet.id)
+            tweets = tweet.replies
+            tweets_set = [{"tweet": tweet, "creator": tweet.user,  "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count}]
             for tweet in tweets do
-                tweets_set.push({"tweet": tweet, "creator": User.where(id: tweet.user_id).first})
+                tweets_set.push({"tweet": tweet, "creator": tweet.user,  "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count})
             end
             result["replies"] = tweets_set
             result["success"] = true
@@ -136,9 +154,106 @@ class TweetsController < ApplicationController
 
 
     def like
+        result = {
+            "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:tweet_id].nil? || params[:user_id].nil? || params[:like].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.find_by_id(params[:user_id])
+            tweet = Tweet.find_by_id(params[:tweet_id])
+            if !user.nil? && !tweet.nil?
+                # like = Like.new(tweet_id: params[:tweet_id], user_id: params[:user_id])
+                # like = tweet.likes.create(tweet_id: params[:tweet_id], user_id: params[:user_id])
+                like = tweet.likes.find_or_create_by(tweet_id: params[:tweet_id], user_id: params[:user_id])
+                if like.valid?
+                    result["success"] = true
+                    if params[:like] === "true"
+                        like.save
+                        result["like"] = like
+                    else
+                        Like.destroy(like.id)
+                    end
+                else
+                    puts like.errors.messages
+                    result["success"] = false
+                    result["error"]["message"] = like.errors.messages
+                end
+            else
+                result["success"] = false
+                result["error"]["message"] = "User/Tweet don't exist!"
+            end
+        end
+
+        render json: {result: result}
     end
 
     def retweet
+        result = {
+            "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:tweet_id].nil? || params[:user_id].nil? || params[:retweet].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.find_by_id(params[:user_id])
+            tweet = Tweet.find_by_id(params[:tweet_id])
+            if !user.nil? && !tweet.nil?
+                # like = Like.new(tweet_id: params[:tweet_id], user_id: params[:user_id])
+                # like = tweet.likes.create(tweet_id: params[:tweet_id], user_id: params[:user_id])
+                retweet = tweet.retweets.find_or_create_by(tweet_id: params[:tweet_id], user_id: params[:user_id])
+                if retweet.valid?
+                    result["success"] = true
+                    if params[:retweet] === "true"
+                        retweet.save
+                        result["retweet"] = retweet
+                    else
+                        Retweet.destroy(retweet.id)
+                    end
+                else
+                    puts retweet.errors.messages
+                    result["success"] = false
+                    result["error"]["message"] = retweet.errors.messages
+                end
+            else
+                result["success"] = false
+                result["error"]["message"] = "User/Tweet don't exist!"
+            end
+        end
+
+        render json: {result: result}
+    end
+
+    def stats
+        result = {
+            "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:tweet_id].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            result["success"] = true
+            tweet = Tweet.find_by_id(params[:tweet_id])
+            result["likes"] = tweet.likes.pluck(:user_id)
+            result["retweets"] = tweet.retweets.pluck(:user_id)
+            result["replies"] = tweet.replies.pluck(:user_id)
+            # result["replies_users"] = tweet.replies
+        end
+        
+        render json: {result: result}
     end
 
     def reply 

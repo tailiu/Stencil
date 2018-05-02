@@ -14,13 +14,7 @@ import Menu, { MenuItem } from 'material-ui/Menu';
 import Input from 'material-ui/Input';
 import TextField from 'material-ui/TextField';
 import MessageBar from './MessageBar';
-
-import Dialog, {
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-  } from 'material-ui/Dialog';
+import NewTweetDialog from "./NewTweetDialog";
 
 const styles = {
     root: {
@@ -82,18 +76,17 @@ class NavBar extends Component {
             value : 0,
             anchorEl: null,
             tweet_box_open: false,
-            tweet_content: "",
         }
 
     }
 
+    handleTweetBoxClose = () => {
+        this.setState({ tweet_box_open: false });
+    };
+
     handleTweetBoxOpen = () => {
         console.log("HERE!");
         this.setState({tweet_box_open: true });
-    };
-
-    handleTweetBoxClose = () => {
-        this.setState({ tweet_box_open: false });
     };
 
     goToIndex = e => {
@@ -119,11 +112,6 @@ class NavBar extends Component {
     goToNotif = e => {
 		window.location = '/notifications';
     }
-    
-    handleChange = (event, value) => {
-        this.setState({ value });
-        event.preventDefault();
-    };
 
     handleClick = e => {
         this.setState({ anchorEl: e.currentTarget });
@@ -142,45 +130,6 @@ class NavBar extends Component {
             this.goToIndex();
         })
       }
-
-    validateForm = () => {
-        if(this.state.tweet_content) 
-            return true;
-        else return false;
-    }
-
-    handleNewTweet = (e, reply_to) => {
-        
-        if(!this.validateForm()){
-          this.MessageBar.showSnackbar("Tweet box can't be empty!")
-        }else{
-            
-          axios.get(
-            'http://localhost:3000/tweets/new',
-            {
-              params: {
-                'content':this.state.tweet_content, 
-                'user_id': this.state.user_id
-              }
-            }
-          ).then(response => {
-            console.log("axios:"+JSON.stringify(response))
-            if(!response.data.result.success){
-              this.MessageBar.showSnackbar(response.data.result.error.message)
-            }else{
-              this.MessageBar.showSnackbar("Tweet Posted!");
-              this.handleTweetBoxClose();
-            }
-          })
-        }
-        e.preventDefault();
-    }
-
-    updateTweetContent = (e) => {
-        this.setState({
-            tweet_content: e.target.value
-        })
-    }
 
     render() {
         return (
@@ -223,40 +172,10 @@ class NavBar extends Component {
                     </div>
                     <Button 
                         style={styles.tweetButton} 
-                        onClick={this.handleTweetBoxOpen}>Tweet</Button>
-                    <Dialog
-                        open={this.state.tweet_box_open}
-                        onClose={this.handleTweetBoxClose}
-                        aria-labelledby="form-dialog-title"
-                        >
-                        <DialogTitle id="form-dialog-title">New Tweet</DialogTitle>
-                        <DialogContent>
-                            <DialogContentText>
-                            {/* What's on your mind? */}
-                            </DialogContentText>
-                            <TextField
-                            autoFocus
-                            margin="dense"
-                            id="tweet"
-                            label="What's on your mind?"
-                            type="email"
-                            value={this.state.tweet_content}
-                            onChange={this.updateTweetContent}
-                            fullWidth
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={this.handleTweetBoxClose} color="primary">
-                            Video/Photo
-                            </Button>
-                            <Button onClick={this.handleTweetBoxClose} color="primary">
-                            Cancel
-                            </Button>
-                            <Button onClick={this.handleNewTweet} color="primary">
-                            Tweet!
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
+                        onClick={this.handleTweetBoxOpen}>
+                        Tweet
+                    </Button>
+                    <NewTweetDialog open={this.state.tweet_box_open} onChange={this.handleTweetBoxClose} />
                 </Toolbar>
             </AppBar>
         );

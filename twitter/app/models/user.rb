@@ -1,6 +1,7 @@
 class User < ApplicationRecord
     has_one :credential
     has_many :tweets,            dependent: :delete_all
+    has_many :retweets,            dependent: :delete_all
     has_many :notifications,     dependent: :delete_all
     has_many :conversation_participants,    dependent: :delete_all
     has_many :user_actions,      foreign_key: "from_user",    dependent: :delete_all

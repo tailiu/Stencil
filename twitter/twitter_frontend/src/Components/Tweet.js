@@ -6,6 +6,9 @@ import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
 import Moment from 'moment';
 import renderHTML from 'react-render-html';
 import IconButton from 'material-ui/IconButton';
+import axios from 'axios';
+import { withCookies, Cookies } from 'react-cookie';
+import { instanceOf } from 'prop-types';
 
 const styles = {
     tweet: {
@@ -27,6 +30,17 @@ const styles = {
         goto_icon:{
             height:15,
             opacity:0.7
+        },
+        action_icon: {
+            height:22,
+            // opacity:0.7
+        },
+        action_stat: {
+            display: "inline-block",
+            // color:"red",
+            opacity: 0.7,
+            fontSize: 15,
+            fontFamily: '"Courier New", Courier, "Lucida Sans Typewriter"'
         }
     }
 }
@@ -34,19 +48,114 @@ const styles = {
 
 class Tweet extends Component{
 
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+    };
+    
     constructor(props){
         super(props);
-        this.state = {
 
+        const { cookies } = this.props;
+        // console.log(props.tweet.tweet.id);
+        this.state = {
+            user_id: parseInt(cookies.get('user_id')),
+            user_name: cookies.get('user_name'),
+            user_handle: cookies.get('user_handle'),
+            liked: false,
+            retweeted: false,
+            replied: false,
+            likes:this.props.tweet.likes,
+            retweets:this.props.tweet.retweets,
+            replies:this.props.tweet.replies
         }
     }
 
-    like = e => {
-
+    componentWillMount(){
+        this.stats();
     }
 
-    retweet = e => {
-        
+    stats = () => {
+        axios.get(
+        'http://localhost:3000/tweets/stats',
+        {
+            params: {
+            'tweet_id': this.props.tweet.tweet.id, 
+            }
+        }
+        ).then(response => {
+        if(response.data.result.success){
+            this.setState({
+                likes: response.data.result.likes.length,
+                retweets: response.data.result.retweets.length,
+                replies: response.data.result.replies.length,
+            })
+
+            if(response.data.result.likes.indexOf(this.state.user_id)>=0){
+                this.setState({
+                    liked: true
+                })
+            }
+
+            if(response.data.result.retweets.indexOf(this.state.user_id)>=0){
+                this.setState({
+                    retweeted: true
+                })
+            }
+            
+            if(response.data.result.replies.indexOf(this.state.user_id)>=0){
+                this.setState({
+                    replied: true
+                })
+            }
+
+        }else{
+            console.log("Unable to fetch stats!")
+        }
+        })
+    }
+
+    like = (like,e) => {
+        axios.get(
+        'http://localhost:3000/tweets/like',
+        {
+            params: {
+            'user_id': this.state.user_id, 
+            'tweet_id': this.props.tweet.tweet.id, 
+            'like': like
+            }
+        }
+        ).then(response => {
+        if(response.data.result.success){
+            this.setState({
+                liked: like
+            })
+            this.stats();
+        }else{
+            console.log("Unable to like!")
+        }
+        })
+    }
+
+    retweet = (retweet, e) => {
+        axios.get(
+            'http://localhost:3000/tweets/retweet',
+            {
+                params: {
+                'user_id': this.state.user_id, 
+                'tweet_id': this.props.tweet.tweet.id, 
+                'retweet': retweet
+                }
+            }
+            ).then(response => {
+            if(response.data.result.success){
+                this.setState({
+                    retweeted: retweet
+                })
+                this.stats();
+            }else{
+                console.log("Unable to retweet!")
+            }
+            })
     }
 
     reply = e => {
@@ -57,7 +166,7 @@ class Tweet extends Component{
         Moment.locale('en');
 
         return(
-            <Card>
+            <Card id={this.props.tweet.tweet.id}>
                 <CardHeader
                     avatar={
                         <Avatar aria-label="Recipe" style={styles.tweet.avatar}>
@@ -76,21 +185,48 @@ class Tweet extends Component{
                 />
                 <CardContent>
                     <Typography component="p">
-                        {this.props.tweet.tweet.content}
+                    {this.props.tweet.tweet.content}
                     </Typography>
                 
                 </CardContent>
                 <CardActions>
                     <div style={styles.tweet.actions}>
-                        <Button size="small" onClick={this.like}>
-                            Like
-                        </Button>
-                        <Button size="small" onClick={this.retweet}>
-                            Retweet
-                        </Button>
-                        <Button size="small" onClick={this.reply}>
-                            Reply
-                        </Button>
+                        {this.state.liked? 
+                            <IconButton size="small" onClick={this.like.bind(this, false)}>
+                                <img style={styles.tweet.action_icon} alt="Unlike" src={require('../Assets/Images/liked-icon.png')} />
+                            </IconButton>
+                        :
+                        <IconButton size="small" onClick={this.like.bind(this, true)}>
+                                <img style={styles.tweet.action_icon} alt="Like" src={require('../Assets/Images/like-icon.png')} />
+                            </IconButton>
+                        }
+                        <div style={styles.tweet.action_stat}>
+                            {this.state.likes}
+                        </div>
+                        {this.state.retweeted?
+                            <IconButton size="small" onClick={this.retweet.bind(this, false)}>
+                                <img style={styles.tweet.action_icon} alt="UnRetweet" src={require('../Assets/Images/retweeted-icon.png')} />
+                            </IconButton>
+                        :
+                        <IconButton size="small" onClick={this.retweet.bind(this, true)}>
+                                <img style={styles.tweet.action_icon} alt="Retweet" src={require('../Assets/Images/retweet-icon.png')} />
+                            </IconButton>
+                        }
+                        <div style={styles.tweet.action_stat}>
+                            {this.state.retweets}
+                        </div>
+                        {this.state.replied?
+                            <IconButton size="small" onClick={this.reply}>
+                                <img style={styles.tweet.action_icon} alt="Reply" src={require('../Assets/Images/replied-icon.png')} />
+                            </IconButton>                        
+                        :
+                            <IconButton size="small" onClick={this.reply}>
+                                <img style={styles.tweet.action_icon} alt="Reply" src={require('../Assets/Images/reply-icon.png')} />
+                            </IconButton>
+                        }
+                        <div style={styles.tweet.action_stat}>
+                            {this.state.replies}
+                        </div>
                     </div>
                     <Typography component="p">
                         {Moment(this.props.tweet.tweet.created_at).format('MMMM Do, YYYY - h:mm A')}
@@ -101,4 +237,4 @@ class Tweet extends Component{
     }
 }
 
-export default Tweet;
+export default withCookies(Tweet);
