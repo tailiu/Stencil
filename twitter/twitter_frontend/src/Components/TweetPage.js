@@ -1,13 +1,12 @@
 import React, {Component, Fragment} from "react";
 import Grid from 'material-ui/Grid';
 import NavBar from './NavBar';
-import UserProfileBox from './UserProfileBox';
+
 import axios from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import MessageBar from './MessageBar';
 import TweetList from './TweetList';
-import Tweet from './Tweet';
 
 const styles = {
     grid : {
