@@ -13,6 +13,9 @@ import Snackbar from 'material-ui/Snackbar';
 import TitleBar from './TitleBar';
 import MessageBar from './MessageBar';
 
+import { withCookies, Cookies } from 'react-cookie';
+import { instanceOf } from 'prop-types';
+
 const styles = {
   logo: {
 		height: 150,
@@ -45,6 +48,10 @@ const styles = {
 
 class SignUp extends Component {
 
+  static propTypes = {
+    cookies: instanceOf(Cookies).isRequired
+  };
+
   constructor(props) {
     
     super(props);
@@ -61,6 +68,10 @@ class SignUp extends Component {
     }
   }
 
+  goToHome = () => {
+    this.props.history.push({pathname: '/home'});
+  }
+
   validateForm = () => {
     if(this.state.name && 
       this.state.email &&
@@ -71,6 +82,8 @@ class SignUp extends Component {
   }
 
   handleSignup = () =>  {
+    const { cookies } = this.props;
+
     if(!this.validateForm()){
       this.MessageBar.showSnackbar("Some fields are left empty!")
     }else{
@@ -89,9 +102,13 @@ class SignUp extends Component {
         if(!response.data.result.success){
           this.MessageBar.showSnackbar(response.data.result.error.message)
         }else{
-          this.MessageBar.showSnackbar("Signup Successful! Login Now!");
-          setTimeout(function() { 
-            this.goToLogin();
+          this.MessageBar.showSnackbar("Signup Successful! Welcome to Twitter!");
+          setTimeout(function() {
+            cookies.set('user_id',  response.data.result.user.id);
+            cookies.set('user_name', response.data.result.user.name);
+            cookies.set('user_handle', response.data.result.user.handle);
+            cookies.set('session_id', response.data.result.session_id);
+            this.goToHome();
           }.bind(this), 3000);
         }
       })
@@ -221,4 +238,4 @@ class SignUp extends Component {
   }
 }
 
-export default SignUp;
+export default withCookies(SignUp);

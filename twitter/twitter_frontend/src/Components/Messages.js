@@ -17,6 +17,7 @@ import MessageBar from './MessageBar';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import axios from 'axios';
+import ConversationList from './ConversationList'
 
 const styles = {
     grid : {
@@ -45,31 +46,6 @@ function generate(element) {
     );
 }
 
-class ConversationOverview extends Component {
-
-    constructor(props) {
-
-        super(props);
-
-        this.state = {
-        }
-    }
-
-    render () {
-        return (
-            <div>
-                <ListItem>
-                    <Avatar src={require('../Assets/Images/user_icon.png')} />
-                <ListItemText primary="Tai Cow" secondary="Jan 9, 2014" />
-                </ListItem>
-                <li>
-                    <Divider inset />
-                </li>
-            </div>
-        )
-    }
-
-}
 
 
 class Messages extends Component {
@@ -86,9 +62,30 @@ class Messages extends Component {
 
         this.state = {
             user_id : cookies.get('user_id'),
+            user_handle: cookies.get('user_handle'),
             new_message_box_open: false,
-            message_to: ''
+            message_to: '',
+            conversations: []
         }
+    }
+
+    componentDidMount() {
+        axios.get(
+            'http://localhost:3000/conversations/',
+            {
+                params: {
+                    'id': this.state.user_id
+                }
+            }
+        ).then(response => {
+            if(!response.data.result.success){
+                this.MessageBar.showSnackbar(response.data.result.error.message)
+            }else{
+                this.setState({
+                    'conversations': response.data.result.conversations
+                })
+            }
+        })
     }
 
     handleNewMessageBoxOpen = e => {
@@ -123,17 +120,16 @@ class Messages extends Component {
             raw_data[i] = raw_data[i].replace(/\s/g,''); // replace all spaces in handles
             participants.push(raw_data[i])
         }
+        participants.push(this.state.user_handle)
 
         axios.get(
             'http://localhost:3000/conversations/new',
             {
                 params: {
-                    'id': this.state.user_id,
                     'participants': participants
                 }
             }
         ).then(response => {
-            // console.log(response)
             if(!response.data.result.success){
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
@@ -203,29 +199,9 @@ class Messages extends Component {
                                 <CardContent>
                                     <Grid container direction="row" spacing={8} align="left">
                                         <Grid item xs={4}>
-                                            <List>
-                                                <ConversationOverview />
 
-                                                {/* <ListItem>
-                                                <Avatar
-                                                src={require('../Assets/Images/user_icon.png')}
-                                                />
-                                                <ListItemText primary="Miro Pasta" secondary="Jan 9, 2014" />
-                                                </ListItem>
-                                                <li>
-                                                <Divider inset />
-                                                </li>
-
-                                                <ListItem>
-                                                <Avatar
-                                                src={require('../Assets/Images/user_icon.png')}
-                                                />
-                                                <ListItemText primary="Major Tom" secondary="Jan 9, 2014" />
-                                                </ListItem>
-                                                <li>
-                                                <Divider inset />
-                                                </li> */}
-                                            </List>
+                                            <ConversationList conversations = {this.state.conversations} />
+                                            
                                         </Grid>
                                         <Grid item xs={8} >
                                             <Grid container direction="column">

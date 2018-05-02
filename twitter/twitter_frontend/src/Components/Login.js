@@ -71,8 +71,8 @@ class Login extends Component {
       else return false;
     }
 
-    goToHome = (user) => {
-      this.props.history.push({pathname: '/home', state: {user: user}});
+    goToHome = () => {
+      this.props.history.push({pathname: '/home'});
     }
   
     handleLogin = () =>  {
@@ -100,7 +100,7 @@ class Login extends Component {
             cookies.set('user_handle', response.data.result.user.handle);
             cookies.set('session_id', response.data.result.session_id);
             setTimeout(function() { 
-              this.goToHome(response.data.result.user);
+              this.goToHome();
             }.bind(this), 1000);
           }
         })
