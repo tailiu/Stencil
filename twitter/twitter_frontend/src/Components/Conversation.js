@@ -16,16 +16,15 @@ class Conversation extends Component {
 
     handleClick = e => {
         axios.get(
-            'http://localhost:3000/conversations/',
+            'http://localhost:3000/conversations' + this.props.conversation.conversation.id + '/messages',
             {
                 params: {
-                    'id': this.props.conversation.id,
                 }
             }
         ).then(response => {
             if(!response.data.result.success){
             }else{
-                
+
             }
         })
     } 
