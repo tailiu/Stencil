@@ -68,11 +68,17 @@ class TweetsController < ApplicationController
         else
             user = User.find(params[:user_id])
             # @user = User.where(id: params[:user_id]).first
-            tweets = user.tweets
+            retweets = user.retweets.pluck(:tweet_id)
+            tweets = user.tweets.pluck(:id)
+            alltweets = Tweet.where(:id => retweets+tweets).order('created_at DESC')
+            # tweets = user.tweets
+            # tweets = user.tweets.or(retweets)
+            # tweets = tweets.concat(retweets)
+            # tweets = tweets.order('created_at DESC')
             # @tweets = Tweet.where(user_id: params[:user_id]).order('created_at DESC')
             result["success"] = true
             tweets_set = []
-            for tweet in tweets do
+            for tweet in alltweets do
                 tweets_set.push({"tweet": tweet, "creator": tweet.user, "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count})
             end
             result["tweets"] = tweets_set
@@ -100,9 +106,11 @@ class TweetsController < ApplicationController
         else
             tweets_set = []
             user = User.find(params[:user_id])
+            retweets = user.retweets.order('created_at DESC').pluck(:tweet_id)
             following_users = UserAction.where(from_user_id: user.id, action_type: "follow").pluck(:to_user_id)
             allusers = following_users + [user.id]
-            alltweets = Tweet.where(:user_id => allusers).order('created_at DESC')
+            alltweets = Tweet.where(:user_id => allusers).or(Tweet.where(:id => retweets))
+            alltweets = alltweets.order('created_at DESC')
             for tweet in alltweets do
                 tweets_set.push({"tweet": tweet, "creator": tweet.user,  "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count})
             end
@@ -112,6 +120,13 @@ class TweetsController < ApplicationController
 
         render json: {result: result}
     end
+
+    def getRetweets(user_id)
+        user = User.find_by_id(user_id)
+        retweets = user.retweets.order('created_at DESC').pluck(:tweet_id)
+        return retweets
+    end
+
 
     def getTweet
         result = {
