@@ -24,7 +24,9 @@ import MessageInput from './MessageInput'
 const styles = {
     grid : {
         container : {
-            marginTop: 80
+            marginTop: 80,
+            height: 10,
+            overflow: true
         }
     },
     tweetButton: {

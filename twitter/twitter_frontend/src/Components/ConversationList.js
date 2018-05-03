@@ -2,6 +2,7 @@ import React, {Component, Fragment} from "react";
 import Divider from 'material-ui/Divider';
 import Conversation from './Conversation'
 import List from 'material-ui/List';
+// import Subheader from 'material-ui/Subheader';
 
 class ConversationList extends Component {
 
@@ -28,6 +29,7 @@ class ConversationList extends Component {
 
         return (
             <List>
+                {/* <Subheader inset={true}>Folders</Subheader> */}
                 {conversationList}
             </List>
         )

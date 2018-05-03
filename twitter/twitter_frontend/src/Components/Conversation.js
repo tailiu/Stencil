@@ -1,8 +1,21 @@
 import React, {Component, Fragment} from "react";
 import Avatar from 'material-ui/Avatar';
-import List, { ListItem, ListItemText, } from 'material-ui/List';
+import List, { 
+    ListItem, 
+    ListItemText, 
+    ListItemSecondaryAction,
+} from 'material-ui/List';
 import Moment from 'moment';
 import axios from 'axios';
+import IconButton from 'material-ui/IconButton';
+
+
+const styles = {
+    action_icon: {
+        height:22,
+        // opacity:0.7
+    }
+}
 
 class Conversation extends Component {
     constructor(props) {
@@ -41,6 +54,11 @@ class Conversation extends Component {
             <ListItem onClick={this.handleClick}>        
                 <Avatar src={require('../Assets/Images/user_icon.png')} />
                 <ListItemText primary={title} secondary={latestUpdatedDate} />
+                <ListItemSecondaryAction>
+                    <IconButton>
+                        <img style={styles.action_icon} src={require('../Assets/Images/message_action.png')} />
+                    </IconButton>
+                </ListItemSecondaryAction>
             </ListItem>
         )
     }
