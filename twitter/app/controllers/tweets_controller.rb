@@ -30,7 +30,7 @@ class TweetsController < ApplicationController
         else
             @user = User.find_by_id(params[:user_id])
             if @user != nil
-                @new_tweet = Tweet.new(content: params[:content], user_id: params[:user_id], reply_to_id: nil)
+                @new_tweet = Tweet.new(content: params[:content], user_id: params[:user_id], reply_to_id: params[:reply_id])
                 if @new_tweet.valid?
                     @new_tweet.save
                     @result["success"] = true

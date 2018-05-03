@@ -2,15 +2,15 @@ import React, {Component, Fragment} from "react";
 
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
-
 import Button from 'material-ui/Button';
 import Card, {CardContent, CardHeader } from 'material-ui/Card';
-
 import NavBar from './NavBar';
-
 import Checkbox from 'material-ui/Checkbox';
-
 import { FormGroup, FormControlLabel } from 'material-ui/Form';
+import MessageBar from './MessageBar';
+import axios from 'axios';
+import { instanceOf } from 'prop-types';
+import { withCookies, Cookies } from 'react-cookie';
 
 const styles = {
     grid : {
@@ -26,15 +26,47 @@ const styles = {
 
 class Settings extends Component {
 
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+      };
+
     constructor(props) {
 
         super(props);
+        const { cookies } = this.props;
         this.state = {
-            protected: true,
-            email: 'taicow@gmail.com',
-            handle: 'taicow',
-            password: '123',
+            user_id: cookies.get('user_id'),
+            protected: false,
+            email: '',
+            handle: '',
+            password: '',
         }
+    }
+
+    componentDidMount(){
+        this.getUserInfo();
+    }
+
+    getUserInfo(){
+        axios.get(
+          'http://localhost:3000/users/getUserInfo',
+          {
+            params: {
+              'user_id': this.state.user_id, 
+            }
+          }
+        ).then(response => {
+          if(response.data.result.success){
+            this.setState({
+                protected: response.data.result.user.protected,
+                email: response.data.result.email,
+                handle: response.data.result.user.handle,
+                password: "123456"
+            })
+          }else{
+            this.MessageBar.showSnackbar("User doesn't exist!");
+          }
+        })
     }
 
     handleProtectedCheck = (e) => {
@@ -46,19 +78,111 @@ class Settings extends Component {
         })
     }
 
-    handleEmailChange = (e) => {
+    handleEmailChange = (email, e) => {
         
-        console.log("Change Email")
+        axios.get(
+            'http://localhost:3000/users/updateEmail',
+            {
+              params: {
+                'user_id': this.state.user_id, 
+                'email': this.state.email, 
+              }
+            }
+          ).then(response => {
+              console.log(response)
+            if(response.data.result.success){
+              this.setState({
+                  email: response.data.result.user.email,
+              })
+              this.MessageBar.showSnackbar("Email changed!");
+            }else{
+              this.MessageBar.showSnackbar("Email can't be changed!");
+            }
+          })
     }
 
     handlePasswordChange = (e) => {
         
-        console.log("Change Password")
+        axios.get(
+            'http://localhost:3000/users/updatePassword',
+            {
+              params: {
+                'user_id': this.state.user_id, 
+                'password': this.state.password, 
+              }
+            }
+          ).then(response => {
+              console.log(response)
+            if(response.data.result.success){
+              this.MessageBar.showSnackbar("Password changed!");
+            }else{
+              this.MessageBar.showSnackbar("Password can't be changed!");
+            }
+          })
     }
 
     handleHandleChange = (e) => {
         
-        console.log("Change Handle")
+        axios.get(
+            'http://localhost:3000/users/updateHandle',
+            {
+              params: {
+                'user_id': this.state.user_id, 
+                'handle': this.state.handle, 
+              }
+            }
+          ).then(response => {
+              console.log(response)
+            if(response.data.result.success){
+              this.setState({
+                  handle: response.data.result.user.handle,
+              })
+              this.MessageBar.showSnackbar("Handle changed!");
+            }else{
+              this.MessageBar.showSnackbar("Handle can't be changed!");
+            }
+          })
+    }
+
+    onChangeHandle =(e)=> {
+        this.setState({
+            "handle": e.target.value
+        })
+    }
+
+    onChangeEmail =(e)=> {
+        this.setState({
+            "email": e.target.value
+        })
+    }
+
+    onChangePassword =(e)=> {
+        this.setState({
+            "password": e.target.value
+        })
+    }
+
+    onChangeProtected =(e)=> {
+
+        axios.get(
+            'http://localhost:3000/users/updateProtected',
+            {
+              params: {
+                'user_id': this.state.user_id, 
+                'protected': !this.state.protected, 
+              }
+            }
+          ).then(response => {
+              console.log(response)
+            if(response.data.result.success){
+              this.setState({
+                  protected: response.data.result.user.protected,
+              })
+              this.MessageBar.showSnackbar("Account protection changed!");
+            }else{
+              this.MessageBar.showSnackbar("Protected account can't be changed!");
+            }
+        })
     }
 
     render () {
@@ -83,7 +207,8 @@ class Settings extends Component {
                                             control={
                                                 <Checkbox
                                                 checked={this.state.protected}
-                                                onChange={this.handleProtectedCheck}
+                                                // onChange={this.handleProtectedCheck}
+                                                onChange={this.onChangeProtected}
                                                 name="protected"
                                                 value="checked"
                                                 />
@@ -99,6 +224,7 @@ class Settings extends Component {
                                             label="Email"
                                             margin="normal"
                                             value={this.state.email}
+                                            onChange={this.onChangeEmail}
                                         />
                                         <Button type="submit" style={styles.button} onClick={this.handleEmailChange}>
                                             Change Email
@@ -112,6 +238,7 @@ class Settings extends Component {
                                             label="Handle"
                                             margin="normal"
                                             value={this.state.handle}
+                                            onChange={this.onChangeHandle}
                                         />
                                         <Button type="submit" style={styles.button} onClick={this.handleHandleChange}>
                                             Change Handle
@@ -126,6 +253,7 @@ class Settings extends Component {
                                             margin="normal"
                                             type="password"
                                             value={this.state.password}
+                                            onChange={this.onChangePassword}
                                         />
                                         <Button type="submit" style={styles.button} onClick={this.handlePasswordChange}>
                                             Change Password
@@ -137,6 +265,7 @@ class Settings extends Component {
 
                 </Grid>
                 <Grid item xs={2}>
+                <MessageBar ref={instance => { this.MessageBar = instance; }}/>
                 </Grid>
             </Grid>
         </Fragment>
@@ -144,4 +273,4 @@ class Settings extends Component {
   }
 }
 
-export default Settings;
+export default withCookies(Settings);
