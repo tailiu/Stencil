@@ -16,9 +16,9 @@ class ConversationList extends Component {
 
     render () {
         const conversations = this.props.conversations
-        const conversationList = conversations.map((conversation, index) =>
+        const conversationList = conversations.map((conversation) =>
             <div key={conversation.conversation.id}>
-                <Conversation conversation = {conversation}/>
+                <Conversation conversation = {conversation} onConversationChange = {this.props.onConversationChange}/>
                 <li>
                     <Divider inset />
                 </li>

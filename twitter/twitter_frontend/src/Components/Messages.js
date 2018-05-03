@@ -18,6 +18,8 @@ import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import axios from 'axios';
 import ConversationList from './ConversationList'
+import MessageList from './MessageList'
+import MessageInput from './MessageInput'
 
 const styles = {
     grid : {
@@ -25,26 +27,11 @@ const styles = {
             marginTop: 80
         }
     },
-    messages: {
-        input: {
-            marginTop: 20,
-            marginLeft: 20,
-            width: "90%"
-        }
-    },
     tweetButton: {
         backgroundColor: "#00aced",
         color: "#fff"
     }
 };
-
-function generate(element) {
-    return [0, 1, 2, 3, 4].map(value =>
-      React.cloneElement(element, {
-        key: value,
-      }),
-    );
-}
 
 
 
@@ -65,7 +52,9 @@ class Messages extends Component {
             user_handle: cookies.get('user_handle'),
             new_message_box_open: false,
             message_to: '',
-            conversations: []
+            conversations: [],
+            current_conversation_id: '',
+            messages: ''
         }
     }
 
@@ -93,6 +82,31 @@ class Messages extends Component {
         })
     }
 
+    getMessageList = (current_conversation_id) => {
+        axios.get(
+            'http://localhost:3000/messages',
+            {
+                params: {
+                    "id": current_conversation_id
+                }
+            }
+        ).then(response => {
+            if(!response.data.result.success){
+            }else{
+                if (response.data.result.messages == undefined) {
+                    this.setState({
+                        messages: ""
+                    })
+                } else {
+                    this.setState({
+                        messages: response.data.result.messages
+                    })
+                }
+    
+            }
+        })
+    }
+
     handleNewMessageBoxOpen = e => {
         this.setState({new_message_box_open: true });
     }
@@ -111,7 +125,7 @@ class Messages extends Component {
         return true
     }
 
-    handleNewMessage = e => {
+    handleNewConversation = e => {
         if(!this.validateInput()){
             this.MessageBar.showSnackbar("Please input valid user handles")
             return
@@ -142,6 +156,17 @@ class Messages extends Component {
             }
         })
 
+    }
+
+    handleConversationChange = current_conversation_id => {
+        this.setState({
+            current_conversation_id: current_conversation_id
+        })
+        this.getMessageList(current_conversation_id)    
+    }
+
+    handleNewMessage = () => {
+        this.getMessageList(this.state.current_conversation_id)    
     }
 
     render () {
@@ -178,21 +203,21 @@ class Messages extends Component {
                                         {/* What's on your mind? */}
                                         </DialogContentText>
                                         <TextField
-                                        autoFocus
-                                        margin="dense"
-                                        id="tweet"
-                                        label="Send message to"
-                                        type="email"
-                                        value={this.state.message_to}
-                                        onChange={this.updateMessageTo}
-                                        fullWidth
+                                            autoFocus
+                                            margin="dense"
+                                            id="tweet"
+                                            label="Send message to"
+                                            type="email"
+                                            value={this.state.message_to}
+                                            onChange={this.updateMessageTo}
+                                            fullWidth
                                         />
                                     </DialogContent>
                                     <DialogActions>
                                         <Button onClick={this.handleNewMessageBoxClose} color="primary">
                                             Cancel
                                         </Button>
-                                        <Button onClick={this.handleNewMessage} color="primary">
+                                        <Button onClick={this.handleNewConversation} color="primary">
                                             New Message
                                         </Button>
                                     </DialogActions>
@@ -204,35 +229,20 @@ class Messages extends Component {
                                 <CardContent>
                                     <Grid container direction="row" spacing={8} align="left">
                                         <Grid item xs={4}>
-
-                                            <ConversationList conversations = {this.state.conversations} />
-                                            
+                                            <ConversationList 
+                                                conversations = {this.state.conversations}
+                                                onConversationChange =  {this.handleConversationChange}
+                                            />
                                         </Grid>
                                         <Grid item xs={8} >
-                                            <Grid container direction="column">
-                                                <Grid item>
-                                                    <List dense={true}>
-                                                        {generate(
-                                                        <ListItem>
-                                                            <ListItemText
-                                                            primary="Miro: Hey!"
-                                                            secondary="Jan 9, 2017"
-                                                            />
-                                                        </ListItem>,
-                                                        )}
-                                                    </List>
-                                                </Grid>
-                                            </Grid>
-                                            <Grid>
-                                                <TextField
-                                                    id="message"
-                                                    label="Message"
-                                                    margin="normal"
-                                                    fullWidth
-                                                    style={styles.messages.input}
-                                                    // onChange={this.handleChange}
-                                                />
-                                            </Grid>
+                                            <MessageList 
+                                                messages = {this.state.messages} 
+                                            />
+
+                                            <MessageInput 
+                                                current_conversation_id = {this.state.current_conversation_id}
+                                                onNewMessage = {this.handleNewMessage}
+                                            />
                                         </Grid>
                                     </Grid>                                
                                 </CardContent>

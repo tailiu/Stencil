@@ -15,18 +15,7 @@ class Conversation extends Component {
     }
 
     handleClick = e => {
-        axios.get(
-            'http://localhost:3000/conversations' + this.props.conversation.conversation.id + '/messages',
-            {
-                params: {
-                }
-            }
-        ).then(response => {
-            if(!response.data.result.success){
-            }else{
-
-            }
-        })
+        this.props.onConversationChange(this.props.conversation.conversation.id)
     } 
 
     getTitleForConversation = () => {
