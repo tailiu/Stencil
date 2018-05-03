@@ -9,6 +9,7 @@ import IconButton from 'material-ui/IconButton';
 import axios from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
+import NewTweetDialog from './NewTweetDialog';
 
 const styles = {
     tweet: {
@@ -66,13 +67,26 @@ class Tweet extends Component{
             replied: false,
             likes:this.props.tweet.likes,
             retweets:this.props.tweet.retweets,
-            replies:this.props.tweet.replies
+            replies:this.props.tweet.replies,
+            tweet_box_open: false,
+
         }
     }
 
-    componentWillMount(){
+    componentDidMount(){
         this.stats();
     }
+
+    handleTweetBoxClose = () => {
+        this.setState({ tweet_box_open: false });
+        this.stats();
+    };
+
+    handleTweetBoxOpen = () => {
+        console.log("HERE!");
+        this.setState({tweet_box_open: true });
+    };
+
 
     stats = () => {
         axios.get(
@@ -216,11 +230,11 @@ class Tweet extends Component{
                             {this.state.retweets}
                         </div>
                         {this.state.replied?
-                            <IconButton size="small" onClick={this.reply}>
+                            <IconButton size="small" onClick={this.handleTweetBoxOpen}>
                                 <img style={styles.tweet.action_icon} alt="Reply" src={require('../Assets/Images/replied-icon.png')} />
                             </IconButton>                        
                         :
-                            <IconButton size="small" onClick={this.reply}>
+                            <IconButton size="small" onClick={this.handleTweetBoxOpen}>
                                 <img style={styles.tweet.action_icon} alt="Reply" src={require('../Assets/Images/reply-icon.png')} />
                             </IconButton>
                         }
@@ -231,6 +245,7 @@ class Tweet extends Component{
                     <Typography component="p">
                         {Moment(this.props.tweet.tweet.created_at).format('MMMM Do, YYYY - h:mm A')}
                     </Typography>
+                    <NewTweetDialog open={this.state.tweet_box_open} onChange={this.handleTweetBoxClose} reply_id={this.props.tweet.tweet.id}/>
                 </CardActions>
             </Card>
         );

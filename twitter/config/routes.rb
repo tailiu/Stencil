@@ -14,6 +14,10 @@ Rails.application.routes.draw do
 	get 'users/updateBio', to: 'users#updateBio'
 	get 'users/checkFollow', to: 'user_actions#checkFollow'
 	get 'users/handleFollow', to: 'user_actions#handleFollow'
+	get 'users/updateEmail', to: 'users#updateEmail'
+	get 'users/updateHandle', to: 'users#updateHandle'
+	get 'users/updatePassword', to: 'users#updatePassword'
+	get 'users/updateProtected', to: 'users#updateProtected'
 
 	resources :users
 	resources :user_actions

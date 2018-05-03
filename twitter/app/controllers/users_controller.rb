@@ -86,6 +86,7 @@ class UsersController < ApplicationController
         }
         if @user != nil
             @result["user"] = @user
+            @result["email"] = @user.credential.email
             @result["user_stats"] = {
                 "tweets" => @user.tweets.size,
                 "followers" => UserAction.where(to_user_id: @user.id, action_type: "follow").count,
@@ -145,10 +146,10 @@ class UsersController < ApplicationController
         else
             user = Credential.where(user_id: params[:user_id]).first
             if user != nil
-                result["user"] = user
                 result["success"] = true
                 user.email = params[:email]
                 user.save
+                result["user"] = user
             else
                 result["success"] = false
                 result["error"]["message"] = "User doesn't exist!"
@@ -171,10 +172,10 @@ class UsersController < ApplicationController
         else
             user = User.find_by_id(params[:user_id])
             if user != nil
-                result["user"] = user
                 result["success"] = true
                 user.handle = params[:handle]
                 user.save
+                result["user"] = user
             else
                 result["success"] = false
                 result["error"]["message"] = "User doesn't exist!"
@@ -197,10 +198,10 @@ class UsersController < ApplicationController
         else
             user = Credential.where(user_id: params[:user_id]).first
             if user != nil
-                result["user"] = user
                 result["success"] = true
                 user.password = params[:password]
                 user.save
+                result["user"] = user
             else
                 result["success"] = false
                 result["error"]["message"] = "User doesn't exist!"
@@ -210,7 +211,34 @@ class UsersController < ApplicationController
         render json: {result: result}
     end
 
-    def markAsProtected
+    def updateProtected
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        if params[:user_id].nil? || params[:protected].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.find_by_id(params[:user_id])
+            if user != nil
+                result["success"] = true
+                if params[:protected] === "true"
+                    user.protected = true
+                else
+                    user.protected = false
+                end
+                user.save
+                result["user"] = user
+            else
+                result["success"] = false
+                result["error"]["message"] = "User doesn't exist!"
+            end
+        end
+        
+        render json: {result: result}
     end
 
 end

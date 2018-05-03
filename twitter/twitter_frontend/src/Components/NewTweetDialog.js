@@ -57,7 +57,7 @@ class NewTweetDialog extends Component {
         else return false;
     }
 
-    handleNewTweet = (e, reply_to) => {
+    handleNewTweet = (e) => {
         
         if(!this.validateForm()){
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
@@ -69,7 +69,7 @@ class NewTweetDialog extends Component {
               params: {
                 'content':this.state.tweet_content, 
                 'user_id': this.state.user_id,
-                'reply_to': reply_to
+                'reply_id': this.props.reply_id
               }
             }
           ).then(response => {
