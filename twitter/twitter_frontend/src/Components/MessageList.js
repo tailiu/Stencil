@@ -1,8 +1,7 @@
 import Grid from 'material-ui/Grid';
 import React, {Component} from "react";
-import List, { ListItem, ListItemText, } from 'material-ui/List';
+import List from 'material-ui/List';
 import Message from './Message'
-
 
 class MessageList extends Component {
 
@@ -12,7 +11,7 @@ class MessageList extends Component {
 
     render () {
         const messages = this.props.messages
-        var messageList = <div></div>
+        var messageList = ''
         if(Array.isArray(messages)) {
             messageList = messages.map((message) =>
                 <div key={message.id}>
@@ -22,15 +21,9 @@ class MessageList extends Component {
         } 
 
         return (
-            <div>
-                <Grid container direction="column">
-                    <Grid item>
-                        <List dense={true}>
-                            {messageList}
-                        </List>
-                    </Grid>
-                </Grid>
-            </div>
+            <List dense={true}>
+                {messageList}
+            </List>
         )   
     }
 }
