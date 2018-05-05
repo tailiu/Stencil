@@ -1,5 +1,4 @@
-import Grid from 'material-ui/Grid';
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import axios from 'axios';
 import TextField from 'material-ui/TextField';
 import Button from 'material-ui/Button';
@@ -22,7 +21,6 @@ const styles = {
         variant: "raised",
         display: "inline-block",
         float: "right",
-        display: "inline-block",
         marginRight: 30
     }
 }

@@ -1,6 +1,5 @@
-import Grid from 'material-ui/Grid';
 import React, {Component} from "react";
-import List, { ListItem, ListItemText, } from 'material-ui/List';
+import { ListItem, ListItemText, } from 'material-ui/List';
 import Moment from 'moment';
 
 class Message extends Component {

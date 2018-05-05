@@ -13,14 +13,17 @@ class ConversationList extends Component {
 
         this.state = {
         }
-        
     }
 
     render () {
         const conversations = this.props.conversations
         const conversationList = conversations.map((conversation) =>
             <div key={conversation.conversation.id}>
-                <Conversation conversation = {conversation} onConversationChange = {this.props.onConversationChange}/>
+                <Conversation 
+                    conversation = {conversation} 
+                    onConversationChange = {this.props.onConversationChange}
+                    selected={this.props.current_conversation_id}
+                />
                 <li>
                     <Divider inset />
                 </li>
@@ -29,7 +32,7 @@ class ConversationList extends Component {
 
 
         return (
-            <MenuList subheader={<ListSubheader>Conversations</ListSubheader>} >
+            <MenuList >
                 {conversationList}
             </MenuList>
         )

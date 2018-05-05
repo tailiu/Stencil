@@ -1,11 +1,9 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
 import Divider from 'material-ui/Divider';
-import Card, { CardContent, CardHeader } from 'material-ui/Card';
 import NavBar from './NavBar';
 import Avatar from 'material-ui/Avatar';
-import List, { ListItem, ListItemText, } from 'material-ui/List';
 import Button from 'material-ui/Button';
 import Dialog, {
     DialogActions,
@@ -96,10 +94,16 @@ class MessagePage extends Component {
             if(!response.data.result.success){
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
+                const conversations = response.data.result.conversations
+                const current_conversation_id = conversations[0].conversation.id
                 this.setState({
-                    'conversations': response.data.result.conversations
+                    'conversations': conversations,
+                    'current_conversation_id': current_conversation_id
                 });
+
                 if (callback) callback()
+
+                this.getMessageList(current_conversation_id)
             }
         })
     }
@@ -223,6 +227,7 @@ class MessagePage extends Component {
                             <ConversationList 
                                 conversations = {this.state.conversations}
                                 onConversationChange =  {this.handleConversationChange}
+                                current_conversation_id = {this.state.current_conversation_id}
                             />
                         </Paper>
                     </Grid>
