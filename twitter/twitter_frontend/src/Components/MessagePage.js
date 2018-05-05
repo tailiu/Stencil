@@ -17,24 +17,44 @@ import MessageBar from './MessageBar';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import axios from 'axios';
-import ConversationList from './ConversationList'
-import MessageList from './MessageList'
-import MessageInput from './MessageInput'
+import ConversationList from './ConversationList';
+import MessageList from './MessageList';
+import MessageInput from './MessageInput';
+import Paper from 'material-ui/Paper';
+import Typography from 'material-ui/Typography';
 
 const styles = {
-    grid : {
-        container: {
-            marginTop: 80
-        }
+    headerContainer: {
+        marginTop: 80
     },
-    
-    card: {
-        height: "500px",
-        overflowY: 'auto',
-        tweetButton: {
-            backgroundColor: "#00aced",
-            color: "#fff"
-        },
+    header: {
+        padding: 20,
+        height: 35
+    },
+    headline: {
+        float: "left"
+    },
+    newMessageButton: {
+        backgroundColor: "#00aced",
+        color: "#fff",
+        variant: "raised",
+        display: "inline-block",
+        float: "right"
+    },
+    conversationListContainer: {
+        height: "70vh",
+        overflow: "auto"
+    },
+    messageListContainer: {
+        height: "70vh",
+        overflow: "auto"
+    },
+    messageList: {
+        height: "58vh",
+        overflow: "auto"
+    },
+    messageInput: {
+        
     }
 };
 
@@ -176,89 +196,90 @@ class MessagePage extends Component {
 
     render () {
         return (
-            <Fragment>
+            <div>
                 <MessageBar ref={instance => { this.MessageBar = instance; }}/>
+
                 <NavBar />
-                <Grid style={styles.grid.container} container spacing={24} >
-                    
+
+                <Grid style={styles.headerContainer} container spacing={24} >
                     <Grid item xs={1}>
                     </Grid>
                     <Grid item xs={10} >
-                        <Grid direction="column" align="left">
-                            <Grid item>
-                            <Card style={styles.card}>
-                                <CardHeader
-                                    title="Messages"
-
-                                    action={
-                                        <Button 
-                                        style={styles.card.tweetButton} 
-                                        onClick={this.handleNewMessageBoxOpen}>New Message</Button>
-                                    }
-                                />
-
-                                <Dialog
-                                    open={this.state.new_message_box_open}
-                                    onClose={this.handleNewMessageBoxClose}
-                                    aria-labelledby="form-dialog-title"
-                                    >
-                                    <DialogTitle id="form-dialog-title">New Message</DialogTitle>
-                                    <DialogContent>
-                                        <DialogContentText>
-                                        {/* What's on your mind? */}
-                                        </DialogContentText>
-                                        <TextField
-                                            autoFocus
-                                            margin="dense"
-                                            id="tweet"
-                                            label="Send message to"
-                                            type="email"
-                                            value={this.state.message_to}
-                                            onChange={this.updateMessageTo}
-                                            fullWidth
-                                        />
-                                    </DialogContent>
-                                    <DialogActions>
-                                        <Button onClick={this.handleNewMessageBoxClose} color="primary">
-                                            Cancel
-                                        </Button>
-                                        <Button onClick={this.handleNewConversation} color="primary">
-                                            New Message
-                                        </Button>
-                                    </DialogActions>
-                                </Dialog>
-
-
-                                <hr />
-
-                                <CardContent>
-                                    <Grid container direction="row" spacing={8} align="left">
-                                        <Grid item xs={4}>
-                                            <ConversationList 
-                                                conversations = {this.state.conversations}
-                                                onConversationChange =  {this.handleConversationChange}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={8} >
-                                            <MessageList 
-                                                messages = {this.state.messages} 
-                                            />
-
-                                            <MessageInput 
-                                                current_conversation_id = {this.state.current_conversation_id}
-                                                onNewMessage = {this.handleNewMessage}
-                                            />
-                                        </Grid>
-                                    </Grid>                                
-                                </CardContent>
-                                </Card>
-                            </Grid>
-                        </Grid>
+                        <Paper style={styles.header}>
+                            <Typography  style={styles.headline} variant="headline" component="h4">
+                                Messages
+                            </Typography>
+                            <Button  style={styles.newMessageButton} onClick={this.handleNewMessageBoxOpen}>
+                                New Message
+                            </Button>
+                        </Paper>
                     </Grid>
                     <Grid item xs={1}>
                     </Grid>
-            </Grid>
-        </Fragment>
+                </Grid>
+
+                <Grid container spacing={24} >
+                    <Grid item xs={1}>
+                    </Grid>
+                    <Grid item xs={3}>
+                        <Paper style={styles.conversationListContainer} >
+                            <ConversationList 
+                                conversations = {this.state.conversations}
+                                onConversationChange =  {this.handleConversationChange}
+                            />
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={7} >
+                        <Paper style={styles.messageListContainer} >
+                            <div style={styles.messageList}>
+                                <MessageList 
+                                    messages = {this.state.messages} 
+                                />
+                            </div>
+                            <Divider light />
+                            <div style={styles.messageInput}>
+                                <MessageInput 
+                                    current_conversation_id = {this.state.current_conversation_id}
+                                    onNewMessage = {this.handleNewMessage}
+                                />
+                            </div>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={1}>
+                    </Grid>
+                </Grid>
+
+                 <Dialog
+                    open={this.state.new_message_box_open}
+                    onClose={this.handleNewMessageBoxClose}
+                    aria-labelledby="form-dialog-title"
+                    >
+                    <DialogTitle id="form-dialog-title">New Message</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                        {/* What's on your mind? */}
+                        </DialogContentText>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="tweet"
+                            label="Send message to"
+                            type="email"
+                            value={this.state.message_to}
+                            onChange={this.updateMessageTo}
+                            fullWidth
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.handleNewMessageBoxClose} color="primary">
+                            Cancel
+                        </Button>
+                        <Button onClick={this.handleNewConversation} color="primary">
+                            New Message
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+        </div>
     );
   }
 }

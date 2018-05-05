@@ -7,12 +7,23 @@ import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 
 const styles = {
-    messages: {
-        input: {
-            marginTop: 20,
-            marginLeft: 20,
-            width: "90%"
-        }
+    inputContainer: {
+        marginTop: 25
+    },
+    messagesInput: {
+        width: "80%",
+        float: "left",
+        marginLeft: 30,
+        backgroundColor: "#fff",
+    },
+    sendMessageButton: {
+        backgroundColor: "#00aced",
+        color: "#fff",
+        variant: "raised",
+        display: "inline-block",
+        float: "right",
+        display: "inline-block",
+        marginRight: 30
     }
 }
 class MessageInput extends Component {
@@ -66,21 +77,19 @@ class MessageInput extends Component {
 
     render() {
         return (
-            <div>
-                <Grid>
-                    <TextField
-                        id="message"
-                        margin="normal"
-                        fullWidth
-                        style={styles.messages.input}
-                        value={this.state.value}
-                        onChange={this.handleChange}
-                        onKeyPress={this.catchReturn}
-                    />
-                    <Button onClick={this.handleNewMessage} color="primary">
-                        Send
-                    </Button>
-                </Grid>
+            <div style={styles.inputContainer}>
+                <TextField
+                    id="message"
+                    margin="normal"
+                    fullWidth
+                    style={styles.messagesInput}
+                    value={this.state.value}
+                    onChange={this.handleChange}
+                    onKeyPress={this.catchReturn}
+                />
+                <Button style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary">
+                    Send
+                </Button>
             </div>
         )
     }
