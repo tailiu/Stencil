@@ -1,5 +1,5 @@
 import Grid from 'material-ui/Grid';
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import List, { ListItem, ListItemText, } from 'material-ui/List';
 import Moment from 'moment';
 

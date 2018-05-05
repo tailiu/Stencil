@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import Avatar from 'material-ui/Avatar';
 import List, { 
     ListItem, 
@@ -8,7 +8,8 @@ import List, {
 import Moment from 'moment';
 import axios from 'axios';
 import IconButton from 'material-ui/IconButton';
-
+import MoreVertIcon from '@material-ui/icons/MoreVert';
+import ConversationInfo from './ConversationInfo'
 
 const styles = {
     action_icon: {
@@ -51,13 +52,11 @@ class Conversation extends Component {
         const latestUpdatedDate = this.getLatestUpdatedDateForConversation()
 
         return (
-            <ListItem onClick={this.handleClick}>        
+            <ListItem button onClick={this.handleClick}>        
                 <Avatar src={require('../Assets/Images/user_icon.png')} />
                 <ListItemText primary={title} secondary={latestUpdatedDate} />
                 <ListItemSecondaryAction>
-                    <IconButton>
-                        <img style={styles.action_icon} src={require('../Assets/Images/message_action.png')} />
-                    </IconButton>
+                    <MoreVertIcon />
                 </ListItemSecondaryAction>
             </ListItem>
         )

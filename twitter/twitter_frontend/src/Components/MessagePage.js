@@ -23,21 +23,24 @@ import MessageInput from './MessageInput'
 
 const styles = {
     grid : {
-        container : {
-            marginTop: 80,
-            height: 10,
-            overflow: true
+        container: {
+            marginTop: 80
         }
     },
-    tweetButton: {
-        backgroundColor: "#00aced",
-        color: "#fff"
+    
+    card: {
+        height: "500px",
+        overflowY: 'auto',
+        tweetButton: {
+            backgroundColor: "#00aced",
+            color: "#fff"
+        },
     }
 };
 
 
 
-class Messages extends Component {
+class MessagePage extends Component {
 
     static propTypes = {
         cookies: instanceOf(Cookies).isRequired
@@ -180,16 +183,16 @@ class Messages extends Component {
                     
                     <Grid item xs={1}>
                     </Grid>
-                    <Grid item xs={10}>
-                        <Grid container direction="column" align="left">
+                    <Grid item xs={10} >
+                        <Grid direction="column" align="left">
                             <Grid item>
-                            <Card>
+                            <Card style={styles.card}>
                                 <CardHeader
                                     title="Messages"
 
                                     action={
                                         <Button 
-                                        style={styles.tweetButton} 
+                                        style={styles.card.tweetButton} 
                                         onClick={this.handleNewMessageBoxOpen}>New Message</Button>
                                     }
                                 />
@@ -260,4 +263,4 @@ class Messages extends Component {
   }
 }
 
-export default withCookies(Messages);
+export default withCookies(MessagePage);

@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import Divider from 'material-ui/Divider';
 import Conversation from './Conversation'
 import List from 'material-ui/List';
