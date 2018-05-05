@@ -1,8 +1,9 @@
 import React, {Component} from "react";
 import Divider from 'material-ui/Divider';
 import Conversation from './Conversation'
-import List from 'material-ui/List';
-// import Subheader from 'material-ui/Subheader';
+import List, {ListSubheader} from 'material-ui/List';
+import { MenuList, MenuItem } from 'material-ui/Menu';
+
 
 class ConversationList extends Component {
 
@@ -28,10 +29,9 @@ class ConversationList extends Component {
 
 
         return (
-            <List>
-                {/* <Subheader inset={true}>Folders</Subheader> */}
+            <MenuList subheader={<ListSubheader>Conversations</ListSubheader>} >
                 {conversationList}
-            </List>
+            </MenuList>
         )
     }
 

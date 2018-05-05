@@ -52,9 +52,6 @@ const styles = {
     messageList: {
         height: "58vh",
         overflow: "auto"
-    },
-    messageInput: {
-        
     }
 };
 
@@ -237,7 +234,7 @@ class MessagePage extends Component {
                                 />
                             </div>
                             <Divider light />
-                            <div style={styles.messageInput}>
+                            <div>
                                 <MessageInput 
                                     current_conversation_id = {this.state.current_conversation_id}
                                     onNewMessage = {this.handleNewMessage}
