@@ -33,13 +33,16 @@ class NewConversation extends Component {
         })
     }
 
-    validateInput = e => {
+    validateInput = () => {
+        if (this.state.message_to.indexOf("@") == -1) {
+            return false
+        }
         return true
     }
 
     handleNewConversation = e => {
         if(!this.validateInput()){
-            this.props.messageBar.showSnackbar("Please input valid user handles")
+            this.props.messageBar.showSnackbar("Please input valid user handles (Ex: @userhandle)")
             return
         }
 
@@ -49,7 +52,9 @@ class NewConversation extends Component {
         const participants = []
         for (var i in raw_data) {
             raw_data[i] = raw_data[i].replace(/\s/g,''); // replace all spaces in handles
-            participants.push(raw_data[i])
+            if (raw_data[i] != this.state.user_handle) {
+                participants.push(raw_data[i])
+            }
         }
         participants.push(this.state.user_handle)
 
@@ -62,7 +67,7 @@ class NewConversation extends Component {
             }
         ).then(response => {
             if(!response.data.result.success){
-                this.props.messageBar.showSnackbar(response.data.result.error.message)
+                this.props.messageBar.showSnackbar(response.data.result.error)
             }else{
                 this.setState({
                     message_to: ''

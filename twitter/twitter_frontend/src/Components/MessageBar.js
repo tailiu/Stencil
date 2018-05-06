@@ -28,14 +28,14 @@ class MessageBar extends Component {
         return(
             <Snackbar
                 anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'center',
+                    vertical: 'top',
+                    horizontal: 'center',
                 }}
                 open={this.state.show}
-                autoHideDuration={6000}
+                autoHideDuration={3000}
                 // onClose={this.handleClose}
                 SnackbarContentProps={{
-                'aria-describedby': 'message-id',
+                    'aria-describedby': 'message-id',
                 }}
                 message={<span id="message-id">{this.state.message}</span>}
                 action={[

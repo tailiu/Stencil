@@ -1,14 +1,12 @@
 class ConversationsController < ApplicationController
-    def initialize
-        @result = {
+    def index 
+        result = {
             # params: params,
             "success" => true,
             "error" => {
             }
         }
-    end
 
-    def index 
         user = User.find(params[:id])
 
         conversation_participants = user.conversation_participants
@@ -31,22 +29,42 @@ class ConversationsController < ApplicationController
             conversations.push(conversation)
         end
 
-        @result["conversations"] = conversations
+        result["conversations"] = conversations
         
-        render json: {result: @result}
+        render json: {result: result}
     end
 
     def new
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+
         participants = params[:participants]
 
-        conversation = Conversation.create()
+        userArr = []
+        error = false
 
-        for participant in participants do
+        for participant in participants do 
             user = User.find_by(handle: participant)
-            conversation_participant = user.conversation_participants.create(conversation_id: conversation.id)
+            if user == nil
+                result['success'] = false
+                result['error'] = 'Invalid handle'
+                break
+            end
+            userArr.push(user)
         end
 
-        render json: {result: @result}
+        if result['success']
+            conversation = Conversation.create()
+            for user in userArr do
+                conversation_participant = user.conversation_participants.create(conversation_id: conversation.id)
+            end
+        end
+
+        render json: {result: result}
     end
 
 
