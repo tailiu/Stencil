@@ -208,6 +208,32 @@ class TweetsController < ApplicationController
         render json: {result: result}
     end
 
+    def delete
+        result = {
+            "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:tweet_id].nil? || params[:user_id].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.find_by_id(params[:user_id])
+            tweet = Tweet.find_by_id(params[:tweet_id])
+            if !user.nil? && !tweet.nil?
+                Tweet.destroy(tweet.id)
+                result["success"] = true
+            else
+                result["success"] = false
+                result["error"]["message"] = "User/Tweet don't exist!"
+            end
+        end
+
+        render json: {result: result}
+    end
+
 
     def like
         result = {

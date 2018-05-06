@@ -184,6 +184,24 @@ class Tweet extends Component{
             })
     }
 
+    delete = (e) => {
+        axios.get(
+            'http://localhost:3000/tweets/delete',
+            {
+                params: {
+                'user_id': this.state.user_id, 
+                'tweet_id': this.props.tweet.tweet.id, 
+                }
+            }
+            ).then(response => {
+            if(response.data.result.success){
+                window.location.reload();
+            }else{
+                console.log("Unable to retweet!")
+            }
+            })
+    }
+
     reply = e => {
         
     }
@@ -266,6 +284,11 @@ class Tweet extends Component{
                         <div style={styles.tweet.action_stat}>
                             {this.state.replies}
                         </div>
+                        {this.state.user_id === this.props.tweet.creator.id &&
+                            <IconButton size="small" onClick={this.delete}>
+                                <img style={styles.tweet.action_icon} alt="Reply" src={require('../Assets/Images/delete-icon.png')} />
+                            </IconButton>
+                        }
                     </div>
                     <Typography component="p">
                         {Moment(this.props.tweet.tweet.created_at).format('MMMM Do, YYYY - h:mm A')}
