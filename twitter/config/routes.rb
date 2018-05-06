@@ -13,6 +13,8 @@ Rails.application.routes.draw do
 	get 'users/getUserInfo', to: 'users#getUserInfo'
 	get 'users/updateBio', to: 'users#updateBio'
 	get 'users/checkFollow', to: 'user_actions#checkFollow'
+	get 'users/checkMute', to: 'user_actions#checkMute'
+	get 'users/checkBlock', to: 'user_actions#checkBlock'
 	get 'users/handleMute', to: 'user_actions#handleMute'
 	get 'users/handleBlock', to: 'user_actions#handleBlock'
 	get 'users/handleFollow', to: 'user_actions#handleFollow'
