@@ -64,6 +64,7 @@ class NewTweetDialog extends Component {
             mediaUrl: '../Assets/Images/liked-icon.png',
             imagePreviewUrl: '',
             file: '',
+            media_type: 'text',
         }
 
     }
@@ -92,15 +93,13 @@ class NewTweetDialog extends Component {
     fileUpload(){
         const url = 'http://localhost:3000/tweets/newf';
         const formData = new FormData();
-        let type = "text"
         let file = false
         if (this.state.hasMedia){
             file = this.state.file
-            type = "photo"
         }
         formData.append('content', this.state.tweet_content);
         formData.append('user_id',this.state.user_id);
-        formData.append('type', type);
+        formData.append('type', this.state.media_type);
         formData.append('file',file);
         formData.append('reply_id', this.props.reply_id);
         const config = {
@@ -116,7 +115,7 @@ class NewTweetDialog extends Component {
         if(!this.validateForm()){
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
-            this.fileUpload().then((response)=>{
+            this.fileUpload(e).then((response)=>{
                 console.log(response.data);
                 console.log("axios:"+JSON.stringify(response))
                 if(!response.data.result.success){
@@ -149,19 +148,17 @@ class NewTweetDialog extends Component {
         }
         e.preventDefault();
     }
-
-    onFileLoad = (e, file) => {
-        console.log(e.target.result, file.name);
-    }
-
-    _handleSubmit =(e)=> {
-        e.preventDefault();
-        // TODO: do something with -> this.state.file
-        console.log('handle uploading-', this.state.file);
-      }
     
     _handleImageChange =(e)=> {
         e.preventDefault();
+
+        console.log(e.target.files[0].type)
+
+        if(e.target.files[0].type.indexOf("image") >= 0){
+            this.state.media_type = "photo"
+        } else if (e.target.files[0].type.indexOf("video") >= 0) {
+            this.state.media_type = "video"
+        }
     
         let reader = new FileReader();
         let file = e.target.files[0];
@@ -202,14 +199,22 @@ class NewTweetDialog extends Component {
                         onChange={this.updateTweetContent}
                         fullWidth
                         />
-                        {this.state.hasMedia?
+                        {this.state.hasMedia &&
                             <Card style={styles.upload.area}>
-                                <CardContent>
-                                    <img style={styles.upload.image} src={this.state.imagePreviewUrl} />
-                                </CardContent>
+                                {this.state.media_type === "image" &&
+                                    <CardContent>
+                                        <img style={styles.upload.image} src={this.state.imagePreviewUrl} />
+                                    </CardContent>
+                                }
+                                {this.state.media_type === "video" &&
+                                    <CardContent>
+                                        <video width="320" height="240" controls>
+                                            <source src={this.state.imagePreviewUrl} type="video/mp4"/>
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </CardContent>
+                                }
                             </Card>
-                        :
-                        <div></div>
                         }
                     </DialogContent>
                     <DialogActions>

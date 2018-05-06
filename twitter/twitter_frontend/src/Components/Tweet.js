@@ -44,10 +44,11 @@ const styles = {
             fontFamily: '"Courier New", Courier, "Lucida Sans Typewriter"'
         },
         image: {
-            height: 300,
+            height: 240,
             textAlign: "center"
         },
         image_area: {
+            height: 240,
             alignItems: "center",
             textAlign: "center",
             marginTop: 20,
@@ -212,23 +213,18 @@ class Tweet extends Component{
                     <Typography component="p">
                     {this.props.tweet.tweet.content}
                     </Typography>
-                    {this.props.tweet.tweet.media_type === "photo"?
+                    {this.props.tweet.tweet.media_type === "photo" &&
                         <div style={styles.tweet.image_area}>
-
-                                <img style={styles.tweet.image} src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} />
-
+                            <img style={styles.tweet.image} src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} />
                         </div>
-                    :
-                        <div></div>
                     }
-                    {this.props.tweet.tweet.media_type === "video"?
+                    {this.props.tweet.tweet.media_type === "video" &&
                         <div style={styles.tweet.image_area}>
-                                {this.state.base_url+this.props.tweet.tweet.tweet_media.url}
-                                {/* <img style={styles.tweet.image} src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} /> */}
-
+                            <video height="240" controls>
+                                <source src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} type="video/mp4"/>
+                                Your browser does not support the video tag.
+                            </video>
                         </div>
-                    :
-                        <div></div>
                     }
                 
                 </CardContent>
