@@ -20,7 +20,7 @@ function TweetList(props) {
             <Grid item>
                 <Paper elevation={2} style={styles.paper}>
                     <Typography variant="headline" component="h3">
-                        No Tweets Yet
+                        Tweet NOW!
                     </Typography>
                 </Paper>
             </Grid>
