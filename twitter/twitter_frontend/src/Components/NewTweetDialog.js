@@ -201,7 +201,7 @@ class NewTweetDialog extends Component {
                         />
                         {this.state.hasMedia &&
                             <Card style={styles.upload.area}>
-                                {this.state.media_type === "image" &&
+                                {this.state.media_type === "photo" &&
                                     <CardContent>
                                         <img style={styles.upload.image} src={this.state.imagePreviewUrl} />
                                     </CardContent>
