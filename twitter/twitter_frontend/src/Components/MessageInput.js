@@ -5,7 +5,7 @@ import Button from 'material-ui/Button';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 
-const styles = {
+var styles = {
     inputContainer: {
         marginTop: 25
     },
@@ -14,16 +14,9 @@ const styles = {
         float: "left",
         marginLeft: 30,
         backgroundColor: "#fff",
-    },
-    sendMessageButton: {
-        backgroundColor: "#00aced",
-        color: "#fff",
-        variant: "raised",
-        display: "inline-block",
-        float: "right",
-        marginRight: 30
     }
 }
+
 class MessageInput extends Component {
 
     static propTypes = {
@@ -37,7 +30,7 @@ class MessageInput extends Component {
 
         this.state = {
             value: '',
-            user_id: cookies.get('user_id'),
+            user_id: cookies.get('user_id')
         }
     }
 
@@ -67,13 +60,28 @@ class MessageInput extends Component {
     }
 
     catchReturn = (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && (this.state.value != '')) {
             this.handleNewMessage()
         }
         
     }
 
     render() {
+        var disabled = true
+
+        if (this.state.value != '') {
+            disabled = false
+        }
+        
+        styles.sendMessageButton = {
+            backgroundColor: disabled ? '#BBDEFB' : "#00aced",
+            color: "#fff",
+            variant: "raised",
+            display: "inline-block",
+            float: "right",
+            marginRight: 30
+        }
+
         return (
             <div style={styles.inputContainer}>
                 <TextField
@@ -85,7 +93,7 @@ class MessageInput extends Component {
                     onChange={this.handleChange}
                     onKeyPress={this.catchReturn}
                 />
-                <Button style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary">
+                <Button style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
                     Send
                 </Button>
             </div>

@@ -112,13 +112,7 @@ class MessagePage extends Component {
 
                 if(cb) {
                     cb.forEach(f => {
-                        if (f.name == 'setCurrentConversationID') {
-                            f(conversation_id)
-                        } else if (f.name == 'getMessageList') {
-                            f(conversation_id)
-                        } else {
-                            f()
-                        }
+                        f(conversation_id)
                     })
                 }
                 
