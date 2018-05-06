@@ -79,10 +79,20 @@ class MessagePage extends Component {
     }
 
     componentDidMount() {
-        this.getConversationList()
+        this.getConversationList(this.setCurrentConversationID, this.getMessageList)
+        this.timer = setInterval(()=> this.periodicActions(), 3000);
     }
 
-    getConversationList = callback => {
+    componentWillUnmount() {
+        this.timer = null;
+    }
+
+    periodicActions = () => {
+        this.getConversationList()
+        this.getMessageList(this.state.current_conversation_id)
+    }
+
+    getConversationList = (...cb) => {
         axios.get(
             'http://localhost:3000/conversations/',
             {
@@ -95,16 +105,30 @@ class MessagePage extends Component {
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
                 const conversations = response.data.result.conversations
-                const current_conversation_id = conversations[0].conversation.id
+                const conversation_id = conversations[0].conversation.id
                 this.setState({
                     'conversations': conversations,
-                    'current_conversation_id': current_conversation_id
                 });
 
-                if (callback) callback()
-
-                this.getMessageList(current_conversation_id)
+                if(cb) {
+                    cb.forEach(f => {
+                        if (f.name == 'setCurrentConversationID') {
+                            f(conversation_id)
+                        } else if (f.name == 'getMessageList') {
+                            f(conversation_id)
+                        } else {
+                            f()
+                        }
+                    })
+                }
+                
             }
+        })
+    }
+
+    setCurrentConversationID = (current_conversation_id) => {
+        this.setState({
+            'current_conversation_id': current_conversation_id
         })
     }
 
