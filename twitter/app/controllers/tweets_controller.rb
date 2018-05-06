@@ -1,4 +1,9 @@
+# encoding: UTF-8
+
 class TweetsController < ApplicationController
+
+    protect_from_forgery prepend: true
+
     def index
         if params[:type] == "tweet_num"
             @user = User.find(params[:id])
@@ -14,6 +19,50 @@ class TweetsController < ApplicationController
     end
 
     def new
+        @result = {
+            # "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:content].nil? || params[:user_id].nil? || params[:type].nil?
+            @result["success"] = false
+            @result["error"]["message"] = "Incomplete params!"
+        elsif params[:content].empty?
+            @result["success"] = false
+            @result["error"]["message"] = "Tweet can't be empty!"
+        else
+            @user = User.find_by_id(params[:user_id])
+            if @user != nil
+                @new_tweet = Tweet.new(content: params[:content], user_id: params[:user_id], reply_to_id: params[:reply_id], media_type: params[:type])
+                if @new_tweet.valid?
+                    if params[:file] != "false"
+                        @result["file"] = true
+                        @new_tweet.media_type = params[:type]
+                        @new_tweet.tweet_media = params[:file]
+                    else
+                        @result["file"] = false
+                    end
+                    @new_tweet.save
+                    @result["success"] = true
+                    @result["tweet"] = @new_tweet
+                else
+                    puts @new_tweet.errors.messages
+                    @result["success"] = false
+                    @result["error"]["message"] = @new_tweet.errors.messages
+                end
+            else
+                @result["success"] = false
+                @result["error"]["message"] = "User doesn't exist!"
+            end
+        end
+
+        # @result["params"]["file"].force_encoding(Encoding::UTF_8)
+        render json: {result: @result}
+    end
+
+    def new_old
         @result = {
             "params" => params,
             "success" => false,
@@ -32,6 +81,13 @@ class TweetsController < ApplicationController
             if @user != nil
                 @new_tweet = Tweet.new(content: params[:content], user_id: params[:user_id], reply_to_id: params[:reply_id])
                 if @new_tweet.valid?
+                    if params[:file] != "false"
+                        @result["file"] = true
+                        # @new_tweet.media_type = params[:type]
+                        # @new_tweet.tweet_media = params[:file]
+                    else
+                        @result["file"] = false
+                    end
                     @new_tweet.save
                     @result["success"] = true
                     @result["tweet"] = @new_tweet

@@ -42,6 +42,16 @@ const styles = {
             opacity: 0.7,
             fontSize: 15,
             fontFamily: '"Courier New", Courier, "Lucida Sans Typewriter"'
+        },
+        image: {
+            height: 300,
+            textAlign: "center"
+        },
+        image_area: {
+            alignItems: "center",
+            textAlign: "center",
+            marginTop: 20,
+            background: "#e6ecf0"
         }
     }
 }
@@ -59,6 +69,7 @@ class Tweet extends Component{
         const { cookies } = this.props;
         // console.log(props.tweet.tweet.id);
         this.state = {
+            base_url : "http://localhost:3000/",
             user_id: parseInt(cookies.get('user_id')),
             user_name: cookies.get('user_name'),
             user_handle: cookies.get('user_handle'),
@@ -201,6 +212,24 @@ class Tweet extends Component{
                     <Typography component="p">
                     {this.props.tweet.tweet.content}
                     </Typography>
+                    {this.props.tweet.tweet.media_type === "photo"?
+                        <div style={styles.tweet.image_area}>
+
+                                <img style={styles.tweet.image} src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} />
+
+                        </div>
+                    :
+                        <div></div>
+                    }
+                    {this.props.tweet.tweet.media_type === "video"?
+                        <div style={styles.tweet.image_area}>
+                                {this.state.base_url+this.props.tweet.tweet.tweet_media.url}
+                                {/* <img style={styles.tweet.image} src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} /> */}
+
+                        </div>
+                    :
+                        <div></div>
+                    }
                 
                 </CardContent>
                 <CardActions>

@@ -1,5 +1,5 @@
 import React, {Component, Fragment} from 'react';
-import axios from 'axios';
+import axios, {post} from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import Dialog, {
@@ -89,30 +89,63 @@ class NewTweetDialog extends Component {
         else return false;
     }
 
+    fileUpload(){
+        const url = 'http://localhost:3000/tweets/newf';
+        const formData = new FormData();
+        let type = "text"
+        let file = false
+        if (this.state.hasMedia){
+            file = this.state.file
+            type = "photo"
+        }
+        formData.append('content', this.state.tweet_content);
+        formData.append('user_id',this.state.user_id);
+        formData.append('type', type);
+        formData.append('file',file);
+        formData.append('reply_id', this.props.reply_id);
+        const config = {
+            headers: {
+                'content-type': 'multipart/form-data'
+            }
+        }
+        return  post(url, formData, config)
+    }    
+
     handleNewTweet = (e) => {
         
         if(!this.validateForm()){
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
+            this.fileUpload().then((response)=>{
+                console.log(response.data);
+                console.log("axios:"+JSON.stringify(response))
+                if(!response.data.result.success){
+                    this.MessageBar.showSnackbar(response.data.result.error.message)
+                }else{
+                    this.MessageBar.showSnackbar("Tweet Posted!");
+                    this.handleTweetBoxClose();
+                }
+            })
             
-          axios.get(
-            'http://localhost:3000/tweets/new',
-            {
-              params: {
-                'content':this.state.tweet_content, 
-                'user_id': this.state.user_id,
-                'reply_id': this.props.reply_id
-              }
-            }
-          ).then(response => {
-            console.log("axios:"+JSON.stringify(response))
-            if(!response.data.result.success){
-              this.MessageBar.showSnackbar(response.data.result.error.message)
-            }else{
-              this.MessageBar.showSnackbar("Tweet Posted!");
-              this.handleTweetBoxClose();
-            }
-          })
+        //   axios.get(
+        //     'http://localhost:3000/tweets/new',
+        //     {
+        //       params: {
+        //         'content':this.state.tweet_content, 
+        //         'user_id': this.state.user_id,
+        //         'reply_id': this.props.reply_id,
+        //         'file': file,
+        //       }
+        //     }
+        //   ).then(response => {
+        //     console.log("axios:"+JSON.stringify(response))
+        //     if(!response.data.result.success){
+        //       this.MessageBar.showSnackbar(response.data.result.error.message)
+        //     }else{
+        //       this.MessageBar.showSnackbar("Tweet Posted!");
+        //       this.handleTweetBoxClose();
+        //     }
+        //   })
         }
         e.preventDefault();
     }

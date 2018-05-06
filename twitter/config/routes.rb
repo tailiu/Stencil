@@ -18,6 +18,7 @@ Rails.application.routes.draw do
 	get 'users/updateHandle', to: 'users#updateHandle'
 	get 'users/updatePassword', to: 'users#updatePassword'
 	get 'users/updateProtected', to: 'users#updateProtected'
+	post 'tweets/newf', to: 'tweets#new'
 
 	resources :users
 	resources :user_actions
