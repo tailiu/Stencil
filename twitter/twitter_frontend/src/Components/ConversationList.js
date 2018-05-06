@@ -1,7 +1,9 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import Divider from 'material-ui/Divider';
 import Conversation from './Conversation'
-import List from 'material-ui/List';
+import List, {ListSubheader} from 'material-ui/List';
+import { MenuList, MenuItem } from 'material-ui/Menu';
+
 
 class ConversationList extends Component {
 
@@ -11,14 +13,17 @@ class ConversationList extends Component {
 
         this.state = {
         }
-        
     }
 
     render () {
         const conversations = this.props.conversations
-        const conversationList = conversations.map((conversation, index) =>
+        const conversationList = conversations.map((conversation) =>
             <div key={conversation.conversation.id}>
-                <Conversation conversation = {conversation}/>
+                <Conversation 
+                    conversation = {conversation} 
+                    onConversationChange = {this.props.onConversationChange}
+                    selected={this.props.current_conversation_id}
+                />
                 <li>
                     <Divider inset />
                 </li>
@@ -27,9 +32,9 @@ class ConversationList extends Component {
 
 
         return (
-            <List>
+            <MenuList >
                 {conversationList}
-            </List>
+            </MenuList>
         )
     }
 

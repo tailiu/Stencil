@@ -6,7 +6,7 @@ import SignUp from './Components/SignUp';
 import Login from './Components/Login';
 import Search from './Components/Search';
 import Profile from './Components/Profile';
-import Messages from './Components/Messages';
+import MessagePage from './Components/MessagePage';
 import Notif from './Components/Notif';
 import Settings from './Components/Settings';
 import TweetPage from './Components/TweetPage';
@@ -30,7 +30,7 @@ ReactDOM.render(
             <Route path="/profile/:user_id" component={Profile} />
             <Route path="/profile" component={Profile} />
             <Route path="/tweet/:tweet_id" component={TweetPage} />
-            <Route path="/messages" component={Messages} />
+            <Route path="/messages" component={MessagePage} />
             <Route path="/notifications" component={Notif} />
             <Route path="/settings" component={Settings} />
             <Route path="" component={Welcome} />
