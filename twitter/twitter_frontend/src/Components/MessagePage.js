@@ -20,6 +20,8 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import Paper from 'material-ui/Paper';
 import Typography from 'material-ui/Typography';
+import NewConversation from './NewConversation'
+
 
 const styles = {
     headerContainer: {
@@ -71,7 +73,6 @@ class MessagePage extends Component {
             user_id : cookies.get('user_id'),
             user_handle: cookies.get('user_handle'),
             new_message_box_open: false,
-            message_to: '',
             conversations: [],
             current_conversation_id: '',
             messages: ''
@@ -80,7 +81,7 @@ class MessagePage extends Component {
 
     componentDidMount() {
         this.getConversationList(this.setCurrentConversationID, this.getMessageList)
-        this.timer = setInterval(()=> this.periodicActions(), 3000);
+        // this.timer = setInterval(()=> this.periodicActions(), 3000);
     }
 
     componentWillUnmount() {
@@ -105,6 +106,11 @@ class MessagePage extends Component {
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
                 const conversations = response.data.result.conversations
+
+                if (conversations.length == 0) {
+                    return 
+                }  
+                
                 const conversation_id = conversations[0].conversation.id
                 this.setState({
                     'conversations': conversations,
@@ -159,47 +165,8 @@ class MessagePage extends Component {
         this.setState({new_message_box_open: false });
     }
 
-    updateMessageTo = e => {
-        this.setState({
-            message_to: e.target.value
-        })
-    }
-
-    validateInput = e => {
-        return true
-    }
-
     handleNewConversation = e => {
-        if(!this.validateInput()){
-            this.MessageBar.showSnackbar("Please input valid user handles")
-            return
-        }
-
-        const raw_data = this.state.message_to.split('@')
-        raw_data.shift()
-
-        const participants = []
-        for (var i in raw_data) {
-            raw_data[i] = raw_data[i].replace(/\s/g,''); // replace all spaces in handles
-            participants.push(raw_data[i])
-        }
-        participants.push(this.state.user_handle)
-
-        axios.get(
-            'http://localhost:3000/conversations/new',
-            {
-                params: {
-                    'participants': participants
-                }
-            }
-        ).then(response => {
-            if(!response.data.result.success){
-                this.MessageBar.showSnackbar(response.data.result.error.message)
-            }else{
-                this.getConversationList(this.handleNewMessageBoxClose)
-            }
-        })
-
+        this.getConversationList()
     }
 
     handleConversationChange = current_conversation_id => {
@@ -269,36 +236,12 @@ class MessagePage extends Component {
                     </Grid>
                 </Grid>
 
-                 <Dialog
-                    open={this.state.new_message_box_open}
-                    onClose={this.handleNewMessageBoxClose}
-                    aria-labelledby="form-dialog-title"
-                    >
-                    <DialogTitle id="form-dialog-title">New Message</DialogTitle>
-                    <DialogContent>
-                        <DialogContentText>
-                        {/* What's on your mind? */}
-                        </DialogContentText>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            id="tweet"
-                            label="Send message to"
-                            type="email"
-                            value={this.state.message_to}
-                            onChange={this.updateMessageTo}
-                            fullWidth
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={this.handleNewMessageBoxClose} color="primary">
-                            Cancel
-                        </Button>
-                        <Button onClick={this.handleNewConversation} color="primary">
-                            New Message
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                <NewConversation 
+                    messageBar={this.MessageBar} 
+                    new_message_box_open={this.state.new_message_box_open}
+                    onNewMessageBoxClose={this.handleNewMessageBoxClose}
+                    onNewConversation={this.handleNewConversation}
+                />
         </div>
     );
   }
