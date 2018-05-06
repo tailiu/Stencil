@@ -61,7 +61,7 @@ class Settings extends Component {
                 protected: response.data.result.user.protected,
                 email: response.data.result.email,
                 handle: response.data.result.user.handle,
-                password: "123456"
+                // password: "123456"
             })
           }else{
             this.MessageBar.showSnackbar("User doesn't exist!");

@@ -11,6 +11,32 @@ import Dialog, {
 import Button from 'material-ui/Button';
 import TextField from 'material-ui/TextField';
 import MessageBar from './MessageBar';
+import Upload from 'material-ui-upload/Upload';
+import Card, { CardMedia } from 'material-ui/Card';
+import { CardContent } from 'material-ui';
+
+const styles = {
+    upload: {
+        button: {
+            border: "1px solid #ccc",
+            display: "inline-block",
+            padding: "6px 12px",
+            cursor: "pointer"
+
+        },
+        input: {
+            display:"hidden"
+        },
+        area: {
+            alignItems: "center",
+            textAlign: "center",
+            marginTop: 10,
+        },
+        image: {
+            height: 250
+        }
+    }
+}
 
 class NewTweetDialog extends Component {
 
@@ -32,6 +58,12 @@ class NewTweetDialog extends Component {
             anchorEl: null,
             tweet_box_open: this.props.open,
             tweet_content: "",
+            file: '',
+            imagePreviewUrl: '',
+            hasMedia: false,
+            mediaUrl: '../Assets/Images/liked-icon.png',
+            imagePreviewUrl: '',
+            file: '',
         }
 
     }
@@ -85,7 +117,35 @@ class NewTweetDialog extends Component {
         e.preventDefault();
     }
 
+    onFileLoad = (e, file) => {
+        console.log(e.target.result, file.name);
+    }
+
+    _handleSubmit =(e)=> {
+        e.preventDefault();
+        // TODO: do something with -> this.state.file
+        console.log('handle uploading-', this.state.file);
+      }
+    
+    _handleImageChange =(e)=> {
+        e.preventDefault();
+    
+        let reader = new FileReader();
+        let file = e.target.files[0];
+    
+        reader.onloadend = () => {
+          this.setState({
+            file: file,
+            imagePreviewUrl: reader.result,
+            hasMedia: true
+          });
+        }
+    
+        reader.readAsDataURL(file)
+      }
+
     render(){
+        
         return(
             <Fragment>
                 <MessageBar ref={instance => { this.MessageBar = instance; }}/>
@@ -109,10 +169,20 @@ class NewTweetDialog extends Component {
                         onChange={this.updateTweetContent}
                         fullWidth
                         />
+                        {this.state.hasMedia?
+                            <Card style={styles.upload.area}>
+                                <CardContent>
+                                    <img style={styles.upload.image} src={this.state.imagePreviewUrl} />
+                                </CardContent>
+                            </Card>
+                        :
+                        <div></div>
+                        }
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={this.handleTweetBoxClose} color="primary">
-                        Video/Photo
+
+                        <Button type="file " color="primary" label='Video/Photo'>
+                            <input type="file" style={styles.upload.input} onChange={this._handleImageChange} />
                         </Button>
                         <Button onClick={this.handleTweetBoxClose} color="primary">
                         Cancel
