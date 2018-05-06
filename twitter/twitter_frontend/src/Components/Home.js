@@ -84,7 +84,7 @@ class Home extends Component {
             })
     }
 
-    componentWillMount(){
+    componentDidMount(){
         this.fetchTweets();
         this.timer = setInterval(()=> this.fetchTweets(), 10000);
     }
