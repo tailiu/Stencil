@@ -42,6 +42,17 @@ const styles = {
             opacity: 0.7,
             fontSize: 15,
             fontFamily: '"Courier New", Courier, "Lucida Sans Typewriter"'
+        },
+        image: {
+            height: 240,
+            textAlign: "center"
+        },
+        image_area: {
+            height: 240,
+            alignItems: "center",
+            textAlign: "center",
+            marginTop: 20,
+            background: "#e6ecf0"
         }
     }
 }
@@ -59,6 +70,7 @@ class Tweet extends Component{
         const { cookies } = this.props;
         // console.log(props.tweet.tweet.id);
         this.state = {
+            base_url : "http://localhost:3000/",
             user_id: parseInt(cookies.get('user_id')),
             user_name: cookies.get('user_name'),
             user_handle: cookies.get('user_handle'),
@@ -172,6 +184,24 @@ class Tweet extends Component{
             })
     }
 
+    delete = (e) => {
+        axios.get(
+            'http://localhost:3000/tweets/delete',
+            {
+                params: {
+                'user_id': this.state.user_id, 
+                'tweet_id': this.props.tweet.tweet.id, 
+                }
+            }
+            ).then(response => {
+            if(response.data.result.success){
+                window.location.reload();
+            }else{
+                console.log("Unable to retweet!")
+            }
+            })
+    }
+
     reply = e => {
         
     }
@@ -201,6 +231,19 @@ class Tweet extends Component{
                     <Typography component="p">
                     {this.props.tweet.tweet.content}
                     </Typography>
+                    {this.props.tweet.tweet.media_type === "photo" &&
+                        <div style={styles.tweet.image_area}>
+                            <img style={styles.tweet.image} src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} />
+                        </div>
+                    }
+                    {this.props.tweet.tweet.media_type === "video" &&
+                        <div style={styles.tweet.image_area}>
+                            <video height="240" controls>
+                                <source src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} type="video/mp4"/>
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    }
                 
                 </CardContent>
                 <CardActions>
@@ -241,6 +284,11 @@ class Tweet extends Component{
                         <div style={styles.tweet.action_stat}>
                             {this.state.replies}
                         </div>
+                        {this.state.user_id === this.props.tweet.creator.id &&
+                            <IconButton size="small" onClick={this.delete}>
+                                <img style={styles.tweet.action_icon} alt="Reply" src={require('../Assets/Images/delete-icon.png')} />
+                            </IconButton>
+                        }
                     </div>
                     <Typography component="p">
                         {Moment(this.props.tweet.tweet.created_at).format('MMMM Do, YYYY - h:mm A')}

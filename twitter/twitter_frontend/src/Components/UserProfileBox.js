@@ -55,7 +55,9 @@ class UserProfileBox extends Component{
             avatar_symbol: '',
             user_bio: '',
             new_bio: '',
-            does_follow: false
+            does_follow: false,
+            does_block: false,
+            does_mute: false
         }
     }
 
@@ -92,6 +94,46 @@ class UserProfileBox extends Component{
           })
     }
 
+    checkDoesBlock =()=> {
+        axios.get(
+            'http://localhost:3000/users/checkBlock',
+            {
+              params: {
+                'from_user_id': this.state.logged_in_user, 
+                'to_user_id': this.state.user_id, 
+              }
+            }
+          ).then(response => {
+            if(response.data.result.success){
+              this.setState({
+                  does_block: response.data.result.block,
+              })
+            }else{
+              
+            }
+          })
+    }
+
+    checkDoesMute =()=> {
+        axios.get(
+            'http://localhost:3000/users/checkMute',
+            {
+              params: {
+                'from_user_id': this.state.logged_in_user, 
+                'to_user_id': this.state.user_id, 
+              }
+            }
+          ).then(response => {
+            if(response.data.result.success){
+              this.setState({
+                  does_mute: response.data.result.mute,
+              })
+            }else{
+              
+            }
+          })
+    }
+
     getUserInfo =()=> {
         axios.get(
         'http://localhost:3000/users/getUserInfo',
@@ -119,6 +161,8 @@ class UserProfileBox extends Component{
     componentWillMount(){
         this.getUserInfo();
         this.checkDoesFollow();
+        this.checkDoesBlock();
+        this.checkDoesMute();
     }
 
     handleFollow =(follow, e)=> {
@@ -136,6 +180,52 @@ class UserProfileBox extends Component{
             if(response.data.result.success){
                 this.setState({
                   does_follow: response.data.result.follow,
+                })
+                this.getUserInfo();
+            }else{
+                
+            }
+          })
+    }
+
+    handleBlock =(block, e)=> {
+        console.log("her:", block);
+        axios.get(
+            'http://localhost:3000/users/handleBlock',
+            {
+              params: {
+                'from_user_id': this.state.logged_in_user, 
+                'to_user_id': this.state.user_id, 
+                'block' : block
+              }
+            }
+          ).then(response => {
+            if(response.data.result.success){
+                this.setState({
+                  does_block: response.data.result.block,
+                })
+                this.getUserInfo();
+            }else{
+                
+            }
+          })
+    }
+
+    handleMute =(mute, e)=> {
+        console.log("her:", mute);
+        axios.get(
+            'http://localhost:3000/users/handleMute',
+            {
+              params: {
+                'from_user_id': this.state.logged_in_user, 
+                'to_user_id': this.state.user_id, 
+                'mute' : mute
+              }
+            }
+          ).then(response => {
+            if(response.data.result.success){
+                this.setState({
+                  does_mute: response.data.result.mute,
                 })
                 this.getUserInfo();
             }else{
@@ -214,6 +304,24 @@ class UserProfileBox extends Component{
                         :
                             <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
                                 Follow
+                            </Button>
+                        }
+                        {this.state.does_block ?
+                            <Button onClick={this.handleBlock.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
+                                Unblock
+                            </Button>
+                        :
+                            <Button onClick={this.handleBlock.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
+                                Block
+                            </Button>
+                        }
+                        {this.state.does_mute ?
+                            <Button onClick={this.handleMute.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
+                                Unmute
+                            </Button>
+                        :
+                            <Button onClick={this.handleMute.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
+                                Mute
                             </Button>
                         }
                     </CardActions>

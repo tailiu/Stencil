@@ -1,4 +1,9 @@
+# encoding: UTF-8
+
 class TweetsController < ApplicationController
+
+    protect_from_forgery prepend: true
+
     def index
         if params[:type] == "tweet_num"
             @user = User.find(params[:id])
@@ -14,6 +19,50 @@ class TweetsController < ApplicationController
     end
 
     def new
+        @result = {
+            # "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:content].nil? || params[:user_id].nil? || params[:type].nil?
+            @result["success"] = false
+            @result["error"]["message"] = "Incomplete params!"
+        elsif params[:content].empty?
+            @result["success"] = false
+            @result["error"]["message"] = "Tweet can't be empty!"
+        else
+            @user = User.find_by_id(params[:user_id])
+            if @user != nil
+                @new_tweet = Tweet.new(content: params[:content], user_id: params[:user_id], reply_to_id: params[:reply_id], media_type: params[:type])
+                if @new_tweet.valid?
+                    if params[:file] != "false"
+                        @result["file"] = true
+                        @new_tweet.media_type = params[:type]
+                        @new_tweet.tweet_media = params[:file]
+                    else
+                        @result["file"] = false
+                    end
+                    @new_tweet.save
+                    @result["success"] = true
+                    @result["tweet"] = @new_tweet
+                else
+                    puts @new_tweet.errors.messages
+                    @result["success"] = false
+                    @result["error"]["message"] = @new_tweet.errors.messages
+                end
+            else
+                @result["success"] = false
+                @result["error"]["message"] = "User doesn't exist!"
+            end
+        end
+
+        # @result["params"]["file"].force_encoding(Encoding::UTF_8)
+        render json: {result: @result}
+    end
+
+    def new_old
         @result = {
             "params" => params,
             "success" => false,
@@ -32,6 +81,13 @@ class TweetsController < ApplicationController
             if @user != nil
                 @new_tweet = Tweet.new(content: params[:content], user_id: params[:user_id], reply_to_id: params[:reply_id])
                 if @new_tweet.valid?
+                    if params[:file] != "false"
+                        @result["file"] = true
+                        # @new_tweet.media_type = params[:type]
+                        # @new_tweet.tweet_media = params[:file]
+                    else
+                        @result["file"] = false
+                    end
                     @new_tweet.save
                     @result["success"] = true
                     @result["tweet"] = @new_tweet
@@ -70,7 +126,9 @@ class TweetsController < ApplicationController
             # @user = User.where(id: params[:user_id]).first
             retweets = user.retweets.pluck(:tweet_id)
             tweets = user.tweets.pluck(:id)
-            alltweets = Tweet.where(:id => retweets+tweets).order('created_at DESC')
+            blocked_users = UserAction.where(from_user_id: user.id, action_type: "block").pluck(:to_user_id)
+            blocked_by_users = UserAction.where(to_user_id: user.id, action_type: "block").pluck(:from_user_id)
+            alltweets = Tweet.where(:id => retweets+tweets).where.not(:user_id => blocked_by_users + blocked_users).order('created_at DESC')
             # tweets = user.tweets
             # tweets = user.tweets.or(retweets)
             # tweets = tweets.concat(retweets)
@@ -108,7 +166,10 @@ class TweetsController < ApplicationController
             user = User.find(params[:user_id])
             retweets = user.retweets.order('created_at DESC').pluck(:tweet_id)
             following_users = UserAction.where(from_user_id: user.id, action_type: "follow").pluck(:to_user_id)
-            allusers = following_users + [user.id]
+            blocked_users = UserAction.where(from_user_id: user.id, action_type: "block").or(UserAction.where(from_user_id: user.id, action_type: "mute")).pluck(:to_user_id)
+            blocked_by_users = UserAction.where(to_user_id: user.id, action_type: "block").pluck(:from_user_id)
+            # muted_users = UserAction.where(from_user_id: user.id, action_type: "mute").pluck(:to_user_id)
+            allusers = following_users + [user.id] - blocked_users - blocked_by_users
             alltweets = Tweet.where(:user_id => allusers).or(Tweet.where(:id => retweets))
             alltweets = alltweets.order('created_at DESC')
             for tweet in alltweets do
@@ -149,6 +210,32 @@ class TweetsController < ApplicationController
             result["success"] = false
             result["error"]["message"] = "Tweet doesn't exist!"
         end
+        render json: {result: result}
+    end
+
+    def delete
+        result = {
+            "params" => params,
+            "success" => false,
+            "error" => {
+            },
+        }
+
+        if params[:tweet_id].nil? || params[:user_id].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.find_by_id(params[:user_id])
+            tweet = Tweet.find_by_id(params[:tweet_id])
+            if !user.nil? && !tweet.nil?
+                Tweet.destroy(tweet.id)
+                result["success"] = true
+            else
+                result["success"] = false
+                result["error"]["message"] = "User/Tweet don't exist!"
+            end
+        end
+
         render json: {result: result}
     end
 

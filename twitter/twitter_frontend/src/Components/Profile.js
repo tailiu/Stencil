@@ -63,6 +63,7 @@ class Profile extends Component {
 
         this.state = {
             user_id: user_id,
+            logged_in_user: cookies.get('user_id'),
             email : '',
             password : '',
             name : '',
@@ -74,8 +75,47 @@ class Profile extends Component {
     }
 
     componentWillMount(){
-        this.fetchTweets();
-        this.timer = setInterval(()=> this.fetchTweets(), 30000);
+
+        axios.get(
+            'http://localhost:3000/users/checkBlock',
+            {
+              params: {
+                'from_user_id': this.state.logged_in_user, 
+                'to_user_id': this.state.user_id, 
+              }
+            }
+          ).then(response => {
+            if(response.data.result.success){
+                if(response.data.result.block){
+                    this.MessageBar.showSnackbar("BLOCKED");
+                }else{
+                    axios.get(
+                        'http://localhost:3000/users/checkBlock',
+                        {
+                          params: {
+                            'from_user_id': this.state.user_id, 
+                            'to_user_id': this.state.logged_in_user, 
+                          }
+                        }
+                      ).then(response => {
+                        if(response.data.result.success){
+                            if(response.data.result.block){
+                                this.MessageBar.showSnackbar("BLOCKED");
+                            }else{
+                                this.fetchTweets();
+                                this.timer = setInterval(()=> this.fetchTweets(), 30000);
+                            }
+                        }else{
+                          
+                        }
+                      })
+                    // this.fetchTweets();
+                    // this.timer = setInterval(()=> this.fetchTweets(), 30000);
+                }
+            }else{
+              
+            }
+          })
     }
 
     componentWillUnmount() {
@@ -100,7 +140,7 @@ class Profile extends Component {
                     tweets: response.data.result.tweets,
                 })
             }else{
-                this.MessageBar.showSnackbar("User doesn't exist!");
+                this.MessageBar.showSnackbar(response.data.result.error.message);
                 setTimeout(function() { 
                 //   this.goToIndex(response.data.result.user);
                 }.bind(this), 1000);

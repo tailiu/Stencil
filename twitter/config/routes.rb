@@ -13,11 +13,17 @@ Rails.application.routes.draw do
 	get 'users/getUserInfo', to: 'users#getUserInfo'
 	get 'users/updateBio', to: 'users#updateBio'
 	get 'users/checkFollow', to: 'user_actions#checkFollow'
+	get 'users/checkMute', to: 'user_actions#checkMute'
+	get 'users/checkBlock', to: 'user_actions#checkBlock'
+	get 'users/handleMute', to: 'user_actions#handleMute'
+	get 'users/handleBlock', to: 'user_actions#handleBlock'
 	get 'users/handleFollow', to: 'user_actions#handleFollow'
 	get 'users/updateEmail', to: 'users#updateEmail'
 	get 'users/updateHandle', to: 'users#updateHandle'
 	get 'users/updatePassword', to: 'users#updatePassword'
 	get 'users/updateProtected', to: 'users#updateProtected'
+	post 'tweets/newf', to: 'tweets#new'
+	get 'tweets/delete', to: 'tweets#delete'
 
 	resources :users
 	resources :user_actions

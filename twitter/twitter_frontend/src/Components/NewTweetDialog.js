@@ -1,5 +1,5 @@
 import React, {Component, Fragment} from 'react';
-import axios from 'axios';
+import axios, {post} from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import Dialog, {
@@ -64,6 +64,7 @@ class NewTweetDialog extends Component {
             mediaUrl: '../Assets/Images/liked-icon.png',
             imagePreviewUrl: '',
             file: '',
+            media_type: 'text',
         }
 
     }
@@ -89,46 +90,75 @@ class NewTweetDialog extends Component {
         else return false;
     }
 
+    fileUpload(){
+        const url = 'http://localhost:3000/tweets/newf';
+        const formData = new FormData();
+        let file = false
+        if (this.state.hasMedia){
+            file = this.state.file
+        }
+        formData.append('content', this.state.tweet_content);
+        formData.append('user_id',this.state.user_id);
+        formData.append('type', this.state.media_type);
+        formData.append('file',file);
+        formData.append('reply_id', this.props.reply_id);
+        const config = {
+            headers: {
+                'content-type': 'multipart/form-data'
+            }
+        }
+        return  post(url, formData, config)
+    }    
+
     handleNewTweet = (e) => {
         
         if(!this.validateForm()){
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
+            this.fileUpload(e).then((response)=>{
+                console.log(response.data);
+                console.log("axios:"+JSON.stringify(response))
+                if(!response.data.result.success){
+                    this.MessageBar.showSnackbar(response.data.result.error.message)
+                }else{
+                    this.MessageBar.showSnackbar("Tweet Posted!");
+                    this.handleTweetBoxClose();
+                }
+            })
             
-          axios.get(
-            'http://localhost:3000/tweets/new',
-            {
-              params: {
-                'content':this.state.tweet_content, 
-                'user_id': this.state.user_id,
-                'reply_id': this.props.reply_id
-              }
-            }
-          ).then(response => {
-            console.log("axios:"+JSON.stringify(response))
-            if(!response.data.result.success){
-              this.MessageBar.showSnackbar(response.data.result.error.message)
-            }else{
-              this.MessageBar.showSnackbar("Tweet Posted!");
-              this.handleTweetBoxClose();
-            }
-          })
+        //   axios.get(
+        //     'http://localhost:3000/tweets/new',
+        //     {
+        //       params: {
+        //         'content':this.state.tweet_content, 
+        //         'user_id': this.state.user_id,
+        //         'reply_id': this.props.reply_id,
+        //         'file': file,
+        //       }
+        //     }
+        //   ).then(response => {
+        //     console.log("axios:"+JSON.stringify(response))
+        //     if(!response.data.result.success){
+        //       this.MessageBar.showSnackbar(response.data.result.error.message)
+        //     }else{
+        //       this.MessageBar.showSnackbar("Tweet Posted!");
+        //       this.handleTweetBoxClose();
+        //     }
+        //   })
         }
         e.preventDefault();
     }
-
-    onFileLoad = (e, file) => {
-        console.log(e.target.result, file.name);
-    }
-
-    _handleSubmit =(e)=> {
-        e.preventDefault();
-        // TODO: do something with -> this.state.file
-        console.log('handle uploading-', this.state.file);
-      }
     
     _handleImageChange =(e)=> {
         e.preventDefault();
+
+        console.log(e.target.files[0].type)
+
+        if(e.target.files[0].type.indexOf("image") >= 0){
+            this.state.media_type = "photo"
+        } else if (e.target.files[0].type.indexOf("video") >= 0) {
+            this.state.media_type = "video"
+        }
     
         let reader = new FileReader();
         let file = e.target.files[0];
@@ -169,14 +199,22 @@ class NewTweetDialog extends Component {
                         onChange={this.updateTweetContent}
                         fullWidth
                         />
-                        {this.state.hasMedia?
+                        {this.state.hasMedia &&
                             <Card style={styles.upload.area}>
-                                <CardContent>
-                                    <img style={styles.upload.image} src={this.state.imagePreviewUrl} />
-                                </CardContent>
+                                {this.state.media_type === "photo" &&
+                                    <CardContent>
+                                        <img style={styles.upload.image} src={this.state.imagePreviewUrl} />
+                                    </CardContent>
+                                }
+                                {this.state.media_type === "video" &&
+                                    <CardContent>
+                                        <video width="320" height="240" controls>
+                                            <source src={this.state.imagePreviewUrl} type="video/mp4"/>
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </CardContent>
+                                }
                             </Card>
-                        :
-                        <div></div>
                         }
                     </DialogContent>
                     <DialogActions>
