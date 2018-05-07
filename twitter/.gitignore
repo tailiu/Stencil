@@ -26,4 +26,7 @@ yarn-debug.log*
 package.json
 package-lock.json
 
+# Ignore all media
+/public/uploads/tweet/tweet_media/*
+
 
