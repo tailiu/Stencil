@@ -1,11 +1,11 @@
-import React, {Component} from "react";
+import React, {Component, Fragment} from "react";
 import axios from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 
 import Typography from 'material-ui/Typography';
 
-import {AppBar} from 'material-ui';
+import {AppBar, Card} from 'material-ui';
 import Toolbar from 'material-ui/Toolbar';
 
 import Button from 'material-ui/Button';
@@ -15,6 +15,8 @@ import Input from 'material-ui/Input';
 import TextField from 'material-ui/TextField';
 import MessageBar from './MessageBar';
 import NewTweetDialog from "./NewTweetDialog";
+import { CardContent } from "material-ui";
+import UserSearchBox from "./UserSearchBox";
 
 const styles = {
     root: {
@@ -76,6 +78,7 @@ class NavBar extends Component {
             value : 0,
             anchorEl: null,
             tweet_box_open: false,
+            search_query: "",
         }
 
     }
@@ -131,8 +134,16 @@ class NavBar extends Component {
         })
       }
 
+    searchUser =(e)=> {
+        // console.log(e.target.value)
+        this.setState({
+            search_query: e.target.value
+        })
+    }
+
     render() {
         return (
+            <Fragment>
             <AppBar style={styles.navbar}>
                 <MessageBar ref={instance => { this.MessageBar = instance; }}/>
                 <Toolbar>
@@ -150,6 +161,7 @@ class NavBar extends Component {
                     <Input
                         placeholder="Search Twitter"
                         style={styles.input}
+                        onChange={this.searchUser}
                     />
                     <div style={styles.profileMenuButton}>
                         <Button
@@ -178,6 +190,8 @@ class NavBar extends Component {
                     <NewTweetDialog open={this.state.tweet_box_open} onChange={this.handleTweetBoxClose} />
                 </Toolbar>
             </AppBar>
+            <UserSearchBox query={this.state.search_query}/>
+            </Fragment>
         );
     }
 }
