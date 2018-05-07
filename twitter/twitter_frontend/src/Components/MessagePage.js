@@ -75,16 +75,18 @@ class MessagePage extends Component {
             new_message_box_open: false,
             conversations: [],
             current_conversation_id: '',
+            current_conversation_type: '',
             messages: ''
         }
     }
 
     componentDidMount() {
         this.getConversationList((conversations) => {
-            const current_conversation_id = conversations[0].conversation.id 
+            const conversation_id = conversations[0].conversation.id 
+            const conversation_type = conversations[0].conversation_type
 
-            this.setCurrentConversationID(current_conversation_id)
-            this.getMessageList(current_conversation_id)
+            this.setCurrentConversation(conversation_id, conversation_type)
+            this.getMessageList(conversation_id)
         })
         this.timer = setInterval(()=> this.periodicActions(), 6000);
     }
@@ -125,9 +127,10 @@ class MessagePage extends Component {
         })
     }
 
-    setCurrentConversationID = (current_conversation_id) => {
+    setCurrentConversation = (current_conversation_id, current_conversation_type) => {
         this.setState({
-            'current_conversation_id': current_conversation_id
+            'current_conversation_id': current_conversation_id,
+            'current_conversation_type': current_conversation_type
         })
     }
 
@@ -142,6 +145,7 @@ class MessagePage extends Component {
         ).then(response => {
             if(!response.data.result.success){
             }else{
+                // console.log(response.data.result.messages)
                 if (response.data.result.messages == undefined) {
                     this.setState({
                         messages: ""
@@ -164,16 +168,14 @@ class MessagePage extends Component {
         this.setState({new_message_box_open: false });
     }
 
-    handleNewConversation = newConversationID => {
+    handleNewConversation = (new_conversation_ID, new_conversation_type) => {
         this.getConversationList()
-        this.setCurrentConversationID(newConversationID)
-        this.getMessageList(newConversationID)
+        this.setCurrentConversation(new_conversation_ID, new_conversation_type)
+        this.getMessageList(new_conversation_ID)
     }
 
-    handleConversationChange = current_conversation_id => {
-        this.setState({
-            current_conversation_id: current_conversation_id
-        })
+    handleConversationChange = (current_conversation_id, current_conversation_type) => {
+        this.setCurrentConversation(current_conversation_id, current_conversation_type)
         this.getMessageList(current_conversation_id)    
     }
 
@@ -222,6 +224,7 @@ class MessagePage extends Component {
                             <div style={styles.messageList}>
                                 <MessageList 
                                     messages = {this.state.messages} 
+                                    current_conversation_type = {this.state.current_conversation_type}
                                 />
                             </div>
                             <Divider light />

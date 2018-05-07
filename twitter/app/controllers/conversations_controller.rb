@@ -9,7 +9,7 @@ class ConversationsController < ApplicationController
 
         user = User.find(params[:id])
 
-        conversation_participants = user.conversation_participants
+        conversation_participants = user.conversation_participants.order(created_at: :desc)
 
         conversations = []
 
@@ -72,7 +72,7 @@ class ConversationsController < ApplicationController
 
                     if conversation.conversation_participants.size == 1
                         existed = true
-                        result["conversationID"] = conversation.id
+                        result["conversation"] = conversation
                         break
                     end
                 end
@@ -91,7 +91,7 @@ class ConversationsController < ApplicationController
                     if conversation_participants.size == 2 
                         if conversation_participants.exists?(user_id: userArr[1].id) 
                             existed = true
-                            result["conversationID"] = conversation.id
+                            result["conversation"] = conversation
                         end
                     end
                 end 
@@ -102,7 +102,7 @@ class ConversationsController < ApplicationController
                 for user in userArr do
                     conversation_participant = user.conversation_participants.create(conversation_id: conversation.id)
                 end
-                result["conversationID"] = conversation.id
+                result["conversation"] = conversation
             end
             
         end

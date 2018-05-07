@@ -15,7 +15,10 @@ class MessageList extends Component {
         if(Array.isArray(messages)) {
             messageList = messages.map((message) =>
                 <div key={message.id}>
-                    <Message message = {message} />
+                    <Message 
+                        message = {message}
+                        current_conversation_type = {this.props.current_conversation_type}
+                    />
                 </div>
             );
         } 
