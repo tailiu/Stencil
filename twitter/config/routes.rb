@@ -11,6 +11,7 @@ Rails.application.routes.draw do
 	get 'tweets/retweet', to: 'tweets#retweet'
 	get 'tweets/stats', to: 'tweets#stats'
 	get 'users/getUserInfo', to: 'users#getUserInfo'
+	get 'users/search', to: 'users#search'
 	get 'users/updateBio', to: 'users#updateBio'
 	get 'users/checkFollow', to: 'user_actions#checkFollow'
 	get 'users/checkMute', to: 'user_actions#checkMute'

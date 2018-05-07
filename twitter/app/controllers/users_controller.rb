@@ -241,4 +241,22 @@ class UsersController < ApplicationController
         render json: {result: result}
     end
 
+    def search
+        result = {
+            "params": params,
+            "success" => false,
+            "error" => {
+            }
+        }
+        if params[:query].nil? || params[:query].empty?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            result["success"] = true
+            query = params[:query]
+            result["users"] = User.where("lower(handle) like ?", "%#{query.downcase}%").or(User.where("lower(name) like ?", "%#{query.downcase}%"))
+        end
+        render json: {result: result}
+    end
+
 end
