@@ -48,8 +48,21 @@ class Message extends Component {
         return styles
     }
 
+    getContentForMessage = () => {
+        const message = this.props.message
+        var content = ''
+
+        if (this.props.current_conversation_type == 'group') {
+            content += message.name + ': '
+        }
+
+        content += this.props.message.content
+
+        return content
+    }
+
     render () {
-        const content = this.props.message.content;
+        const content = this.getContentForMessage();
         const updatedDate = this.getLatestUpdatedDateForMessage();
 
         const styles = this.setStyle()

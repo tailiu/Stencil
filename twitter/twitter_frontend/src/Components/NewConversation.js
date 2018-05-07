@@ -73,8 +73,9 @@ class NewConversation extends Component {
                     message_to: ''
                 })
 
+                const conversation = response.data.result.conversation
                 this.props.onNewMessageBoxClose()
-                this.props.onNewConversation(response.data.result.conversationID)
+                this.props.onNewConversation(conversation.id, conversation.conversation_type)
             }
         })
 
