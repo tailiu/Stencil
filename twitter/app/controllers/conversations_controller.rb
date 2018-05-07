@@ -58,14 +58,56 @@ class ConversationsController < ApplicationController
         end
 
         if result['success']
-            conversation = Conversation.create()
-            for user in userArr do
-                conversation_participant = user.conversation_participants.create(conversation_id: conversation.id)
+            existed = false
+            conversation_type = 'group'
+
+            if userArr.length == 1
+                conversation_type = 'not_group'
+                conversation_participants = userArr[0].conversation_participants
+                for conversation_participant in conversation_participants do
+                    conversation = conversation_participant.conversation
+                    if conversation.conversation_type != conversation_type
+                        continue 
+                    end
+
+                    if conversation.conversation_participants.size == 1
+                        existed = true
+                        result["conversationID"] = conversation.id
+                        break
+                    end
+                end
             end
+
+            if userArr.length == 2
+                conversation_type = 'not_group'
+                user_one_conversation_participants = userArr[0].conversation_participants
+                for user_one_conversation_participant in user_one_conversation_participants do
+                    conversation = user_one_conversation_participant.conversation
+                    if conversation.conversation_type != conversation_type
+                        next 
+                    end
+
+                    conversation_participants = conversation.conversation_participants
+                    if conversation_participants.size == 2 
+                        if conversation_participants.exists?(user_id: userArr[1].id) 
+                            existed = true
+                            result["conversationID"] = conversation.id
+                        end
+                    end
+                end 
+            end
+
+            if !existed
+                conversation = Conversation.create(conversation_type: conversation_type)
+                for user in userArr do
+                    conversation_participant = user.conversation_participants.create(conversation_id: conversation.id)
+                end
+                result["conversationID"] = conversation.id
+            end
+            
         end
 
         render json: {result: result}
     end
-
 
 end

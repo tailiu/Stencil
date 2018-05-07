@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import { ListItem, ListItemText, } from 'material-ui/List';
 import Moment from 'moment';
 import Avatar from 'material-ui/Avatar';
