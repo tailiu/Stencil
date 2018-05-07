@@ -74,7 +74,7 @@ class NewConversation extends Component {
                 })
 
                 this.props.onNewMessageBoxClose()
-                this.props.onNewConversation()
+                this.props.onNewConversation(response.data.result.conversationID)
             }
         })
 

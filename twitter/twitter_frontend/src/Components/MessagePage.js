@@ -80,8 +80,13 @@ class MessagePage extends Component {
     }
 
     componentDidMount() {
-        this.getConversationList(this.setCurrentConversationID, this.getMessageList)
-        // this.timer = setInterval(()=> this.periodicActions(), 3000);
+        this.getConversationList((conversations) => {
+            const current_conversation_id = conversations[0].conversation.id 
+
+            this.setCurrentConversationID(current_conversation_id)
+            this.getMessageList(current_conversation_id)
+        })
+        this.timer = setInterval(()=> this.periodicActions(), 6000);
     }
 
     componentWillUnmount() {
@@ -93,7 +98,7 @@ class MessagePage extends Component {
         this.getMessageList(this.state.current_conversation_id)
     }
 
-    getConversationList = (...cb) => {
+    getConversationList = (cb) => {
         axios.get(
             'http://localhost:3000/conversations/',
             {
@@ -111,17 +116,11 @@ class MessagePage extends Component {
                     return 
                 }  
                 
-                const conversation_id = conversations[0].conversation.id
                 this.setState({
                     'conversations': conversations,
                 });
 
-                if(cb) {
-                    cb.forEach(f => {
-                        f(conversation_id)
-                    })
-                }
-                
+                if (cb) cb(conversations)
             }
         })
     }
@@ -165,8 +164,10 @@ class MessagePage extends Component {
         this.setState({new_message_box_open: false });
     }
 
-    handleNewConversation = e => {
+    handleNewConversation = newConversationID => {
         this.getConversationList()
+        this.setCurrentConversationID(newConversationID)
+        this.getMessageList(newConversationID)
     }
 
     handleConversationChange = current_conversation_id => {
