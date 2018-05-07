@@ -46,11 +46,12 @@ class ConversationActions extends Component {
 
     handleLeaveConversation = () => {
         axios.delete(
-            'http://localhost:3000/messages/',
+            'http://localhost:3000/conversations',
             {
                 params: {
-                    "user_id": this.state.user_id,
-                    "conversation_id": this.props.current_conversation_id,
+                    "id": this.props.current_conversation_id,
+                    "user_id": this.state.user_id
+                    
                 }
             }
         ).then(response => {
