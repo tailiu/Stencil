@@ -7,7 +7,7 @@ import {
 import Moment from 'moment';
 import axios from 'axios';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
-import ConversationInfo from './ConversationInfo'
+import ConversationActions from './ConversationActions'
 import { MenuItem } from 'material-ui/Menu';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
@@ -91,7 +91,7 @@ class Conversation extends Component {
                 <Avatar src={require('../Assets/Images/user_icon.png')} />
                 <ListItemText primary={title} secondary={latestUpdatedDate} />
                 <ListItemSecondaryAction>
-                    <MoreVertIcon />
+                    <ConversationActions conversationID = {this.props.conversation.conversation.id}/>
                 </ListItemSecondaryAction>
             </MenuItem>
         )

@@ -47,14 +47,19 @@ class ConversationsController < ApplicationController
         userArr = []
         error = false
 
-        for participant in participants do 
-            user = User.find_by(handle: participant)
-            if user == nil
-                result['success'] = false
-                result['error'] = 'Invalid handle'
-                break
+        if participants.length == 0
+            result['success'] = false
+            result['error'] = 'No handle submitted'
+        else 
+            for participant in participants do 
+                user = User.find_by(handle: participant)
+                if user == nil
+                    result['success'] = false
+                    result['error'] = 'Invalid handle'
+                    break
+                end
+                userArr.push(user)
             end
-            userArr.push(user)
         end
 
         if result['success']
@@ -110,4 +115,14 @@ class ConversationsController < ApplicationController
         render json: {result: result}
     end
 
+    def destroy
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+        
+        render json: {result: result}
+    end
 end

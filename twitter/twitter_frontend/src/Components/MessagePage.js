@@ -1,16 +1,8 @@
 import React, {Component} from "react";
-import TextField from 'material-ui/TextField';
 import Grid from 'material-ui/Grid';
 import Divider from 'material-ui/Divider';
 import NavBar from './NavBar';
-import Avatar from 'material-ui/Avatar';
 import Button from 'material-ui/Button';
-import Dialog, {
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-} from 'material-ui/Dialog';
 import MessageBar from './MessageBar';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
@@ -88,7 +80,7 @@ class MessagePage extends Component {
             this.setCurrentConversation(conversation_id, conversation_type)
             this.getMessageList(conversation_id)
         })
-        this.timer = setInterval(()=> this.periodicActions(), 6000);
+        // this.timer = setInterval(()=> this.periodicActions(), 6000);
     }
 
     componentWillUnmount() {
