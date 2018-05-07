@@ -46,7 +46,9 @@ class Conversation extends Component {
         var conversationTitle = ''
         var handle = ''
 
-        if (conversation_participants.length == 2) {
+        if (conversation_participants.length == 1) {
+            conversationTitle += 'You'
+        } else if (conversation_participants.length == 2) {
             for (var i in conversation_participants) {
                 handle = conversation_participants[i].handle
                 if (this.state.user_handle == handle) {
