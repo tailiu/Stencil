@@ -126,7 +126,9 @@ class TweetsController < ApplicationController
             # @user = User.where(id: params[:user_id]).first
             retweets = user.retweets.pluck(:tweet_id)
             tweets = user.tweets.pluck(:id)
-            alltweets = Tweet.where(:id => retweets+tweets).order('created_at DESC')
+            blocked_users = UserAction.where(from_user_id: user.id, action_type: "block").pluck(:to_user_id)
+            blocked_by_users = UserAction.where(to_user_id: user.id, action_type: "block").pluck(:from_user_id)
+            alltweets = Tweet.where(:id => retweets+tweets).where.not(:user_id => blocked_by_users + blocked_users).order('created_at DESC')
             # tweets = user.tweets
             # tweets = user.tweets.or(retweets)
             # tweets = tweets.concat(retweets)
@@ -164,7 +166,10 @@ class TweetsController < ApplicationController
             user = User.find(params[:user_id])
             retweets = user.retweets.order('created_at DESC').pluck(:tweet_id)
             following_users = UserAction.where(from_user_id: user.id, action_type: "follow").pluck(:to_user_id)
-            allusers = following_users + [user.id]
+            blocked_users = UserAction.where(from_user_id: user.id, action_type: "block").or(UserAction.where(from_user_id: user.id, action_type: "mute")).pluck(:to_user_id)
+            blocked_by_users = UserAction.where(to_user_id: user.id, action_type: "block").pluck(:from_user_id)
+            # muted_users = UserAction.where(from_user_id: user.id, action_type: "mute").pluck(:to_user_id)
+            allusers = following_users + [user.id] - blocked_users - blocked_by_users
             alltweets = Tweet.where(:user_id => allusers).or(Tweet.where(:id => retweets))
             alltweets = alltweets.order('created_at DESC')
             for tweet in alltweets do

@@ -5,6 +5,9 @@ import Typography from 'material-ui/Typography';
 import Tweet from './Tweet';
 
 const styles = {
+    logo: {
+		height: 150,
+	},
     paper: {
         padding: 15,
         textAlign : "center",
@@ -19,9 +22,10 @@ function TweetList(props) {
         return (
             <Grid item>
                 <Paper elevation={2} style={styles.paper}>
-                    <Typography variant="headline" component="h3">
+                <img style={styles.logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
+                    {/* <Typography variant="headline" component="h3">
                         Tweet NOW!
-                    </Typography>
+                    </Typography> */}
                 </Paper>
             </Grid>
         );
