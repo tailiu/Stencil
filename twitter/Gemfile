@@ -58,3 +58,8 @@ gem 'react-rails'
 gem 'webpacker'
 
 gem 'carrierwave', '~> 1.0'
+
+gem 'mysql2',          '~> 0.3',    :platform => :ruby
+gem 'jdbc-mysql',      '~> 5.1.35', :platform => :jruby
+
+gem 'thinking-sphinx', '~> 4.0'
