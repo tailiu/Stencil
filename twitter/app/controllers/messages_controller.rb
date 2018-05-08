@@ -9,12 +9,17 @@ class MessagesController < ApplicationController
 
         conversation = Conversation.find_by(id: params[:id])
         messages = nil
-        if (conversation!=nil) then
+        if conversation == nil
+            result["success"] = false
+            result["error"] = "No such conversation"
+        end
+
+        if result["success"]
             messages = Message.joins("INNER JOIN users ON messages.user_id = users.id")
                         .where('messages.conversation_id' => conversation.id)
                         .select("users.name, users.avatar, messages.*")
+            result["messages"] = messages
         end
-        result["messages"] = messages
 
         render json: {result: result}
     end
@@ -26,9 +31,19 @@ class MessagesController < ApplicationController
             "error" => {
             }
         }
+        user = User.find_by_id(params[:user_id])
+        conversation = Conversation.find_by_id(params[:conversation_id])
+        content = params[:content]
 
-        new_message = Message.new(content: params[:content], user_id: params[:user_id], conversation_id: params[:conversation_id])
-        new_message.save
+        if user == nil || conversation == nil
+            result["success"] = false
+            result["error"] = "No such conversation or user"
+        end
+
+        if result["success"]
+            new_message = Message.new(content: content, user_id: user.id, conversation_id: conversation.id)
+            new_message.save
+        end
         
         render json: {result: result}
     end

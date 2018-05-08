@@ -39,11 +39,13 @@ const styles = {
     },
     messageListContainer: {
         height: "70vh",
-        overflow: "auto"
     },
     messageList: {
-        height: "58vh",
+        height: "57vh",
         overflow: "auto"
+    },
+    messageInput: {
+        height: "8vh"
     }
 };
 
@@ -74,7 +76,7 @@ class MessagePage extends Component {
 
     componentDidMount() {
         this.initialize()
-        this.timer = setInterval(()=> this.periodicActions(), 6000);
+        // this.timer = setInterval(()=> this.periodicActions(), 6000);
     }
 
     componentWillUnmount() {
@@ -101,6 +103,7 @@ class MessagePage extends Component {
                 this.setCurrentConversation(conversation_id, conversation_type)
                 this.getMessageList(conversation_id)
             } else {
+                this.setCurrentConversation('', '')
                 this.setMessageState('')
             }
         })
@@ -231,7 +234,7 @@ class MessagePage extends Component {
                                 />
                             </div>
                             <Divider light />
-                            <div>
+                            <div style={styles.messageInput}>
                                 <MessageInput 
                                     current_conversation_id = {this.state.current_conversation_id}
                                     onNewMessage = {this.handleNewMessage}

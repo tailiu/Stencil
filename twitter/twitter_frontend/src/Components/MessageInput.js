@@ -60,7 +60,7 @@ class MessageInput extends Component {
     }
 
     catchReturn = (e) => {
-        if (e.key === 'Enter' && (this.state.value != '')) {
+        if (e.key === 'Enter' && this.state.value != '' && this.props.current_conversation_id != '') {
             this.handleNewMessage()
         }
         
@@ -69,7 +69,7 @@ class MessageInput extends Component {
     render() {
         var disabled = true
 
-        if (this.state.value != '') {
+        if (this.state.value != '' && this.props.current_conversation_id != '') {
             disabled = false
         }
         
