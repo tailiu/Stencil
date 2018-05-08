@@ -59,65 +59,6 @@ const styles = {
 
 }
 
-class FollowRequestList extends Component {
-
-    constructor(props) {
-        super(props)
-
-        this.state = {
-            reqList: this.props.requests
-        }
-    }
-
-    approveFollowRequest =(from_user, to_user)=> {
-
-        axios.get(
-            'http://localhost:3000/users/approveFollowRequest',
-            {
-              params: {
-                'from_user_id': from_user,
-                'to_user_id': to_user
-              }
-            }
-          ).then(response => {
-            if(response.data.result.success){
-                console.log("DONE");
-            }else{
-                
-            }
-          })
-    }
-
-    render() {
-        return(
-            this.state.reqList.map((req) =>
-            // <div style={styles.follow_list_item}>
-            //     <Typography variant="body2" >
-            //     {req.user.name}, @{req.user.handle}
-            //     </Typography>
-            // </div>
-            <ListItem>
-                <ListItemText
-                    // primary={req.user.name + ", @"+req.user.handle}
-                    primary={
-                        renderHTML(
-                            "<strong>"+req.user.name + "</strong>, <i>@"+req.user.handle+"</i>"
-                        )
-                    }
-                    // secondary={secondary ? 'Secondary text' : null}
-                />
-                <ListItemSecondaryAction onClick={this.approveFollowRequest.bind(this, req.from_user_id, req.to_user_id)}>
-                    <ListItemIcon >
-                        <img style={styles.approve_button} alt="allow" src={require('../Assets/Images/approve-icon.png')} /> 
-                    </ListItemIcon>
-                </ListItemSecondaryAction>
-            </ListItem>
-            )
-        )
-    }
-
-}
-
 class FollowRequestsBox extends Component{
 
     constructor(props){
@@ -137,7 +78,28 @@ class FollowRequestsBox extends Component{
         this.getFollowRequests();
     }
 
+    approveFollowRequest =(from_user, to_user)=> {
+
+        axios.get(
+            'http://localhost:3000/users/approveFollowRequest',
+            {
+              params: {
+                'from_user_id': from_user,
+                'to_user_id': to_user
+              }
+            }
+          ).then(response => {
+            if(response.data.result.success){
+                console.log("DONE:"+from_user);
+            }else{
+                
+            }
+            this.getFollowRequests()
+          })
+    }
+
     getFollowRequests =()=> {
+        console.log("Fetch new requests!")
         axios.get(
             'http://localhost:3000/users/getFollowRequests',
             {
@@ -147,9 +109,13 @@ class FollowRequestsBox extends Component{
             }
           ).then(response => {
             if(response.data.result.success){
-              this.setState({
-                  follow_requests: response.data.result.follow_requests,
-              })
+                this.setState({
+                    follow_requests: response.data.result.follow_requests,
+                },
+                    ()=>{
+                        console.log("\n***\n "+JSON.stringify(this.state.follow_requests)+" \n***\n")
+                    }
+                )
             }else{
               
             }
@@ -171,7 +137,26 @@ class FollowRequestsBox extends Component{
                             </Typography>
                             <hr />
                             <List dense={true}>
-                                <FollowRequestList requests={this.state.follow_requests} />
+                            {this.state.follow_requests.map((req) =>
+            
+                                <ListItem>
+                                    <ListItemText
+                                        // primary={req.user.name + ", @"+req.user.handle}
+                                        primary={
+                                            renderHTML(
+                                                "<strong>"+req.user.name + "</strong>, <i>@"+req.user.handle+"</i>"
+                                            )
+                                        }
+                                        // secondary={secondary ? 'Secondary text' : null}
+                                    />
+                                    <ListItemSecondaryAction onClick={this.approveFollowRequest.bind(this, req.from_user_id, req.to_user_id)}>
+                                        <ListItemIcon >
+                                            <img style={styles.approve_button} alt="allow" src={require('../Assets/Images/approve-icon.png')} /> 
+                                        </ListItemIcon>
+                                    </ListItemSecondaryAction>
+                                </ListItem>
+                                )
+                            }
                             </List>
                         </CardContent>
                     </Card>

@@ -135,8 +135,8 @@ class Profile extends Component {
         ).then(response => {
 
             if(response.data.result.success){
-                console.log("result:")
-                console.log(response.data.result.tweets)
+                // console.log("result:")
+                // console.log(response.data.result.tweets)
                 this.setState({
                     tweets: response.data.result.tweets,
                 })

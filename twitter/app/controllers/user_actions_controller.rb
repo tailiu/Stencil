@@ -113,7 +113,8 @@ class UserActionsController < ApplicationController
             else
                 follow_requests = UserAction.where(to_user_id: params[:user_id], action_type: "follow_pending")
                 if follow_requests.nil? || follow_requests.empty?
-                    result["success"] = false
+                    result["success"] = true
+                    result["follow_requests"] = []
                     result["error"]["message"] = "No follow requests!"
                 else
                     result["success"] = true
