@@ -16,6 +16,7 @@ Rails.application.routes.draw do
 	get 'users/checkFollow', to: 'user_actions#checkFollow'
 	get 'users/checkMute', to: 'user_actions#checkMute'
 	get 'users/checkBlock', to: 'user_actions#checkBlock'
+	get 'users/checkTwoWayBlock', to: 'user_actions#checkTwoWayBlock'
 	get 'users/handleMute', to: 'user_actions#handleMute'
 	get 'users/handleBlock', to: 'user_actions#handleBlock'
 	get 'users/handleFollow', to: 'user_actions#handleFollow'

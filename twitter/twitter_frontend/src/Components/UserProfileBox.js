@@ -154,20 +154,17 @@ class UserProfileBox extends Component{
                 user_stats: response.data.result.user_stats,
                 avatar_symbol: response.data.result.user.name[0]
             })
+            this.checkDoesFollow();
+            this.checkDoesBlock();
+            this.checkDoesMute();
         }else{
             this.MessageBar.showSnackbar("User doesn't exist!");
-            setTimeout(function() { 
-            this.goToHome();
-            }.bind(this), 1000);
         }
         })
     }
 
     componentWillMount(){
         this.getUserInfo();
-        this.checkDoesFollow();
-        this.checkDoesBlock();
-        this.checkDoesMute();
     }
 
     handleFollow =(follow, e)=> {
@@ -183,10 +180,13 @@ class UserProfileBox extends Component{
             }
           ).then(response => {
             if(response.data.result.success){
-                this.checkDoesFollow();
                 this.getUserInfo();
+                console.log("followd: success");
+                console.log(response);
             }else{
-                
+                console.log("followd: failed");
+                console.log(response);
+                this.MessageBar.showSnackbar(response.data.result.error.message);   
             }
           })
     }
@@ -300,19 +300,25 @@ class UserProfileBox extends Component{
                     </CardActions>
                 :
                     <CardActions>
-                        {this.state.does_follow === "pending" ?
-                            <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.pending_follow_button} size="small" >
-                                Pending
-                            </Button>
-                        :
-                            this.state.does_follow ?
-                                <Button onClick={this.handleFollow.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
-                                    Unfollow
+                        {!this.state.does_block ?
+                            this.state.does_follow === "pending" ?
+                                <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.pending_follow_button} size="small" >
+                                    Pending
                                 </Button>
+                            :   
+                            
+                                this.state.does_follow ?
+                                    <Button onClick={this.handleFollow.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
+                                        Unfollow
+                                    </Button>
+                                :
+                                    <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
+                                        Follow
+                                    </Button>
                             :
-                                <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
-                                    Follow
-                                </Button>
+                            <Fragment>
+                            </Fragment>
+                                
                         }
                         {this.state.does_block ?
                             <Button onClick={this.handleBlock.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
@@ -323,14 +329,18 @@ class UserProfileBox extends Component{
                                 Block
                             </Button>
                         }
-                        {this.state.does_mute ?
-                            <Button onClick={this.handleMute.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
-                                Unmute
-                            </Button>
-                        :
-                            <Button onClick={this.handleMute.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
-                                Mute
-                            </Button>
+                        {!this.state.does_block?
+                            this.state.does_mute ?
+                                <Button onClick={this.handleMute.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
+                                    Unmute
+                                </Button>
+                            :
+                                <Button onClick={this.handleMute.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
+                                    Mute
+                                </Button>
+                            :
+                            <Fragment>
+                            </Fragment>
                         }
                     </CardActions>
                 }

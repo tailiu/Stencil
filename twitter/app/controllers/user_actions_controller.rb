@@ -69,6 +69,31 @@ class UserActionsController < ApplicationController
         render json: {result: result}
     end
 
+    def checkTwoWayBlock
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+
+        if params[:from_user_id].nil? || params[:to_user_id].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            result["success"] = true
+            block = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block")
+            is_blocked = UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "block")
+            if (block.nil? || block.empty?) && (is_blocked.nil? || is_blocked.empty?)
+                result["block"] = false
+            else
+                result["block"] = true
+            end
+        end
+        
+        render json: {result: result}
+    end
+
     def checkMute
         result = {
             # params: params,
@@ -151,22 +176,29 @@ class UserActionsController < ApplicationController
                 result["success"] = false
                 result["error"]["message"] = "User[s] don't exist!"
             else
-                result["user"] = user
-                if params[:follow] === "true"
-                    if to_user.protected
-                        follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")
-                    else
-                        follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
-                    end
-                    # follow = user.build_user_action(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
-                    follow.save
-                    result["follow"] = follow
+                block = UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "block")
+                if !block.nil? && !block.empty?
+                    result["success"] = false
+                    result["error"]["message"] = "This person has blocked you!"
+                    result["block"] = block
                 else
-                    follow = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").first
-                    UserAction.delete(follow.id)
-                    result["follow"] = false
+                    result["user"] = user
+                    if params[:follow] === "true"
+                        if to_user.protected
+                            follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")
+                        else
+                            follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
+                        end
+                        # follow = user.build_user_action(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
+                        follow.save
+                        result["follow"] = follow
+                        result["success"] = true
+                    else
+                        follow = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").first
+                        UserAction.delete(follow.id)
+                        result["follow"] = false
+                    end
                 end
-                result["success"] = true
             end
         end
         render json: {result: result}
@@ -225,6 +257,15 @@ class UserActionsController < ApplicationController
             if params[:block] === "true"
                 block = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block")
                 block.save
+                follow_list = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").
+                        or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "follow")).
+                        or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "follow_pending")).
+                        or(UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending"))
+                if !follow_list.nil? && !follow_list.empty? 
+                    for follow in follow_list do
+                        UserAction.delete(follow.id)
+                    end
+                end
                 result["block"] = block
             else
                 block = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block").first

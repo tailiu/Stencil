@@ -111,11 +111,7 @@ class FollowRequestsBox extends Component{
             if(response.data.result.success){
                 this.setState({
                     follow_requests: response.data.result.follow_requests,
-                },
-                    ()=>{
-                        console.log("\n***\n "+JSON.stringify(this.state.follow_requests)+" \n***\n")
-                    }
-                )
+                })
             }else{
               
             }
@@ -144,7 +140,11 @@ class FollowRequestsBox extends Component{
                                         // primary={req.user.name + ", @"+req.user.handle}
                                         primary={
                                             renderHTML(
-                                                "<strong>"+req.user.name + "</strong>, <i>@"+req.user.handle+"</i>"
+                                                "<strong>"+
+                                                "<a style='text-decoration: none;' href='/profile/"+req.user.id+"'>"+
+                                                req.user.name+
+                                                "</a>"+
+                                                "</strong>, <i>@"+req.user.handle+"</i>"
                                             )
                                         }
                                         // secondary={secondary ? 'Secondary text' : null}

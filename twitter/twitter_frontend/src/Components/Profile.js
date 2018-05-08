@@ -78,7 +78,7 @@ class Profile extends Component {
     componentWillMount(){
 
         axios.get(
-            'http://localhost:3000/users/checkBlock',
+            'http://localhost:3000/users/checkTwoWayBlock',
             {
               params: {
                 'from_user_id': this.state.logged_in_user, 
@@ -86,32 +86,13 @@ class Profile extends Component {
               }
             }
           ).then(response => {
+            
             if(response.data.result.success){
                 if(response.data.result.block){
                     this.MessageBar.showSnackbar("BLOCKED");
                 }else{
-                    axios.get(
-                        'http://localhost:3000/users/checkBlock',
-                        {
-                          params: {
-                            'from_user_id': this.state.user_id, 
-                            'to_user_id': this.state.logged_in_user, 
-                          }
-                        }
-                      ).then(response => {
-                        if(response.data.result.success){
-                            if(response.data.result.block){
-                                this.MessageBar.showSnackbar("BLOCKED");
-                            }else{
-                                this.fetchTweets();
-                                this.timer = setInterval(()=> this.fetchTweets(), 30000);
-                            }
-                        }else{
-                          
-                        }
-                      })
-                    // this.fetchTweets();
-                    // this.timer = setInterval(()=> this.fetchTweets(), 30000);
+                    this.fetchTweets();
+                    this.timer = setInterval(()=> this.fetchTweets(), 30000);
                 }
             }else{
               
