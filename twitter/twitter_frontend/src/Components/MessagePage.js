@@ -73,14 +73,8 @@ class MessagePage extends Component {
     }
 
     componentDidMount() {
-        this.getConversationList((conversations) => {
-            const conversation_id = conversations[0].conversation.id 
-            const conversation_type = conversations[0].conversation_type
-
-            this.setCurrentConversation(conversation_id, conversation_type)
-            this.getMessageList(conversation_id)
-        })
-        // this.timer = setInterval(()=> this.periodicActions(), 6000);
+        this.initialize()
+        this.timer = setInterval(()=> this.periodicActions(), 6000);
     }
 
     componentWillUnmount() {
@@ -90,6 +84,26 @@ class MessagePage extends Component {
     periodicActions = () => {
         this.getConversationList()
         this.getMessageList(this.state.current_conversation_id)
+    }
+
+    setMessageState = (messages) => {
+        this.setState({
+            'messages': messages,
+        });
+    }
+
+    initialize = () => {
+        this.getConversationList((conversations) => {
+            if (conversations.length >= 1) {
+                const conversation_id = conversations[0].conversation.id 
+                const conversation_type = conversations[0].conversation_type
+
+                this.setCurrentConversation(conversation_id, conversation_type)
+                this.getMessageList(conversation_id)
+            } else {
+                this.setMessageState('')
+            }
+        })
     }
 
     getConversationList = (cb) => {
@@ -105,10 +119,6 @@ class MessagePage extends Component {
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
                 const conversations = response.data.result.conversations
-
-                if (conversations.length == 0) {
-                    return 
-                }  
                 
                 this.setState({
                     'conversations': conversations,
@@ -137,15 +147,10 @@ class MessagePage extends Component {
         ).then(response => {
             if(!response.data.result.success){
             }else{
-                // console.log(response.data.result.messages)
                 if (response.data.result.messages == undefined) {
-                    this.setState({
-                        messages: ""
-                    })
+                    this.setMessageState('')
                 } else {
-                    this.setState({
-                        messages: response.data.result.messages
-                    })
+                    this.setMessageState(response.data.result.messages)
                 }
     
             }
@@ -169,6 +174,10 @@ class MessagePage extends Component {
     handleConversationChange = (current_conversation_id, current_conversation_type) => {
         this.setCurrentConversation(current_conversation_id, current_conversation_type)
         this.getMessageList(current_conversation_id)    
+    }
+
+    handleLeaveConversation = () => {
+        this.initialize()
     }
 
     handleNewMessage = () => {
@@ -205,8 +214,10 @@ class MessagePage extends Component {
                     <Grid item xs={3}>
                         <Paper style={styles.conversationListContainer} >
                             <ConversationList 
+                                messageBar={this.MessageBar} 
                                 conversations = {this.state.conversations}
                                 onConversationChange =  {this.handleConversationChange}
+                                onLeaveConversation =  {this.handleLeaveConversation}
                                 current_conversation_id = {this.state.current_conversation_id}
                             />
                         </Paper>

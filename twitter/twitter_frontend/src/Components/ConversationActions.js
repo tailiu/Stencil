@@ -45,20 +45,22 @@ class ConversationActions extends Component {
     }
 
     handleLeaveConversation = () => {
-        axios.delete(
-            'http://localhost:3000/conversations',
+        console.log(this.props.current_conversation_id)
+        console.log(this.state.user_id)
+        axios.get(
+            'http://localhost:3000/conversations/leaveConversation',
             {
                 params: {
-                    "id": this.props.current_conversation_id,
+                    "conversation_id": this.props.conversationID,
                     "user_id": this.state.user_id
-                    
                 }
             }
         ).then(response => {
             if(!response.data.result.success){
+                this.props.messageBar.showSnackbar(response.data.result.error)
             }else{
-                console.log('ooooooooooooooo')
-                // this.props.onNewMessage()
+                this.props.messageBar.showSnackbar('Leave conversation successfully')
+                this.props.onLeaveConversation()
             }
         })
     }

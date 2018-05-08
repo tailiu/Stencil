@@ -91,7 +91,11 @@ class Conversation extends Component {
                 <Avatar src={require('../Assets/Images/user_icon.png')} />
                 <ListItemText primary={title} secondary={latestUpdatedDate} />
                 <ListItemSecondaryAction>
-                    <ConversationActions conversationID = {this.props.conversation.conversation.id}/>
+                    <ConversationActions
+                        messageBar = {this.props.messageBar} 
+                        conversationID = {this.props.conversation.conversation.id}
+                        onLeaveConversation = {this.props.onLeaveConversation}
+                    />
                 </ListItemSecondaryAction>
             </MenuItem>
         )

@@ -26,6 +26,8 @@ Rails.application.routes.draw do
 	post 'tweets/newf', to: 'tweets#new'
 	get 'tweets/delete', to: 'tweets#delete'
 
+	get 'conversations/leaveConversation', to: 'conversations#leaveConversation'
+
 	resources :users
 	resources :user_actions
 	resources :tweets

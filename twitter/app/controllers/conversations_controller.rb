@@ -7,7 +7,7 @@ class ConversationsController < ApplicationController
             }
         }
 
-        user = User.find(params[:id])
+        user = User.find_by_id(params[:id])
 
         conversation_participants = user.conversation_participants.order(created_at: :desc)
 
@@ -72,7 +72,7 @@ class ConversationsController < ApplicationController
                 for conversation_participant in conversation_participants do
                     conversation = conversation_participant.conversation
                     if conversation.conversation_type != conversation_type
-                        continue 
+                        next 
                     end
 
                     if conversation.conversation_participants.size == 1
@@ -115,13 +115,32 @@ class ConversationsController < ApplicationController
         render json: {result: result}
     end
 
-    def destroy
+    def leaveConversation
         result = {
             # params: params,
             "success" => true,
             "error" => {
             }
         }
+
+        conversation = Conversation.find_by_id(params[:conversation_id])
+        user = User.find_by_id(params[:user_id])
+
+        if user == nil || conversation == nil || !conversation.conversation_participants.find_by(user_id: user.id)
+            result['success'] = false
+            result['error'] = 'No such conversation or user, or this user does not belong to this conversation'
+        end
+
+        if result['success']
+            conversation_participants = conversation.conversation_participants
+            conversation_participant = conversation_participants.find_by(user_id: user.id)
+            conversation_participants.delete(conversation_participant)
+
+            if conversation_participants.empty?
+                conversation.messages.clear()
+                conversation.delete()
+            end
+        end
         
         render json: {result: result}
     end
