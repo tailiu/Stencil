@@ -1,4 +1,3 @@
-import Grid from 'material-ui/Grid';
 import React, {Component} from "react";
 import List from 'material-ui/List';
 import Message from './Message'

@@ -20,8 +20,10 @@ class ConversationList extends Component {
         const conversationList = conversations.map((conversation) =>
             <div key={conversation.conversation.id}>
                 <Conversation 
+                    messageBar = {this.props.messageBar}
                     conversation = {conversation} 
                     onConversationChange = {this.props.onConversationChange}
+                    onLeaveConversation = {this.props.onLeaveConversation}
                     selected={this.props.current_conversation_id}
                 />
                 <li>
