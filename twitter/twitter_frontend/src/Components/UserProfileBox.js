@@ -37,6 +37,11 @@ const styles = {
         backgroundColor: "#F94877",
         color: "#fff",
         marginBottom: 5
+    },
+    pending_follow_button: {
+        backgroundColor: "#ffb347",
+        color: "#fff",
+        marginBottom: 5
     }
 }
 
@@ -178,9 +183,7 @@ class UserProfileBox extends Component{
             }
           ).then(response => {
             if(response.data.result.success){
-                this.setState({
-                  does_follow: response.data.result.follow,
-                })
+                this.checkDoesFollow();
                 this.getUserInfo();
             }else{
                 
@@ -297,14 +300,19 @@ class UserProfileBox extends Component{
                     </CardActions>
                 :
                     <CardActions>
-                        {this.state.does_follow ?
-                            <Button onClick={this.handleFollow.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
-                                Unfollow
+                        {this.state.does_follow === "pending" ?
+                            <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.pending_follow_button} size="small" >
+                                Pending
                             </Button>
                         :
-                            <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
-                                Follow
-                            </Button>
+                            this.state.does_follow ?
+                                <Button onClick={this.handleFollow.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >
+                                    Unfollow
+                                </Button>
+                            :
+                                <Button onClick={this.handleFollow.bind(this, true)} fullWidth style={styles.follow_button} size="small" >
+                                    Follow
+                                </Button>
                         }
                         {this.state.does_block ?
                             <Button onClick={this.handleBlock.bind(this, false)} fullWidth style={styles.unfollow_button} size="small" >

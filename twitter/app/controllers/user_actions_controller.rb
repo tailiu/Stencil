@@ -31,7 +31,12 @@ class UserActionsController < ApplicationController
             result["success"] = true
             follow = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
             if follow.nil? || follow.empty?
-                result["follow"] = false
+                follow = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")
+                if follow.nil? || follow.empty?
+                    result["follow"] = false
+                else
+                    result["follow"] = "pending"
+                end
             else
                 result["follow"] = true
             end
@@ -87,6 +92,44 @@ class UserActionsController < ApplicationController
         
         render json: {result: result}
     end
+    
+    def getFollowRequests
+        result = {
+            # params: params,
+            "success" => false,
+            # "params" => params,
+            "error" => {
+            }
+        }
+
+        if params[:user_id].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.where(id: params[:user_id]).first
+            if user.nil?
+                result["success"] = false
+                result["error"]["message"] = "User doesn't exist!"
+            else
+                follow_requests = UserAction.where(to_user_id: params[:user_id], action_type: "follow_pending")
+                if follow_requests.nil? || follow_requests.empty?
+                    result["success"] = false
+                    result["error"]["message"] = "No follow requests!"
+                else
+                    result["success"] = true
+                    result["follow_requests"] = []
+                    for request in follow_requests do 
+                        request = request.attributes
+                        request["user"] = User.where(id: request["from_user_id"]).first
+                        result["follow_requests"].push(request)
+                    end
+                end
+            end
+            
+        end
+        render json: {result: result}
+    end
+
 
     def handleFollow
         result = {
@@ -102,18 +145,63 @@ class UserActionsController < ApplicationController
             result["error"]["message"] = "Incomplete params!"
         else
             user = User.where(id: params[:from_user_id]).first
-            result["user"] = user
-            if params[:follow] === "true"
-                follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
-                # follow = user.build_user_action(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
-                follow.save
-                result["follow"] = follow
+            to_user = User.where(id: params[:to_user_id]).first
+            if user.nil? || to_user.nil?
+                result["success"] = false
+                result["error"]["message"] = "User[s] don't exist!"
             else
-                follow = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").first
-                UserAction.delete(follow.id)
-                result["follow"] = false
+                result["user"] = user
+                if params[:follow] === "true"
+                    if to_user.protected
+                        follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")
+                    else
+                        follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
+                    end
+                    # follow = user.build_user_action(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
+                    follow.save
+                    result["follow"] = follow
+                else
+                    follow = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").first
+                    UserAction.delete(follow.id)
+                    result["follow"] = false
+                end
+                result["success"] = true
             end
-            result["success"] = true
+        end
+        render json: {result: result}
+    end
+
+    def approveFollowRequest
+        result = {
+            # params: params,
+            "success" => false,
+            "params" => params,
+            "error" => {
+            }
+        }
+
+        if params[:from_user_id].nil? || params[:to_user_id].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        else
+            user = User.where(id: params[:from_user_id]).first
+            to_user = User.where(id: params[:to_user_id]).first
+            if user.nil? || to_user.nil?
+                result["success"] = false
+                result["error"]["message"] = "User[s] don't exist!"
+            else
+                result["user"] = user
+                follow = UserAction.find_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")
+                if follow.nil?
+                    result["success"] = false
+                    result["error"]["message"] = "Follow request doesn't exist."
+                else
+                    result["success"] = true
+                    follow.action_type = "follow"
+                    follow.save
+                    result["follow"] = follow
+                end
+            end
         end
         render json: {result: result}
     end

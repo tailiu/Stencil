@@ -19,6 +19,8 @@ Rails.application.routes.draw do
 	get 'users/handleMute', to: 'user_actions#handleMute'
 	get 'users/handleBlock', to: 'user_actions#handleBlock'
 	get 'users/handleFollow', to: 'user_actions#handleFollow'
+	get 'users/approveFollowRequest', to: 'user_actions#approveFollowRequest'
+	get 'users/getFollowRequests', to: 'user_actions#getFollowRequests'
 	get 'users/updateEmail', to: 'users#updateEmail'
 	get 'users/updateHandle', to: 'users#updateHandle'
 	get 'users/updatePassword', to: 'users#updatePassword'

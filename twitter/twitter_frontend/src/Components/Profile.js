@@ -7,6 +7,7 @@ import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import MessageBar from './MessageBar';
 import TweetList from './TweetList';
+import FollowRequestsBox from "./FollowRequestsBox";
 
 const styles = {
     grid : {
@@ -167,8 +168,16 @@ class Profile extends Component {
                 </Grid>
 
                 <Grid item xs={3}>
-                    <UserProfileBox user_id={this.state.user_id}/>
-
+                    <Grid container direction="column" spacing={8}>
+                        <Grid item>
+                            <UserProfileBox user_id={this.state.user_id}/>
+                        </Grid>
+                        <Grid item>
+                            {this.state.logged_in_user == this.state.user_id &&
+                                <FollowRequestsBox user_id={this.state.user_id}/>
+                            }
+                        </Grid>
+                    </Grid>
                 </Grid>
 
                 <Grid item xs={7}>

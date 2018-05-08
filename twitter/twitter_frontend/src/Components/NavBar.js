@@ -190,7 +190,9 @@ class NavBar extends Component {
                     <NewTweetDialog open={this.state.tweet_box_open} onChange={this.handleTweetBoxClose} />
                 </Toolbar>
             </AppBar>
-            <UserSearchBox query={this.state.search_query}/>
+
+                <UserSearchBox query={this.state.search_query}/>
+
             </Fragment>
         );
     }

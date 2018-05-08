@@ -74,17 +74,14 @@ class UserSearchBox extends Component {
                     this.searchUser()
             }
         );
-        console.log("HERE I AM! PROPS!")
-        console.log(this.state)
     }
 
-    componentDidUpdate(prevProps, prevState, snapshot) {
-        // this.setState({query: prevProps.query});
-        // console.log("HERE I AM! UPDAYED!")
-        // console.log("HERE I AM! PROPS!")
-        // console.log("prevProps:"+JSON.stringify(prevProps))
-        // console.log("prevState:"+JSON.stringify(prevState))
-        // console.log("snapshot:"+JSON.stringify(snapshot))
+    componentWillMount() {
+        console.log("MOUNTED")
+    }
+
+    componentWillUnmount() {
+        console.log("UUUUNNNMOUNTED")
     }
 
     searchUser =()=> {
@@ -100,7 +97,7 @@ class UserSearchBox extends Component {
             ).then(response => {
     
                 if(response.data.result.success){
-                    console.log("API:"+JSON.stringify(response.data.result.users))
+                    // console.log("API:"+JSON.stringify(response.data.result.users))
                     this.setState({
                         search_users: response.data.result.users,
                     })
