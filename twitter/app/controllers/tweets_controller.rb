@@ -47,6 +47,15 @@ class TweetsController < ApplicationController
                     @new_tweet.save
                     @result["success"] = true
                     @result["tweet"] = @new_tweet
+                    reply_tweet = Tweet.find_by_id(params[:reply_id])
+                    if !reply_tweet.nil?
+                        notif = Notification.create(notification_type: "reply", user_id: reply_tweet.user.id, from_user: params[:user_id], tweet: reply_tweet.id, is_seen: false)
+                        if notif.valid?
+                            notif.save
+                        end
+                        @result["notif"] = notif
+                    end
+
                 else
                     puts @new_tweet.errors.messages
                     @result["success"] = false
@@ -291,6 +300,11 @@ class TweetsController < ApplicationController
                     if params[:like] === "true"
                         like.save
                         result["like"] = like
+                        notif = Notification.create(notification_type: "like", user_id: tweet.user.id, from_user: params[:user_id], tweet: tweet.id, is_seen: false)
+                        if notif.valid?
+                            notif.save
+                        end
+                        result["notif"] = notif
                     else
                         Like.destroy(like.id)
                     end
@@ -337,6 +351,11 @@ class TweetsController < ApplicationController
                             retweet.save
                             result["retweet"] = retweet
                             result["success"] = true
+                            notif = Notification.create(notification_type: "retweet", user_id: tweet.user.id, from_user: params[:user_id], tweet: tweet.id, is_seen: false)
+                            if notif.valid?
+                                notif.save
+                            end
+                            result["notif"] = notif
                         end
                     else
                         result["success"] = true

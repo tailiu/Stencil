@@ -3,6 +3,9 @@ import Grid from 'material-ui/Grid';
 import Card, { CardContent, CardHeader } from 'material-ui/Card';
 import NavBar from './NavBar';
 import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
+import axios from 'axios';
+import { withCookies, Cookies } from 'react-cookie';
+import { instanceOf } from 'prop-types';
 
 const styles = {
     grid : {
@@ -15,14 +18,48 @@ const styles = {
 
 class Notif extends Component {
 
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+    };
+
     constructor(props) {
 
         super(props);
+        const { cookies } = this.props;
         this.state = {
+            user_id: cookies.get('user_id'),
+            notifs: []
         }
     }
 
-  render () {
+    componentDidMount(){
+        console.log("here notif")
+        this.getNotifs();
+    }
+
+    getNotifs =(e)=> {
+
+        axios.get(
+            'http://localhost:3000/notifications/get',
+            {
+              params: {
+                'user_id': this.state.user_id, 
+              }
+            }
+          ).then(response => {
+            console.log(response)
+            if(response.data.result.success){
+                this.setState({
+                  notifs: response.data.result.notifs,
+                })
+
+            }else{
+                console.log("Notif error!");
+            }
+          })
+    }
+
+    render () {
     return (
         <Fragment>
             <NavBar />
@@ -41,6 +78,17 @@ class Notif extends Component {
                                 <CardContent>
 
                                     <List dense={true}>
+                                    {this.state.notifs.map((notif) =>
+                                        <ListItem>
+                                            <ListItemIcon>
+                                            <img style={styles.logo} alt="retweet" src={require('../Assets/Images/retweet_icon.png')} /> 
+                                            </ListItemIcon>
+                                            <ListItemText
+                                            primary="Tai retweeted your tweet"
+                                            //   secondary={secondary ? 'Secondary text' : null}
+                                            />
+                                        </ListItem>
+                                    )}
                                         <ListItem>
                                             <ListItemIcon>
                                             <img style={styles.logo} alt="retweet" src={require('../Assets/Images/retweet_icon.png')} /> 
@@ -83,4 +131,4 @@ class Notif extends Component {
   }
 }
 
-export default Notif;
+export default withCookies(Notif);
