@@ -49,14 +49,18 @@ class NewConversation extends Component {
         const raw_data = this.state.message_to.split('@')
         raw_data.shift()
 
-        const participants = []
+        var participants = {
+            participants: [],
+            conversation_creator: ''
+        }
         for (var i in raw_data) {
             raw_data[i] = raw_data[i].replace(/\s/g,''); // replace all spaces in handles
             if (raw_data[i] != this.state.user_handle) {
-                participants.push(raw_data[i])
+                participants.participants.push(raw_data[i])
             }
         }
-        participants.push(this.state.user_handle)
+        participants.participants.push(this.state.user_handle)
+        participants.conversation_creator = this.state.user_handle
 
         axios.get(
             'http://localhost:3000/conversations/new',

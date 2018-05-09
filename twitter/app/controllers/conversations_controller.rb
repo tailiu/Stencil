@@ -42,7 +42,8 @@ class ConversationsController < ApplicationController
             }
         }
 
-        participants = params[:participants]
+        parameters = JSON.parse(params[:participants])
+        participants = parameters['participants']
 
         userArr = []
         error = false
@@ -103,10 +104,18 @@ class ConversationsController < ApplicationController
             end
 
             if !existed
+                conversation_creator = parameters['conversation_creator']
+                creator = User.find_by(handle: conversation_creator)
+
                 conversation = Conversation.create(conversation_type: conversation_type)
                 for user in userArr do
-                    conversation_participant = user.conversation_participants.create(conversation_id: conversation.id)
+                    if user.id == creator.id 
+                        user.conversation_participants.create(conversation_id: conversation.id, role: 'creator')
+                    else
+                        user.conversation_participants.create(conversation_id: conversation.id, role: 'normal')
+                    end
                 end
+
                 result["conversation"] = conversation
             end
             
@@ -115,6 +124,7 @@ class ConversationsController < ApplicationController
         render json: {result: result}
     end
 
+    
     def leaveConversation
         result = {
             # params: params,
