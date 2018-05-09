@@ -68,15 +68,13 @@ class Message extends Component {
         const styles = this.setStyle()
 
         return (
-            <div>
-                <ListItem style={styles.listContainer}>
-                    <Avatar src={require('../Assets/Images/user_icon.png')} />
-                    <ListItemText style={styles.listItem}
-                        primary={content}
-                        secondary={updatedDate}
-                    />
-                </ListItem>
-            </div>
+            <ListItem style={styles.listContainer}>
+                <Avatar src={require('../Assets/Images/user_icon.png')} />
+                <ListItemText style={styles.listItem}
+                    primary={content}
+                    secondary={updatedDate}
+                />
+            </ListItem>
         )   
     }
 }

@@ -1,13 +1,14 @@
-import React, {Component} from "react";
+import React, {Component, Fragment} from "react";
 import axios from 'axios';
 import TextField from 'material-ui/TextField';
 import Button from 'material-ui/Button';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
+import Grid from 'material-ui/Grid';
 
 var styles = {
     inputContainer: {
-        marginTop: 25
+        marginTop: 30
     },
     messagesInput: {
         width: "80%",
@@ -79,24 +80,29 @@ class MessageInput extends Component {
             variant: "raised",
             display: "inline-block",
             float: "right",
-            marginRight: 30
+            margin: 20,
+            marginRight: 30,
         }
 
         return (
-            <div style={styles.inputContainer}>
-                <TextField
-                    id="message"
-                    margin="normal"
-                    fullWidth
-                    style={styles.messagesInput}
-                    value={this.state.value}
-                    onChange={this.handleChange}
-                    onKeyPress={this.catchReturn}
-                />
-                <Button style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
-                    Send
-                </Button>
-            </div>
+            <Fragment >
+                <Grid >
+                    <TextField
+                        id="message"
+                        margin="normal"
+                        fullWidth
+                        style={styles.messagesInput}
+                        value={this.state.value}
+                        onChange={this.handleChange}
+                        onKeyPress={this.catchReturn}
+                    />
+                 </Grid>
+                 <Grid >
+                    <Button style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
+                        Send
+                    </Button>
+                </Grid>
+            </Fragment>
         )
     }
 }

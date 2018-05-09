@@ -41,11 +41,11 @@ const styles = {
         height: "70vh",
     },
     messageList: {
-        height: "57vh",
+        height: "87%",
         overflow: "auto"
     },
     messageInput: {
-        height: "8vh"
+        height: "13%"
     }
 };
 
@@ -227,19 +227,21 @@ class MessagePage extends Component {
                     </Grid>
                     <Grid item xs={7} >
                         <Paper style={styles.messageListContainer} >
-                            <div style={styles.messageList}>
+                            <Grid style={styles.messageList}>
                                 <MessageList 
                                     messages = {this.state.messages} 
                                     current_conversation_type = {this.state.current_conversation_type}
                                 />
-                            </div>
-                            <Divider light />
-                            <div style={styles.messageInput}>
+                            </Grid>
+                            <Grid>
+                                <Divider light />
+                            </Grid>
+                            <Grid style={styles.messageInput}>
                                 <MessageInput 
                                     current_conversation_id = {this.state.current_conversation_id}
                                     onNewMessage = {this.handleNewMessage}
                                 />
-                            </div>
+                            </Grid>
                         </Paper>
                     </Grid>
                     <Grid item xs={1}>
