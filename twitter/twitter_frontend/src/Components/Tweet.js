@@ -10,6 +10,7 @@ import axios from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import NewTweetDialog from './NewTweetDialog';
+import MessageBar from './MessageBar';
 
 const styles = {
     tweet: {
@@ -179,7 +180,8 @@ class Tweet extends Component{
                 })
                 this.stats();
             }else{
-                console.log("Unable to retweet!")
+                console.log(response)
+                this.MessageBar.showSnackbar(response.data.result.error.message);
             }
             })
     }
@@ -228,6 +230,7 @@ class Tweet extends Component{
                     }
                 />
                 <CardContent>
+                    <MessageBar ref={instance => { this.MessageBar = instance; }}/>
                     <Typography component="p">
                     {this.props.tweet.tweet.content}
                     </Typography>
