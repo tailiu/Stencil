@@ -1,6 +1,12 @@
 import React, {Component} from 'react';
 import Snackbar from 'material-ui/Snackbar';
 
+const styles = {
+    message: {
+        textAlign: "center"
+    }
+}
+
 class MessageBar extends Component {
 
     constructor(props){
@@ -32,12 +38,12 @@ class MessageBar extends Component {
                     horizontal: 'center',
                 }}
                 open={this.state.show}
-                autoHideDuration={3000}
+                autoHideDuration={2000}
                 // onClose={this.handleClose}
                 SnackbarContentProps={{
                     'aria-describedby': 'message-id',
                 }}
-                message={<span id="message-id">{this.state.message}</span>}
+                message={<span id="message-id" style={styles.message}>{this.state.message}</span>}
                 action={[
                 ]}
             />

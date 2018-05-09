@@ -7,6 +7,7 @@ import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import MessageBar from './MessageBar';
 import TweetList from './TweetList';
+import FollowRequestsBox from "./FollowRequestsBox";
 
 const styles = {
     grid : {
@@ -77,7 +78,7 @@ class Profile extends Component {
     componentWillMount(){
 
         axios.get(
-            'http://localhost:3000/users/checkBlock',
+            'http://localhost:3000/users/checkTwoWayBlock',
             {
               params: {
                 'from_user_id': this.state.logged_in_user, 
@@ -85,32 +86,13 @@ class Profile extends Component {
               }
             }
           ).then(response => {
+            
             if(response.data.result.success){
                 if(response.data.result.block){
                     this.MessageBar.showSnackbar("BLOCKED");
                 }else{
-                    axios.get(
-                        'http://localhost:3000/users/checkBlock',
-                        {
-                          params: {
-                            'from_user_id': this.state.user_id, 
-                            'to_user_id': this.state.logged_in_user, 
-                          }
-                        }
-                      ).then(response => {
-                        if(response.data.result.success){
-                            if(response.data.result.block){
-                                this.MessageBar.showSnackbar("BLOCKED");
-                            }else{
-                                this.fetchTweets();
-                                this.timer = setInterval(()=> this.fetchTweets(), 30000);
-                            }
-                        }else{
-                          
-                        }
-                      })
-                    // this.fetchTweets();
-                    // this.timer = setInterval(()=> this.fetchTweets(), 30000);
+                    this.fetchTweets();
+                    this.timer = setInterval(()=> this.fetchTweets(), 30000);
                 }
             }else{
               
@@ -134,8 +116,8 @@ class Profile extends Component {
         ).then(response => {
 
             if(response.data.result.success){
-                console.log("result:")
-                console.log(response.data.result.tweets)
+                // console.log("result:")
+                // console.log(response.data.result.tweets)
                 this.setState({
                     tweets: response.data.result.tweets,
                 })
@@ -167,8 +149,16 @@ class Profile extends Component {
                 </Grid>
 
                 <Grid item xs={3}>
-                    <UserProfileBox user_id={this.state.user_id}/>
-
+                    <Grid container direction="column" spacing={8}>
+                        <Grid item>
+                            <UserProfileBox user_id={this.state.user_id}/>
+                        </Grid>
+                        <Grid item>
+                            {this.state.logged_in_user == this.state.user_id &&
+                                <FollowRequestsBox user_id={this.state.user_id}/>
+                            }
+                        </Grid>
+                    </Grid>
                 </Grid>
 
                 <Grid item xs={7}>
