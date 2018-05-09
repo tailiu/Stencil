@@ -209,7 +209,9 @@ class UserProfileBox extends Component{
                 })
                 this.getUserInfo();
             }else{
-                
+                console.log("block: failed");
+                console.log(response);
+                this.MessageBar.showSnackbar(response.data.result.error.message);   
             }
           })
     }
@@ -232,7 +234,9 @@ class UserProfileBox extends Component{
                 })
                 this.getUserInfo();
             }else{
-                
+                console.log("mute: failed");
+                console.log(response);
+                this.MessageBar.showSnackbar(response.data.result.error.message);      
             }
           })
     }

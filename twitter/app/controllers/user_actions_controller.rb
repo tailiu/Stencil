@@ -260,7 +260,9 @@ class UserActionsController < ApplicationController
                 follow_list = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").
                         or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "follow")).
                         or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "follow_pending")).
-                        or(UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending"))
+                        or(UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")).
+                        or(UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "mute")).
+                        or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "mute"))
                 if !follow_list.nil? && !follow_list.empty? 
                     for follow in follow_list do
                         UserAction.delete(follow.id)
@@ -269,7 +271,9 @@ class UserActionsController < ApplicationController
                 result["block"] = block
             else
                 block = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block").first
-                UserAction.delete(block.id)
+                if !block.nil?
+                    UserAction.delete(block.id)
+                end
                 result["block"] = false
             end
             result["success"] = true
@@ -291,17 +295,33 @@ class UserActionsController < ApplicationController
             result["error"]["message"] = "Incomplete params!"
         else
             user = User.where(id: params[:from_user_id]).first
-            result["user"] = user
-            if params[:mute] === "true"
-                mute = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "mute")
-                mute.save
-                result["mute"] = mute
+            to_user = User.where(id: params[:to_user_id]).first
+            if user.nil? || to_user.nil?
+                result["success"] = false
+                result["error"]["message"] = "User[s] don't exist!"
             else
-                mute = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "mute").first
-                UserAction.delete(mute.id)
-                result["mute"] = false
+                block = UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "block")
+                if !block.nil? && !block.empty?
+                    result["success"] = false
+                    result["error"]["message"] = "This person has blocked you!"
+                    result["block"] = block
+                else
+                    user = User.where(id: params[:from_user_id]).first
+                    result["user"] = user
+                    if params[:mute] === "true"
+                        mute = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "mute")
+                        mute.save
+                        result["mute"] = mute
+                    else
+                        mute = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "mute").first
+                        if !mute.nil?
+                            UserAction.delete(mute.id)
+                        end
+                        result["mute"] = false
+                    end
+                    result["success"] = true
+                end
             end
-            result["success"] = true
         end
         render json: {result: result}
     end
