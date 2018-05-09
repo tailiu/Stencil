@@ -105,12 +105,14 @@ class Profile extends Component {
       }
 
     fetchTweets =()=> {
+        console.log("Fetching Tweets")
 
         axios.get(
         'http://localhost:3000/tweets/fetchUserTweets',
         {
             params: {
             'user_id': this.state.user_id, 
+            'requesting_user': this.state.logged_in_user
             }
         }
         ).then(response => {
@@ -123,9 +125,7 @@ class Profile extends Component {
                 })
             }else{
                 this.MessageBar.showSnackbar(response.data.result.error.message);
-                setTimeout(function() { 
-                //   this.goToIndex(response.data.result.user);
-                }.bind(this), 1000);
+                this.timer = null;
             }
         })
     }

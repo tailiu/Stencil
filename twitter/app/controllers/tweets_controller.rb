@@ -112,34 +112,62 @@ class TweetsController < ApplicationController
             "params" => params,
             "success" => false,
             "error" => {
+                "message" => "Some Error!"
             },
         }
 
         if params[:user_id].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
-        elsif !User.where(id: params[:user_id]).exists?
-            result["success"] = false
-            result["error"]["message"] = "User doesn't exist!"
         else
-            user = User.find(params[:user_id])
-            # @user = User.where(id: params[:user_id]).first
-            retweets = user.retweets.pluck(:tweet_id)
-            tweets = user.tweets.pluck(:id)
-            blocked_users = UserAction.where(from_user_id: user.id, action_type: "block").pluck(:to_user_id)
-            blocked_by_users = UserAction.where(to_user_id: user.id, action_type: "block").pluck(:from_user_id)
-            alltweets = Tweet.where(:id => retweets+tweets).where.not(:user_id => blocked_by_users + blocked_users).order('created_at DESC')
-            # tweets = user.tweets
-            # tweets = user.tweets.or(retweets)
-            # tweets = tweets.concat(retweets)
-            # tweets = tweets.order('created_at DESC')
-            # @tweets = Tweet.where(user_id: params[:user_id]).order('created_at DESC')
-            result["success"] = true
-            tweets_set = []
-            for tweet in alltweets do
-                tweets_set.push({"tweet": tweet, "creator": tweet.user, "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count})
+            user = User.find_by_id(params[:user_id])
+            if user.nil?
+                result["success"] = false
+                result["error"]["message"] = "User doesn't exist!"
+            else
+                go_ahead = true
+                if !user.protected
+                    go_ahead = true
+                else
+                    go_ahead = false
+                    if !params[:requesting_user].nil? && !params[:requesting_user].empty?
+                        requesting_user = User.find_by_id(params[:requesting_user])
+                        if requesting_user.nil?
+                            result["success"] = false
+                            result["error"]["message"] = "Can't identify requesting user."
+                        elsif requesting_user.id == user.id
+                            go_ahead = true
+                        else
+                            follow = UserAction.where(from_user_id: requesting_user.id, to_user_id: user.id, action_type: "follow")
+                            if follow.nil? || follow.empty?
+                                result["success"] = false
+                                result["error"]["message"] = "This user's tweets are protected. Follow to access."
+                            else
+                                go_ahead = true
+                            end
+                        end
+                    else
+                        result["success"] = false
+                        result["error"]["message"] = "Need a valid identity to access protected tweets."
+                    end
+                end
+
+                if go_ahead
+                    retweets = user.retweets.pluck(:tweet_id)
+                    tweets = user.tweets.pluck(:id)
+                    blocked_users = UserAction.where(from_user_id: user.id, action_type: "block").pluck(:to_user_id)
+                    blocked_by_users = UserAction.where(to_user_id: user.id, action_type: "block").pluck(:from_user_id)
+                    alltweets = Tweet.where(:id => retweets+tweets).where.not(:user_id => blocked_by_users + blocked_users).order('created_at DESC')
+                    result["success"] = true
+                    tweets_set = []
+                    for tweet in alltweets do
+                        tweets_set.push({"tweet": tweet, "creator": tweet.user, "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count})
+                    end
+                    result["tweets"] = tweets_set
+                else
+                    result["success"] = false
+                end
             end
-            result["tweets"] = tweets_set
         end
 
         render json: {result: result}
@@ -285,6 +313,7 @@ class TweetsController < ApplicationController
             "params" => params,
             "success" => false,
             "error" => {
+                "message" => "No Error!"
             },
         }
 
@@ -299,11 +328,18 @@ class TweetsController < ApplicationController
                 # like = tweet.likes.create(tweet_id: params[:tweet_id], user_id: params[:user_id])
                 retweet = tweet.retweets.find_or_create_by(tweet_id: params[:tweet_id], user_id: params[:user_id])
                 if retweet.valid?
-                    result["success"] = true
                     if params[:retweet] === "true"
-                        retweet.save
-                        result["retweet"] = retweet
+                        if tweet.user.protected
+                            result["success"] = false
+                            result["error"]["message"] = "Can't retweet protected tweets."
+                            Retweet.destroy(retweet.id)
+                        else
+                            retweet.save
+                            result["retweet"] = retweet
+                            result["success"] = true
+                        end
                     else
+                        result["success"] = true
                         Retweet.destroy(retweet.id)
                     end
                 else

@@ -295,9 +295,9 @@ class UserProfileBox extends Component{
                 </CardContent>
                 {this.state.logged_in_user === this.state.user_id ?
                     <CardActions>
-                        <Button size="small" onClick={this.like}>
+                        {/* <Button size="small" onClick={this.like}>
                             Change Photo
-                        </Button>
+                        </Button> */}
                         <Button size="small" onClick={this.handleBioBoxOpen}>
                             Change Bio
                         </Button>
