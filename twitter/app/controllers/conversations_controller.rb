@@ -19,13 +19,16 @@ class ConversationsController < ApplicationController
 
             conversation = {
                 "conversation" => one_conversation,
-                "conversation_participants" => []
+                "conversation_participants" => [],
+                "conversation_state" => ''
             }
             for one_conversation_participant in one_conversation_participants do
                 user = one_conversation_participant.user
                 conversation["conversation_participants"].push(user)
             end
-
+            if one_conversation.conversation_type == "not_group" 
+                
+            end
             conversations.push(conversation)
         end
 

@@ -70,6 +70,7 @@ class MessagePage extends Component {
             conversations: [],
             current_conversation_id: '',
             current_conversation_type: '',
+            current_conversation_state: '',
             messages: ''
         }
     }
@@ -103,7 +104,7 @@ class MessagePage extends Component {
                 this.setCurrentConversation(conversation_id, conversation_type)
                 this.getMessageList(conversation_id)
             } else {
-                this.setCurrentConversation('', '')
+                this.setCurrentConversation('', '', '')
                 this.setMessageState('')
             }
         })
@@ -132,10 +133,11 @@ class MessagePage extends Component {
         })
     }
 
-    setCurrentConversation = (current_conversation_id, current_conversation_type) => {
+    setCurrentConversation = (current_conversation_id, current_conversation_type, current_conversation_state) => {
         this.setState({
             'current_conversation_id': current_conversation_id,
-            'current_conversation_type': current_conversation_type
+            'current_conversation_type': current_conversation_type,
+            'current_conversation_state': current_conversation_state
         })
     }
 
