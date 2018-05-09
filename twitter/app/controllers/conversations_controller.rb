@@ -1,4 +1,4 @@
-class ConversationsController < ApplicationController
+class ConversationsController < ApplicationController    
     def index 
         result = {
             # params: params,
@@ -20,14 +20,20 @@ class ConversationsController < ApplicationController
             conversation = {
                 "conversation" => one_conversation,
                 "conversation_participants" => [],
-                "conversation_state" => ''
+                "conversation_state" => 'normal'
             }
             for one_conversation_participant in one_conversation_participants do
                 user = one_conversation_participant.user
                 conversation["conversation_participants"].push(user)
             end
             if one_conversation.conversation_type == "not_group" 
-                
+                block_one = UserAction.where(from_user_id: conversation["conversation_participants"][0], 
+                    to_user_id: conversation["conversation_participants"][1], action_type: "block")
+                block_two = UserAction.where(from_user_id: conversation["conversation_participants"][1], 
+                    to_user_id: conversation["conversation_participants"][0], action_type: "block")
+                if (block_one.length != 0 || block_two.length != 0)
+                    conversation['conversation_state'] = 'blocked'
+                end
             end
             conversations.push(conversation)
         end

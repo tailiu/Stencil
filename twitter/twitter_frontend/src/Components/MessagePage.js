@@ -100,8 +100,9 @@ class MessagePage extends Component {
             if (conversations.length >= 1) {
                 const conversation_id = conversations[0].conversation.id 
                 const conversation_type = conversations[0].conversation_type
+                const conversation_state = conversations[0].conversation_state
 
-                this.setCurrentConversation(conversation_id, conversation_type)
+                this.setCurrentConversation(conversation_id, conversation_type, conversation_state)
                 this.getMessageList(conversation_id)
             } else {
                 this.setCurrentConversation('', '', '')
@@ -124,6 +125,8 @@ class MessagePage extends Component {
             }else{
                 const conversations = response.data.result.conversations
                 
+                console.log(conversations)
+
                 this.setState({
                     'conversations': conversations,
                 });
@@ -241,6 +244,7 @@ class MessagePage extends Component {
                             <Grid style={styles.messageInput}>
                                 <MessageInput 
                                     current_conversation_id = {this.state.current_conversation_id}
+                                    current_conversation_state = {this.state.current_conversation_state}
                                     onNewMessage = {this.handleNewMessage}
                                 />
                             </Grid>

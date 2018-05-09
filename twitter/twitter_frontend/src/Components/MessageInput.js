@@ -67,6 +67,8 @@ class MessageInput extends Component {
         
     }
 
+    
+
     render() {
         var disabled = true
 
