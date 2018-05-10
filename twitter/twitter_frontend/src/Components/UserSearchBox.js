@@ -77,11 +77,11 @@ class UserSearchBox extends Component {
     }
 
     componentWillMount() {
-        console.log("MOUNTED")
+        // console.log("MOUNTED")
     }
 
     componentWillUnmount() {
-        console.log("UUUUNNNMOUNTED")
+        // console.log("UUUUNNNMOUNTED")
     }
 
     searchUser =()=> {
