@@ -6,6 +6,9 @@ import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
 import axios from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
+import Typography from 'material-ui/Typography';
+import renderHTML from 'react-render-html';
+import Moment from 'moment';
 
 const styles = {
     grid : {
@@ -60,6 +63,24 @@ class Notif extends Component {
     }
 
     render () {
+        const notif_info = {
+            'retweet': {
+                'text': "retweeted",
+                'icon': require('../Assets/Images/retweet_notif.png')
+            },
+            'like': {
+                'text': "liked",
+                'icon': require('../Assets/Images/like_notif.png')
+            },
+            'reply': {
+                'text': "replied to",
+                'icon': require('../Assets/Images/reply_icon.png')
+            },
+            'follow': {
+                'text': "followed you",
+                'icon': require('../Assets/Images/follow_notif.png')
+            },
+        }
     return (
         <Fragment>
             <NavBar />
@@ -68,60 +89,54 @@ class Notif extends Component {
                 <Grid item xs={2}>
                 </Grid>
                 <Grid item xs={8}>
+                    <Card>
+                        <CardHeader
+                            title="Notifications"
+                        />
+                        <hr />
+                        <CardContent>
+                        <List dense={this.state.notifs.length > 0}>
+                            {this.state.notifs.length <= 0? 
+                                <ListItem>
+                                    <ListItemText primary='No Notifications!' />
+                                </ListItem>
+                            :
 
-
-                            <Card>
-                                <CardHeader
-                                    title="Notifications"
-                                />
-                                <hr />
-                                <CardContent>
-
-                                    <List dense={true}>
-                                    {this.state.notifs.map((notif) =>
-                                        <ListItem>
-                                            <ListItemIcon>
-                                            <img style={styles.logo} alt="retweet" src={require('../Assets/Images/retweet_icon.png')} /> 
-                                            </ListItemIcon>
+                                <Fragment>
+                                {this.state.notifs.map((notif) =>
+                                    <ListItem>
+                                        
+                                        <ListItemIcon>
+                                        <img style={styles.logo} alt="retweet" src={notif_info[notif.notification_type]["icon"]} /> 
+                                        </ListItemIcon>
+                                        {notif.notification_type == "follow"? 
                                             <ListItemText
-                                            primary="Tai retweeted your tweet"
-                                            //   secondary={secondary ? 'Secondary text' : null}
+                                            primary={
+                                                renderHTML("<a style='text-decoration: none;' href='/profile/"+notif.from_user_id+"'>"+notif.from_user_name+"</a>" + " " + notif_info[notif.notification_type]["text"])
+                                            }
+                                            secondary={
+                                                Moment(notif.created_at).format('MMMM Do, YYYY - h:mm A')
+                                            }
                                             />
-                                        </ListItem>
-                                    )}
-                                        <ListItem>
-                                            <ListItemIcon>
-                                            <img style={styles.logo} alt="retweet" src={require('../Assets/Images/retweet_icon.png')} /> 
-                                            </ListItemIcon>
+                                        :
                                             <ListItemText
-                                            primary="Tai retweeted your tweet"
-                                            //   secondary={secondary ? 'Secondary text' : null}
+                                            primary={
+                                                renderHTML("<a style='text-decoration: none;' href='/profile/"+notif.from_user_id+"'>"+notif.from_user_name+"</a>"  + " " + notif_info[notif.notification_type]["text"]+" your <a style='text-decoration: none;' href='/tweet/"+notif.tweet+"'>tweet</a>")
+                                            }
+                                            secondary={
+                                                Moment(notif.created_at).format('MMMM Do, YYYY - h:mm A')
+                                            }
                                             />
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemIcon>
-                                            <img style={styles.logo} alt="favourite" src={require('../Assets/Images/fav_icon.png')} /> 
-                                            </ListItemIcon>
-                                            <ListItemText
-                                            primary="Miro favorited your tweet"
-                                            //   secondary={secondary ? 'Secondary text' : null}
-                                            />
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemIcon>
-                                            <img style={styles.logo} alt="follow" src={require('../Assets/Images/follow_icon.png')} /> 
-                                            {/* <FolderIcon /> */}
-                                            </ListItemIcon>
-                                            <ListItemText
-                                            primary="Major Tom followed you"
-                                            //   secondary={secondary ? 'Secondary text' : null}
-                                            />
-                                        </ListItem>
-                                    </List>
-                                </CardContent>
-                            </Card>
+                                        
+                                        }
+                                    </ListItem>
+                                )}
+                                </Fragment>
 
-
+                            }
+                            </List>
+                        </CardContent>
+                    </Card>
                 </Grid>
                 <Grid item xs={2}>
                 </Grid>

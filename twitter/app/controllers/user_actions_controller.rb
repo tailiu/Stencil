@@ -188,6 +188,11 @@ class UserActionsController < ApplicationController
                             follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")
                         else
                             follow = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
+                            notif = Notification.create(notification_type: "follow", user_id: params[:to_user_id], from_user: params[:from_user_id], tweet: nil, is_seen: false)
+                            if notif.valid?
+                                notif.save
+                            end
+                            result["notif"] = notif
                         end
                         # follow = user.build_user_action(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
                         follow.save
@@ -233,6 +238,11 @@ class UserActionsController < ApplicationController
                     follow.action_type = "follow"
                     follow.save
                     result["follow"] = follow
+                    notif = Notification.create(notification_type: "follow", user_id: params[:to_user_id], from_user: params[:from_user_id], tweet: nil, is_seen: false)
+                    if notif.valid?
+                        notif.save
+                    end
+                    result["notif"] = notif
                 end
             end
         end
