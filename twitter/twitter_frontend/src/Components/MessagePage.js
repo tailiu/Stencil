@@ -77,7 +77,7 @@ class MessagePage extends Component {
 
     componentDidMount() {
         this.initialize()
-        // this.timer = setInterval(()=> this.periodicActions(), 6000);
+        this.timer = setInterval(()=> this.periodicActions(), 6000);
     }
 
     componentWillUnmount() {
