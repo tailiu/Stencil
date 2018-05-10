@@ -202,6 +202,10 @@ class UserActionsController < ApplicationController
                         follow = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").first
                         UserAction.delete(follow.id)
                         result["follow"] = false
+                        notif = Notification.where(notification_type: "follow", user_id: params[:to_user_id], from_user: params[:from_user_id]).first
+                        if !notif.nil?
+                            Notification.destroy(notif.id)
+                        end
                     end
                 end
             end
@@ -262,31 +266,38 @@ class UserActionsController < ApplicationController
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
         else
-            user = User.where(id: params[:from_user_id]).first
-            result["user"] = user
-            if params[:block] === "true"
-                block = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block")
-                block.save
-                follow_list = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").
-                        or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "follow")).
-                        or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "follow_pending")).
-                        or(UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")).
-                        or(UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "mute")).
-                        or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "mute"))
-                if !follow_list.nil? && !follow_list.empty? 
-                    for follow in follow_list do
-                        UserAction.delete(follow.id)
-                    end
-                end
+            block = UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "block")
+            if !block.nil? && !block.empty?
+                result["success"] = false
+                result["error"]["message"] = "This person has blocked you!"
                 result["block"] = block
             else
-                block = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block").first
-                if !block.nil?
-                    UserAction.delete(block.id)
+                user = User.where(id: params[:from_user_id]).first
+                result["user"] = user
+                if params[:block] === "true"
+                    block = UserAction.find_or_create_by(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block")
+                    block.save
+                    follow_list = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow").
+                            or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "follow")).
+                            or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "follow_pending")).
+                            or(UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow_pending")).
+                            or(UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "mute")).
+                            or(UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "mute"))
+                    if !follow_list.nil? && !follow_list.empty? 
+                        for follow in follow_list do
+                            UserAction.delete(follow.id)
+                        end
+                    end
+                    result["block"] = block
+                else
+                    block = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block").first
+                    if !block.nil?
+                        UserAction.delete(block.id)
+                    end
+                    result["block"] = false
                 end
-                result["block"] = false
+                result["success"] = true
             end
-            result["success"] = true
         end
         render json: {result: result}
     end

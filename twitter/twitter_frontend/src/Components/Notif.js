@@ -17,6 +17,13 @@ const styles = {
             height: 200
         }
     },
+    new_notif: {
+        backgroundColor: "#c0deed",
+        marginBottom: 5
+    },
+    old_notif: {
+        marginBottom: 5
+    }
 };
 
 class Notif extends Component {
@@ -62,6 +69,11 @@ class Notif extends Component {
           })
     }
 
+    getNotifStyle = (isSeen) => {
+        if (isSeen) return styles.old_notif
+        else return styles.new_notif
+    }
+
     render () {
         const notif_info = {
             'retweet': {
@@ -104,7 +116,8 @@ class Notif extends Component {
 
                                 <Fragment>
                                 {this.state.notifs.map((notif) =>
-                                    <ListItem>
+                                    
+                                    <ListItem style={this.getNotifStyle(notif.is_seen)}>
                                         
                                         <ListItemIcon>
                                         <img style={styles.logo} alt="retweet" src={notif_info[notif.notification_type]["icon"]} /> 

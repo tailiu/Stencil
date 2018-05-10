@@ -79,8 +79,13 @@ class NavBar extends Component {
             anchorEl: null,
             tweet_box_open: false,
             search_query: "",
+            notifications: 0,
         }
 
+    }
+
+    componentDidMount() {
+        this.getNotifications();
     }
 
     handleTweetBoxClose = () => {
@@ -134,6 +139,28 @@ class NavBar extends Component {
         })
       }
 
+    getNotifications = () =>  {
+
+        axios.get(
+        'http://localhost:3000/notifications/getNewNotifications',
+        {
+            params: {
+              'user_id': this.state.user_id, 
+            }
+          }
+        ).then(response => {
+            console.log(response)
+            if(response.data.result.success){
+                this.setState({
+                  notifications: response.data.result.notifs,
+                })
+
+            }else{
+                // console.log("Notif error!");
+            }
+          })
+      }
+
     searchUser =(e)=> {
         // console.log(e.target.value)
         this.setState({
@@ -155,7 +182,7 @@ class NavBar extends Component {
                     </Typography>
                     <div style={styles.buttonGroup} >
                         <Button onClick = {this.goToHome}>Home</Button>
-                        <Button onClick = {this.goToNotif}>Notifications</Button>
+                        <Button onClick = {this.goToNotif}>{"Notifications " + this.state.notifications}</Button>
                         <Button onClick = {this.goToMessages}>Messages</Button>
                     </div>
                     <Input
