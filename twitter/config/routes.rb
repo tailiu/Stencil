@@ -32,6 +32,7 @@ Rails.application.routes.draw do
 	get 'notifications/getNewNotifications', to: 'notifications#getNewNotifications'
 
 	get 'conversations/leaveConversation', to: 'conversations#leaveConversation'
+	get 'conversations/blockInGroupConversation', to: 'conversations#blockInGroupConversation'
 
 	resources :users
 	resources :user_actions

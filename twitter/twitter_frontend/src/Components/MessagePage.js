@@ -173,14 +173,14 @@ class MessagePage extends Component {
         this.setState({new_message_box_open: false });
     }
 
-    handleNewConversation = (new_conversation_ID, new_conversation_type) => {
+    handleNewConversation = (new_conversation_ID, new_conversation_type, new_conversation_state) => {
         this.getConversationList()
-        this.setCurrentConversation(new_conversation_ID, new_conversation_type)
+        this.setCurrentConversation(new_conversation_ID, new_conversation_type, new_conversation_state)
         this.getMessageList(new_conversation_ID)
     }
 
-    handleConversationChange = (current_conversation_id, current_conversation_type) => {
-        this.setCurrentConversation(current_conversation_id, current_conversation_type)
+    handleConversationChange = (current_conversation_id, current_conversation_type, current_conversation_state) => {
+        this.setCurrentConversation(current_conversation_id, current_conversation_type, current_conversation_state)
         this.getMessageList(current_conversation_id)    
     }
 

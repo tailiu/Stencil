@@ -37,7 +37,11 @@ class Conversation extends Component {
     }
 
     handleClick = e => {
-        this.props.onConversationChange(this.props.conversation.conversation.id, this.props.conversation.conversation.conversation_type)
+        this.props.onConversationChange(
+            this.props.conversation.conversation.id, 
+            this.props.conversation.conversation.conversation_type,
+            this.props.conversation.conversation_state
+        )
     } 
 
     getTitleForConversation = () => {

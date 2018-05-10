@@ -196,13 +196,13 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/users/handleBlock',
             {
-              params: {
-                'from_user_id': this.state.logged_in_user, 
-                'to_user_id': this.state.user_id, 
-                'block' : block
-              }
+                params: {
+                    'from_user_id': this.state.logged_in_user, 
+                    'to_user_id': this.state.user_id, 
+                    'block' : block
+                }
             }
-          ).then(response => {
+        ).then(response => {
             if(response.data.result.success){
                 this.setState({
                   does_block: response.data.result.block,
@@ -213,7 +213,22 @@ class UserProfileBox extends Component{
                 console.log(response);
                 this.MessageBar.showSnackbar(response.data.result.error.message);   
             }
-          })
+        })
+
+        axios.get(
+            'http://localhost:3000/conversations/blockInGroupConversation',
+            {
+                params: {
+                    'from_user_id': this.state.logged_in_user, 
+                    'to_user_id': this.state.user_id
+                }
+            }
+        ).then(response => {
+            if(response.data.result.success){
+            }else{
+                this.MessageBar.showSnackbar(response.data.result.error.message);   
+            }
+        })
     }
 
     handleMute =(mute, e)=> {

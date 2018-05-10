@@ -48,7 +48,8 @@ class ConversationsController < ApplicationController
             # params: params,
             "success" => true,
             "error" => {
-            }
+            },
+            "conversation_state" => ""            
         }
 
         parameters = JSON.parse(params[:participants])
@@ -106,6 +107,13 @@ class ConversationsController < ApplicationController
                     if conversation_participants.size == 2 
                         if conversation_participants.exists?(user_id: userArr[1].id) 
                             existed = true
+                            block_one = UserAction.where(from_user_id: conversation_participants[0], 
+                                to_user_id: conversation_participants[1], action_type: "block")
+                            block_two = UserAction.where(from_user_id: conversation_participants[1], 
+                                to_user_id: conversation_participants[0], action_type: "block")
+                            if (block_one.length != 0 || block_two.length != 0)
+                                result["conversation_state"] = "blocked"
+                            end
                             result["conversation"] = conversation
                         end
                     end
@@ -162,5 +170,39 @@ class ConversationsController < ApplicationController
         end
         
         render json: {result: result}
+    end
+
+    def blockInGroupConversation
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+
+        from_user = User.find_by_id(params[:from_user_id])
+        to_user = User.find_by_id(params[:to_user_id])
+
+        from_user_conversation_participants = from_user.conversation_participants
+
+        for from_user_conversation_participant in from_user_conversation_participants do 
+            conversation = from_user_conversation_participant.conversation
+            if conversation.conversation_type == 'not_group'
+                next
+            end
+            conversation_participants = conversation.conversation_participants
+            to_user_conversation_participant = conversation_participants.find_by(user_id: to_user.id)
+            if to_user_conversation_participant == nil
+                next 
+            end
+            if to_user_conversation_participant.role == 'creator'
+                from_user_conversation_participant.delete()
+                next
+            end
+            to_user_conversation_participant.delete()
+        end
+
+        render json: {result: result}
+
     end
 end
