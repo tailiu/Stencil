@@ -267,6 +267,13 @@ class TweetsController < ApplicationController
             if !user.nil? && !tweet.nil?
                 Tweet.destroy(tweet.id)
                 result["success"] = true
+                notifs = Notification.where(tweet: tweet.id)
+                # result["notifs"] = notifs
+                if !notifs.nil? && !notifs.empty?
+                    for notif in notifs do
+                        Notification.destroy(notif.id)
+                    end
+                end
             else
                 result["success"] = false
                 result["error"]["message"] = "User/Tweet don't exist!"
@@ -307,6 +314,10 @@ class TweetsController < ApplicationController
                         result["notif"] = notif
                     else
                         Like.destroy(like.id)
+                        notif = Notification.where(notification_type: "like", user_id: tweet.user.id, from_user: params[:user_id], tweet: tweet.id).first
+                        if !notif.nil?
+                            Notification.destroy(notif.id)
+                        end
                     end
                 else
                     puts like.errors.messages
@@ -360,6 +371,10 @@ class TweetsController < ApplicationController
                     else
                         result["success"] = true
                         Retweet.destroy(retweet.id)
+                        notif = Notification.where(notification_type: "retweet", user_id: tweet.user.id, from_user: params[:user_id], tweet: tweet.id).first
+                        if !notif.nil?
+                            Notification.destroy(notif.id)
+                        end
                     end
                 else
                     puts retweet.errors.messages

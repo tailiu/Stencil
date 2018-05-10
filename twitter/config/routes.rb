@@ -29,6 +29,7 @@ Rails.application.routes.draw do
 	post 'tweets/newf', to: 'tweets#new'
 	get 'tweets/delete', to: 'tweets#delete'
 	get 'notifications/get', to: 'notifications#get'
+	get 'notifications/getNewNotifications', to: 'notifications#getNewNotifications'
 
 	get 'conversations/leaveConversation', to: 'conversations#leaveConversation'
 	get 'conversations/blockInGroupConversation', to: 'conversations#blockInGroupConversation'
