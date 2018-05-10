@@ -78,8 +78,10 @@ class NewConversation extends Component {
                 })
 
                 const conversation = response.data.result.conversation
+                const conversation_state = response.data.result.conversation_state
+                
                 this.props.onNewMessageBoxClose()
-                this.props.onNewConversation(conversation.id, conversation.conversation_type)
+                this.props.onNewConversation(conversation.id, conversation.conversation_type, conversation_state )
             }
         })
 

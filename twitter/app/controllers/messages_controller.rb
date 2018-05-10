@@ -40,11 +40,24 @@ class MessagesController < ApplicationController
             result["error"] = "No such conversation or user"
         end
 
+        conversation_participants = conversation.conversation_participants
+        userInConversation = false
+        for conversation_participant in conversation_participants do
+            if conversation_participant.user_id == user.id
+                userInConversation = true
+                break
+            end
+        end
+        if !userInConversation
+            result["success"] = false
+            result["error"] = "This user is not in the conversation"
+        end
+
         if conversation.conversation_type == 'not_group'
-            block_one = UserAction.where(from_user_id: conversation["conversation_participants"][0], 
-                to_user_id: conversation["conversation_participants"][1], action_type: "block")
-            block_two = UserAction.where(from_user_id: conversation["conversation_participants"][1], 
-                to_user_id: conversation["conversation_participants"][0], action_type: "block")
+            block_one = UserAction.where(from_user_id: conversation_participants[0], 
+                to_user_id: conversation_participants[1], action_type: "block")
+            block_two = UserAction.where(from_user_id: conversation_participants[1], 
+                to_user_id: conversation_participants[0], action_type: "block")
             if (block_one.length != 0 || block_two.length != 0)
                 result["success"] = false
                 result["error"] = "You have been blocked in this conversation"
@@ -55,7 +68,7 @@ class MessagesController < ApplicationController
             new_message = Message.new(content: content, user_id: user.id, conversation_id: conversation.id)
             new_message.save
         end
-        
+
         render json: {result: result}
     end
 end

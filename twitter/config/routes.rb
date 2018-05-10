@@ -30,6 +30,7 @@ Rails.application.routes.draw do
 	get 'tweets/delete', to: 'tweets#delete'
 
 	get 'conversations/leaveConversation', to: 'conversations#leaveConversation'
+	get 'conversations/blockInGroupConversation', to: 'conversations#blockInGroupConversation'
 
 	resources :users
 	resources :user_actions
