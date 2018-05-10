@@ -5,11 +5,15 @@ import Dialog, {
     DialogContentText,
     DialogTitle,
 } from 'material-ui/Dialog';
-import TextField from 'material-ui/TextField';
 import Button from 'material-ui/Button';
 import axios from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
+import NewConversationSearchUser from './NewConversationSearchUser'
+
+const styles = {
+    height: 300
+}
 
 class NewConversation extends Component {
     static propTypes = {
@@ -79,7 +83,7 @@ class NewConversation extends Component {
 
                 const conversation = response.data.result.conversation
                 const conversation_state = response.data.result.conversation_state
-                
+
                 this.props.onNewMessageBoxClose()
                 this.props.onNewConversation(conversation.id, conversation.conversation_type, conversation_state )
             }
@@ -96,20 +100,10 @@ class NewConversation extends Component {
                 onClose={this.props.onNewMessageBoxClose}
                 aria-labelledby="form-dialog-title"
                 fullWidth
-                >
+            >
                 <DialogTitle id="form-dialog-title">New Message</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        id="tweet"
-                        label="Send message to"
-                        type="email"
-                        placeholder="Example: @tai @zain"
-                        value={this.state.message_to}
-                        onChange={this.updateMessageTo}
-                        fullWidth
-                    />
+                <DialogContent style={styles}>
+                    <NewConversationSearchUser suggestions={this.props.suggestions}/>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={this.props.onNewMessageBoxClose} color="primary">
@@ -125,3 +119,7 @@ class NewConversation extends Component {
 }
 
 export default withCookies(NewConversation);
+
+
+
+

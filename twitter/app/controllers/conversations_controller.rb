@@ -203,6 +203,40 @@ class ConversationsController < ApplicationController
         end
 
         render json: {result: result}
+    end
 
+    def getContactList
+        result = {
+            # params: params,
+            "success" => true,
+            "contactList" => [],
+            "error" => {
+            }
+        }
+        user = User.find_by_id(params[:user_id])
+
+        followers = UserAction.where(
+            to_user_id: user.id, 
+            action_type: "follow"
+        )
+        for follower in followers do
+            follower_user = User.find_by_id(follower.from_user_id)
+            result["contactList"].push(follower_user.name + ' @' + follower_user.handle)
+        end
+
+        conversation_participants = user.conversation_participants
+        for conversation_participant in conversation_participants do
+            conversation = conversation_participant.conversation
+            one_conversation_conversation_participants = conversation.conversation_participants
+            for one_conversation_conversation_participant in one_conversation_conversation_participants do
+                one_user = one_conversation_conversation_participant.user
+                contact = one_user.name + ' @' + one_user.handle
+                if !result.include?(contact)
+                    result["contactList"].push()
+                end
+            end
+        end
+
+        render json: {result: result}
     end
 end

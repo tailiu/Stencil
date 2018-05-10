@@ -71,7 +71,8 @@ class MessagePage extends Component {
             current_conversation_id: '',
             current_conversation_type: '',
             current_conversation_state: '',
-            messages: ''
+            messages: '',
+            suggestions: []
         }
     }
 
@@ -93,6 +94,24 @@ class MessagePage extends Component {
         this.setState({
             'messages': messages,
         });
+    }
+
+    getConversationContactList = () => {
+        axios.get(
+            'http://localhost:3000/conversations/getContactList',
+            {
+                params: {
+                    'user_id': this.state.user_id
+                }
+            }
+        ).then(response => {
+            if(!response.data.result.success){
+            }else{
+                this.setState({
+                    suggestions: response.data.result.contactList
+                })
+            }
+        })
     }
 
     initialize = () => {
@@ -124,8 +143,6 @@ class MessagePage extends Component {
                 this.MessageBar.showSnackbar(response.data.result.error.message)
             }else{
                 const conversations = response.data.result.conversations
-                
-                console.log(conversations)
 
                 this.setState({
                     'conversations': conversations,
@@ -166,6 +183,7 @@ class MessagePage extends Component {
     }
 
     handleNewMessageBoxOpen = e => {
+        this.getConversationContactList()
         this.setState({new_message_box_open: true });
     }
 
@@ -259,6 +277,7 @@ class MessagePage extends Component {
                     new_message_box_open={this.state.new_message_box_open}
                     onNewMessageBoxClose={this.handleNewMessageBoxClose}
                     onNewConversation={this.handleNewConversation}
+                    suggestions={this.state.suggestions}
                 />
         </div>
     );

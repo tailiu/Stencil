@@ -33,6 +33,8 @@ Rails.application.routes.draw do
 
 	get 'conversations/leaveConversation', to: 'conversations#leaveConversation'
 	get 'conversations/blockInGroupConversation', to: 'conversations#blockInGroupConversation'
+	get 'conversations/getContactList', to: 'conversations#getContactList'
+
 
 	resources :users
 	resources :user_actions
