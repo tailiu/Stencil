@@ -32,6 +32,8 @@ const styles = theme => ({
     },
 });
 
+var selectedItem = []
+
 class NewConversationSearchUser extends React.Component {
 
     constructor(props) {
@@ -39,8 +41,7 @@ class NewConversationSearchUser extends React.Component {
         super(props);
 
         this.state = {
-            inputValue: '',
-            selectedItem: [],
+            inputValue: ''
         };
     }
 
@@ -99,11 +100,10 @@ class NewConversationSearchUser extends React.Component {
     }
 
     handleKeyDown = event => {
-        const { inputValue, selectedItem } = this.state;
+        const inputValue = this.state.inputValue
         if (selectedItem.length && !inputValue.length && keycode(event) === 'backspace') {
-            this.setState({
-            selectedItem: selectedItem.slice(0, selectedItem.length - 1),
-            });
+            selectedItem = selectedItem.slice(0, selectedItem.length - 1)
+            this.props.setSelectedItem(selectedItem)
         }
     };
 
@@ -112,20 +112,18 @@ class NewConversationSearchUser extends React.Component {
     };
 
     handleChange = item => {
-        let { selectedItem } = this.state;
-
         if (selectedItem.indexOf(item) === -1) {
             selectedItem = [...selectedItem, item];
         }
 
         this.setState({
             inputValue: '',
-            selectedItem,
         });
+
+        this.props.setSelectedItem(selectedItem);
     };
 
     handleDelete = item => () => {
-        const selectedItem = [...this.state.selectedItem];
         selectedItem.splice(selectedItem.indexOf(item), 1);
 
         this.setState({ selectedItem });
@@ -133,9 +131,10 @@ class NewConversationSearchUser extends React.Component {
 
     render() {
         const { classes } = this.props;
-        const { inputValue, selectedItem } = this.state;
-        console.log(classes)
+        const { inputValue } = this.state;
 
+        selectedItem = this.props.selectedItem
+        
         return (
             <Downshift inputValue={inputValue} onChange={this.handleChange} selectedItem={selectedItem}>
                 {({

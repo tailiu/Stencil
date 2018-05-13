@@ -26,43 +26,35 @@ class NewConversation extends Component {
         const { cookies } = this.props;
 
         this.state = {
-            message_to: '',
-            user_handle: cookies.get('user_handle')
+            user_handle: cookies.get('user_handle'),
+            selectedItem: []
         }
     }
 
-    updateMessageTo = e => {
+    clearMessageTo = () => {
         this.setState({
-            message_to: e.target.value
+            selectedItem: []
         })
     }
 
-    validateInput = () => {
-        if (this.state.message_to.indexOf("@") == -1) {
-            return false
-        }
-        return true
+    setSelectedItem = (selectedItem) => {
+        this.setState({
+            selectedItem: selectedItem
+        })
     }
 
     handleNewConversation = e => {
-        if(!this.validateInput()){
-            this.props.messageBar.showSnackbar("Please input valid user handles (Ex: @userhandle)")
-            return
-        }
-
-        const raw_data = this.state.message_to.split('@')
-        raw_data.shift()
-
         var participants = {
             participants: [],
             conversation_creator: ''
         }
-        for (var i in raw_data) {
-            raw_data[i] = raw_data[i].replace(/\s/g,''); // replace all spaces in handles
-            if (raw_data[i] != this.state.user_handle) {
-                participants.participants.push(raw_data[i])
-            }
+        var selectedItem = this.state.selectedItem
+
+        for (var i in selectedItem) {
+            const handle = selectedItem[i].split('@')[1]
+            participants.participants.push(handle)
         }
+
         participants.participants.push(this.state.user_handle)
         participants.conversation_creator = this.state.user_handle
 
@@ -77,18 +69,21 @@ class NewConversation extends Component {
             if(!response.data.result.success){
                 this.props.messageBar.showSnackbar(response.data.result.error)
             }else{
-                this.setState({
-                    message_to: ''
-                })
+                this.clearMessageTo()
 
                 const conversation = response.data.result.conversation
                 const conversation_state = response.data.result.conversation_state
 
-                this.props.onNewMessageBoxClose()
+                this.handleNewMessageBoxClose()
                 this.props.onNewConversation(conversation.id, conversation.conversation_type, conversation_state )
             }
         })
 
+    }
+
+    handleNewMessageBoxClose = () => {
+        this.clearMessageTo()
+        this.props.onNewMessageBoxClose()
     }
 
     render () {
@@ -97,16 +92,20 @@ class NewConversation extends Component {
         return (
             <Dialog
                 open={open}
-                onClose={this.props.onNewMessageBoxClose}
+                onClose={this.handleNewMessageBoxClose}
                 aria-labelledby="form-dialog-title"
                 fullWidth
             >
                 <DialogTitle id="form-dialog-title">New Message</DialogTitle>
                 <DialogContent style={styles}>
-                    <NewConversationSearchUser suggestions={this.props.suggestions}/>
+                    <NewConversationSearchUser 
+                        suggestions={this.props.suggestions}
+                        selectedItem={this.state.selectedItem}
+                        setSelectedItem={this.setSelectedItem}
+                    />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={this.props.onNewMessageBoxClose} color="primary">
+                    <Button onClick={this.handleNewMessageBoxClose} color="primary">
                         Cancel
                     </Button>
                     <Button onClick={this.handleNewConversation} color="primary">
