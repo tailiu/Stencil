@@ -57,6 +57,16 @@ const styles = {
     input: {
         marginRight: 5
     },
+    notif_num: {
+        // display: "inline-block",
+        marginLeft: 3,
+        marginTop: 3,
+        fontSize: 16,
+        // opacity: 0.6,
+        color: "#00aced",
+        fontWeight: "bold",
+        fontFamily: '"Courier New", Courier, "Lucida Sans Typewriter"'
+    }
 };
 
 class NavBar extends Component {
@@ -86,6 +96,11 @@ class NavBar extends Component {
 
     componentDidMount() {
         this.getNotifications();
+        this.timer = setInterval(()=> this.getNotifications(), 30000);
+    }
+
+    componentWillUnmount() {
+        this.timer = null;
     }
 
     handleTweetBoxClose = () => {
@@ -182,7 +197,14 @@ class NavBar extends Component {
                     </Typography>
                     <div style={styles.buttonGroup} >
                         <Button onClick = {this.goToHome}>Home</Button>
-                        <Button onClick = {this.goToNotif}>{"Notifications " + this.state.notifications}</Button>
+                        <Button onClick = {this.goToNotif}>
+                            Notifications
+                            <Typography 
+                                variant="button"
+                                style={styles.notif_num}>
+                                {this.state.notifications}
+                            </Typography>
+                        </Button>
                         <Button onClick = {this.goToMessages}>Messages</Button>
                     </div>
                     <Input

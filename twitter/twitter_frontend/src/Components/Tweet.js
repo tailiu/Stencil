@@ -224,9 +224,11 @@ class Tweet extends Component{
                     title={renderHTML('<a style="text-decoration: none;" href="/profile/'+this.props.tweet.creator.id+'">'+this.props.tweet.creator.name+'</a>' )}
                     subheader={"@"+this.props.tweet.creator.handle}
                     action={
+                        <a href={"/tweet/"+this.props.tweet.tweet.id}>
                         <IconButton>
-                            <a href={"/tweet/"+this.props.tweet.tweet.id}><img style={styles.tweet.goto_icon} alt="Logo" src={require('../Assets/Images/goto-link-icon.png')} /> </a>
+                            <img style={styles.tweet.goto_icon} alt="Logo" src={require('../Assets/Images/goto-link-icon.png')} />
                         </IconButton>
+                        </a>
                     }
                 />
                 <CardContent>
