@@ -16,7 +16,7 @@ class UsersController < ApplicationController
             @result["success"] = true
             @result["user"] = @new_user
 
-            session[:current_user_id] = @new_user.id
+            @new_user.start_session(session, @new_user.id)
         else 
             puts @new_user.errors.messages
             puts @new_credential.errors.messages
@@ -92,13 +92,13 @@ class UsersController < ApplicationController
                 "followers" => UserAction.where(to_user_id: @user.id, action_type: "follow").count,
                 "following" => UserAction.where(from_user_id: @user.id, action_type: "follow").count
             }
+            @result["auth_test"] = @user.auth_test
+            @result["test1"] = @user.start_session(session, @user.id)
             @result["success"] = true
         else
             @result["success"] = false
             @result["error"]["message"] = "User doesn't exist!"
         end
-
-        @result["auth_test"] = User.new.auth_test
         
         render json: {result: @result}
     end
