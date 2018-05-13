@@ -7,11 +7,27 @@ class MessagesController < ApplicationController
             }
         }
 
-        conversation = Conversation.find_by(id: params[:id])
+        user = User.find_by(id: params[:user_id])
+        conversation = Conversation.find_by(id: params[:conversation_id])
         messages = nil
-        if conversation == nil
+
+        if conversation == nil || user == nil
             result["success"] = false
-            result["error"] = "No such conversation"
+            result["error"] = "No such conversation or user"
+        end
+
+        if result["success"]
+            exist = false
+            conversation_participants = conversation.conversation_participants
+            for conversation_participant in conversation_participants do
+                if conversation_participant.user_id == user.id 
+                    exist = true
+                end
+            end
+            if !exist
+                result["success"] = false
+                result["error"] = "The user is not in the conversation"
+            end
         end
 
         if result["success"]
@@ -32,8 +48,8 @@ class MessagesController < ApplicationController
             "error" => {
             }
         }
-        user = User.find_by_id(params[:user_id])
-        conversation = Conversation.find_by_id(params[:conversation_id])
+        user = User.find_by(id: params[:user_id])
+        conversation = Conversation.find_by(id: params[:conversation_id])
         content = params[:content]
 
         if user == nil || conversation == nil
@@ -62,10 +78,6 @@ class MessagesController < ApplicationController
                     to_user_id: conversation_participants[1].user_id, action_type: "block")
                 block_two = UserAction.find_by(from_user_id: conversation_participants[1].user_id, 
                     to_user_id: conversation_participants[0].user_id, action_type: "block")
-                puts '*******************************'
-                puts block_one != nil
-                puts block_two != nil
-                puts '*******************************'
                 if (block_one != nil || block_two != nil)
                     result["success"] = false
                     result["error"] = "You have been blocked in this conversation"
