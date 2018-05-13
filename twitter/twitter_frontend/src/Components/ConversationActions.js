@@ -45,8 +45,6 @@ class ConversationActions extends Component {
     }
 
     handleLeaveConversation = () => {
-        console.log(this.props.current_conversation_id)
-        console.log(this.state.user_id)
         axios.get(
             'http://localhost:3000/conversations/leaveConversation',
             {

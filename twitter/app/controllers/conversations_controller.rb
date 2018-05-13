@@ -150,10 +150,10 @@ class ConversationsController < ApplicationController
             }
         }
 
-        conversation = Conversation.find_by_id(params[:conversation_id])
-        user = User.find_by_id(params[:user_id])
+        conversation = Conversation.find_by(id: params[:conversation_id])
+        user = User.find_by(id: params[:user_id])
 
-        if user == nil || conversation == nil || !conversation.conversation_participants.find_by(user_id: user.id)
+        if user == nil || conversation == nil || !conversation.conversation_participants.exists?(user_id: user.id)
             result['success'] = false
             result['error'] = 'No such conversation or user, or this user does not belong to this conversation'
         end
