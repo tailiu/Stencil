@@ -97,6 +97,8 @@ class UsersController < ApplicationController
             @result["success"] = false
             @result["error"]["message"] = "User doesn't exist!"
         end
+
+        @result["auth_test"] = User.new.auth_test
         
         render json: {result: @result}
     end
