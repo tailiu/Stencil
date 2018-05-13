@@ -159,8 +159,8 @@ class MessagePage extends Component {
                 }
             }
         ).then(response => {
-            if(!response.data.result.success){
-                this.MessageBar.showSnackbar(response.data.result.error.message)
+            if(!response.data.result.success) {
+                this.MessageBar.showSnackbar(response.data.result.error)
             }else{
                 const conversations = response.data.result.conversations
 
@@ -191,7 +191,7 @@ class MessagePage extends Component {
                 }
             }
         ).then(response => {
-            if(!response.data.result.success){
+            if(!response.data.result.success) {
                 this.MessageBar.showSnackbar(response.data.result.error)
             }else{
                 if (response.data.result.messages == undefined) {

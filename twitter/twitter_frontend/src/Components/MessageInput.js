@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import MessageInputAllow from './MessageInputAllow'
 import MessageInputBlock from './MessageInputBlock'
 

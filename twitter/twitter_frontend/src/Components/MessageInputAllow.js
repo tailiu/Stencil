@@ -1,20 +1,21 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import axios from 'axios';
 import TextField from 'material-ui/TextField';
 import Button from 'material-ui/Button';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import Grid from 'material-ui/Grid';
-import Card, { CardActions, CardContent, CardMedia } from 'material-ui/Card';
+import Card, { CardActions } from 'material-ui/Card';
+import FileUpload from '@material-ui/icons/FileUpload';
 
 var styles = {
     inputContainer: {
         height: '100%'
     },
     messagesInput: {
-        width: "80%",
-        marginLeft: 30,
-        marginRight: 30
+        width: "75%",
+        marginLeft: 5,
+        marginRight: 10
     }
 }
 
@@ -91,7 +92,11 @@ class MessageInputAllow extends Component {
                         onChange={this.handleChange}
                         onKeyPress={this.catchReturn}
                     />
-                    <Button style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
+                    <Button size="small" variant="raised" color="default">
+                        Upload
+                        <FileUpload  />
+                    </Button>
+                    <Button size="large" style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
                         Send
                     </Button>
                 </CardActions>
