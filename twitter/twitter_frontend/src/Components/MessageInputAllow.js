@@ -5,16 +5,16 @@ import Button from 'material-ui/Button';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import Grid from 'material-ui/Grid';
+import Card, { CardActions, CardContent, CardMedia } from 'material-ui/Card';
 
 var styles = {
     inputContainer: {
-        marginTop: 30
+        height: '100%'
     },
     messagesInput: {
         width: "80%",
-        float: "left",
         marginLeft: 30,
-        backgroundColor: "#fff",
+        marginRight: 30
     }
 }
 
@@ -78,32 +78,24 @@ class MessageInputAllow extends Component {
         styles.sendMessageButton = {
             backgroundColor: disabled ? '#BBDEFB' : "#00aced",
             color: "#fff",
-            variant: "raised",
-            display: "inline-block",
-            float: "right",
-            margin: 20,
-            marginRight: 30,
+            variant: "raised"
         }
 
         return (
-            <Fragment >
-                <Grid >
+            <Card style={styles.inputContainer}>
+                <CardActions>
                     <TextField
-                        id="message"
                         margin="normal"
-                        fullWidth
                         style={styles.messagesInput}
                         value={this.state.value}
                         onChange={this.handleChange}
                         onKeyPress={this.catchReturn}
                     />
-                 </Grid>
-                 <Grid >
                     <Button style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
                         Send
                     </Button>
-                </Grid>
-            </Fragment>
+                </CardActions>
+            </Card>
         )
     }
 }

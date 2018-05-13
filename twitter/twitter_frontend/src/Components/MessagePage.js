@@ -87,7 +87,6 @@ class MessagePage extends Component {
 
     periodicActions = () => {
         this.getConversationList((conversations) => {
-            console.log(conversations)
             if (conversations.length >= 1) {
                 if (this.state.current_conversation_id != '') {
                     for (var i in conversations) {
