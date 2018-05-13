@@ -107,10 +107,14 @@ class MessagePage extends Component {
         ).then(response => {
             if(!response.data.result.success){
             }else{
-                this.setState({
-                    suggestions: response.data.result.contactList
-                })
+                this.setSuggestions(response.data.result.contactList)
             }
+        })
+    }
+
+    setSuggestions = (suggestions) => {
+        this.setState({
+            suggestions: suggestions
         })
     }
 

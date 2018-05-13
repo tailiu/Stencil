@@ -231,8 +231,8 @@ class ConversationsController < ApplicationController
             for one_conversation_conversation_participant in one_conversation_conversation_participants do
                 one_user = one_conversation_conversation_participant.user
                 contact = one_user.name + ' @' + one_user.handle
-                if !result.include?(contact)
-                    result["contactList"].push()
+                if !result["contactList"].include?(contact)
+                    result["contactList"].push(contact)
                 end
             end
         end
