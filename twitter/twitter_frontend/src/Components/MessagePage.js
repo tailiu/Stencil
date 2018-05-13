@@ -86,8 +86,17 @@ class MessagePage extends Component {
     }
 
     periodicActions = () => {
-        this.getConversationList()
-        this.getMessageList(this.state.current_conversation_id)
+        this.getConversationList((conversations) => {
+            for (var i in conversations) {
+                if (conversations[i].conversation.id == this.state.current_conversation_id){
+                    this.setState({
+                        'current_conversation_state': conversations[i].conversation_state
+                    })
+                }
+            }
+            this.getMessageList(this.state.current_conversation_id)
+        })
+        
     }
 
     setMessageState = (messages) => {
@@ -107,10 +116,14 @@ class MessagePage extends Component {
         ).then(response => {
             if(!response.data.result.success){
             }else{
-                this.setState({
-                    suggestions: response.data.result.contactList
-                })
+                this.setSuggestions(response.data.result.contactList)
             }
+        })
+    }
+
+    setSuggestions = (suggestions) => {
+        this.setState({
+            suggestions: suggestions
         })
     }
 
@@ -264,6 +277,7 @@ class MessagePage extends Component {
                                     current_conversation_id = {this.state.current_conversation_id}
                                     current_conversation_state = {this.state.current_conversation_state}
                                     onNewMessage = {this.handleNewMessage}
+                                    messageBar={this.MessageBar} 
                                 />
                             </Grid>
                         </Paper>

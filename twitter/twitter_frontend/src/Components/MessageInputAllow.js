@@ -52,7 +52,8 @@ class MessageInputAllow extends Component {
                 }
             }
         ).then(response => {
-            if(!response.data.result.success){
+            if(!response.data.result.success) {
+                this.props.messageBar.showSnackbar(response.data.result.error)
             }else{
                 this.setState({value : ''});
                 this.props.onNewMessage()

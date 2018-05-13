@@ -11,13 +11,15 @@ class MessageInput extends Component {
     render() {
         if (this.props.current_conversation_state == 'blocked') {
             return (
-                <MessageInputBlock />
+                <MessageInputBlock 
+                />
             )
         } else {
             return (
                 <MessageInputAllow 
                     current_conversation_id = {this.props.current_conversation_id}
                     onNewMessage = {this.props.onNewMessage}
+                    messageBar={this.props.messageBar} 
                 />
             )
         }
