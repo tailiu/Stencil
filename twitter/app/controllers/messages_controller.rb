@@ -18,6 +18,7 @@ class MessagesController < ApplicationController
             messages = Message.joins("INNER JOIN users ON messages.user_id = users.id")
                         .where('messages.conversation_id' => conversation.id)
                         .select("users.name, users.avatar, messages.*")
+                        .order(created_at: :asc)
             result["messages"] = messages
         end
 
@@ -40,27 +41,35 @@ class MessagesController < ApplicationController
             result["error"] = "No such conversation or user"
         end
 
-        conversation_participants = conversation.conversation_participants
-        userInConversation = false
-        for conversation_participant in conversation_participants do
-            if conversation_participant.user_id == user.id
-                userInConversation = true
-                break
+        if result["success"]
+            conversation_participants = conversation.conversation_participants
+            userInConversation = false
+            for conversation_participant in conversation_participants do
+                if conversation_participant.user_id == user.id
+                    userInConversation = true
+                    break
+                end
+            end
+            if !userInConversation
+                result["success"] = false
+                result["error"] = "This user is not in the conversation"
             end
         end
-        if !userInConversation
-            result["success"] = false
-            result["error"] = "This user is not in the conversation"
-        end
 
-        if conversation.conversation_type == 'not_group'
-            block_one = UserAction.where(from_user_id: conversation_participants[0], 
-                to_user_id: conversation_participants[1], action_type: "block")
-            block_two = UserAction.where(from_user_id: conversation_participants[1], 
-                to_user_id: conversation_participants[0], action_type: "block")
-            if (block_one.length != 0 || block_two.length != 0)
-                result["success"] = false
-                result["error"] = "You have been blocked in this conversation"
+        if result["success"]
+            if conversation.conversation_type == 'not_group'
+                block_one = UserAction.find_by(from_user_id: conversation_participants[0].user_id, 
+                    to_user_id: conversation_participants[1].user_id, action_type: "block")
+                block_two = UserAction.find_by(from_user_id: conversation_participants[1].user_id, 
+                    to_user_id: conversation_participants[0].user_id, action_type: "block")
+                puts '*******************************'
+                puts block_one != nil
+                puts block_two != nil
+                puts '*******************************'
+                if (block_one != nil || block_two != nil)
+                    result["success"] = false
+                    result["error"] = "You have been blocked in this conversation"
+                end
             end
         end
 
