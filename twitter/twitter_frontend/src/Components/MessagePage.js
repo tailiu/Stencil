@@ -15,7 +15,7 @@ import Typography from 'material-ui/Typography';
 import NewConversation from './NewConversation'
 
 
-const styles = {
+var styles = {
     headerContainer: {
         marginTop: 80
     },
@@ -41,11 +41,11 @@ const styles = {
         height: "70vh",
     },
     messageList: {
-        height: "87%",
+        height: "50%",
         overflow: "auto"
     },
     messageInput: {
-        height: "13%"
+        height: "50%"
     }
 };
 
@@ -72,7 +72,8 @@ class MessagePage extends Component {
             current_conversation_type: '',
             current_conversation_state: '',
             messages: '',
-            suggestions: []
+            suggestions: [],
+            has_media: false
         }
     }
 
@@ -159,8 +160,8 @@ class MessagePage extends Component {
                 }
             }
         ).then(response => {
-            if(!response.data.result.success){
-                this.MessageBar.showSnackbar(response.data.result.error.message)
+            if(!response.data.result.success) {
+                this.MessageBar.showSnackbar(response.data.result.error)
             }else{
                 const conversations = response.data.result.conversations
 
@@ -191,7 +192,7 @@ class MessagePage extends Component {
                 }
             }
         ).then(response => {
-            if(!response.data.result.success){
+            if(!response.data.result.success) {
                 this.MessageBar.showSnackbar(response.data.result.error)
             }else{
                 if (response.data.result.messages == undefined) {
@@ -232,7 +233,33 @@ class MessagePage extends Component {
         this.getMessageList(this.state.current_conversation_id)    
     }
 
+    setHasMediaState = (has_media) => {
+        this.setState({has_media: has_media})
+    }
+    
+    changeMessageInputLayout = () => {
+        if (this.state.has_media) {
+            styles.messageInput = {
+                height: '50%'
+            }
+            styles.messageList = {
+                height: "50%",
+                overflow: "auto"
+            }
+        } else {
+            styles.messageInput = {
+                height: "13%"
+            }
+            styles.messageList = {
+                height: "87%",
+                overflow: "auto"
+            }
+        }
+    }
+
     render () {
+        this.changeMessageInputLayout()
+
         return (
             <div>
                 <MessageBar ref={instance => { this.MessageBar = instance; }}/>
@@ -287,6 +314,7 @@ class MessagePage extends Component {
                                     current_conversation_state = {this.state.current_conversation_state}
                                     onNewMessage = {this.handleNewMessage}
                                     messageBar={this.MessageBar} 
+                                    setHasMediaState={this.setHasMediaState}
                                 />
                             </Grid>
                         </Paper>

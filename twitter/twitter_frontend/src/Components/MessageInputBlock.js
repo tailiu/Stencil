@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from "react";
+import React, {Component} from "react";
 import Typography from 'material-ui/Typography';
 import Card, { CardContent } from 'material-ui/Card';
 
@@ -8,13 +8,8 @@ const styles = {
     fontSize: 20
 }
 
-class MessageInputBlock extends Component {
-    constructor(props) {
-        super(props)
-    }
- 
+class MessageInputBlock extends Component { 
     render() {
-        
         return (
             <Card style={styles}>
                 <CardContent>

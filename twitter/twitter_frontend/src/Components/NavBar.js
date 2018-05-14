@@ -210,7 +210,6 @@ class NavBar extends Component {
       }
 
     searchUser =(e)=> {
-        // console.log(e.target.value)
         this.setState({
             search_query: e.target.value
         })

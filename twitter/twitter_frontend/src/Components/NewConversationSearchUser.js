@@ -146,11 +146,10 @@ class NewConversationSearchUser extends React.Component {
                     highlightedIndex,
                 }) => (
                     <div className={classes.container}>
-                        {this.renderInput
-                            ({
-                                fullWidth: true,
-                                classes,
-                                InputProps: getInputProps({
+                        {this.renderInput({
+                            fullWidth: true,
+                            classes,
+                            InputProps: getInputProps({
                                 startAdornment: selectedItem.map(item => (
                                     <Chip
                                         key={item}

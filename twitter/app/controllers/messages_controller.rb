@@ -48,6 +48,9 @@ class MessagesController < ApplicationController
             "error" => {
             }
         }
+        media = params[:media]
+        media_type = params{:media_type}
+
         user = User.find_by(id: params[:user_id])
         conversation = Conversation.find_by(id: params[:conversation_id])
         content = params[:content]

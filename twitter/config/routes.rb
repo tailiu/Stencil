@@ -37,7 +37,7 @@ Rails.application.routes.draw do
 	get 'conversations/leaveConversation', to: 'conversations#leaveConversation'
 	get 'conversations/blockInGroupConversation', to: 'conversations#blockInGroupConversation'
 	get 'conversations/getContactList', to: 'conversations#getContactList'
-
+	post 'messages/new', to: 'messages#new'
 
 	resources :users
 	resources :user_actions

@@ -57,7 +57,6 @@ class NewTweetDialog extends Component {
             anchorEl: null,
             tweet_box_open: this.props.open,
             tweet_content: "",
-            file: '',
             imagePreviewUrl: '',
             hasMedia: false,
             mediaUrl: '../Assets/Images/liked-icon.png',
@@ -115,8 +114,6 @@ class NewTweetDialog extends Component {
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
             this.fileUpload(e).then((response)=>{
-                console.log(response.data);
-                console.log("axios:"+JSON.stringify(response))
                 if(!response.data.result.success){
                     this.MessageBar.showSnackbar(response.data.result.error.message)
                 }else{

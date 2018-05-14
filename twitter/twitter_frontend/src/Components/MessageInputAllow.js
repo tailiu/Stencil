@@ -1,25 +1,36 @@
-import React, {Component, Fragment} from "react";
-import axios from 'axios';
+import React, {Component} from "react";
+import axios, {post} from 'axios';
 import TextField from 'material-ui/TextField';
 import Button from 'material-ui/Button';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import Grid from 'material-ui/Grid';
+import Card, { CardActions, CardContent } from 'material-ui/Card';
+import FileUpload from '@material-ui/icons/FileUpload';
 
 var styles = {
     inputContainer: {
-        marginTop: 30
+        height: '100%'
     },
     messagesInput: {
-        width: "80%",
-        float: "left",
-        marginLeft: 30,
-        backgroundColor: "#fff",
+        width: "75%",
+        marginLeft: 5,
+        marginRight: 10
+    },
+    upload: {
+        width: "100%",
+    },
+    preview: {
+        textAlign: "center",
+        marginTop: 5
+    },
+    media_preview: {
+        height: 200,
+        width: "auto"
     }
 }
 
 class MessageInputAllow extends Component {
-
     static propTypes = {
         cookies: instanceOf(Cookies).isRequired
     }
@@ -31,7 +42,11 @@ class MessageInputAllow extends Component {
 
         this.state = {
             value: '',
-            user_id: cookies.get('user_id')
+            user_id: cookies.get('user_id'),
+            media_type: '',
+            media_preview: '',
+            file: '',
+            has_media: false  
         }
     }
 
@@ -42,68 +57,126 @@ class MessageInputAllow extends Component {
     }
 
     handleNewMessage = () => {
-        axios.get(
-            'http://localhost:3000/messages/new',
-            {
-                params: {
-                    "user_id": this.state.user_id,
-                    "conversation_id": this.props.current_conversation_id,
-                    "content": this.state.value
-                }
+        var formData = new FormData();
+        formData.append('content', this.state.value);
+        formData.append('user_id',this.state.user_id);
+        formData.append("conversation_id", this.props.current_conversation_id);
+        formData.append('media_type', this.state.media_type);
+        formData.append('media', this.state.file);
+        const config = {
+            headers: {
+                'content-type': 'multipart/form-data'
             }
-        ).then(response => {
+        };
+        const url = 'http://localhost:3000/messages/new';
+
+        post(url, formData, config).then(response => {
             if(!response.data.result.success) {
                 this.props.messageBar.showSnackbar(response.data.result.error)
             }else{
-                this.setState({value : ''});
+                this.setState({
+                    value: '',
+                    media_type: '',
+                    media_preview: '',
+                    has_media: false,
+                    file: ''
+                })
+                this.document.getElementById("upload").reset()
+                this.props.setHasMediaState(false)
                 this.props.onNewMessage()
             }
         })
     }
 
     catchReturn = (e) => {
-        if (e.key === 'Enter' && this.state.value != '' && this.props.current_conversation_id != '') {
+        if (e.key === 'Enter' && (this.state.value != '' || this.state.has_media) && this.props.current_conversation_id != '') {
             this.handleNewMessage()
         }
-        
     }
- 
+    
+    setMediaType = (media_type) => {
+        this.setState({
+            "media_type": media_type
+        })
+    }
+
+    handleUploadChange = (e) => {
+        const file = e.target.files[0]
+        
+        if (file == undefined) {
+            return 
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file)
+        reader.onloadend = () => {
+            if (file.type.indexOf("image") >= 0) {
+                this.setMediaType("photo")
+            } else if (file.type.indexOf("video") >= 0) {
+                this.setMediaType("video")
+            }
+            this.setState({
+                file: file,
+                media_preview: reader.result,
+                has_media: true
+            })
+        }
+
+        this.props.setHasMediaState(true)
+    }
+    
+    renderMedia = () => {
+        if (this.state.has_media) {
+            if (this.state.media_type == "photo") {
+                return (
+                    <CardContent style={styles.preview}>
+                        <img style={styles.media_preview} src={this.state.media_preview} />
+                    </CardContent>
+                ) 
+            } else if (this.state.media_type == "video") {
+                return (
+                    <CardContent style={styles.preview}>
+                        <video style={styles.media_preview} controls>
+                            <source src={this.state.media_preview} type="video/mp4"/>
+                        </video>
+                    </CardContent>
+                )
+            }
+        }
+    }
+
     render() {
         var disabled = true
 
-        if (this.state.value != '' && this.props.current_conversation_id != '') {
+        if ((this.state.value != '' || this.state.has_media) && this.props.current_conversation_id != '') {
             disabled = false
         }
         
         styles.sendMessageButton = {
             backgroundColor: disabled ? '#BBDEFB' : "#00aced",
             color: "#fff",
-            variant: "raised",
-            display: "inline-block",
-            float: "right",
-            margin: 20,
-            marginRight: 30,
+            variant: "raised"
         }
 
         return (
-            <Fragment >
-                <Grid >
+            <Card style={styles.inputContainer}>
+                {this.renderMedia()}
+                <CardActions>
                     <TextField
-                        id="message"
                         margin="normal"
-                        fullWidth
                         style={styles.messagesInput}
                         value={this.state.value}
                         onChange={this.handleChange}
                         onKeyPress={this.catchReturn}
-                    />
-                 </Grid>
-                 <Grid >
-                    <Button style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
+                    /> 
+                    <Button variant="raised" color="default" >
+                        <input id="upload" style={styles.upload} type="file" onChange={this.handleUploadChange}/>
+                    </Button>
+                    <Button size="large" style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
                         Send
                     </Button>
-                </Grid>
-            </Fragment>
+                </CardActions>
+            </Card>
         )
     }
 }
