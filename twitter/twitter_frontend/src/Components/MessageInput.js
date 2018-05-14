@@ -20,6 +20,7 @@ class MessageInput extends Component {
                     current_conversation_id = {this.props.current_conversation_id}
                     onNewMessage = {this.props.onNewMessage}
                     messageBar={this.props.messageBar} 
+                    setHasMediaState={this.props.setHasMediaState}
                 />
             )
         }

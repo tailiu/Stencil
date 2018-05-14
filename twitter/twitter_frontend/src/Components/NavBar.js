@@ -108,7 +108,6 @@ class NavBar extends Component {
     };
 
     handleTweetBoxOpen = () => {
-        console.log("HERE!");
         this.setState({tweet_box_open: true });
     };
 
@@ -164,7 +163,7 @@ class NavBar extends Component {
             }
           }
         ).then(response => {
-            console.log(response)
+            // console.log(response)
             if(response.data.result.success){
                 this.setState({
                   notifications: response.data.result.notifs,
@@ -177,7 +176,6 @@ class NavBar extends Component {
       }
 
     searchUser =(e)=> {
-        // console.log(e.target.value)
         this.setState({
             search_query: e.target.value
         })

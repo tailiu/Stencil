@@ -11,7 +11,6 @@ import Dialog, {
 import Button from 'material-ui/Button';
 import TextField from 'material-ui/TextField';
 import MessageBar from './MessageBar';
-import Upload from 'material-ui-upload/Upload';
 import Card, { CardMedia } from 'material-ui/Card';
 import { CardContent } from 'material-ui';
 
@@ -58,7 +57,6 @@ class NewTweetDialog extends Component {
             anchorEl: null,
             tweet_box_open: this.props.open,
             tweet_content: "",
-            file: '',
             imagePreviewUrl: '',
             hasMedia: false,
             mediaUrl: '../Assets/Images/liked-icon.png',
@@ -116,8 +114,6 @@ class NewTweetDialog extends Component {
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
             this.fileUpload(e).then((response)=>{
-                console.log(response.data);
-                console.log("axios:"+JSON.stringify(response))
                 if(!response.data.result.success){
                     this.MessageBar.showSnackbar(response.data.result.error.message)
                 }else{
@@ -151,8 +147,6 @@ class NewTweetDialog extends Component {
     
     _handleImageChange =(e)=> {
         e.preventDefault();
-
-        console.log(e.target.files[0].type)
 
         if(e.target.files[0].type.indexOf("image") >= 0){
             this.state.media_type = "photo"
