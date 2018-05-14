@@ -43,7 +43,7 @@ class Notif extends Component {
     }
 
     componentDidMount(){
-        console.log("here notif")
+        // console.log("here notif")
         this.getNotifs();
     }
 
@@ -57,7 +57,7 @@ class Notif extends Component {
               }
             }
           ).then(response => {
-            console.log(response)
+            // console.log(response)
             if(response.data.result.success){
                 this.setState({
                   notifs: response.data.result.notifs,

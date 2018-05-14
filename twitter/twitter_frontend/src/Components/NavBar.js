@@ -99,6 +99,28 @@ class NavBar extends Component {
         this.timer = setInterval(()=> this.getNotifications(), 30000);
     }
 
+    componentWillMount() {
+        this.loggedIn();
+    }
+
+    loggedIn = () => {
+        axios.get(
+            'http://localhost:3000/auth/login',
+            {
+                withCredentials: true
+            }
+          ).then(response => {
+            console.log(response.data)
+            
+            if(response.data.result.success){
+
+            }else{
+                this.handleLogout()
+            }
+          })
+        console.log("here in console!")
+    }
+
     componentWillUnmount() {
         this.timer = null;
     }
@@ -108,7 +130,7 @@ class NavBar extends Component {
     };
 
     handleTweetBoxOpen = () => {
-        console.log("HERE!");
+        // console.log("HERE!");
         this.setState({tweet_box_open: true });
     };
 
@@ -147,9 +169,16 @@ class NavBar extends Component {
     handleLogout = () =>  {
         const { cookies } = this.props;
         axios.get(
-        'http://localhost:3000/users/logout'
+        'http://localhost:3000/users/logout',
+        {
+            withCredentials: true
+        }
         ).then(response => {
             cookies.remove('session_id');
+            cookies.remove('user');
+            cookies.remove('user_id');
+            cookies.remove('user_name');
+            cookies.remove('user_handle');
             this.goToIndex();
         })
       }
@@ -164,7 +193,7 @@ class NavBar extends Component {
             }
           }
         ).then(response => {
-            console.log(response)
+            // console.log(response)
             if(response.data.result.success){
                 this.setState({
                   notifications: response.data.result.notifs,

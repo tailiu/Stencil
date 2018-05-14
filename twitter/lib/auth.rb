@@ -23,6 +23,9 @@ module Auth
     def is_logged_in(session, session_id, user_id)
         result = {
             "success": false,
+            "params": [
+                session.id, session_id, user_id
+            ],
             "message": "What went wrong?"
         }
         if session.id.to_s === session_id.to_s
@@ -33,15 +36,32 @@ module Auth
         else
             result["success"] = false
             result["message"] = "Can't find session."
-            forceLogout(session)
         end
 
         return result
     end
 
-    def forceLogout(session)
+    def force_logout(session)
         session.clear
         session[:session_active] = false
+    end
+
+    def isActive(session)
+        result = {
+            "success": false,
+            "message": "What went wrong?"
+        }
+        if session[:session_active].nil? || session[:session_active].empty?
+            result["success"] = false
+            result["message"] = "Session doesn't exist?"
+        elsif session[:session_active]
+            result["success"] = true
+            result["message"] = "Session is active!"
+        else
+            result["success"] = false
+            result["message"] = "Session exists, but ain't active."
+        end
+
     end
 
 end

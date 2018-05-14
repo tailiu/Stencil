@@ -84,13 +84,14 @@ class Login extends Component {
         axios.get(
           'http://localhost:3000/users/verify',
           {
+            withCredentials: true,
             params: {
               'email':this.state.email, 
               'password': this.state.password
             }
           }
         ).then(response => {
-          // console.log(response)
+          console.log(response.data)
           if(!response.data.result.success){
             this.MessageBar.showSnackbar(response.data.result.error.message)
           }else{

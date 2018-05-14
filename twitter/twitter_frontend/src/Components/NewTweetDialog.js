@@ -1,5 +1,5 @@
 import React, {Component, Fragment} from 'react';
-import axios, {post} from 'axios';
+import {post} from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 import Dialog, {
@@ -11,8 +11,7 @@ import Dialog, {
 import Button from 'material-ui/Button';
 import TextField from 'material-ui/TextField';
 import MessageBar from './MessageBar';
-import Upload from 'material-ui-upload/Upload';
-import Card, { CardMedia } from 'material-ui/Card';
+import Card from 'material-ui/Card';
 import { CardContent } from 'material-ui';
 
 const styles = {
@@ -149,10 +148,13 @@ class NewTweetDialog extends Component {
         e.preventDefault();
     }
     
-    _handleImageChange =(e)=> {
+    handleImageChange =(e)=> {
         e.preventDefault();
 
-        console.log(e.target.files[0].type)
+        if (e.target.files.length <= 0) {
+            console.log("No files selected.")
+            return
+        }
 
         if(e.target.files[0].type.indexOf("image") >= 0){
             this.state.media_type = "photo"
@@ -220,7 +222,7 @@ class NewTweetDialog extends Component {
                     <DialogActions>
 
                         <Button type="file " color="primary" label='Video/Photo'>
-                            <input type="file" style={styles.upload.input} onChange={this._handleImageChange} />
+                            <input type="file" style={styles.upload.input} onChange={this.handleImageChange} />
                         </Button>
                         <Button onClick={this.handleTweetBoxClose} color="primary">
                         Cancel

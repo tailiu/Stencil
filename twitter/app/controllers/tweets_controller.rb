@@ -121,7 +121,7 @@ class TweetsController < ApplicationController
             "params" => params,
             "success" => false,
             "error" => {
-                "message" => "Some Error!"
+                "message" => ""
             },
         }
 
@@ -134,6 +134,7 @@ class TweetsController < ApplicationController
                 result["success"] = false
                 result["error"]["message"] = "User doesn't exist!"
             else
+                result["logged_in"] = user.is_logged_in(session, params[:session_id], user.id)
                 go_ahead = true
                 if !user.protected
                     go_ahead = true
@@ -178,7 +179,6 @@ class TweetsController < ApplicationController
                 end
             end
         end
-
         render json: {result: result}
 
     end

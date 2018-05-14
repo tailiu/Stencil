@@ -1,5 +1,4 @@
 import React, {Component} from "react";
-import Button from 'material-ui/Button';
 import Avatar from 'material-ui/Avatar';
 import Typography from 'material-ui/Typography';
 import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
@@ -238,7 +237,7 @@ class Tweet extends Component{
                     </Typography>
                     {this.props.tweet.tweet.media_type === "photo" &&
                         <div style={styles.tweet.image_area}>
-                            <img style={styles.tweet.image} src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} />
+                            <img alt="image" style={styles.tweet.image} src={this.state.base_url+this.props.tweet.tweet.tweet_media.url} />
                         </div>
                     }
                     {this.props.tweet.tweet.media_type === "video" &&

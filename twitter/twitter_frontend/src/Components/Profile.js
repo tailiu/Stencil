@@ -65,6 +65,7 @@ class Profile extends Component {
         this.state = {
             user_id: user_id,
             logged_in_user: cookies.get('user_id'),
+            session_id: cookies.get('session_id'),
             email : '',
             password : '',
             name : '',
@@ -110,16 +111,18 @@ class Profile extends Component {
         axios.get(
         'http://localhost:3000/tweets/fetchUserTweets',
         {
+            withCredentials: true,
             params: {
             'user_id': this.state.user_id, 
-            'requesting_user': this.state.logged_in_user
+            'requesting_user': this.state.logged_in_user,
+            'session_id': this.state.session_id,
             }
         }
         ).then(response => {
 
             if(response.data.result.success){
                 // console.log("result:")
-                // console.log(response.data.result.tweets)
+                console.log(response.data)
                 this.setState({
                     tweets: response.data.result.tweets,
                 })
@@ -154,7 +157,7 @@ class Profile extends Component {
                             <UserProfileBox user_id={this.state.user_id}/>
                         </Grid>
                         <Grid item>
-                            {this.state.logged_in_user == this.state.user_id &&
+                            {this.state.logged_in_user === this.state.user_id &&
                                 <FollowRequestsBox user_id={this.state.user_id}/>
                             }
                         </Grid>

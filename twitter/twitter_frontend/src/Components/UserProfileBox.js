@@ -11,7 +11,7 @@ import Dialog, {
     DialogTitle,
   } from 'material-ui/Dialog';
   import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
+import { withCookies } from 'react-cookie';
 import MessageBar from './MessageBar';
 import renderHTML from 'react-render-html';
 

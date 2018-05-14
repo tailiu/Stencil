@@ -1,8 +1,11 @@
 Rails.application.routes.draw do
 	# For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
 
-	get 'users/verify', to: 'users#verify'
-	get 'users/logout', to: 'users#logout'
+	get 'users/verify', to: 'auth#verify'
+	get 'users/signup', to: 'auth#new'
+	get 'auth/login', to: 'auth#is_logged_in'
+	# get 'users/logout', to: 'users#logout'
+	get 'users/logout', to: 'auth#logout'
 	get 'tweets/fetchall', to: 'tweets#fetchall'
 	get 'tweets/fetchUserTweets', to: 'tweets#fetchUserTweets'
 	get 'tweets/mainPageTweets', to: 'tweets#mainPageTweets'
