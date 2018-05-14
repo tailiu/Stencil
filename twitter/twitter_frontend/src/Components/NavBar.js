@@ -1,7 +1,6 @@
 import React, {Component, Fragment} from "react";
 import axios from 'axios';
 import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
 
 import Typography from 'material-ui/Typography';
 
@@ -71,20 +70,16 @@ const styles = {
 
 class NavBar extends Component {
 
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-      };
-
     constructor(props) {
         
         super(props);
         
-        const { cookies } = this.props;
+        this.cookies = this.props.cookies;
 
         this.state = {
-            user_id: cookies.get('user_id'),
-            user_name: cookies.get('user_name'),
-            user_handle: cookies.get('user_handle'),
+            user_id: this.cookies.get('user_id'),
+            user_name: this.cookies.get('user_name'),
+            user_handle: this.cookies.get('user_handle'),
             value : 0,
             anchorEl: null,
             tweet_box_open: false,
@@ -104,13 +99,14 @@ class NavBar extends Component {
     }
 
     loggedIn = () => {
-        const { cookies } = this.props;
+
         axios.get(
             'http://localhost:3000/auth/login',
             {
                 withCredentials: true,
                 params: {
-                    "session_id": cookies.get('session_id')
+                    "session_id": this.cookies.get('session_id'),
+                    "req_token": this.cookies.get('req_token')
                 }
             }
           ).then(response => {
@@ -175,7 +171,10 @@ class NavBar extends Component {
         axios.get(
         'http://localhost:3000/users/logout',
         {
-            withCredentials: true
+            withCredentials: true,
+            params: {
+                "req_token": this.cookies.get('req_token')
+            }
         }
         ).then(response => {
             cookies.remove('session_id');
@@ -194,6 +193,7 @@ class NavBar extends Component {
         {
             params: {
               'user_id': this.state.user_id, 
+              "req_token": this.cookies.get('req_token')
             }
           }
         ).then(response => {
@@ -210,6 +210,7 @@ class NavBar extends Component {
       }
 
     searchUser =(e)=> {
+        // console.log(e.target.value)
         this.setState({
             search_query: e.target.value
         })

@@ -58,12 +58,13 @@ class FollowRequestsBox extends Component{
 
     constructor(props){
         super(props);
-        const { cookies } = this.props;
+
+        this.cookies = this.props.cookies;
 
         this.state = {
             bio_box_open : false,
             user_id : props.user_id,
-            logged_in_user: cookies.get("user_id"),
+            logged_in_user: this.cookies.get("user_id"),
             user: [],
             follow_requests : []
         }

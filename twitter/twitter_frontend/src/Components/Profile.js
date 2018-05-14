@@ -46,17 +46,13 @@ const styles = {
 
 class Profile extends Component {
 
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-    };
-
     constructor(props) {
 
         super(props);
 
-        const { cookies } = this.props;
+        this.cookies = this.props.cookies;
 
-        let user_id = cookies.get('user_id');
+        let user_id = this.cookies.get('user_id');
 
         if (props.match.params.user_id){
             user_id = props.match.params.user_id
@@ -64,8 +60,8 @@ class Profile extends Component {
 
         this.state = {
             user_id: user_id,
-            logged_in_user: cookies.get('user_id'),
-            session_id: cookies.get('session_id'),
+            logged_in_user: this.cookies.get('user_id'),
+            session_id: this.cookies.get('session_id'),
             email : '',
             password : '',
             name : '',

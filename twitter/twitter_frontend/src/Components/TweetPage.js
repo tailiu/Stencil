@@ -45,18 +45,11 @@ const styles = {
 
 class Profile extends Component {
 
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-    };
-
     constructor(props) {
 
         super(props);
 
-        console.log("oaram: "+JSON.stringify(props))
-        console.log("oaram: "+JSON.stringify(props.match.params))
-
-        const { cookies } = this.props;
+        this.cookies = this.props;
         
         this.state = {
             tweets: [],

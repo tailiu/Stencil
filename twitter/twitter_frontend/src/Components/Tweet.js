@@ -60,20 +60,16 @@ const styles = {
 
 class Tweet extends Component{
 
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-    };
-    
     constructor(props){
         super(props);
 
-        const { cookies } = this.props;
+        this.cookies = this.props.cookies;
         // console.log(props.tweet.tweet.id);
         this.state = {
             base_url : "http://localhost:3000/",
-            user_id: parseInt(cookies.get('user_id')),
-            user_name: cookies.get('user_name'),
-            user_handle: cookies.get('user_handle'),
+            user_id: parseInt(this.cookies.get('user_id')),
+            user_name: this.cookies.get('user_name'),
+            user_handle: this.cookies.get('user_handle'),
             liked: false,
             retweeted: false,
             replied: false,

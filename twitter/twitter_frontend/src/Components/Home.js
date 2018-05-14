@@ -45,17 +45,13 @@ const styles = {
 
 class Home extends Component {
 
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-      };
-
     constructor(props) {
 
         super(props);
-        const { cookies } = this.props;
+        this.cookies = this.props.cookies;
 
         this.state = {
-            user_id: cookies.get('user_id'),
+            user_id: this.cookies.get('user_id'),
             email : '',
             name : '',
             tweet_value : '',

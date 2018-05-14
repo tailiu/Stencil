@@ -48,13 +48,11 @@ const styles = {
 
 class SignUp extends Component {
 
-  static propTypes = {
-    cookies: instanceOf(Cookies).isRequired
-  };
-
   constructor(props) {
     
     super(props);
+    
+    this.cookies = this.props.cookies;
 
     this.state = {
       email : '',
@@ -82,7 +80,7 @@ class SignUp extends Component {
   }
 
   handleSignup = () =>  {
-    const { cookies } = this.props;
+
 
     if(!this.validateForm()){
       this.MessageBar.showSnackbar("Some fields are left empty!")
@@ -104,10 +102,10 @@ class SignUp extends Component {
         }else{
           this.MessageBar.showSnackbar("Signup Successful! Welcome to Twitter!");
           setTimeout(function() {
-            cookies.set('user_id',  response.data.result.user.id);
-            cookies.set('user_name', response.data.result.user.name);
-            cookies.set('user_handle', response.data.result.user.handle);
-            cookies.set('session_id', response.data.result.session_id);
+            this.cookies.set('user_id',  response.data.result.user.id);
+            this.cookies.set('user_name', response.data.result.user.name);
+            this.cookies.set('user_handle', response.data.result.user.handle);
+            this.cookies.set('session_id', response.data.result.session_id);
             this.goToHome();
           }.bind(this), 3000);
         }
