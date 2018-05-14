@@ -48,21 +48,26 @@ class Message extends Component {
         return styles
     }
 
-    getContentForMessage = () => {
+    getHeaderForMessage = () => {
         const message = this.props.message
-        var content = ''
+
+        var text = ''
 
         if (this.props.current_conversation_type == 'group') {
-            content += message.name + ': '
+            text += message.name + ': '
         }
 
-        content += this.props.message.content
+        text += this.props.message.content
 
-        return content
+        return text
+    }
+
+    getMediaForMessage = () => {
+        
     }
 
     render () {
-        const content = this.getContentForMessage();
+        const text = this.getHeaderForMessage();
         const updatedDate = this.getLatestUpdatedDateForMessage();
 
         const styles = this.setStyle()
@@ -71,7 +76,7 @@ class Message extends Component {
             <ListItem style={styles.listContainer}>
                 <Avatar src={require('../Assets/Images/user_icon.png')} />
                 <ListItemText style={styles.listItem}
-                    primary={content}
+                    primary={text}
                     secondary={updatedDate}
                 />
             </ListItem>

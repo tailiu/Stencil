@@ -48,8 +48,8 @@ class MessagesController < ApplicationController
             "error" => {
             }
         }
-        media = params[:media]
-        media_type = params{:media_type}
+        message_media = params[:media]
+        media_type = params[:media_type]
 
         user = User.find_by(id: params[:user_id])
         conversation = Conversation.find_by(id: params[:conversation_id])
@@ -89,7 +89,13 @@ class MessagesController < ApplicationController
         end
 
         if result["success"]
-            new_message = Message.new(content: content, user_id: user.id, conversation_id: conversation.id)
+            new_message = Message.new(
+                                content: content, 
+                                user_id: user.id, 
+                                conversation_id: conversation.id,
+                                media_type: media_type,
+                                message_media: message_media
+                            )
             new_message.save
         end
 

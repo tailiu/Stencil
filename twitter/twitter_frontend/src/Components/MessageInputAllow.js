@@ -81,7 +81,6 @@ class MessageInputAllow extends Component {
                     has_media: false,
                     file: ''
                 })
-                this.document.getElementById("upload").reset()
                 this.props.setHasMediaState(false)
                 this.props.onNewMessage()
             }
