@@ -1,9 +1,6 @@
 import React, {Component} from "react";
-
-// import Typography from 'material-ui/Typography';
-
-// import AppBar from 'material-ui/AppBar';
-// import Toolbar from 'material-ui/Toolbar';
+import { withCookies, Cookies } from 'react-cookie';
+import { instanceOf } from 'prop-types';
 
 const styles = {
     titlebar: {
@@ -20,15 +17,35 @@ const styles = {
 };
 
 class TitleBar extends Component {
+    
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+    };
 
     constructor(props) {
         super(props);
-        this.goToHome = this.goToHome.bind(this);
     }
 
+    componentWillMount() {
+        this.checkLogin();
+    }
 
-    goToHome(e) {
-		window.location = '/index';
+    checkLogin =()=> {
+        const { cookies } = this.props;
+        let session_id = cookies.get("session_id");
+        console.log("session:"+ session_id)
+        if (session_id){
+            console.log("logged in")
+            this.goToHome()
+        }else{
+            console.log("not logged in")
+        }
+
+
+    }
+
+    goToHome =(e)=> {
+		window.location = '/home';
 	}
 
     render() {
@@ -36,21 +53,8 @@ class TitleBar extends Component {
             <a href="/index">
                 <img style={styles.title_logo} alt="Logo" src={require('../Assets/Images/Twitter_Logo_Blue.png')} /> 
             </a>
-            // <AppBar 
-            //     style={styles.titlebar} 
-            //     position="static" 
-            //     color="default">
-            //     <Toolbar>
-            //         <Typography 
-            //             variant="title" 
-            //             style={styles.title} 
-            //             onClick = {this.goToHome}>
-            //             Twitter
-            //         </Typography>
-            //     </Toolbar>
-            // </AppBar>
         );
     }
 }
 
-export default TitleBar;
+export default withCookies(TitleBar);

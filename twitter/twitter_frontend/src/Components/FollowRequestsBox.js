@@ -1,19 +1,14 @@
 import React, {Component, Fragment} from "react";
-import Button from 'material-ui/Button';
-import Avatar from 'material-ui/Avatar';
 import Typography from 'material-ui/Typography';
-import TextField from 'material-ui/TextField';
-import Card, { CardActions, CardContent, CardHeader } from 'material-ui/Card';
+import Card, { CardContent } from 'material-ui/Card';
 import List, {
     ListItem,
-    ListItemAvatar,
     ListItemIcon,
     ListItemSecondaryAction,
     ListItemText,
   } from 'material-ui/List';
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import MessageBar from './MessageBar';
+import { withCookies } from 'react-cookie';
 import renderHTML from 'react-render-html';
 
 const styles = {

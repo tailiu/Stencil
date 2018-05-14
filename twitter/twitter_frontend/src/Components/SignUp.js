@@ -88,7 +88,7 @@ class SignUp extends Component {
       this.MessageBar.showSnackbar("Some fields are left empty!")
     }else{
       axios.get(
-        'http://localhost:3000/users/new',
+        'http://localhost:3000/users/signup',
         {
           params: {
             'name':this.state.name, 

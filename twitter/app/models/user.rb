@@ -12,4 +12,6 @@ class User < ApplicationRecord
     validates_associated :credential
 
     mount_uploader :avatar, AvatarUploader
+
+    include Auth
 end
