@@ -100,6 +100,7 @@ class Login extends Component {
             cookies.set('user_name', response.data.result.user.name);
             cookies.set('user_handle', response.data.result.user.handle);
             cookies.set('session_id', response.data.result.session_id);
+            cookies.set('req_token', response.data.result.req_token);
             setTimeout(function() { 
               this.goToHome();
             }.bind(this), 1000);

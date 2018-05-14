@@ -104,10 +104,14 @@ class NavBar extends Component {
     }
 
     loggedIn = () => {
+        const { cookies } = this.props;
         axios.get(
             'http://localhost:3000/auth/login',
             {
-                withCredentials: true
+                withCredentials: true,
+                params: {
+                    "session_id": cookies.get('session_id')
+                }
             }
           ).then(response => {
             console.log(response.data)

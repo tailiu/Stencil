@@ -56,8 +56,10 @@ class AuthController < ApplicationController
             reset_session
             session[:is_active] = true
             session[:user_id] = @credentials.user.id
+            session[:req_token] = rand(32**32).to_s(16)
             @result["session_id"] = session.id
-            @result["session"] = session
+            @result["req_token"] = session[:req_token]
+            # @result["session"] = session
         else
             @result["success"] = false
             @result["error"]["message"] = "Invalid credentials!"
@@ -101,28 +103,28 @@ class AuthController < ApplicationController
             "session" => session,
             "session_id" => session.id,
         }
-        if session[:is_active].nil?
+
+        if params[:session_id].nil?
             result["success"] = false
-            result["error"]["message"] = "Session not found."
+            result["error"]["message"] = "Incomplete params!"
         else
-            if session[:is_active] == true
-                result["success"] = true
+            if session.id.to_s === params[:session_id].to_s
+                if session[:is_active].nil?
+                    result["success"] = false
+                    result["error"]["message"] = "Session not found."
+                else
+                    if session[:is_active] == true
+                        result["success"] = true
+                    else
+                        result["success"] = false
+                        result["error"]["message"] = "Session not active."
+                    end
+                end
             else
                 result["success"] = false
-                result["error"]["message"] = "Session not active."
+                result["error"]["message"] = "Session incompatible."
             end
         end
-        # if params[:session_id].nil?
-        #     result["success"] = false
-        #     result["error"]["message"] = "Incomplete params!"
-        # else
-        #     if session.id.to_s === params[:session_id].to_s
-        #         result["success"] = true
-        #     else
-        #         result["success"] = false
-        #         result["error"]["message"] = "Session not active."
-        #     end
-        # end
         render json: {result: result}
     end
     
