@@ -87,14 +87,21 @@ class MessagePage extends Component {
 
     periodicActions = () => {
         this.getConversationList((conversations) => {
-            for (var i in conversations) {
-                if (conversations[i].conversation.id == this.state.current_conversation_id){
-                    this.setState({
-                        'current_conversation_state': conversations[i].conversation_state
-                    })
+            if (conversations.length >= 1) {
+                if (this.state.current_conversation_id != '') {
+                    for (var i in conversations) {
+                        if (conversations[i].conversation.id == this.state.current_conversation_id){
+                            this.setState({
+                                'current_conversation_state': conversations[i].conversation_state
+                            })
+                        }
+                    }
+                    this.getMessageList(this.state.current_conversation_id)  
                 }
+            } else {
+                this.setCurrentConversation('', '', '')
+                this.setMessageState('')
             }
-            this.getMessageList(this.state.current_conversation_id)
         })
         
     }
@@ -179,11 +186,13 @@ class MessagePage extends Component {
             'http://localhost:3000/messages',
             {
                 params: {
-                    "id": current_conversation_id
+                    "user_id": this.state.user_id,
+                    "conversation_id": current_conversation_id
                 }
             }
         ).then(response => {
             if(!response.data.result.success){
+                this.MessageBar.showSnackbar(response.data.result.error)
             }else{
                 if (response.data.result.messages == undefined) {
                     this.setMessageState('')

@@ -230,9 +230,16 @@ class ConversationsController < ApplicationController
             one_conversation_conversation_participants = conversation.conversation_participants
             for one_conversation_conversation_participant in one_conversation_conversation_participants do
                 one_user = one_conversation_conversation_participant.user
-                contact = one_user.name + ' @' + one_user.handle
-                if !result["contactList"].include?(contact)
-                    result["contactList"].push(contact)
+                if one_user.id == user.id
+                    next
+                end
+                block_one = UserAction.where(from_user_id: user, to_user_id: one_user, action_type: "block")
+                block_two = UserAction.where(from_user_id: one_user, to_user_id: user, action_type: "block")
+                if block_one.length == 0 && block_two.length == 0
+                    contact = one_user.name + ' @' + one_user.handle
+                    if !result["contactList"].include?(contact)
+                        result["contactList"].push(contact)
+                    end
                 end
             end
         end
