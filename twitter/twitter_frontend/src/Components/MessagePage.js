@@ -193,7 +193,9 @@ class MessagePage extends Component {
             }
         ).then(response => {
             if(!response.data.result.success) {
-                this.MessageBar.showSnackbar(response.data.result.error)
+                if (this.MessageBar != undefined) {
+                    this.MessageBar.showSnackbar(response.data.result.error)
+                }
             }else{
                 if (response.data.result.messages == undefined) {
                     this.setMessageState('')
@@ -310,6 +312,7 @@ class MessagePage extends Component {
                             </Grid>
                             <Grid style={styles.messageInput}>
                                 <MessageInput 
+                                    messageBar = {this.MessageBar}
                                     current_conversation_id = {this.state.current_conversation_id}
                                     current_conversation_state = {this.state.current_conversation_state}
                                     onNewMessage = {this.handleNewMessage}

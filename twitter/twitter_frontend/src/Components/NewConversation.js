@@ -69,6 +69,10 @@ class NewConversation extends Component {
             if(!response.data.result.success){
                 this.props.messageBar.showSnackbar(response.data.result.error)
             }else{
+                if (response.data.result.message != "") {
+                    this.props.messageBar.showSnackbar(response.data.result.message)
+                }
+                
                 this.clearMessageTo()
 
                 const conversation = response.data.result.conversation

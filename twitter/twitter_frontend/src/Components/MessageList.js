@@ -1,4 +1,4 @@
-import React, {Component} from "react";
+import React, {Component, Fragment} from "react";
 import List from 'material-ui/List';
 import Message from './Message'
 
@@ -21,9 +21,9 @@ class MessageList extends Component {
         } 
 
         return (
-            <List dense={true}>
+            <Fragment>
                 {messageList}
-            </List>
+            </Fragment>
         )   
     }
 }

@@ -48,8 +48,8 @@ class MessagesController < ApplicationController
             "error" => {
             }
         }
-        media = params[:media]
-        media_type = params{:media_type}
+        message_media = params[:media]
+        media_type = params[:media_type]
 
         user = User.find_by(id: params[:user_id])
         conversation = Conversation.find_by(id: params[:conversation_id])
@@ -58,6 +58,11 @@ class MessagesController < ApplicationController
         if user == nil || conversation == nil
             result["success"] = false
             result["error"] = "No such conversation or user"
+        end
+
+        if media_type != 'video' && media_type != 'photo' && media_type != 'null'
+            result["success"] = false
+            result["error"] = "Wrong media type"
         end
 
         if result["success"]
@@ -89,7 +94,13 @@ class MessagesController < ApplicationController
         end
 
         if result["success"]
-            new_message = Message.new(content: content, user_id: user.id, conversation_id: conversation.id)
+            new_message = Message.new(
+                                content: content, 
+                                user_id: user.id, 
+                                conversation_id: conversation.id,
+                                media_type: media_type,
+                                message_media: message_media
+                            )
             new_message.save
         end
 

@@ -49,7 +49,8 @@ class ConversationsController < ApplicationController
             "success" => true,
             "error" => {
             },
-            "conversation_state" => ""            
+            "conversation_state" => "",
+            "message" => ""        
         }
 
         parameters = JSON.parse(params[:participants])
@@ -107,10 +108,10 @@ class ConversationsController < ApplicationController
                     if conversation_participants.size == 2 
                         if conversation_participants.exists?(user_id: userArr[1].id) 
                             existed = true
-                            block_one = UserAction.where(from_user_id: conversation_participants[0], 
-                                to_user_id: conversation_participants[1], action_type: "block")
-                            block_two = UserAction.where(from_user_id: conversation_participants[1], 
-                                to_user_id: conversation_participants[0], action_type: "block")
+                            block_one = UserAction.where(from_user_id: conversation_participants[0].user_id, 
+                                to_user_id: conversation_participants[1].user_id, action_type: "block")
+                            block_two = UserAction.where(from_user_id: conversation_participants[1].user_id, 
+                                to_user_id: conversation_participants[0].user_id, action_type: "block")
                             if (block_one.length != 0 || block_two.length != 0)
                                 result["conversation_state"] = "blocked"
                             end
@@ -126,11 +127,31 @@ class ConversationsController < ApplicationController
 
                 conversation = Conversation.create(conversation_type: conversation_type)
                 for user in userArr do
+                    blocked = false
+                    for user1 in userArr do
+                        if user1.id == user.id
+                            next
+                        end
+                        state = UserAction.where(from_user_id: user1, to_user_id: user, action_type: "block")
+                        if state.length != 0
+                            blocked = true
+                            break
+                        end
+                    end
+                    if blocked 
+                        result['message'] += user.name + '@' + user.handle + ' '
+                        next
+                    end
+
                     if user.id == creator.id 
                         user.conversation_participants.create(conversation_id: conversation.id, role: 'creator')
                     else
                         user.conversation_participants.create(conversation_id: conversation.id, role: 'normal')
                     end
+                end
+
+                if result['message'] != ""
+                    result['message'] += " cannot join the new conversation"
                 end
 
                 result["conversation"] = conversation

@@ -43,10 +43,10 @@ class MessageInputAllow extends Component {
         this.state = {
             value: '',
             user_id: cookies.get('user_id'),
-            media_type: '',
+            media_type: null,
             media_preview: '',
             file: '',
-            has_media: false  
+            has_media: false
         }
     }
 
@@ -76,12 +76,11 @@ class MessageInputAllow extends Component {
             }else{
                 this.setState({
                     value: '',
-                    media_type: '',
+                    media_type: null,
                     media_preview: '',
                     has_media: false,
                     file: ''
                 })
-                this.document.getElementById("upload").reset()
                 this.props.setHasMediaState(false)
                 this.props.onNewMessage()
             }
@@ -102,9 +101,14 @@ class MessageInputAllow extends Component {
 
     handleUploadChange = (e) => {
         const file = e.target.files[0]
-        
+
         if (file == undefined) {
             return 
+        }
+
+        if (file.type.indexOf("image") < 0 && file.type.indexOf("video") < 0) {
+            this.props.messageBar.showSnackbar("File type is not supported")
+            return
         }
 
         const reader = new FileReader();
@@ -170,7 +174,7 @@ class MessageInputAllow extends Component {
                         onKeyPress={this.catchReturn}
                     /> 
                     <Button variant="raised" color="default" >
-                        <input id="upload" style={styles.upload} type="file" onChange={this.handleUploadChange}/>
+                        <input style={styles.upload} type="file" onChange={this.handleUploadChange}/>
                     </Button>
                     <Button size="large" style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
                         Send
