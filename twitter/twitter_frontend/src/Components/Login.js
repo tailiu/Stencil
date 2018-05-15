@@ -1,6 +1,5 @@
 import React, {Component} from "react";
 import axios from 'axios';
-import { instanceOf } from 'prop-types';
 import TextField from 'material-ui/TextField';
 
 import Grid from 'material-ui/Grid';
@@ -12,7 +11,7 @@ import Card, { CardActions, CardContent } from 'material-ui/Card';
 import TitleBar from './TitleBar';
 import MessageBar from './MessageBar';
 
-import { withCookies, Cookies } from 'react-cookie';
+import { withCookies } from 'react-cookie';
 
 const styles = {
   logo: {

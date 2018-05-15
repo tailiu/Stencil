@@ -13,8 +13,7 @@ import Snackbar from 'material-ui/Snackbar';
 import TitleBar from './TitleBar';
 import MessageBar from './MessageBar';
 
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 
 const styles = {
   logo: {

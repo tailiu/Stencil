@@ -4,8 +4,7 @@ import NavBar from './NavBar';
 import MessageBar from './MessageBar';
 import UserInfo from './UserInfo';
 import axios from 'axios';
-import { instanceOf } from 'prop-types';
-import { withCookies, Cookies } from 'react-cookie';
+import { withCookies } from 'react-cookie';
 import TweetList from './TweetList';
 
 const styles = {
@@ -67,6 +66,7 @@ class Home extends Component {
             {
                 params: {
                 'user_id': this.state.user_id, 
+                "req_token": this.cookies.get('req_token')
                 }
             }
             ).then(response => {

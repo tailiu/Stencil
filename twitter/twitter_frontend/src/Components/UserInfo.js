@@ -2,8 +2,7 @@ import React, {Component} from "react";
 import Avatar from 'material-ui/Avatar';
 import Card, { CardHeader } from 'material-ui/Card';
 import axios from 'axios';
-import { instanceOf } from 'prop-types';
-import { withCookies, Cookies } from 'react-cookie';
+import { withCookies } from 'react-cookie';
 import MessageBar from './MessageBar';
 import renderHTML from 'react-render-html';
 
@@ -43,6 +42,7 @@ class UserInfo extends Component{
             {
               params: {
                 'user_id': this.state.user_id, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {

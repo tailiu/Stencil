@@ -3,8 +3,7 @@ import Grid from 'material-ui/Grid';
 import NavBar from './NavBar';
 
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 import MessageBar from './MessageBar';
 import TweetList from './TweetList';
 
@@ -74,6 +73,7 @@ class Profile extends Component {
         {
             params: {
             'tweet_id': this.state.tweet_id, 
+            "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {

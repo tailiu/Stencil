@@ -1,6 +1,6 @@
 import React, {Component, Fragment} from "react";
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
+import { withCookies } from 'react-cookie';
 
 import Typography from 'material-ui/Typography';
 
@@ -110,7 +110,7 @@ class NavBar extends Component {
                 }
             }
           ).then(response => {
-            console.log(response.data)
+            // console.log(response.data)
             
             if(response.data.result.success){
 
@@ -118,7 +118,6 @@ class NavBar extends Component {
                 this.handleLogout()
             }
           })
-        console.log("here in console!")
     }
 
     componentWillUnmount() {

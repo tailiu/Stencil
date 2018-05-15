@@ -6,8 +6,7 @@ import Moment from 'moment';
 import renderHTML from 'react-render-html';
 import IconButton from 'material-ui/IconButton';
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 import NewTweetDialog from './NewTweetDialog';
 import MessageBar from './MessageBar';
 
@@ -102,6 +101,7 @@ class Tweet extends Component{
         {
             params: {
             'tweet_id': this.props.tweet.tweet.id, 
+            "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
@@ -143,7 +143,8 @@ class Tweet extends Component{
             params: {
             'user_id': this.state.user_id, 
             'tweet_id': this.props.tweet.tweet.id, 
-            'like': like
+            'like': like,
+            "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
@@ -165,7 +166,8 @@ class Tweet extends Component{
                 params: {
                 'user_id': this.state.user_id, 
                 'tweet_id': this.props.tweet.tweet.id, 
-                'retweet': retweet
+                'retweet': retweet,
+                "req_token": this.cookies.get('req_token')
                 }
             }
             ).then(response => {
@@ -188,6 +190,7 @@ class Tweet extends Component{
                 params: {
                 'user_id': this.state.user_id, 
                 'tweet_id': this.props.tweet.tweet.id, 
+                "req_token": this.cookies.get('req_token')
                 }
             }
             ).then(response => {

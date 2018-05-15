@@ -4,8 +4,7 @@ import Card, { CardContent, CardHeader } from 'material-ui/Card';
 import NavBar from './NavBar';
 import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 import Typography from 'material-ui/Typography';
 import renderHTML from 'react-render-html';
 import Moment from 'moment';
@@ -51,7 +50,8 @@ class Notif extends Component {
             'http://localhost:3000/notifications/get',
             {
               params: {
-                'user_id': this.state.user_id, 
+                'user_id': this.state.user_id,
+                "req_token": this.cookies.get('req_token') 
               }
             }
           ).then(response => {

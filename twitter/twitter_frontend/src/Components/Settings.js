@@ -9,8 +9,7 @@ import Checkbox from 'material-ui/Checkbox';
 import { FormGroup, FormControlLabel } from 'material-ui/Form';
 import MessageBar from './MessageBar';
 import axios from 'axios';
-import { instanceOf } from 'prop-types';
-import { withCookies, Cookies } from 'react-cookie';
+import { withCookies } from 'react-cookie';
 
 const styles = {
     grid : {
@@ -49,6 +48,7 @@ class Settings extends Component {
           {
             params: {
               'user_id': this.state.user_id, 
+              "req_token": this.cookies.get('req_token')
             }
           }
         ).then(response => {
@@ -105,6 +105,7 @@ class Settings extends Component {
               params: {
                 'user_id': this.state.user_id, 
                 'password': this.state.password, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -166,6 +167,7 @@ class Settings extends Component {
               params: {
                 'user_id': this.state.user_id, 
                 'protected': !this.state.protected, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {

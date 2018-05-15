@@ -3,8 +3,7 @@ import Grid from 'material-ui/Grid';
 import NavBar from './NavBar';
 import UserProfileBox from './UserProfileBox';
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 import MessageBar from './MessageBar';
 import TweetList from './TweetList';
 import FollowRequestsBox from "./FollowRequestsBox";
@@ -80,6 +79,7 @@ class Profile extends Component {
               params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -102,7 +102,6 @@ class Profile extends Component {
       }
 
     fetchTweets =()=> {
-        console.log("Fetching Tweets")
 
         axios.get(
         'http://localhost:3000/tweets/fetchUserTweets',
@@ -112,19 +111,20 @@ class Profile extends Component {
             'user_id': this.state.user_id, 
             'requesting_user': this.state.logged_in_user,
             'session_id': this.state.session_id,
+            "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
 
             if(response.data.result.success){
                 // console.log("result:")
-                console.log(response.data)
+                // console.log(response.data)
                 this.setState({
                     tweets: response.data.result.tweets,
                 })
             }else{
                 this.MessageBar.showSnackbar(response.data.result.error.message);
-                this.timer = null;
+                clearInterval(this.timer);
             }
         })
     }

@@ -86,6 +86,7 @@ class UserProfileBox extends Component{
               params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -106,6 +107,7 @@ class UserProfileBox extends Component{
               params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -126,6 +128,7 @@ class UserProfileBox extends Component{
               params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -145,6 +148,7 @@ class UserProfileBox extends Component{
         {
             params: {
             'user_id': this.state.user_id, 
+            "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
@@ -175,7 +179,8 @@ class UserProfileBox extends Component{
               params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
-                'follow' : follow
+                'follow' : follow,
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -199,7 +204,8 @@ class UserProfileBox extends Component{
                 params: {
                     'from_user_id': this.state.logged_in_user, 
                     'to_user_id': this.state.user_id, 
-                    'block' : block
+                    'block' : block,
+                    "req_token": this.cookies.get('req_token')
                 }
             }
         ).then(response => {
@@ -220,7 +226,8 @@ class UserProfileBox extends Component{
             {
                 params: {
                     'from_user_id': this.state.logged_in_user, 
-                    'to_user_id': this.state.user_id
+                    'to_user_id': this.state.user_id,
+                    "req_token": this.cookies.get('req_token')
                 }
             }
         ).then(response => {
@@ -239,7 +246,8 @@ class UserProfileBox extends Component{
               params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
-                'mute' : mute
+                'mute' : mute,
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -263,7 +271,8 @@ class UserProfileBox extends Component{
             {
               params: {
                 'user_id': this.state.logged_in_user, 
-                'bio': this.state.new_bio
+                'bio': this.state.new_bio,
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {

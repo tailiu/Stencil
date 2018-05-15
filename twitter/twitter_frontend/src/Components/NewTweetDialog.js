@@ -1,7 +1,6 @@
 import React, {Component, Fragment} from 'react';
 import {post} from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 import Dialog, {
     DialogActions,
     DialogContent,
@@ -53,7 +52,6 @@ class NewTweetDialog extends Component {
             anchorEl: null,
             tweet_box_open: this.props.open,
             tweet_content: "",
-            imagePreviewUrl: '',
             hasMedia: false,
             mediaUrl: '../Assets/Images/liked-icon.png',
             imagePreviewUrl: '',
@@ -96,6 +94,7 @@ class NewTweetDialog extends Component {
         formData.append('type', this.state.media_type);
         formData.append('file',file);
         formData.append('reply_id', this.props.reply_id);
+        formData.append("req_token", this.cookies.get('req_token'));
         const config = {
             headers: {
                 'content-type': 'multipart/form-data'
@@ -150,9 +149,16 @@ class NewTweetDialog extends Component {
         }
 
         if(e.target.files[0].type.indexOf("image") >= 0){
-            this.state.media_type = "photo"
+            this.setState({
+                "media_type":"photo"
+            })
         } else if (e.target.files[0].type.indexOf("video") >= 0) {
-            this.state.media_type = "video"
+            this.setState({
+                "media_type":"video"
+            })
+        } else {
+            this.MessageBar.showSnackbar("This type of file is not allowed!");
+            return false;
         }
     
         let reader = new FileReader();
@@ -198,7 +204,7 @@ class NewTweetDialog extends Component {
                             <Card style={styles.upload.area}>
                                 {this.state.media_type === "photo" &&
                                     <CardContent>
-                                        <img style={styles.upload.image} src={this.state.imagePreviewUrl} />
+                                        <img alt="preview" style={styles.upload.image} src={this.state.imagePreviewUrl} />
                                     </CardContent>
                                 }
                                 {this.state.media_type === "video" &&
