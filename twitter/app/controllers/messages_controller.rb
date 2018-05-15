@@ -60,6 +60,11 @@ class MessagesController < ApplicationController
             result["error"] = "No such conversation or user"
         end
 
+        if media_type != 'video' && media_type != 'photo' && media_type != 'null'
+            result["success"] = false
+            result["error"] = "Wrong media type"
+        end
+
         if result["success"]
             conversation_participants = conversation.conversation_participants
             userInConversation = false

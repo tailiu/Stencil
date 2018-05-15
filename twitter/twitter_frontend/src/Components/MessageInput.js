@@ -21,6 +21,7 @@ class MessageInput extends Component {
                     onNewMessage = {this.props.onNewMessage}
                     messageBar={this.props.messageBar} 
                     setHasMediaState={this.props.setHasMediaState}
+                    messageBar={this.props.messageBar}
                 />
             )
         }
