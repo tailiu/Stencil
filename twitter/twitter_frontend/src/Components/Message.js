@@ -3,7 +3,7 @@ import Moment from 'moment';
 import Avatar from 'material-ui/Avatar';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
-import Card, { CardContent, CardHeader } from 'material-ui/Card';
+import Card, { CardContent, CardHeader, CardMedia } from 'material-ui/Card';
 
 var styles = {
     photo: {
@@ -12,7 +12,7 @@ var styles = {
     },
     video: {
         height: "auto",
-        width: '100%'
+        width: '90%'
     },
     media_container: {
         textAlign: "center",
@@ -76,21 +76,17 @@ class Message extends Component {
 
     getMedia = () => {
         const message = this.props.message
-
         if (message.message_media.url != null) {
             if (message.media_type == 'photo') {
                 return (
-                    <CardContent style={styles.media_container}>
-                        <img style={styles.photo} src={this.state.base_url + this.props.message.message_media.url} />
-                    </CardContent>
+                    <img style={styles.photo} src={this.state.base_url + this.props.message.message_media.url} />
+
                 )
             } else if (message.media_type == 'video') {
                 return (
-                    <CardContent style={styles.media_container}>
-                        <video style={styles.video} controls>
-                            <source src={this.state.base_url + this.props.message.message_media.url} type="video/mp4"/>
-                        </video>
-                    </CardContent>
+                    <video style={styles.video} controls>
+                        <source src={this.state.base_url + this.props.message.message_media.url} type="video/mp4"/>
+                    </video>
                 )
             }
         }
@@ -113,7 +109,9 @@ class Message extends Component {
                     }
                     subheader={this.getLatestUpdatedDate()}
                 />
-                {this.getMedia()}
+                <CardMedia style={styles.media_container}>
+                    {this.getMedia()}
+                </CardMedia>
                 <CardContent style={styles.text}>
                     {this.getText()}
                 </CardContent>
