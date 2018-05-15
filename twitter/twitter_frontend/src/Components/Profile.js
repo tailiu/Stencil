@@ -76,7 +76,8 @@ class Profile extends Component {
         axios.get(
             'http://localhost:3000/users/checkTwoWayBlock',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
                 "req_token": this.cookies.get('req_token')
@@ -98,7 +99,7 @@ class Profile extends Component {
     }
 
     componentWillUnmount() {
-        this.timer = null;
+        clearInterval(this.timer);
       }
 
     fetchTweets =()=> {

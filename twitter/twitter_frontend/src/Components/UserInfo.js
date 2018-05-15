@@ -40,7 +40,8 @@ class UserInfo extends Component{
           axios.get(
             'http://localhost:3000/users/getUserInfo',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'user_id': this.state.user_id, 
                 "req_token": this.cookies.get('req_token')
               }
@@ -53,7 +54,7 @@ class UserInfo extends Component{
                   avatar_symbol: response.data.result.user.name[0]
               })
             }else{
-              this.MessageBar.showSnackbar("User doesn't exist!");
+              this.MessageBar.showSnackbar(response.data.result.error.message);
               setTimeout(function() { 
               //   this.goToIndex(response.data.result.user);
               }.bind(this), 1000);

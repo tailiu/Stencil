@@ -99,6 +99,7 @@ class Tweet extends Component{
         axios.get(
         'http://localhost:3000/tweets/stats',
         {
+            withCredentials: true,
             params: {
             'tweet_id': this.props.tweet.tweet.id, 
             "req_token": this.cookies.get('req_token')
@@ -140,6 +141,7 @@ class Tweet extends Component{
         axios.get(
         'http://localhost:3000/tweets/like',
         {
+            withCredentials: true,
             params: {
             'user_id': this.state.user_id, 
             'tweet_id': this.props.tweet.tweet.id, 
@@ -163,6 +165,7 @@ class Tweet extends Component{
         axios.get(
             'http://localhost:3000/tweets/retweet',
             {
+                withCredentials: true,
                 params: {
                 'user_id': this.state.user_id, 
                 'tweet_id': this.props.tweet.tweet.id, 
@@ -187,6 +190,7 @@ class Tweet extends Component{
         axios.get(
             'http://localhost:3000/tweets/delete',
             {
+                withCredentials: true,
                 params: {
                 'user_id': this.state.user_id, 
                 'tweet_id': this.props.tweet.tweet.id, 

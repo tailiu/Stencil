@@ -87,6 +87,7 @@ class SignUp extends Component {
       axios.get(
         'http://localhost:3000/users/signup',
         {
+          withCredentials: true,
           params: {
             'name':this.state.name, 
             'email':this.state.email, 
@@ -100,11 +101,12 @@ class SignUp extends Component {
           this.MessageBar.showSnackbar(response.data.result.error.message)
         }else{
           this.MessageBar.showSnackbar("Signup Successful! Welcome to Twitter!");
+          this.cookies.set('user_id',  response.data.result.user.id);
+          this.cookies.set('user_name', response.data.result.user.name);
+          this.cookies.set('user_handle', response.data.result.user.handle);
+          this.cookies.set('session_id', response.data.result.session_id);
+          this.cookies.set('req_token', response.data.result.req_token);
           setTimeout(function() {
-            this.cookies.set('user_id',  response.data.result.user.id);
-            this.cookies.set('user_name', response.data.result.user.name);
-            this.cookies.set('user_handle', response.data.result.user.handle);
-            this.cookies.set('session_id', response.data.result.session_id);
             this.goToHome();
           }.bind(this), 3000);
         }

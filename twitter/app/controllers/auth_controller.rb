@@ -19,6 +19,9 @@ class AuthController < ApplicationController
             reset_session
             session[:is_active] = true
             session[:user_id] = @new_user.id
+            session[:req_token] = rand(32**32).to_s(16)
+            @result["req_token"] = session[:req_token]
+            @result["session_id"] = session.id
         else 
             puts @new_user.errors.messages
             puts @new_credential.errors.messages

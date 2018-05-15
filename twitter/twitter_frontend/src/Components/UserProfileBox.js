@@ -67,7 +67,6 @@ class UserProfileBox extends Component{
     }
 
     handleBioBoxOpen = () => {
-        console.log("HERE!");
         this.setState({bio_box_open: true });
     };
 
@@ -83,13 +82,15 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/users/checkFollow',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
                 "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
+            //   console.log(response.data)
             if(response.data.result.success){
               this.setState({
                   does_follow: response.data.result.follow,
@@ -104,7 +105,8 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/users/checkBlock',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
                 "req_token": this.cookies.get('req_token')
@@ -125,7 +127,8 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/users/checkMute',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
                 "req_token": this.cookies.get('req_token')
@@ -146,6 +149,7 @@ class UserProfileBox extends Component{
         axios.get(
         'http://localhost:3000/users/getUserInfo',
         {
+            withCredentials: true,
             params: {
             'user_id': this.state.user_id, 
             "req_token": this.cookies.get('req_token')
@@ -176,7 +180,8 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/users/handleFollow',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
                 'follow' : follow,
@@ -201,6 +206,7 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/users/handleBlock',
             {
+                withCredentials: true,
                 params: {
                     'from_user_id': this.state.logged_in_user, 
                     'to_user_id': this.state.user_id, 
@@ -224,6 +230,7 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/conversations/blockInGroupConversation',
             {
+                withCredentials: true,
                 params: {
                     'from_user_id': this.state.logged_in_user, 
                     'to_user_id': this.state.user_id,
@@ -243,7 +250,8 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/users/handleMute',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'from_user_id': this.state.logged_in_user, 
                 'to_user_id': this.state.user_id, 
                 'mute' : mute,
@@ -269,7 +277,8 @@ class UserProfileBox extends Component{
         axios.get(
             'http://localhost:3000/users/updateBio',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'user_id': this.state.logged_in_user, 
                 'bio': this.state.new_bio,
                 "req_token": this.cookies.get('req_token')

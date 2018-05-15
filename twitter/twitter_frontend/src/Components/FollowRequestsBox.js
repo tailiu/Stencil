@@ -79,7 +79,8 @@ class FollowRequestsBox extends Component{
         axios.get(
             'http://localhost:3000/users/approveFollowRequest',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'from_user_id': from_user,
                 'to_user_id': to_user,
                 "req_token": this.cookies.get('req_token')
@@ -100,6 +101,7 @@ class FollowRequestsBox extends Component{
         axios.get(
             'http://localhost:3000/users/getFollowRequests',
             {
+                withCredentials: true,
                 params: {
                     'user_id': this.state.user_id, 
                     "req_token": this.cookies.get('req_token')

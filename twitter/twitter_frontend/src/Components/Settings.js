@@ -46,6 +46,7 @@ class Settings extends Component {
         axios.get(
           'http://localhost:3000/users/getUserInfo',
           {
+            withCredentials: true,
             params: {
               'user_id': this.state.user_id, 
               "req_token": this.cookies.get('req_token')
@@ -79,9 +80,11 @@ class Settings extends Component {
         axios.get(
             'http://localhost:3000/users/updateEmail',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'user_id': this.state.user_id, 
                 'email': this.state.email, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -102,7 +105,8 @@ class Settings extends Component {
         axios.get(
             'http://localhost:3000/users/updatePassword',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'user_id': this.state.user_id, 
                 'password': this.state.password, 
                 "req_token": this.cookies.get('req_token')
@@ -123,9 +127,11 @@ class Settings extends Component {
         axios.get(
             'http://localhost:3000/users/updateHandle',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'user_id': this.state.user_id, 
                 'handle': this.state.handle, 
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -164,7 +170,8 @@ class Settings extends Component {
         axios.get(
             'http://localhost:3000/users/updateProtected',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'user_id': this.state.user_id, 
                 'protected': !this.state.protected, 
                 "req_token": this.cookies.get('req_token')

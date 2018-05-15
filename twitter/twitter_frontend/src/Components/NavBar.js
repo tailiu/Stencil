@@ -106,22 +106,22 @@ class NavBar extends Component {
                 withCredentials: true,
                 params: {
                     "session_id": this.cookies.get('session_id'),
-                    "req_token": this.cookies.get('req_token')
+                    // "req_token": this.cookies.get('req_token')
                 }
             }
-          ).then(response => {
-            // console.log(response.data)
+        ).then(response => {
+            console.log("isLoggedIn: "+JSON.stringify(response.data))
             
             if(response.data.result.success){
 
             }else{
                 this.handleLogout()
             }
-          })
+        })
     }
 
     componentWillUnmount() {
-        this.timer = null;
+        clearInterval(this.timer);
     }
 
     handleTweetBoxClose = () => {
@@ -172,15 +172,16 @@ class NavBar extends Component {
         {
             withCredentials: true,
             params: {
-                "req_token": this.cookies.get('req_token')
+                // "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
-            cookies.remove('session_id');
-            cookies.remove('user');
-            cookies.remove('user_id');
-            cookies.remove('user_name');
-            cookies.remove('user_handle');
+            ["session_id", "req_token", "user_id", 
+             "user_name", "user_handle"].
+                forEach(function(cookie_name){
+                cookies.remove(cookie_name);  
+                console.log("removed:"+cookie_name)
+                })
             this.goToIndex();
         })
       }
@@ -190,6 +191,7 @@ class NavBar extends Component {
         axios.get(
         'http://localhost:3000/notifications/getNewNotifications',
         {
+            withCredentials: true,
             params: {
               'user_id': this.state.user_id, 
               "req_token": this.cookies.get('req_token')

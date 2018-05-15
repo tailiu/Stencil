@@ -24,9 +24,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:from_user_id].nil? || params[:to_user_id].nil?
+        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             result["success"] = true
             follow = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "follow")
@@ -53,9 +56,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:from_user_id].nil? || params[:to_user_id].nil?
+        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             result["success"] = true
             block = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block")
@@ -77,9 +83,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:from_user_id].nil? || params[:to_user_id].nil?
+        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             result["success"] = true
             block = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "block")
@@ -102,9 +111,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:from_user_id].nil? || params[:to_user_id].nil?
+        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             result["success"] = true
             mute = UserAction.where(from_user_id: params[:from_user_id], to_user_id: params[:to_user_id], action_type: "mute")
@@ -127,9 +139,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:user_id].nil?
+        if params[:user_id].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.where(id: params[:user_id]).first
             if user.nil?
@@ -166,9 +181,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:follow].nil?
+        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:follow].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.where(id: params[:from_user_id]).first
             to_user = User.where(id: params[:to_user_id]).first
@@ -222,9 +240,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:from_user_id].nil? || params[:to_user_id].nil?
+        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.where(id: params[:from_user_id]).first
             to_user = User.where(id: params[:to_user_id]).first
@@ -262,9 +283,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:block].nil?
+        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:block].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             block = UserAction.where(from_user_id: params[:to_user_id], to_user_id: params[:from_user_id], action_type: "block")
             if !block.nil? && !block.empty?
@@ -311,9 +335,12 @@ class UserActionsController < ApplicationController
             }
         }
 
-        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:mute].nil?
+        if params[:from_user_id].nil? || params[:to_user_id].nil? || params[:mute].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.where(id: params[:from_user_id]).first
             to_user = User.where(id: params[:to_user_id]).first

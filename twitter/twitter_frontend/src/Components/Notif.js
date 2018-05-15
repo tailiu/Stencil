@@ -49,7 +49,8 @@ class Notif extends Component {
         axios.get(
             'http://localhost:3000/notifications/get',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'user_id': this.state.user_id,
                 "req_token": this.cookies.get('req_token') 
               }

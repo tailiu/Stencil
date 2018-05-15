@@ -64,6 +64,7 @@ class Home extends Component {
         axios.get(
             'http://localhost:3000/tweets/mainPageTweets',
             {
+                withCredentials: true,
                 params: {
                 'user_id': this.state.user_id, 
                 "req_token": this.cookies.get('req_token')
@@ -86,7 +87,7 @@ class Home extends Component {
     }
 
     componentWillUnmount() {
-        this.timer = null;
+        clearInterval(this.timer);
       }
 
     goToIndex = () => {

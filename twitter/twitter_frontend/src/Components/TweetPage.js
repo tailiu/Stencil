@@ -71,18 +71,17 @@ class Profile extends Component {
         axios.get(
         'http://localhost:3000/tweets/getTweet',
         {
+            withCredentials: true,
             params: {
             'tweet_id': this.state.tweet_id, 
             "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
-            console.log("RESULT");
-            console.log(response);
             if(response.data.result.success){
                 this.setState({
                     tweets: response.data.result.replies,
-                  }, () => console.log("AJAHSAHDAKSBDASBK:"+JSON.stringify(this.state)))
+                })
             }else{
                 
             }
