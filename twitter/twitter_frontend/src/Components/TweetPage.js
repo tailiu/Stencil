@@ -48,7 +48,7 @@ class Profile extends Component {
 
         super(props);
 
-        this.cookies = this.props;
+        this.cookies = this.props.cookies;
         
         this.state = {
             tweets: [],

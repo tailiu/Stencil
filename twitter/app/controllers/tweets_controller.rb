@@ -2,7 +2,7 @@
 
 class TweetsController < ApplicationController
 
-    protect_from_forgery prepend: true
+    # protect_from_forgery prepend: true
 
     def index
         if params[:type] == "tweet_num"
@@ -27,12 +27,12 @@ class TweetsController < ApplicationController
             },
         }
 
-        if params[:content].nil? || params[:user_id].nil? || params[:type].nil?# || params[:req_token].nil?
+        if params[:content].nil? || params[:user_id].nil? || params[:type].nil? || params[:req_token].nil?
             @result["success"] = false
             @result["error"]["message"] = "Incomplete params!"
-        # elsif session[:req_token].to_s != params[:req_token]
-        #     @result["success"] = false
-        #     @result["error"]["message"] = "Invalid token!"
+        elsif session[:req_token].to_s != params[:req_token]
+            @result["success"] = false
+            @result["error"]["message"] = "Invalid token!"
         
         elsif params[:content].empty?
             @result["success"] = false

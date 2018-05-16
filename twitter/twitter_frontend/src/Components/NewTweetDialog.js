@@ -13,6 +13,8 @@ import MessageBar from './MessageBar';
 import Card from 'material-ui/Card';
 import { CardContent } from 'material-ui';
 
+axios.defaults.withCredentials = true
+
 const styles = {
     upload: {
         button: {
@@ -82,93 +84,45 @@ class NewTweetDialog extends Component {
         else return false;
     }
 
-    fileUpload(){
-        const url = 'http://localhost:3000/tweets/newf';
-        const formData = new FormData();
-        let file = false
-        if (this.state.hasMedia){
-            file = this.state.file
-        }
-        formData.append('content', this.state.tweet_content);
-        formData.append('user_id',this.state.user_id);
-        formData.append('type', this.state.media_type);
-        formData.append('file',file);
-        formData.append('reply_id', this.props.reply_id);
-        formData.append('req_token', this.cookies.get('req_token'));
-        const config = {
-            headers: {
-                'content-type': 'multipart/form-data',
-                'withCredentials': true
-            }
-        }
-        return  post(url, formData, config)
-    }    
-
     handleNewTweet = (e) => {
+
+        let file = false
+        if (this.state.hasMedia) file = this.state.file
         
-        if(!this.validateForm()){
-          this.MessageBar.showSnackbar("Tweet box can't be empty!")
-        }else{
-            // this.fileUpload(e).then((response)=>{
-            //     console.log(response.data)
-            //     if(!response.data.result.success){
-            //         this.MessageBar.showSnackbar(response.data.result.error.message)
-            //     }else{
-            //         this.MessageBar.showSnackbar("Tweet Posted!");
-            //         this.handleTweetBoxClose();
-            //     }
-            // })
+        let formData = new FormData();
 
-            const formData = new FormData();
-            let file = false
-            if (this.state.hasMedia){
-                file = this.state.file
-            }
-            formData.append('content', this.state.tweet_content);
-            formData.append('user_id',this.state.user_id);
-            formData.append('type', this.state.media_type);
-            formData.append('file',file);
-            formData.append('reply_id', this.props.reply_id);
-            formData.append('req_token', this.cookies.get('req_token'));
+        formData.set('content', this.state.tweet_content);
+        formData.set('user_id',this.state.user_id);
+        formData.set('type', this.state.media_type);
+        formData.set('file',file);
+        formData.set('reply_id', this.props.reply_id);
+        formData.set('req_token', this.cookies.get('req_token'));
 
-            axios('http://localhost:3000/tweets/newf',{
-                method: 'post',
-                withCredentials: true,
-                data: formData,
-                config: { headers: {'Content-Type': 'multipart/form-data', "withCredentials": true }}
-            }).then((response)=>{
-                console.log(response.data)
-                if(!response.data.result.success){
-                    this.MessageBar.showSnackbar(response.data.result.error.message)
-                }else{
-                    this.MessageBar.showSnackbar("Tweet Posted!");
-                    this.handleTweetBoxClose();
+        axios('http://localhost:3000/tweets/newf', {
+            method: 'post',
+            data: formData,
+            withCredentials: true,
+            config: { 
+                headers: {
+                    'Content-Type': 'multipart/form-data', 
                 }
-            })
-            
-        //   axios.get(
-        //     'http://localhost:3000/tweets/new',
-        //     {
-        //       params: {
-        //         'content':this.state.tweet_content, 
-        //         'user_id': this.state.user_id,
-        //         'reply_id': this.props.reply_id,
-        //         'file': file,
-        //       }
-        //     }
-        //   ).then(response => {
-        //     console.log("axios:"+JSON.stringify(response))
-        //     if(!response.data.result.success){
-        //       this.MessageBar.showSnackbar(response.data.result.error.message)
-        //     }else{
-        //       this.MessageBar.showSnackbar("Tweet Posted!");
-        //       this.handleTweetBoxClose();
-        //     }
-        //   })
-        }
-        e.preventDefault();
+            }
+        })
+        .then((response) => {
+            console.log(response.data.result);
+            if(!response.data.result.success){
+                this.MessageBar.showSnackbar(response.data.result.error.message)
+            }else{
+                this.MessageBar.showSnackbar("Tweet Posted!");
+                this.handleTweetBoxClose();
+            }
+        })
+        // .catch(function (response) {
+        //     console.log("something wrong ")
+        //     console.log(response);
+        // });
     }
-    
+
     handleImageChange =(e)=> {
         e.preventDefault();
 

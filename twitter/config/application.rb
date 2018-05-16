@@ -15,7 +15,9 @@ module Twitter
     config.action_dispatch.default_headers = {
       'Access-Control-Allow-Origin' => 'http://localhost:3001',
       'Access-Control-Allow-Credentials' => true,
-      'Access-Control-Request-Method' => %w{GET POST OPTIONS PUT DELETE HEAD PATCH}.join(",")
+      'Access-Control-Request-Method' => %w{GET POST OPTIONS PUT DELETE HEAD PATCH}.join(","),
+      'Access-Control-Allow-Methods' => 'POST, PUT, DELETE, GET, OPTIONS',
+      'Access-Control-Allow-Headers' => 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
     }
     config.autoload_paths += %W(#{config.root}/lib)
     # Settings in config/environments/* take precedence over those specified here.
