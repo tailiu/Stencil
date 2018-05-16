@@ -38,6 +38,7 @@ Rails.application.routes.draw do
 	get 'conversations/blockInGroupConversation', to: 'conversations#blockInGroupConversation'
 	get 'conversations/getContactList', to: 'conversations#getContactList'
 	post 'messages/new', to: 'messages#new'
+	get 'conversations/getUnreadConversationNum', to: 'conversations#getUnreadConversationNum'
 
 	resources :users
 	resources :user_actions

@@ -144,9 +144,9 @@ class ConversationsController < ApplicationController
                     end
 
                     if user.id == creator.id 
-                        user.conversation_participants.create(conversation_id: conversation.id, role: 'creator')
+                        user.conversation_participants.create(conversation_id: conversation.id, role: 'creator', saw_new_messages: true)
                     else
-                        user.conversation_participants.create(conversation_id: conversation.id, role: 'normal')
+                        user.conversation_participants.create(conversation_id: conversation.id, role: 'normal', saw_new_messages: false)
                     end
                 end
 
@@ -261,6 +261,32 @@ class ConversationsController < ApplicationController
                     if !result["contactList"].include?(contact)
                         result["contactList"].push(contact)
                     end
+                end
+            end
+        end
+
+        render json: {result: result}
+    end
+
+    def getUnreadConversationNum
+        result = {
+            # params: params,
+            "success" => true,
+            "unreadConversationNum" => 0,
+            "error" => {}
+        }
+
+        user = User.find_by(id: params[:user_id])
+        if (user == nil) 
+            result["success"] = false
+            result["error"] = "No such user"
+        end
+
+        if result["success"] 
+            conversation_participants = user.conversation_participants
+            for conversation_participant in conversation_participants do
+                if !conversation_participant.saw_new_messages
+                    result["unreadConversationNum"] = result["unreadConversationNum"] + 1
                 end
             end
         end
