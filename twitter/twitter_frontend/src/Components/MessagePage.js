@@ -73,7 +73,8 @@ class MessagePage extends Component {
             current_conversation_state: '',
             messages: '',
             suggestions: [],
-            has_media: false
+            has_media: false,
+            notificationsOfConversations: ''
         }
     }
 
@@ -104,13 +105,19 @@ class MessagePage extends Component {
                 this.setMessageState('')
             }
         })
-        
+        this.getNotificationsOfConversations()               
     }
 
     setMessageState = (messages) => {
         this.setState({
             'messages': messages,
         });
+    }
+
+    setNotificationsOfConversations = (notificationsOfConversations) => {
+        this.setState({
+            notificationsOfConversations: notificationsOfConversations
+        })
     }
 
     getConversationContactList = () => {
@@ -266,7 +273,7 @@ class MessagePage extends Component {
             <div>
                 <MessageBar ref={instance => { this.MessageBar = instance; }}/>
 
-                <NavBar />
+                <NavBar notificationsOfConversations={this.state.notificationsOfConversations}/>
 
                 <Grid style={styles.headerContainer} container spacing={24} >
                     <Grid item xs={1}>

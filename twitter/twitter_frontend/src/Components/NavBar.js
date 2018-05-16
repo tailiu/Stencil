@@ -199,12 +199,7 @@ class NavBar extends Component {
             this.goToIndex();
         })
     }
-    
-    setNotificationsOfConversations = (notificationsOfConversations) => {
-        this.setState({
-            notificationsOfConversations: notificationsOfConversations
-        })
-    }
+
     getNotificationsOfConversations = () => {
         axios.get(
         'http://localhost:3000/conversations/getUnreadConversationNum',
@@ -223,6 +218,12 @@ class NavBar extends Component {
             }else{
                 this.MessageBar.showSnackbar(response.data.result.error)
             }
+        })
+    }
+    
+    setNotificationsOfConversations = (notificationsOfConversations) => {
+        this.setState({
+            notificationsOfConversations: notificationsOfConversations
         })
     }
 
