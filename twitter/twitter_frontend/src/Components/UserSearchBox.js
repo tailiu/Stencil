@@ -1,7 +1,6 @@
 import React, {Component, Fragment} from 'react';
 import Card, { CardContent } from "material-ui/Card";
 import axios from 'axios';
-import Divider from 'material-ui/Divider';
 import Typography from 'material-ui/Typography';
 import '../Style/searchscroll.css';
 

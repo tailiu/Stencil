@@ -58,12 +58,13 @@ class FollowRequestsBox extends Component{
 
     constructor(props){
         super(props);
-        const { cookies } = this.props;
+
+        this.cookies = this.props.cookies;
 
         this.state = {
             bio_box_open : false,
             user_id : props.user_id,
-            logged_in_user: cookies.get("user_id"),
+            logged_in_user: this.cookies.get("user_id"),
             user: [],
             follow_requests : []
         }
@@ -78,9 +79,11 @@ class FollowRequestsBox extends Component{
         axios.get(
             'http://localhost:3000/users/approveFollowRequest',
             {
-              params: {
+                withCredentials: true,
+                params: {
                 'from_user_id': from_user,
-                'to_user_id': to_user
+                'to_user_id': to_user,
+                "req_token": this.cookies.get('req_token')
               }
             }
           ).then(response => {
@@ -94,12 +97,14 @@ class FollowRequestsBox extends Component{
     }
 
     getFollowRequests =()=> {
-        console.log("Fetch new requests!")
+        // console.log("Fetch new requests!")
         axios.get(
             'http://localhost:3000/users/getFollowRequests',
             {
+                withCredentials: true,
                 params: {
                     'user_id': this.state.user_id, 
+                    "req_token": this.cookies.get('req_token')
                 }
             }
           ).then(response => {
@@ -130,7 +135,7 @@ class FollowRequestsBox extends Component{
                             <List dense={true}>
                             {this.state.follow_requests.map((req) =>
             
-                                <ListItem>
+                                <ListItem key={req.id}>
                                     <ListItemText
                                         // primary={req.user.name + ", @"+req.user.handle}
                                         primary={

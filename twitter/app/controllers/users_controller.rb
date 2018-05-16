@@ -1,30 +1,38 @@
 class UsersController < ApplicationController
 
     def getUserInfo
-        @user = User.find_by_id(params[:user_id])
-        @result = {
+
+        result = {
             # params: params,
             "success" => true,
             "error" => {
             }
         }
-        if @user != nil
-            @result["user"] = @user
-            @result["email"] = @user.credential.email
-            @result["user_stats"] = {
-                "tweets" => @user.tweets.size,
-                "followers" => UserAction.where(to_user_id: @user.id, action_type: "follow").count,
-                "following" => UserAction.where(from_user_id: @user.id, action_type: "follow").count
-            }
-            @result["auth_test"] = @user.auth_test
-            @result["test1"] = @user.start_session(session, @user.id)
-            @result["success"] = true
+
+        if params[:user_id].nil? || params[:req_token].nil?
+            result["success"] = false
+            result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
-            @result["success"] = false
-            @result["error"]["message"] = "User doesn't exist!"
+            user = User.find_by_id(params[:user_id])
+            if !user.nil?
+                result["user"] = user
+                result["email"] = user.credential.email
+                result["user_stats"] = {
+                    "tweets" => user.tweets.size,
+                    "followers" => UserAction.where(to_user_id: user.id, action_type: "follow").count,
+                    "following" => UserAction.where(from_user_id: user.id, action_type: "follow").count
+                }
+                result["success"] = true
+            else
+                result["success"] = false
+                result["error"]["message"] = "User doesn't exist!"
+            end
         end
         
-        render json: {result: @result}
+        render json: {result: result}
     end
 
     def userInfo
@@ -37,9 +45,12 @@ class UsersController < ApplicationController
             "error" => {
             }
         }
-        if params[:user_id].nil? || params[:bio].nil?
+        if params[:user_id].nil? || params[:bio].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.find_by_id(params[:user_id])
             if user != nil
@@ -66,9 +77,12 @@ class UsersController < ApplicationController
             "error" => {
             }
         }
-        if params[:user_id].nil? || params[:email].nil?
+        if params[:user_id].nil? || params[:email].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = Credential.where(user_id: params[:user_id]).first
             if user != nil
@@ -92,9 +106,12 @@ class UsersController < ApplicationController
             "error" => {
             }
         }
-        if params[:user_id].nil? || params[:handle].nil?
+        if params[:user_id].nil? || params[:handle].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.find_by_id(params[:user_id])
             if user != nil
@@ -118,9 +135,12 @@ class UsersController < ApplicationController
             "error" => {
             }
         }
-        if params[:user_id].nil? || params[:password].nil?
+        if params[:user_id].nil? || params[:password].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = Credential.where(user_id: params[:user_id]).first
             if user != nil
@@ -144,9 +164,12 @@ class UsersController < ApplicationController
             "error" => {
             }
         }
-        if params[:user_id].nil? || params[:protected].nil?
+        if params[:user_id].nil? || params[:protected].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.find_by_id(params[:user_id])
             if user != nil

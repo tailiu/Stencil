@@ -1,7 +1,6 @@
 import React, {Component, Fragment} from "react";
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 
 import Typography from 'material-ui/Typography';
 
@@ -75,20 +74,16 @@ const styles = {
 
 class NavBar extends Component {
 
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-      };
-
     constructor(props) {
         
         super(props);
         
-        const { cookies } = this.props;
+        this.cookies = this.props.cookies;
 
         this.state = {
-            user_id: cookies.get('user_id'),
-            user_name: cookies.get('user_name'),
-            user_handle: cookies.get('user_handle'),
+            user_id: this.cookies.get('user_id'),
+            user_name: this.cookies.get('user_name'),
+            user_handle: this.cookies.get('user_handle'),
             value : 0,
             anchorEl: null,
             tweet_box_open: false,
@@ -114,25 +109,29 @@ class NavBar extends Component {
     }
     
     loggedIn = () => {
+
         axios.get(
             'http://localhost:3000/auth/login',
             {
-                withCredentials: true
+                withCredentials: true,
+                params: {
+                    "session_id": this.cookies.get('session_id'),
+                    // "req_token": this.cookies.get('req_token')
+                }
             }
-          ).then(response => {
-            console.log(response.data)
+        ).then(response => {
+            console.log("isLoggedIn: "+JSON.stringify(response.data))
             
             if(response.data.result.success){
 
             }else{
                 this.handleLogout()
             }
-          })
-        console.log("here in console!")
+        })
     }
 
     componentWillUnmount() {
-        this.timer = null;
+        clearInterval(this.timer);
     }
 
     initialize = () => {
@@ -185,14 +184,18 @@ class NavBar extends Component {
         axios.get(
         'http://localhost:3000/users/logout',
         {
-            withCredentials: true
+            withCredentials: true,
+            params: {
+                // "req_token": this.cookies.get('req_token')
+            }
         }
         ).then(response => {
-            cookies.remove('session_id');
-            cookies.remove('user');
-            cookies.remove('user_id');
-            cookies.remove('user_name');
-            cookies.remove('user_handle');
+            ["session_id", "req_token", "user_id", 
+             "user_name", "user_handle"].
+                forEach(function(cookie_name){
+                cookies.remove(cookie_name);  
+                console.log("removed:"+cookie_name)
+                })
             this.goToIndex();
         })
     }
@@ -228,8 +231,10 @@ class NavBar extends Component {
         axios.get(
         'http://localhost:3000/notifications/getNewNotifications',
         {
+            withCredentials: true,
             params: {
               'user_id': this.state.user_id, 
+              "req_token": this.cookies.get('req_token')
             }
           }
         ).then(response => {
@@ -244,6 +249,7 @@ class NavBar extends Component {
     }
 
     searchUser =(e)=> {
+        // console.log(e.target.value)
         this.setState({
             search_query: e.target.value
         })

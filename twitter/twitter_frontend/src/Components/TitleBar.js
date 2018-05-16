@@ -1,6 +1,5 @@
 import React, {Component} from "react";
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 
 const styles = {
     titlebar: {
@@ -17,13 +16,10 @@ const styles = {
 };
 
 class TitleBar extends Component {
-    
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-    };
 
     constructor(props) {
         super(props);
+        this.cookies = this.props.cookies;
     }
 
     componentWillMount() {
@@ -31,14 +27,13 @@ class TitleBar extends Component {
     }
 
     checkLogin =()=> {
-        const { cookies } = this.props;
-        let session_id = cookies.get("session_id");
-        console.log("session:"+ session_id)
+
+        let session_id = this.cookies.get("session_id");
+
         if (session_id){
-            console.log("logged in")
             this.goToHome()
         }else{
-            console.log("not logged in")
+
         }
 
 

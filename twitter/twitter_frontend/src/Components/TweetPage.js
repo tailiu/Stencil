@@ -3,8 +3,7 @@ import Grid from 'material-ui/Grid';
 import NavBar from './NavBar';
 
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 import MessageBar from './MessageBar';
 import TweetList from './TweetList';
 
@@ -45,18 +44,11 @@ const styles = {
 
 class Profile extends Component {
 
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-    };
-
     constructor(props) {
 
         super(props);
 
-        console.log("oaram: "+JSON.stringify(props))
-        console.log("oaram: "+JSON.stringify(props.match.params))
-
-        const { cookies } = this.props;
+        this.cookies = this.props;
         
         this.state = {
             tweets: [],
@@ -79,17 +71,17 @@ class Profile extends Component {
         axios.get(
         'http://localhost:3000/tweets/getTweet',
         {
+            withCredentials: true,
             params: {
             'tweet_id': this.state.tweet_id, 
+            "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
-            console.log("RESULT");
-            console.log(response);
             if(response.data.result.success){
                 this.setState({
                     tweets: response.data.result.replies,
-                  }, () => console.log("AJAHSAHDAKSBDASBK:"+JSON.stringify(this.state)))
+                })
             }else{
                 
             }

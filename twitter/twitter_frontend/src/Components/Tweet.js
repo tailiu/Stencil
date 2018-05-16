@@ -6,8 +6,7 @@ import Moment from 'moment';
 import renderHTML from 'react-render-html';
 import IconButton from 'material-ui/IconButton';
 import axios from 'axios';
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 import NewTweetDialog from './NewTweetDialog';
 import MessageBar from './MessageBar';
 
@@ -60,20 +59,16 @@ const styles = {
 
 class Tweet extends Component{
 
-    static propTypes = {
-        cookies: instanceOf(Cookies).isRequired
-    };
-    
     constructor(props){
         super(props);
 
-        const { cookies } = this.props;
+        this.cookies = this.props.cookies;
         // console.log(props.tweet.tweet.id);
         this.state = {
             base_url : "http://localhost:3000/",
-            user_id: parseInt(cookies.get('user_id')),
-            user_name: cookies.get('user_name'),
-            user_handle: cookies.get('user_handle'),
+            user_id: parseInt(this.cookies.get('user_id')),
+            user_name: this.cookies.get('user_name'),
+            user_handle: this.cookies.get('user_handle'),
             liked: false,
             retweeted: false,
             replied: false,
@@ -104,8 +99,10 @@ class Tweet extends Component{
         axios.get(
         'http://localhost:3000/tweets/stats',
         {
+            withCredentials: true,
             params: {
             'tweet_id': this.props.tweet.tweet.id, 
+            "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
@@ -144,10 +141,12 @@ class Tweet extends Component{
         axios.get(
         'http://localhost:3000/tweets/like',
         {
+            withCredentials: true,
             params: {
             'user_id': this.state.user_id, 
             'tweet_id': this.props.tweet.tweet.id, 
-            'like': like
+            'like': like,
+            "req_token": this.cookies.get('req_token')
             }
         }
         ).then(response => {
@@ -166,10 +165,12 @@ class Tweet extends Component{
         axios.get(
             'http://localhost:3000/tweets/retweet',
             {
+                withCredentials: true,
                 params: {
                 'user_id': this.state.user_id, 
                 'tweet_id': this.props.tweet.tweet.id, 
-                'retweet': retweet
+                'retweet': retweet,
+                "req_token": this.cookies.get('req_token')
                 }
             }
             ).then(response => {
@@ -189,9 +190,11 @@ class Tweet extends Component{
         axios.get(
             'http://localhost:3000/tweets/delete',
             {
+                withCredentials: true,
                 params: {
                 'user_id': this.state.user_id, 
                 'tweet_id': this.props.tweet.tweet.id, 
+                "req_token": this.cookies.get('req_token')
                 }
             }
             ).then(response => {

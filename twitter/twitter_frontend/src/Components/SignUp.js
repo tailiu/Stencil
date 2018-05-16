@@ -13,8 +13,7 @@ import Snackbar from 'material-ui/Snackbar';
 import TitleBar from './TitleBar';
 import MessageBar from './MessageBar';
 
-import { withCookies, Cookies } from 'react-cookie';
-import { instanceOf } from 'prop-types';
+import { withCookies } from 'react-cookie';
 
 const styles = {
   logo: {
@@ -48,13 +47,11 @@ const styles = {
 
 class SignUp extends Component {
 
-  static propTypes = {
-    cookies: instanceOf(Cookies).isRequired
-  };
-
   constructor(props) {
     
     super(props);
+    
+    this.cookies = this.props.cookies;
 
     this.state = {
       email : '',
@@ -82,7 +79,7 @@ class SignUp extends Component {
   }
 
   handleSignup = () =>  {
-    const { cookies } = this.props;
+
 
     if(!this.validateForm()){
       this.MessageBar.showSnackbar("Some fields are left empty!")
@@ -90,6 +87,7 @@ class SignUp extends Component {
       axios.get(
         'http://localhost:3000/users/signup',
         {
+          withCredentials: true,
           params: {
             'name':this.state.name, 
             'email':this.state.email, 
@@ -103,11 +101,12 @@ class SignUp extends Component {
           this.MessageBar.showSnackbar(response.data.result.error.message)
         }else{
           this.MessageBar.showSnackbar("Signup Successful! Welcome to Twitter!");
+          this.cookies.set('user_id',  response.data.result.user.id);
+          this.cookies.set('user_name', response.data.result.user.name);
+          this.cookies.set('user_handle', response.data.result.user.handle);
+          this.cookies.set('session_id', response.data.result.session_id);
+          this.cookies.set('req_token', response.data.result.req_token);
           setTimeout(function() {
-            cookies.set('user_id',  response.data.result.user.id);
-            cookies.set('user_name', response.data.result.user.name);
-            cookies.set('user_handle', response.data.result.user.handle);
-            cookies.set('session_id', response.data.result.session_id);
             this.goToHome();
           }.bind(this), 3000);
         }
