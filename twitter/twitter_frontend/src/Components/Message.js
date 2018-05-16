@@ -8,11 +8,11 @@ import Card, { CardContent, CardHeader, CardMedia } from 'material-ui/Card';
 var styles = {
     photo: {
         height: "auto",
-        width: '90%'
+        width: '100%'
     },
     video: {
         height: "auto",
-        width: '90%'
+        width: '100%'
     },
     media_container: {
         textAlign: "center",
@@ -79,14 +79,17 @@ class Message extends Component {
         if (message.message_media.url != null) {
             if (message.media_type == 'photo') {
                 return (
-                    <img style={styles.photo} src={this.state.base_url + this.props.message.message_media.url} />
-
+                    <CardContent style={styles.media_container}>
+                        <img style={styles.photo} src={this.state.base_url + this.props.message.message_media.url} />
+                    </CardContent>
                 )
             } else if (message.media_type == 'video') {
                 return (
-                    <video style={styles.video} controls>
-                        <source src={this.state.base_url + this.props.message.message_media.url} type="video/mp4"/>
-                    </video>
+                    <CardContent style={styles.media_container}>
+                        <video style={styles.video} controls>
+                            <source src={this.state.base_url + this.props.message.message_media.url} type="video/mp4"/>
+                        </video>
+                    </CardContent>
                 )
             }
         }
@@ -109,13 +112,10 @@ class Message extends Component {
                     }
                     subheader={this.getLatestUpdatedDate()}
                 />
-                <CardMedia style={styles.media_container}>
-                    {this.getMedia()}
-                </CardMedia>
+                {this.getMedia()}
                 <CardContent style={styles.text}>
                     {this.getText()}
-                </CardContent>
-                
+                </CardContent> 
             </Card>
         )
     }

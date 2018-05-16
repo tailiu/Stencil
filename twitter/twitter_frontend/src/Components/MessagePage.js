@@ -74,7 +74,8 @@ class MessagePage extends Component {
             messages: '',
             suggestions: [],
             has_media: false,
-            notificationsOfConversations: ''
+            notificationsOfConversations: '',
+            disableGetNotifsofConversations: true
         }
     }
 
@@ -89,35 +90,39 @@ class MessagePage extends Component {
 
     periodicActions = () => {
         this.getConversationList((conversations) => {
+            console.log(conversations)
             if (conversations.length >= 1) {
+                var alreadySet = false
                 if (this.state.current_conversation_id != '') {
                     for (var i in conversations) {
                         if (conversations[i].conversation.id == this.state.current_conversation_id){
                             this.setState({
                                 'current_conversation_state': conversations[i].conversation_state
                             })
+                            if (!conversations[i].is_seen) {
+                                this.setConversationSeen(this.state.current_conversation_id)
+                                alreadySet = true
+                            }
+                            break
                         }
                     }
                     this.getMessageList(this.state.current_conversation_id)  
+                }
+                if (!alreadySet) {
+                    this.calculateAndSetUnseenConversationNum(conversations)
                 }
             } else {
                 this.setCurrentConversation('', '', '')
                 this.setMessageState('')
             }
-        })
-        this.getNotificationsOfConversations()               
+            
+        })         
     }
 
     setMessageState = (messages) => {
         this.setState({
             'messages': messages,
         });
-    }
-
-    setNotificationsOfConversations = (notificationsOfConversations) => {
-        this.setState({
-            notificationsOfConversations: notificationsOfConversations
-        })
     }
 
     getConversationContactList = () => {
@@ -151,19 +156,37 @@ class MessagePage extends Component {
 
                 this.setCurrentConversation(conversation_id, conversation_type, conversation_state)
                 this.getMessageList(conversation_id)
+                if (!conversations[0].is_seen) {
+                    this.setConversationSeen(conversation_id)
+                }
             } else {
                 this.setCurrentConversation('', '', '')
                 this.setMessageState('')
             }
-        })
+        })    
+    }
+
+    calculateAndSetUnseenConversationNum = (conversations) => {
+        var unseenConversations = 0
+        for (var i in conversations) {
+            if (!conversations[i].is_seen) {
+                unseenConversations++
+            }
+        }
+
+        if (unseenConversations == 0) {
+            this.setNotificationsOfConversations('')
+        } else {
+            this.setNotificationsOfConversations(unseenConversations)
+        }
     }
 
     getConversationList = (cb) => {
         axios.get(
-            'http://localhost:3000/conversations/',
+            'http://localhost:3000/conversations',
             {
                 params: {
-                    'id': this.state.user_id
+                    'user_id': this.state.user_id
                 }
             }
         ).then(response => {
@@ -172,13 +195,17 @@ class MessagePage extends Component {
             }else{
                 const conversations = response.data.result.conversations
 
-                this.setState({
-                    'conversations': conversations,
-                });
+                this.setConversations(conversations)
 
                 if (cb) cb(conversations)
             }
         })
+    }
+    
+    setConversations = (conversations) => {
+        this.setState({
+            'conversations': conversations,
+        });
     }
 
     setCurrentConversation = (current_conversation_id, current_conversation_type, current_conversation_state) => {
@@ -214,6 +241,52 @@ class MessagePage extends Component {
         })
     }
 
+    setNotificationsOfConversations = (notificationsOfConversations) => {
+        this.setState({
+            notificationsOfConversations: notificationsOfConversations
+        })
+    }
+
+    setConversationSeen = (conversation_id) => {
+        axios.get(
+            'http://localhost:3000/conversations/setConversationSeen',
+            {
+                params: {
+                    "user_id": this.state.user_id,
+                    "conversation_id": conversation_id
+                }
+            }
+        ).then(response => {
+            if(!response.data.result.success) {
+                if (this.MessageBar != undefined) {
+                    this.MessageBar.showSnackbar(response.data.result.error)
+                }
+            } else {
+                this.getConversationList((conversations) => {
+                    this.calculateAndSetUnseenConversationNum(conversations)
+                })
+            }
+        })
+    }
+
+    setConversationUnseen = (conversation_id) => {
+        axios.get(
+            'http://localhost:3000/conversations/setConversationUnseen',
+            {
+                params: {
+                    "user_id": this.state.user_id,
+                    "conversation_id": conversation_id
+                }
+            }
+        ).then(response => {
+            if(!response.data.result.success) {
+                if (this.MessageBar != undefined) {
+                    this.MessageBar.showSnackbar(response.data.result.error)
+                }
+            }
+        })
+    }
+
     handleNewMessageBoxOpen = e => {
         this.getConversationContactList()
         this.setState({new_message_box_open: true });
@@ -229,9 +302,25 @@ class MessagePage extends Component {
         this.getMessageList(new_conversation_ID)
     }
 
-    handleConversationChange = (current_conversation_id, current_conversation_type, current_conversation_state) => {
+    handleConversationChange = (current_conversation_id) => {
+        var conversations = this.state.conversations
+        var current_conversation_type 
+        var current_conversation_state
+        var is_seen
+        for (var i in conversations) {
+            var conversation = conversations[i].conversation
+            if (conversation.id == current_conversation_id) {
+                current_conversation_type = conversation.conversation_type
+                current_conversation_state = conversation.conversation_state
+                is_seen = conversations[i].is_seen
+                break
+            }
+        }
+        if (!is_seen) {
+            this.setConversationSeen(current_conversation_id)
+        }
         this.setCurrentConversation(current_conversation_id, current_conversation_type, current_conversation_state)
-        this.getMessageList(current_conversation_id)    
+        this.getMessageList(current_conversation_id)
     }
 
     handleLeaveConversation = () => {
@@ -239,7 +328,8 @@ class MessagePage extends Component {
     }
 
     handleNewMessage = () => {
-        this.getMessageList(this.state.current_conversation_id)    
+        this.getMessageList(this.state.current_conversation_id)
+        this.setConversationUnseen(this.state.current_conversation_id)
     }
 
     setHasMediaState = (has_media) => {
@@ -273,7 +363,10 @@ class MessagePage extends Component {
             <div>
                 <MessageBar ref={instance => { this.MessageBar = instance; }}/>
 
-                <NavBar notificationsOfConversations={this.state.notificationsOfConversations}/>
+                <NavBar 
+                    notificationsOfConversations={this.state.notificationsOfConversations}
+                    disableGetNotifsofConversations={this.state.disableGetNotifsofConversations}
+                />
 
                 <Grid style={styles.headerContainer} container spacing={24} >
                     <Grid item xs={1}>

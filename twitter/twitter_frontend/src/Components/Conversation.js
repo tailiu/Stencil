@@ -12,12 +12,6 @@ import { MenuItem } from 'material-ui/Menu';
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 
-const styles = {
-    menuItem: {
-        padding: 20
-    }
-}
-
 class Conversation extends Component {
 
     static propTypes = {
@@ -38,9 +32,7 @@ class Conversation extends Component {
 
     handleClick = e => {
         this.props.onConversationChange(
-            this.props.conversation.conversation.id, 
-            this.props.conversation.conversation.conversation_type,
-            this.props.conversation.conversation_state
+            this.props.conversation.conversation.id
         )
     } 
 
@@ -82,15 +74,32 @@ class Conversation extends Component {
         return Moment(this.props.conversation.conversation.updated_at).format('MMMM Do, YYYY - h:mm A')
     }
 
+    setStyles = () => {
+        var styles
+        if (!this.props.is_seen) {
+            styles = {
+                padding: 20,
+                backgroundColor: '#EEEEEE'
+            }
+        } else {
+            styles = {
+                padding: 20
+            }
+        }
+
+        return styles
+    }
+
     render() {
         const title = this.getTitleForConversation()
         const latestUpdatedDate = this.getLatestUpdatedDateForConversation()
-
+        const styles = this.setStyles()
+       
         return (
             <MenuItem   button 
                         onClick={this.handleClick} 
                         selected={this.props.selected === this.props.conversation.conversation.id}
-                        style={styles.menuItem}
+                        style={styles}
             >        
                 <Avatar src={require('../Assets/Images/user_icon.png')} />
                 <ListItemText primary={title} secondary={latestUpdatedDate} />

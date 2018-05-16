@@ -105,7 +105,9 @@ class NavBar extends Component {
     
     periodicActions = () => {
         this.getNotifications()
-        this.getNotificationsOfConversations()
+        if (!this.props.disableGetNotifsofConversations) {
+            this.getNotificationsOfConversations()
+        }
     }
     
     loggedIn = () => {
@@ -136,7 +138,9 @@ class NavBar extends Component {
 
     initialize = () => {
         this.getNotifications()
-        this.getNotificationsOfConversations()
+        if (!this.props.disableGetNotifsofConversations) {
+            this.getNotificationsOfConversations()
+        }
     }
 
     handleTweetBoxClose = () => {
@@ -220,7 +224,7 @@ class NavBar extends Component {
             }
         })
     }
-    
+
     setNotificationsOfConversations = (notificationsOfConversations) => {
         this.setState({
             notificationsOfConversations: notificationsOfConversations
@@ -228,7 +232,6 @@ class NavBar extends Component {
     }
 
     getNotifications = () =>  {
-
         axios.get(
         'http://localhost:3000/notifications/getNewNotifications',
         {
@@ -256,6 +259,14 @@ class NavBar extends Component {
         })
     }
 
+    getBadgeContent = () => {
+        if (this.props.disableGetNotifsofConversations) {
+            return this.props.notificationsOfConversations
+        } else {
+            return this.state.notificationsOfConversations
+        }
+    }
+
     render() {
         return (
             <Fragment>
@@ -279,7 +290,7 @@ class NavBar extends Component {
                             </Typography>
                         </Button>
                         <Button onClick = {this.goToMessages}>
-                            <Badge style={styles.badge} badgeContent={this.state.notificationsOfConversations} color="default" >
+                            <Badge style={styles.badge} badgeContent={this.getBadgeContent()} color="default" >
                                 Messages
                             </Badge>
                         </Button>

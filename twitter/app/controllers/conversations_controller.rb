@@ -7,35 +7,38 @@ class ConversationsController < ApplicationController
             }
         }
 
-        user = User.find_by_id(params[:id])
-
-        conversation_participants = user.conversation_participants.order(created_at: :desc)
+        user = User.find_by(id: params[:user_id])
 
         conversations = []
 
-        for conversation_participant in conversation_participants do
-            one_conversation = conversation_participant.conversation
-            one_conversation_participants = one_conversation.conversation_participants
+        if user.conversation_participants != nil
+            conversation_participants = user.conversation_participants.order(created_at: :desc)
 
-            conversation = {
-                "conversation" => one_conversation,
-                "conversation_participants" => [],
-                "conversation_state" => 'normal'
-            }
-            for one_conversation_participant in one_conversation_participants do
-                user = one_conversation_participant.user
-                conversation["conversation_participants"].push(user)
-            end
-            if one_conversation.conversation_type == "not_group" 
-                block_one = UserAction.where(from_user_id: conversation["conversation_participants"][0], 
-                    to_user_id: conversation["conversation_participants"][1], action_type: "block")
-                block_two = UserAction.where(from_user_id: conversation["conversation_participants"][1], 
-                    to_user_id: conversation["conversation_participants"][0], action_type: "block")
-                if (block_one.length != 0 || block_two.length != 0)
-                    conversation['conversation_state'] = 'blocked'
+            for conversation_participant in conversation_participants do
+                one_conversation = conversation_participant.conversation
+                one_conversation_participants = one_conversation.conversation_participants
+
+                conversation = {
+                    "conversation" => one_conversation,
+                    "conversation_participants" => [],
+                    "conversation_state" => 'normal',
+                    "is_seen" => conversation_participant.saw_new_messages
+                }
+                for one_conversation_participant in one_conversation_participants do
+                    one_user = one_conversation_participant.user
+                    conversation["conversation_participants"].push(one_user)
                 end
+                if one_conversation.conversation_type == "not_group" 
+                    block_one = UserAction.where(from_user_id: conversation["conversation_participants"][0], 
+                        to_user_id: conversation["conversation_participants"][1], action_type: "block")
+                    block_two = UserAction.where(from_user_id: conversation["conversation_participants"][1], 
+                        to_user_id: conversation["conversation_participants"][0], action_type: "block")
+                    if (block_one.length != 0 || block_two.length != 0)
+                        conversation['conversation_state'] = 'blocked'
+                    end
+                end
+                conversations.push(conversation)
             end
-            conversations.push(conversation)
         end
 
         result["conversations"] = conversations
@@ -291,6 +294,62 @@ class ConversationsController < ApplicationController
             end
         end
 
+        render json: {result: result}
+    end
+
+    def setConversationSeen
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {}
+        }
+
+        user = User.find_by(id: params[:user_id])
+        conversation = Conversation.find_by(id: params[:conversation_id])
+
+        if (user == nil || conversation == nil) 
+            result["success"] = false
+            result["error"] = "No such user or conversation"
+        end
+
+        if result["success"]
+            conversation_participants = conversation.conversation_participants
+            for conversation_participant in conversation_participants do
+                if conversation_participant.user_id == user.id
+                    conversation_participant.saw_new_messages = true
+                    conversation_participant.save
+                end
+            end
+        end
+
+        render json: {result: result}
+    end
+
+    def setConversationUnseen
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {}
+        }
+
+        user = User.find_by(id: params[:user_id])
+        conversation = Conversation.find_by(id: params[:conversation_id])
+
+        if (user == nil || conversation == nil) 
+            result["success"] = false
+            result["error"] = "No such user or conversation"
+        end
+
+        if result["success"]
+            conversation_participants = conversation.conversation_participants
+            for conversation_participant in conversation_participants do
+                if conversation_participant.user_id != user.id
+                    conversation_participant.saw_new_messages = false       
+                    conversation_participant.save
+                end
+            end
+        end
+        result["error"] = conversation_participants
         render json: {result: result}
     end
 end

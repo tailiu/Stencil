@@ -25,6 +25,7 @@ class ConversationList extends Component {
                     onConversationChange = {this.props.onConversationChange}
                     onLeaveConversation = {this.props.onLeaveConversation}
                     selected={this.props.current_conversation_id}
+                    is_seen={conversation.is_seen}
                 />
                 <li>
                     <Divider inset />

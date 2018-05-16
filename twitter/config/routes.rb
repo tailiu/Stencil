@@ -39,6 +39,8 @@ Rails.application.routes.draw do
 	get 'conversations/getContactList', to: 'conversations#getContactList'
 	post 'messages/new', to: 'messages#new'
 	get 'conversations/getUnreadConversationNum', to: 'conversations#getUnreadConversationNum'
+	get 'conversations/setConversationSeen', to: 'conversations#setConversationSeen'
+	get 'conversations/setConversationUnseen', to: 'conversations#setConversationUnseen'
 
 	resources :users
 	resources :user_actions
