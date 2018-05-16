@@ -4,6 +4,7 @@ Rails.application.routes.draw do
 	get 'users/verify', to: 'auth#verify'
 	get 'users/signup', to: 'auth#new'
 	get 'auth/login', to: 'auth#is_logged_in'
+	post 'auth/login', to: 'auth#is_logged_in'
 	# get 'users/logout', to: 'users#logout'
 	get 'users/logout', to: 'auth#logout'
 	get 'tweets/fetchall', to: 'tweets#fetchall'
