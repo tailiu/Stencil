@@ -1,5 +1,5 @@
 import React, {Component, Fragment} from 'react';
-import {post} from 'axios';
+import axios, {post} from 'axios';
 import { withCookies } from 'react-cookie';
 import Dialog, {
     DialogActions,
@@ -94,10 +94,11 @@ class NewTweetDialog extends Component {
         formData.append('type', this.state.media_type);
         formData.append('file',file);
         formData.append('reply_id', this.props.reply_id);
-        formData.append("req_token", this.cookies.get('req_token'));
+        formData.append('req_token', this.cookies.get('req_token'));
         const config = {
             headers: {
-                'content-type': 'multipart/form-data'
+                'content-type': 'multipart/form-data',
+                'withCredentials': true
             }
         }
         return  post(url, formData, config)
@@ -108,7 +109,35 @@ class NewTweetDialog extends Component {
         if(!this.validateForm()){
           this.MessageBar.showSnackbar("Tweet box can't be empty!")
         }else{
-            this.fileUpload(e).then((response)=>{
+            // this.fileUpload(e).then((response)=>{
+            //     console.log(response.data)
+            //     if(!response.data.result.success){
+            //         this.MessageBar.showSnackbar(response.data.result.error.message)
+            //     }else{
+            //         this.MessageBar.showSnackbar("Tweet Posted!");
+            //         this.handleTweetBoxClose();
+            //     }
+            // })
+
+            const formData = new FormData();
+            let file = false
+            if (this.state.hasMedia){
+                file = this.state.file
+            }
+            formData.append('content', this.state.tweet_content);
+            formData.append('user_id',this.state.user_id);
+            formData.append('type', this.state.media_type);
+            formData.append('file',file);
+            formData.append('reply_id', this.props.reply_id);
+            formData.append('req_token', this.cookies.get('req_token'));
+
+            axios('http://localhost:3000/tweets/newf',{
+                method: 'post',
+                withCredentials: true,
+                data: formData,
+                config: { headers: {'Content-Type': 'multipart/form-data', "withCredentials": true }}
+            }).then((response)=>{
+                console.log(response.data)
                 if(!response.data.result.success){
                     this.MessageBar.showSnackbar(response.data.result.error.message)
                 }else{
