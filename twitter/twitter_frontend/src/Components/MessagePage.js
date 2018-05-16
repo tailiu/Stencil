@@ -92,7 +92,7 @@ class MessagePage extends Component {
         this.getConversationList((conversations) => {
             console.log(conversations)
             if (conversations.length >= 1) {
-                var alreadySet = false
+                var alreadySetNotifNum = false
                 if (this.state.current_conversation_id != '') {
                     for (var i in conversations) {
                         if (conversations[i].conversation.id == this.state.current_conversation_id){
@@ -101,14 +101,14 @@ class MessagePage extends Component {
                             })
                             if (!conversations[i].is_seen) {
                                 this.setConversationSeen(this.state.current_conversation_id)
-                                alreadySet = true
+                                alreadySetNotifNum = true
                             }
                             break
                         }
                     }
                     this.getMessageList(this.state.current_conversation_id)  
                 }
-                if (!alreadySet) {
+                if (!alreadySetNotifNum) {
                     this.calculateAndSetUnseenConversationNum(conversations)
                 }
             } else {
@@ -150,6 +150,7 @@ class MessagePage extends Component {
     initialize = () => {
         this.getConversationList((conversations) => {
             if (conversations.length >= 1) {
+                var alreadySetNotifNum = false
                 const conversation_id = conversations[0].conversation.id 
                 const conversation_type = conversations[0].conversation_type
                 const conversation_state = conversations[0].conversation_state
@@ -158,6 +159,10 @@ class MessagePage extends Component {
                 this.getMessageList(conversation_id)
                 if (!conversations[0].is_seen) {
                     this.setConversationSeen(conversation_id)
+                    alreadySetNotifNum = true
+                }
+                if (!alreadySetNotifNum) {
+                    this.calculateAndSetUnseenConversationNum(conversations)
                 }
             } else {
                 this.setCurrentConversation('', '', '')
