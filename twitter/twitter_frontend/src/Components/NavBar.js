@@ -88,7 +88,7 @@ class NavBar extends Component {
             anchorEl: null,
             tweet_box_open: false,
             search_query: "",
-            notifications: 0,
+            notifications: "",
             notificationsOfConversations: ''
         }
 
@@ -239,9 +239,14 @@ class NavBar extends Component {
           }
         ).then(response => {
             if(response.data.result.success){
-                this.setState({
-                  notifications: response.data.result.notifs,
-                })
+                if (response.data.result.notifs == 0)
+                    this.setState({
+                        notifications: '',
+                    })
+                else
+                    this.setState({
+                        notifications: response.data.result.notifs,
+                    })
 
             }else{
             }
@@ -270,12 +275,9 @@ class NavBar extends Component {
                     <div style={styles.buttonGroup} >
                         <Button onClick = {this.goToHome}>Home</Button>
                         <Button onClick = {this.goToNotif}>
-                            Notifications
-                            <Typography 
-                                variant="button"
-                                style={styles.notif_num}>
-                                {this.state.notifications}
-                            </Typography>
+                            <Badge style={styles.badge} badgeContent={this.state.notifications} color="default" >
+                                Notifications
+                            </Badge>
                         </Button>
                         <Button onClick = {this.goToMessages}>
                             <Badge style={styles.badge} badgeContent={this.state.notificationsOfConversations} color="default" >
