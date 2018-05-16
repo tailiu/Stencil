@@ -20,15 +20,20 @@ class TweetsController < ApplicationController
 
     def new
         @result = {
-            # "params" => params,
+            "params" => params.except(:file),
             "success" => false,
+            "session" => session,
             "error" => {
             },
         }
 
-        if params[:content].nil? || params[:user_id].nil? || params[:type].nil?
+        if params[:content].nil? || params[:user_id].nil? || params[:type].nil?# || params[:req_token].nil?
             @result["success"] = false
             @result["error"]["message"] = "Incomplete params!"
+        # elsif session[:req_token].to_s != params[:req_token]
+        #     @result["success"] = false
+        #     @result["error"]["message"] = "Invalid token!"
+        
         elsif params[:content].empty?
             @result["success"] = false
             @result["error"]["message"] = "Tweet can't be empty!"
@@ -125,9 +130,12 @@ class TweetsController < ApplicationController
             },
         }
 
-        if params[:user_id].nil?
+        if params[:user_id].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.find_by_id(params[:user_id])
             if user.nil?
@@ -195,6 +203,10 @@ class TweetsController < ApplicationController
         if params[:user_id].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
+        
         elsif !User.where(id: params[:user_id]).exists?
             result["success"] = false
             result["error"]["message"] = "User doesn't exist!"
@@ -234,7 +246,10 @@ class TweetsController < ApplicationController
             },
         }
         tweet = Tweet.find_by_id(params[:tweet_id])
-        if !tweet.nil?
+        if session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
+        elsif !tweet.nil?
             # tweets = Tweet.where(reply_to_id: tweet.id)
             tweets = tweet.replies
             tweets_set = [{"tweet": tweet, "creator": tweet.user,  "likes": tweet.likes.count, "retweets": tweet.retweets.count, "replies": tweet.replies.count}]
@@ -261,6 +276,9 @@ class TweetsController < ApplicationController
         if params[:tweet_id].nil? || params[:user_id].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.find_by_id(params[:user_id])
             tweet = Tweet.find_by_id(params[:tweet_id])
@@ -295,6 +313,9 @@ class TweetsController < ApplicationController
         if params[:tweet_id].nil? || params[:user_id].nil? || params[:like].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.find_by_id(params[:user_id])
             tweet = Tweet.find_by_id(params[:tweet_id])
@@ -345,6 +366,9 @@ class TweetsController < ApplicationController
         if params[:tweet_id].nil? || params[:user_id].nil? || params[:retweet].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             user = User.find_by_id(params[:user_id])
             tweet = Tweet.find_by_id(params[:tweet_id])
@@ -401,6 +425,9 @@ class TweetsController < ApplicationController
         if params[:tweet_id].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             result["success"] = true
             tweet = Tweet.find_by_id(params[:tweet_id])

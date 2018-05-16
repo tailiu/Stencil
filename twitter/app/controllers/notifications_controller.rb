@@ -6,9 +6,12 @@ class NotificationsController < ApplicationController
             "error" => {
             },
         }
-        if params[:user_id].nil?
+        if params[:user_id].nil? || params[:req_token].nil?
             result["success"] = false
             result["error"]["message"] = "Incomplete params!"
+        elsif session[:req_token].to_s != params[:req_token]
+            result["success"] = false
+            result["error"]["message"] = "Invalid token!"
         else
             result["success"] = true
             notifs = Notification.joins("JOIN users ON users.id = notifications.from_user")
