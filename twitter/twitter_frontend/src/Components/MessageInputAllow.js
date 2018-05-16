@@ -48,6 +48,8 @@ class MessageInputAllow extends Component {
             file: '',
             has_media: false
         }
+
+        this.setFileName = React.createRef();
     }
 
     handleChange = (e) => {
@@ -81,6 +83,7 @@ class MessageInputAllow extends Component {
                     has_media: false,
                     file: ''
                 })
+                this.setFileName.current.value = ''
                 this.props.setHasMediaState(false)
                 this.props.onNewMessage()
             }
@@ -174,7 +177,7 @@ class MessageInputAllow extends Component {
                         onKeyPress={this.catchReturn}
                     /> 
                     <Button variant="raised" color="default" >
-                        <input style={styles.upload} type="file" onChange={this.handleUploadChange}/>
+                        <input style={styles.upload} type="file" ref={this.setFileName} onChange={this.handleUploadChange}/>
                     </Button>
                     <Button size="large" style={styles.sendMessageButton} onClick={this.handleNewMessage} color="primary" disabled={disabled}>
                         Send

@@ -17,6 +17,7 @@ import MessageBar from './MessageBar';
 import NewTweetDialog from "./NewTweetDialog";
 import { CardContent } from "material-ui";
 import UserSearchBox from "./UserSearchBox";
+import Badge from 'material-ui/Badge';
 
 const styles = {
     root: {
@@ -66,6 +67,9 @@ const styles = {
         color: "#00aced",
         fontWeight: "bold",
         fontFamily: '"Courier New", Courier, "Lucida Sans Typewriter"'
+    },
+    badge: {
+        padding: 3
     }
 };
 
@@ -90,19 +94,25 @@ class NavBar extends Component {
             tweet_box_open: false,
             search_query: "",
             notifications: 0,
+            notificationsOfConversations: ''
         }
 
     }
 
     componentDidMount() {
-        this.getNotifications();
-        this.timer = setInterval(()=> this.getNotifications(), 30000);
+        this.initialize()
+        this.timer = setInterval(()=> this.periodicActions(), 30000);
     }
 
     componentWillMount() {
         this.loggedIn();
     }
-
+    
+    periodicActions = () => {
+        this.getNotifications()
+        this.getNotificationsOfConversations()
+    }
+    
     loggedIn = () => {
         axios.get(
             'http://localhost:3000/auth/login',
@@ -125,12 +135,16 @@ class NavBar extends Component {
         this.timer = null;
     }
 
+    initialize = () => {
+        this.getNotifications()
+        this.getNotificationsOfConversations()
+    }
+
     handleTweetBoxClose = () => {
         this.setState({ tweet_box_open: false });
     };
 
     handleTweetBoxOpen = () => {
-        // console.log("HERE!");
         this.setState({tweet_box_open: true });
     };
 
@@ -181,7 +195,33 @@ class NavBar extends Component {
             cookies.remove('user_handle');
             this.goToIndex();
         })
-      }
+    }
+    
+    setNotificationsOfConversations = (notificationsOfConversations) => {
+        this.setState({
+            notificationsOfConversations: notificationsOfConversations
+        })
+    }
+    getNotificationsOfConversations = () => {
+        axios.get(
+        'http://localhost:3000/conversations/getUnreadConversationNum',
+        {
+            params: {
+                'user_id': this.state.user_id, 
+            }
+        }
+        ).then(response => {
+            if(response.data.result.success) {
+                if (response.data.result.unreadConversationNum == 0) {
+                    this.setNotificationsOfConversations('')
+                } else {
+                    this.setNotificationsOfConversations(response.data.result.unreadConversationNum)
+                }
+            }else{
+                this.MessageBar.showSnackbar(response.data.result.error)
+            }
+        })
+    }
 
     getNotifications = () =>  {
 
@@ -193,17 +233,15 @@ class NavBar extends Component {
             }
           }
         ).then(response => {
-            // console.log(response)
             if(response.data.result.success){
                 this.setState({
                   notifications: response.data.result.notifs,
                 })
 
             }else{
-                // console.log("Notif error!");
             }
-          })
-      }
+        })
+    }
 
     searchUser =(e)=> {
         this.setState({
@@ -233,7 +271,11 @@ class NavBar extends Component {
                                 {this.state.notifications}
                             </Typography>
                         </Button>
-                        <Button onClick = {this.goToMessages}>Messages</Button>
+                        <Button onClick = {this.goToMessages}>
+                            <Badge style={styles.badge} badgeContent={this.state.notificationsOfConversations} color="default" >
+                                Messages
+                            </Badge>
+                        </Button>
                     </div>
                     <Input
                         placeholder="Search Twitter"

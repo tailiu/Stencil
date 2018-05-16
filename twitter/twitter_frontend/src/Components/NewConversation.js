@@ -72,7 +72,7 @@ class NewConversation extends Component {
                 if (response.data.result.message != "") {
                     this.props.messageBar.showSnackbar(response.data.result.message)
                 }
-                
+
                 this.clearMessageTo()
 
                 const conversation = response.data.result.conversation
@@ -122,7 +122,3 @@ class NewConversation extends Component {
 }
 
 export default withCookies(NewConversation);
-
-
-
-
