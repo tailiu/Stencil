@@ -27,6 +27,6 @@ package.json
 package-lock.json
 
 # Ignore all media
-/public/upload/*
+/public/uploads/*
 
 
