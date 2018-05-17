@@ -42,6 +42,7 @@ Rails.application.routes.draw do
 	get 'conversations/getUnreadConversationNum', to: 'conversations#getUnreadConversationNum'
 	get 'conversations/setConversationSeen', to: 'conversations#setConversationSeen'
 	get 'conversations/setConversationUnseen', to: 'conversations#setConversationUnseen'
+	get 'messages/setSawMessagesUntil', to: 'messages#setSawMessagesUntil'
 
 	resources :users
 	resources :user_actions

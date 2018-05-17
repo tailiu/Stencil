@@ -70,6 +70,7 @@ class MessagesController < ApplicationController
             userInConversation = false
             for conversation_participant in conversation_participants do
                 if conversation_participant.user_id == user.id
+                    participant = conversation_participant
                     userInConversation = true
                     break
                 end
@@ -81,7 +82,7 @@ class MessagesController < ApplicationController
         end
 
         if result["success"]
-            if conversation.conversation_type == 'not_group'
+            if conversation.conversation_type == 'not_group' && conversation_participants.length == 2
                 block_one = UserAction.find_by(from_user_id: conversation_participants[0].user_id, 
                     to_user_id: conversation_participants[1].user_id, action_type: "block")
                 block_two = UserAction.find_by(from_user_id: conversation_participants[1].user_id, 
@@ -102,8 +103,42 @@ class MessagesController < ApplicationController
                                 message_media: message_media
                             )
             new_message.save
+            participant.saw_messages_until = new_message.created_at
+            participant.save
+            result["newMessage"] = new_message
         end
 
         render json: {result: result}
     end
+
+    def setSawMessagesUntil
+        result = {
+            # params: params,
+            "success" => true,
+            "error" => {
+            }
+        }
+
+        user = User.find_by(id: params[:user_id]) 
+        conversation = Conversation.find_by(id: params[:conversation_id])
+        time = params[:time]
+        
+        if conversation == nil || user == nil
+            result["success"] = false
+            result["error"] = "No such conversation or user"
+        end
+
+        if result["success"]
+            conversation_participants = conversation.conversation_participants
+            for conversation_participant in conversation_participants do
+                if conversation_participant.user_id == user.id
+                    conversation_participant.saw_messages_until = time
+                    conversation_participant.save
+                end
+            end
+        end
+
+        render json: {result: result}
+    end
+
 end

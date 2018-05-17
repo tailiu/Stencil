@@ -85,7 +85,7 @@ class MessageInputAllow extends Component {
                 })
                 this.setFileName.current.value = ''
                 this.props.setHasMediaState(false)
-                this.props.onNewMessage()
+                this.props.onNewMessage(response.data.result.newMessage)
             }
         })
     }

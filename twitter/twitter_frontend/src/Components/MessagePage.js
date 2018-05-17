@@ -222,13 +222,14 @@ class MessagePage extends Component {
         })
     }
 
-    getMessageList = (current_conversation_id) => {
+    getMessageList = (current_conversation_id, update_saw_messages_unitl) => {
         axios.get(
             'http://localhost:3000/messages',
             {
                 params: {
                     "user_id": this.state.user_id,
-                    "conversation_id": current_conversation_id
+                    "conversation_id": current_conversation_id,
+                    "update_saw_messages_unitl": update_saw_messages_unitl
                 }
             }
         ).then(response => {
@@ -308,6 +309,25 @@ class MessagePage extends Component {
         this.getMessageList(new_conversation_ID)
     }
 
+    setSawMessagesUntil = (conversation_id, time) => {
+        axios.get(
+            'http://localhost:3000/messages/setSawMessagesUntil',
+            {
+                params: {
+                    "user_id": this.state.user_id,
+                    "conversation_id": conversation_id,
+                    "time": time
+                }
+            }
+        ).then(response => {
+            if(!response.data.result.success) {
+                if (this.MessageBar != undefined) {
+                    this.MessageBar.showSnackbar(response.data.result.error)
+                }
+            }
+        })
+    }
+
     handleConversationChange = (current_conversation_id) => {
         var conversations = this.state.conversations
         var current_conversation_type 
@@ -325,6 +345,10 @@ class MessagePage extends Component {
         if (!is_seen) {
             this.setConversationSeen(current_conversation_id)
         }
+        const messages = this.state.messages
+        if (messages.length > 0) {
+            this.setSawMessagesUntil(this.state.current_conversation_id, messages[messages.length-1].created_at)
+        }
         this.setCurrentConversation(current_conversation_id, current_conversation_type, current_conversation_state)
         this.getMessageList(current_conversation_id)
     }
@@ -333,7 +357,23 @@ class MessagePage extends Component {
         this.initialize()
     }
 
-    handleNewMessage = () => {
+    changeSawMessagesUntilInState = (newMessage) => {
+        var conversations = this.state.conversations
+        for (var i in conversations) {
+            if (conversations[i].conversation.id == newMessage.conversation_id) {
+                for (var j in conversations[i].conversation_participants) {
+                    if (conversations[i].conversation_participants[j].id == this.state.user_id) {
+                        conversations[i].conversation_participants[j].saw_messages_until = newMessage.created_at
+                        this.setConversations(conversations)
+                    }
+                }
+            }
+        }
+    }
+
+    handleNewMessage = (newMessage) => {
+        this.changeSawMessagesUntilInState(newMessage)
+        
         this.getMessageList(this.state.current_conversation_id)
         this.setConversationUnseen(this.state.current_conversation_id)
     }
@@ -358,6 +398,21 @@ class MessagePage extends Component {
             styles.messageList = {
                 height: "87%",
                 overflow: "auto"
+            }
+        }
+    }
+
+    getSawMessagesUntil = (conversation_id) => {
+        const conversations = this.state.conversations
+        for (var i in conversations) {
+            const conversation = conversations[i]
+            if (conversation.conversation.id == conversation_id) {
+                const conversation_participants = conversation.conversation_participants
+                for (var j in conversation_participants) {
+                    if (conversation_participants[j].id == this.state.user_id) {
+                        return conversation_participants[j].saw_messages_until
+                    }
+                }
             }
         }
     }
@@ -409,7 +464,8 @@ class MessagePage extends Component {
                         <Paper style={styles.messageListContainer} >
                             <Grid style={styles.messageList}>
                                 <MessageList 
-                                    messages = {this.state.messages} 
+                                    messages = {this.state.messages}
+                                    saw_messages_until = {this.getSawMessagesUntil(this.state.current_conversation_id)}
                                     current_conversation_type = {this.state.current_conversation_type}
                                 />
                             </Grid>

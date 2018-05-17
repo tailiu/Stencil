@@ -25,14 +25,16 @@ class ConversationsController < ApplicationController
                     "is_seen" => conversation_participant.saw_new_messages
                 }
                 for one_conversation_participant in one_conversation_participants do
-                    one_user = one_conversation_participant.user
-                    conversation["conversation_participants"].push(one_user)
+                    participant = User.joins("INNER JOIN conversation_participants ON users.id = conversation_participants.user_id")
+                                    .where('users.id' => one_conversation_participant.user_id)
+                                    .select("users.name, users.id, users.handle, conversation_participants.saw_messages_until")
+                    conversation["conversation_participants"].push(participant[0])
                 end
-                if one_conversation.conversation_type == "not_group" 
-                    block_one = UserAction.where(from_user_id: conversation["conversation_participants"][0], 
-                        to_user_id: conversation["conversation_participants"][1], action_type: "block")
-                    block_two = UserAction.where(from_user_id: conversation["conversation_participants"][1], 
-                        to_user_id: conversation["conversation_participants"][0], action_type: "block")
+                if one_conversation.conversation_type == "not_group" && one_conversation.conversation_participants.length == 2
+                    block_one = UserAction.where(from_user_id: conversation["conversation_participants"][0].id, 
+                        to_user_id: conversation["conversation_participants"][1].id, action_type: "block")
+                    block_two = UserAction.where(from_user_id: conversation["conversation_participants"][1].id, 
+                        to_user_id: conversation["conversation_participants"][0].id, action_type: "block")
                     if (block_one.length != 0 || block_two.length != 0)
                         conversation['conversation_state'] = 'blocked'
                     end
