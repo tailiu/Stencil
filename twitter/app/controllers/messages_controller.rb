@@ -121,18 +121,18 @@ class MessagesController < ApplicationController
 
         user = User.find_by(id: params[:user_id]) 
         conversation = Conversation.find_by(id: params[:conversation_id])
-        time = params[:time]
+        message = Message.find_by(id: params[:message_id])
         
-        if conversation == nil || user == nil
+        if conversation == nil || user == nil || message == nil
             result["success"] = false
-            result["error"] = "No such conversation or user"
+            result["error"] = "No such conversation, user or message"
         end
 
         if result["success"]
             conversation_participants = conversation.conversation_participants
             for conversation_participant in conversation_participants do
                 if conversation_participant.user_id == user.id
-                    conversation_participant.saw_messages_until = time
+                    conversation_participant.saw_messages_until = message.created_at
                     conversation_participant.save
                 end
             end

@@ -25,10 +25,15 @@ class ConversationsController < ApplicationController
                     "is_seen" => conversation_participant.saw_new_messages
                 }
                 for one_conversation_participant in one_conversation_participants do
-                    participant = User.joins("INNER JOIN conversation_participants ON users.id = conversation_participants.user_id")
+                    participants = User.joins("INNER JOIN conversation_participants ON users.id = conversation_participants.user_id")
                                     .where('users.id' => one_conversation_participant.user_id)
-                                    .select("users.name, users.id, users.handle, conversation_participants.saw_messages_until")
-                    conversation["conversation_participants"].push(participant[0])
+                                    .select("users.name, users.id, users.handle, conversation_participants.saw_messages_until, conversation_participants.conversation_id")
+                    for participant in participants do
+                        if participant.conversation_id == one_conversation.id
+                            conversation["conversation_participants"].push(participant)
+                        end
+                    end
+                    
                 end
                 if one_conversation.conversation_type == "not_group" && one_conversation.conversation_participants.length == 2
                     block_one = UserAction.where(from_user_id: conversation["conversation_participants"][0].id, 
