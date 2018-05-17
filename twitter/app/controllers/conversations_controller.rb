@@ -147,9 +147,9 @@ class ConversationsController < ApplicationController
                     end
 
                     if user.id == creator.id 
-                        user.conversation_participants.create(conversation_id: conversation.id, role: 'creator', saw_new_messages: true)
+                        user.conversation_participants.create(conversation_id: conversation.id, role: 'creator', saw_new_messages: true, saw_messages_until: Time.now())
                     else
-                        user.conversation_participants.create(conversation_id: conversation.id, role: 'normal', saw_new_messages: false)
+                        user.conversation_participants.create(conversation_id: conversation.id, role: 'normal', saw_new_messages: false, saw_messages_until: Time.now())
                     end
                 end
 

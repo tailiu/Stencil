@@ -90,7 +90,7 @@ class MessagePage extends Component {
 
     periodicActions = () => {
         this.getConversationList((conversations) => {
-            console.log(conversations)
+            // console.log(conversations)
             if (conversations.length >= 1) {
                 var alreadySetNotifNum = false
                 if (this.state.current_conversation_id != '') {
@@ -167,6 +167,7 @@ class MessagePage extends Component {
             } else {
                 this.setCurrentConversation('', '', '')
                 this.setMessageState('')
+                this.calculateAndSetUnseenConversationNum(conversations)
             }
         })    
     }
