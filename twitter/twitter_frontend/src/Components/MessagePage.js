@@ -75,7 +75,9 @@ class MessagePage extends Component {
             suggestions: [],
             has_media: false,
             notificationsOfConversations: '',
-            disableGetNotifsofConversations: true
+            disableGetNotifsofConversations: true,
+            newMessagesCome: false,
+            saw_messages_until: ''
         }
     }
 
@@ -90,7 +92,9 @@ class MessagePage extends Component {
 
     periodicActions = () => {
         this.getConversationList((conversations) => {
-            console.log(conversations)
+            // console.log('3333333333')
+            // console.log(conversations)
+            // console.log('3333333333')
             if (conversations.length >= 1) {
                 var alreadySetNotifNum = false
                 if (this.state.current_conversation_id != '') {
@@ -106,7 +110,7 @@ class MessagePage extends Component {
                             break
                         }
                     }
-                    this.getMessageList(this.state.current_conversation_id)  
+                    this.getMessageList(this.state.current_conversation_id, true)  
                 }
                 if (!alreadySetNotifNum) {
                     this.calculateAndSetUnseenConversationNum(conversations)
@@ -156,7 +160,7 @@ class MessagePage extends Component {
                 const conversation_state = conversations[0].conversation_state
 
                 this.setCurrentConversation(conversation_id, conversation_type, conversation_state)
-                this.getMessageList(conversation_id)
+                this.getMessageList(conversation_id, true)
                 if (!conversations[0].is_seen) {
                     this.setConversationSeen(conversation_id)
                     alreadySetNotifNum = true
@@ -222,7 +226,7 @@ class MessagePage extends Component {
         })
     }
 
-    getMessageList = (current_conversation_id) => {
+    getMessageList = (current_conversation_id, checkAndUpdateNewMessagesComeAndConversationState) => {
         axios.get(
             'http://localhost:3000/messages',
             {
@@ -240,10 +244,54 @@ class MessagePage extends Component {
                 if (response.data.result.messages == undefined) {
                     this.setMessageState('')
                 } else {
-                    this.setMessageState(response.data.result.messages)
+                    const newMessages = response.data.result.messages
+                    var AlreadySetMessages = false
+                    if (checkAndUpdateNewMessagesComeAndConversationState && newMessages.length > 0) {
+                        const oldMessages = this.state.messages
+                        const newMessagesCome= this.state.newMessagesCome
+                        var needUpdate = false
+                        
+                        if (oldMessages == '') {
+                            needUpdate = true
+                        } else { 
+                            if (newMessages[newMessages.length-1].created_at > oldMessages[oldMessages.length-1].created_at) needUpdate = true
+                        }
+                        console.log(newMessagesCome)
+                        if (newMessagesCome) {
+                            if (needUpdate) {
+                                this.setSawMessagesUntil(
+                                    current_conversation_id, 
+                                    newMessages[newMessages.length-1].id, 
+                                    this.changeSawMessagesUntilInState(newMessages[newMessages.length-1], newMessages)
+                                )
+                                AlreadySetMessages = true
+                            }
+                        }
+                        if (needUpdate && !newMessagesCome) {
+                            this.setSawMessagesUntil(
+                                current_conversation_id, 
+                                newMessages[newMessages.length-1].id, 
+                                this.changeSawMessagesUntilInState(newMessages[newMessages.length-1], newMessages)
+                            )
+                            this.setNewMessagesComeState(true)
+                            AlreadySetMessages = true
+                        }
+                    }
+                    // console.log(newMessages)
+                    // console.log(newMessages[newMessages.length-1].created_at)
+                    console.log('88888888888888888888888888')
+                    if (!AlreadySetMessages) {
+                        this.setMessageState(newMessages)
+                    }
                 }
-    
+                
             }
+        })
+    }
+
+    setNewMessagesComeState = (newMessagesCome) => {
+        this.setState({
+            newMessagesCome: newMessagesCome
         })
     }
 
@@ -308,7 +356,7 @@ class MessagePage extends Component {
         this.getMessageList(new_conversation_ID)
     }
 
-    setSawMessagesUntil = (conversation_id, message_id) => {
+    setSawMessagesUntil = (conversation_id, message_id, cb) => {
         axios.get(
             'http://localhost:3000/messages/setSawMessagesUntil',
             {
@@ -323,6 +371,8 @@ class MessagePage extends Component {
                 if (this.MessageBar != undefined) {
                     this.MessageBar.showSnackbar(response.data.result.error)
                 }
+            } else {
+                if (cb) cb()
             }
         })
     }
@@ -351,26 +401,39 @@ class MessagePage extends Component {
         
         const messages = this.state.messages
         if (messages.length > 0) {
-            this.setSawMessagesUntil(this.state.current_conversation_id, messages[messages.length-1].id)
-            this.changeSawMessagesUntilInState(messages[messages.length-1])
+            this.setSawMessagesUntil(
+                this.state.current_conversation_id, 
+                messages[messages.length-1].id, 
+                this.changeSawMessagesUntilInState(messages[messages.length-1])
+            )
         }
         
         this.setCurrentConversation(current_conversation_id, current_conversation_type, current_conversation_state)
         this.getMessageList(current_conversation_id)
+        this.setNewMessagesComeState(false)
     }
 
     handleLeaveConversation = () => {
         this.initialize()
     }
 
-    changeSawMessagesUntilInState = (newMessage) => {
+    changeSawMessagesUntilInState = (newMessage, newMessages) => {
         var conversations = this.state.conversations
         for (var i in conversations) {
             if (conversations[i].conversation.id == newMessage.conversation_id) {
                 for (var j in conversations[i].conversation_participants) {
                     if (conversations[i].conversation_participants[j].id == this.state.user_id) {
                         conversations[i].conversation_participants[j].saw_messages_until = newMessage.created_at
-                        this.setConversations(conversations)
+                        console.log(conversations)
+                        console.log(newMessages)
+                        if (newMessages != undefined) {
+                            this.setState({
+                                'conversations': conversations,
+                                'messages': newMessages
+                            })
+                        } else {
+                            this.setConversations(conversations)
+                        }
                     }
                 }
             }
@@ -409,7 +472,7 @@ class MessagePage extends Component {
     }
 
     getSawMessagesUntil = (conversation_id) => {
-        console.log(conversation_id)
+        // console.log(conversation_id)
         const conversations = this.state.conversations
         for (var i in conversations) {
             const conversation = conversations[i]
@@ -417,6 +480,8 @@ class MessagePage extends Component {
                 const conversation_participants = conversation.conversation_participants
                 for (var j in conversation_participants) {
                     if (conversation_participants[j].id == this.state.user_id) {
+                        console.log(conversations)
+                        console.log(conversation_participants[j].saw_messages_until)
                         return conversation_participants[j].saw_messages_until
                     }
                 }

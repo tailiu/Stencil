@@ -37,8 +37,8 @@ class MessageList extends Component {
             var addUnreadLine = false
             messageList = messages.map((message) => {
                 if (this.props.saw_messages_until < message.created_at && !addUnreadLine) {
-                    console.log("this " + this.props.saw_messages_until)
-                    console.log("that " + message.created_at)
+                    // console.log("this " + this.props.saw_messages_until)
+                    // console.log("that " + message.created_at)
                     addUnreadLine = true
                     return (
                         <Fragment>
