@@ -262,7 +262,7 @@ class MessagePage extends Component {
                                 this.setSawMessagesUntil(
                                     current_conversation_id, 
                                     newMessages[newMessages.length-1].id, 
-                                    this.changeSawMessagesUntilInState(newMessages[newMessages.length-1], newMessages)
+                                    this.changeSawMessagesUntilInState(newMessages[newMessages.length-1].created_at, newMessages)
                                 )
                                 AlreadySetMessages = true
                             }
@@ -271,7 +271,7 @@ class MessagePage extends Component {
                             this.setSawMessagesUntil(
                                 current_conversation_id, 
                                 newMessages[newMessages.length-1].id, 
-                                this.changeSawMessagesUntilInState(newMessages[newMessages.length-1], newMessages)
+                                this.changeSawMessagesUntilInState(newMessages[newMessages.length-1].created_at, newMessages)
                             )
                             this.setNewMessagesComeState(true)
                             AlreadySetMessages = true
@@ -403,45 +403,57 @@ class MessagePage extends Component {
         if (messages.length > 0) {
             this.setSawMessagesUntil(
                 this.state.current_conversation_id, 
-                messages[messages.length-1].id, 
-                this.changeSawMessagesUntilInState(messages[messages.length-1])
+                messages[messages.length-1].id
             )
         }
         
+        this.changeSawMessagesUntilInState('')
+        this.setNewMessagesComeState(false)
+
         this.setCurrentConversation(current_conversation_id, current_conversation_type, current_conversation_state)
         this.getMessageList(current_conversation_id)
-        this.setNewMessagesComeState(false)
     }
 
     handleLeaveConversation = () => {
         this.initialize()
     }
 
-    changeSawMessagesUntilInState = (newMessage, newMessages) => {
-        var conversations = this.state.conversations
-        for (var i in conversations) {
-            if (conversations[i].conversation.id == newMessage.conversation_id) {
-                for (var j in conversations[i].conversation_participants) {
-                    if (conversations[i].conversation_participants[j].id == this.state.user_id) {
-                        conversations[i].conversation_participants[j].saw_messages_until = newMessage.created_at
-                        console.log(conversations)
-                        console.log(newMessages)
-                        if (newMessages != undefined) {
-                            this.setState({
-                                'conversations': conversations,
-                                'messages': newMessages
-                            })
-                        } else {
-                            this.setConversations(conversations)
-                        }
-                    }
-                }
-            }
+    changeSawMessagesUntilInState = (created_at, newMessages) => {
+        if (newMessages != undefined) {
+            this.setState({
+                saw_messages_until: created_at,
+                messages: newMessages
+            })
+        } else {
+            this.setState({
+                saw_messages_until: created_at
+            })
         }
+        
+        // var conversations = this.state.conversations
+        // for (var i in conversations) {
+        //     if (conversations[i].conversation.id == newMessage.conversation_id) {
+        //         for (var j in conversations[i].conversation_participants) {
+        //             if (conversations[i].conversation_participants[j].id == this.state.user_id) {
+        //                 conversations[i].conversation_participants[j].saw_messages_until = newMessage.created_at
+        //                 console.log(conversations)
+        //                 console.log(newMessages)
+        //                 if (newMessages != undefined) {
+        //                     this.setState({
+        //                         'conversations': conversations,
+        //                         'messages': newMessages
+        //                     })
+        //                 } else {
+        //                     this.setConversations(conversations)
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     handleNewMessage = (newMessage) => {
-        this.changeSawMessagesUntilInState(newMessage)
+        this.changeSawMessagesUntilInState(newMessage.created_at)
         
         this.getMessageList(this.state.current_conversation_id)
         this.setConversationUnseen(this.state.current_conversation_id)
@@ -480,9 +492,21 @@ class MessagePage extends Component {
                 const conversation_participants = conversation.conversation_participants
                 for (var j in conversation_participants) {
                     if (conversation_participants[j].id == this.state.user_id) {
+                        // console.log(conversations)
+                        // console.log(conversation_participants[j].saw_messages_until)
+                        console.log('(((((((((((((((((((((((')
+                        console.log(this.state.saw_messages_until)
                         console.log(conversations)
-                        console.log(conversation_participants[j].saw_messages_until)
-                        return conversation_participants[j].saw_messages_until
+                        console.log('(((((((((((((((((((((((')
+                        if (conversation_participants[j].saw_messages_until > this.state.saw_messages_until || this.state.saw_messages_until == '') {
+                            this.setState({
+                                saw_messages_until: conversation_participants[j].saw_messages_until
+                            })
+                            return conversation_participants[j].saw_messages_until
+                        } else {
+                            return this.state.saw_messages_until
+                        }
+                        
                     }
                 }
             }
