@@ -46,7 +46,7 @@ class ConversationActions extends Component {
 
     handleLeaveConversation = () => {
         axios.get(
-            'http://localhost:3000/conversations/leaveConversation',
+            'http://localhost:8000/conversations/leaveConversation',
             {
                 params: {
                     "conversation_id": this.props.conversationID,

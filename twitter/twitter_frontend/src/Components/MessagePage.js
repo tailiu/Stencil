@@ -131,7 +131,7 @@ class MessagePage extends Component {
 
     getConversationContactList = () => {
         axios.get(
-            'http://localhost:3000/conversations/getContactList',
+            'http://localhost:8000/conversations/getContactList',
             {
                 params: {
                     'user_id': this.state.user_id
@@ -193,7 +193,7 @@ class MessagePage extends Component {
 
     getConversationList = (cb) => {
         axios.get(
-            'http://localhost:3000/conversations',
+            'http://localhost:8000/conversations',
             {
                 params: {
                     'user_id': this.state.user_id
@@ -228,7 +228,7 @@ class MessagePage extends Component {
 
     getMessageList = (current_conversation_id, checkAndUpdateNewMessagesComeAndConversationState) => {
         axios.get(
-            'http://localhost:3000/messages',
+            'http://localhost:8000/messages',
             {
                 params: {
                     "user_id": this.state.user_id,
@@ -303,7 +303,7 @@ class MessagePage extends Component {
 
     setConversationSeen = (conversation_id) => {
         axios.get(
-            'http://localhost:3000/conversations/setConversationSeen',
+            'http://localhost:8000/conversations/setConversationSeen',
             {
                 params: {
                     "user_id": this.state.user_id,
@@ -325,7 +325,7 @@ class MessagePage extends Component {
 
     setConversationUnseen = (conversation_id) => {
         axios.get(
-            'http://localhost:3000/conversations/setConversationUnseen',
+            'http://localhost:8000/conversations/setConversationUnseen',
             {
                 params: {
                     "user_id": this.state.user_id,
@@ -358,7 +358,7 @@ class MessagePage extends Component {
 
     setSawMessagesUntil = (conversation_id, message_id, cb) => {
         axios.get(
-            'http://localhost:3000/messages/setSawMessagesUntil',
+            'http://localhost:8000/messages/setSawMessagesUntil',
             {
                 params: {
                     "user_id": this.state.user_id,

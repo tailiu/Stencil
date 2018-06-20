@@ -44,7 +44,7 @@ class Settings extends Component {
 
     getUserInfo(){
         axios.get(
-          'http://localhost:3000/users/getUserInfo',
+          'http://localhost:8000/users/getUserInfo',
           {
             withCredentials: true,
             params: {
@@ -78,7 +78,7 @@ class Settings extends Component {
     handleEmailChange = (email, e) => {
         
         axios.get(
-            'http://localhost:3000/users/updateEmail',
+            'http://localhost:8000/users/updateEmail',
             {
                 withCredentials: true,
                 params: {
@@ -103,7 +103,7 @@ class Settings extends Component {
     handlePasswordChange = (e) => {
         
         axios.get(
-            'http://localhost:3000/users/updatePassword',
+            'http://localhost:8000/users/updatePassword',
             {
                 withCredentials: true,
                 params: {
@@ -125,7 +125,7 @@ class Settings extends Component {
     handleHandleChange = (e) => {
         
         axios.get(
-            'http://localhost:3000/users/updateHandle',
+            'http://localhost:8000/users/updateHandle',
             {
                 withCredentials: true,
                 params: {
@@ -168,7 +168,7 @@ class Settings extends Component {
     onChangeProtected =(e)=> {
 
         axios.get(
-            'http://localhost:3000/users/updateProtected',
+            'http://localhost:8000/users/updateProtected',
             {
                 withCredentials: true,
                 params: {

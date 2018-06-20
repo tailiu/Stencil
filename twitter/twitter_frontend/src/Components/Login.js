@@ -78,7 +78,7 @@ class Login extends Component {
       }else{
 
         axios.get(
-          'http://localhost:3000/users/verify',
+          'http://localhost:8000/users/verify',
           {
             withCredentials: true,
             params: {

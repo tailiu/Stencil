@@ -87,7 +87,7 @@ class UserSearchBox extends Component {
         // console.log(this.props.query)
 
         axios.get(
-            'http://localhost:3000/users/search',
+            'http://localhost:8000/users/search',
             {
                 params: {
                 'query': this.state.query 

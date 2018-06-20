@@ -69,7 +69,7 @@ class Profile extends Component {
     fetchTweets =()=> {
 
         axios.get(
-        'http://localhost:3000/tweets/getTweet',
+        'http://localhost:8000/tweets/getTweet',
         {
             withCredentials: true,
             params: {

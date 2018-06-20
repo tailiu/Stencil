@@ -59,7 +59,7 @@ class NewConversation extends Component {
         participants.conversation_creator = this.state.user_handle
 
         axios.get(
-            'http://localhost:3000/conversations/new',
+            'http://localhost:8000/conversations/new',
             {
                 params: {
                     'participants': participants

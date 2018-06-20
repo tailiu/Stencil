@@ -74,7 +74,7 @@ class Profile extends Component {
     componentWillMount(){
 
         axios.get(
-            'http://localhost:3000/users/checkTwoWayBlock',
+            'http://localhost:8000/users/checkTwoWayBlock',
             {
                 withCredentials: true,
                 params: {
@@ -105,7 +105,7 @@ class Profile extends Component {
     fetchTweets =()=> {
 
         axios.get(
-        'http://localhost:3000/tweets/fetchUserTweets',
+        'http://localhost:8000/tweets/fetchUserTweets',
         {
             withCredentials: true,
             params: {
