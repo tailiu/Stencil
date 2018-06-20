@@ -13,7 +13,7 @@ module Twitter
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 5.1
     config.action_dispatch.default_headers = {
-      'Access-Control-Allow-Origin' => 'http://localhost:3001',
+      'Access-Control-Allow-Origin' => 'http://localhost:8001',
       'Access-Control-Allow-Credentials' => true,
       'Access-Control-Request-Method' => %w{GET POST OPTIONS PUT DELETE HEAD PATCH}.join(","),
       'Access-Control-Allow-Methods' => 'POST, PUT, DELETE, GET, OPTIONS',

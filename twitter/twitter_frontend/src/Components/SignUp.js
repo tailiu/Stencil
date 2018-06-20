@@ -85,7 +85,7 @@ class SignUp extends Component {
       this.MessageBar.showSnackbar("Some fields are left empty!")
     }else{
       axios.get(
-        'http://localhost:3000/users/signup',
+        'http://localhost:8000/users/signup',
         {
           withCredentials: true,
           params: {
@@ -108,7 +108,7 @@ class SignUp extends Component {
           this.cookies.set('req_token', response.data.result.req_token);
           setTimeout(function() {
             this.goToHome();
-          }.bind(this), 8000);
+          }.bind(this), 3000);
         }
       })
     }
