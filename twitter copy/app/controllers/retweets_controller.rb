@@ -1,2 +1,0 @@
-class RetweetsController < ApplicationController
-end
