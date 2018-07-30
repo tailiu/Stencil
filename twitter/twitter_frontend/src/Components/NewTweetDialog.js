@@ -1,5 +1,5 @@
 import React, {Component, Fragment} from 'react';
-import axios, {post} from 'axios';
+import axios from 'axios';
 import { withCookies } from 'react-cookie';
 import Dialog, {
     DialogActions,
