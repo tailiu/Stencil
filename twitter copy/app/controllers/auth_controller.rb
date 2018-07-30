@@ -1,51 +1,42 @@
 class AuthController < ApplicationController
 
     def new
+        @new_user = User.new(name: params[:name], handle: params[:handle])
+        @new_credential = @new_user.build_credential(email: params[:email], password: params[:password])
 
         @result = {
             # params: params,
             "success" => false,
             "error" => {
-            },
-            "test" => Stencil.new.hello
+            }
         }
 
-        @new_user = Stencil.new.query("SELECT * FROM users")
+        if @new_user.valid? && @new_credential.valid?
+            @new_user.save
+            @new_credential.save
+            @result["success"] = true
+            @result["user"] = @new_user
+            reset_session
+            session[:is_active] = true
+            session[:user_id] = @new_user.id
+            session[:req_token] = rand(32**32).to_s(16)
+            @result["req_token"] = session[:req_token]
+            @result["session_id"] = session.id
+        else 
+            puts @new_user.errors.messages
+            puts @new_credential.errors.messages
 
-        if params[:name].nil? || params[:handle].nil? || params[:email].nil? || params[:password].nil?
-            @result["success"] = false
-            @result["error"]["message"] = "Incomplete params!"
-        else
-            @new_user = User.new(name: params[:name], handle: params[:handle])
-            @new_credential = @new_user.build_credential(email: params[:email], password: params[:password])
-
-            if @new_user.valid? && @new_credential.valid?
-                @new_user.save
-                @new_credential.save
-                @result["success"] = true
-                @result["user"] = @new_user
-                reset_session
-                session[:is_active] = true
-                session[:user_id] = @new_user.id
-                session[:req_token] = rand(32**32).to_s(16)
-                @result["req_token"] = session[:req_token]
-                @result["session_id"] = session.id
-            else 
-                puts @new_user.errors.messages
-                puts @new_credential.errors.messages
-
-                if @new_user.errors.messages.key?(:handle) && @new_credential.errors.messages.key?(:email)
-                    @result["error"]["message"] = "Handle and Email already exist!"
-                elsif @new_user.errors.messages.key?(:handle)
-                    @result["error"]["message"] = "Handle already exists!"
-                elsif @new_credential.errors.messages.key?(:email)
-                    @result["error"]["message"] = "Email already exists!"
-                else
-                    @result["error"]["message"] = "Invalid Credentials!"
-                end
-
-                @result["success"] = false
+            if @new_user.errors.messages.key?(:handle) && @new_credential.errors.messages.key?(:email)
+                @result["error"]["message"] = "Handle and Email already exist!"
+            elsif @new_user.errors.messages.key?(:handle)
+                @result["error"]["message"] = "Handle already exists!"
+            elsif @new_credential.errors.messages.key?(:email)
+                @result["error"]["message"] = "Email already exists!"
+            else
+                @result["error"]["message"] = "Invalid Credentials!"
             end
+
+            @result["success"] = false
         end
 
         render json: {result: @result}
