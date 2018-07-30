@@ -47,7 +47,7 @@ class Notif extends Component {
     getNotifs =(e)=> {
 
         axios.get(
-            'http://localhost:3000/notifications/get',
+            'http://localhost:8000/notifications/get',
             {
                 withCredentials: true,
                 params: {

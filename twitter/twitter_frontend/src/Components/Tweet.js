@@ -65,7 +65,7 @@ class Tweet extends Component{
         this.cookies = this.props.cookies;
         // console.log(props.tweet.tweet.id);
         this.state = {
-            base_url : "http://localhost:3000/",
+            base_url : "http://localhost:8000/",
             user_id: parseInt(this.cookies.get('user_id')),
             user_name: this.cookies.get('user_name'),
             user_handle: this.cookies.get('user_handle'),

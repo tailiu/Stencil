@@ -77,7 +77,7 @@ class FollowRequestsBox extends Component{
     approveFollowRequest =(from_user, to_user)=> {
 
         axios.get(
-            'http://localhost:3000/users/approveFollowRequest',
+            'http://localhost:8000/users/approveFollowRequest',
             {
                 withCredentials: true,
                 params: {
@@ -99,7 +99,7 @@ class FollowRequestsBox extends Component{
     getFollowRequests =()=> {
         // console.log("Fetch new requests!")
         axios.get(
-            'http://localhost:3000/users/getFollowRequests',
+            'http://localhost:8000/users/getFollowRequests',
             {
                 withCredentials: true,
                 params: {

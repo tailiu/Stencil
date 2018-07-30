@@ -113,7 +113,7 @@ class NavBar extends Component {
     loggedIn = () => {
 
         axios.get(
-            'http://localhost:3000/auth/login',
+            'http://localhost:8000/auth/login',
             {
                 withCredentials: true,
                 params: {
@@ -186,7 +186,7 @@ class NavBar extends Component {
     handleLogout = () =>  {
         const { cookies } = this.props;
         axios.get(
-        'http://localhost:3000/users/logout',
+        'http://localhost:8000/users/logout',
         {
             withCredentials: true,
             params: {
@@ -206,7 +206,7 @@ class NavBar extends Component {
 
     getNotificationsOfConversations = () => {
         axios.get(
-        'http://localhost:3000/conversations/getUnreadConversationNum',
+        'http://localhost:8000/conversations/getUnreadConversationNum',
         {
             params: {
                 'user_id': this.state.user_id, 
@@ -233,7 +233,7 @@ class NavBar extends Component {
 
     getNotifications = () =>  {
         axios.get(
-        'http://localhost:3000/notifications/getNewNotifications',
+        'http://localhost:8000/notifications/getNewNotifications',
         {
             withCredentials: true,
             params: {

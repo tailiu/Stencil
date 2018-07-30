@@ -62,7 +62,7 @@ class Home extends Component {
 
     fetchTweets =()=> {
         axios.get(
-            'http://localhost:3000/tweets/mainPageTweets',
+            'http://localhost:8000/tweets/mainPageTweets',
             {
                 withCredentials: true,
                 params: {

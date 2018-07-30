@@ -80,7 +80,7 @@ class UserProfileBox extends Component{
 
     checkDoesFollow =()=> {
         axios.get(
-            'http://localhost:3000/users/checkFollow',
+            'http://localhost:8000/users/checkFollow',
             {
                 withCredentials: true,
                 params: {
@@ -103,7 +103,7 @@ class UserProfileBox extends Component{
 
     checkDoesBlock =()=> {
         axios.get(
-            'http://localhost:3000/users/checkBlock',
+            'http://localhost:8000/users/checkBlock',
             {
                 withCredentials: true,
                 params: {
@@ -125,7 +125,7 @@ class UserProfileBox extends Component{
 
     checkDoesMute =()=> {
         axios.get(
-            'http://localhost:3000/users/checkMute',
+            'http://localhost:8000/users/checkMute',
             {
                 withCredentials: true,
                 params: {
@@ -147,7 +147,7 @@ class UserProfileBox extends Component{
 
     getUserInfo =()=> {
         axios.get(
-        'http://localhost:3000/users/getUserInfo',
+        'http://localhost:8000/users/getUserInfo',
         {
             withCredentials: true,
             params: {
@@ -178,7 +178,7 @@ class UserProfileBox extends Component{
     handleFollow =(follow, e)=> {
         console.log("her:", follow);
         axios.get(
-            'http://localhost:3000/users/handleFollow',
+            'http://localhost:8000/users/handleFollow',
             {
                 withCredentials: true,
                 params: {
@@ -204,7 +204,7 @@ class UserProfileBox extends Component{
     handleBlock =(block, e)=> {
         console.log("her:", block);
         axios.get(
-            'http://localhost:3000/users/handleBlock',
+            'http://localhost:8000/users/handleBlock',
             {
                 withCredentials: true,
                 params: {
@@ -228,7 +228,7 @@ class UserProfileBox extends Component{
         })
 
         axios.get(
-            'http://localhost:3000/conversations/blockInGroupConversation',
+            'http://localhost:8000/conversations/blockInGroupConversation',
             {
                 withCredentials: true,
                 params: {
@@ -248,7 +248,7 @@ class UserProfileBox extends Component{
     handleMute =(mute, e)=> {
         console.log("her:", mute);
         axios.get(
-            'http://localhost:3000/users/handleMute',
+            'http://localhost:8000/users/handleMute',
             {
                 withCredentials: true,
                 params: {
@@ -275,7 +275,7 @@ class UserProfileBox extends Component{
     handleBio =(e)=> {
         console.log("her:", this.state.new_bio);
         axios.get(
-            'http://localhost:3000/users/updateBio',
+            'http://localhost:8000/users/updateBio',
             {
                 withCredentials: true,
                 params: {

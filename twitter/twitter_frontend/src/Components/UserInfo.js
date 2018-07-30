@@ -38,7 +38,7 @@ class UserInfo extends Component{
 
     componentWillMount(){
           axios.get(
-            'http://localhost:3000/users/getUserInfo',
+            'http://localhost:8000/users/getUserInfo',
             {
                 withCredentials: true,
                 params: {

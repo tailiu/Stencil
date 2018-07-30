@@ -70,7 +70,7 @@ class MessageInputAllow extends Component {
                 'content-type': 'multipart/form-data'
             }
         };
-        const url = 'http://localhost:3000/messages/new';
+        const url = 'http://localhost:8000/messages/new';
 
         post(url, formData, config).then(response => {
             if(!response.data.result.success) {

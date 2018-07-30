@@ -36,7 +36,7 @@ class Message extends Component {
 
         this.state = {
             user_id: cookies.get('user_id'),
-            base_url: "http://localhost:3000/"
+            base_url: "http://localhost:8000/"
         };
     }
 

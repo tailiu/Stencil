@@ -98,7 +98,7 @@ class NewTweetDialog extends Component {
         formData.set('reply_id', this.props.reply_id);
         formData.set('req_token', this.cookies.get('req_token'));
 
-        axios('http://localhost:3000/tweets/newf', {
+        axios('http://localhost:8000/tweets/newf', {
             method: 'post',
             data: formData,
             withCredentials: true,
