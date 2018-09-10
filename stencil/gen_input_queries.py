@@ -65,4 +65,4 @@ if __name__ == "__main__":
     with open(hn_wpath, "wb") as fh: 
         for q in logical_queries:
             print q
-            # fh.write("%s\n" % q)
+            fh.write("%s\n" % q)
