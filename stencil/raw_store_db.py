@@ -19,7 +19,15 @@ def getSchemaMapping(app_name, table_name):
             WHERE apps.app_name = '%s' AND app_tables.table_name = '%s'" % (app_name, table_name)
     CUR.execute(sql)
     result = CUR.fetchone()[0].split(",")
-    return [(result[i], result[i+1]) for i in range(0, len(result), 2)]
+    return {result[i]: result[i+1] for i in range(0, len(result), 2)}
+
+def getTableNames(app_name):
+    sql = "SELECT table_name \
+           FROM app_tables \
+           JOIN apps ON apps.PK = app_tables.app_id \
+           WHERE apps.app_name = '%s'" % app_name
+    CUR.execute(sql)
+    return [x[0].lower() for x in CUR.fetchall()]
 
 ################ DB Globals ##
 CONN, CUR = getDBConn()
@@ -27,26 +35,26 @@ CONN, CUR = getDBConn()
 
 if __name__ == "__main__":
 
-    hn_fpath = "/Users/zain/Documents/DataSets/HackerNews/hn.min2.json"
+    hn_fpath = "/Users/zain/Documents/DataSets/HackerNews/hn.min.json"
 
-    with open(hn_fpath) as fh: data = json.load(fh)
+    with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
     
-    sql = "INSERT INTO Story "
+    app_name = "hacker news"
+    schemas  = {}
 
-    hn_story_schema = getSchemaMapping("hacker news", "story")
-    hn_comment_schema = getSchemaMapping("hacker news", "comment")
+    for table_name in getTableNames(app_name):
+        schemas[table_name] = getSchemaMapping(app_name, table_name)
 
+    input_queries = []
+    
     for datum in data:
-        if datum['type'] == "story":
-            sql += "( "
-            attrs = [ x.lower() for x in datum.keys() if x.lower() in [y[0] for y in hn_story_schema] ]
-            for attr in attrs:
-                sql += str(attr) + ", "
-            sql = sql[:-2] + " ) VALUES ( "
-            for attr in attrs:
-                sql += '"' + str(datum[attr]) + '", '
-            sql = sql[:-2] + ")"
-            print sql
-            break
-
-    pass
+        if datum['type'].lower() in schemas.keys():
+            table_name = datum['type'] 
+            attrs = [ x.lower() for x in datum.keys() if x.lower() in schemas[table_name].keys() ]
+            sql = "INSERT INTO %s ( " % table_name \
+                  + ','.join(attrs) \
+                  + " ) VALUES ( " \
+                  + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
+                  + " )"
+            input_queries.append(sql)
+    print input_queries
