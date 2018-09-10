@@ -45,20 +45,28 @@ if __name__ == "__main__":
     for table_name in getTableNames(app_name):
         schemas[table_name] = getSchemaMapping(app_name, table_name)
 
-    input_queries = []
+    logical_queries = []
+    physical_queries = []
     
     for datum in data:
         if datum['type'].lower() in schemas.keys():
             table_name = datum['type'] 
             attrs = [ x.lower() for x in datum.keys() if x.lower() in schemas[table_name].keys() ]
-            sql = "INSERT INTO %s ( " % table_name \
+            sql1 = "INSERT INTO %s ( " % table_name \
                   + ','.join(attrs) \
                   + " ) VALUES ( " \
                   + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
                   + " )"
-            input_queries.append(sql)
+            sql2 = "INSERT INTO %s ( " % table_name \
+                  + ','.join([schemas[table_name][attr] for attr in attrs]) \
+                  + " ) VALUES ( " \
+                  + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
+                  + " )"
+            logical_queries.append(sql1)
+            physical_queries.append(sql2)
 
-    hn_wpath = "hn.queries"
+    hn_wpath = "hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
-        for q in input_queries:
-            fh.write(q)
+        for q in logical_queries:
+            # print q
+            fh.write("%s\n" % q)
