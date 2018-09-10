@@ -40,13 +40,9 @@ if __name__ == "__main__":
     with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
     
     app_name = "hacker news"
-    schemas  = {}
+    schemas  = {tn : getSchemaMapping(app_name, tn) for tn in getTableNames(app_name)}
 
-    for table_name in getTableNames(app_name):
-        schemas[table_name] = getSchemaMapping(app_name, table_name)
-
-    logical_queries = []
-    physical_queries = []
+    logical_queries, physical_queries = [], []
     
     for datum in data:
         if datum['type'].lower() in schemas.keys():
@@ -68,5 +64,5 @@ if __name__ == "__main__":
     hn_wpath = "hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
         for q in logical_queries:
-            # print q
-            fh.write("%s\n" % q)
+            print q
+            # fh.write("%s\n" % q)
