@@ -86,3 +86,4 @@ production:
   database: twitter_production
   username: twitter
   password: <%= ENV['TWITTER_DATABASE_PASSWORD'] %>
+
