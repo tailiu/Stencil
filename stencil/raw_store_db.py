@@ -10,34 +10,22 @@ def getDBConn():
     )
     return db_conn, db_conn.cursor()
 
-def getSchema(app_name, table_name):
-    sql = "SELECT GROUP_CONCAT(LOWER(app_schemas.column_name)) \
-           FROM app_schemas JOIN apps \
-           ON app_schemas.app_id = apps.PK \
-           WHERE apps.app_name = '%s' AND app_schemas.table_name = '%s'" % (app_name, table_name)
-
+def getSchemaMapping(app_name, table_name):
+    sql =  "SELECT GROUP_CONCAT(LOWER(app_mappings.column_name), ',', LOWER(app_mappings.mapping)) \
+            FROM app_mappings JOIN apps \
+            ON app_mappings.app_id = apps.PK \
+            JOIN  app_tables \
+            ON app_mappings.table_id = app_tables.PK \
+            WHERE apps.app_name = '%s' AND app_tables.table_name = '%s'" % (app_name, table_name)
     CUR.execute(sql)
-    result = CUR.fetchone()[0].split(',')
-    return result
+    result = CUR.fetchone()[0].split(",")
+    return [(result[i], result[i+1]) for i in range(0, len(result), 2)]
 
-def getMapping(app_name, table_name):
-    sql = "SELECT GROUP_CONCAT(LOWER(app_schemas.column_name), LOWER(app_schemas.mapping)) \
-           FROM app_schemas JOIN apps \
-           ON app_schemas.app_id = apps.PK \
-           WHERE apps.app_name = '%s' AND app_schemas.table_name = '%s'" % (app_name, table_name)
-
-    CUR.execute(sql)
-    result = CUR.fetchone()[0].split(',')
-    return result
-
-############### Globals #
+################ DB Globals ##
 CONN, CUR = getDBConn()
-#########################
+##############################
 
 if __name__ == "__main__":
-
-    # getMapping("hacker news", "story")
-    # exit(0)
 
     hn_fpath = "/Users/zain/Documents/DataSets/HackerNews/hn.min2.json"
 
@@ -45,12 +33,13 @@ if __name__ == "__main__":
     
     sql = "INSERT INTO Story "
 
-    hn_story_schema = getSchema("hacker news", "story")
+    hn_story_schema = getSchemaMapping("hacker news", "story")
+    hn_comment_schema = getSchemaMapping("hacker news", "comment")
 
     for datum in data:
         if datum['type'] == "story":
             sql += "( "
-            attrs = [ x.lower() for x in datum.keys() if x.lower() in hn_story_schema ]
+            attrs = [ x.lower() for x in datum.keys() if x.lower() in [y[0] for y in hn_story_schema] ]
             for attr in attrs:
                 sql += str(attr) + ", "
             sql = sql[:-2] + " ) VALUES ( "
