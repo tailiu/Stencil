@@ -57,4 +57,8 @@ if __name__ == "__main__":
                   + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
                   + " )"
             input_queries.append(sql)
-    print input_queries
+
+    hn_wpath = "hn.queries"
+    with open(hn_wpath, "wb") as fh: 
+        for q in input_queries:
+            fh.write(q)
