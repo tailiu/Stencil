@@ -35,19 +35,22 @@ CONN, CUR = getDBConn()
 
 if __name__ == "__main__":
 
-    hn_fpath = "/Users/zain/Documents/DataSets/HackerNews/hn.min.json"
+    hn_fpath = "./data.json"
 
     with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
     
     app_name = "hacker news"
     schemas  = {tn : getSchemaMapping(app_name, tn) for tn in getTableNames(app_name)}
+    
+    # print schemas
 
     logical_queries, physical_queries = [], []
     
     for datum in data:
-        if datum['type'].lower() in schemas.keys():
+        if datum['type'].lower() in schemas.keys(): # datum['type] here is by accident the table name..
             table_name = datum['type'] 
             attrs = [ x.lower() for x in datum.keys() if x.lower() in schemas[table_name].keys() ]
+            # print attrs
             sql1 = "INSERT INTO %s ( " % table_name \
                   + ','.join(attrs) \
                   + " ) VALUES ( " \
@@ -61,8 +64,11 @@ if __name__ == "__main__":
             logical_queries.append(sql1)
             physical_queries.append(sql2)
 
+    print physical_queries
+    print logical_queries
     hn_wpath = "hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
+
         for q in logical_queries:
             print q
             fh.write("%s\n" % q)

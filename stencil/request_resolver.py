@@ -2,7 +2,7 @@
 import MySQLdb
 
 db = MySQLdb.connect(host="127.0.0.1",    # your host, usually localhost
-                     port= 3300,
+                     port= 3307,
                      user="root",         # your username
                      passwd="",  # your password
                      db="stencil_storage")        # name of the data base
