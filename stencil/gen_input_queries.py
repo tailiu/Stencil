@@ -41,22 +41,32 @@ if __name__ == "__main__":
     
     app_name = "hacker news"
     schemas  = {tn : getSchemaMapping(app_name, tn) for tn in getTableNames(app_name)}
+    
+    # print schemas
 
     logical_queries = []
     
     for datum in data:
-        if datum['type'].lower() in schemas.keys():
+        if datum['type'].lower() in schemas.keys(): # datum['type] here is by accident the table name..
             table_name = datum['type'] 
             attrs = [ x.lower() for x in datum.keys() if x.lower() in schemas[table_name].keys() ]
+<<<<<<< HEAD
             sql = "INSERT INTO %s ( " % table_name \
+=======
+            # print attrs
+            sql1 = "INSERT INTO %s ( " % table_name \
+>>>>>>> bbbbf270cff484a7fbe252b5811089aed1cf1bc1
                   + ','.join(attrs) \
                   + " ) VALUES ( " \
                   + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
                   + " )"
             logical_queries.append(sql)
 
+    print physical_queries
+    print logical_queries
     hn_wpath = "hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
+
         for q in logical_queries:
             print q
             fh.write("%s\n" % q)
