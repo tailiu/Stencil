@@ -1,8 +1,5 @@
-import MySQLdb, json, sqlparse
+import MySQLdb, json, sqlparse, uuid
 from gen_input_queries import CONN, CUR, getSchemaMapping, getTableNames
-from sqlparse.sql import IdentifierList, Identifier
-from sqlparse.tokens import Keyword, DML, Token
-import uuid
 
 def getNewRowId():
     return uuid.uuid4().hex
@@ -49,9 +46,7 @@ if __name__ == "__main__":
         tokens = [x.value for x in list(sqlparse.parse(q)[0].flatten()) if x.value.strip(". (),") != ""]
         tname  = tokens[2]
         colval = getColValDict(tokens)
-        # print colval
-        # print schemas[tname]
-        # break
+        
         pq_ing = {}
 
         if tname in schemas.keys():
@@ -68,5 +63,4 @@ if __name__ == "__main__":
         for pq in pqs:
             # print pq
             CUR.execute(pq)
-        CONN.commit()
-        # break
+        # CONN.commit()
