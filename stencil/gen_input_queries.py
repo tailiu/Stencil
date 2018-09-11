@@ -44,28 +44,20 @@ if __name__ == "__main__":
     
     # print schemas
 
-    logical_queries, physical_queries = [], []
+    logical_queries = []
     
     for datum in data:
         if datum['type'].lower() in schemas.keys(): # datum['type] here is by accident the table name..
             table_name = datum['type'] 
             attrs = [ x.lower() for x in datum.keys() if x.lower() in schemas[table_name].keys() ]
-            # print attrs
-            sql1 = "INSERT INTO %s ( " % table_name \
+            sql = "INSERT INTO %s ( " % table_name \
                   + ','.join(attrs) \
                   + " ) VALUES ( " \
                   + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
                   + " )"
-            sql2 = "INSERT INTO %s ( " % table_name \
-                  + ','.join([schemas[table_name][attr] for attr in attrs]) \
-                  + " ) VALUES ( " \
-                  + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
-                  + " )"
-            logical_queries.append(sql1)
-            physical_queries.append(sql2)
+            logical_queries.append(sql)
 
-    print physical_queries
-    print logical_queries
+
     hn_wpath = "hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
 
