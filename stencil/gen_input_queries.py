@@ -35,31 +35,25 @@ CONN, CUR = getDBConn()
 
 if __name__ == "__main__":
 
-    hn_fpath = "/Users/zain/Documents/DataSets/HackerNews/hn.min.json"
+    hn_fpath = "./data.json"
 
     with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
     
     app_name = "hacker news"
     schemas  = {tn : getSchemaMapping(app_name, tn) for tn in getTableNames(app_name)}
 
-    logical_queries, physical_queries = [], []
+    logical_queries = []
     
     for datum in data:
         if datum['type'].lower() in schemas.keys():
             table_name = datum['type'] 
             attrs = [ x.lower() for x in datum.keys() if x.lower() in schemas[table_name].keys() ]
-            sql1 = "INSERT INTO %s ( " % table_name \
+            sql = "INSERT INTO %s ( " % table_name \
                   + ','.join(attrs) \
                   + " ) VALUES ( " \
                   + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
                   + " )"
-            sql2 = "INSERT INTO %s ( " % table_name \
-                  + ','.join([schemas[table_name][attr] for attr in attrs]) \
-                  + " ) VALUES ( " \
-                  + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
-                  + " )"
-            logical_queries.append(sql1)
-            physical_queries.append(sql2)
+            logical_queries.append(sql)
 
     hn_wpath = "hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
