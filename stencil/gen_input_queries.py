@@ -19,7 +19,7 @@ def getSchemaMapping(app_name, table_name):
             WHERE apps.app_name = '%s' AND app_tables.table_name = '%s'" % (app_name, table_name)
     CUR.execute(sql)
     result = CUR.fetchone()[0].split(",")
-    return {result[i]: result[i+1] for i in range(0, len(result), 2)}
+    return {result[i]: (result[i+1].split('.')[0] , result[i+1].split('.')[1]) for i in range(0, len(result), 2)}
 
 def getTableNames(app_name):
     sql = "SELECT table_name \
