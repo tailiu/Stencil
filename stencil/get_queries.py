@@ -53,49 +53,72 @@ def resolveRequest(req, originalQuery):
 
     return resolvedQuery
 
-def translateAttribute(attr, table):
-    sql = "SELECT column_name, mapping  \
-            FROM app_mappings \
-            INNER JOIN app_tables on app_mappings.table_id = app_tables.PK \
-            WHERE column_name = '{0}' and table_name = '{1}'".format(attr, table)
-    CUR.execute(sql)
-    return CUR.fetchone()
+def findBetweenStrings(originalStr, str1, str2):
+    strStart = originalStr.find(str1) + len(str1)
+    strEnd = -1
+    if str2 != None: strEnd = originalStr.find(str2)
+    return originalStr[strStart : strEnd]
 
-def translateBasicSelectQuery(query):
-    queryLower = query.lower()
-
-    attributesStart = queryLower.find("select") + len("select")
-    attributesEnd = queryLower.find("from")
-    attributes = query[attributesStart : attributesEnd].split(",")
-
-    tablesStart = queryLower.find("from") + len("from")
-    tablesEnd = queryLower.find("where")
-    tables = query[tablesStart : tablesEnd].split(",")
-
-    condsStart = queryLower.find("where") + len("where")
-    conds = query[condsStart:].split("and")
+def processConditions(conds):
+    conds = conds.split('and')
 
     condList = []
     for cond in conds:
         cond1 = cond.split('=')
         condList.append(cond1[0].strip())
+    
+    return condList
 
-    for i in range(len(attributes)):
-        attributes[i] = attributes[i].strip()
+def removeSpace(l):
+    for i in range(len(l)):
+        l[i] = l[i].strip()
+    return l
 
-    for i in range(len(condList)):
-        condList[i] = condList[i].strip()
+def translateAttributes(app_name, table, attrList):
+    attrStr = '('
+    for i in range(len(attrList)):
+        if i == len(attrList) - 1: attrStr += 'app_schemas.column_name = \'' + attrList[i] + '\')'
+        else: attrStr += 'app_schemas.column_name = \'' + attrList[i] + '\' or '
+        
+    sql = "SELECT app_schemas.column_name, base_table_attributes.table_name, base_table_attributes.column_name\
+            FROM base_table_attributes INNER JOIN physical_mappings INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
+            on base_table_attributes.PK = physical_mappings.physical_attribute \
+            and app_schemas.PK = physical_mappings.logical_attribute\
+            and app_tables.PK = app_schemas.table_id\
+            and apps.PK = app_tables.app_id \
+            WHERE app_name = '{0}' and app_tables.table_name = '{1}' and {2}".format(app_name, table, attrStr)
+
+    CUR.execute(sql)
+    return CUR.fetchall()
+    
+def translateBasicSelectQuery(query):
+    query = query.lower()
+    
+    attributes = findBetweenStrings(query, 'select', 'from').split(',')
+    tables = findBetweenStrings(query, 'from', 'where').split(',')
+    condList = processConditions(findBetweenStrings(query, 'where', None))
+
+    attributes = removeSpace(attributes)
+    tables = removeSpace(tables)
+    condList = removeSpace(condList)
 
     attrList = list(set(attributes).union(condList))
 
-    attributePairs = []
-    for attr in attrList:
-        translatedAttr = translateAttribute(attr, tables[0].strip()) # only for one table now
-        attributePairs.append(translatedAttr)
+    print attrList
 
-    mergedReq = mergeRquests(attributePairs)
+    baseAttributes = translateAttributesToBaseTables('hacker news', tables[0].strip(), attrList)
+    suppAttributes = []
 
-    return resolveRequest(mergedReq, query)
+    # attributePairs = []
+    # for attr in attrList:
+    #     translatedAttr = translateAttributes('hacker news', tables[0].strip(), attr) # only for one table now
+    #     attributePairs.append(translatedAttr)
+
+
+    # print attributePairs
+    # mergedReq = mergeRquests(attributePairs)
+
+    # return resolveRequest(mergedReq, query)
 
      
 if __name__ == "__main__":
@@ -107,14 +130,12 @@ if __name__ == "__main__":
            WHERE By = \'\"Impossible\"\' and Id = 13075839" 
     
     translatedQuery = translateBasicSelectQuery(sql)
-    
-    print translatedQuery
 
     # sql1 = "SELECT PK, column_name \
     #         FROM app_mappings  \
     #         WHERE app_id = 3 and table_id = 1"
 
-    CUR.execute(translatedQuery)
+    # CUR.execute(translatedQuery)
 
-    for row in CUR.fetchall():
-        print row
+    # for row in CUR.fetchall():
+    #     print row
