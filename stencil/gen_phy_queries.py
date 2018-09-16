@@ -31,6 +31,18 @@ def getQueriesFromPQIng(pq_ing, app_name):
         sqls.append(sql[:-1] + ")" + val[:-1] + ");")
     return sqls
 
+def getAppSchema():
+    sql = """ SELECT    app_schemas.table_name, 
+                        app_schemas.column_name, 
+                        physical_schemas.table_name, 
+                        physical_schemas.column_name
+                FROM 	physical_mappings 
+                JOIN 	app_schemas ON physical_mappings.logical_attribute = app_schemas.PK
+                JOIN 	physical_schemas ON physical_mappings.physical_attribute = physical_schemas.PK
+                JOIN 	apps ON app_schemas.app_id = apps.PK
+                WHERE   apps.app_name = "%s" """ % (app_name) 
+    pass
+
 if __name__ == "__main__":
     
     queries = []

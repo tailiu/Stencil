@@ -10,24 +10,21 @@ def getDBConn():
     )
     return db_conn, db_conn.cursor()
 
-def getSchemaMapping(app_name, table_name):
-    sql =  "SELECT GROUP_CONCAT(LOWER(app_mappings.column_name), ',', LOWER(app_mappings.mapping)) \
-            FROM app_mappings JOIN apps \
-            ON app_mappings.app_id = apps.PK \
-            JOIN  app_tables \
-            ON app_mappings.table_id = app_tables.PK \
-            WHERE apps.app_name = '%s' AND app_tables.table_name = '%s'" % (app_name, table_name)
-    CUR.execute(sql)
-    result = CUR.fetchone()[0].split(",")
-    return {result[i]: (result[i+1].split('.')[0] , result[i+1].split('.')[1]) for i in range(0, len(result), 2)}
+def getAppSchema(app_name):
+    
+    sql = """ SELECT    LOWER(app_schemas.table_name), 
+                        LOWER(app_schemas.column_name)
+                FROM 	app_schemas 
+                JOIN 	apps ON app_schemas.app_id = apps.PK
+                WHERE   apps.app_name = "%s" """ % (app_name) 
 
-def getTableNames(app_name):
-    sql = "SELECT table_name \
-           FROM app_tables \
-           JOIN apps ON apps.PK = app_tables.app_id \
-           WHERE apps.app_name = '%s'" % app_name
     CUR.execute(sql)
-    return [x[0].lower() for x in CUR.fetchall()]
+    rows = CUR.fetchall()
+    result = {}
+    for row in rows:
+        if row[0] in result.keys(): result[row[0]].append(row[1])
+        else: result[row[0]] = [row[1]]
+    return result
 
 ################ DB Globals ##
 CONN, CUR = getDBConn()
@@ -35,32 +32,27 @@ CONN, CUR = getDBConn()
 
 if __name__ == "__main__":
 
+    app_name = "hacker news"
     hn_fpath = "./data.json"
 
     with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
     
-    app_name = "hacker news"
-    schemas  = {tn : getSchemaMapping(app_name, tn) for tn in getTableNames(app_name)}
+    schema = getAppSchema(app_name)
     
-    # print schemas
-
     logical_queries = []
     
     for datum in data:
-        if datum['type'].lower() in schemas.keys(): # datum['type] here is by accident the table name..
+        if datum['type'].lower() in schema.keys(): # datum['type] here is by accident the table name..
             table_name = datum['type'] 
-            attrs = [ x.lower() for x in datum.keys() if x.lower() in schemas[table_name].keys() ]
+            attrs = [ x.lower() for x in datum.keys() if x.lower() in schema[table_name] ]
             sql = "INSERT INTO %s ( " % table_name \
                   + ','.join(attrs) \
                   + " ) VALUES ( " \
-                  + ','.join([json.dumps(datum[attr]) for attr in attrs]) \
+                  + ','.join( ['"' + json.dumps(datum[attr]).strip('"[]') + '"' for attr in attrs] ) \
                   + " )"
             logical_queries.append(sql)
 
-
     hn_wpath = "hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
-
         for q in logical_queries:
-            print q
             fh.write("%s\n" % q)
