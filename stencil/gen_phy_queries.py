@@ -8,6 +8,7 @@ class InsertQueryResolver():
         self.app_name = app_name
         self.app_id   = self.__getAppId(app_name)
         self.q        = q
+        self.row_id   = self.__getNewRowId()
 
     def __del__(self):
         self.db.close()
@@ -49,27 +50,6 @@ class InsertQueryResolver():
         rows = self.db.cursor.fetchall()
         return {(row[0], row[1]) : (row[2], row[1]) for row in rows}
 
-    def __getColValDict(self, tokens):
-        cols, vals = [], []
-        for i in range(3, len(tokens)): # column names start from index 3
-            if tokens[i].lower() == "values":  break
-            cols.append(tokens[i])
-        for i in range(4+len(cols), len(tokens)): # values start from 3 + number of columns + 1 (VALUES)
-            vals.append(tokens[i])
-        return { x:y for x,y in zip(cols, vals)}
-
-    def __getQueriesFromPQIng(self, pq_ing, app_name):
-        row_id = self.__getNewRowId()
-        sqls   = []
-        for tn in pq_ing.keys():
-            sql = 'INSERT INTO %s ( row_id, app_id, ' % tn
-            val = ' VALUES ( "%s", %s, ' % (row_id, self.app_id)
-            for tc in pq_ing[tn].keys():
-                sql += '%s,' %tc
-                val += '"%s",' % self.db.conn.escape_string(pq_ing[tn][tc])
-            sqls.append(sql[:-1] + ")" + val[:-1] + ");")
-        return sqls
-
     def __getQueryIngs(self):
         
         tokens   = [x.value for x in list(sqlparse.parse(self.q)[0].flatten()) if x.value.strip(". (),") != ""]
@@ -96,7 +76,7 @@ class InsertQueryResolver():
         for pt in phy_tabs:
             valid   = False
             pq_cols = 'INSERT INTO %s ( app_id, Row_id,' % pt
-            pq_vals = ' VALUES ( %s, "%s",' % (self.app_id, self.__getNewRowId())
+            pq_vals = ' VALUES ( %s, "%s",' % (self.app_id, self.row_id)
             for item in phy_map.items():
                 if item[1][0] == pt:
                     if item[0] in q_ing.keys():
@@ -109,7 +89,7 @@ class InsertQueryResolver():
 
         if send_to_db:
             for pq in pqs:
-                print pq
+                # print pq
                 self.db.cursor.execute(pq)
             self.db.conn.commit()
         return pqs
