@@ -74,7 +74,7 @@ def removeSpace(l):
         l[i] = l[i].strip()
     return l
 
-def translateAttributes(app_name, table, attrList):
+def translateAttributesToBaseTables(app_name, table, attrList):
     attrStr = '('
     for i in range(len(attrList)):
         if i == len(attrList) - 1: attrStr += 'app_schemas.column_name = \'' + attrList[i] + '\')'
@@ -108,6 +108,16 @@ def translateBasicSelectQuery(query):
 
     baseAttributes = translateAttributesToBaseTables('hacker news', tables[0].strip(), attrList)
     suppAttributes = []
+
+    print baseAttributes
+
+    for attr in attrList:
+        for var in baseAttributes:
+            if attr != var[0].lower():
+                continue
+            suppAttributes.append(var[0])
+
+    print suppAttributes
 
     # attributePairs = []
     # for attr in attrList:
