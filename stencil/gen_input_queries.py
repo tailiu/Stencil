@@ -1,34 +1,25 @@
-import MySQLdb, json
-
-def getDBConn():
-    db_conn = MySQLdb.connect(
-        host   = "127.0.0.1",
-        port   = 3307,
-        user   = "root",
-        passwd = "",
-        db     = "stencil_storage",
-    )
-    return db_conn, db_conn.cursor()
+import MySQLdb, json, os
+from db import DB
 
 def getAppSchema(app_name):
+
+    db = DB()
     
-    sql = """ SELECT    LOWER(app_schemas.table_name), 
+    sql = """ SELECT    LOWER(app_tables.table_name), 
                         LOWER(app_schemas.column_name)
                 FROM 	app_schemas 
-                JOIN 	apps ON app_schemas.app_id = apps.PK
+                JOIN 	app_tables ON app_schemas.table_id = app_tables.PK
+                JOIN 	apps ON app_tables.app_id = apps.PK
                 WHERE   apps.app_name = "%s" """ % (app_name) 
 
-    CUR.execute(sql)
-    rows = CUR.fetchall()
+    db.cursor.execute(sql)
+    rows = db.cursor.fetchall()
+    db.close()
     result = {}
     for row in rows:
         if row[0] in result.keys(): result[row[0]].append(row[1])
         else: result[row[0]] = [row[1]]
     return result
-
-################ DB Globals ##
-CONN, CUR = getDBConn()
-##############################
 
 if __name__ == "__main__":
 
@@ -51,8 +42,11 @@ if __name__ == "__main__":
                   + ','.join( ['"' + json.dumps(datum[attr]).strip('"[]') + '"' for attr in attrs] ) \
                   + " )"
             logical_queries.append(sql)
+            print sql
 
     hn_wpath = "hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
         for q in logical_queries:
             fh.write("%s\n" % q)
+        fh.seek(-1, os.SEEK_END)
+        fh.truncate()
