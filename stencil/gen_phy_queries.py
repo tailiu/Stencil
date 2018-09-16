@@ -63,4 +63,4 @@ if __name__ == "__main__":
         for pq in pqs:
             # print pq
             CUR.execute(pq)
-        # CONN.commit()
+        CONN.commit()
