@@ -109,7 +109,12 @@ def translateBasicSelectQuery(query):
         attributes = removeSpace(attributes)
     else: 
         attributes = findAllAttributes('hacker news', table)
-    
+        attrStr = ''
+        for attr in attributes: attrStr += ", " + attr
+        attrStr = attrStr.replace(',', '', 1)
+        query = query.replace('*', attrStr)
+        query = query.lower()
+
     condList = processConditions(findBetweenStrings(query, 'where', None))
     condList = removeSpace(condList)
 
@@ -143,10 +148,8 @@ if __name__ == "__main__":
             WHERE By = 'Impossible' and Id = 13075839"
 
     translatedQuery = translateBasicSelectQuery(sql1)
-
     print translatedQuery
 
     CUR.execute(translatedQuery)
-
     for row in CUR.fetchall():
         print row
