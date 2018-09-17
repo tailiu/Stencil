@@ -10,49 +10,6 @@ def getDBConn():
     )
     return db_conn, db_conn.cursor()
 
-def mergeRquests(attributePairs):
-    requestDict = {}
-    for attrPair in attributePairs:
-        tableName = attrPair[1].split('.')[0]
-        attributeName = attrPair[1].split('.')[1]
-        t = (attrPair[0], attributeName)
-        if  tableName in requestDict:
-            requestDict[tableName].append(t)
-        else:
-            requestDict[tableName] = []
-            requestDict[tableName].append(t)
-    return requestDict
-
-def resolveRequest(req, originalQuery):
-    resolvedQuery = originalQuery
-
-    tables = []
-
-    for k, v in req.iteritems():
-        tables.append(k)
-        for tuple in v:
-            resolvedQuery = resolvedQuery.replace(tuple[0], tuple[1])
-
-    fromWords = ''
-
-    for i in range(len(tables)):
-        if i != len(tables) - 1:
-            fromWords += tables[i] + ' join '
-        else:
-            fromWords += tables[i]
-
-    for i in range(len(tables)):
-        if i == 0:
-            fromWords += ' on ' + tables[i] + '.row_id = '
-        else:
-            fromWords += tables[i] + '.row_id'
-
-    tablesStart = resolvedQuery.lower().find("from") + len("from")
-    tablesEnd = resolvedQuery.lower().find("where")
-    resolvedQuery = resolvedQuery[:tablesStart] +  ' ' + fromWords + ' ' + resolvedQuery[tablesEnd:]
-
-    return resolvedQuery
-
 def findBetweenStrings(originalStr, str1, str2):
     strStart = originalStr.find(str1) + len(str1)
     strEnd = -1
@@ -73,16 +30,19 @@ def removeSpace(l):
     for i in range(len(l)):
         l[i] = l[i].strip()
     return l
-
-def translateAttributesToBaseTables(app_name, table, attrList):
+def formAttrStr(attrList):
     attrStr = '('
     for i in range(len(attrList)):
         if i == len(attrList) - 1: attrStr += 'app_schemas.column_name = \'' + attrList[i] + '\')'
         else: attrStr += 'app_schemas.column_name = \'' + attrList[i] + '\' or '
+    return attrStr
+
+def translateAttributesToBaseTables(app_name, table, attrList):
+    attrStr = formAttrStr(attrList)
         
     sql = "SELECT app_schemas.column_name, base_table_attributes.table_name, base_table_attributes.column_name\
             FROM base_table_attributes INNER JOIN physical_mappings INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
-            on base_table_attributes.PK = physical_mappings.physical_attribute \
+            on base_table_attributes.PK = physical_mappings.physical_attribute\
             and app_schemas.PK = physical_mappings.logical_attribute\
             and app_tables.PK = app_schemas.table_id\
             and apps.PK = app_tables.app_id \
@@ -90,9 +50,42 @@ def translateAttributesToBaseTables(app_name, table, attrList):
 
     CUR.execute(sql)
     return CUR.fetchall()
+
+def findSuppTables(app_name, table, suppAttributes):
+    attrStr = formAttrStr(suppAttributes)
+
+    sql = "SELECT app_schemas.column_name, supplementary_tables.supplementary_table\
+            FROM supplementary_tables INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
+            on supplementary_tables.table_id = app_schemas.table_id\
+            and app_tables.PK = app_schemas.table_id\
+            and apps.PK = app_tables.app_id \
+            WHERE app_name = '{0}' and app_tables.table_name = '{1}' and {2}".format(app_name, table, attrStr)
     
-def translateBasicSelectQuery(query):
-    query = query.lower()
+    CUR.execute(sql)
+    return CUR.fetchall()
+
+def resolveRequest(query, baseAttributes, suppAttributes):
+    for attr in baseAttributes: query = query.replace(attr[0].lower(), attr[2].lower())
+
+    tables = set()
+    for attr in baseAttributes: tables.add(attr[1])
+    for attr in suppAttributes: tables.add(attr[1])
+
+    fromTables = ''
+    for table in tables: fromTables += ' join ' + table
+    fromTables = fromTables.replace('join', '', 1)
+    fromTables += ' on '
+    for table in tables: fromTables += ' = ' + table + '.row_id '
+    fromTables = fromTables.replace('=', '', 1)
+
+    tablesStart = query.find("from") + len("from")
+    tablesEnd = query.find("where")
+    query = query[:tablesStart] +  ' ' + fromTables + ' ' + query[tablesEnd:]
+
+    return query
+
+def translateBasicSelectQuery(originalQuery):
+    query = originalQuery.lower()
     
     attributes = findBetweenStrings(query, 'select', 'from').split(',')
     tables = findBetweenStrings(query, 'from', 'where').split(',')
@@ -104,32 +97,20 @@ def translateBasicSelectQuery(query):
 
     attrList = list(set(attributes).union(condList))
 
-    print attrList
-
     baseAttributes = translateAttributesToBaseTables('hacker news', tables[0].strip(), attrList)
-    suppAttributes = []
-
-    print baseAttributes
-
+    
+    suppAttributeList = []
     for attr in attrList:
+        find = False
         for var in baseAttributes:
-            if attr != var[0].lower():
-                continue
-            suppAttributes.append(var[0])
+            if attr == var[0].lower(): 
+                find = True
+                break
+        if not find: suppAttributeList.append(attr)
 
-    print suppAttributes
+    suppAttributes = findSuppTables('hacker news', tables[0].strip(), suppAttributeList)
 
-    # attributePairs = []
-    # for attr in attrList:
-    #     translatedAttr = translateAttributes('hacker news', tables[0].strip(), attr) # only for one table now
-    #     attributePairs.append(translatedAttr)
-
-
-    # print attributePairs
-    # mergedReq = mergeRquests(attributePairs)
-
-    # return resolveRequest(mergedReq, query)
-
+    return resolveRequest(query, baseAttributes, suppAttributes)
      
 if __name__ == "__main__":
 
@@ -137,15 +118,17 @@ if __name__ == "__main__":
 
     sql = "SELECT By, Descendents, Id \
            FROM story  \
-           WHERE By = \'\"Impossible\"\' and Id = 13075839" 
+           WHERE By = 'Impossible' and Id = 13075839" 
     
     translatedQuery = translateBasicSelectQuery(sql)
 
-    # sql1 = "SELECT PK, column_name \
-    #         FROM app_mappings  \
-    #         WHERE app_id = 3 and table_id = 1"
+    print translatedQuery
 
-    # CUR.execute(translatedQuery)
+    sql1 = "SELECT PK, column_name \
+            FROM app_mappings  \
+            WHERE app_id = 3 and table_id = 1"
 
-    # for row in CUR.fetchall():
-    #     print row
+    CUR.execute(translatedQuery)
+
+    for row in CUR.fetchall():
+        print row
