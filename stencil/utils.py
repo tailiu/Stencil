@@ -12,7 +12,7 @@ def getDBConn():
     return db_conn, db_conn.cursor()
 
 def findSuppTables(CUR, app_name, table, suppAttributes):
-    attrStr = utils.formAttrStr(suppAttributes)
+    attrStr = formAttrStr(suppAttributes)
 
     sql = "SELECT app_schemas.column_name, supplementary_tables.supplementary_table\
             FROM supplementary_tables INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
@@ -124,11 +124,7 @@ def getRowID(CUR, app_name, logicalTableName, conditions):
         if not find: suppAttributeList.append(attr)
 
     suppAttributes = ()
-<<<<<<< HEAD
-    if len(suppAttributeList) != 0: suppAttributes = findSuppTables(app_name, table, suppAttributeList)
-=======
-    if len(suppAttributeList) != 0: suppAttributes = findSuppTables(CUR, 'hacker news', table, suppAttributeList)
->>>>>>> 5ed43a91dcb52dd470a0543ebdc12bf3c6de56e8
+    if len(suppAttributeList) != 0: suppAttributes = findSuppTables(CUR, app_name, table, suppAttributeList)
 
     resolvedReq = resolveGetRowIDReq(table, baseAttributes, suppAttributes, conditions)
 

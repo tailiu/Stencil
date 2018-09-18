@@ -10,7 +10,7 @@ if __name__ == "__main__":
         for q in queries:
             QR.resolveUpdate(q)
             print QR.getResolvedQueries()
-            # QR.sendToDB(True)
+            QR.sendToDB(True)
             # break
         
         

@@ -1,3 +1,2 @@
-DELETE FROM comment WHERE id = 13075828
-DELETE FROM comment WHERE id = 13075829 AND user = "jimmywanger"
-DELETE FROM comment WHERE id = 13075542 OR user = "ris"
+DELETE FROM comment WHERE by = "danharaj"
+DELETE FROM comment WHERE by = "noir_lord" OR user = "forrestthewoods"
