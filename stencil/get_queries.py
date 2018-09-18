@@ -1,4 +1,5 @@
 import MySQLdb
+import re
 
 def getDBConn():
     db_conn = MySQLdb.connect(
@@ -30,6 +31,7 @@ def removeSpace(l):
     for i in range(len(l)):
         l[i] = l[i].strip()
     return l
+    
 def formAttrStr(attrList):
     attrStr = '('
     for i in range(len(attrList)):
@@ -65,7 +67,8 @@ def findSuppTables(app_name, table, suppAttributes):
     return CUR.fetchall()
 
 def resolveRequest(query, baseAttributes, suppAttributes):
-    for attr in baseAttributes: query = query.replace(attr[0].lower(), attr[2].lower())
+    for attr in baseAttributes: query = re.sub(r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[2].lower(), query)
+    for attr in suppAttributes: query = re.sub(r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[0].lower(), query)
 
     tables = set()
     for attr in baseAttributes: tables.add(attr[1])
@@ -121,12 +124,12 @@ def translateBasicSelectQuery(query):
     attrList = list(set(attributes).union(condList))
 
     baseAttributes = translateAttributesToBaseTables('hacker news', table, attrList)
-    
+
     suppAttributeList = []
     for attr in attrList:
         find = False
         for var in baseAttributes:
-            if attr == var[0].lower(): 
+            if attr.lower() == var[0].lower(): 
                 find = True
                 break
         if not find: suppAttributeList.append(attr)
@@ -147,7 +150,11 @@ if __name__ == "__main__":
             FROM story  \
             WHERE By = 'Impossible' and Id = 13075839"
 
-    translatedQuery = translateBasicSelectQuery(sql1)
+    sql2 = "SELECT * \
+            FROM comment  \
+            WHERE Id = 13075839 + 1 "
+
+    translatedQuery = translateBasicSelectQuery(sql2)
     print translatedQuery
 
     CUR.execute(translatedQuery)
