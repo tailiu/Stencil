@@ -11,6 +11,40 @@ def getDBConn():
     )
     return db_conn, db_conn.cursor()
 
+def findSuppTables(CUR, app_name, table, suppAttributes):
+    attrStr = utils.formAttrStr(suppAttributes)
+
+    sql = "SELECT app_schemas.column_name, supplementary_tables.supplementary_table\
+            FROM supplementary_tables INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
+            on supplementary_tables.table_id = app_schemas.table_id\
+            and app_tables.PK = app_schemas.table_id\
+            and apps.PK = app_tables.app_id \
+            WHERE app_name = '{0}' and app_tables.table_name = '{1}' and {2}".format(app_name, table, attrStr)
+    
+    CUR.execute(sql)
+    return CUR.fetchall()
+
+def findAllAttributes(CUR, app_name, table):
+    sql = "SELECT app_schemas.column_name\
+        FROM app_schemas INNER JOIN app_tables INNER JOIN apps\
+        on app_tables.PK = app_schemas.table_id\
+        and apps.PK = app_tables.app_id \
+        WHERE app_name = '{0}' and app_tables.table_name = '{1}'".format(app_name, table)
+
+    CUR.execute(sql)
+    attributes = CUR.fetchall()
+
+    attrList = []
+    for attr in attributes:
+        attrList.append(attr[0])
+    return attrList
+
+def findBetweenStrings(originalStr, str1, str2):
+    strStart = originalStr.find(str1) + len(str1)
+    strEnd = -1
+    if str2 != None: strEnd = originalStr.find(str2)
+    return originalStr[strStart : strEnd]
+
 def formAttrStr(attrList):
     attrStr = '('
     for i in range(len(attrList)):
@@ -89,7 +123,7 @@ def getRowID(CUR, logicalTableName, conditions):
         if not find: suppAttributeList.append(attr)
 
     suppAttributes = ()
-    if len(suppAttributeList) != 0: suppAttributes = findSuppTables('hacker news', table, suppAttributeList)
+    if len(suppAttributeList) != 0: suppAttributes = findSuppTables(CUR, 'hacker news', table, suppAttributeList)
 
     resolvedReq = resolveGetRowIDReq(table, baseAttributes, suppAttributes, conditions)
 
