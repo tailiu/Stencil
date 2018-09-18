@@ -72,23 +72,17 @@ class QueryResolver():
 
     def __getUpdateQueryIngs(self, q):
         
-        tokens = re.split('(update table | set | where)(?i)', q)
-        # todo
-        return tokens
+        regex  = "(update | set | where )(?i)"
+        tokens = filter(lambda x: x.strip(" ,"), re.split(regex, q))
+        updates_list = [token.strip(" ,") for token in tokens[3].split(",")]
+        updates_dict = {update.split("=")[0].strip().lower():update.split("=")[1].strip() for update in updates_list}
+        return {"table": tokens[1], "conditions": tokens[-1], "updates": updates_dict}
     
     def __getDeleteQueryIngs(self, q):
         
         regex  = "(delete from | where )(?i)"
         tokens = filter(lambda x: x.strip(" ,"), re.split(regex, q))
-        table  = tokens[1]
-        conds  = tokens[3]
-        phy_tabs = self.__getPhyMappingForLogicalTable(table)
-
-        print phy_tabs
-        # print table
-        # print conds
-        # todo
-        # return tokens
+        return {"table": tokens[1], "conditions": tokens[3]}
     
     def __getPhyMappingForLogicalTable(self, ltable):
 
@@ -106,12 +100,16 @@ class QueryResolver():
         
         return phy_map
 
-    def sendToDB(self):
+    def __get_affected_row_ids(self, ltable, conds):
+        return ['0d1601347d50497aa9d5a4aa256d8815', '73224968bfa24812b825d46c32d6ab42']
+
+    def sendToDB(self, commit=True):
         if self.pqs:
             for pq in self.pqs:
-                print pq
+                # print pq
                 self.db.cursor.execute(pq)
-            self.db.conn.commit()
+            if commit:
+                self.db.conn.commit()
             del self.pqs[:]
 
     def resolveInsert(self, q):
@@ -121,11 +119,11 @@ class QueryResolver():
         phy_map = self.__getPhyMappingForLogicalTable(q_ing["table"])
 
         for pt in phy_map.keys():
-            pq_cols = 'INSERT INTO %s ( app_id, Row_id,' % pt
+            pq_cols = 'INSERT INTO `%s` ( app_id, Row_id,' % pt
             pq_vals = ' VALUES ( %s, "%s",' % (self.app_id, row_id)
             for phy_col in phy_map[pt]:
                 if phy_col[1] in q_ing["items"].keys():
-                    pq_cols += '%s,' % phy_col[0]
+                    pq_cols += '`%s`,' % phy_col[0]
                     pq_vals += '%s,' % q_ing["items"][phy_col[1]]
             pq = pq_cols[:-1] + ")" + pq_vals[:-1] + ");"
             self.pqs.append(pq) 
@@ -133,9 +131,31 @@ class QueryResolver():
 
     def resolveUpdate(self, q):
         
-        q_ing    = self.__getUpdateQueryIngs(q)
-        print q_ing
+        ings    = self.__getUpdateQueryIngs(q)
+        phy_map = self.__getPhyMappingForLogicalTable(ings["table"])
+        row_ids = self.__get_affected_row_ids(ings["table"], ings["conditions"])
+
+        for pt in phy_map.keys():
+             
+            updates = ""
+            for mapping in phy_map[pt]:
+                if mapping[1] in ings["updates"].keys():
+                    updates += "`%s` = %s," % (mapping[0], ings["updates"][mapping[1]])
+            if updates != "":
+                updates = updates.strip(",")
+                pq = 'UPDATE `%s` SET %s WHERE row_id IN (%s);'% (pt, updates, str(row_ids).strip("[]"))
+                self.pqs.append(pq)
 
     def resolveDelete(self,q):
         
-        self.__getDeleteQueryIngs(q)
+        ings    = self.__getDeleteQueryIngs(q)
+        phy_map = self.__getPhyMappingForLogicalTable(ings["table"])
+        row_ids = self.__get_affected_row_ids(ings["table"], ings["conditions"])
+
+        for pt in phy_map.keys():
+            pq = 'DELETE FROM %s WHERE row_id IN (%s);' % (pt, str(row_ids).strip("[]"))
+            self.pqs.append(pq)
+    
+    def getResolvedQueries(self):
+        return self.pqs
+        
