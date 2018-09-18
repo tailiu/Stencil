@@ -4,6 +4,7 @@ import uuid
 import json
 import re
 from db import DB
+from utils import getRowID
 
 class QueryResolver():
 
@@ -101,7 +102,8 @@ class QueryResolver():
         return phy_map
 
     def __get_affected_row_ids(self, ltable, conds):
-        return ['0d1601347d50497aa9d5a4aa256d8815', '73224968bfa24812b825d46c32d6ab42']
+        row_ids = getRowID(self.db.cursor, self.app_name, ltable, conds)
+        return [x[0] for x in row_ids]
 
     def sendToDB(self, commit=True):
         if self.pqs:
@@ -134,6 +136,10 @@ class QueryResolver():
         ings    = self.__getUpdateQueryIngs(q)
         phy_map = self.__getPhyMappingForLogicalTable(ings["table"])
         row_ids = self.__get_affected_row_ids(ings["table"], ings["conditions"])
+
+        if len(row_ids) <= 0:
+            print "ROW IDS NONE!"
+            return
 
         for pt in phy_map.keys():
              

@@ -1,4 +1,4 @@
-UPDATE story SET Score = 1, Retrieved_On = "4/4/4", by = "zain", type="story2" WHERE id = 13075828
-UPDATE  story SET Score = 2 WHERE id = 13075828
-UPDATE  story SET Score = 3 WHERE id = 13075829 AND user = "jimmywanger"
-UPDATE  story SET Score = 4 WHERE id = 13075542 OR user = "ris"
+UPDATE story SET Score = 1, Retrieved_On = "4/4/4", by = "zain", type="story2" WHERE id = 13075831
+UPDATE  story SET Score = 2 WHERE id = 13075832
+UPDATE  story SET Score = 3 WHERE id = 13075834 AND user = "jimmywanger"
+UPDATE  story SET Score = 4 WHERE id = 13075835 OR user = "ARothfusz"
