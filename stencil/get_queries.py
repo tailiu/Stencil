@@ -159,4 +159,4 @@ if __name__ == "__main__":
 
     CUR.execute(translatedQuery)
     for row in CUR.fetchall():
-        print row
+        print " "

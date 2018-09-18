@@ -9,7 +9,8 @@ if __name__ == "__main__":
         queries = fh.read().split('\n')
         for q in queries:
             QR.resolveDelete(q)
-            # QR.sendToDB()
-            break
+            print QR.getResolvedQueries()
+            QR.sendToDB(False)
+            # break
         
         
