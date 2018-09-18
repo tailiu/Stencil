@@ -1,0 +1,4 @@
+UPDATE TABLE comment SET Score = 22 WHERE id = 13075828
+UPDATE TABLE comment SET Score = 22, Retrieved_On = "4/4/4" WHERE id = 13075828
+UPDATE TABLE comment SET Score = 122 WHERE id = 13075829 AND user = "jimmywanger"
+UPDATE TABLE comment SET Score = 131 WHERE id = 13075542 OR user = "ris"
