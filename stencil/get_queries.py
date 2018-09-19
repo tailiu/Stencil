@@ -52,6 +52,8 @@ def translateBasicSelectQuery(CUR, query):
 
     baseAttributes = utils.translateAttributesToBaseTables(CUR, 'hacker news', table, attrList)
 
+    print baseAttributes
+    
     suppAttributeList = []
     for attr in attrList:
         find = False
@@ -62,7 +64,7 @@ def translateBasicSelectQuery(CUR, query):
         if not find: suppAttributeList.append(attr)
 
     suppAttributes = ()
-    if len(suppAttributeList) != 0: suppAttributes = findSuppTables('hacker news', table, suppAttributeList)
+    if len(suppAttributeList) != 0: suppAttributes = utils.findSuppTables(CUR, 'hacker news', table, suppAttributeList)
 
     return resolveRequest(query, baseAttributes, suppAttributes)
 
@@ -88,4 +90,4 @@ if __name__ == "__main__":
 
     CUR.execute(translatedQuery)
     for row in CUR.fetchall():
-        print " "
+        print row

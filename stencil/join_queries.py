@@ -1,15 +1,6 @@
 import MySQLdb
 import utils
-
-def getDBConn():
-    db_conn = MySQLdb.connect(
-        host   = "127.0.0.1",
-        port   = 3307,
-        user   = "root",
-        passwd = "",
-        db     = "stencil_storage",
-    )
-    return db_conn, db_conn.cursor()
+import re
 
 def findAllAttributes(app_name, table):
     sql = "SELECT app_schemas.column_name\
@@ -26,36 +17,32 @@ def findAllAttributes(app_name, table):
         attrList.append(attr[0])
     return attrList
 
-def formAttrStr(attrList):
-    attrStr = '('
-    for i in range(len(attrList)):
-        if i == len(attrList) - 1: attrStr += 'app_schemas.column_name = \'' + attrList[i] + '\')'
-        else: attrStr += 'app_schemas.column_name = \'' + attrList[i] + '\' or '
-    return attrStr
+def resolveRequest(query, baseAttributes, suppAttributes):
+    for attr in baseAttributes: query = re.sub(r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[2].lower(), query)
+    for attr in suppAttributes: query = re.sub(r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[0].lower(), query)
 
-def formTableStr(tables):
-    tableStr = '('
-    for table in tables: tableStr += ' or app_tables.table_name = \'' + table + '\''
-    tableStr += ')'
-    return tableStr.replace('or', '', 1)
+    tables = set()
+    for attr in baseAttributes: tables.add(attr[1])
+    for attr in suppAttributes: tables.add(attr[1])
 
-def translateAttributesToBaseTables(CUR, app_name, tables, attrList):
-    attrStr = formAttrStr(attrList)
-    tableStr = formTableStr(tables)
+    if len(tables) == 1:
+        fromTables = tables.pop()
+        oneTable = fromTables
+    else:
+        fromTables = ''
+        for table in tables: 
+            fromTables += ' join ' + table
+            oneTable = table
+        fromTables = fromTables.replace('join', '', 1)
+        fromTables += ' on '
+        for table in tables: fromTables += ' = ' + table + '.row_id '
+        fromTables = fromTables.replace('=', '', 1)
 
-    # print tableStr
-    sql = "SELECT app_schemas.column_name, base_table_attributes.table_name, base_table_attributes.column_name\
-            FROM base_table_attributes INNER JOIN physical_mappings INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
-            on base_table_attributes.PK = physical_mappings.physical_attribute\
-            and app_schemas.PK = physical_mappings.logical_attribute\
-            and app_tables.PK = app_schemas.table_id\
-            and apps.PK = app_tables.app_id \
-            WHERE app_name = '{0}' and {1} and {2}".format(app_name, tableStr, attrStr)
+    tablesStart = query.find("from") + len("from")
+    tablesEnd = query.find("where")
+    query = query[:tablesStart] +  ' ' + fromTables + ' ' + query[tablesEnd:]
 
-    # print sql
-
-    CUR.execute(sql)
-    return CUR.fetchall()
+    return query
 
 def translateJoinQuery(CUR, query):
     query = query.lower()
@@ -67,33 +54,41 @@ def translateJoinQuery(CUR, query):
     if query.find('*') == -1:
         attributes = utils.findBetweenStrings(query, 'select', 'from').split(',')
         attributes = utils.removeSpace(attributes)
-    else: 
-        attributes = utils.findAllAttributes('hacker news', table)
-        attrStr = ''
-        for attr in attributes: attrStr += ", " + attr
-        attrStr = attrStr.replace(',', '', 1)
-        query = query.replace('*', attrStr)
-        query = query.lower()
+    # else: 
+    #     attributes = utils.findAllAttributes('hacker news', tables)
+    #     attrStr = ''
+    #     for attr in attributes: attrStr += ", " + attr
+    #     attrStr = attrStr.replace(',', '', 1)
+    #     query = query.replace('*', attrStr)
+    #     query = query.lower()
 
     condList = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
     condList = utils.removeSpace(condList)
 
     attrList = list(set(attributes).union(condList))
 
-    print tables
+    baseAttributes = utils.translateAttributesToBaseTables(CUR, 'hacker news', tables, attrList)
 
-    baseAttributes = translateAttributesToBaseTables(CUR, 'hacker news', tables, attrList)
+    print baseAttributes
 
-    # print baseAttributes
-    # print attrList
-    # print attributes
-    # print tables
-    # print condList
+    suppAttributeList = []
+    for attr in attrList:
+        find = False
+        for var in baseAttributes:
+            if attr.lower() == var[0].lower(): 
+                find = True
+                break
+        if not find: suppAttributeList.append(attr)
+
+    suppAttributes = ()
+    if len(suppAttributeList) != 0: suppAttributes = utils.findSuppTables(CUR, 'hacker news', tables, suppAttributeList)
+
+    return resolveRequest(query, baseAttributes, suppAttributes)
 
 
 if __name__ == "__main__":
 
-    CONN, CUR = getDBConn()
+    CONN, CUR = utils.getDBConn()
 
     sql = "SELECT descendents, kids, parent, story.id\
             FROM story INNER JOIN comment on story.id = comment.parent \
@@ -101,6 +96,7 @@ if __name__ == "__main__":
 
     translatedQuery = translateJoinQuery(CUR, sql)
 
+    print translatedQuery
     # CUR.execute(translatedQuery)
 
     # for row in CUR.fetchall():
