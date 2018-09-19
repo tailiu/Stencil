@@ -144,13 +144,14 @@ def resolveGetRowIDReq(table, baseAttributes, suppAttributes, conditions):
     query = 'SELECT ' + oneTable + '.row_id ' + 'FROM ' + fromTables + ' WHERE ' + conditions
     return query
 
-def getRowID(CUR, logicalTableName, conditions):
+def getRowID(CUR, app_name, logicalTableName, conditions):
+
     conditions = conditions.lower()
 
     table = logicalTableName.strip()
     condList = processConditions(conditions)
 
-    baseAttributes = translateAttributesToBaseTables(CUR, 'hacker news', table, condList)
+    baseAttributes = translateAttributesToBaseTables(CUR, app_name, table, condList)
 
     suppAttributeList = []
     for attr in condList:
@@ -162,7 +163,7 @@ def getRowID(CUR, logicalTableName, conditions):
         if not find: suppAttributeList.append(attr)
 
     suppAttributes = ()
-    if len(suppAttributeList) != 0: suppAttributes = findSuppTables(CUR, 'hacker news', table, suppAttributeList)
+    if len(suppAttributeList) != 0: suppAttributes = findSuppTables(CUR, app_name, table, suppAttributeList)
 
     resolvedReq = resolveGetRowIDReq(table, baseAttributes, suppAttributes, conditions)
 

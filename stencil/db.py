@@ -2,13 +2,13 @@ import MySQLdb
 
 class DB:
 
-    def __init__(self):
+    def __init__(self, db = "stencil_storage"):
         self.conn = MySQLdb.connect(
             host   = "127.0.0.1",
             port   = 3307,
             user   = "root",
             passwd = "",
-            db     = "stencil_storage",
+            db     = db,
         )
         self.cursor = self.conn.cursor()
     

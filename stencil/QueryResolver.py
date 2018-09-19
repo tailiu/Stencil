@@ -4,6 +4,7 @@ import uuid
 import json
 import re
 from db import DB
+from utils import getRowID
 
 class QueryResolver():
 
@@ -63,7 +64,7 @@ class QueryResolver():
         of_cols  = of_tname + 1
         of_vals  = tokens.index("VALUES")+1
         tname    = tokens[of_tname].lower()
-        ings     = { "table": tname , "items": {} }
+        ings     = { "table": tname.strip() , "items": {} }
 
         for i, j in zip(range(of_cols, of_vals), range(of_vals, len(tokens))):
             ings["items"][tokens[i].lower()] = tokens[j]
@@ -76,13 +77,13 @@ class QueryResolver():
         tokens = filter(lambda x: x.strip(" ,"), re.split(regex, q))
         updates_list = [token.strip(" ,") for token in tokens[3].split(",")]
         updates_dict = {update.split("=")[0].strip().lower():update.split("=")[1].strip() for update in updates_list}
-        return {"table": tokens[1], "conditions": tokens[-1], "updates": updates_dict}
+        return {"table": tokens[1].strip(), "conditions": tokens[-1], "updates": updates_dict}
     
     def __getDeleteQueryIngs(self, q):
         
         regex  = "(delete from | where )(?i)"
         tokens = filter(lambda x: x.strip(" ,"), re.split(regex, q))
-        return {"table": tokens[1], "conditions": tokens[3]}
+        return {"table": tokens[1].strip(), "conditions": tokens[3]}
     
     def __getPhyMappingForLogicalTable(self, ltable):
 
@@ -101,7 +102,8 @@ class QueryResolver():
         return phy_map
 
     def __get_affected_row_ids(self, ltable, conds):
-        return ['0d1601347d50497aa9d5a4aa256d8815', '73224968bfa24812b825d46c32d6ab42']
+        row_ids = getRowID(self.db.cursor, self.app_name, ltable, conds)
+        return [x[0] for x in row_ids]
 
     def sendToDB(self, commit=True):
         if self.pqs:
@@ -135,8 +137,9 @@ class QueryResolver():
         phy_map = self.__getPhyMappingForLogicalTable(ings["table"])
         row_ids = self.__get_affected_row_ids(ings["table"], ings["conditions"])
 
+        if len(row_ids) <= 0: return
+
         for pt in phy_map.keys():
-             
             updates = ""
             for mapping in phy_map[pt]:
                 if mapping[1] in ings["updates"].keys():
@@ -145,12 +148,15 @@ class QueryResolver():
                 updates = updates.strip(",")
                 pq = 'UPDATE `%s` SET %s WHERE row_id IN (%s);'% (pt, updates, str(row_ids).strip("[]"))
                 self.pqs.append(pq)
+                # print pq
 
     def resolveDelete(self,q):
         
         ings    = self.__getDeleteQueryIngs(q)
         phy_map = self.__getPhyMappingForLogicalTable(ings["table"])
         row_ids = self.__get_affected_row_ids(ings["table"], ings["conditions"])
+
+        if len(row_ids) <= 0: return
 
         for pt in phy_map.keys():
             pq = 'DELETE FROM %s WHERE row_id IN (%s);' % (pt, str(row_ids).strip("[]"))
