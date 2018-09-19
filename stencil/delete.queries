@@ -1,2 +1,0 @@
-DELETE FROM comment WHERE by = "danharaj"
-DELETE FROM comment WHERE by = "noir_lord" OR by = "forrestthewoods"
