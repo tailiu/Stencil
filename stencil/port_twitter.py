@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
             logical_queries.append(sql)
             hn_db.cursor.execute(sql)
-    # hn_db.conn.commit()
+    hn_db.conn.commit()
 
     # hn_wpath = "hn_log.queries"
     # with open(hn_wpath, "wb") as fh: 
@@ -65,3 +65,5 @@ if __name__ == "__main__":
     #         fh.write("%s\n" % q)
     #     fh.seek(-1, os.SEEK_END)
     #     fh.truncate()
+
+
