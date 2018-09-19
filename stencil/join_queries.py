@@ -65,7 +65,7 @@ def translateJoinQuery(CUR, query):
     condList1 = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
     condList1 = utils.removeSpace(condList1)
 
-    
+    print condList1
 
     attrList = list(set(attributes).union(condList1))
 
