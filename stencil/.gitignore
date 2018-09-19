@@ -1,2 +1,7 @@
 ./data.json
+<<<<<<< HEAD
 datasets
+=======
+./*.pyc
+dataset/
+>>>>>>> 162f34a9095d3da3cf843893d5f51a03bed5e9fb

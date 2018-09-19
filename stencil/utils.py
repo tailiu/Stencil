@@ -11,19 +11,6 @@ def getDBConn():
     )
     return db_conn, db_conn.cursor()
 
-def findSuppTables(CUR, app_name, table, suppAttributes):
-    attrStr = formAttrStr(suppAttributes)
-
-    sql = "SELECT app_schemas.column_name, supplementary_tables.supplementary_table\
-            FROM supplementary_tables INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
-            on supplementary_tables.table_id = app_schemas.table_id\
-            and app_tables.PK = app_schemas.table_id\
-            and apps.PK = app_tables.app_id \
-            WHERE app_name = '{0}' and app_tables.table_name = '{1}' and {2}".format(app_name, table, attrStr)
-    
-    CUR.execute(sql)
-    return CUR.fetchall()
-
 def findAllAttributes(CUR, app_name, table):
     sql = "SELECT app_schemas.column_name\
         FROM app_schemas INNER JOIN app_tables INNER JOIN apps\
@@ -52,19 +39,71 @@ def formAttrStr(attrList):
         else: attrStr += 'app_schemas.column_name = \'' + attrList[i] + '\' or '
     return attrStr
 
-def translateAttributesToBaseTables(CUR, app_name, table, attrList):
-    attrStr = formAttrStr(attrList)
-        
-    sql = "SELECT app_schemas.column_name, base_table_attributes.table_name, base_table_attributes.column_name\
-            FROM base_table_attributes INNER JOIN physical_mappings INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
-            on base_table_attributes.PK = physical_mappings.physical_attribute\
-            and app_schemas.PK = physical_mappings.logical_attribute\
+def findSuppTables(CUR, app_name, tables, suppAttributes):
+    attrStr = formAttrStr(suppAttributes)
+    tableStr = formTableStr(tables)
+
+    sql = "SELECT app_schemas.column_name, supplementary_tables.supplementary_table\
+            FROM supplementary_tables INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
+            on supplementary_tables.table_id = app_schemas.table_id\
             and app_tables.PK = app_schemas.table_id\
             and apps.PK = app_tables.app_id \
-            WHERE app_name = '{0}' and app_tables.table_name = '{1}' and {2}".format(app_name, table, attrStr)
-
+            WHERE app_name = '{0}' and {1} and {2}".format(app_name, tableStr, attrStr)
+    
     CUR.execute(sql)
     return CUR.fetchall()
+
+def formTableStr(tables):
+    if isinstance(tables, list):
+        tableStr = '('
+        for table in tables: tableStr += ' or app_tables.table_name = \'' + table + '\''
+        tableStr += ')'
+        return tableStr.replace('or', '', 1)
+    else:
+        return "app_tables.table_name = \'" + tables + "\'"
+
+def translateAttributesToBaseTables(CUR, app_name, tables, attrList):
+    attrDic = {}
+    for attr in attrList:
+        if attr.find(".") != -1:
+            l = attr.split(".")
+            if not l[0] in attrDic: attrDic[l[0]] = []
+            attrDic[l[0]].append(l[1])
+        else:
+            if not '_' in attrDic: attrDic['_'] = []
+            attrDic['_'].append(attr)
+
+    result = ()
+
+    for table, attr in attrDic.iteritems():
+        if table == '_':
+            attrStr = formAttrStr(attr)
+            tableStr = formTableStr(tables)
+        else:
+            attrStr = formAttrStr(attr)
+            tableStr = formTableStr(table)
+
+        sql = "SELECT app_schemas.column_name, base_table_attributes.table_name, base_table_attributes.column_name\
+                    FROM base_table_attributes INNER JOIN physical_mappings INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
+                    on base_table_attributes.PK = physical_mappings.physical_attribute\
+                    and app_schemas.PK = physical_mappings.logical_attribute\
+                    and app_tables.PK = app_schemas.table_id\
+                    and apps.PK = app_tables.app_id \
+                    WHERE app_name = '{0}' and {1} and {2}".format(app_name, tableStr, attrStr)
+        
+        CUR.execute(sql)
+
+        r = CUR.fetchall()
+        if table != '_':            
+            l = list(r)
+            for v in l:
+                l1 = list(v)
+                l1[0] = table + '.' + l1[0]
+                t1 = tuple(l1)
+                result = (t1,) + result
+        else: result = result +  r
+
+    return result
 
 def processConditions(conds):
     conds = re.split('and | or', conds)
