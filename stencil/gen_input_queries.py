@@ -31,8 +31,12 @@ if __name__ == "__main__":
 
     app_name = "hacker news"
     db_name  = "hacker_news"
+<<<<<<< HEAD
+    hn_fpath = "./datasets/HackerNews/hn.full.json"
+=======
     hn_fpath = "./data.json"
     hn_fpath = "./dataset/hn.full.json"
+>>>>>>> 162f34a9095d3da3cf843893d5f51a03bed5e9fb
 
     with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
     
@@ -59,9 +63,18 @@ if __name__ == "__main__":
             # hn_db.cursor.execute(sql)
     # hn_db.conn.commit()
 
+<<<<<<< HEAD
+    # hn_wpath = "./datasets/hn_log.queries"
+    # with open(hn_wpath, "wb") as fh: 
+    #     for q in logical_queries:
+    #         fh.write("%s\n" % q)
+    #     fh.seek(-1, os.SEEK_END)
+    #     fh.truncate()
+=======
     hn_wpath = "./dataset/hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
         for q in logical_queries:
             fh.write("%s\n" % q)
         fh.seek(-1, os.SEEK_END)
         fh.truncate()
+>>>>>>> 162f34a9095d3da3cf843893d5f51a03bed5e9fb

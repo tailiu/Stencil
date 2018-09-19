@@ -59,7 +59,7 @@ class QueryResolver():
 
     def __getInsertQueryIngs(self, q):
         
-        tokens   = [x.value for x in list(sqlparse.parse(q)[0].flatten()) if x.value.strip(". (),") != ""]
+        tokens   = [x.value for x in list(sqlparse.parse(q.strip(";"))[0].flatten()) if x.value.strip(". (),") != ""]
         of_tname = tokens.index("INTO")+1
         of_cols  = of_tname + 1
         of_vals  = tokens.index("VALUES")+1
@@ -67,7 +67,7 @@ class QueryResolver():
         ings     = { "table": tname.strip() , "items": {} }
 
         for i, j in zip(range(of_cols, of_vals), range(of_vals, len(tokens))):
-            ings["items"][tokens[i].lower()] = tokens[j]
+            ings["items"][tokens[i].strip("\"'` ").lower()] = tokens[j]
 
         return ings
 
@@ -119,6 +119,9 @@ class QueryResolver():
         row_id  = self.__getNewRowId()
         q_ing   = self.__getInsertQueryIngs(q)
         phy_map = self.__getPhyMappingForLogicalTable(q_ing["table"])
+
+        # exit()
+        # print q_ing["items"], "\n"
 
         for pt in phy_map.keys():
             pq_cols = 'INSERT INTO `%s` ( app_id, Row_id,' % pt
