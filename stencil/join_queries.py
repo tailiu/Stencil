@@ -62,10 +62,12 @@ def translateJoinQuery(CUR, query):
     #     query = query.replace('*', attrStr)
     #     query = query.lower()
 
-    condList = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
-    condList = utils.removeSpace(condList)
+    condList1 = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
+    condList1 = utils.removeSpace(condList1)
 
-    attrList = list(set(attributes).union(condList))
+    
+
+    attrList = list(set(attributes).union(condList1))
 
     baseAttributes = utils.translateAttributesToBaseTables(CUR, 'hacker news', tables, attrList)
 
