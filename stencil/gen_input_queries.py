@@ -32,12 +32,12 @@ if __name__ == "__main__":
     app_name = "hacker news"
     db_name  = "hacker_news"
     hn_fpath = "./data.json"
-    hn_fpath = "/Users/zain/Documents/DataSets/HackerNews/hn.full.json"
+    hn_fpath = "./dataset/hn.full.json"
 
     with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
     
     schema = getAppSchema(app_name)
-    hn_db  = DB(db_name)
+    # hn_db  = DB(db_name)
     
     logical_queries = []
     
@@ -53,15 +53,15 @@ if __name__ == "__main__":
             
             sql  = "INSERT INTO %s (%s) VALUES (%s);" % (table_name, cols, vals)
             
-            print sql
+            # print sql
 
             logical_queries.append(sql)
-            hn_db.cursor.execute(sql)
+            # hn_db.cursor.execute(sql)
     # hn_db.conn.commit()
 
-    # hn_wpath = "hn_log.queries"
-    # with open(hn_wpath, "wb") as fh: 
-    #     for q in logical_queries:
-    #         fh.write("%s\n" % q)
-    #     fh.seek(-1, os.SEEK_END)
-    #     fh.truncate()
+    hn_wpath = "./dataset/hn_log.queries"
+    with open(hn_wpath, "wb") as fh: 
+        for q in logical_queries:
+            fh.write("%s\n" % q)
+        fh.seek(-1, os.SEEK_END)
+        fh.truncate()
