@@ -18,8 +18,10 @@ def findAllAttributes(app_name, table):
     return attrList
 
 def resolveRequest(query, baseAttributes, suppAttributes):
-    for attr in baseAttributes: query = re.sub(r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[2].lower(), query)
-    for attr in suppAttributes: query = re.sub(r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[0].lower(), query)
+    # print baseAttributes
+    # print suppAttributes
+    for attr in baseAttributes: query = re.sub("(?<=\s|=)"r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[2].lower(), query)
+    for attr in suppAttributes: query = re.sub("(?<=\s|=)"r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[0].lower(), query)
 
     tables = set()
     for attr in baseAttributes: tables.add(attr[1])
@@ -44,6 +46,23 @@ def resolveRequest(query, baseAttributes, suppAttributes):
 
     return query
 
+def processJoinConditions(query):
+    conds = utils.findBetweenStrings(query, 'on', 'where')
+    conds = re.split('and | or', conds)
+
+    condList = []
+    for cond in conds:
+        cond1 = cond.split('=')
+        condList.append(cond1[0].strip())
+        condList.append(cond1[1].strip())
+    return condList
+
+def changeQuery(query):
+    conds = utils.findBetweenStrings(query, 'on', 'where')
+    
+    if query.find('where') == -1: return query + ' where ' + conds
+    else: return query + ' and ' + conds 
+
 def translateJoinQuery(CUR, query):
     query = query.lower()
 
@@ -64,14 +83,13 @@ def translateJoinQuery(CUR, query):
 
     condList1 = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
     condList1 = utils.removeSpace(condList1)
-
-    print condList1
+    condList2 = processJoinConditions(query)
+    query = changeQuery(query)
 
     attrList = list(set(attributes).union(condList1))
+    attrList = list(set(attrList).union(condList2))
 
     baseAttributes = utils.translateAttributesToBaseTables(CUR, 'hacker news', tables, attrList)
-
-    print baseAttributes
 
     suppAttributeList = []
     for attr in attrList:
@@ -93,13 +111,13 @@ if __name__ == "__main__":
     CONN, CUR = utils.getDBConn()
 
     sql = "SELECT descendents, kids, parent, story.id\
-            FROM story INNER JOIN comment on story.id = comment.parent \
+            FROM story INNER JOIN comment on story.id =comment.parent \
             WHERE story.By = 'edblarney'"
-
+    
     translatedQuery = translateJoinQuery(CUR, sql)
 
     print translatedQuery
-    # CUR.execute(translatedQuery)
+    CUR.execute(translatedQuery)
 
-    # for row in CUR.fetchall():
-    #     print row
+    for row in CUR.fetchall():
+        print row
