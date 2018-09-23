@@ -105,13 +105,14 @@ class QueryResolver():
         row_ids = getRowID(self.db.cursor, self.app_name, ltable, conds)
         return [x[0] for x in row_ids]
 
-    def sendToDB(self, commit=True):
+    def DBCommit(self):
+        self.db.conn.commit()
+
+    def runQuery(self):
         if self.pqs:
             for pq in self.pqs:
                 # print pq
                 self.db.cursor.execute(pq)
-            if commit:
-                self.db.conn.commit()
             del self.pqs[:]
 
     def resolveInsert(self, q):

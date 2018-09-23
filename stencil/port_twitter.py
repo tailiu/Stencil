@@ -1,5 +1,6 @@
-import MySQLdb, json, os
+import MySQLdb, json, os, re
 from db import DB
+from QueryResolver import QueryResolver
 
 def getAppSchema(app_name):
 
@@ -21,51 +22,66 @@ def getAppSchema(app_name):
         else: result[row[0]] = [row[1]]
     return result
 
-def validString(item):
+def getDatasetsPaths():
 
-    item = json.dumps(item).strip('"[]')
-    return MySQLdb.escape_string(item)
+    twit_dir = "./datasets/Twitter/"
+    fpaths = []
+
+    for dir in os.listdir(twit_dir):
+        dirpath = twit_dir + dir
+        if os.path.isdir(dirpath):
+            for file in os.listdir(dirpath):
+                fpath = "%s/%s" % (dirpath, file)
+                if fpath.find(".json") >= 0:
+                    fpaths.append(fpath)
+    return fpaths
+
+def escapeString(item):
+    # return str(item)
+    # return 
+    return MySQLdb.escape_string(json.dumps(item))
+
+def getJSONDataFromFile(fpath):
+    data = []
+    with open(fpaths[0], "rb") as fh: 
+        rows = fh.read().split("\n")
+        for row in rows[:-1]:
+            data.append(json.loads(row, encoding='utf-8'))
+    return data
 
 
 if __name__ == "__main__":
 
-    app_name = "hacker news"
-    db_name  = "hacker_news"
-    hn_fpath = "./data.json"
-    hn_fpath = "/Users/zain/Documents/DataSets/HackerNews/hn.full.json"
+    app_name = "twitter"
+    db       = DB(app_name)
+    schema   = getAppSchema(app_name)
+    fpaths   = getDatasetsPaths()
+    QR       = QueryResolver(app_name)
 
-    with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
-    
-    schema = getAppSchema(app_name)
-    hn_db  = DB(db_name)
-    
-    logical_queries = []
-    
-    for datum in data:
-        if datum['type'].lower() in schema.keys(): # datum['type] here is by accident the table name..
+    for fpath in fpaths[:40]:
+        print "Porting: ", fpath
+        data = getJSONDataFromFile(fpath)
+        
+        for datum in data:
             
-            table_name = datum['type'] 
-            
-            attrs = [ x.lower() for x in datum.keys() if x.lower() in schema[table_name] ]
-            
-            cols = "`%s`" % '`,`'.join(attrs)
-            vals = "'%s'" % "','".join( [validString(datum[attr]) for attr in attrs] )
-            
-            sql  = "INSERT INTO %s (%s) VALUES (%s);" % (table_name, cols, vals)
-            
-            print sql
+            t_attrs = [ x.lower() for x in datum.keys() if x.lower() in schema["tweet"] and x.lower() != "user"]
+            if len(t_attrs) > 0:
+                t_cols = "`%s`" % '`,`'.join(t_attrs)
+                t_vals = "'%s'" % "','".join( [escapeString(datum[attr]) for attr in t_attrs] )
 
-            logical_queries.append(sql)
-            hn_db.cursor.execute(sql)
-    hn_db.conn.commit()
-
-    # hn_wpath = "hn_log.queries"
-    # with open(hn_wpath, "wb") as fh: 
-    #     for q in logical_queries:
-    #         fh.write("%s\n" % q)
-    #     fh.seek(-1, os.SEEK_END)
-    #     fh.truncate()
-
-
-
-
+                if "user" in datum.keys():
+                    u_attrs = [ x.lower() for x in datum["user"].keys() if x.lower() in schema["user"]]
+                    if len(t_attrs) > 0:
+                        u_cols = "`%s`" % '`,`'.join(u_attrs)
+                        u_vals = "'%s'" % "','".join( [escapeString(datum["user"][attr]) for attr in u_attrs] )
+                        u_sql  = "INSERT INTO user (%s) VALUES (%s);" % (u_cols, u_vals)
+                        t_sql  = "INSERT INTO tweet (%s, `user`) VALUES (%s, '%s');" % (t_cols, t_vals, datum["user"]["id"])
+                        # db.cursor.execute(u_sql)
+                        # QR.resolveInsert(u_sql)
+                else:
+                    t_sql  = "INSERT INTO tweet (%s) VALUES (%s);" % (t_cols, t_vals)
+                # db.cursor.execute(t_sql)
+                QR.resolveInsert(t_sql)
+                QR.runQuery()
+        QR.DBCommit()
+        # db.conn.commit()
