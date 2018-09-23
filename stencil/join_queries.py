@@ -18,8 +18,8 @@ def findAllAttributes(app_name, table):
     return attrList
 
 def resolveRequest(query, baseAttributes, suppAttributes):
-    # print baseAttributes
-    # print suppAttributes
+    print baseAttributes
+    print suppAttributes
     for attr in baseAttributes: query = re.sub("(?<=\s|=)"r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[2].lower(), query)
     for attr in suppAttributes: query = re.sub("(?<=\s|=)"r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[0].lower(), query)
 
@@ -33,9 +33,9 @@ def resolveRequest(query, baseAttributes, suppAttributes):
     else:
         fromTables = ''
         for table in tables: 
-            fromTables += ' join ' + table
+            fromTables += ' inner join ' + table
             oneTable = table
-        fromTables = fromTables.replace('join', '', 1)
+        fromTables = fromTables.replace('inner join', '', 1)
         fromTables += ' on '
         for table in tables: fromTables += ' = ' + table + '.row_id '
         fromTables = fromTables.replace('=', '', 1)
@@ -111,13 +111,20 @@ if __name__ == "__main__":
     CONN, CUR = utils.getDBConn()
 
     sql = "SELECT descendents, kids, parent, story.id\
-            FROM story INNER JOIN comment on story.id =comment.parent \
-            WHERE story.By = 'edblarney'"
-    
-    translatedQuery = translateJoinQuery(CUR, sql)
+            FROM story INNER JOIN comment on story.id = comment.parent \
+            WHERE story.By = 'lisper'"
+    sql1 = "SELECT descendents, kids, parent, story.id\
+            FROM story INNER JOIN comment on story.id = comment.parent \
+            WHERE story.By = 'lisper'"
+
+    sql2 = "select base_1.parent, base_1.id\
+            from base_1 inner join base_1 as B on base_1.id = B.parent\
+            where base_1.user = 'lisper'"
+
+    translatedQuery = translateJoinQuery(CUR, sql1)
 
     print translatedQuery
-    CUR.execute(translatedQuery)
+    CUR.execute(sql2)
 
     for row in CUR.fetchall():
         print row

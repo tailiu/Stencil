@@ -28,10 +28,8 @@ def findAllAttributes(CUR, app_name, table):
 
 def findBetweenStrings(originalStr, str1, str2):
     strStart = originalStr.find(str1) + len(str1)
-    strEnd = -1
-    if str2 != None: strEnd = originalStr.find(str2)
-    return originalStr[strStart : strEnd]
-
+    return originalStr[strStart : originalStr.find(str2)] if str2 != None else originalStr[strStart:]
+    
 def formAttrStr(attrList):
     attrStr = '('
     for i in range(len(attrList)):
