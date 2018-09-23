@@ -30,7 +30,7 @@ def resolveRequest(query, baseAttributes, suppAttributes):
 
     return query
 
-def translateBasicSelectQuery(CUR, query):
+def translateBasicSelectQuery(CUR, query, app):
     query = query.lower()
 
     condList = []
@@ -41,11 +41,13 @@ def translateBasicSelectQuery(CUR, query):
         condList = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
         condList = utils.removeSpace(condList)
 
+    print table
+
     if query.find('*') == -1:
         attributes = utils.findBetweenStrings(query, 'select', 'from').split(',')
         attributes = utils.removeSpace(attributes)
     else: 
-        attributes = utils.findAllAttributes(CUR, 'twitter', table)
+        attributes = utils.findAllAttributes(CUR, app, table)
         attrStr = ''
         for attr in attributes: attrStr += ", " + attr
         attrStr = attrStr.replace(',', '', 1)
@@ -54,8 +56,8 @@ def translateBasicSelectQuery(CUR, query):
 
     if len(condList): attributes = list(set(attributes).union(condList))
 
-    baseAttributes = utils.translateAttributesToBaseTables(CUR, 'hacker news', table, attributes)
-    
+    baseAttributes = utils.translateAttributesToBaseTables(CUR, app, table, attributes)
+
     suppAttributeList = []
     for attr in attributes:
         find = False
@@ -66,7 +68,7 @@ def translateBasicSelectQuery(CUR, query):
         if not find: suppAttributeList.append(attr)
 
     suppAttributes = ()
-    if len(suppAttributeList) != 0: suppAttributes = utils.findSuppTables(CUR, 'twitter', table, suppAttributeList)
+    if len(suppAttributeList) != 0: suppAttributes = utils.findSuppTables(CUR, app, table, suppAttributeList)
 
     return resolveRequest(query, baseAttributes, suppAttributes)
 
@@ -74,6 +76,8 @@ def translateBasicSelectQuery(CUR, query):
 if __name__ == "__main__":
 
     CONN, CUR = utils.getDBConn()
+
+    app = 'hacker news'
 
     sql = "SELECT By, Descendents, Id, Retrieved_on, Score\
            FROM story  \
@@ -90,20 +94,15 @@ if __name__ == "__main__":
     sql3 = "SELECT * \
             FROM comment"
 
-    translatedQuery = translateBasicSelectQuery(CUR, sql3)
-    print translatedQuery
-
-    sql2 = "SELECT * FROM tweet where user =2238942602"
-
-    translatedQuery = translateBasicSelectQuery(CUR, sql2)
+    translatedQuery = translateBasicSelectQuery(CUR, sql3, app)
     print "translatedQuery: ", translatedQuery
+
     pre_time = datetime.datetime.now().time()
     CUR.execute(translatedQuery)
     post_time = datetime.datetime.now().time()
-    CUR.fetchall()
-
     print "pretime: %s; post time: %s" % (pre_time, post_time)
-    print "fetched rows:", CUR.row_count
+
+    print "fetched rows:", len(CUR.fetchall())
 
     # for row in CUR.fetchall():
     #     print row
