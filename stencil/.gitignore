@@ -1,3 +1,8 @@
+<<<<<<< HEAD
 ./data.json
 ./*.pyc
+=======
+data.json
+*.pyc
+>>>>>>> 52276e1fcbf5925ae27a593f18352d40376b05c8
 datasets/
