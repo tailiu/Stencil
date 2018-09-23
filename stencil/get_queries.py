@@ -25,15 +25,21 @@ def resolveRequest(query, baseAttributes, suppAttributes):
         fromTables = fromTables.replace('=', '', 1)
 
     tablesStart = query.find("from") + len("from")
-    tablesEnd = query.find("where")
-    query = query[:tablesStart] +  ' ' + fromTables + ' ' + query[tablesEnd:]
+    if query.find('where') == -1: query = query[:tablesStart] + ' ' + fromTables
+    else: query = query[:tablesStart] +  ' ' + fromTables + ' ' + query[query.find("where"):]
 
     return query
 
 def translateBasicSelectQuery(CUR, query):
     query = query.lower()
-    
-    table = utils.findBetweenStrings(query, 'from', 'where').strip() # Assume there is only one table
+
+    condList = []
+    if query.find('where') == -1:
+        table = utils.findBetweenStrings(query, 'from', None).strip() # Assume there is only one table
+    else:
+        table = utils.findBetweenStrings(query, 'from', 'where').strip() # Assume there is only one table
+        condList = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
+        condList = utils.removeSpace(condList)
 
     if query.find('*') == -1:
         attributes = utils.findBetweenStrings(query, 'select', 'from').split(',')
@@ -46,15 +52,12 @@ def translateBasicSelectQuery(CUR, query):
         query = query.replace('*', attrStr)
         query = query.lower()
 
-    condList = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
-    condList = utils.removeSpace(condList)
-    
-    attrList = list(set(attributes).union(condList))
+    if len(condList): attributes = list(set(attributes).union(condList))
 
-    baseAttributes = utils.translateAttributesToBaseTables(CUR, 'twitter', table, attrList)
+    baseAttributes = utils.translateAttributesToBaseTables(CUR, 'hacker news', table, attributes)
     
     suppAttributeList = []
-    for attr in attrList:
+    for attr in attributes:
         find = False
         for var in baseAttributes:
             if attr.lower() == var[0].lower(): 
@@ -82,8 +85,13 @@ if __name__ == "__main__":
 
     sql2 = "SELECT * \
             FROM comment  \
-            WHERE Id = 13075839 + 1 "
+            WHERE user = 'lisper' "
 
+    sql3 = "SELECT * \
+            FROM comment"
+
+    translatedQuery = translateBasicSelectQuery(CUR, sql3)
+    print translatedQuery
 
     sql2 = "SELECT * FROM tweet where user =2238942602"
 
