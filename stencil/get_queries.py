@@ -93,9 +93,7 @@ if __name__ == "__main__":
     translatedQuery = translateBasicSelectQuery(CUR, sql3)
     print translatedQuery
 
-    sql2 = "SELECT * FROM tweet where user =2238942602"
-
-    translatedQuery = translateBasicSelectQuery(CUR, sql2)
+    translatedQuery = translateBasicSelectQuery(CUR, sql3)
     print "translatedQuery: ", translatedQuery
     pre_time = datetime.datetime.now().time()
     print "pretime: ", pre_time
