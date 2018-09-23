@@ -31,8 +31,12 @@ if __name__ == "__main__":
 
     app_name = "hacker news"
     db_name  = "hacker_news"
+<<<<<<< HEAD:stencil/port_hacker_news.py
+    hn_fpath = "./datasets/HackerNews/hn.full.json"
+=======
     hn_fpath = "./data.json"
     hn_fpath = "./datasets/hn.full.json"
+>>>>>>> 52276e1fcbf5925ae27a593f18352d40376b05c8:stencil/gen_input_queries.py
 
     with open(hn_fpath) as fh: data = json.load(fh, encoding='utf-8')
     
@@ -59,9 +63,18 @@ if __name__ == "__main__":
             # hn_db.cursor.execute(sql)
     # hn_db.conn.commit()
 
+<<<<<<< HEAD:stencil/port_hacker_news.py
+    # hn_wpath = "./datasets/hn_log.queries"
+    # with open(hn_wpath, "wb") as fh: 
+    #     for q in logical_queries:
+    #         fh.write("%s\n" % q)
+    #     fh.seek(-1, os.SEEK_END)
+    #     fh.truncate()
+=======
     hn_wpath = "./datasets/hn_log.queries"
     with open(hn_wpath, "wb") as fh: 
         for q in logical_queries:
             fh.write("%s\n" % q)
         fh.seek(-1, os.SEEK_END)
         fh.truncate()
+>>>>>>> 52276e1fcbf5925ae27a593f18352d40376b05c8:stencil/gen_input_queries.py

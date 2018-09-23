@@ -1,6 +1,7 @@
 import MySQLdb
 import re
 import utils
+import datetime
 
 def resolveRequest(query, baseAttributes, suppAttributes):
     for attr in baseAttributes: query = re.sub(r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[2].lower(), query)
@@ -44,7 +45,7 @@ def translateBasicSelectQuery(CUR, query):
         attributes = utils.findBetweenStrings(query, 'select', 'from').split(',')
         attributes = utils.removeSpace(attributes)
     else: 
-        attributes = utils.findAllAttributes(CUR, 'hacker news', table)
+        attributes = utils.findAllAttributes(CUR, 'twitter', table)
         attrStr = ''
         for attr in attributes: attrStr += ", " + attr
         attrStr = attrStr.replace(',', '', 1)
@@ -65,7 +66,7 @@ def translateBasicSelectQuery(CUR, query):
         if not find: suppAttributeList.append(attr)
 
     suppAttributes = ()
-    if len(suppAttributeList) != 0: suppAttributes = utils.findSuppTables(CUR, 'hacker news', table, suppAttributeList)
+    if len(suppAttributeList) != 0: suppAttributes = utils.findSuppTables(CUR, 'twitter', table, suppAttributeList)
 
     return resolveRequest(query, baseAttributes, suppAttributes)
 
@@ -92,6 +93,17 @@ if __name__ == "__main__":
     translatedQuery = translateBasicSelectQuery(CUR, sql3)
     print translatedQuery
 
+    sql2 = "SELECT * FROM tweet where user =2238942602"
+
+    translatedQuery = translateBasicSelectQuery(CUR, sql2)
+    print "translatedQuery: ", translatedQuery
+    pre_time = datetime.datetime.now().time()
     CUR.execute(translatedQuery)
-    for row in CUR.fetchall():
-        print row
+    post_time = datetime.datetime.now().time()
+    CUR.fetchall()
+
+    print "pretime: %s; post time: %s" % (pre_time, post_time)
+    print "fetched rows:", CUR.row_count
+
+    # for row in CUR.fetchall():
+    #     print row
