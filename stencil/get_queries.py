@@ -98,6 +98,7 @@ if __name__ == "__main__":
     print "translatedQuery: ", translatedQuery
 
     pre_time = datetime.datetime.now().time()
+    print "pretime: ", pre_time
     CUR.execute(translatedQuery)
     post_time = datetime.datetime.now().time()
     print "pretime: %s; post time: %s" % (pre_time, post_time)
