@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     CONN, CUR = utils.getDBConn()
 
-    app = 'hacker news'
+    app = 'twitter'
 
     sql = "SELECT By, Descendents, Id, Retrieved_on, Score\
            FROM story  \
@@ -92,25 +92,18 @@ if __name__ == "__main__":
             WHERE user = 'lisper' "
 
     sql3 = "SELECT * \
-            FROM comment"
+            FROM tweet"
 
-<<<<<<< HEAD
-    translatedQuery = translateBasicSelectQuery(CUR, sql3)
-    print translatedQuery
-
-    translatedQuery = translateBasicSelectQuery(CUR, sql3)
-=======
     translatedQuery = translateBasicSelectQuery(CUR, sql3, app)
->>>>>>> f1b841de68d08b02c71cafc1bc3f9abef71bfafd
     print "translatedQuery: ", translatedQuery
 
     pre_time = datetime.datetime.now().time()
     print "pretime: ", pre_time
-    CUR.execute(translatedQuery)
-    post_time = datetime.datetime.now().time()
-    print "pretime: %s; post time: %s" % (pre_time, post_time)
+    # CUR.execute(translatedQuery)
+    # post_time = datetime.datetime.now().time()
+    # print "pretime: %s; post time: %s" % (pre_time, post_time)
 
-    print "fetched rows:", len(CUR.fetchall())
+    # print "fetched rows:", len(CUR.fetchall())
 
     # for row in CUR.fetchall():
     #     print row

@@ -58,7 +58,7 @@ if __name__ == "__main__":
     fpaths   = getDatasetsPaths()
     QR       = QueryResolver(app_name)
 
-    for fpath in fpaths[:40]:
+    for fpath in fpaths:
         print "Porting: ", fpath
         data = getJSONDataFromFile(fpath)
         
