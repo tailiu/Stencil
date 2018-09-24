@@ -11,18 +11,15 @@ def resolveRequest(query, baseAttributes, suppAttributes):
     for attr in baseAttributes: tables.add(attr[1])
     for attr in suppAttributes: tables.add(attr[1])
 
-    if len(tables) == 1:
-        fromTables = tables.pop()
-        oneTable = fromTables
+    if len(tables) == 1: fromTables = tables.pop()
     else:
         fromTables = ''
-        for table in tables: 
-            fromTables += ' join ' + table
-            oneTable = table
-        fromTables = fromTables.replace('join', '', 1)
-        fromTables += ' on '
-        for table in tables: fromTables += ' = ' + table + '.row_id '
-        fromTables = fromTables.replace('=', '', 1)
+        table1 = tables.pop()
+        fromTables += table1
+        while len(tables) > 0:
+            table2 = tables.pop()
+            fromTables += ' join ' + table2 + ' on ' + table1 + '.row_id = ' + table2 + '.row_id '
+            if len(tables) > 0: table1 = table2
 
     tablesStart = query.find("from") + len("from")
     if query.find('where') == -1: query = query[:tablesStart] + ' ' + fromTables
@@ -40,8 +37,6 @@ def translateBasicSelectQuery(CUR, query, app):
         table = utils.findBetweenStrings(query, 'from', 'where').strip() # Assume there is only one table
         condList = utils.processConditions(utils.findBetweenStrings(query, 'where', None))
         condList = utils.removeSpace(condList)
-
-    print table
 
     if query.find('*') == -1:
         attributes = utils.findBetweenStrings(query, 'select', 'from').split(',')
@@ -92,16 +87,15 @@ if __name__ == "__main__":
             WHERE user = 'lisper' "
 
     sql3 = "SELECT * \
-            FROM tweet"
+            FROM story"
 
     translatedQuery = translateBasicSelectQuery(CUR, sql3, app)
     print "translatedQuery: ", translatedQuery
 
     pre_time = datetime.datetime.now().time()
-    print "pretime: ", pre_time
-    # CUR.execute(translatedQuery)
-    # post_time = datetime.datetime.now().time()
-    # print "pretime: %s; post time: %s" % (pre_time, post_time)
+    CUR.execute(translatedQuery)
+    post_time = datetime.datetime.now().time()
+    print "pretime: %s; post time: %s" % (pre_time, post_time)
 
     # print "fetched rows:", len(CUR.fetchall())
 
