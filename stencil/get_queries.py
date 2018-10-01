@@ -92,12 +92,17 @@ if __name__ == "__main__":
     translatedQuery = translateBasicSelectQuery(CUR, sql2, app)
     print "translatedQuery: ", translatedQuery
 
-    pre_time = datetime.datetime.now().time()
+    pre_time = datetime.datetime.now()
     CUR.execute(translatedQuery)
-    post_time = datetime.datetime.now().time()
+    post_time = datetime.datetime.now()
     print "pretime: %s; post time: %s" % (pre_time, post_time)
+    print "Time duration: {0}".format(post_time - pre_time) 
 
+<<<<<<< HEAD
     # print "fetched rows:", len(CUR.fetchall())
 
+=======
+    print "fetched rows:", len(CUR.fetchall())
+>>>>>>> 0b2ed9b6ebc47bea74d97b5d1475b94cd3e0bc54
     # for row in CUR.fetchall():
     #     print row
