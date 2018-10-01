@@ -89,15 +89,15 @@ if __name__ == "__main__":
     sql3 = "SELECT * \
             FROM story"
 
-    translatedQuery = translateBasicSelectQuery(CUR, sql3, app)
+    translatedQuery = translateBasicSelectQuery(CUR, sql2, app)
     print "translatedQuery: ", translatedQuery
 
-    pre_time = datetime.datetime.now().time()
+    pre_time = datetime.datetime.now()
     CUR.execute(translatedQuery)
-    post_time = datetime.datetime.now().time()
+    post_time = datetime.datetime.now()
     print "pretime: %s; post time: %s" % (pre_time, post_time)
+    print "Time duration: {0}".format(post_time - pre_time) 
 
     print "fetched rows:", len(CUR.fetchall())
-
     # for row in CUR.fetchall():
     #     print row
