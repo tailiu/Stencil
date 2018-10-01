@@ -7,11 +7,11 @@ if __name__ == "__main__":
 
     with open("./datasets/hn_log.queries") as fh: 
         queries = fh.read().split('\n')
-        for q in queries:
+        start, end = 0, 10000
+        for q in queries[start:end]:
             QR.resolveInsert(q)
-            print QR.getResolvedQueries()
-            QR.sendToDB()
-            print "------------------------------\n"
-            # break
+            # print QR.getResolvedQueries()
+            QR.runQuery()
+    QR.DBCommit()
         
         

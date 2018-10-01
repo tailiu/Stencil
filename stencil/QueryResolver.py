@@ -9,7 +9,7 @@ from utils import getRowID
 class QueryResolver():
 
     def __init__(self, app_name):
-        self.db       = DB()
+        self.db       = DB(host="10.224.45.162", user="zainmac", passwd="123")
         self.app_name = app_name
         self.app_id   = self.__getAppId(app_name)
         self.base_map = self.__getBaseMappings()
@@ -113,6 +113,11 @@ class QueryResolver():
             for pq in self.pqs:
                 # print pq
                 self.db.cursor.execute(pq)
+            del self.pqs[:]
+
+    def runAllQueries(self):
+        if self.pqs:
+            self.db.cursor.executemany(self.pqs)
             del self.pqs[:]
 
     def resolveInsert(self, q):

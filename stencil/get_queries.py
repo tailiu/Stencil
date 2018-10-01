@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     CONN, CUR = utils.getDBConn()
 
-    app = 'twitter'
+    app = 'hacker news'
 
     sql = "SELECT By, Descendents, Id, Retrieved_on, Score\
            FROM story  \
@@ -87,9 +87,9 @@ if __name__ == "__main__":
             WHERE user = 'lisper' "
 
     sql3 = "SELECT * \
-            FROM story"
+            FROM tweet"
 
-    translatedQuery = translateBasicSelectQuery(CUR, sql3, app)
+    translatedQuery = translateBasicSelectQuery(CUR, sql2, app)
     print "translatedQuery: ", translatedQuery
 
     pre_time = datetime.datetime.now().time()

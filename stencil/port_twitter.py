@@ -4,7 +4,7 @@ from QueryResolver import QueryResolver
 
 def getAppSchema(app_name):
 
-    db = DB()
+    db = DB(host="10.224.45.162", user="zainmac", passwd="123")
     
     sql = """ SELECT    LOWER(app_tables.table_name), 
                         LOWER(app_schemas.column_name)
@@ -53,12 +53,21 @@ def getJSONDataFromFile(fpath):
 if __name__ == "__main__":
 
     app_name = "twitter"
-    db       = DB(app_name)
+    print "Started: %s" % app_name
+    # db       = DB(host="10.224.45.162", user="zainmac", passwd="123", db=app_name)
+    print "connected db"
     schema   = getAppSchema(app_name)
+    print "got schema"
     fpaths   = getDatasetsPaths()
+    print "got paths"
     QR       = QueryResolver(app_name)
+    print "got QR"
+    log_file = open("./twitter_log.txt", "wb")
+    print "created Log"
 
-    for fpath in fpaths:
+    # db.truncateTables(["tweet", "user"])
+
+    for fpath in fpaths[0:10]:
         print "Porting: ", fpath
         data = getJSONDataFromFile(fpath)
         
@@ -78,10 +87,21 @@ if __name__ == "__main__":
                         t_sql  = "INSERT INTO tweet (%s, `user`) VALUES (%s, '%s');" % (t_cols, t_vals, datum["user"]["id"])
                         # db.cursor.execute(u_sql)
                         # QR.resolveInsert(u_sql)
+                        # QR.runQuery()
                 else:
                     t_sql  = "INSERT INTO tweet (%s) VALUES (%s);" % (t_cols, t_vals)
-                # db.cursor.execute(t_sql)
-                QR.resolveInsert(t_sql)
-                QR.runQuery()
-        QR.DBCommit()
+                try:
+                    # db.cursor.execute(t_sql)
+                    QR.resolveInsert(t_sql)
+                    QR.runQuery()
+                except Exception as e:
+                    print "------------------------------------------"
+                    print "ERROR: %s" %e
+                    print "------------------------------------------"
+                    print t_sql
+                    print QR.getResolvedQueries()
+                    log_file.write(t_sql) 
+                    log_file.write(str(QR.getResolvedQueries())) 
+                    # break
         # db.conn.commit()
+        QR.DBCommit()
