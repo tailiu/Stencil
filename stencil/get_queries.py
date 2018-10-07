@@ -2,6 +2,8 @@ import MySQLdb
 import re
 import utils
 import datetime
+from db import DB
+
 
 def resolveRequest(query, baseAttributes, suppAttributes):
     for attr in baseAttributes: query = re.sub(r"\b{0}\b".format(attr[0].lower()), attr[1].lower() + '.' + attr[2].lower(), query)
@@ -70,7 +72,8 @@ def translateBasicSelectQuery(CUR, query, app):
 
 if __name__ == "__main__":
 
-    CONN, CUR = utils.getDBConn()
+    db = DB()
+    CONN, CUR = db.conn, db.cursor
 
     app = 'hacker news'
 
@@ -82,12 +85,14 @@ if __name__ == "__main__":
             FROM story  \
             WHERE By = 'Impossible' and Id = 13075839"
 
-    sql2 = "SELECT * \
+    sql2 = 'SELECT * \
             FROM comment  \
-            WHERE user = 'lisper' "
+            WHERE user = "lisper" '
 
     sql3 = "SELECT * \
             FROM tweet"
+
+    sql4 = "SELECT * from story"
 
     translatedQuery = translateBasicSelectQuery(CUR, sql2, app)
     print "translatedQuery: ", translatedQuery
@@ -98,11 +103,8 @@ if __name__ == "__main__":
     print "pretime: %s; post time: %s" % (pre_time, post_time)
     print "Time duration: {0}".format(post_time - pre_time) 
 
-<<<<<<< HEAD
-    # print "fetched rows:", len(CUR.fetchall())
-
-=======
     print "fetched rows:", len(CUR.fetchall())
->>>>>>> 0b2ed9b6ebc47bea74d97b5d1475b94cd3e0bc54
     # for row in CUR.fetchall():
     #     print row
+
+    db.close()

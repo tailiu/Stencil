@@ -4,14 +4,15 @@ from QueryResolver import QueryResolver
 
 def getAppSchema(app_name):
 
-    db = DB(host="10.224.45.162", user="zainmac", passwd="123")
+    # db = DB(host="10.224.45.162", user="zainmac", passwd="123", port=3306)
+    db = DB()
     
     sql = """ SELECT    LOWER(app_tables.table_name), 
                         LOWER(app_schemas.column_name)
                 FROM 	app_schemas 
                 JOIN 	app_tables ON app_schemas.table_id = app_tables.PK
                 JOIN 	apps ON app_tables.app_id = apps.PK
-                WHERE   apps.app_name = "%s" """ % (app_name) 
+                WHERE   apps.app_name = '%s' """ % (app_name) 
 
     db.cursor.execute(sql)
     rows = db.cursor.fetchall()
@@ -46,7 +47,7 @@ if __name__ == "__main__":
     
     logical_queries = []
     i = 0
-    for datum in data[100000:]:
+    for datum in data:
         i += 1
         if datum['type'].lower() in schema.keys(): # datum['type] here is by accident the table name..
             print i
@@ -68,14 +69,16 @@ if __name__ == "__main__":
             #     log_file.write("Logical DB Error: %s \n" % sql) 
             try:
                 QR.resolveInsert(sql)
+                # print QR.getResolvedQueries()
                 QR.runQuery()
-                QR.DBCommit()
+                # QR.DBCommit()
             except Exception as e:
-                print "error in physical db: %s" % e
+                print "********ERROR in physical db: %s" % e
                 log_file.write("Error: %s \n" % e) 
                 log_file.write("Logical Query: %s \n" % sql) 
                 log_file.write("Physical Queries: %s \n" % str(QR.getResolvedQueries())) 
                 log_file.write("----------") 
+                # break
     # QR.runAllQueries()
     # db.conn.commit()
     # QR.DBCommit()

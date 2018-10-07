@@ -1,4 +1,3 @@
-import MySQLdb
 import sqlparse
 import uuid
 import json
@@ -9,7 +8,9 @@ from utils import getRowID
 class QueryResolver():
 
     def __init__(self, app_name):
-        self.db       = DB(host="10.224.45.162", user="zainmac", passwd="123")
+        # self.db       = DB(host="10.224.45.162", user="zainmac", passwd="123", port=3306)
+        # self.db       = DB()
+        self.db       = DB()
         self.app_name = app_name
         self.app_id   = self.__getAppId(app_name)
         self.base_map = self.__getBaseMappings()
@@ -23,7 +24,7 @@ class QueryResolver():
         return uuid.uuid4().hex
 
     def __getAppId(self, app_name):
-        sql = "SELECT PK from apps WHERE app_name = '%s'" % app_name
+        sql = "SELECT pk from apps WHERE app_name = '%s'" % app_name
         self.db.cursor.execute(sql)
         return self.db.cursor.fetchone()[0]
 
@@ -33,10 +34,10 @@ class QueryResolver():
                             LOWER(base_table_attributes.table_name), 
                             LOWER(base_table_attributes.column_name)
                     FROM 	physical_mappings 
-                    JOIN 	app_schemas ON physical_mappings.logical_attribute = app_schemas.PK
-                    JOIN 	app_tables ON app_schemas.table_id = app_tables.PK
-                    JOIN 	base_table_attributes ON physical_mappings.physical_attribute = base_table_attributes.PK
-                    WHERE 	app_tables.app_id  = "%s" """ % (self.app_id) 
+                    JOIN 	app_schemas ON physical_mappings.logical_attribute = app_schemas.pk
+                    JOIN 	app_tables ON app_schemas.table_id = app_tables.pk
+                    JOIN 	base_table_attributes ON physical_mappings.physical_attribute = base_table_attributes.pk
+                    WHERE 	app_tables.app_id  = '%s' """ % (self.app_id) 
         self.db.cursor.execute(sql)
         return self.db.cursor.fetchall()
         return {(row[0], row[1]) : (row[2], row[3]) for row in rows}
@@ -47,10 +48,10 @@ class QueryResolver():
                             LOWER(supplementary_tables.supplementary_table),
                             LOWER(app_schemas.column_name)
                     FROM 	app_tables JOIN 
-                    		app_schemas ON app_schemas.table_id = app_tables.PK JOIN
-                    		supplementary_tables ON supplementary_tables.table_id = app_tables.PK
-                    WHERE 	app_tables.app_id  = "%s" AND
-                    		app_schemas.PK NOT IN (
+                    		app_schemas ON app_schemas.table_id = app_tables.pk JOIN
+                    		supplementary_tables ON supplementary_tables.table_id = app_tables.pk
+                    WHERE 	app_tables.app_id  = '%s' AND
+                    		app_schemas.pk NOT IN (
                                 SELECT logical_attribute FROM physical_mappings
                             )""" % (self.app_id) 
         self.db.cursor.execute(sql)
@@ -130,12 +131,12 @@ class QueryResolver():
         # print q_ing["items"], "\n"
 
         for pt in phy_map.keys():
-            pq_cols = 'INSERT INTO `%s` ( app_id, Row_id,' % pt
-            pq_vals = ' VALUES ( %s, "%s",' % (self.app_id, row_id)
+            pq_cols = 'INSERT INTO %s ( app_id, row_id,' % pt
+            pq_vals = " VALUES ( %s, '%s'," % (self.app_id, row_id)
             for phy_col in phy_map[pt]:
                 if phy_col[1] in q_ing["items"].keys():
-                    pq_cols += '`%s`,' % phy_col[0]
-                    pq_vals += '%s,' % q_ing["items"][phy_col[1]]
+                    pq_cols += '"%s",' % phy_col[0]
+                    pq_vals += 'E%s,' % q_ing["items"][phy_col[1]]
             pq = pq_cols[:-1] + ")" + pq_vals[:-1] + ");"
             self.pqs.append(pq) 
         return self.pqs
