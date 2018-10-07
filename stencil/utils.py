@@ -1,21 +1,20 @@
-import MySQLdb
+import psycopg2
 import re
 
 def getDBConn():
-    db_conn = MySQLdb.connect(
-        host   = "10.224.45.162",
-        port   = 3306,
-        user   = "tai",
-        passwd = "123",
-        db     = "stencil_storage",
+    db_conn = psycopg2.connect(
+        host         = "10.224.45.162",
+        sslmode      = 'disable',
+        port         = 26257,
+        user         = "root",
+        database     = "stencil_storage",
     )
     return db_conn, db_conn.cursor()
 
 def findAllAttributes(CUR, app_name, table):
     sql = "SELECT app_schemas.column_name\
-        FROM app_schemas INNER JOIN app_tables INNER JOIN apps\
-        on app_tables.PK = app_schemas.table_id\
-        and apps.PK = app_tables.app_id \
+        FROM app_schemas INNER JOIN app_tables on app_tables.PK = app_schemas.table_id\
+        INNER JOIN apps on apps.PK = app_tables.app_id \
         WHERE app_name = '{0}' and app_tables.table_name = '{1}'".format(app_name, table)
 
     CUR.execute(sql)
@@ -42,10 +41,9 @@ def findSuppTables(CUR, app_name, tables, suppAttributes):
     tableStr = formTableStr(tables)
 
     sql = "SELECT app_schemas.column_name, supplementary_tables.supplementary_table\
-            FROM supplementary_tables INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
-            on supplementary_tables.table_id = app_schemas.table_id\
-            and app_tables.PK = app_schemas.table_id\
-            and apps.PK = app_tables.app_id \
+            FROM supplementary_tables INNER JOIN app_schemas on supplementary_tables.table_id = app_schemas.table_id\
+            INNER JOIN app_tables on app_tables.PK = app_schemas.table_id\
+            INNER JOIN apps on apps.PK = app_tables.app_id \
             WHERE app_name = '{0}' and {1} and {2}".format(app_name, tableStr, attrStr)
     
     CUR.execute(sql)
@@ -71,7 +69,7 @@ def translateAttributesToBaseTables(CUR, app_name, tables, attrList):
             if not '_' in attrDic: attrDic['_'] = []
             attrDic['_'].append(attr)
 
-    result = ()
+    result = []
 
     for table, attr in attrDic.iteritems():
         if table == '_':
@@ -82,24 +80,22 @@ def translateAttributesToBaseTables(CUR, app_name, tables, attrList):
             tableStr = formTableStr(table)
 
         sql = "SELECT app_schemas.column_name, base_table_attributes.table_name, base_table_attributes.column_name\
-                    FROM base_table_attributes INNER JOIN physical_mappings INNER JOIN app_schemas INNER JOIN app_tables INNER JOIN apps\
-                    on base_table_attributes.PK = physical_mappings.physical_attribute\
-                    and app_schemas.PK = physical_mappings.logical_attribute\
-                    and app_tables.PK = app_schemas.table_id\
-                    and apps.PK = app_tables.app_id \
+                    FROM base_table_attributes INNER JOIN physical_mappings on base_table_attributes.PK = physical_mappings.physical_attribute\
+                    INNER JOIN app_schemas on app_schemas.PK = physical_mappings.logical_attribute\
+                    INNER JOIN app_tables on app_tables.PK = app_schemas.table_id\
+                    INNER JOIN apps on apps.PK = app_tables.app_id \
                     WHERE app_name = '{0}' and {1} and {2}".format(app_name, tableStr, attrStr)
         
         CUR.execute(sql)
-
         r = CUR.fetchall()
-        if table != '_':            
-            l = list(r)
+
+        if table != '_':
             for v in l:
                 l1 = list(v)
                 l1[0] = table + '.' + l1[0]
                 t1 = tuple(l1)
                 result = (t1,) + result
-        else: result = result +  r
+        else: result = result + r
 
     return result
 
