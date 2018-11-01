@@ -1,4 +1,3 @@
-import MySQLdb
 import re
 import utils
 import datetime
@@ -87,12 +86,23 @@ if __name__ == "__main__":
 
     sql2 = 'SELECT * \
             FROM comment  \
+<<<<<<< HEAD
             WHERE user = "lisper" '
+=======
+            WHERE By = 'lisper' "
+>>>>>>> d819b464149ab081a8313187c5b69ee3f129a717
 
     sql3 = "SELECT * \
             FROM tweet"
 
     sql4 = "SELECT * from story"
+
+    sql4 = "SELECT * \
+            FROM comment"
+
+    sql5 = "SELECT * \
+            FROM story  \
+            WHERE By = 'lisper' "
 
     translatedQuery = translateBasicSelectQuery(CUR, sql2, app)
     print "translatedQuery: ", translatedQuery
