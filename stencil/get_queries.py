@@ -86,11 +86,7 @@ if __name__ == "__main__":
 
     sql2 = 'SELECT * \
             FROM comment  \
-<<<<<<< HEAD
-            WHERE user = "lisper" '
-=======
             WHERE By = 'lisper' "
->>>>>>> d819b464149ab081a8313187c5b69ee3f129a717
 
     sql3 = "SELECT * \
             FROM tweet"

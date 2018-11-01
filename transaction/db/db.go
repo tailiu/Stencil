@@ -53,6 +53,8 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 				columnPointers[i] = &columns[i]
 			}
 
+			tx, err := tgtDB.Begin()
+
 			for rows.Next() {
 
 				rows.Scan(columnPointers...)
@@ -74,16 +76,28 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 					insql := escape.Escape("INSERT INTO %s (%s) VALUES (%s)", tgtTable, cols, vals)
 					fmt.Println(insql)
 
-					if _, err = tgtDB.Exec(insql); err != nil {
-						fmt.Println(">>>>>>>>>>> Can't insert!")
-						panic(err)
+					stmt, err := tx.Prepare(insql)
+					if err != nil {
+						tx.Rollback()
+						return err
 					}
+					defer stmt.Close()
+
+					if _, err := stmt.Exec(insql); err != nil {
+						tx.Rollback() // return an error too, we may want to wrap them
+						return err
+					}
+
+					// if _, err = tgtDB.Exec(insql); err != nil {
+					// 	fmt.Println(">>>>>>>>>>> Can't insert!")
+					// 	panic(err)
+					// }
 				}
 			}
 			rows.Close()
-		} else {
-			return errors.New("mapping doesn't exist for table:" + sql.Table)
+			return tx.Commit()
 		}
+		return errors.New("mapping doesn't exist for table:" + sql.Table)
 	}
 	return errors.New("mapping doesn't exist for app:" + tgtApp)
 }
