@@ -34,8 +34,9 @@ if __name__ == "__main__":
     app_name = "hacker news"
     db_name  = "hacker_news"
     # db       = DB(host="10.224.45.162", user="zainmac", passwd="123", db=db_name)
+    db       = DB(db_name)
     hn_fpath = "./datasets/HackerNews/hn.full.json"
-    QR       = QueryResolver(app_name)
+    # QR       = QueryResolver(app_name)
     log_file = open("./log.txt", "wb")
 
     # db.truncateTables(["story", "comment"])
@@ -55,30 +56,32 @@ if __name__ == "__main__":
             
             attrs = [ x.lower() for x in datum.keys() if x.lower() in schema[table_name] ]
             
-            cols = "`%s`" % '`,`'.join(attrs)
-            vals = "'%s'" % "','".join( [validString(datum[attr]) for attr in attrs] )
+            cols = '"%s"' % '","'.join(attrs)
+            vals = "E'%s'" % "',E'".join( [validString(datum[attr]) for attr in attrs] )
             
             sql  = "INSERT INTO %s (%s) VALUES (%s);" % (table_name, cols, vals)
             
             # print sql
 
             # logical_queries.append(sql)
-            # try:
-            #     db.cursor.execute(sql)
-            # except:
-            #     log_file.write("Logical DB Error: %s \n" % sql) 
             try:
-                QR.resolveInsert(sql)
-                # print QR.getResolvedQueries()
-                QR.runQuery()
-                # QR.DBCommit()
+                db.cursor.execute(sql)
             except Exception as e:
-                print "********ERROR in physical db: %s" % e
-                log_file.write("Error: %s \n" % e) 
-                log_file.write("Logical Query: %s \n" % sql) 
-                log_file.write("Physical Queries: %s \n" % str(QR.getResolvedQueries())) 
-                log_file.write("----------") 
+                print "**ERROR => ", e
+                log_file.write("Logical DB Error: %s \n" % sql) 
                 # break
+            # try:
+            #     QR.resolveInsert(sql)
+            #     # print QR.getResolvedQueries()
+            #     QR.runQuery()
+            #     # QR.DBCommit()
+            # except Exception as e:
+            #     print "********ERROR in physical db: %s" % e
+            #     log_file.write("Error: %s \n" % e) 
+            #     log_file.write("Logical Query: %s \n" % sql) 
+            #     log_file.write("Physical Queries: %s \n" % str(QR.getResolvedQueries())) 
+            #     log_file.write("----------") 
+            #     # break
     # QR.runAllQueries()
     # db.conn.commit()
     # QR.DBCommit()

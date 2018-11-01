@@ -13,7 +13,7 @@ class DB:
         # )
         self.conn = psycopg2.connect(
             database=db,
-            user='zainmac',
+            user='root',
             sslmode='disable',
             port=26259,
             host='10.224.45.162'

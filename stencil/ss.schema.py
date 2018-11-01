@@ -2,8 +2,8 @@ import psycopg2
 
 # Connect to the "bank" database.
 conn = psycopg2.connect(
-    database='stencil_storage',
-    user='zainmac',
+    database='twitter',
+    user='root',
     sslmode='disable',
     port=26257,
     host='10.224.45.162'
@@ -20,7 +20,7 @@ cur = conn.cursor()
 sql = """
     CREATE TABLE apps (
   PK  serial PRIMARY KEY,
-  app_name varchar(256)  NOT NULL,
+  app_name text  NOT NULL,
   timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 )  ;
 
@@ -42,9 +42,9 @@ INSERT INTO apps (PK, app_name, timestamp) VALUES
 CREATE TABLE app_schemas (
   PK  serial PRIMARY KEY,
   table_id  int NOT NULL,
-  column_name varchar(256)  NOT NULL,
+  column_name text  NOT NULL,
   data_type  int NOT NULL,
-  constraints varchar(512)  DEFAULT NULL,
+  constraints text  DEFAULT NULL,
   timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 )  ;
 
@@ -147,7 +147,7 @@ INSERT INTO app_schemas (PK, table_id, column_name, data_type, constraints, time
 CREATE TABLE app_tables (
   PK  serial PRIMARY KEY,
   app_id  int NOT NULL,
-  table_name varchar(256)  NOT NULL,
+  table_name text  NOT NULL,
   timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 )  ;
 
@@ -208,8 +208,8 @@ CREATE TABLE base_2 (
 
 CREATE TABLE base_table_attributes (
   PK  serial PRIMARY KEY,
-  table_name varchar(256)  NOT NULL,
-  column_name varchar(256)  NOT NULL,
+  table_name text  NOT NULL,
+  column_name text  NOT NULL,
   timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 )  ;
 
@@ -313,7 +313,7 @@ CREATE TABLE schema_mappings (
   PK  serial PRIMARY KEY,
   app1_attribute  int NOT NULL,
   app2_attribute  int NOT NULL,
-  rules varchar(512)  DEFAULT NULL,
+  rules text  DEFAULT NULL,
   timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 )  ;
 
@@ -575,7 +575,7 @@ CREATE TABLE supplementary_10 (
 CREATE TABLE supplementary_tables (
   PK  serial PRIMARY KEY,
   table_id  int NOT NULL,
-  supplementary_table varchar(256)  NOT NULL,
+  supplementary_table text  NOT NULL,
   timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP 
 )  ;
 
@@ -591,10 +591,126 @@ INSERT INTO supplementary_tables (PK, table_id, supplementary_table, timestamp) 
 
 """
 
+hn_schema = """
+CREATE TABLE comment (
+  PK serial PRIMARY KEY,
+  By text DEFAULT NULL,
+  Id text DEFAULT NULL,
+  Retrieved_on varchar(128) DEFAULT NULL,
+  Time varchar(128) DEFAULT NULL,
+  Kids text DEFAULT NULL,
+  Parent text DEFAULT NULL,
+  Text text DEFAULT NULL,
+  Type varchar(64) DEFAULT NULL,
+  Timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ;
+
+
+CREATE TABLE story (
+  PK serial PRIMARY KEY,
+  By text DEFAULT NULL,
+  Descendents text DEFAULT NULL,
+  Id text DEFAULT NULL,
+  Retrieved_on varchar(128) DEFAULT NULL,
+  Score varchar(10) DEFAULT NULL,
+  Time varchar(128) DEFAULT NULL,
+  Title text,
+  Type varchar(64) DEFAULT NULL,
+  Url text DEFAULT NULL,
+  Timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ;
+"""
+
+twitter_schema = """
+  CREATE TABLE tweet (
+  PK serial PRIMARY KEY,
+  "user" text  DEFAULT NULL,
+  created_at text  DEFAULT NULL,
+  id text  DEFAULT NULL,
+  id_str text  DEFAULT NULL,
+  text text ,
+  truncated text  DEFAULT NULL,
+  in_reply_to_status_id text  DEFAULT NULL,
+  in_reply_to_status_id_str text  DEFAULT NULL,
+  in_reply_to_user_id text  DEFAULT NULL,
+  in_reply_to_user_id_str text  DEFAULT NULL,
+  in_reply_to_screen_name text  DEFAULT NULL,
+  geo text  DEFAULT NULL,
+  coordinates text  DEFAULT NULL,
+  place text  DEFAULT NULL,
+  contributors text ,
+  is_quote_status text  DEFAULT NULL,
+  quote_count text  DEFAULT NULL,
+  reply_count text  DEFAULT NULL,
+  retweet_count text  DEFAULT NULL,
+  favorite_count text  DEFAULT NULL,
+  favorited text  DEFAULT NULL,
+  retweeted text  DEFAULT NULL,
+  filter_level text  DEFAULT NULL,
+  lang text  DEFAULT NULL,
+  timestamp_ms text  DEFAULT NULL,
+  hashtags text ,
+  urls text  DEFAULT NULL,
+  user_mentions text ,
+  symbols text  DEFAULT NULL,
+  timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table user
+--
+
+CREATE TABLE "user" (
+  PK serial PRIMARY KEY,
+  id text  DEFAULT NULL,
+  id_str text  DEFAULT NULL,
+  name text  DEFAULT NULL,
+  screen_name text  DEFAULT NULL,
+  location text  DEFAULT NULL,
+  url text  DEFAULT NULL,
+  description text ,
+  translator_type text  DEFAULT NULL,
+  protected text  DEFAULT NULL,
+  verified text  DEFAULT NULL,
+  followers_count text  DEFAULT NULL,
+  friends_count text  DEFAULT NULL,
+  listed_count text  DEFAULT NULL,
+  favourites_count text  DEFAULT NULL,
+  statuses_count text  DEFAULT NULL,
+  created_at text  DEFAULT NULL,
+  utc_offset text  DEFAULT NULL,
+  time_zone text  DEFAULT NULL,
+  geo_enabled text  DEFAULT NULL,
+  lang text  DEFAULT NULL,
+  contributors_enabled text  DEFAULT NULL,
+  is_translator text  DEFAULT NULL,
+  profile_background_color text  DEFAULT NULL,
+  profile_background_image_url text  DEFAULT NULL,
+  profile_background_image_url_https text  DEFAULT NULL,
+  profile_background_tile text  DEFAULT NULL,
+  profile_link_color text  DEFAULT NULL,
+  profile_sidebar_border_color text  DEFAULT NULL,
+  profile_sidebar_fill_color text  DEFAULT NULL,
+  profile_text_color text  DEFAULT NULL,
+  profile_use_background_image text  DEFAULT NULL,
+  profile_image_url text  DEFAULT NULL,
+  profile_image_url_https text  DEFAULT NULL,
+  default_profile text  DEFAULT NULL,
+  default_profile_image text  DEFAULT NULL,
+  following text  DEFAULT NULL,
+  follow_request_sent text  DEFAULT NULL,
+  notifications text  DEFAULT NULL,
+  timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ;
+
+"""
+
 # print sql.lower()
 # exit()
 
-cur.execute(sql.lower())
+cur.execute(twitter_schema.lower())
 
 # # Create the "accounts" table.
 # cur.execute("CREATE TABLE IF NOT EXISTS accounts (id INT PRIMARY KEY, balance INT)")

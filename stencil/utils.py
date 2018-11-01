@@ -10,17 +10,10 @@ def getDBConn():
     #     db     = "stencil_storage",
     # )
     db_conn = MySQLdb.connect(
-<<<<<<< HEAD
         host   = "127.0.0.1",
         port   = 3307,
         user   = "root",
         passwd = "",
-=======
-        host   = "10.224.45.162",
-        port   = 3306,
-        user   = "tai",
-        passwd = "123",
->>>>>>> c2a0f8fad2d8d1945047625904d8b6d219c6bac1
         db     = "stencil_storage",
     )
     return db_conn, db_conn.cursor()

@@ -1,0 +1,7 @@
+{
+    "settings" : {
+        "user_table" : "Customer",
+        "user_column": "c_id",
+        "mapping":[]
+    }
+}
