@@ -24,7 +24,8 @@ func GetDBConn(app string) *sql.DB {
 		dbConns = make(map[string]*sql.DB)
 	}
 
-	if _, ok := dbConns[app]; ok {
+	if _, ok := dbConns[app]; !ok {
+		log.Println("Creating new db conn for:", app)
 		dbConnAddr := "postgresql://root@10.224.45.158:26257/%s?sslmode=disable"
 		dbConn, err := sql.Open("postgres", fmt.Sprintf(dbConnAddr, app))
 		if err != nil {
@@ -33,6 +34,7 @@ func GetDBConn(app string) *sql.DB {
 		}
 		dbConns[app] = dbConn
 	}
+	// log.Println("Returning dbconn for:", app)
 	return dbConns[app]
 }
 
@@ -61,8 +63,6 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 				columnPointers[i] = &columns[i]
 			}
 
-			tx, err := tgtDB.Begin()
-
 			for rows.Next() {
 
 				rows.Scan(columnPointers...)
@@ -84,28 +84,16 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 					insql := escape.Escape("INSERT INTO %s (%s) VALUES (%s)", tgtTable, cols, vals)
 					fmt.Println(insql)
 
-					stmt, err := tx.Prepare(insql)
-					if err != nil {
-						tx.Rollback()
-						return err
+					if _, err = tgtDB.Exec(insql); err != nil {
+						fmt.Println(">>>>>>>>>>> Can't insert!")
+						panic(err)
 					}
-					defer stmt.Close()
-
-					if _, err := stmt.Exec(insql); err != nil {
-						tx.Rollback() // return an error too, we may want to wrap them
-						return err
-					}
-
-					// if _, err = tgtDB.Exec(insql); err != nil {
-					// 	fmt.Println(">>>>>>>>>>> Can't insert!")
-					// 	panic(err)
-					// }
 				}
 			}
 			rows.Close()
-			return tx.Commit()
+		} else {
+			return errors.New("mapping doesn't exist for table:" + sql.Table)
 		}
-		return errors.New("mapping doesn't exist for table:" + sql.Table)
 	}
 	return errors.New("mapping doesn't exist for app:" + tgtApp)
 }
