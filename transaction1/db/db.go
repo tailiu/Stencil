@@ -16,16 +16,24 @@ import (
 	"github.com/tj/go-pg-escape"
 )
 
+var dbConns map[string]*sql.DB
+
 func GetDBConn(app string) *sql.DB {
 
-	dbConnAddr := "postgresql://root@10.224.45.158:26257/%s?sslmode=disable"
-
-	dbConn, err := sql.Open("postgres", fmt.Sprintf(dbConnAddr, app))
-	if err != nil {
-		fmt.Println("error connecting to the db app:", app)
-		log.Fatal(err)
+	if dbConns == nil {
+		dbConns = make(map[string]*sql.DB)
 	}
-	return dbConn
+
+	if _, ok := dbConns[app]; ok {
+		dbConnAddr := "postgresql://root@10.224.45.158:26257/%s?sslmode=disable"
+		dbConn, err := sql.Open("postgres", fmt.Sprintf(dbConnAddr, app))
+		if err != nil {
+			fmt.Println("error connecting to the db app:", app)
+			log.Fatal(err)
+		}
+		dbConns[app] = dbConn
+	}
+	return dbConns[app]
 }
 
 func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mapping, uid int) error {
