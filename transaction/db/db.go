@@ -47,53 +47,75 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 			srcDB := GetDBConn(srcApp)
 			tgtDB := GetDBConn(tgtApp)
 
-			rows, err := srcDB.Query(sql.SQL, uid)
-			if err != nil {
-				log.Fatal(err)
-			}
-			cols, err := rows.Columns()
-			if err != nil {
-				log.Fatal(err)
-			}
+			for {
 
-			data := make(map[string]string)
-			columns := make([]string, len(cols))
-			columnPointers := make([]interface{}, len(cols))
-			for i := range columns {
-				columnPointers[i] = &columns[i]
-			}
+				row, err := DataCall1(srcApp, sql.SQL, uid)
+				if err == nil {
 
-			for rows.Next() {
+					ttx, err := tgtDB.Begin()
+					if err != nil {
+						log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
+						return err
+					}
 
-				rows.Scan(columnPointers...)
+					stx, err := srcDB.Begin()
+					if err != nil {
+						log.Println("ERROR! SOURCE TRANSACTION CAN'T BEGIN")
+						return err
+					}
 
-				for i, col := range cols {
-					data[col] = columns[i]
+					defer ttx.Rollback()
+					defer stx.Rollback()
+
+					ucond := ""
+
+					for col, val := range row {
+						if !strings.EqualFold(col, "mark_delete") && val != "" {
+							ucond += fmt.Sprintf(" %s = %s AND", col, escape.Literal(val))
+						}
+						// fmt.Println("col", col, "data", columns[i])
+					}
+
+					ucond = strings.TrimSuffix(ucond, "AND")
+					usql := fmt.Sprintf("UPDATE %s SET mark_delete = 'true' WHERE %s", sql.Table, ucond)
+
+					if _, err = stx.Exec(usql); err != nil {
+						fmt.Println(">>>>>>>>>>> Can't update!")
+						return err
+					} else {
+						fmt.Println("Updated!")
+					}
+
+					for tgtTable, tgtMap := range tableMapping {
+
+						var cols, vals string
+						for scol, tcol := range tgtMap {
+							cols += tcol + ","
+							vals += escape.Literal(row[scol]) + ","
+						}
+						cols = strings.TrimSuffix(cols, ",")
+						vals = strings.TrimSuffix(vals, ",")
+						insql := escape.Escape("INSERT INTO %s (%s) VALUES (%s)", tgtTable, cols, vals)
+
+						if _, err = ttx.Exec(insql); err != nil {
+							log.Println("# Can't insert!")
+							return err
+						} else {
+							fmt.Println("Inserted!")
+						}
+					}
+
+					stx.Commit()
+					ttx.Commit()
+				} else if err != nil {
+					log.Println("# No more rows!")
+					break
 				}
 
-				for tgtTable, tgtMap := range tableMapping {
-
-					var cols, vals string
-					for col1, col2 := range tgtMap {
-						cols += col1 + ","
-						vals += escape.Literal(data[col2]) + ","
-						// vals += fmt.Sprintf("\"%s\",", data[col2])
-					}
-					cols = strings.TrimSuffix(cols, ",")
-					vals = strings.TrimSuffix(vals, ",")
-					insql := escape.Escape("INSERT INTO %s (%s) VALUES (%s)", tgtTable, cols, vals)
-					fmt.Println(insql)
-
-					if _, err = tgtDB.Exec(insql); err != nil {
-						fmt.Println(">>>>>>>>>>> Can't insert!")
-						panic(err)
-					}
-				}
 			}
-			rows.Close()
-		} else {
-			return errors.New("mapping doesn't exist for table:" + sql.Table)
+			return nil
 		}
+		return errors.New("mapping doesn't exist for table:" + sql.Table)
 	}
 	return errors.New("mapping doesn't exist for app:" + tgtApp)
 }
@@ -127,6 +149,82 @@ func DataCall(app, sql string, args ...interface{}) []map[string]string {
 			data[col] = columns[i]
 		}
 		result = append(result, data)
+	}
+	rows.Close()
+	return result
+}
+
+func DataCall1(app, sql string, args ...interface{}) (map[string]string, error) {
+
+	data := make(map[string]string)
+
+	db := GetDBConn(app)
+
+	rows, err := db.Query(sql, args...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cols, err := rows.Columns()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		columns := make([]string, len(cols))
+		columnPointers := make([]interface{}, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+
+		rows.Scan(columnPointers...)
+
+		for i, col := range cols {
+			data[col] = columns[i]
+		}
+
+		return data, nil
+	}
+
+	return data, errors.New("no result found for sql: " + sql)
+}
+
+func GetPK(app, table string) []string {
+
+	var result []string
+
+	db := GetDBConn(app)
+
+	sql := "SHOW CONSTRAINTS FROM " + table
+
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cols, err := rows.Columns()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for rows.Next() {
+		data := make(map[string]string)
+		columns := make([]string, len(cols))
+		columnPointers := make([]interface{}, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+
+		rows.Scan(columnPointers...)
+
+		for i, col := range cols {
+			data[col] = columns[i]
+		}
+
+		if data["Type"] == "PRIMARY KEY" {
+			result = strings.Split(data["Column(s)"], ",")
+			break
+		}
 	}
 	rows.Close()
 	return result

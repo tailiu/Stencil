@@ -35,7 +35,7 @@ func prepareData(settings config.Settings, dependencies []config.Dependency) []c
 
 	var sqls []config.DataQuery
 
-	sql := fmt.Sprintf("SELECT %s.* FROM %s WHERE %s = $1", settings.UserTable, settings.UserTable, settings.KeyCol)
+	sql := fmt.Sprintf("SELECT %s.* FROM %s WHERE %s = $1 AND %s.mark_delete != 'true' ", settings.UserTable, settings.UserTable, settings.KeyCol, settings.UserTable)
 	sqls = append(sqls, config.DataQuery{SQL: sql, Table: settings.UserTable})
 
 	for _, dependency := range dependencies {
@@ -57,7 +57,7 @@ func prepareData(settings config.Settings, dependencies []config.Dependency) []c
 						}
 					}
 					if strings.EqualFold(dep.DependsOn, settings.UserTable) {
-						sql += fmt.Sprintf(" WHERE %s.%s = $1", settings.UserTable, settings.KeyCol)
+						sql += fmt.Sprintf(" WHERE %s.%s = $1 AND %s.mark_delete != 'true'", settings.UserTable, settings.KeyCol, subDep.Tag)
 						break
 					} else {
 						var e error
@@ -94,7 +94,9 @@ func initMigration(uid int, srcApp, tgApp string) {
 
 	helper.Linebreak("=", 80)
 	for _, sql := range sqls {
-		// fmt.Println("#sql => ", sql.Table, ":", sql.SQL)
+		helper.Linebreak("±", 50)
+		fmt.Println("#sql => ", sql.Table, ":", sql.SQL)
+		helper.Linebreak("±", 50)
 		db.MoveData(srcApp, tgApp, sql, settings.Mappings, uid)
 	}
 	helper.Linebreak("=", 80)
@@ -116,6 +118,6 @@ func initMigration(uid int, srcApp, tgApp string) {
 
 func main() {
 
-	initMigration(1, "tpcc", "tpcc2")
+	initMigration(2, "tpcc", "tpcc2")
 
 }
