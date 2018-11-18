@@ -118,6 +118,6 @@ func initMigration(uid int, srcApp, tgApp string) {
 
 func main() {
 
-	initMigration(2, "tpcc", "tpcc2")
+	initMigration(5, "app1", "app5")
 
 }

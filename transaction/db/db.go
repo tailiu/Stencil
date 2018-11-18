@@ -80,7 +80,7 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 					usql := fmt.Sprintf("UPDATE %s SET mark_delete = 'true' WHERE %s", sql.Table, ucond)
 
 					if _, err = stx.Exec(usql); err != nil {
-						fmt.Println(">>>>>>>>>>> Can't update!")
+						fmt.Println(">>>>>>>>>>> Can't update!", err)
 						return err
 					} else {
 						fmt.Println("Updated!")
@@ -98,7 +98,7 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 						insql := escape.Escape("INSERT INTO %s (%s) VALUES (%s)", tgtTable, cols, vals)
 
 						if _, err = ttx.Exec(insql); err != nil {
-							log.Println("# Can't insert!")
+							log.Println("# Can't insert!", err)
 							return err
 						} else {
 							fmt.Println("Inserted!")
