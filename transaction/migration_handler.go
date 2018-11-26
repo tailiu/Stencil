@@ -11,6 +11,7 @@ import (
 	"transaction/config"
 	"transaction/db"
 	"transaction/helper"
+	"transaction/qr"
 )
 
 /*********************--bgn
@@ -118,6 +119,10 @@ func initMigration(uid int, srcApp, tgApp string) {
 
 func main() {
 
-	initMigration(5, "app1", "app5")
+	qq := qr.NewQR("app1")
+	qq.TestQuery()
+	// fmt.Println(qq.Resolve("INSERT INTO CUSTOMER (c_id) VALUES (1)"))
+
+	// initMigration(5, "app1", "app5")
 
 }

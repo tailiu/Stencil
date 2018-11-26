@@ -231,6 +231,9 @@ def createSupplementaryTables():
 
 if __name__ == "__main__":
 
+    createSupplementaryTables()
+    exit(1)
+
     t = 0.5
 
     print "Get App Schemas"
