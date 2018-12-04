@@ -160,7 +160,7 @@ func DataCall1(app, sql string, args ...interface{}) (map[string]string, error) 
 
 	db := GetDBConn(app)
 
-	rows, err := db.Query(sql, args...)
+	rows, err := db.Query(sql+" LIMIT 1", args...)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -188,6 +188,7 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
         cur.execute(pmsql)
 
     attrs_with_type = [attr + " STRING" for attr in attrs.values()]
+    attrs_with_type.insert(0,"app_id STRING")
     attrs_with_type.insert(0,"base_row_id SERIAL PRIMARY KEY")
     attrs_with_type.append("base_created_at TIMESTAMP DEFAULT now()")
     attrs_with_type.append("base_mark_delete BOOL")
