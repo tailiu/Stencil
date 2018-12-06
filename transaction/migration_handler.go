@@ -9,7 +9,6 @@ import (
 	"log"
 	"strings"
 	"transaction/config"
-	"transaction/db"
 	"transaction/helper"
 	"transaction/migrate"
 )
@@ -132,7 +131,7 @@ func initAppLevelMigration(uid int, srcApp, tgApp string) {
 		log.Fatal("error reading dependencies for:"+srcApp, err)
 	}
 
-	settings, err := config.ReadAppSettings(srcApp)
+	settings, err := config.ReadAppSettings(srcApp, false)
 	if err != nil {
 		log.Fatal("error reading settings for:"+srcApp, err)
 	}
@@ -144,14 +143,9 @@ func initAppLevelMigration(uid int, srcApp, tgApp string) {
 		helper.Linebreak("±", 50)
 		fmt.Println("#sql => ", sql.Table, ":", sql.SQL)
 		helper.Linebreak("±", 50)
-		db.MoveData(srcApp, tgApp, sql, settings.Mappings, uid)
+		migrate.MoveData(srcApp, tgApp, sql, settings.Mappings, uid)
 	}
 	helper.Linebreak("=", 80)
-
-	// usql := fmt.Sprintf("SELECT * FROM %s WHERE %s = $1", settings.UserTable, settings.KeyCol)
-	// udata := DataCall(srcApp, usql, uid)[0]
-
-	// fmt.Println("Fetched user data for uid: ", udata["c_id"])
 
 }
 
@@ -165,7 +159,7 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 		log.Fatal("error reading dependencies for:"+srcApp, err)
 	}
 
-	settings, err := config.ReadAppSettings(srcApp)
+	settings, err := config.ReadAppSettings(srcApp, false)
 	if err != nil {
 		log.Fatal("error reading settings for:"+srcApp, err)
 	}
@@ -193,8 +187,8 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 
 func main() {
 
-	// initAppLevelMigration(5, "app1", "app5")
-	initStencilMigration(7, "app1", "app5")
+	initAppLevelMigration(7, "app1", "app5")
+	// initStencilMigration(7, "app1", "app5")
 	// QR := qr.NewQR("app1")
 	// QR.TestQuery()
 }
