@@ -8,6 +8,7 @@ import (
 	"transaction/config"
 	"transaction/db"
 	"transaction/qr"
+	"transaction/transaction_log"
 
 	escape "github.com/tj/go-pg-escape"
 )
@@ -94,7 +95,7 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 	return errors.New("mapping doesn't exist for app:" + tgtApp)
 }
 
-func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mapping, uid int) error {
+func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mapping, uid int, log_txn *transaction_log.Log_txn) error {
 
 	if appMapping, ok := mappings[tgtApp]; ok {
 
@@ -104,20 +105,32 @@ func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Ma
 			QR := qr.NewQR(srcApp)
 			TgtQR := qr.NewQR(tgtApp)
 			sql.SQL = strings.Replace(sql.SQL, "$1", fmt.Sprintf("'%d'", uid), 1)
+
+			// transform a logical request into a physical request
 			if psqls := QR.Resolve(sql.SQL); len(psqls) > 0 {
 				psql := psqls[0]
 				// log.Println(psql)
 				for {
+					// according to the physical request, find one result 
 					if data, err := db.DataCall1("stencil", psql); err == nil {
+
+						// according to the row_id of the result, 
+						// form queries to update records with the same row_id in different physical tables 
+						updQ := QR.PhyUpdateAppIDByRowID(TgtQR.AppID, sql.Table, []string{data["base_row_id"]})
+						
+						transaction_log.Log_change(QR.AppID, TgtQR.AppID, sql.Table, data["base_row_id"], log_txn)
+
+						// defer tx.Rollback()
+
+						fmt.Println(updQ)
+
 						tx, err := stencilDB.Begin()
 						if err != nil {
 							log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
 							return err
 						}
-						// fmt.Println("TO UPDATE ROWS:", len(data))
-						updQ := QR.PhyUpdateAppIDByRowID(TgtQR.AppID, sql.Table, []string{data["base_row_id"]})
-						// defer tx.Rollback()
-						// fmt.Println("TO UPDATE TABLES:", len(updQ))
+
+						// update each physical row
 						for _, usql := range updQ {
 							log.Println(usql)
 							if _, err = tx.Exec(usql); err != nil {
