@@ -11,7 +11,7 @@ import (
 	"transaction/config"
 	"transaction/helper"
 	"transaction/migrate"
-	"transaction/transaction_log"
+	"transaction/atomicity"
 )
 
 /*********************--bgn
@@ -155,7 +155,7 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 	log.Printf("Init Stencil Migration for Customer '%d'. '%s' => '%s'\n", uid, srcApp, tgApp)
 	helper.Linebreak("\n")
 	
-	log_txn := transaction_log.Begin_transaction()
+	log_txn := atomicity.BeginTransaction()
 
 	dependencies, err := config.ReadDependencies(srcApp)
 	if err != nil {
@@ -178,7 +178,7 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 	}
 	helper.Linebreak("=", 80)
 
-	transaction_log.End_transaction(log_txn)
+	atomicity.LogOutcome(log_txn, "COMMIT")
 
 }
 
@@ -193,7 +193,9 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 func main() {
 
 	// initAppLevelMigration(7, "app1", "app5")
-	initStencilMigration(23, "app1", "app5")
+	initStencilMigration(43, "app2", "app1")
 	// QR := qr.NewQR("app1")
 	// QR.TestQuery()
+
+	// atomicity.RollbackMigration(1531369323)
 }

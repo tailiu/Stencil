@@ -8,7 +8,7 @@ import (
 	"transaction/config"
 	"transaction/db"
 	"transaction/qr"
-	"transaction/transaction_log"
+	"transaction/atomicity"
 
 	escape "github.com/tj/go-pg-escape"
 )
@@ -95,53 +95,37 @@ func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mappi
 	return errors.New("mapping doesn't exist for app:" + tgtApp)
 }
 
-func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mapping, uid int, log_txn *transaction_log.Log_txn) error {
+func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mapping, uid int, log_txn *atomicity.Log_txn) error {
 
 	if appMapping, ok := mappings[tgtApp]; ok {
 
 		if _, ok := appMapping[strings.ToLower(sql.Table)]; ok {
-
-			stencilDB := db.GetDBConn("stencil")
-			QR := qr.NewQR(srcApp)
-			TgtQR := qr.NewQR(tgtApp)
+			QR := qr.NewQR(srcApp, "stencil")
+			TgtQR := qr.NewQR(tgtApp, "stencil")
 			sql.SQL = strings.Replace(sql.SQL, "$1", fmt.Sprintf("'%d'", uid), 1)
+
+			fmt.Println(QR.AppID)
+			fmt.Println(TgtQR.AppID)
 
 			// transform a logical request into a physical request
 			if psqls := QR.Resolve(sql.SQL); len(psqls) > 0 {
 				psql := psqls[0]
-				// log.Println(psql)
+				log.Println("IN MIGRATE:", psql)
 				for {
 					// according to the physical request, find one result 
 					if data, err := db.DataCall1("stencil", psql); err == nil {
 
 						// according to the row_id of the result, 
 						// form queries to update records with the same row_id in different physical tables 
-						updQ := QR.PhyUpdateAppIDByRowID(TgtQR.AppID, sql.Table, []string{data["base_row_id"]})
-						
-						transaction_log.Log_change(QR.AppID, TgtQR.AppID, sql.Table, data["base_row_id"], log_txn)
+						if len(data["base_row_id"]) > 0{
+							updQ := QR.PhyUpdateAppIDByRowID(TgtQR.AppID, sql.Table, []string{data["base_row_id"]})
+							
+							atomicity.LogChange(QR.AppID, TgtQR.AppID, sql.Table, data["base_row_id"], log_txn)
 
-						// defer tx.Rollback()
+							// defer tx.Rollback()
 
-						fmt.Println(updQ)
-
-						tx, err := stencilDB.Begin()
-						if err != nil {
-							log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
-							return err
+							QR.MigrateOneLogicalRow(updQ)
 						}
-
-						// update each physical row
-						for _, usql := range updQ {
-							log.Println(usql)
-							if _, err = tx.Exec(usql); err != nil {
-								// log.Println("!! updQ => ", updQ)
-								log.Println(">> Can't update!", err)
-								return err
-							}
-							// fmt.Println("Updated:", uid, sql.Table, QR.AppID, "=>", TgtQR.AppID, "|", data["base_row_id"])
-						}
-
-						tx.Commit()
 					} else if err != nil {
 						log.Println("# No more rows!")
 						break

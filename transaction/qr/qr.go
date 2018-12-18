@@ -35,14 +35,16 @@ type QI struct {
 	ColumnsWithTable map[string][]string
 }
 
-func NewQR(app_name string) *QR {
+func NewQR(app_name, PDBNAME string) *QR {
 	qr := new(QR)
-	qr.PDBNAME = "stencil"
+	qr.PDBNAME = PDBNAME
 	qr.DB = db.GetDBConn(qr.PDBNAME)
-	qr.AppName = app_name
-	qr.SetAppId()
-	qr.GetBaseMappings()
-	qr.GetSupplementaryMappings()
+	if app_name != "" {
+		qr.AppName = app_name
+		qr.SetAppId()
+		qr.GetBaseMappings()
+		qr.GetSupplementaryMappings()
+	}
 	return qr
 }
 
@@ -68,6 +70,12 @@ func Contains(a []string, x string) bool {
 		}
 	}
 	return false
+}
+
+func (self *QR) SetAppID(appID string) {
+	self.AppID = appID
+	self.GetBaseMappings()
+	self.GetSupplementaryMappings()
 }
 
 func (self QI) ValueOfColumn(col string) (string, error) {
@@ -424,6 +432,10 @@ func (self QR) PhyUpdateAppIDByRowID(new_app_id, ltab string, rowIDs []string) [
 	} else {
 		phyMap := self.GetPhyMappingForLogicalTable(strings.ToLower(ltab))
 		for pt := range phyMap {
+			log.Println("PhyUpdateAppIDByRowID", pt)
+			if strings.Contains(strings.ToLower(pt), "supplementary_"){
+				continue
+			}
 			pq := fmt.Sprintf("UPDATE %s SET app_id = %s WHERE app_id = '%s' AND %s_row_id IN (%s);", pt, escape.Literal(new_app_id), self.AppID, pt[0:4], strings.Join(rowIDs[:], ","))
 			PQs = append(PQs, pq)
 		}
@@ -463,8 +475,10 @@ func (self QR) ResolveSelect(sql string, args ...interface{}) []string {
 					joins = pt
 					appidtab += fmt.Sprintf("%s.app_id = '%s'", pt, self.AppID)
 				} else {
-					joins += fmt.Sprintf(" JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
-					appidtab += fmt.Sprintf(" AND %s.app_id = '%s'", pt, self.AppID)
+					joins += fmt.Sprintf(" FULL JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
+					if strings.Contains(pt, "base_"){
+						appidtab += fmt.Sprintf(" AND %s.app_id = '%s'", pt, self.AppID)
+					}
 				}
 				prev = pt
 			}
@@ -473,7 +487,7 @@ func (self QR) ResolveSelect(sql string, args ...interface{}) []string {
 			// ptable := fmt.Sprintf(" (SELECT %s FROM %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), tabWOnCond[0])
 
 			if len(tabWOnCond) > 1 {
-				bigjoin += fmt.Sprintf(" JOIN %s ON %s ", ptable, tabWOnCond[1])
+				bigjoin += fmt.Sprintf(" FULL JOIN %s ON %s ", ptable, tabWOnCond[1])
 			} else {
 				bigjoin += ptable
 			}
@@ -508,7 +522,7 @@ func (self QR) ResolveSelect(sql string, args ...interface{}) []string {
 						if prev == "" {
 							joins += fmt.Sprintf(" %s ", pt)
 						} else {
-							joins += fmt.Sprintf(" JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
+							joins += fmt.Sprintf(" FULL JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
 						}
 						prev = pt
 						joined = true
@@ -589,4 +603,26 @@ func (self QR) Resolve(sql string) []string {
 		}
 	}
 	return PQs
+}
+
+// migrate one logical row corresponding to one or several physical rows with same Row_ID
+func (self QR) MigrateOneLogicalRow(updQ []string) error {
+	tx, err := self.DB.Begin()
+	if err != nil {
+		log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
+		return err
+	}
+
+	// update each physical row
+	for _, usql := range updQ {
+		log.Println(usql)
+		if _, err = tx.Exec(usql); err != nil {
+			log.Println(">> Can't update!", err)
+			return err
+		}
+	}
+
+	tx.Commit()
+	
+	return nil
 }
