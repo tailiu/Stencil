@@ -13,6 +13,7 @@ def getUsersFromApp(app):
 
 def giveAccessToUser(accessGiver, accessHavers):
     tables = ["order", "history", "new_order", "orderline"]
+    
 
 
 if __name__ == "__main__":
