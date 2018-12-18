@@ -187,7 +187,7 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 
 func main() {
 
-	initAppLevelMigration(7, "app1", "app5")
+	initAppLevelMigration(7, "app1", "app6")
 	// initStencilMigration(7, "app1", "app5")
 	// QR := qr.NewQR("app1")
 	// QR.TestQuery()
