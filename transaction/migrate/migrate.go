@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"transaction/atomicity"
 	"transaction/config"
 	"transaction/db"
 	"transaction/qr"
-	"transaction/atomicity"
 
 	escape "github.com/tj/go-pg-escape"
 )
@@ -108,18 +108,18 @@ func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Ma
 			fmt.Println(TgtQR.AppID)
 
 			// transform a logical request into a physical request
-			if psqls := QR.Resolve(sql.SQL); len(psqls) > 0 {
+			if psqls := QR.Resolve(sql.SQL, true); len(psqls) > 0 {
 				psql := psqls[0]
-				log.Println("IN MIGRATE:", psql)
+				// log.Println("IN MIGRATE:", psql)
 				for {
-					// according to the physical request, find one result 
+					// according to the physical request, find one result
 					if data, err := db.DataCall1("stencil", psql); err == nil {
 
-						// according to the row_id of the result, 
-						// form queries to update records with the same row_id in different physical tables 
-						if len(data["base_row_id"]) > 0{
+						// according to the row_id of the result,
+						// form queries to update records with the same row_id in different physical tables
+						if len(data["base_row_id"]) > 0 {
 							updQ := QR.PhyUpdateAppIDByRowID(TgtQR.AppID, sql.Table, []string{data["base_row_id"]})
-							
+
 							atomicity.LogChange(QR.AppID, TgtQR.AppID, sql.Table, data["base_row_id"], log_txn)
 
 							// defer tx.Rollback()

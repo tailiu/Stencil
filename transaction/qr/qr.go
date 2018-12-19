@@ -216,6 +216,29 @@ func (self QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string
 	return phyMap
 }
 
+func (self QR) GetBaseMappingForLogicalTable(ltable string) map[string][][]string {
+
+	var phyMap = make(map[string][][]string)
+
+	for _, mapping := range self.BaseMappings {
+		if ltable == mapping["logical_table"] {
+			ptab := mapping["physical_table"]
+			pcol := mapping["physical_column"]
+			lcol := mapping["logical_column"]
+			var pair []string
+			pair = append(pair, pcol, lcol)
+			if _, ok := phyMap[ptab]; ok {
+				phyMap[ptab] = append(phyMap[ptab], pair)
+			} else {
+				phyMap[ptab] = [][]string{pair}
+			}
+			// fmt.Println(i, pair, mapping)
+		}
+	}
+
+	return phyMap
+}
+
 func (self QR) GetInsertQueryIngs(sql string) *QI {
 
 	qi := new(QI)
@@ -392,6 +415,7 @@ func (self QR) GetAffectedRowIDs(table, conds string) []string {
 
 	sql := fmt.Sprintf("SELECT * from %s WHERE %s", table, conds)
 
+	// needs to be changed, indicator args replaced for migration
 	pqs := self.ResolveSelect(sql, true)
 
 	if len(pqs) > 0 {
@@ -430,12 +454,8 @@ func (self QR) PhyUpdateAppIDByRowID(new_app_id, ltab string, rowIDs []string) [
 	if len(rowIDs) <= 0 {
 		log.Println("Warning: NO ROWIDS!")
 	} else {
-		phyMap := self.GetPhyMappingForLogicalTable(strings.ToLower(ltab))
+		phyMap := self.GetBaseMappingForLogicalTable(strings.ToLower(ltab))
 		for pt := range phyMap {
-			log.Println("PhyUpdateAppIDByRowID", pt)
-			if strings.Contains(strings.ToLower(pt), "supplementary_"){
-				continue
-			}
 			pq := fmt.Sprintf("UPDATE %s SET app_id = %s WHERE app_id = '%s' AND %s_row_id IN (%s);", pt, escape.Literal(new_app_id), self.AppID, pt[0:4], strings.Join(rowIDs[:], ","))
 			PQs = append(PQs, pq)
 		}
@@ -443,113 +463,136 @@ func (self QR) PhyUpdateAppIDByRowID(new_app_id, ltab string, rowIDs []string) [
 	return PQs
 }
 
-func (self QR) ResolveSelect(sql string, args ...interface{}) []string {
+func (self QR) ResolveSelectWithoutJoins(sql string, qi *QI, args ...interface{}) []string {
 
 	var PQs []string
-	qi := self.GetSelectQueryIngs(sql)
+	var phyMap map[string][][]string
 
-	if strings.Contains(qi.TableName, " join ") {
-		re := regexp.MustCompile(`(?i)(join)`)
-		phrases := deleteEmpty(re.Split(qi.TableName, -1))
-		phyMaps := make(map[string]map[string][][]string)
-		bigjoin := ""
-		for _, phrase := range phrases {
-			phrase = strings.Trim(phrase, " ")
-			re := regexp.MustCompile(`(?i)( on )`)
-			tabWOnCond := deleteEmpty(re.Split(phrase, -1))
-			phyMaps[tabWOnCond[0]] = self.GetPhyMappingForLogicalTable(tabWOnCond[0])
-			// pconds := ""
-			joins := ""
-			prev := ""
-			pcols := ""
-			appidtab := ""
-			for pt, mapping := range phyMaps[tabWOnCond[0]] {
-				// pcols += pt + ".*, "
-				if pcols == "" {
-					pcols = fmt.Sprintf("%s.%s_row_id as  base_row_id, ", pt, pt[0:4])
-				}
-				for _, colmap := range mapping {
-					pcols += fmt.Sprintf("%s.%s as %s, ", pt, colmap[0], colmap[1])
-				}
-				if joins == "" {
-					joins = pt
-					appidtab += fmt.Sprintf("%s.app_id = '%s'", pt, self.AppID)
-				} else {
-					joins += fmt.Sprintf(" FULL JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
-					if strings.Contains(pt, "base_"){
-						appidtab += fmt.Sprintf(" AND %s.app_id = '%s'", pt, self.AppID)
-					}
-				}
-				prev = pt
-			}
-			// ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE app_id = '%s') %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), self.AppID, tabWOnCond[0])
-			ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), appidtab, tabWOnCond[0])
-			// ptable := fmt.Sprintf(" (SELECT %s FROM %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), tabWOnCond[0])
-
-			if len(tabWOnCond) > 1 {
-				bigjoin += fmt.Sprintf(" FULL JOIN %s ON %s ", ptable, tabWOnCond[1])
-			} else {
-				bigjoin += ptable
-			}
-		}
-		var bigsql string
-		if len(qi.Conditions) > 0 {
-			bigsql = fmt.Sprintf("SELECT %s FROM %s WHERE %s", strings.Join(qi.Columns, ","), bigjoin, qi.Conditions)
-		} else {
-			bigsql = fmt.Sprintf("SELECT %s FROM %s", strings.Join(qi.Columns, ","), bigjoin)
-		}
-		PQs = append(PQs, bigsql)
+	if len(args) <= 0 {
+		phyMap = self.GetPhyMappingForLogicalTable(qi.TableName)
 	} else {
+		phyMap = self.GetBaseMappingForLogicalTable(qi.TableName)
+	}
 
-		phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
-
-		cols := ""
-		joins := ""
-		conds := qi.Conditions
-		prev := ""
-		appidtab := ""
-		for pt, mapping := range phyMap {
-			joined := false
-			for _, colmap := range mapping {
-				if Contains(qi.Columns, colmap[1]) || Contains(qi.Columns, "*") {
-					if cols == "" {
-						cols = fmt.Sprintf("%s.%s_row_id as base_row_id, ", pt, pt[0:4])
-					}
-					if strings.Contains(pt, "base") && appidtab == "" {
-						appidtab = pt
-					}
-					if !joined {
-						if prev == "" {
-							joins += fmt.Sprintf(" %s ", pt)
-						} else {
-							joins += fmt.Sprintf(" FULL JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
-						}
-						prev = pt
-						joined = true
-					}
-					col := fmt.Sprintf("%s.%s", pt, colmap[0])
-					cols += col + ", "
-					if nconds := strings.Replace(conds, qi.TableName+"."+colmap[1], col, -1); conds == nconds {
-						conds = strings.Replace(conds, colmap[1], col, -1)
-					} else {
-						conds = nconds
-					}
-					// conds = strings.Replace(conds, colmap[1], col, -1)
-				} else {
+	cols := ""
+	joins := ""
+	conds := qi.Conditions
+	prev := ""
+	appidtab := ""
+	for pt, mapping := range phyMap {
+		joined := false
+		for _, colmap := range mapping {
+			if Contains(qi.Columns, colmap[1]) || Contains(qi.Columns, "*") {
+				if cols == "" {
+					cols = fmt.Sprintf("%s.%s_row_id as base_row_id, ", pt, pt[0:4])
 				}
+				if strings.Contains(pt, "base") && appidtab == "" {
+					appidtab = pt
+				}
+				if !joined {
+					if prev == "" {
+						joins += fmt.Sprintf(" %s ", pt)
+					} else {
+						joins += fmt.Sprintf(" JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
+					}
+					prev = pt
+					joined = true
+				}
+				col := fmt.Sprintf("%s.%s", pt, colmap[0])
+				cols += col + ", "
+				if nconds := strings.Replace(conds, qi.TableName+"."+colmap[1], col, -1); conds == nconds {
+					conds = strings.Replace(conds, colmap[1], col, -1)
+				} else {
+					conds = nconds
+				}
+				// conds = strings.Replace(conds, colmap[1], col, -1)
+			} else {
 			}
 		}
-
-		if len(args) > 0 {
-			cols = "base_row_id"
-		}
-		pq := fmt.Sprintf("SELECT %s FROM %s WHERE %s.app_id = '%s'", strings.Trim(cols, ", "), strings.Trim(joins, ", "), appidtab, self.AppID)
-		if len(conds) > 0 {
-			pq += fmt.Sprintf(" AND (%s)", strings.Trim(conds, ", "))
-		}
-		PQs = append(PQs, pq)
 	}
+
+	// if len(args) > 0 {
+	// 	cols = "base_row_id"
+	// }
+	pq := fmt.Sprintf("SELECT %s FROM %s WHERE %s.app_id = '%s'", strings.Trim(cols, ", "), strings.Trim(joins, ", "), appidtab, self.AppID)
+	if len(conds) > 0 {
+		pq += fmt.Sprintf(" AND (%s)", strings.Trim(conds, ", "))
+	}
+	PQs = append(PQs, pq)
 	return PQs
+}
+
+func (self QR) ResolveSelectWithJoins(sql string, qi *QI, args ...interface{}) []string {
+
+	// parameter args used as indicator for query resolution during migration
+
+	var PQs []string
+
+	re := regexp.MustCompile(`(?i)(join)`)
+	phrases := deleteEmpty(re.Split(qi.TableName, -1))
+	phyMaps := make(map[string]map[string][][]string)
+	bigjoin := ""
+	for _, phrase := range phrases {
+		phrase = strings.Trim(phrase, " ")
+		re := regexp.MustCompile(`(?i)( on )`)
+		tabWOnCond := deleteEmpty(re.Split(phrase, -1))
+		if len(args) <= 0 {
+			phyMaps[tabWOnCond[0]] = self.GetPhyMappingForLogicalTable(tabWOnCond[0])
+		} else {
+			phyMaps[tabWOnCond[0]] = self.GetBaseMappingForLogicalTable(tabWOnCond[0])
+		}
+		// pconds := ""
+		joins := ""
+		prev := ""
+		pcols := ""
+		appidtab := ""
+		for pt, mapping := range phyMaps[tabWOnCond[0]] {
+			// pcols += pt + ".*, "
+			if pcols == "" {
+				pcols = fmt.Sprintf("%s.%s_row_id as  base_row_id, ", pt, pt[0:4])
+			}
+			for _, colmap := range mapping {
+				pcols += fmt.Sprintf("%s.%s as %s, ", pt, colmap[0], colmap[1])
+			}
+			if joins == "" {
+				joins = pt
+				appidtab += fmt.Sprintf("%s.app_id = '%s'", pt, self.AppID)
+			} else {
+				joins += fmt.Sprintf(" JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
+				if strings.Contains(pt, "base_") {
+					appidtab += fmt.Sprintf(" AND %s.app_id = '%s'", pt, self.AppID)
+				}
+			}
+			prev = pt
+		}
+		// ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE app_id = '%s') %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), self.AppID, tabWOnCond[0])
+		ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), appidtab, tabWOnCond[0])
+		// ptable := fmt.Sprintf(" (SELECT %s FROM %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), tabWOnCond[0])
+
+		if len(tabWOnCond) > 1 {
+			bigjoin += fmt.Sprintf(" JOIN %s ON %s ", ptable, tabWOnCond[1])
+		} else {
+			bigjoin += ptable
+		}
+	}
+	var bigsql string
+	if len(qi.Conditions) > 0 {
+		bigsql = fmt.Sprintf("SELECT %s FROM %s WHERE %s", strings.Join(qi.Columns, ","), bigjoin, qi.Conditions)
+	} else {
+		bigsql = fmt.Sprintf("SELECT %s FROM %s", strings.Join(qi.Columns, ","), bigjoin)
+	}
+	PQs = append(PQs, bigsql)
+	return PQs
+}
+
+func (self QR) ResolveSelect(sql string, args ...interface{}) []string {
+
+	qi := self.GetSelectQueryIngs(sql)
+	if strings.Contains(qi.TableName, " join ") {
+		return self.ResolveSelectWithJoins(sql, qi, args)
+	} else {
+		return self.ResolveSelectWithoutJoins(sql, qi, args)
+	}
 }
 
 func (self QR) ResolveInsert(sql string) []string {
@@ -580,7 +623,7 @@ func (self QR) ResolveInsert(sql string) []string {
 	return PQs
 }
 
-func (self QR) Resolve(sql string) []string {
+func (self QR) Resolve(sql string, args ...interface{}) []string {
 
 	var PQs []string
 
@@ -591,7 +634,7 @@ func (self QR) Resolve(sql string) []string {
 	} else {
 		switch stmt := stmt.(type) {
 		case *sqlparser.Select:
-			PQs = self.ResolveSelect(sql)
+			PQs = self.ResolveSelect(sql, args)
 		case *sqlparser.Update:
 			PQs = self.ResolveUpdate(sql)
 		case *sqlparser.Delete:
@@ -623,6 +666,6 @@ func (self QR) MigrateOneLogicalRow(updQ []string) error {
 	}
 
 	tx.Commit()
-	
+
 	return nil
 }
