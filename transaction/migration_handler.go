@@ -193,9 +193,9 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 func main() {
 
 	// initAppLevelMigration(7, "app1", "app5")
-	initStencilMigration(44, "app2", "app1")
+	initStencilMigration(60, "app1", "app2")
 	// QR := qr.NewQR("app1")
 	// QR.TestQuery()
 
-	// atomicity.RollbackMigration(1531369323)
+	// atomicity.RollbackMigration(267793080)
 }
