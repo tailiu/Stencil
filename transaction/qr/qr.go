@@ -600,6 +600,8 @@ func (self QR) ResolveInsert(sql string) []string {
 	var PQs []string
 	rowID := self.NewRowId()
 	qi := self.GetInsertQueryIngs(sql)
+	newRowSQL := fmt.Sprintf("INSERT INTO row_desc (row_id, app_id, table_name) VALUES ('%s', '%s', '%s')", rowID, self.AppID, qi.TableName)
+	PQs = append(PQs, newRowSQL)
 	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
 
 	for pt, mapping := range phyMap {
