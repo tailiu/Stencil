@@ -12,14 +12,16 @@ import (
 func main() {
 
 	stencilDB := db.GetDBConn("stencil")
-	appDB := "app1"
-	QR := qr.NewQR(appDB)
+	appName := "app5"
+	QR := qr.NewQR(appName, "stencil")
 	// tables := []string{"customer", "history", "orderr", "new_order", "item", "stock", "order_line"}
-	tables := []string{"stock"}
+	tables := []string{"customer"}
 
 	for _, table := range tables {
+
 		sql := fmt.Sprintf("SELECT * FROM %s", table)
-		for rownum, row := range db.DataCall(appDB, sql) {
+
+		for rownum, row := range db.DataCall(appName, sql) {
 			cols := ""
 			vals := ""
 			for col, val := range row {
@@ -34,7 +36,10 @@ func main() {
 				fmt.Println(err)
 				panic("ERROR! SOURCE TRANSACTION CAN'T BEGIN")
 			}
+
 			for qnum, pq := range QR.Resolve(insql) {
+				// fmt.Println(rownum, qnum, pq)
+
 				if _, err := tx.Exec(pq); err != nil {
 					fmt.Println(rownum, qnum, pq)
 					fmt.Println(err)
@@ -45,6 +50,7 @@ func main() {
 			}
 			tx.Commit()
 		}
+
 	}
 
 }

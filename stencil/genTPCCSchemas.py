@@ -66,6 +66,24 @@ def addRandomTables(conn, cur, populate = False):
             # cur.execute(open("./SQLS/%s.sql"%table, "r").read())
             print table, "populated, wrong sqls:", wrong_sqls
 
+def populateData(cur):
+    tables = ["warehouse", "district", "customer", "history", "orderr", "new_order", "item", "stock", "order_line"]
+    for table in tables:
+        print "Truncate existing data:", table
+        cur.execute("TRUNCATE TABLE "+table)
+        print "Populating TPCC data for table:", table
+        d = "INSERT INTO"
+        sqls = [d+e for e in open("./SQLS/%s.sql"%table, "r").read().split(d) if e]
+        wrong_sqls = 0
+        for sql in sqls:
+            if sql.strip() != "INSERT INTO":
+                cur.execute(sql)
+            else:
+                wrong_sqls += 1    
+        # return
+        # cur.execute(open("./SQLS/%s.sql"%table, "r").read())
+        print table, "populated, wrong sqls:", wrong_sqls
+
 def printColDict(tables):
     for table in tables.keys():
         print "Table:- ", table
@@ -142,18 +160,24 @@ if __name__ == "__main__" :
     total_apps = 10
 
     for i in range(1, total_apps):
-        apps.append("app%s"%i)
+        app = "app%s"%i
+        apps.append(app)
 
-    settings = {
-        "user_table": "Customer",
-        "key_column": "c_id",
-        "mappings": {}
-    }
-    stencildb, stencilcur = getDBConn("stencil")
+    # app = "app9"
+    # conn, cur = getDBConn(app)
+    # print "Populating ", app
+    # populateData(cur)
+
+    # settings = {
+    #     "user_table": "Customer",
+    #     "key_column": "c_id",
+    #     "mappings": {}
+    # }
+    # stencildb, stencilcur = getDBConn("stencil")
     # for app in apps:
     #     pushSchemaInfoIntoStencil(stencilcur, app)
     
-    createMappingsInStencil(stencilcur, apps)
+    # createMappingsInStencil(stencilcur, apps)
 
     # with open('%s.json'%app1, 'w') as fp:
     #     for app in apps:
