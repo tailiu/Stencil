@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -100,12 +101,28 @@ func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Ma
 	if appMapping, ok := mappings[tgtApp]; ok {
 
 		if _, ok := appMapping[strings.ToLower(sql.Table)]; ok {
-			QR := qr.NewQR(srcApp, "stencil")
-			TgtQR := qr.NewQR(tgtApp, "stencil")
+
+			srcAppID, err := db.GetAppId(srcApp)
+
+			if err != nil {
+				panic("Crashing" + err.Error())
+			} else {
+				// fmt.Println("SrcApp ID:" + srcAppID)
+			}
+
+			tgtAppID, err := db.GetAppId(tgtApp)
+			if err != nil {
+				panic("Crashing" + err.Error())
+			} else {
+				// fmt.Println("TgtApp ID:" + tgtAppID)
+			}
+
+			QR := qr.NewQR(srcAppID, "stencil")
+			TgtQR := qr.NewQR(tgtAppID, "stencil")
 			sql.SQL = strings.Replace(sql.SQL, "$1", fmt.Sprintf("'%d'", uid), 1)
 
-			fmt.Println(QR.AppID)
-			fmt.Println(TgtQR.AppID)
+			// fmt.Println(QR.AppID)
+			// fmt.Println(TgtQR.AppID)
 
 			// transform a logical request into a physical request
 			if psqls := QR.Resolve(sql.SQL, true); len(psqls) > 0 {
@@ -124,7 +141,7 @@ func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Ma
 
 							// defer tx.Rollback()
 
-							QR.MigrateOneLogicalRow(updQ)
+							migrateOneLogicalRow(updQ, QR)
 						}
 					} else if err != nil {
 						log.Println("# No more rows!")
@@ -141,4 +158,70 @@ func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Ma
 		return errors.New("mapping doesn't exist for table:" + sql.Table)
 	}
 	return errors.New("mapping doesn't exist for app:" + tgtApp)
+}
+
+func rollbackOneRow(undo_action sql.NullString) {
+	parameters := strings.Fields(undo_action.String)
+
+	QR := qr.NewQR(parameters[0], "stencil")
+
+	updQ := QR.PhyUpdateAppIDByRowID(parameters[1], parameters[2], []string{parameters[3]})
+	fmt.Println(updQ)
+
+	migrateOneLogicalRow(updQ, QR)
+}
+
+// migrate one logical row corresponding to one or several physical rows with same Row_ID
+func migrateOneLogicalRow(updQ []string, QR *qr.QR) error {
+	tx, err := QR.DB.Begin()
+	if err != nil {
+		log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
+		return err
+	}
+
+	// update each physical row
+	for _, usql := range updQ {
+		log.Println(usql)
+		if _, err = tx.Exec(usql); err != nil {
+			log.Println(">> Can't update!", err)
+			return err
+		}
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
+func RollbackMigration(txn_id int) {
+	stencilDB := db.GetDBConn(atomicity.StencilDBName)
+
+	getLogRecords := fmt.Sprintf("SELECT action_type, undo_action FROM txn_log WHERE action_id = %d ORDER BY PRIMARY KEY txn_log DESC", txn_id)
+	rows, err := stencilDB.Query(getLogRecords)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var action_type string
+		var undo_action sql.NullString
+		if err := rows.Scan(&action_type, &undo_action); err != nil {
+			log.Fatal(err)
+		}
+		// fmt.Printf("%s %s\n", action_type, undo_action)
+
+		switch action_type {
+		// case "COMMIT":
+		// 	log.Fatal("Can't abort an already completed action.")
+		case "ABORT", "ABORTED":
+			log.Fatal("Can't abort an already aborted action.")
+		case "CHANGE":
+			rollbackOneRow(undo_action)
+		case "BEGIN_TRANSACTION":
+			break
+		}
+	}
+
+	// LogOutcome(&Log_txn{DBconn: stencilDB, Txn_id: txn_id}, "ABORTED")
 }
