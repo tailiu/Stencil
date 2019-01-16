@@ -161,15 +161,20 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 	if err != nil {
 		log.Fatal("error reading dependencies for:"+srcApp, err)
 	}
+	log.Println("Dependencies fetched!")
 
 	settings, err := config.ReadAppSettings(srcApp, false)
 	if err != nil {
 		log.Fatal("error reading settings for:"+srcApp, err)
 	}
+	log.Println("App Settings fetched!")
 
 	sqls := preparePhysicalData(settings, dependencies)
+	log.Println("SQLs prepared!")
+
 	helper.Reverse(sqls)
 	helper.Linebreak("=", 80)
+
 	for _, sql := range sqls {
 		helper.Linebreak("±", 50)
 		fmt.Println("#sql => ", sql.Table, ":", sql.SQL)
@@ -193,9 +198,9 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 func main() {
 
 	// initAppLevelMigration(7, "app1", "app5")
-	initStencilMigration(60, "app1", "app2")
+	// initStencilMigration(50, "app1", "app6")
 	// QR := qr.NewQR("app1")
 	// QR.TestQuery()
 
-	// atomicity.RollbackMigration(267793080)
+	migrate.RollbackMigration(1503622861)
 }

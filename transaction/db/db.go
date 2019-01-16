@@ -24,7 +24,7 @@ func GetDBConn(app string) *sql.DB {
 
 	if _, ok := dbConns[app]; !ok {
 		log.Println("Creating new db conn for:", app)
-		dbConnAddr := "postgresql://root@10.224.45.154:26257/%s?sslmode=disable"
+		dbConnAddr := "postgresql://root@10.224.45.158:26257/%s?sslmode=disable"
 		dbConn, err := sql.Open("postgres", fmt.Sprintf(dbConnAddr, app))
 		if err != nil {
 			fmt.Println("error connecting to the db app:", app)
@@ -85,25 +85,40 @@ func DataCall1(app, sql string, args ...interface{}) (map[string]string, error) 
 		log.Fatal(err)
 	}
 
-	defer rows.Close()
+	// defer rows.Close()
 
 	if rows.Next() {
+
 		columns := make([]string, len(cols))
 		columnPointers := make([]interface{}, len(cols))
+
 		for i := range columns {
+
 			columnPointers[i] = &columns[i]
 		}
 
 		rows.Scan(columnPointers...)
 
 		for i, col := range cols {
+
 			data[col] = columns[i]
 		}
 
+		rows.Close()
 		return data, nil
 	}
 
+	rows.Close()
 	return data, errors.New("no result found for sql: " + sql)
+}
+
+func GetAppId(app_name string) (string, error) {
+	sql := "SELECT row_id from apps WHERE app_name = $1"
+
+	if result, err := DataCall1("stencil", sql, app_name); err == nil {
+		return result["row_id"], nil
+	}
+	return "-1", errors.New("App Not Found: " + app_name)
 }
 
 func GetPK(app, table string) []string {

@@ -35,16 +35,15 @@ type QI struct {
 	ColumnsWithTable map[string][]string
 }
 
-func NewQR(app_name, PDBNAME string) *QR {
+func NewQR(app_id, PDBNAME string) *QR {
 	qr := new(QR)
+	// qr.AppName = app_name
+	qr.AppID = app_id
 	qr.PDBNAME = PDBNAME
 	qr.DB = db.GetDBConn(qr.PDBNAME)
-	if app_name != "" {
-		qr.AppName = app_name
-		qr.SetAppId()
-		qr.GetBaseMappings()
-		qr.GetSupplementaryMappings()
-	}
+	// qr.SetAppId()
+	qr.GetBaseMappings()
+	qr.GetSupplementaryMappings()
 	return qr
 }
 
@@ -70,12 +69,6 @@ func Contains(a []string, x string) bool {
 		}
 	}
 	return false
-}
-
-func (self *QR) SetAppID(appID string) {
-	self.AppID = appID
-	self.GetBaseMappings()
-	self.GetSupplementaryMappings()
 }
 
 func (self QI) ValueOfColumn(col string) (string, error) {
@@ -144,11 +137,17 @@ func (self QR) TestQuery() {
 
 func (self QR) NewRowId() string {
 	sql := "Select unique_rowid() as rowid"
-	if res, err := db.DataCall1(self.AppName, sql); err != nil {
+	if res, err := db.DataCall1("stencil", sql); err != nil {
 		return "-1"
 	} else {
 		return res["rowid"]
 	}
+}
+
+func (self *QR) SetAppID(appID string) {
+	self.AppID = appID
+	self.GetBaseMappings()
+	self.GetSupplementaryMappings()
 }
 
 func (self *QR) SetAppId() string {
@@ -419,7 +418,7 @@ func (self QR) GetAffectedRowIDs(table, conds string) []string {
 	pqs := self.ResolveSelect(sql, true)
 
 	if len(pqs) > 0 {
-		for _, rowMap := range db.DataCall(self.AppName, sql) {
+		for _, rowMap := range db.DataCall("stencil", sql) {
 			for _, val := range rowMap {
 				rowIDs = append(rowIDs, val)
 			}
@@ -648,26 +647,4 @@ func (self QR) Resolve(sql string, args ...interface{}) []string {
 		}
 	}
 	return PQs
-}
-
-// migrate one logical row corresponding to one or several physical rows with same Row_ID
-func (self QR) MigrateOneLogicalRow(updQ []string) error {
-	tx, err := self.DB.Begin()
-	if err != nil {
-		log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
-		return err
-	}
-
-	// update each physical row
-	for _, usql := range updQ {
-		log.Println(usql)
-		if _, err = tx.Exec(usql); err != nil {
-			log.Println(">> Can't update!", err)
-			return err
-		}
-	}
-
-	tx.Commit()
-
-	return nil
 }
