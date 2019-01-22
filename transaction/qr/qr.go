@@ -462,6 +462,65 @@ func (self QR) PhyUpdateAppIDByRowID(new_app_id, ltab string, rowIDs []string) [
 	return PQs
 }
 
+// func (self QR) ResolveSelectWithoutJoins(sql string, qi *QI, args ...interface{}) []string {
+
+// 	var PQs []string
+// 	var phyMap map[string][][]string
+
+// 	if len(args) <= 0 {
+// 		phyMap = self.GetPhyMappingForLogicalTable(qi.TableName)
+// 	} else {
+// 		phyMap = self.GetBaseMappingForLogicalTable(qi.TableName)
+// 	}
+// 	fmt.Println("MAP ", phyMap)
+// 	cols := ""
+// 	joins := ""
+// 	conds := qi.Conditions
+// 	prev := ""
+// 	appidtab := ""
+// 	for pt, mapping := range phyMap {
+// 		joined := false
+// 		for _, colmap := range mapping {
+// 			if Contains(qi.Columns, colmap[1]) || Contains(qi.Columns, "*") {
+// 				if cols == "" {
+// 					cols = fmt.Sprintf("%s.%s_row_id as base_row_id, ", pt, pt[0:4])
+// 				}
+// 				if strings.Contains(pt, "base") && appidtab == "" {
+// 					appidtab = pt
+// 				}
+// 				if !joined {
+// 					if prev == "" {
+// 						joins += fmt.Sprintf(" %s ", pt)
+// 					} else {
+// 						joins += fmt.Sprintf(" JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
+// 					}
+// 					prev = pt
+// 					joined = true
+// 				}
+// 				col := fmt.Sprintf("%s.%s", pt, colmap[0])
+// 				cols += col + ", "
+// 				if nconds := strings.Replace(conds, qi.TableName+"."+colmap[1], col, -1); conds == nconds {
+// 					conds = strings.Replace(conds, colmap[1], col, -1)
+// 				} else {
+// 					conds = nconds
+// 				}
+// 				// conds = strings.Replace(conds, colmap[1], col, -1)
+// 			} else {
+// 			}
+// 		}
+// 	}
+
+// 	// if len(args) > 0 {
+// 	// 	cols = "base_row_id"
+// 	// }
+// 	pq := fmt.Sprintf("SELECT %s FROM %s WHERE %s.app_id = '%s'", strings.Trim(cols, ", "), strings.Trim(joins, ", "), appidtab, self.AppID)
+// 	if len(conds) > 0 {
+// 		pq += fmt.Sprintf(" AND (%s)", strings.Trim(conds, ", "))
+// 	}
+// 	PQs = append(PQs, pq)
+// 	return PQs
+// }
+
 func (self QR) ResolveSelectWithoutJoins(sql string, qi *QI, args ...interface{}) []string {
 
 	var PQs []string
@@ -472,21 +531,16 @@ func (self QR) ResolveSelectWithoutJoins(sql string, qi *QI, args ...interface{}
 	} else {
 		phyMap = self.GetBaseMappingForLogicalTable(qi.TableName)
 	}
-
 	cols := ""
 	joins := ""
 	conds := qi.Conditions
 	prev := ""
-	appidtab := ""
 	for pt, mapping := range phyMap {
 		joined := false
 		for _, colmap := range mapping {
 			if Contains(qi.Columns, colmap[1]) || Contains(qi.Columns, "*") {
 				if cols == "" {
-					cols = fmt.Sprintf("%s.%s_row_id as base_row_id, ", pt, pt[0:4])
-				}
-				if strings.Contains(pt, "base") && appidtab == "" {
-					appidtab = pt
+					cols = fmt.Sprintf("row_desc.row_id AS base_row_id, ")
 				}
 				if !joined {
 					if prev == "" {
@@ -509,17 +563,77 @@ func (self QR) ResolveSelectWithoutJoins(sql string, qi *QI, args ...interface{}
 			}
 		}
 	}
-
-	// if len(args) > 0 {
-	// 	cols = "base_row_id"
-	// }
-	pq := fmt.Sprintf("SELECT %s FROM %s WHERE %s.app_id = '%s'", strings.Trim(cols, ", "), strings.Trim(joins, ", "), appidtab, self.AppID)
+	joins += fmt.Sprintf(" JOIN row_desc ON %s.%s = row_desc.row_id", prev, prev[0:4]+"_row_id")
+	pq := fmt.Sprintf("SELECT %s FROM %s WHERE row_desc.app_id = '%s'", strings.Trim(cols, ", "), strings.Trim(joins, ", "), self.AppID)
 	if len(conds) > 0 {
 		pq += fmt.Sprintf(" AND (%s)", strings.Trim(conds, ", "))
 	}
 	PQs = append(PQs, pq)
 	return PQs
 }
+
+// func (self QR) ResolveSelectWithJoins(sql string, qi *QI, args ...interface{}) []string {
+
+// 	// parameter args used as indicator for query resolution during migration
+
+// 	var PQs []string
+
+// 	re := regexp.MustCompile(`(?i)(join)`)
+// 	phrases := deleteEmpty(re.Split(qi.TableName, -1))
+// 	phyMaps := make(map[string]map[string][][]string)
+// 	bigjoin := ""
+// 	for _, phrase := range phrases {
+// 		phrase = strings.Trim(phrase, " ")
+// 		re := regexp.MustCompile(`(?i)( on )`)
+// 		tabWOnCond := deleteEmpty(re.Split(phrase, -1))
+// 		if len(args) <= 0 {
+// 			phyMaps[tabWOnCond[0]] = self.GetPhyMappingForLogicalTable(tabWOnCond[0])
+// 		} else {
+// 			phyMaps[tabWOnCond[0]] = self.GetBaseMappingForLogicalTable(tabWOnCond[0])
+// 		}
+// 		// pconds := ""
+// 		joins := ""
+// 		prev := ""
+// 		pcols := ""
+// 		appidtab := ""
+// 		for pt, mapping := range phyMaps[tabWOnCond[0]] {
+// 			// pcols += pt + ".*, "
+// 			if pcols == "" {
+// 				pcols = fmt.Sprintf("%s.%s_row_id as  base_row_id, ", pt, pt[0:4])
+// 			}
+// 			for _, colmap := range mapping {
+// 				pcols += fmt.Sprintf("%s.%s as %s, ", pt, colmap[0], colmap[1])
+// 			}
+// 			if joins == "" {
+// 				joins = pt
+// 				appidtab += fmt.Sprintf("%s.app_id = '%s'", pt, self.AppID)
+// 			} else {
+// 				joins += fmt.Sprintf(" JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
+// 				if strings.Contains(pt, "base_") {
+// 					appidtab += fmt.Sprintf(" AND %s.app_id = '%s'", pt, self.AppID)
+// 				}
+// 			}
+// 			prev = pt
+// 		}
+// 		// ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE app_id = '%s') %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), self.AppID, tabWOnCond[0])
+// 		ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), appidtab, tabWOnCond[0])
+// 		// ptable := fmt.Sprintf(" (SELECT %s FROM %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), tabWOnCond[0])
+
+// 		if len(tabWOnCond) > 1 {
+// 			bigjoin += fmt.Sprintf(" JOIN %s ON %s ", ptable, tabWOnCond[1])
+// 		} else {
+// 			bigjoin += ptable
+// 		}
+// 	}
+// 	var bigsql string
+// 	if len(qi.Conditions) > 0 {
+// 		bigsql = fmt.Sprintf("SELECT %s FROM %s WHERE %s", strings.Join(qi.Columns, ","), bigjoin, qi.Conditions)
+// 	} else {
+// 		bigsql = fmt.Sprintf("SELECT %s FROM %s", strings.Join(qi.Columns, ","), bigjoin)
+// 	}
+// 	PQs = append(PQs, bigsql)
+// 	return PQs
+// }
 
 func (self QR) ResolveSelectWithJoins(sql string, qi *QI, args ...interface{}) []string {
 
@@ -544,28 +658,24 @@ func (self QR) ResolveSelectWithJoins(sql string, qi *QI, args ...interface{}) [
 		joins := ""
 		prev := ""
 		pcols := ""
-		appidtab := ""
 		for pt, mapping := range phyMaps[tabWOnCond[0]] {
 			// pcols += pt + ".*, "
 			if pcols == "" {
-				pcols = fmt.Sprintf("%s.%s_row_id as  base_row_id, ", pt, pt[0:4])
+				pcols = fmt.Sprintf("row_desc.row_id AS base_row_id, ")
 			}
 			for _, colmap := range mapping {
 				pcols += fmt.Sprintf("%s.%s as %s, ", pt, colmap[0], colmap[1])
 			}
 			if joins == "" {
 				joins = pt
-				appidtab += fmt.Sprintf("%s.app_id = '%s'", pt, self.AppID)
 			} else {
 				joins += fmt.Sprintf(" JOIN %s ON %s.%s = %s.%s ", pt, prev, prev[0:4]+"_row_id", pt, pt[0:4]+"_row_id")
-				if strings.Contains(pt, "base_") {
-					appidtab += fmt.Sprintf(" AND %s.app_id = '%s'", pt, self.AppID)
-				}
 			}
 			prev = pt
 		}
+		joins += fmt.Sprintf(" JOIN row_desc ON %s.%s = row_desc.row_id", prev, prev[0:4]+"_row_id")
 		// ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE app_id = '%s') %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), self.AppID, tabWOnCond[0])
-		ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), appidtab, tabWOnCond[0])
+		ptable := fmt.Sprintf(" (SELECT %s FROM %s WHERE row_desc.app_id = '%s') %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), self.AppID, tabWOnCond[0])
 		// ptable := fmt.Sprintf(" (SELECT %s FROM %s) %s ", strings.Trim(pcols, " ,"), strings.Trim(joins, " ,"), tabWOnCond[0])
 
 		if len(tabWOnCond) > 1 {

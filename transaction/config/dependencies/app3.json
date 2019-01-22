@@ -1,0 +1,119 @@
+{
+	"dependencies": [{
+			"tag": "Customer",
+			"depends_on": "District",
+			"conditions": [
+                {   "tag_attr": "C_D_ID",
+                    "depends_on_attr": "D_ID"
+                },
+				{
+                    "tag_attr": "C_W_ID",
+                    "depends_on_attr": "D_W_ID"
+                }
+            ]
+		},
+		{
+			"tag": "History",
+			"depends_on": "Customer",
+            "conditions": [
+                {   "tag_attr": "H_C_ID",
+                    "depends_on_attr": "C_ID"
+                },
+				{
+                    "tag_attr": "H_C_D_ID",
+                    "depends_on_attr": "C_D_ID"
+                },
+				{
+                    "tag_attr": "H_C_W_ID",
+                    "depends_on_attr": "C_W_ID"
+                }
+            ]
+		},
+		{
+			"tag": "History",
+			"depends_on": "District",
+			"conditions": [
+                {   "tag_attr": "H_D_ID",
+                    "depends_on_attr": "D_ID"
+                },
+				{
+                    "tag_attr": "H_W_ID",
+                    "depends_on_attr": "D_W_ID"
+                }
+            ]
+		},
+		{
+			"tag": "New_Order",
+			"depends_on": "Orderr",
+            "conditions": [
+                {   "tag_attr": "NO_O_ID",
+                    "depends_on_attr": "O_ID"
+                },
+				{
+                    "tag_attr": "NO_D_ID",
+                    "depends_on_attr": "O_D_ID"
+                },
+				{
+                    "tag_attr": "NO_W_ID",
+                    "depends_on_attr": "O_W_ID"
+                }
+            ]
+		},
+		{
+			"tag": "Orderr",
+			"depends_on": "Customer",
+            "conditions": [
+                {   "tag_attr": "O_C_ID",
+                    "depends_on_attr": "C_ID"
+                },
+				{
+                    "tag_attr": "O_D_ID",
+                    "depends_on_attr": "C_D_ID"
+                },
+				{
+                    "tag_attr": "O_W_ID",
+                    "depends_on_attr": "C_W_ID"
+                }
+            ]
+		},
+		{
+			"tag": "Order_Line",
+			"depends_on": "Orderr",
+            "conditions": [
+                {   "tag_attr": "OL_O_ID",
+                    "depends_on_attr": "O_ID"
+                },
+				{
+                    "tag_attr": "OL_D_ID",
+                    "depends_on_attr": "O_D_ID"
+                },
+				{
+                    "tag_attr": "OL_W_ID",
+                    "depends_on_attr": "O_W_ID"
+                }
+            ]
+		},
+		{
+			"tag": "Order_Line",
+			"depends_on": "Stock",
+			"conditions": [
+                {   "tag_attr": "OL_SUPPLY_W_ID",
+                    "depends_on_attr": "S_W_ID"
+                },
+				{
+                    "tag_attr": "OL_I_ID",
+                    "depends_on_attr": "S_I_ID"
+                }
+            ]
+		},
+		{
+			"tag": "Stock",
+			"depends_on": "Item",
+			"conditions": [
+                {   "tag_attr": "S_I_ID",
+                    "depends_on_attr": "I_ID"
+                }
+            ]
+		}
+	]
+}
