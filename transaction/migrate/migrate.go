@@ -122,9 +122,6 @@ func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Ma
 			TgtQR := qr.NewQR(tgtAppID, "stencil")
 
 			sql.SQL = strings.Replace(sql.SQL, "$1", fmt.Sprintf("'%d'", uid), 1)
-			
-			// fmt.Println(QR.AppID)
-			// fmt.Println(TgtQR.AppID)
 
 			// transform a logical request into a physical request
 			if psqls := QR.Resolve(sql.SQL, true); len(psqls) > 0 {
@@ -161,17 +158,6 @@ func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Ma
 		return errors.New("mapping doesn't exist for table:" + sql.Table)
 	}
 	return errors.New("mapping doesn't exist for app:" + tgtApp)
-}
-
-func rollbackOneRow(undo_action sql.NullString) {
-	parameters := strings.Fields(undo_action.String)
-
-	QR := qr.NewQR(parameters[0], "stencil")
-
-	updQ := QR.PhyUpdateAppIDByRowID(parameters[1], parameters[2], []string{parameters[3]})
-	fmt.Println(updQ)
-
-	// migrateOneLogicalRow(updQ, QR)
 }
 
 func migrateOneLogicalRow(QR *qr.QR, tgt_app_ID string, base_row_id string) error {
@@ -217,6 +203,17 @@ func migrateOneLogicalRow(QR *qr.QR, tgt_app_ID string, base_row_id string) erro
 
 // 	return nil
 // }
+
+func rollbackOneRow(undo_action sql.NullString) {
+	parameters := strings.Fields(undo_action.String)
+
+	QR := qr.NewQR(parameters[0], "stencil")
+
+	// updQ := QR.PhyUpdateAppIDByRowID(parameters[1], parameters[2], []string{parameters[3]})
+	// fmt.Println(updQ)
+
+	// migrateOneLogicalRow(updQ, QR)
+}
 
 func RollbackMigration(txn_id int) {
 	stencilDB := db.GetDBConn(atomicity.StencilDBName)
