@@ -28,6 +28,7 @@ for line in schemaFile:
                 createTablelines = createTable.split('\n')
                 for i, createTableline in enumerate(createTablelines):
                     if re.search(r'\b%s\b'%(primaryKey), createTableline):
+                        createTableline = createTableline.replace('bigint', 'serial8')
                         if createTableline.find(',') != -1:
                             createTablelines[i] = createTableline[:-1] + ' PRIMARY KEY,'
                         else:
