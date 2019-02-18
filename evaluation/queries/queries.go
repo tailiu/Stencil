@@ -47,35 +47,28 @@ func execute(tx *sql.Tx, queries []string) {
 	tx.Commit()
 }
 
-func publishStatus(dbConn *sql.DB, accountID int, content string) {
-	t := time.Now().Format(time.RFC3339)
-	activityID := randomNonnegativeInt()
-	conversationID := randomNonnegativeInt()
-	statusID := randomNonnegativeInt()
-	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(activityID)
-	var statusNum int
-	var sqls1 []string
-	var sqls2 []string
+func checkExists(tx *sql.Tx, query string) int {
+	var exists int
+	rows, err := tx.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		if err := rows.Scan(&exists); err != nil {
+			log.Fatal(err)
+		}
+	}
+	return exists
+}
 
+func updateAccountStats(dbConn *sql.DB, accountID int, updateType string, difference int) {
+	var statusNum int
+	var	sqls []string 
 	tx := beginTx(dbConn)
 	sql1 := fmt.Sprintf(
-		"INSERT INTO conversations (id, created_at, updated_at) VALUES (%d, '%s', '%s');", 
-		conversationID, t, t)
-	sql2 := fmt.Sprintf(
-		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s');",  
-		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri)
-	sql3 := fmt.Sprintf(
-		"INSERT INTO stream_entries (activity_id, activity_type, created_at, updated_at, account_id) VALUES (%d, '%s', '%s', '%s', %d);",
-		activityID, "Status", t, t, accountID)
-	sqls1 = append(sqls1, sql1, sql2, sql3)
-	execute(tx, sqls1)
-	tx.Commit()
-
-	tx = beginTx(dbConn)
-	sql4 := fmt.Sprintf(
-		"SELECT statuses_count FROM account_stats WHERE account_stats.account_id = %d LIMIT %d;",
-		accountID, 1)
-	rows, err := tx.Query(sql4)
+		"SELECT %s FROM account_stats WHERE account_stats.account_id = %d LIMIT %d;",
+		updateType, accountID, 1)
+	rows, err := tx.Query(sql1)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,110 +78,121 @@ func publishStatus(dbConn *sql.DB, accountID int, content string) {
 		}
 	}
 	t1 := time.Now().Format(time.RFC3339)
-	sql5 := fmt.Sprintf(
-		"UPDATE account_stats SET statuses_count = %d, last_status_at = '%s', updated_at = '%s' WHERE account_stats.account_id = %d;",
-		statusNum + 1, t1, t1, accountID) // These last_status_at and updated_at are generated randomly
+	sql2 := fmt.Sprintf(
+		"UPDATE account_stats SET %s = %d, last_status_at = '%s', updated_at = '%s' WHERE account_stats.account_id = %d;",
+		updateType, statusNum + difference, t1, t1, accountID) // These last_status_at and updated_at are generated randomly
 
-	sqls2 = append(sqls2, sql5)
-	execute(tx, sqls2)
+	sqls = append(sqls, sql2)
+	execute(tx, sqls)
 	tx.Commit()
 }
 
-func favourite(dbConn *sql.DB, userID int, statusID int) {
-	tx := beginTx(dbConn)
-
-	var favouriteExist int
-	var favouritesCount int 
+func updateStatusStats(dbConn *sql.DB, accountID int, statusID int, updateType string, difference int) {
 	var sqls []string
-
+	count := -1
+	tx := beginTx(dbConn)
 	sql1 := fmt.Sprintf(
-		"SELECT 1 AS one FROM favourites WHERE favourites.status_id = %d AND favourites.account_id = %d LIMIT %d;",
-		statusID, userID, 1)
+		"SELECT status_stats.%s FROM status_stats WHERE status_stats.status_id = %d LIMIT %d;",
+		updateType, statusID, 1)
 	rows, err := tx.Query(sql1)
 	if err != nil {
 		log.Fatal(err)
 	}
 	for rows.Next() {
-		if err := rows.Scan(&favouriteExist); err != nil {
+		if err := rows.Scan(&count); err != nil {
 			log.Fatal(err)
 		}
 	}
-	if favouriteExist == 1 {
+	var sql2 string
+	t := time.Now().Format(time.RFC3339)
+	if count == -1 {
+		sql2 = fmt.Sprintf(
+			"INSERT INTO status_stats (status_id, %s, created_at, updated_at) VALUES (%d, %d, '%s', '%s');",
+			updateType, statusID, 1, t, t)
+	} else {
+		sql2 = fmt.Sprintf(
+			"UPDATE status_stats SET %s = %d, updated_at = '%s' WHERE status_id = %d;",
+			updateType, count + difference, t, statusID)
+	}
+	sqls = append(sqls, sql2)
+	execute(tx, sqls)
+	tx.Commit()
+}
+
+func insertIntoStreamEntries(activityID int, t string, accountID int) string {
+	return fmt.Sprintf(
+		"INSERT INTO stream_entries (activity_id, activity_type, created_at, updated_at, account_id) VALUES (%d, '%s', '%s', '%s', %d);",
+		activityID, "Status", t, t, accountID)
+}
+
+func publishStatus(dbConn *sql.DB, accountID int, content string) {
+	t := time.Now().Format(time.RFC3339)
+	activityID := randomNonnegativeInt()
+	conversationID := randomNonnegativeInt()
+	statusID := randomNonnegativeInt()
+	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(activityID)
+	var sqls1 []string
+
+	tx := beginTx(dbConn)
+	sql1 := fmt.Sprintf(
+		"INSERT INTO conversations (id, created_at, updated_at) VALUES (%d, '%s', '%s');", 
+		conversationID, t, t)
+	sql2 := fmt.Sprintf(
+		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s');",  
+		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri)
+	sql3 := insertIntoStreamEntries(activityID, t, accountID)
+	sqls1 = append(sqls1, sql1, sql2, sql3)
+	execute(tx, sqls1)
+	tx.Commit()
+
+	updateAccountStats(dbConn, accountID, "statuses_count", 1)
+}
+
+func favourite(dbConn *sql.DB, accountID int, statusID int) {
+	tx := beginTx(dbConn)
+
+	var sqls []string
+
+	sql1 := fmt.Sprintf(
+		"SELECT 1 AS one FROM favourites WHERE favourites.status_id = %d AND favourites.account_id = %d LIMIT %d;",
+		statusID, accountID, 1)
+	if exists := checkExists(tx, sql1); exists == 1 {
 		tx.Commit()
 		return 
-	}
-
-	sql2 := fmt.Sprintf(
-		"SELECT status_stats.favourites_count FROM status_stats WHERE status_stats.status_id = %d LIMIT %d;",
-		statusID, 1)
-	rows, err = tx.Query(sql2)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		if err := rows.Scan(&favouritesCount); err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	t := time.Now().Format(time.RFC3339)
 	sql3 := fmt.Sprintf(
 		"INSERT INTO favourites (created_at, updated_at, account_id, status_id) VALUES ('%s', '%s', %d, %d);",
-		t, t, userID, statusID)
-	sql4 := fmt.Sprintf(
-		"INSERT INTO status_stats (status_id, favourites_count, created_at, updated_at) VALUES (%d, %d, '%s', '%s');",
-		statusID, favouritesCount + 1, t, t)
-	sqls = append(sqls, sql3, sql4)
+		t, t, accountID, statusID)
+	sqls = append(sqls, sql3)
 	execute(tx, sqls)
 	tx.Commit()
+
+	updateStatusStats(dbConn, accountID, statusID, "favourites_count", 1)
 }
 
-func unfavourite(dbConn *sql.DB, userID int, statusID int) {
+func unfavourite(dbConn *sql.DB, accountID int, statusID int) {
 	tx := beginTx(dbConn)
 
-	var favouriteExist int
-	var favouritesCount int
 	var sqls []string
 
 	sql1 := fmt.Sprintf(
 		"SELECT 1 AS one FROM favourites WHERE favourites.status_id = %d AND favourites.account_id = %d LIMIT %d;",
-		statusID, userID, 1)
-	rows, err := tx.Query(sql1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		if err := rows.Scan(&favouriteExist); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if favouriteExist == 0 {
+		statusID, accountID, 1)
+	if exists := checkExists(tx, sql1); exists == 0 {
 		tx.Commit()
 		return 
 	}
 
-	sql2 := fmt.Sprintf(
-		"SELECT status_stats.favourites_count FROM status_stats WHERE status_stats.status_id = %d LIMIT %d;",
-		statusID, 1)
-	rows, err = tx.Query(sql2)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		if err := rows.Scan(&favouritesCount); err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	sql3 := fmt.Sprintf(
 		"DELETE FROM favourites WHERE account_id = %d and status_ID = %d;",
-		userID, statusID)
-	sql4 := fmt.Sprintf(
-		"UPDATE status_stats SET favourites_count = %d WHERE status_ID = %d;",
-		favouritesCount - 1, statusID)
-	sqls = append(sqls, sql3, sql4)
+		accountID, statusID)
+	sqls = append(sqls, sql3)
 	execute(tx, sqls)
 	tx.Commit()
+
+	updateStatusStats(dbConn, accountID, statusID, "favourites_count", -1)
 }
 
 func signup(dbConn *sql.DB, email string, username string, password string) {
@@ -220,19 +224,9 @@ func follow(dbConn *sql.DB, accountID int, targetAccountID int) {
 
 	tx := beginTx(dbConn)
 
-	var followExists int
 	sql1 := fmt.Sprintf("SELECT 1 AS one FROM follows WHERE follows.account_id = %d AND follows.target_account_id = %d LIMIT %d;",
 	accountID, targetAccountID, 1)
-	rows, err := tx.Query(sql1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		if err := rows.Scan(&followExists); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if followExists == 1 {
+	if exists := checkExists(tx, sql1); exists == 1 {
 		tx.Commit()
 		return 
 	}
@@ -240,98 +234,37 @@ func follow(dbConn *sql.DB, accountID int, targetAccountID int) {
 	t := time.Now().Format(time.RFC3339)
 	uri := "http://localhost:3000/" + randStrSeq(32)
 	var sqls1 []string
-	var sqls2 []string
-	var counts []int
-	var count int
-
-	sql2 := fmt.Sprintf("SELECT following_count FROM ACCOUNT_STATS WHERE account_stats.account_id = %d LIMIT %d;", accountID, 1)
-	sql3 := fmt.Sprintf("SELECT followers_count FROM ACCOUNT_STATS WHERE account_stats.account_id = %d LIMIT %d;", targetAccountID, 1)
-	sqls1 = append(sqls1, sql2, sql3)
-
-	for _, sql := range sqls1 {
-		fmt.Println(sql)
-		rows, err = tx.Query(sql)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for rows.Next() {
-			if err := rows.Scan(&count); err != nil {
-				log.Fatal(err)
-			}
-			counts = append(counts, count)
-		}
-	}
-
 	sql4 := fmt.Sprintf("INSERT INTO FOLLOWS (created_at, updated_at, account_id, target_account_id, uri) VALUES ('%s', '%s', %d, %d, '%s');",  
 	t, t, accountID, targetAccountID, uri)
-	sql5 := fmt.Sprintf("UPDATE ACCOUNT_STATS SET following_count = %d, updated_at = '%s' WHERE account_stats.account_id = %d;",
-	counts[0] + 1, t, accountID)
-	sql6 := fmt.Sprintf("UPDATE ACCOUNT_STATS SET followers_count = %d, updated_at = '%s' WHERE account_stats.account_id = %d;",
-	counts[1] + 1, t, targetAccountID)
-	sqls2 = append(sqls2, sql4, sql5, sql6)
-	execute(tx, sqls2)
-
+	sqls1 = append(sqls1, sql4)
+	execute(tx, sqls1)
 	tx.Commit()
+
+	updateAccountStats(dbConn, accountID, "following_count", 1)
+	updateAccountStats(dbConn, targetAccountID, "followers_count", 1)
 }
 
 func unfollow(dbConn *sql.DB, accountID int, targetAccountID int) {
 	if accountID == targetAccountID {
 		return 
 	}
-
+	
 	tx := beginTx(dbConn)
-
-	var followExists int
-	sql1 := fmt.Sprintf("SELECT 1 AS one FROM follows WHERE follows.account_id = %d AND follows.target_account_id = %d LIMIT %d;",
-	accountID, targetAccountID, 1)
-	rows, err := tx.Query(sql1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		if err := rows.Scan(&followExists); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if followExists == 0 {
+	sql1 := fmt.Sprintf(
+		"SELECT 1 AS one FROM follows WHERE follows.account_id = %d AND follows.target_account_id = %d LIMIT %d;",accountID, targetAccountID, 1)
+	if exists := checkExists(tx, sql1); exists == 0 {
 		tx.Commit()
-		return
+		return 
 	}
-
-	t := time.Now().Format(time.RFC3339)
-	var sqls1 []string
-	var sqls2 []string
-	var counts []int
-	var count int
-
-	sql2 := fmt.Sprintf("SELECT following_count FROM ACCOUNT_STATS WHERE account_stats.account_id = %d LIMIT %d;", accountID, 1)
-	sql3 := fmt.Sprintf("SELECT followers_count FROM ACCOUNT_STATS WHERE account_stats.account_id = %d LIMIT %d;", targetAccountID, 1)
-	sqls1 = append(sqls1, sql2, sql3)
-
-	for _, sql := range sqls1 {
-		fmt.Println(sql)
-		rows, err = tx.Query(sql)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for rows.Next() {
-			if err := rows.Scan(&count); err != nil {
-				log.Fatal(err)
-			}
-			counts = append(counts, count)
-		}
-	}
-
-	sql4 := fmt.Sprintf("DELETE FROM follows WHERE follows.account_id = %d AND follows.target_account_id = %d",  
+	var sqls []string
+	sql2 := fmt.Sprintf("DELETE FROM follows WHERE follows.account_id = %d AND follows.target_account_id = %d",  
 	accountID, targetAccountID)
-	sql5 := fmt.Sprintf("UPDATE ACCOUNT_STATS SET following_count = %d, updated_at = '%s' WHERE account_stats.account_id = %d;",
-	counts[0] - 1, t, accountID)
-	sql6 := fmt.Sprintf("UPDATE ACCOUNT_STATS SET followers_count = %d, updated_at = '%s' WHERE account_stats.account_id = %d;",
-	counts[1] - 1, t, targetAccountID)
-	sqls2 = append(sqls2, sql4, sql5, sql6)
-	execute(tx, sqls2)
-
+	sqls = append(sqls, sql2)
+	execute(tx, sqls)
 	tx.Commit()
+
+	updateAccountStats(dbConn, accountID, "following_count", -1)
+	updateAccountStats(dbConn, targetAccountID, "followers_count", -1)
 }
 
 func replyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusID int) {
@@ -341,11 +274,7 @@ func replyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusI
 	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(activityID)
 	var conversationID int
 	var replyToAccountID int
-	var statusNum int
-	replyCount := -1
 	var sqls1 []string
-	var sqls2 []string
-	var sqls3 []string
 
 	tx := beginTx(dbConn)
 	sql1 := fmt.Sprintf("SELECT conversation_id, account_id FROM statuses WHERE statuses.id = %d LIMIT %d;",
@@ -362,64 +291,44 @@ func replyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusI
 	sql2 := fmt.Sprintf(
 		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, in_reply_to_id, reply, in_reply_to_account_id) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s', %d, %t, %d);",  
 		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID)
-	sql3 := fmt.Sprintf(
-		"INSERT INTO stream_entries (activity_id, activity_type, created_at, updated_at, account_id) VALUES (%d, '%s', '%s', '%s', %d);",
-		activityID, "Status", t, t, accountID)
+	sql3 := insertIntoStreamEntries(activityID, t, accountID)
 	sqls1 = append(sqls1, sql2, sql3)
 	execute(tx, sqls1)
 	tx.Commit()
 
+	updateAccountStats(dbConn, accountID, "statuses_count", 1)
+	updateStatusStats(dbConn, accountID, statusID, "replies_count", 1)
+}
 
-	tx = beginTx(dbConn)
-	sql4 := fmt.Sprintf(
-		"SELECT statuses_count FROM account_stats WHERE account_stats.account_id = %d LIMIT %d;",
-		accountID, 1)
-	rows, err = tx.Query(sql4)
-	if err != nil {
-		log.Fatal(err)
+func reblog(dbConn *sql.DB, accountID int, reblogStatusID int) {
+	t := time.Now().Format(time.RFC3339)
+	activityID := randomNonnegativeInt()
+	conversationID := randomNonnegativeInt()
+	statusID := randomNonnegativeInt()
+	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(activityID)
+	var sqls []string
+
+	tx := beginTx(dbConn)
+	sql1 := fmt.Sprintf(
+		"SELECT 1 AS one FROM statuses WHERE statuses.reblog_of_id = %d AND statuses.account_id = %d LIMIT %d;", 
+		statusID, accountID, 1)
+	if exists := checkExists(tx, sql1); exists == 1 {
+		tx.Commit()
+		return 
 	}
-	for rows.Next() {
-		if err := rows.Scan(&statusNum); err != nil {
-			log.Fatal(err)
-		}
-	}
-	t1 := time.Now().Format(time.RFC3339)
-	fmt.Println(statusNum)
-	sql5 := fmt.Sprintf(
-		"UPDATE account_stats SET statuses_count = %d, last_status_at = '%s', updated_at = '%s' WHERE account_stats.account_id = %d;",
-		statusNum + 1, t1, t1, accountID) // These last_status_at and updated_at are generated randomly
-	sqls2 = append(sqls2, sql5)
-	execute(tx, sqls2)
+	sql2 := fmt.Sprintf(
+		"INSERT INTO conversations (id, created_at, updated_at) VALUES (%d, '%s', '%s')", 
+		conversationID, t, t)
+	sql3 := fmt.Sprintf(
+		"INSERT INTO statuses (id, created_at, updated_at, reblog_of_id, conversation_id, local, account_id, uri) VALUES (%d, '%s', '%s', %d, %d, %t, %d, '%s');",
+		statusID, t, t, reblogStatusID, conversationID, true, accountID, uri)
+	sql4 := insertIntoStreamEntries(activityID, t, accountID)
+	sqls = append(sqls, sql2, sql3, sql4)
+	execute(tx, sqls)
 	tx.Commit()
 
-
-	tx = beginTx(dbConn)
-
-	sql6 := fmt.Sprintf(
-		"SELECT status_stats.replies_count FROM status_stats WHERE status_stats.status_id = %d LIMIT %d;",
-		statusID, 1)
-	rows, err = tx.Query(sql6)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		if err := rows.Scan(&replyCount); err != nil {
-			log.Fatal(err)
-		}
-	}
-	var sql7 string
-	if replyCount == -1 {
-		sql7 = fmt.Sprintf(
-			"INSERT INTO status_stats (status_id, replies_count, created_at, updated_at) VALUES (%d, %d, '%s', '%s');",
-			statusID, 1, t, t)
-	} else {
-		sql7 = fmt.Sprintf(
-			"UPDATE status_stats SET replies_count = %d, updated_at = '%s' WHERE status_id = %d,;",
-			replyCount + 1, t, statusID)
-	}
-	sqls3 = append(sqls3, sql7)
-	execute(tx, sqls3)
-	tx.Commit()
+	updateAccountStats(dbConn, accountID, "statuses_count", 1)
+	updateStatusStats(dbConn, accountID, statusID, "reblogs_count", 1)
 }
 
 func main() {
@@ -428,17 +337,19 @@ func main() {
         log.Fatal("error connecting to the database: ", err)
 	}
 	
-	// publishStatus(dbConn, 925840864, "oooooooooooooooo")
+	// publishStatus(dbConn, 925840864, "okkkkkkkkkkkk")
 
-	// favourite(dbConn, 1, 100584447)
+	// favourite(dbConn, 925840864, 1389362391)
 
-	// unfavourite(dbConn, 1, 100584447)
+	// unfavourite(dbConn, 925840864, 1389362391)
 
-	// signup(dbConn, "zainzainzainzainzainzain@nyu.edu", "zainzainzainzainzainzaincow", "cowcow")
+	// signup(dbConn, "tai@nyu.edu", "zaincow", "cowcow")
 
-	// follow(dbConn, 829522384, 1042906640)
+	// follow(dbConn, 1217195077, 1042906640)
 
-	// unfollow(dbConn, 829522384, 1042906640)
+	// unfollow(dbConn, 1217195077, 1042906640)
 	
-	// replyToStatus(dbConn, 829522384, "jkjkjkjkjkj", 614615112)
+	// replyToStatus(dbConn, 829522384, "a reply", 2042450516)
+
+	reblog(dbConn, 735104489, 614615112)
 }
