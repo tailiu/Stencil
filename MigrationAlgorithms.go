@@ -99,6 +99,12 @@ func randomize(nodes []DependencyNode) {
 
 }
 
+
+func (t Thread) SharedDataMigration(migratingUser, sharingUser int, srcApp, dstApp string) {
+
+
+}
+
 /*
  * Assumptions:
  * 1. Threads don't communicate with each other. Reasons: Simplicity, performance.
@@ -108,33 +114,49 @@ func randomize(nodes []DependencyNode) {
 
 func (t Thread) AggressiveMigration(userid int, srcApp, dstApp string, node *DependencyNode) {
 	try:
-		for child := randomlyGetChild(node); child != nil; child = randomlyGetChild(node) {
+		if t.Root == node && !checkUserInApp(userid, dstApp) {
+			addUserToApplication(userid, dstApp)
+		}
+		// randomlyGetAdjacentNode(node) not only gets a migrating user's data but also some data shared by other users
+		for child := randomlyGetAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
 			AggressiveMigration(userid, srcApp, dstApp, child)
 		}
-		// leaf node ==> len(node.Children) == 0
 		acquirePredicateLock(*node)
-		for child := randomlyGetChild(node); child != nil; child = randomlyGetChild(node) {
+		for child := randomlyGetAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
 			AggressiveMigration(userid, srcApp, dstApp, child)
 		}
-		migrateNode(*node)
+		migrateNode(*node) // Log before migrating
 		releasePredicateLock(*node)
 	catch NodeNotFound:
 		t.releaseAllLocks()
 		if t.Root {
 			AggressiveMigration(userid, srcApp, dstApp, t.Root)
 		}else{
+			if checkUserInApp(userid, srcApp){
+				removeUserFromApplication(userid, srcApp)
+			}
+			UpdateMigrationState(userid, srcApp, dstApp)
 			log.Println("Congratulations, this migration worker has finished it's job!")
 		}
 }
 
+//Extending database guarantee to ensure migration correctness and protect application semantics
+//we are trying not to lock all application service and other users' data and protect application semantics
+//Our solution is agnostic to threads or concurrent migration
+//we are only interrupting limited things that are going to be migrated and minimizing interruption even not per user basis
+//Aggressive and normal: tradeoff between availability and performance(latency) 
+
+//Diaspora person and user table <-> Twitter user table
 func (t Thread) NormalMigration(userid int, srcApp, dstApp string, node *DependencyNode) {
 	try:
-		for child := randomlyGetChild(node); child != nil; child = randomlyGetChild(node) {
+		if t.Root == node && !checkUserInApp(userid, dstApp) {
+			addUserToApplication(userid, dstApp)
+		}
+		for child := randomlyGetAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
 			NormalMigration(userid, srcApp, dstApp, child)
 		}
-		// leaf node ==> len(node.Children) == 0
 		acquirePredicateLock(*node)
-		if child := randomlyGetChild(node); child != nil {
+		if child := randomlyGetAdjacentNode(node); child != nil {
 			releasePredicateLock(*node)
 			NormalMigration(userid, srcApp, dstApp, child)
 		} else {
@@ -144,12 +166,59 @@ func (t Thread) NormalMigration(userid int, srcApp, dstApp string, node *Depende
 	catch NodeNotFound:
 		t.releaseAllLocks()
 		if t.Root {
-			NormalMigration(userid, srcApp, dstApp, t.Root)
+			AggressiveMigration(userid, srcApp, dstApp, t.Root)
 		}else{
+			if checkUserInApp(userid, srcApp){
+				removeUserFromApplication(userid, srcApp)
+			}
+			UpdateMigrationState(userid, srcApp, dstApp)
 			log.Println("Congratulations, this migration worker has finished it's job!")
 		}
 }
 
+func GetMigratedData() {
+	return data
+}
+
+func DisplayController(migrationID int) {
+
+	for migratedNode := GetMigratedNode(migrationID); 
+		!IsMigrationComplete(migrationID);  
+		migratedNode = GetMigratedNode(migrationID){
+		if migratedNode {
+			go CheckDisplay(migratedNode. false)
+		}
+	}
+	// Only Executed After The Migration Is Complete
+	// Remaning Migration Nodes:
+	// -> The Migrated Nodes In The Destination Application That Still Have Their Migration Flags Raised
+	for migratedNode := range GetRemainingMigratedNodes(migrationID){
+		go CheckDisplay(migratedNode, true)
+	}
+}
+
+func CheckDisplay(node *DependencyNode, finalRound bool) bool {
+	try:
+		if AlreadyDisplayed(node) {
+			return true
+		}
+		if t.Root == node.GetParent() {
+			Display(node)
+			return true
+		} else {
+			if CheckDisplay(node.GetParent(), finalRound) {
+				Display(node)
+				return true
+			}
+		}
+		if finalRound && node.DisplayFlag {
+			Display(node)
+			return true
+		}
+		return  false
+	catch NodeNotFound:
+		return false
+}
 
 
 func mappingExists(srcApp, dstApp string) bool {
@@ -161,12 +230,22 @@ func main() {
 	userid := 1
 	srcApp := "FB"
 	dstApp := "TW"
+	threads := 100
 
 	if !mappingExists(srcApp, dstApp) {
+		log.Fatal("No way to migrate between these.")
 		return
 	}
 
 	root := getDependencyRootForApp(srcApp)
 
-	greedyMigration(userid, srcApp, dstApp, root)
+	for i:=0; i < threads; i++ {
+		go AggressiveMigration(userid, srcApp, dstApp, root)
+	}
+
+	go DisplayController(migrationID)
+
+	for {
+
+	}
 }
