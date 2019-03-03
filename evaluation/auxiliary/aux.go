@@ -2,6 +2,7 @@ package auxiliary
 
 import (
 	"time"
+	"math"
 	"math/rand"
 )
 
@@ -17,5 +18,10 @@ func RandStrSeq(n int) string {
 
 func RandomNonnegativeInt() int {
 	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(2147483647)
+	return rand.Intn(math.MaxInt32)
+}
+
+func RandomNonnegativeIntWithUpperBound(upperBound int) int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(upperBound)
 }

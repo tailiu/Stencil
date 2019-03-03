@@ -7,7 +7,8 @@ package database
 import (
     "database/sql"
 	"log"
-    _ "github.com/lib/pq"
+	_ "github.com/lib/pq"
+	"fmt"
 )
 
 func ConnectToDB(address string) *sql.DB {
@@ -27,13 +28,20 @@ func BeginTx(dbConn *sql.DB) *sql.Tx {
 }
 
 func Execute(tx *sql.Tx, queries []string) {
+	haveErr := false
 	for _, query := range queries {
-		// fmt.Println(query)
+		fmt.Println(query)
 		if _, err := tx.Exec(query); err != nil {
-			log.Fatal(err)
-		}	
+			fmt.Println(err)
+			haveErr = true
+			break
+		}
 	}
-	tx.Commit()
+	if !haveErr {
+		tx.Commit()
+	} else {
+		tx.Rollback()
+	}
 }
 
 func CheckExists(tx *sql.Tx, query string) int {
