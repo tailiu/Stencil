@@ -49,8 +49,8 @@ func createPostsThread(dbConn *sql.DB, slicedAccountIDs []int) {
 	var haveMedia bool
 	var numOfPosts int
 	for _, accountID := range slicedAccountIDs {
-		// Each user publishes 0 - 400 statuses
-		numOfPosts = auxiliary.RandomNonnegativeIntWithUpperBound(400)
+		// Each user publishes 0 - 350 statuses
+		numOfPosts = auxiliary.RandomNonnegativeIntWithUpperBound(350)
 		for j := 0; j < numOfPosts; j++ {
 			if j % 25 == 0 {
 				haveMedia = true
@@ -70,7 +70,7 @@ func createPostsController(dbConn *sql.DB, accountIDs *[]int) {
 	j := 0
 	for i := 0; i < len(*accountIDs); i++ {
 		// There are about 100,000 accounts, so there will be 100000/500 = 200 threads
-		if i != 0 && i % 500 == 0 {
+		if i != 0 && i % 1000 == 0 {
 			go createPostsThread(dbConn, (*accountIDs)[j:i])
 			j = i
 		}
@@ -116,7 +116,7 @@ func main() {
 	// 	fmt.Println(i)
 	// }
 
-	// createPostsController(dbConn, getAllAccountIDs(dbConn))
+	createPostsController(dbConn, getAllAccountIDs(dbConn))
 	// followFriendsController(dbConn, getAllAccountIDs(dbConn))
 	
 	for {

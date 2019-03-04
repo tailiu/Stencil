@@ -30,7 +30,7 @@ func BeginTx(dbConn *sql.DB) *sql.Tx {
 func Execute(tx *sql.Tx, queries []string) {
 	haveErr := false
 	for _, query := range queries {
-		fmt.Println(query)
+		// fmt.Println(query)
 		if _, err := tx.Exec(query); err != nil {
 			fmt.Println(err)
 			haveErr = true
