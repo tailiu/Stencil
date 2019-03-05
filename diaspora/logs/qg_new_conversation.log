@@ -1,0 +1,248 @@
+[2019-02-11T17:33:41] INFO  PID-9665 TID-47454376912320 Rails: Started GET "/contacts.json?q=za&mutual=true&_=1549891999656" for 127.0.0.1 at 2019-02-11 17:33:41 +0400
+[2019-02-11T17:33:41] INFO  PID-9665 TID-47454376912320 ActionController::Base: Processing by ContactsController#index as JSON
+[2019-02-11T17:33:41] INFO  PID-9665 TID-47454376912320 ActionController::Base:   Parameters: {"q"=>"za", "mutual"=>"true", "_"=>"1549891999656"}
+[2019-02-11T17:33:41] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.4ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 ORDER BY "users"."id" ASC LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:41] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.7ms)  SELECT  "people".* FROM "people" INNER JOIN "profiles" ON "profiles"."person_id" = "people"."id" INNER JOIN "contacts" ON "contacts"."person_id" = "people"."id" WHERE (      profiles.full_name ILIKE '%za%' OR
+      people.diaspora_handle ILIKE 'za%'
+) AND "contacts"."user_id" = $1 AND "contacts"."sharing" = $2 AND "contacts"."receiving" = $3 AND "people"."closed_account" = $4 ORDER BY contacts.user_id IS NULL, profiles.last_name ASC, profiles.first_name ASC LIMIT $5  [["user_id", 4], ["sharing", "t"], ["receiving", "t"], ["closed_account", "f"], ["LIMIT", 15]]
+[2019-02-11T17:33:41] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.4ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:41] INFO  PID-9665 TID-47454376912320 ActionController::Base: Completed 200 OK in 8ms (Views: 2.8ms | ActiveRecord: 1.5ms)
+
+
+[2019-02-11T17:33:42] INFO  PID-9665 TID-47454376912320 Rails: Started GET "/contacts.json?q=zain&mutual=true&_=1549891999657" for 127.0.0.1 at 2019-02-11 17:33:42 +0400
+[2019-02-11T17:33:42] INFO  PID-9665 TID-47454376912320 ActionController::Base: Processing by ContactsController#index as JSON
+[2019-02-11T17:33:42] INFO  PID-9665 TID-47454376912320 ActionController::Base:   Parameters: {"q"=>"zain", "mutual"=>"true", "_"=>"1549891999657"}
+[2019-02-11T17:33:42] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.8ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 ORDER BY "users"."id" ASC LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:42] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.7ms)  SELECT  "people".* FROM "people" INNER JOIN "profiles" ON "profiles"."person_id" = "people"."id" INNER JOIN "contacts" ON "contacts"."person_id" = "people"."id" WHERE (      profiles.full_name ILIKE '%zain%' OR
+      people.diaspora_handle ILIKE 'zain%'
+) AND "contacts"."user_id" = $1 AND "contacts"."sharing" = $2 AND "contacts"."receiving" = $3 AND "people"."closed_account" = $4 ORDER BY contacts.user_id IS NULL, profiles.last_name ASC, profiles.first_name ASC LIMIT $5  [["user_id", 4], ["sharing", "t"], ["receiving", "t"], ["closed_account", "f"], ["LIMIT", 15]]
+[2019-02-11T17:33:42] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.4ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:42] INFO  PID-9665 TID-47454376912320 ActionController::Base: Completed 200 OK in 11ms (Views: 3.5ms | ActiveRecord: 1.9ms)
+
+
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 Rails: Started POST "/conversations" for 127.0.0.1 at 2019-02-11 17:33:53 +0400
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 ActionController::Base: Processing by ConversationsController#create as JS
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 ActionController::Base:   Parameters: {"utf8"=>"✓", "contact_autocomplete"=>"", "person_ids"=>"1", "conversation"=>{"subject"=>"Nothing", "text"=>"[FILTERED]"}, "commit"=>"Send"}
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 ORDER BY "users"."id" ASC LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.3ms)  SELECT "contacts"."person_id" FROM "contacts" WHERE "contacts"."user_id" = $1 AND "contacts"."sharing" = $2 AND "contacts"."receiving" = $3 AND "contacts"."person_id" = 1  [["user_id", 4], ["sharing", "t"], ["receiving", "t"]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActionController::Base: Unpermitted parameter: :text
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT "people".* FROM "people" WHERE "people"."id" IN (1, 4)
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.3ms)  BEGIN
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Conversation Exists (0.4ms)  SELECT  1 AS one FROM "conversations" WHERE "conversations"."guid" = $1 LIMIT $2  [["guid", "99233400102f013735eb28d244506873"], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Exists (0.3ms)  SELECT  1 AS one FROM "people" WHERE "people"."guid" = $1 AND ("people"."id" != $2) LIMIT $3  [["guid", "a92853400c22013735eb28d244506873"], ["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.3ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Exists (0.2ms)  SELECT  1 AS one FROM "people" WHERE "people"."diaspora_handle" = $1 AND ("people"."id" != $2) LIMIT $3  [["diaspora_handle", "zain@127.0.0.1"], ["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Exists (0.2ms)  SELECT  1 AS one FROM "people" WHERE "people"."guid" = $1 AND ("people"."id" != $2) LIMIT $3  [["guid", "2bf6f8e0101c013735eb28d244506873"], ["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.2ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Exists (0.2ms)  SELECT  1 AS one FROM "people" WHERE "people"."diaspora_handle" = $1 AND ("people"."id" != $2) LIMIT $3  [["diaspora_handle", "doubaobei@127.0.0.1"], ["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Message Exists (0.3ms)  SELECT  1 AS one FROM "messages" WHERE "messages"."guid" = $1 LIMIT $2  [["guid", "992330f0102f013735eb28d244506873"], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Contact Exists (0.2ms)  SELECT  1 AS one FROM "contacts" WHERE "contacts"."user_id" = $1 AND "contacts"."person_id" = $2 LIMIT $3  [["user_id", 1], ["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.6ms)  INSERT INTO "conversations" ("subject", "guid", "author_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5) RETURNING "id"  [["subject", "Nothing"], ["guid", "99233400102f013735eb28d244506873"], ["author_id", 4], ["created_at", "2019-02-11 13:33:53.793419"], ["updated_at", "2019-02-11 13:33:53.793419"]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.6ms)  INSERT INTO "conversation_visibilities" ("conversation_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id"  [["conversation_id", 1], ["person_id", 1], ["created_at", "2019-02-11 13:33:53.794943"], ["updated_at", "2019-02-11 13:33:53.794943"]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.3ms)  INSERT INTO "conversation_visibilities" ("conversation_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id"  [["conversation_id", 1], ["person_id", 4], ["created_at", "2019-02-11 13:33:53.796328"], ["updated_at", "2019-02-11 13:33:53.796328"]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.5ms)  INSERT INTO "messages" ("conversation_id", "author_id", "guid", "text", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"  [["conversation_id", 1], ["author_id", 4], ["guid", "992330f0102f013735eb28d244506873"], ["text", "Hi!"], ["created_at", "2019-02-11 13:33:53.797417"], ["updated_at", "2019-02-11 13:33:53.797417"]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.2ms)  UPDATE "conversations" SET "updated_at" = $1 WHERE "conversations"."id" = $2  [["updated_at", "2019-02-11 13:33:53.798580"], ["id", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (69.6ms)  COMMIT
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Conversation Load (0.2ms)  SELECT  "conversations".* FROM "conversations" WHERE "conversations"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.1ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.3ms)  SELECT "people".* FROM "people" INNER JOIN "conversation_visibilities" ON "people"."id" = "conversation_visibilities"."person_id" WHERE "conversation_visibilities"."conversation_id" = $1  [["conversation_id", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Conversation Load (0.0ms)  SELECT  "conversations".* FROM "conversations" WHERE "conversations"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Message Load (0.3ms)  SELECT "messages".* FROM "messages" WHERE "messages"."conversation_id" = $1 ORDER BY created_at ASC  [["conversation_id", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.4ms)  SELECT "people"."owner_id" FROM "people" INNER JOIN "conversation_visibilities" ON "people"."id" = "conversation_visibilities"."person_id" WHERE "conversation_visibilities"."conversation_id" = $1 AND (people.owner_id IS NOT NULL) AND ("people"."id" != $2)  [["conversation_id", 1], ["id", 4]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = 1 ORDER BY "users"."id" ASC LIMIT $1  [["LIMIT", 1000]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   ConversationVisibility Load (0.2ms)  SELECT  "conversation_visibilities".* FROM "conversation_visibilities" WHERE "conversation_visibilities"."conversation_id" = $1 AND "conversation_visibilities"."person_id" = $2 LIMIT $3  [["conversation_id", 1], ["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.1ms)  BEGIN
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Conversation Load (0.0ms)  SELECT  "conversations".* FROM "conversations" WHERE "conversations"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.3ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.4ms)  UPDATE "conversation_visibilities" SET "unread" = $1, "updated_at" = $2 WHERE "conversation_visibilities"."id" = $3  [["unread", 1], ["updated_at", "2019-02-11 13:33:53.883878"], ["id", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (25.5ms)  COMMIT
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.4ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   UserPreference Exists (0.4ms)  SELECT  1 AS one FROM "user_preferences" WHERE "user_preferences"."user_id" = $1 AND "user_preferences"."email_type" = $2 LIMIT $3  [["user_id", 1], ["email_type", "private_message"], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.4ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 NotificationMailers::PrivateMessage: event=mail mail_type=notification_mailers/private_message recipient_id=1 sender_id=4  recipient_handle=zain@127.0.0.1 sender_handle=doubaobei@127.0.0.1
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Message Load (0.2ms)  SELECT  "messages".* FROM "messages" WHERE "messages"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Conversation Load (0.5ms)  SELECT  "conversations".* FROM "conversations" WHERE "conversations"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.2ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.2ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.2ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendering notifier/private_message.markerb within layouts/notifier
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered notifier/private_message.markerb within layouts/notifier (0.8ms)
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendering notifier/private_message.markerb within layouts/notifier
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered notifier/private_message.markerb within layouts/notifier (0.6ms)
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActionMailer::Base: Notifier#send_notification: processed outbound mail in 45.4ms
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 ActionMailer::Base: Sent mail to zaintq@gmail.com (2.2ms)
+[2019-02-11T17:33:53] DEBUG PID-9665 TID-47454376912320 ActionMailer::Base: Date: Mon, 11 Feb 2019 17:33:53 +0400
+From: "diaspora* (doubaobei)" <no-reply@example.org>
+To: "zain@127.0.0.1" <zaintq@gmail.com>
+Message-ID: <5c6179c1f1fc3_25c12b28d54765c014740@userpc.mail>
+In-Reply-To: <99233400102f013735eb28d244506873@127.0.0.1>
+References: <99233400102f013735eb28d244506873@127.0.0.1>
+Subject: =?UTF-8?Q?There=E2=80=99s_a_new_private_message_for_you?=
+Mime-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="--==_mimepart_5c6179c1f178b_25c12b28d54765c014667";
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+host: 127.0.0.1
+
+
+----==_mimepart_5c6179c1f178b_25c12b28d54765c014667
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+There=E2=80=99s a new private message in diaspora* for you to check out.=0D=
+
+=0D
+[Reply to or view this conversation >][1]=0D
+=0D
+[1]: http://127.0.0.1/conversations?conversation_id=3D1=0D
+=0D
+This email was sent by diaspora*. If you'd like to stop getting emails li=
+ke this,=0D
+to change your notification settings=0D
+http://127.0.0.1/user/edit=0D
+
+----==_mimepart_5c6179c1f178b_25c12b28d54765c014667
+Content-Type: text/html;
+ charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<table border=3D'0' cellpadding=3D'0' cellspacing=3D'0' style=3D'font-fam=
+ily: &#39;Helvetica Neue&#39;, Helvetica, Arial, sans-serif; font-size: 1=
+4px'>=0D
+<tr><td style=3D'vertical-align: top' width=3D'60px'>=0D
+<div style=3D'background-color: #eee; height: 50px; width: 50px'>=0D
+<img alt=3D"doubaobei@127.0.0.1" style=3D"border: 0, display: block; top:=
+ 0; left: 0" height=3D"50px" width=3D"50px" src=3D"http://127.0.0.1/asset=
+s/user/default-2c878d1cd0171726fc490add065f342be5a959729df46a89807a4c18a8=
+fc8d14.png" />=0D
+</div>=0D
+</td><td style=3D'vertical-align: top'>=0D
+<p>There=E2=80=99s a new private message in diaspora* for you to check ou=
+t.</p>=0D
+=0D
+<p><a href=3D"http://127.0.0.1/conversations?conversation_id=3D1">Reply t=
+o or view this conversation &gt;</a></p>=0D
+=0D
+</td>=0D
+</tr>=0D
+</table>=0D
+<div style=3D'font-family: &#39;Helvetica Neue&#39;, Helvetica, Arial, sa=
+ns-serif; font-size: 12px; color: #999; padding-top: 10px; margin-top: 10=
+px; border-top: 1px solid #ddd'>=0D
+This email was sent by <a href=3D"http://127.0.0.1">diaspora*</a>. If you=
+'d like to stop getting emails like this,=0D
+<a href=3D"http://127.0.0.1/user/edit">Click here</a>=0D
+to change your notification settings.=0D
+</div>=0D
+
+----==_mimepart_5c6179c1f178b_25c12b28d54765c014667--
+
+[2019-02-11T17:33:53] INFO  PID-9665 TID-47454376912320 ActionController::Base: Completed 200 OK in 241ms (Views: 0.2ms | ActiveRecord: 110.6ms)
+
+
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 Rails: Started GET "/conversations/1" for 127.0.0.1 at 2019-02-11 17:33:54 +0400
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionController::Base: Processing by ConversationsController#show as HTML
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionController::Base:   Parameters: {"id"=>"1"}
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.4ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 ORDER BY "users"."id" ASC LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Conversation Load (0.6ms)  SELECT  "conversations".* FROM "conversations" INNER JOIN "conversation_visibilities" ON "conversations"."id" = "conversation_visibilities"."conversation_id" INNER JOIN "people" ON "conversation_visibilities"."person_id" = "people"."id" WHERE "people"."owner_id" = $1 AND "conversations"."id" = $2 ORDER BY "conversations"."id" ASC LIMIT $3  [["owner_id", 4], ["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   ConversationVisibility Load (0.6ms)  SELECT  "conversation_visibilities".* FROM "conversation_visibilities" WHERE "conversation_visibilities"."conversation_id" = $1 AND "conversation_visibilities"."person_id" = $2 AND (unread > 0) ORDER BY "conversation_visibilities"."id" ASC LIMIT $3  [["conversation_id", 1], ["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   ConversationVisibility Load (0.3ms)  SELECT  "conversation_visibilities".* FROM "conversation_visibilities" WHERE "conversation_visibilities"."conversation_id" = $1 AND "conversation_visibilities"."person_id" = $2 LIMIT $3  [["conversation_id", 1], ["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.2ms)  BEGIN
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.1ms)  COMMIT
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionController::Base: Redirected to http://0.0.0.0:3000/conversations?conversation_id=1
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionController::Base: Completed 302 Found in 17ms (ActiveRecord: 2.6ms)
+
+
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 Rails: Started GET "/conversations?conversation_id=1" for 127.0.0.1 at 2019-02-11 17:33:54 +0400
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionController::Base: Processing by ConversationsController#index as HTML
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionController::Base:   Parameters: {"conversation_id"=>"1"}
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.5ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 ORDER BY "users"."id" ASC LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Conversation Load (0.4ms)  SELECT  "conversations".* FROM "conversations" INNER JOIN "conversation_visibilities" ON "conversation_visibilities"."conversation_id" = "conversations"."id" WHERE "conversation_visibilities"."person_id" = $1 AND "conversation_visibilities"."conversation_id" = $2 ORDER BY "conversations"."id" ASC LIMIT $3  [["person_id", 4], ["conversation_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   ConversationVisibility Load (0.3ms)  SELECT  "conversation_visibilities".* FROM "conversation_visibilities" WHERE "conversation_visibilities"."conversation_id" = $1 AND "conversation_visibilities"."person_id" = $2 AND (unread > 0) ORDER BY "conversation_visibilities"."id" ASC LIMIT $3  [["conversation_id", 1], ["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   ConversationVisibility Load (0.2ms)  SELECT  "conversation_visibilities".* FROM "conversation_visibilities" WHERE "conversation_visibilities"."conversation_id" = $1 AND "conversation_visibilities"."person_id" = $2 LIMIT $3  [["conversation_id", 1], ["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.1ms)  BEGIN
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.1ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.1ms)  COMMIT
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.6ms)  SELECT contacts.id, profiles.first_name, profiles.last_name, people.diaspora_handle FROM "contacts" INNER JOIN "people" ON "people"."id" = "contacts"."person_id" INNER JOIN "profiles" ON "profiles"."person_id" = "people"."id" WHERE "contacts"."user_id" = $1 AND "contacts"."sharing" = $2 AND "contacts"."receiving" = $3  [["user_id", 4], ["sharing", "t"], ["receiving", "t"]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Contact Exists (0.3ms)  SELECT  1 AS one FROM "contacts" WHERE "contacts"."user_id" = $1 AND "contacts"."sharing" = $2 AND "contacts"."receiving" = $3 LIMIT $4  [["user_id", 4], ["sharing", "t"], ["receiving", "t"], ["LIMIT", 1]]
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendering conversations/index.haml within layouts/with_header_with_footer
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.5ms)  SELECT COUNT(DISTINCT "conversation_visibilities"."id") FROM "conversation_visibilities" LEFT OUTER JOIN "conversations" ON "conversations"."id" = "conversation_visibilities"."conversation_id" WHERE "conversation_visibilities"."person_id" = $1  [["person_id", 4]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.5ms)  SELECT  "conversation_visibilities"."id" AS t0_r0, "conversation_visibilities"."conversation_id" AS t0_r1, "conversation_visibilities"."person_id" AS t0_r2, "conversation_visibilities"."unread" AS t0_r3, "conversation_visibilities"."created_at" AS t0_r4, "conversation_visibilities"."updated_at" AS t0_r5, "conversations"."id" AS t1_r0, "conversations"."subject" AS t1_r1, "conversations"."guid" AS t1_r2, "conversations"."author_id" AS t1_r3, "conversations"."created_at" AS t1_r4, "conversations"."updated_at" AS t1_r5 FROM "conversation_visibilities" LEFT OUTER JOIN "conversations" ON "conversations"."id" = "conversation_visibilities"."conversation_id" WHERE "conversation_visibilities"."person_id" = $1 ORDER BY conversations.updated_at DESC LIMIT $2 OFFSET $3  [["person_id", 4], ["LIMIT", 15], ["OFFSET", 0]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Message Load (0.5ms)  SELECT "messages".* FROM "messages" WHERE "messages"."conversation_id" = $1 ORDER BY created_at ASC  [["conversation_id", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.5ms)  SELECT "people".* FROM "people" INNER JOIN "conversation_visibilities" ON "people"."id" = "conversation_visibilities"."person_id" WHERE "conversation_visibilities"."conversation_id" = $1  [["conversation_id", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.3ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.3ms)  SELECT "profiles".* FROM "profiles" WHERE "profiles"."person_id" = 4
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered collection of conversations/_conversation.haml [1 times] (18.9ms)
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.6ms)  SELECT COUNT(*) FROM "people" INNER JOIN "conversation_visibilities" ON "people"."id" = "conversation_visibilities"."person_id" WHERE "conversation_visibilities"."conversation_id" = $1  [["conversation_id", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT "people".* FROM "people" INNER JOIN "conversation_visibilities" ON "people"."id" = "conversation_visibilities"."person_id" WHERE "conversation_visibilities"."conversation_id" = $1  [["conversation_id", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Profile Load (0.0ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.6ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Message Load (0.0ms)  SELECT "messages".* FROM "messages" WHERE "messages"."conversation_id" = $1 ORDER BY created_at ASC  [["conversation_id", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Profile Load (0.0ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered collection of conversations/_message.html.haml [1 times] (11.2ms)
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Profile Load (0.0ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered conversations/_messages.haml (65.4ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered conversations/_show.haml (79.3ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered conversations/_new.haml (7.0ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered conversations/index.haml within layouts/with_header_with_footer (170.3ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered shared/_links.haml (3.3ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered layouts/_footer.html.haml (5.5ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendering layouts/with_header.html.haml
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered layouts/_header.html.haml (2.7ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendering layouts/application.html.haml
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.5ms)  SELECT COUNT(*) FROM "notifications" WHERE "notifications"."recipient_id" = $1 AND "notifications"."unread" = $2  [["recipient_id", 4], ["unread", "t"]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.4ms)  SELECT SUM("conversation_visibilities"."unread") FROM "conversation_visibilities" WHERE "conversation_visibilities"."person_id" = $1  [["person_id", 4]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Role Exists (0.4ms)  SELECT  1 AS one FROM "roles" WHERE "roles"."person_id" = $1 AND "roles"."name" = $2 LIMIT $3  [["person_id", 4], ["name", "admin"], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Role Exists (0.3ms)  SELECT  1 AS one FROM "roles" WHERE "roles"."name" IN ('moderator', 'admin') AND "roles"."person_id" = $1 LIMIT $2  [["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Aspect Load (0.3ms)  SELECT "aspects".* FROM "aspects" WHERE "aspects"."user_id" = $1 ORDER BY order_id ASC  [["user_id", 4]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Service Load (0.2ms)  SELECT "services".* FROM "services" WHERE "services"."user_id" = $1  [["user_id", 4]]
+[2019-02-11T17:33:54] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.4ms)  SELECT COUNT(*) FROM "contacts" WHERE "contacts"."user_id" = $1 AND "contacts"."receiving" = $2  [["user_id", 4], ["receiving", "t"]]
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered application/_head.haml (46.3ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered layouts/application.html.haml (666.5ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered layouts/with_header.html.haml (672.8ms)
+[2019-02-11T17:33:54] INFO  PID-9665 TID-47454376912320 ActionController::Base: Completed 200 OK in 869ms (Views: 846.6ms | ActiveRecord: 9.1ms)
+
+
+[2019-02-11T17:33:57] INFO  PID-9665 TID-47454376912320 Rails: Started GET "/notifications?per_page=10&page=1&_=1549892035023" for 127.0.0.1 at 2019-02-11 17:33:57 +0400
+[2019-02-11T17:33:57] INFO  PID-9665 TID-47454376912320 ActionController::Base: Processing by NotificationsController#index as JSON
+[2019-02-11T17:33:57] INFO  PID-9665 TID-47454376912320 ActionController::Base:   Parameters: {"per_page"=>"10", "page"=>"1", "_"=>"1549892035023"}
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.5ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 ORDER BY "users"."id" ASC LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.4ms)  SELECT COUNT(*) FROM "notifications" WHERE "notifications"."recipient_id" = $1  [["recipient_id", 4]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Notification Load (0.5ms)  SELECT  "notifications".* FROM "notifications" WHERE "notifications"."recipient_id" = $1 ORDER BY updated_at desc LIMIT $2 OFFSET $3  [["recipient_id", 4], ["LIMIT", 10], ["OFFSET", 0]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Mention Load (0.4ms)  SELECT "mentions".* FROM "mentions" WHERE "mentions"."id" = 1
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Post Load (0.7ms)  SELECT "posts".* FROM "posts" WHERE "posts"."id" = 1
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.3ms)  SELECT "people".* FROM "people" WHERE "people"."id" = 1
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   NotificationActor Load (0.5ms)  SELECT "notification_actors".* FROM "notification_actors" WHERE "notification_actors"."notification_id" IN (6, 5, 3)
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT "people".* FROM "people" WHERE "people"."id" = 1
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.6ms)  SELECT "profiles".* FROM "profiles" WHERE "profiles"."person_id" = 1
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.7ms)  SELECT COUNT(*) FROM "notifications" WHERE "notifications"."recipient_id" = $1 AND "notifications"."unread" = $2  [["recipient_id", 4], ["unread", "t"]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Notification Load (0.4ms)  SELECT "notifications".* FROM "notifications" WHERE "notifications"."recipient_id" = $1 AND "notifications"."unread" = $2  [["recipient_id", 4], ["unread", "t"]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.3ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 4], ["LIMIT", 1]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Post Load (0.3ms)  SELECT  "posts".* FROM "posts" WHERE "posts"."id" = $1 LIMIT $2  [["id", 6], ["LIMIT", 1]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Mention Load (0.4ms)  SELECT "mentions".* FROM "mentions" WHERE "mentions"."mentions_container_id" = $1 AND "mentions"."mentions_container_type" = $2  [["mentions_container_id", 6], ["mentions_container_type", "Post"]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.5ms)  SELECT "people".* FROM "people" WHERE "people"."id" = 4
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.5ms)  SELECT "profiles".* FROM "profiles" WHERE "profiles"."person_id" = 4
+[2019-02-11T17:33:57] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered notifications/_notification.haml (28.5ms)
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.2ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T17:33:57] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Mention Load (0.5ms)  SELECT "mentions".* FROM "mentions" WHERE "mentions"."mentions_container_id" = $1 AND "mentions"."mentions_container_type" = $2  [["mentions_container_id", 1], ["mentions_container_type", "Post"]]
+[2019-02-11T17:33:57] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered notifications/_notification.haml (6.7ms)
+[2019-02-11T17:33:57] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered notifications/_notification.haml (4.5ms)
+[2019-02-11T17:33:57] INFO  PID-9665 TID-47454376912320 ActionController::Base: Completed 200 OK in 65ms (Views: 0.9ms | ActiveRecord: 7.7ms)
+
+

@@ -1,0 +1,135 @@
+Query Groups
+
+User Registration:
+
+BEGIN 
+INSERT INTO "users" ("username", "serialized_private_key", "language", "email", "encrypted_password", "created_at", "updated_at", "color_theme") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING "id" [u'user1', u'-----BEGIN RSA PRIVATE KEY-----\n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\n-----END RSA PRIVATE KEY-----\n', u'en', u'user1@gmail.com', u'$2a$10$408zooOxx9.C.sNm9Csg0.uY83YZ.1f6qX1m4tn3D8tD03jbPPs62', u'2019-02-11 10:53:59.340877', u'2019-02-11 10:53:59.340877', u'original']
+INSERT INTO "people" ("guid", "diaspora_handle", "serialized_public_key", "owner_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [u'4212a0601019013735eb28d244506873', u'user1@127.0.0.1', u'-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAxebDG8MvymvjtN7RgcO6\nn0KtvNQKrlPUQMt9GsSrujW19ZK5vf4PLUEB8CrRJmkYnEdh7qQtF/6deyOEHxLN\nzSe1vO1H/1bFnk5daZ+I2ttfdS/KfKKG2V16K8T4/Xf4MYjRpHHgbVP8+D1ecaHX\nFddUc5EbSfuZ1mFLpFtM56TsbQBtV0GZTcv68tQklWO3SrnUhEoaIwWWRBYv4BJt\nqNpZHhebfpX4nzJNs15q3VJhBCE6p9Kmu8s217Jb6NqWfdMpJaUk6rQ6iOjzNHxh\nxJnoGCwUEbITyEu4AOd+EWHXpRpMKY+Ytmjlym2+7iJPkJRZLVLwTwFoGOYsODcA\n8bHUI2kBtE2SOUYW9ax5FgvFJ7nltgDkw6EI/bb3Mejl2fmhqZ5ELmjUhswrW/2G\njHqBaVYhwXYyMA1CAkQ9x4Ffj0ojHtshHvGWKblZhzgYuVryLc1Q5aS3DwAic2AJ\nF0eycGZSYsPDPLXbaIk+PKB07G8QhLLA1+MSZ3CAkFVo+5iLI+fADXcSo0uCvqL4\nmlOu4bLsjgtkjpGtyY8frJH+9WUO36+tDCkY1Hvq1/sz4s4iRcID4rwTwI7iZRZA\nGtatWAX+gQ6HpT/Opao1a2EsG9xVh9zQDT9TpUs6bHRV3fXU+LvfHTIjLg8foCHT\ngT0i/y1piQH/7pN/IbTKV+ECAwEAAQ==\n-----END PUBLIC KEY-----\n', 3, u'2019-02-11 10:53:59.353028', u'2019-02-11 10:53:59.353028']
+INSERT INTO "profiles" ("person_id", "created_at", "updated_at", "full_name") VALUES ($1, $2, $3, $4) RETURNING "id" [3, u'2019-02-11 10:53:59.356783', u'2019-02-11 10:53:59.356783', u'']
+UPDATE "users" SET "unconfirmed_email" = NULL, "confirm_email_token" = NULL WHERE "users"."unconfirmed_email" = $1 [u'user1@gmail.com']
+COMMIT 
+BEGIN 
+INSERT INTO "aspects" ("name", "user_id", "created_at", "updated_at", "order_id") VALUES ($1, $2, $3, $4, $5) RETURNING "id" [u'Family', 3, u'2019-02-11 10:53:59.393456', u'2019-02-11 10:53:59.393456', 1]
+COMMIT 
+BEGIN 
+INSERT INTO "aspects" ("name", "user_id", "created_at", "updated_at", "order_id") VALUES ($1, $2, $3, $4, $5) RETURNING "id" [u'Friends', 3, u'2019-02-11 10:53:59.440883', u'2019-02-11 10:53:59.440883', 2]
+COMMIT 
+BEGIN 
+INSERT INTO "aspects" ("name", "user_id", "created_at", "updated_at", "order_id") VALUES ($1, $2, $3, $4, $5) RETURNING "id" [u'Work', 3, u'2019-02-11 10:53:59.450838', u'2019-02-11 10:53:59.450838', 3]
+COMMIT 
+BEGIN 
+INSERT INTO "aspects" ("name", "user_id", "created_at", "updated_at", "order_id") VALUES ($1, $2, $3, $4, $5) RETURNING "id" [u'Acquaintances', 3, u'2019-02-11 10:53:59.465800', u'2019-02-11 10:53:59.465800', 4]
+COMMIT 
+BEGIN 
+UPDATE "users" SET "sign_in_count" = $1, "current_sign_in_at" = $2, "last_sign_in_at" = $3, "current_sign_in_ip" = $4, "last_sign_in_ip" = $5, "updated_at" = $6 WHERE "users"."id" = $7 [1, u'2019-02-11 10:53:59.471393', u'2019-02-11 10:53:59.471393', u'127.0.0.1', u'127.0.0.1', u'2019-02-11 10:53:59.472105', 3]
+COMMIT 
+BEGIN 
+UPDATE "users" SET "updated_at" = $1, "last_seen" = $2 WHERE "users"."id" = $3 [u'2019-02-11 10:53:59.485429', u'2019-02-11 10:53:59.479226', 3]
+COMMIT 
+
+New Conversation:
+
+BEGIN 
+INSERT INTO "conversations" ("subject", "guid", "author_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5) RETURNING "id" [u'Nothing', u'99233400102f013735eb28d244506873', 4, u'2019-02-11 13:33:53.793419', u'2019-02-11 13:33:53.793419']
+INSERT INTO "conversation_visibilities" ("conversation_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id" [1, 1, u'2019-02-11 13:33:53.794943', u'2019-02-11 13:33:53.794943']
+INSERT INTO "conversation_visibilities" ("conversation_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id" [1, 4, u'2019-02-11 13:33:53.796328', u'2019-02-11 13:33:53.796328']
+INSERT INTO "messages" ("conversation_id", "author_id", "guid", "text", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [1, 4, u'992330f0102f013735eb28d244506873', u'Hi!', u'2019-02-11 13:33:53.797417', u'2019-02-11 13:33:53.797417']
+UPDATE "conversations" SET "updated_at" = $1 WHERE "conversations"."id" = $2 [u'2019-02-11 13:33:53.798580', 1]
+COMMIT 
+BEGIN 
+UPDATE "conversation_visibilities" SET "unread" = $1, "updated_at" = $2 WHERE "conversation_visibilities"."id" = $3 [1, u'2019-02-11 13:33:53.883878', 1]
+COMMIT 
+
+Conversation Reply:
+
+BEGIN 
+INSERT INTO "messages" ("conversation_id", "author_id", "guid", "text", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [1, 1, u'cc62be60102f013735eb28d244506873', u'Hello!', u'2019-02-11 13:35:19.765716', u'2019-02-11 13:35:19.765716']
+UPDATE "conversations" SET "updated_at" = $1 WHERE "conversations"."id" = $2 [u'2019-02-11 13:35:19.767097', 1]
+COMMIT 
+BEGIN 
+UPDATE "conversation_visibilities" SET "unread" = $1, "updated_at" = $2 WHERE "conversation_visibilities"."id" = $3 [1, u'2019-02-11 13:35:19.807945', 2]
+COMMIT 
+
+New Post:
+
+BEGIN 
+INSERT INTO "posts" ("author_id", "guid", "type", "text", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [1, u'1daf5ca01057013735eb28d244506873', u'StatusMessage', u'test123', u'2019-02-11 18:16:46.541439', u'2019-02-11 18:16:46.541439']
+UPDATE "posts" SET "updated_at" = $1, "interacted_at" = $2 WHERE "posts"."id" = $3 [u'2019-02-11 18:16:46.543840', u'2019-02-11 18:16:46.543840', 7]
+COMMIT 
+BEGIN 
+INSERT INTO "aspect_visibilities" ("shareable_id", "aspect_id") VALUES ($1, $2) RETURNING "id" [7, 1]
+COMMIT 
+BEGIN 
+INSERT INTO "aspect_visibilities" ("shareable_id", "aspect_id") VALUES ($1, $2) RETURNING "id" [7, 2]
+COMMIT 
+BEGIN 
+INSERT INTO "aspect_visibilities" ("shareable_id", "aspect_id") VALUES ($1, $2) RETURNING "id" [7, 3]
+COMMIT 
+BEGIN 
+INSERT INTO "aspect_visibilities" ("shareable_id", "aspect_id") VALUES ($1, $2) RETURNING "id" [7, 4]
+COMMIT 
+BEGIN 
+INSERT INTO "share_visibilities" ("shareable_id", "user_id") VALUES ($1, $2) RETURNING "id" [7, 4]
+COMMIT 
+
+New Comment:
+
+BEGIN 
+INSERT INTO "comments" ("text", "commentable_id", "author_id", "guid", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [u'test what?', 7, 4, u'66a4e7e01057013735eb28d244506873', u'2019-02-11 18:18:48.952066', u'2019-02-11 18:18:48.952066']
+UPDATE "posts" SET "updated_at" = $1 WHERE "posts"."id" = $2 [u'2019-02-11 18:18:48.954076', 7]
+COMMIT 
+UPDATE "posts" SET "comments_count" = 1 WHERE "posts"."type" IN ('StatusMessage') AND "posts"."id" = $1 [7]
+BEGIN 
+UPDATE "posts" SET "updated_at" = $1, "interacted_at" = $2 WHERE "posts"."id" = $3 [u'2019-02-11 18:18:48.989490', u'2019-02-11 18:18:48.989490', 7]
+COMMIT 
+BEGIN 
+INSERT INTO "notifications" ("target_type", "target_id", "recipient_id", "created_at", "updated_at", "type") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [u'Post', 7, 1, u'2019-02-11 18:18:49.026970', u'2019-02-11 18:18:49.026970', u'Notifications::CommentOnPost']
+INSERT INTO "notification_actors" ("notification_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id" [8, 4, u'2019-02-11 18:18:49.028562', u'2019-02-11 18:18:49.028562']
+COMMIT 
+BEGIN 
+UPDATE "participations" SET "count" = $1, "updated_at" = $2 WHERE "participations"."id" = $3 [2, u'2019-02-11 18:18:49.075457', 2]
+COMMIT 
+
+Reply Comment:
+
+BEGIN 
+INSERT INTO "comments" ("text", "commentable_id", "author_id", "guid", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [u'just test', 7, 1, u'92c0d1101057013735eb28d244506873', u'2019-02-11 18:20:02.955482', u'2019-02-11 18:20:02.955482']
+UPDATE "posts" SET "updated_at" = $1 WHERE "posts"."id" = $2 [u'2019-02-11 18:20:02.957186', 7]
+COMMIT 
+UPDATE "posts" SET "comments_count" = 2 WHERE "posts"."type" IN ('StatusMessage') AND "posts"."id" = $1 [7]
+BEGIN 
+UPDATE "posts" SET "updated_at" = $1, "interacted_at" = $2 WHERE "posts"."id" = $3 [u'2019-02-11 18:20:02.979746', u'2019-02-11 18:20:02.979746', 7]
+COMMIT 
+BEGIN 
+INSERT INTO "notifications" ("target_type", "target_id", "recipient_id", "created_at", "updated_at", "type") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [u'Post', 7, 4, u'2019-02-11 18:20:03.016838', u'2019-02-11 18:20:03.016838', u'Notifications::AlsoCommented']
+INSERT INTO "notification_actors" ("notification_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id" [9, 1, u'2019-02-11 18:20:03.018026', u'2019-02-11 18:20:03.018026']
+COMMIT 
+
+Follow:
+
+BEGIN 
+INSERT INTO "contacts" ("user_id", "person_id", "created_at", "updated_at", "receiving") VALUES ($1, $2, $3, $4, $5) RETURNING "id" [4, 1, u'2019-02-13 06:28:22.858014', u'2019-02-13 06:28:22.858014', u't']
+INSERT INTO "aspect_memberships" ("aspect_id", "contact_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id" [16, 5, u'2019-02-13 06:28:22.859518', u'2019-02-13 06:28:22.859518']
+COMMIT 
+BEGIN 
+INSERT INTO "contacts" ("user_id", "person_id", "created_at", "updated_at", "sharing") VALUES ($1, $2, $3, $4, $5) RETURNING "id" [1, 4, u'2019-02-13 06:28:22.906447', u'2019-02-13 06:28:22.906447', u't']
+COMMIT 
+BEGIN 
+INSERT INTO "notifications" ("target_type", "target_id", "recipient_id", "created_at", "updated_at", "type") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [u'Person', 4, 1, u'2019-02-13 06:28:22.971843', u'2019-02-13 06:28:22.971843', u'Notifications::StartedSharing']
+INSERT INTO "notification_actors" ("notification_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id" [10, 4, u'2019-02-13 06:28:22.980693', u'2019-02-13 06:28:22.980693']
+COMMIT 
+UPDATE "notifications" SET "unread" = 'f' WHERE "notifications"."type" IN ('Notifications::StartedSharing') AND "notifications"."recipient_id" = $1 AND "notifications"."target_id" = 1 AND "notifications"."unread" = $2 [4, u't']
+
+Like Post:
+
+BEGIN 
+INSERT INTO "likes" ("target_id", "author_id", "guid", "created_at", "updated_at", "target_type") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [7, 4, u'47ca23401057013735eb28d244506873', u'2019-02-11 18:17:57.185892', u'2019-02-11 18:17:57.185892', u'Post']
+COMMIT 
+UPDATE "posts" SET "likes_count" = 1 WHERE "posts"."type" IN ('StatusMessage') AND "posts"."id" = $1 [7]
+BEGIN 
+INSERT INTO "notifications" ("target_type", "target_id", "recipient_id", "created_at", "updated_at", "type") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [u'Post', 7, 1, u'2019-02-11 18:17:57.256719', u'2019-02-11 18:17:57.256719', u'Notifications::Liked']
+INSERT INTO "notification_actors" ("notification_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id" [7, 4, u'2019-02-11 18:17:57.258014', u'2019-02-11 18:17:57.258014']
+COMMIT 
+BEGIN 
+INSERT INTO "participations" ("guid", "target_id", "target_type", "author_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id" [u'47e491701057013735eb28d244506873', 7, u'Post', 4, u'2019-02-11 18:17:57.348233', u'2019-02-11 18:17:57.348233']
+COMMIT 
