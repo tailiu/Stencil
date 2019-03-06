@@ -59,12 +59,12 @@ func makeUsersFriends(dbConn *sql.DB, users []*datagen.User) {
 			} else {
 				user2 := users[index]
 				aspect_idx := helper.RandomNumber(0, len(user.Aspects)-1)
-				datagen.FollowUser(dbConn, user.User_ID, user2.User_ID, user.Aspects[aspect_idx])
-				log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user.User_ID, user2.User_ID, user.Aspects[aspect_idx]))
+				datagen.FollowUser(dbConn, user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx])
+				log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx]))
 				if helper.RandomNumber(1, 50)%2 == 0 {
 					aspect_idx := helper.RandomNumber(0, len(user2.Aspects)-1)
-					datagen.FollowUser(dbConn, user2.User_ID, user.User_ID, user2.Aspects[aspect_idx])
-					log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user2.User_ID, user.User_ID, user2.Aspects[aspect_idx]))
+					datagen.FollowUser(dbConn, user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx])
+					log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx]))
 				}
 			}
 		}
@@ -125,18 +125,23 @@ func interactWithPosts(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 		num_frnds, num_posts := len(friends_of_user), helper.RandomNumber(0, len(posts))
 		for pidx, post := range posts[0:num_posts] {
 			for fidx, friend := range friends_of_user {
+				thereIsAnError := true
 				fmt.Println(fmt.Sprintf("{THREAD: %3d} Users %3d/%4d | Frnds %3d/%4d | Posts %4d/%4d ", thread_num, uidx, num_users, fidx, num_frnds, pidx, num_posts))
 
 				if helper.RandomNumber(1, 100)%4 == 0 { // 25%, Friend Likes The Post
 					if _, err := datagen.NewLike(dbConn, post.ID, friend.Person_ID, user.Person_ID); err != nil {
 						// log.Println(err)
 						// WaitForAWhile()
+					} else {
+						thereIsAnError = false
 					}
 				}
 				if helper.RandomNumber(1, 100)%10 == 0 { // 10%, Friend Reshares The Post
 					if _, err := datagen.NewReshare(dbConn, *post, friend.Person_ID); err != nil {
 						// log.Println(err)
 						// WaitForAWhile()
+					} else {
+						thereIsAnError = false
 					}
 				}
 				if helper.RandomNumber(1, 100)%5 == 0 { // 20%, Comments On The Post
@@ -145,16 +150,24 @@ func interactWithPosts(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 						if helper.RandomNumber(1, 100)%2 == 0 { // Friend Comments
 							if _, err := datagen.NewComment(dbConn, post.ID, friend.Person_ID, user.Person_ID); err != nil {
 								log.Println(err)
-								WaitForAWhile()
+								// WaitForAWhile()
+							} else {
+								thereIsAnError = false
 							}
 						}
 						if helper.RandomNumber(1, 100)%2 == 0 { // Owner Comments
 							if _, err := datagen.NewComment(dbConn, post.ID, user.Person_ID, user.Person_ID); err != nil {
 								log.Println(err)
-								WaitForAWhile()
+								// WaitForAWhile()
+							} else {
+								thereIsAnError = false
 							}
 						}
 					}
+				}
+				if thereIsAnError {
+					// log.Println("Waiting...")
+					// WaitForAWhile()
 				}
 			}
 		}
@@ -181,7 +194,7 @@ func runMakeUsersTalk() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspectsExcept(dbConn, "author_id", "conversations")
 	num_users := len(users)
-	inc := 500
+	inc := 100
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
 		go makeUsersTalk(db.GetDBConn(config.APP_NAME), users[i:j], thread_num)

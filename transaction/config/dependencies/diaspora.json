@@ -1,0 +1,241 @@
+{
+	"dependencies": [
+        {
+            "tag": "People",
+            "depends_on": "Users",
+            "conditions": [
+                {   "tag_attr": "owner_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Profiles",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "person_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Posts",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Posts",
+            "depends_on": "Posts",
+            "conditions": [
+                {   "tag_attr": "root_guid",
+                    "depends_on_attr": "guid",
+                    "type": {
+                        "col":"type",
+                        "val":"Reshare"
+                    }
+                }
+            ]
+        },
+        {
+            "tag": "Aspect_Visibilities",
+            "depends_on": "Posts",
+            "conditions": [
+                {   "tag_attr": "shareable_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Aspect_Visibilities",
+            "depends_on": "Aspects",
+            "conditions": [
+                {   "tag_attr": "aspect_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Aspects",
+            "depends_on": "Users",
+            "conditions": [
+                {   "tag_attr": "user_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Comments",
+            "depends_on": "Posts",
+            "conditions": [
+                {   "tag_attr": "commentable_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Notifications",
+            "depends_on": "Posts",
+            "conditions": [
+                {   "tag_attr": "target_id",
+                    "depends_on_attr": "id",
+                    "type": [
+                        {
+                            "col":"type",
+                            "val":"Notifications::Reshared"
+                        },
+                        {
+                            "col":"type",
+                            "val":"Notifications::Liked"
+                        },
+                        {
+                            "col":"type",
+                            "val":"Notifications::CommentOnPost"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "Notifications",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "target_id",
+                    "depends_on_attr": "id",
+                    "type": [{
+                        "col":"type",
+                        "val":"Notifications::StartedSharing"
+                    }]
+                }
+            ]
+        },
+        {
+            "tag": "Notification_Actors",
+            "depends_on": "Notifications",
+            "conditions": [
+                {   "tag_attr": "notification_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Notification_Actors",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "person_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Participations",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "depends_on_attr": "id",
+                }
+            ]
+        },
+        {
+            "tag": "Participations",
+            "depends_on": "Posts",
+            "conditions": [
+                {   "tag_attr": "target_id",
+                    "depends_on_attr": "id",
+                    "type": [{
+                        "col":"target_type",
+                        "val":"Post"
+                    }]
+                }
+            ]
+        },
+        {
+            "tag": "Likes",
+            "depends_on": "Posts",
+            "conditions": [
+                {   "tag_attr": "target_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Messages",
+            "depends_on": "Conversations",
+            "conditions": [
+                {   "tag_attr": "conversation_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Conversations",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Contacts",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "user_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        }
+    ],
+
+
+    "ownership": [{
+        "tag": "Comment",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+       },
+       {
+        "tag": "Message",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Conversations",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Contacts",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "user_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        },
+        {
+            "tag": "Likes",
+            "depends_on": "People",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "depends_on_attr": "id"
+                }
+            ]
+        }
+
+    ]
+}
