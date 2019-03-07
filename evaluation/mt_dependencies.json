@@ -1,44 +1,125 @@
 {
-	"dependencies": [{
-            "tag": "root",
-            "content": [
-                {   
-                    "account": "SELECT * FROM accounts WHERE account_id = $1"
-                },
-                {   
-                    "user": "SELECT * FROM user WHERE account_id = $1"
+    "tags": [
+        {
+            "name" : "root",
+            "members" : {
+                "member1":"accounts",
+                "member2":"users",
+                "member3":"account_stats"
+            },
+            "keys":{
+                "id":"member1.id"
+            },
+            "inner_dependencies" : [
+                {
+                    "member1.id":"member2.account_id"
                 },
                 {
-                    "account_stats": "SELECT * FROM account_stats WHERE account_id = $1"
+                    "member1.id":"member3.account_id"
                 }
             ]
-		},
-		{
-			"tag": "conversations",
-			"depends_on": "root",
-            "conditions": [
-                {   "tag_attr": "H_C_ID",
-                    "depends_on_attr": "C_ID"
+        },
+        {
+            "tag" : "conversations",
+            "members" : {
+                "member1":"conversations"
+            },
+            "keys": {
+                "id": "member1.id"
+            }
+        },
+        {
+            "tag" : "statuses",
+            "members" : {
+                "member1":"statuses",
+                "member2":"status_stats",
+                "member3":"mentions",
+                "member4":"media_attachments"
+            },
+            "keys": {
+                "conversation_id":"member1.conversation_id",
+                "id":"member1.id",
+                "reply":"member1.in_reply_to_id",
+                "reblog":"member1.reblog_of",
+                "account":"member1.account_id"
+            },
+            "inner_dependencies":[
+                {
+                    "member1.id":"member2.status_id"
                 },
-				{
-                    "tag_attr": "H_C_D_ID",
-                    "depends_on_attr": "C_D_ID"
+                {
+                    "member1.id":"member3.status_id"
                 },
-				{
-                    "tag_attr": "H_C_W_ID",
-                    "depends_on_attr": "C_W_ID"
+                {
+                    "member1.id":"member4.status_id"
+                }
+            ]
+        }
+    ],
+	"dependencies": [
+        {
+            "tag": "conversations",
+            "depends_on": [
+                {
+                    "tag":"root",
+                    "conditions":[
+                        {   
+                            "tag_attr": "id",
+                            "depends_on_attr": "statuses.conversation_id"
+                        },
+                        {
+                            "tag_attr": "statuses.account",
+                            "depends_on_attr": "root.id"
+                        }
+                    ]
                 }
             ]
         },
         {
             "tag": "statuses",
-            "depends_on": "conversations",
-            "content": [
+            "depends_on":[ 
                 {
-                    "statuses": "SELECT * FROM statuses WHERE conversation_id = $1"
+                    "tag": "conversations",
+                    "conditions":[
+                        {   "tag_attr": "conversation_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "statuses",
+            "depends_on": [
+                {
+                    "tag":"statuses",
+                    "conditions":[
+                        {   "tag_attr": "reply",
+                            "depends_on_attr": "id"
+                        }
+                    
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "statuses",
+            "depends_on": [
+                {
+                    "tag":"statuses",
+                    "conditions":[
+                        {   "tag_attr": "reblog",
+                            "depends_on_attr": "id"
+                        }
+                    ]
                 },
                 {
-                    "status_stats": ""
+                    "tag":"conversations",
+                    "conditions":[
+                        {   "tag_attr": "conversation_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
                 }
             ]
         }
