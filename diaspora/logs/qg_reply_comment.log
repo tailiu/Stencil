@@ -1,0 +1,149 @@
+[2019-02-11T22:20:02] INFO  PID-9665 TID-47454376912320 Rails: Started POST "/posts/7/comments" for 127.0.0.1 at 2019-02-11 22:20:02 +0400
+[2019-02-11T22:20:02] INFO  PID-9665 TID-47454376912320 ActionController::Base: Processing by CommentsController#create as JSON
+[2019-02-11T22:20:02] INFO  PID-9665 TID-47454376912320 ActionController::Base:   Parameters: {"text"=>"[FILTERED]", "post_id"=>"7", "comment"=>{"text"=>"[FILTERED]"}}
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.4ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 ORDER BY "users"."id" ASC LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Post Load (0.5ms)  SELECT  posts.* FROM "posts" INNER JOIN "share_visibilities" ON "share_visibilities"."shareable_id" = "posts"."id" AND "share_visibilities"."shareable_type" = $1 WHERE "posts"."id" = $2 AND "share_visibilities"."user_id" = $3 ORDER BY "posts"."id" ASC LIMIT $4  [["shareable_type", "Post"], ["id", 7], ["user_id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Post Load (0.3ms)  SELECT  "posts".* FROM "posts" WHERE "posts"."id" = $1 AND "posts"."author_id" = $2 ORDER BY "posts"."id" ASC LIMIT $3  [["id", 7], ["author_id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.1ms)  BEGIN
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Comment Exists (0.4ms)  SELECT  1 AS one FROM "comments" WHERE "comments"."guid" = $1 LIMIT $2  [["guid", "92c0d1101057013735eb28d244506873"], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.4ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   ActsAsTaggableOn::Tagging Load (0.4ms)  SELECT "taggings".* FROM "taggings" WHERE "taggings"."taggable_id" = $1 AND "taggings"."taggable_type" = $2  [["taggable_id", 7], ["taggable_type", "Post"]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   ActsAsTaggableOn::Tag Load (0.6ms)  SELECT "tags".* FROM "tags" INNER JOIN "taggings" ON "tags"."id" = "taggings"."tag_id" WHERE "taggings"."taggable_id" = $1 AND "taggings"."taggable_type" = $2 AND (taggings.context = 'tags' AND taggings.tagger_id IS NULL)  [["taggable_id", 7], ["taggable_type", "Post"]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Post Exists (0.5ms)  SELECT  1 AS one FROM "posts" WHERE "posts"."guid" = $1 AND ("posts"."id" != $2) LIMIT $3  [["guid", "1daf5ca01057013735eb28d244506873"], ["id", 7], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Post Exists (0.3ms)  SELECT  1 AS one FROM "posts" WHERE "posts"."id" = $1 AND ("posts"."id" != $2) LIMIT $3  [["id", 7], ["id", 7], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Exists (0.3ms)  SELECT  1 AS one FROM "people" INNER JOIN "blocks" ON "people"."id" = "blocks"."person_id" WHERE "blocks"."user_id" = $1 AND "people"."id" = $2 LIMIT $3  [["user_id", 1], ["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.4ms)  INSERT INTO "comments" ("text", "commentable_id", "author_id", "guid", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"  [["text", "just test"], ["commentable_id", 7], ["author_id", 1], ["guid", "92c0d1101057013735eb28d244506873"], ["created_at", "2019-02-11 18:20:02.955482"], ["updated_at", "2019-02-11 18:20:02.955482"]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   ActsAsTaggableOn::Tag Load (0.6ms)  SELECT "tags".* FROM "tags" INNER JOIN "taggings" ON "tags"."id" = "taggings"."tag_id" WHERE "taggings"."taggable_id" = $1 AND "taggings"."taggable_type" = $2 AND (taggings.context = 'tags' AND taggings.tagger_id IS NULL)  [["taggable_id", 4], ["taggable_type", "Comment"]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.4ms)  UPDATE "posts" SET "updated_at" = $1 WHERE "posts"."id" = $2  [["updated_at", "2019-02-11 18:20:02.957186"], ["id", 7]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (9.5ms)  COMMIT
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.4ms)  SELECT COUNT(*) FROM "comments" WHERE "comments"."commentable_id" = $1 AND "comments"."commentable_type" = $2  [["commentable_id", 7], ["commentable_type", "Post"]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (6.0ms)  UPDATE "posts" SET "comments_count" = 2 WHERE "posts"."type" IN ('StatusMessage') AND "posts"."id" = $1  [["id", 7]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.2ms)  BEGIN
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.4ms)  UPDATE "posts" SET "updated_at" = $1, "interacted_at" = $2 WHERE "posts"."id" = $3  [["updated_at", "2019-02-11 18:20:02.979746"], [:interacted_at, "2019-02-11 18:20:02.979746"], ["id", 7]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (6.1ms)  COMMIT
+[2019-02-11T22:20:02] INFO  PID-9665 TID-47454376912320 Comment::Generator: user:1 dispatching Comment:92c0d1101057013735eb28d244506873
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Comment Load (0.3ms)  SELECT  "comments".* FROM "comments" WHERE "comments"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Post Load (0.2ms)  SELECT  "posts".* FROM "posts" WHERE "posts"."id" = $1 LIMIT $2  [["id", 7], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE User Load (0.0ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Aspect Load (0.5ms)  SELECT "aspects".* FROM "aspects" WHERE "aspects"."user_id" = $1 ORDER BY order_id ASC  [["user_id", 1]]
+[2019-02-11T22:20:02] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Aspect Load (0.7ms)  SELECT "aspects".* FROM "aspects" INNER JOIN "aspect_visibilities" ON "aspect_visibilities"."aspect_id" = "aspects"."id" WHERE "aspects"."user_id" = $1 AND "aspect_visibilities"."shareable_id" = $2 AND "aspect_visibilities"."shareable_type" = $3 ORDER BY order_id ASC  [["user_id", 1], ["shareable_id", 7], ["shareable_type", "Post"]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.6ms)  SELECT DISTINCT "people".* FROM "people" INNER JOIN "contacts" ON "contacts"."person_id" = "people"."id" INNER JOIN "aspect_memberships" ON "aspect_memberships"."contact_id" = "contacts"."id" WHERE "aspect_memberships"."aspect_id" IN (1, 2, 3, 4)
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Comment Load (0.0ms)  SELECT  "comments".* FROM "comments" WHERE "comments"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Post Load (0.0ms)  SELECT  "posts".* FROM "posts" WHERE "posts"."id" = $1 LIMIT $2  [["id", 7], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.9ms)  SELECT DISTINCT "mentions"."id" AS t0_r0, "mentions"."mentions_container_id" AS t0_r1, "mentions"."person_id" AS t0_r2, "mentions"."mentions_container_type" AS t0_r3, "people"."id" AS t1_r0, "people"."guid" AS t1_r1, "people"."diaspora_handle" AS t1_r2, "people"."serialized_public_key" AS t1_r3, "people"."owner_id" AS t1_r4, "people"."created_at" AS t1_r5, "people"."updated_at" AS t1_r6, "people"."closed_account" AS t1_r7, "people"."fetch_status" AS t1_r8, "people"."pod_id" AS t1_r9 FROM "mentions" INNER JOIN "people" ON "people"."id" = "mentions"."person_id" LEFT OUTER JOIN comments ON
+      comments.author_id = people.id AND comments.commentable_type = 'Post' AND comments.commentable_id = 7 LEFT OUTER JOIN likes ON
+      likes.author_id = people.id AND likes.target_type = 'Post' AND likes.target_id = 7 WHERE "mentions"."mentions_container_id" = $1 AND "mentions"."mentions_container_type" = $2 AND ("people"."owner_id" IS NOT NULL) AND ("mentions"."person_id" != 1) AND (comments.id IS NOT NULL OR likes.id IS NOT NULL OR people.id = 1)  [["mentions_container_id", 4], ["mentions_container_type", "Comment"]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.4ms)  SELECT "people"."owner_id" FROM "people" INNER JOIN "participations" ON "people"."id" = "participations"."author_id" WHERE "participations"."target_id" = $1 AND "participations"."target_type" = $2 AND (people.owner_id IS NOT NULL) AND ("people"."id" NOT IN (1, 1))  [["target_id", 7], ["target_type", "Post"]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = 4 ORDER BY "users"."id" ASC LIMIT $1  [["LIMIT", 1000]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 4], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Notifications::MentionedInComment Exists (0.4ms)  SELECT  1 AS one FROM "notifications" WHERE "notifications"."type" IN ('Notifications::MentionedInComment') AND "notifications"."target_type" = 'Mention' AND "notifications"."target_id" IN (SELECT "mentions"."id" FROM "mentions" WHERE "mentions"."mentions_container_id" = $1 AND "mentions"."mentions_container_type" = $2 AND "mentions"."person_id" = 4) LIMIT $3  [["mentions_container_id", 4], ["mentions_container_type", "Comment"], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Block Exists (0.2ms)  SELECT  1 AS one FROM "blocks" WHERE "blocks"."user_id" = $1 AND "blocks"."person_id" = 1 LIMIT $2  [["user_id", 4], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Notifications::AlsoCommented Load (0.2ms)  SELECT  "notifications".* FROM "notifications" WHERE "notifications"."type" IN ('Notifications::AlsoCommented') AND "notifications"."recipient_id" = 4 AND "notifications"."target_type" = 'Post' AND "notifications"."target_id" = 7 AND "notifications"."unread" = $1 LIMIT $2  [["unread", "t"], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (0.1ms)  BEGIN
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Exists (0.3ms)  SELECT  1 AS one FROM "people" WHERE "people"."guid" = $1 AND ("people"."id" != $2) LIMIT $3  [["guid", "a92853400c22013735eb28d244506873"], ["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE User Load (0.0ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.3ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Exists (0.2ms)  SELECT  1 AS one FROM "people" WHERE "people"."diaspora_handle" = $1 AND ("people"."id" != $2) LIMIT $3  [["diaspora_handle", "zain@127.0.0.1"], ["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.3ms)  INSERT INTO "notifications" ("target_type", "target_id", "recipient_id", "created_at", "updated_at", "type") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"  [["target_type", "Post"], ["target_id", 7], ["recipient_id", 4], ["created_at", "2019-02-11 18:20:03.016838"], ["updated_at", "2019-02-11 18:20:03.016838"], ["type", "Notifications::AlsoCommented"]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   SQL (0.2ms)  INSERT INTO "notification_actors" ("notification_id", "person_id", "created_at", "updated_at") VALUES ($1, $2, $3, $4) RETURNING "id"  [["notification_id", 9], ["person_id", 1], ["created_at", "2019-02-11 18:20:03.018026"], ["updated_at", "2019-02-11 18:20:03.018026"]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:    (9.9ms)  COMMIT
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   UserPreference Exists (0.3ms)  SELECT  1 AS one FROM "user_preferences" WHERE "user_preferences"."user_id" = $1 AND "user_preferences"."email_type" = $2 LIMIT $3  [["user_id", 4], ["email_type", "also_commented"], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.4ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.2ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Person Load (0.3ms)  SELECT  "people".* FROM "people" WHERE "people"."owner_id" = $1 LIMIT $2  [["owner_id", 4], ["LIMIT", 1]]
+[2019-02-11T22:20:03] INFO  PID-9665 TID-47454376912320 NotificationMailers::AlsoCommented: event=mail mail_type=notification_mailers/also_commented recipient_id=4 sender_id=1  recipient_handle=doubaobei@127.0.0.1 sender_handle=zain@127.0.0.1
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Comment Load (0.2ms)  SELECT  "comments".* FROM "comments" WHERE "comments"."id" = $1 LIMIT $2  [["id", 4], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Post Load (0.2ms)  SELECT  "posts".* FROM "posts" WHERE "posts"."id" = $1 LIMIT $2  [["id", 7], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.3ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 4], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Profile Load (0.2ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendering notifier/also_commented.markerb within layouts/notifier
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Person Load (0.0ms)  SELECT  "people".* FROM "people" WHERE "people"."id" = $1 LIMIT $2  [["id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Profile Load (0.0ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered notifier/also_commented.markerb within layouts/notifier (2.0ms)
+[2019-02-11T22:20:03] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendering notifier/also_commented.markerb within layouts/notifier
+[2019-02-11T22:20:03] INFO  PID-9665 TID-47454376912320 ActionView::Base:   Rendered notifier/also_commented.markerb within layouts/notifier (1.0ms)
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActionMailer::Base: Notifier#send_notification: processed outbound mail in 31.5ms
+[2019-02-11T22:20:03] INFO  PID-9665 TID-47454376912320 ActionMailer::Base: Sent mail to doubaobei@gmail.com (1.6ms)
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActionMailer::Base: Date: Mon, 11 Feb 2019 22:20:03 +0400
+From: "diaspora* (zain)" <no-reply@example.org>
+To: "doubaobei@127.0.0.1" <doubaobei@gmail.com>
+Message-ID: <5c61bcd3f88c_25c12b28d54765c0155a8@userpc.mail>
+In-Reply-To: <1daf5ca01057013735eb28d244506873@127.0.0.1>
+References: <1daf5ca01057013735eb28d244506873@127.0.0.1>
+Subject: There's a new comment on a post you commented
+Mime-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="--==_mimepart_5c61bcd3f1fc_25c12b28d54765c0154d5";
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+host: 127.0.0.1
+
+
+----==_mimepart_5c61bcd3f1fc_25c12b28d54765c0154d5
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+There=E2=80=99s a new comment on a limited post in diaspora* for you to c=
+heck out.=0D
+=0D
+[Reply or view zain=E2=80=99s post >][1]=0D
+=0D
+[1]: http://127.0.0.1/posts/7#92c0d1101057013735eb28d244506873=0D
+=0D
+This email was sent by diaspora*. If you'd like to stop getting emails li=
+ke this,=0D
+to change your notification settings=0D
+http://127.0.0.1/user/edit=0D
+
+----==_mimepart_5c61bcd3f1fc_25c12b28d54765c0154d5
+Content-Type: text/html;
+ charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<table border=3D'0' cellpadding=3D'0' cellspacing=3D'0' style=3D'font-fam=
+ily: &#39;Helvetica Neue&#39;, Helvetica, Arial, sans-serif; font-size: 1=
+4px'>=0D
+<tr><td style=3D'vertical-align: top' width=3D'60px'>=0D
+<div style=3D'background-color: #eee; height: 50px; width: 50px'>=0D
+<img alt=3D"zain@127.0.0.1" style=3D"border: 0, display: block; top: 0; l=
+eft: 0" height=3D"50px" width=3D"50px" src=3D"http://127.0.0.1/assets/use=
+r/default-2c878d1cd0171726fc490add065f342be5a959729df46a89807a4c18a8fc8d1=
+4.png" />=0D
+</div>=0D
+</td><td style=3D'vertical-align: top'>=0D
+<p>There=E2=80=99s a new comment on a limited post in diaspora* for you t=
+o check out.</p>=0D
+=0D
+<p><a href=3D"http://127.0.0.1/posts/7#92c0d1101057013735eb28d244506873">=
+Reply or view zain=E2=80=99s post &gt;</a></p>=0D
+=0D
+</td>=0D
+</tr>=0D
+</table>=0D
+<div style=3D'font-family: &#39;Helvetica Neue&#39;, Helvetica, Arial, sa=
+ns-serif; font-size: 12px; color: #999; padding-top: 10px; margin-top: 10=
+px; border-top: 1px solid #ddd'>=0D
+This email was sent by <a href=3D"http://127.0.0.1">diaspora*</a>. If you=
+'d like to stop getting emails like this,=0D
+<a href=3D"http://127.0.0.1/user/edit">Click here</a>=0D
+to change your notification settings.=0D
+</div>=0D
+
+----==_mimepart_5c61bcd3f1fc_25c12b28d54765c0154d5--
+
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   Mention Load (0.4ms)  SELECT "mentions".* FROM "mentions" WHERE "mentions"."mentions_container_id" = $1 AND "mentions"."mentions_container_type" = $2  [["mentions_container_id", 4], ["mentions_container_type", "Comment"]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Profile Load (0.0ms)  SELECT  "profiles".* FROM "profiles" WHERE "profiles"."person_id" = $1 LIMIT $2  [["person_id", 1], ["LIMIT", 1]]
+[2019-02-11T22:20:03] DEBUG PID-9665 TID-47454376912320 ActiveRecord::Base:   CACHE Mention Load (0.0ms)  SELECT "mentions".* FROM "mentions" WHERE "mentions"."mentions_container_id" = $1 AND "mentions"."mentions_container_type" = $2  [["mentions_container_id", 4], ["mentions_container_type", "Comment"]]
+[2019-02-11T22:20:03] INFO  PID-9665 TID-47454376912320 ActionController::Base: Completed 201 Created in 136ms (Views: 2.8ms | ActiveRecord: 48.4ms)
+
+
