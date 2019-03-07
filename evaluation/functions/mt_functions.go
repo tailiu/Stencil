@@ -147,10 +147,13 @@ func PublishStatus(dbConn *sql.DB, accountID int, content string, haveMedia bool
 		}
 	}
 
-	database.Execute(tx, sqls1)
-	tx.Commit()
-
-	updateAccountStats(dbConn, accountID, "statuses_count", 1)
+	result := database.Execute(tx, sqls1)
+	if result {
+		tx.Commit()
+		updateAccountStats(dbConn, accountID, "statuses_count", 1)
+	} else {
+		tx.Rollback()
+	}
 }
 
 func Favourite(dbConn *sql.DB, accountID int, statusID int) {
@@ -171,10 +174,14 @@ func Favourite(dbConn *sql.DB, accountID int, statusID int) {
 		"INSERT INTO favourites (created_at, updated_at, account_id, status_id) VALUES ('%s', '%s', %d, %d);",
 		t, t, accountID, statusID)
 	sqls = append(sqls, sql3)
-	database.Execute(tx, sqls)
-	tx.Commit()
-
-	updateStatusStats(dbConn, accountID, statusID, "favourites_count", 1)
+	result := database.Execute(tx, sqls)
+	if result {
+		tx.Commit()
+		updateStatusStats(dbConn, accountID, statusID, "favourites_count", 1)
+	} else {
+		tx.Rollback()
+	}
+	
 }
 
 func Unfavourite(dbConn *sql.DB, accountID int, statusID int) {
@@ -194,10 +201,14 @@ func Unfavourite(dbConn *sql.DB, accountID int, statusID int) {
 		"DELETE FROM favourites WHERE account_id = %d and status_ID = %d;",
 		accountID, statusID)
 	sqls = append(sqls, sql3)
-	database.Execute(tx, sqls)
-	tx.Commit()
-
-	updateStatusStats(dbConn, accountID, statusID, "favourites_count", -1)
+	result := database.Execute(tx, sqls)
+	if result {
+		tx.Commit()
+		updateStatusStats(dbConn, accountID, statusID, "favourites_count", -1)
+	} else {
+		tx.Rollback()
+	}
+	
 }
 
 func Signup(dbConn *sql.DB, user *User) {
@@ -219,7 +230,13 @@ func Signup(dbConn *sql.DB, user *User) {
 		"INSERT INTO ACCOUNT_STATS (account_id, statuses_count, following_count, followers_count, created_at, updated_at) VALUES (%d, %d, %d, %d, '%s', '%s');",
 		accountID, 0, 0, 0, t, t)
 	sqls = append(sqls, sql1, sql2, sql3)
-	database.Execute(tx, sqls)
+	result := database.Execute(tx, sqls)
+
+	if result {
+		tx.Commit()
+	} else {
+		tx.Rollback()
+	}
 }
 
 func Follow(dbConn *sql.DB, accountID int, targetAccountID int) {
@@ -242,11 +259,15 @@ func Follow(dbConn *sql.DB, accountID int, targetAccountID int) {
 	sql4 := fmt.Sprintf("INSERT INTO FOLLOWS (created_at, updated_at, account_id, target_account_id, uri) VALUES ('%s', '%s', %d, %d, '%s');",  
 	t, t, accountID, targetAccountID, uri)
 	sqls1 = append(sqls1, sql4)
-	database.Execute(tx, sqls1)
-	tx.Commit()
-
-	updateAccountStats(dbConn, accountID, "following_count", 1)
-	updateAccountStats(dbConn, targetAccountID, "followers_count", 1)
+	result := database.Execute(tx, sqls1)
+	if result {
+		tx.Commit()
+		updateAccountStats(dbConn, accountID, "following_count", 1)
+		updateAccountStats(dbConn, targetAccountID, "followers_count", 1)
+	} else {
+		tx.Rollback()
+	}
+	
 }
 
 func Unfollow(dbConn *sql.DB, accountID int, targetAccountID int) {
@@ -265,14 +286,18 @@ func Unfollow(dbConn *sql.DB, accountID int, targetAccountID int) {
 	sql2 := fmt.Sprintf("DELETE FROM follows WHERE follows.account_id = %d AND follows.target_account_id = %d",  
 	accountID, targetAccountID)
 	sqls = append(sqls, sql2)
-	database.Execute(tx, sqls)
-	tx.Commit()
+	result := database.Execute(tx, sqls)
 
-	updateAccountStats(dbConn, accountID, "following_count", -1)
-	updateAccountStats(dbConn, targetAccountID, "followers_count", -1)
+	if result {
+		tx.Commit()
+		updateAccountStats(dbConn, accountID, "following_count", -1)
+		updateAccountStats(dbConn, targetAccountID, "followers_count", -1)
+	} else {
+		tx.Rollback()
+	}
 }
 
-func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusID int) {
+func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusID int) int {
 	t := time.Now().Format(time.RFC3339)
 	activityID := auxiliary.RandomNonnegativeInt()
 	statusID := auxiliary.RandomNonnegativeInt()
@@ -299,14 +324,21 @@ func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusI
 		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID)
 	sql3 := insertIntoStreamEntries(activityID, t, accountID, hidden)
 	sqls1 = append(sqls1, sql2, sql3)
-	database.Execute(tx, sqls1)
-	tx.Commit()
+	result := database.Execute(tx, sqls1)
 
-	updateAccountStats(dbConn, accountID, "statuses_count", 1)
-	updateStatusStats(dbConn, accountID, statusID, "replies_count", 1)
+	if result {
+		tx.Commit()
+		updateAccountStats(dbConn, accountID, "statuses_count", 1)
+		updateStatusStats(dbConn, accountID, statusID, "replies_count", 1)
+		return statusID
+	} else {
+		tx.Rollback()
+		return -1
+	}
+	
 }
 
-func Reblog(dbConn *sql.DB, accountID int, reblogStatusID int) {
+func Reblog(dbConn *sql.DB, accountID int, reblogStatusID int) int {
 	t := time.Now().Format(time.RFC3339)
 	activityID := auxiliary.RandomNonnegativeInt()
 	conversationID := auxiliary.RandomNonnegativeInt()
@@ -321,7 +353,7 @@ func Reblog(dbConn *sql.DB, accountID int, reblogStatusID int) {
 		statusID, accountID, 1)
 	if exists := database.CheckExists(tx, sql1); exists == 1 {
 		tx.Commit()
-		return 
+		return -1
 	}
 	sql2 := fmt.Sprintf(
 		"INSERT INTO conversations (id, created_at, updated_at) VALUES (%d, '%s', '%s')", 
@@ -331,9 +363,15 @@ func Reblog(dbConn *sql.DB, accountID int, reblogStatusID int) {
 		statusID, t, t, reblogStatusID, conversationID, true, accountID, uri)
 	sql4 := insertIntoStreamEntries(activityID, t, accountID, hidden)
 	sqls = append(sqls, sql2, sql3, sql4)
-	database.Execute(tx, sqls)
-	tx.Commit()
-
-	updateAccountStats(dbConn, accountID, "statuses_count", 1)
-	updateStatusStats(dbConn, accountID, statusID, "reblogs_count", 1)
+	result := database.Execute(tx, sqls)
+	if result {
+		tx.Commit()
+		updateAccountStats(dbConn, accountID, "statuses_count", 1)
+		updateStatusStats(dbConn, accountID, statusID, "reblogs_count", 1)
+		return statusID
+	} else {
+		tx.Rollback()
+		return -1
+	}
+	
 }

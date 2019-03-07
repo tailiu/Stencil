@@ -1,0 +1,46 @@
+{
+	"dependencies": [{
+            "tag": "root",
+            "content": [
+                {   
+                    "account": "SELECT * FROM accounts WHERE account_id = $1"
+                },
+                {   
+                    "user": "SELECT * FROM user WHERE account_id = $1"
+                },
+                {
+                    "account_stats": "SELECT * FROM account_stats WHERE account_id = $1"
+                }
+            ]
+		},
+		{
+			"tag": "conversations",
+			"depends_on": "root",
+            "conditions": [
+                {   "tag_attr": "H_C_ID",
+                    "depends_on_attr": "C_ID"
+                },
+				{
+                    "tag_attr": "H_C_D_ID",
+                    "depends_on_attr": "C_D_ID"
+                },
+				{
+                    "tag_attr": "H_C_W_ID",
+                    "depends_on_attr": "C_W_ID"
+                }
+            ]
+        },
+        {
+            "tag": "statuses",
+            "depends_on": "conversations",
+            "content": [
+                {
+                    "statuses": "SELECT * FROM statuses WHERE conversation_id = $1"
+                },
+                {
+                    "status_stats": ""
+                }
+            ]
+        }
+	]
+}

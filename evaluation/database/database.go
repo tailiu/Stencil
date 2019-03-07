@@ -27,7 +27,7 @@ func BeginTx(dbConn *sql.DB) *sql.Tx {
 	return tx
 }
 
-func Execute(tx *sql.Tx, queries []string) {
+func Execute(tx *sql.Tx, queries []string) bool {
 	haveErr := false
 	for _, query := range queries {
 		// fmt.Println(query)
@@ -37,11 +37,7 @@ func Execute(tx *sql.Tx, queries []string) {
 			break
 		}
 	}
-	if !haveErr {
-		tx.Commit()
-	} else {
-		tx.Rollback()
-	}
+	return !haveErr
 }
 
 func CheckExists(tx *sql.Tx, query string) int {
