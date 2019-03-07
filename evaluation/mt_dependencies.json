@@ -38,7 +38,16 @@
                     "statuses": "SELECT * FROM statuses WHERE conversation_id = $1"
                 },
                 {
-                    "status_stats": ""
+                    "status_stats": "SELECT * FROM status_stats WHERE status_id = $2"
+                }
+            ]
+        },
+        {
+            "tag": "statuses",
+            "depends_on": "statuses",
+            "content": [
+                {
+                    "replied_statuses": "SELECT * FROM statuses WHERE "
                 }
             ]
         }
