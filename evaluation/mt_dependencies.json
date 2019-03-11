@@ -54,6 +54,30 @@
                     "member1.id":"member4.status_id"
                 }
             ]
+        },
+        {
+            "tag" : "follows",
+            "members" : {
+                "member1": "follows"
+            },
+            "keys": {
+                "account_id": "account_id" 
+            } 
+        },
+        {
+            "tag" : "favourites",
+            "members" : {
+                "member1": "favourites"
+            },
+            "keys": {
+                "id": "id"
+            } 
+        },
+        {
+            "tag" : "stream_entries",
+            "members" : {
+                "member1":
+            }
         }
     ],
 	"dependencies": [
@@ -81,7 +105,22 @@
                 {
                     "tag": "conversations",
                     "conditions":[
-                        {   "tag_attr": "conversation_id",
+                        {   
+                            "tag_attr": "conversation_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "statuses",
+            "depends_on":[ 
+                {
+                    "tag": "conversations",
+                    "conditions":[
+                        {   
+                            "tag_attr": "conversation_id",
                             "depends_on_attr": "id"
                         }
                     ]
@@ -116,7 +155,36 @@
                 {
                     "tag":"conversations",
                     "conditions":[
-                        {   "tag_attr": "conversation_id",
+                        {   
+                            "tag_attr": "conversation_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "follows",
+            "depends_on": [
+                {
+                    "tag": "root",
+                    "conditions": [
+                        {   
+                            "tag_attr": "account_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "favourites",
+            "depends_on": [
+                {
+                    "tag": "statuses",
+                    "conditions": [
+                        {
+                            "tag_attr": "id",
                             "depends_on_attr": "id"
                         }
                     ]
