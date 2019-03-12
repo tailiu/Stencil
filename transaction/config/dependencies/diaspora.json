@@ -66,7 +66,8 @@
                 "aspect_visibilities":"member2.id",
                 "aspect_memberships":"member3.id",
                 "shareable_id":"member2.shareable_id",
-                "shareable_type":"member2.shareable_type"
+                "shareable_type":"member2.shareable_type",
+                "user_id":"member1.user_id"
             },
             "inner_dependencies":[
                 {
@@ -93,6 +94,7 @@
             },
             "keys":{
                 "id":"member1.id",
+                "author_id":"member1.author_id",
                 "commentable_id":"member1.commentable_id"
             }
         },
@@ -103,6 +105,7 @@
             },
             "keys":{
                 "id":"member1.id",
+                "author_id":"member1.author_id",
                 "post_id":"member1.target_id"
             }
         },
@@ -117,7 +120,8 @@
                 "notification_id":"member2.notification_id",
                 "recipient_id":"member1.recipient_id",
                 "target_id":"member1.target_id",
-                "type":"member1.target_type"
+                "type":"member1.target_type",
+                "author_id":"member2.person_id"
             },
             "inner_dependencies":[
                 {
@@ -148,6 +152,7 @@
             },
             "keys":{
                 "id":"member1.id",
+                "author_id":"member1.author_id",
                 "conversation_id":"member1.conversation_id"
             }
         }
@@ -302,49 +307,94 @@
 
 
     "ownership": [{
-        "tag": "Comment",
-            "depends_on": "People",
+        "tag": "comment",
+            "owned_by": "root",
             "conditions": [
                 {   "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "person_id"
                 }
             ]
        },
        {
-        "tag": "Message",
-            "depends_on": "People",
+        "tag": "message",
+            "owned_by": "root",
             "conditions": [
                 {   "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "person_id"
                 }
             ]
         },
         {
-            "tag": "Conversations",
-            "depends_on": "People",
+            "tag": "conversation",
+            "owned_by": "root",
             "conditions": [
                 {   
                     "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "person_id"
                 }
             ]
         },
         {
-            "tag": "Contacts",
-            "depends_on": "People",
+            "tag": "contact",
+            "owned_by": "root",
             "conditions": [
                 {   
                     "tag_attr": "user_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "person_id"
                 }
             ]
         },
         {
-            "tag": "Likes",
-            "depends_on": "People",
+            "tag": "like",
+            "owned_by": "root",
             "conditions": [
                 {   "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "post",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "notification",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "aspect",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "user_id",
+                    "owner_attr": "user_id"
+                }
+            ]
+        },
+        {
+            "tag": "profile",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "person_id",
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "reshare",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "owner_attr": "person_id"
                 }
             ]
         }

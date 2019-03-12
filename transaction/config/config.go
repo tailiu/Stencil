@@ -27,24 +27,35 @@ type DataQuery struct {
 }
 
 type AppConfig struct {
+	Tags         []Tag        `json:"tags"`
 	Dependencies []Dependency `json:"dependencies"`
-	Ownerships   []Ownership  `json:"ownerships"`
-	Tags         []Tag        `json:"ownerships"`
+	Ownerships   []Ownership  `json:"ownership"`
 }
 
 type Ownership struct {
+	Tag        string              `json:"tag"`
+	DependsOn  string              `json:"owned_by"`
+	Conditions []map[string]string `json:"conditions"`
 }
 
 type Tag struct {
+	Name              string              `json:"name"`
+	Members           map[string]string   `json:"members"`
+	Keys              map[string]string   `json:"keys"`
+	InnerDependencies []map[string]string `json:"inner_dependencies"`
 }
 
 type Dependency struct {
-	Tag        string      `json:"tag"`
-	DependsOn  string      `json:"depends_on"`
-	Conditions []Condition `json:"conditions"`
+	Tag       string      `json:"tag"`
+	DependsOn []DependsOn `json:"depends_on"`
 }
 
-type Condition struct {
+type DependsOn struct {
+	Tag        string       `json:"tag"`
+	Conditions []DCondition `json:"conditions"`
+}
+
+type DCondition struct {
 	TagAttr       string `json:"tag_attr"`
 	DependsOnAttr string `json:"depends_on_attr"`
 }
@@ -66,8 +77,9 @@ type Settings struct {
 func FindDependency(tag, depends_on string, dependencies []Dependency) (Dependency, error) {
 
 	for _, dependency := range dependencies {
-		if strings.ToLower(dependency.Tag) == strings.ToLower(tag) &&
-			strings.ToLower(dependency.DependsOn) == strings.ToLower(depends_on) {
+		if strings.ToLower(dependency.Tag) == strings.ToLower(tag) {
+			// && strings.ToLower(dependency.DependsOn) == strings.ToLower(depends_on)
+
 			return dependency, nil
 		}
 	}
@@ -84,24 +96,24 @@ func FindDependencyByDependsOn(depends_on string, dependencies []Dependency) (De
 	return *new(Dependency), errors.New("dependency doesn't exist")
 }
 
-func ReadDependencies(app string) ([]Dependency, error) {
+func ReadAppConfig(app string) (AppConfig, error) {
 
-	var dependencies Dependencies
+	var appConfig AppConfig
 	dconfig := "./config/dependencies/" + app + ".json"
 	jsonFile, err := os.Open(dconfig)
 
 	if err != nil {
 		fmt.Println("Some problem with the file: ")
 		fmt.Println(err)
-		return dependencies.Dependencies, errors.New("can't open file")
+		return appConfig, errors.New("can't open file")
 	}
 
 	defer jsonFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-	json.Unmarshal(byteValue, &dependencies)
+	json.Unmarshal(byteValue, &appConfig)
 
-	return dependencies.Dependencies, nil
+	return appConfig, nil
 }
 
 func GetSchemaMappingsFromDB(app string) Mapping {
