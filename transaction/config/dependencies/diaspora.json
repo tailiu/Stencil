@@ -152,38 +152,44 @@
             }
         }
     ],
+
 	"dependencies": [
         {
             "tag": "profile",
-            "depends_on": "root",
-            "conditions": [
-                {   "tag_attr": "person_id",
-                    "depends_on_attr": "person_id"
+            "depends_on": [
+                {
+                    "tag":"root",
+                    "conditions": [
+                        {   
+                            "tag_attr": "person_id",
+                            "depends_on_attr": "person_id"
+                        }
+                    ]
                 }
             ]
         },
         {
             "tag": "post",
-            "depends_on": "root",
+            "depends_on": [{"tag":"root",
             "conditions": [
                 {   "tag_attr": "id",
                     "depends_on_attr": "person_id"
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Reshare",
-            "depends_on": "Posts",
+            "depends_on": [{"tag":"Posts",
             "conditions": [
                 {   
                     "tag_attr": "root_guid",
                     "depends_on_attr": "guid"
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Post",
-            "depends_on": "Aspect",
+            "depends_on": [{"tag":"Aspect",
             "conditions": [
                 {   
                     "tag_attr": "id",
@@ -193,30 +199,30 @@
                         "val":"Post"
                     }]
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Aspect",
-            "depends_on": "root",
+            "depends_on": [{"tag":"root",
             "conditions": [
                 {
                     "tag_attr": "user_id",
                     "depends_on_attr": "user_id"
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Comment",
-            "depends_on": "Post",
+            "depends_on": [{"tag":"Post",
             "conditions": [
                 {   "tag_attr": "commentable_id",
                     "depends_on_attr": "id"
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Notification",
-            "depends_on": "Post",
+            "depends_on": [{"tag":"Post",
             "conditions": [
                 {   
                     "tag_attr": "target_id",
@@ -236,49 +242,49 @@
                         }
                     ]
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Notification",
-            "depends_on": "root",
+            "depends_on": [{"tag":"root",
             "conditions": [
                 {   
                     "tag_attr": "recipient_id",
                     "depends_on_attr": "user_id"
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Like",
-            "depends_on": "Post",
+            "depends_on": [{"tag":"Post",
             "conditions": [
                 {   "tag_attr": "post_id",
                     "depends_on_attr": "id"
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Message",
-            "depends_on": "Conversation",
+            "depends_on": [{"tag":"Conversation",
             "conditions": [
                 {   "tag_attr": "conversation_id",
                     "depends_on_attr": "id"
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Conversation",
-            "depends_on": "root",
+            "depends_on": [{"tag":"root",
             "conditions": [
                 {   
                     "tag_attr": "author_id",
                     "depends_on_attr": "id"
                 }
-            ]
+            ]}]
         },
         {
             "tag": "Contact",
-            "depends_on": "root",
+            "depends_on": [{"tag":"root",
             "conditions": [
                 {   
                     "tag_attr": "user_id",
@@ -290,7 +296,7 @@
                         }
                     ]
                 }
-            ]
+            ]}]
         }
     ],
 

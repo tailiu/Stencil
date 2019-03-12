@@ -197,8 +197,17 @@ func initStencilMigration(uid int, srcApp, tgApp string) {
 
 func main() {
 
+	srcApp := "diaspora"
+	if dependencies, err := config.ReadDependencies(srcApp); err != nil {
+		log.Println(err)
+		log.Fatal("Some Error")
+	} else {
+		fmt.Println(dependencies)
+		log.Println("Dependencies Fetched")
+	}
+
 	// initAppLevelMigration(7, "app1", "app5")
-	initStencilMigration(61, "app3", "app4")
+	// initStencilMigration(61, "app3", "app4")
 	// QR := qr.NewQR("app1")
 	// QR.TestQuery()
 

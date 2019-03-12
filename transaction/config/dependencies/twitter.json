@@ -1,0 +1,37 @@
+{
+    "tags":[
+        {
+            "name" : "root",
+            "members" : {
+                "member1":""
+            },
+            "keys":{
+                
+            },
+            "inner_dependencies" : [
+                {
+                    
+                }
+            ]
+        }
+    ],
+    "dependencies":[
+        {
+            "tag": "profile",
+            "depends_on": [
+                {
+                    "tag":"root",
+                    "conditions": [
+                        {   
+                            "tag_attr": "person_id",
+                            "depends_on_attr": "person_id"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "ownership":[
+
+    ]
+}

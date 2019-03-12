@@ -26,21 +26,17 @@ type DataQuery struct {
 	SQL, Table string
 }
 
-type AppConfig struct {
+type Dependencies struct {
 	Dependencies []Dependency `json:"dependencies"`
-	Ownerships   []Ownership  `json:"ownerships"`
-	Tags         []Tag        `json:"ownerships"`
-}
-
-type Ownership struct {
-}
-
-type Tag struct {
 }
 
 type Dependency struct {
 	Tag        string      `json:"tag"`
 	DependsOn  string      `json:"depends_on"`
+	Conditions []Condition `json:"conditions"`
+}
+
+type Conditions struct {
 	Conditions []Condition `json:"conditions"`
 }
 
