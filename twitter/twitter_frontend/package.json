@@ -1,0 +1,28 @@
+{
+  "name": "twitter_frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@material-ui/icons": "^1.0.0-beta.43",
+    "axios": "^0.18.0",
+    "babel-core": "^6.26.2",
+    "downshift": "^1.31.14",
+    "material-ui": "^1.0.0-beta.44",
+    "material-ui-icons": "^1.0.0-beta.36",
+    "material-ui-next-upload": "^1.2.1",
+    "material-ui-upload": "^1.2.1",
+    "moment": "^2.22.1",
+    "react": "^16.3.2",
+    "react-cookie": "^2.1.4",
+    "react-dom": "^16.3.2",
+    "react-render-html": "^0.6.0",
+    "react-router-dom": "^4.2.2",
+    "react-scripts": "^1.1.4"
+  },
+  "scripts": {
+    "start": "PORT=8001 react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}

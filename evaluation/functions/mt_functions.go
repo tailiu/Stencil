@@ -98,12 +98,11 @@ func insertIntoStreamEntries(activityID int, t string, accountID int, hidden boo
  * 0: Public Statuses
  * 3: Direct Messages
  */
-func PublishStatus(dbConn *sql.DB, accountID int, content string, haveMedia bool, visibility int, mentionedAccounts []int) {
+func PublishStatus(dbConn *sql.DB, accountID int, content string, haveMedia bool, visibility int, mentionedAccounts []int) int {
 	t := time.Now().Format(time.RFC3339)
-	activityID := auxiliary.RandomNonnegativeInt()
 	conversationID := auxiliary.RandomNonnegativeInt()
 	statusID := auxiliary.RandomNonnegativeInt()
-	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(activityID)
+	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(statusID)
 	var sqls1 []string
 	var hidden bool
 
@@ -120,7 +119,7 @@ func PublishStatus(dbConn *sql.DB, accountID int, content string, haveMedia bool
 	sql2 := fmt.Sprintf(
 		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, visibility) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s', %d);",  
 		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri, visibility)
-	sql3 := insertIntoStreamEntries(activityID, t, accountID, hidden)
+	sql3 := insertIntoStreamEntries(statusID, t, accountID, hidden)
 	sqls1 = append(sqls1, sql1, sql2, sql3)
 	
 	if haveMedia {
@@ -151,8 +150,10 @@ func PublishStatus(dbConn *sql.DB, accountID int, content string, haveMedia bool
 	if result {
 		tx.Commit()
 		updateAccountStats(dbConn, accountID, "statuses_count", 1)
+		return statusID
 	} else {
 		tx.Rollback()
+		return -1
 	}
 }
 
@@ -297,11 +298,10 @@ func Unfollow(dbConn *sql.DB, accountID int, targetAccountID int) {
 	}
 }
 
-func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusID int) int {
+func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusID int, visibility int, mentionedAccounts []int) int {
 	t := time.Now().Format(time.RFC3339)
-	activityID := auxiliary.RandomNonnegativeInt()
 	statusID := auxiliary.RandomNonnegativeInt()
-	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(activityID)
+	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(statusID)
 	var conversationID int
 	var replyToAccountID int
 	var sqls1 []string
@@ -320,10 +320,20 @@ func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusI
 		}
 	}
 	sql2 := fmt.Sprintf(
-		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, in_reply_to_id, reply, in_reply_to_account_id) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s', %d, %t, %d);",  
-		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID)
-	sql3 := insertIntoStreamEntries(activityID, t, accountID, hidden)
+		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, in_reply_to_id, reply, in_reply_to_account_id, visibility) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s', %d, %t, %d, %d);",  
+		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID, visibility)
+	sql3 := insertIntoStreamEntries(statusID, t, accountID, hidden)
 	sqls1 = append(sqls1, sql2, sql3)
+
+	if len(mentionedAccounts) != 0 {
+		var sql4 string
+		for _, mentionedAccount := range mentionedAccounts {
+			sql4 = fmt.Sprintf("INSERT INTO mentions (status_id, created_at, updated_at, account_id) VALUES (%d, '%s', '%s', %d);",
+				statusID, t, t, mentionedAccount)
+			sqls1 = append(sqls1, sql4)
+		}
+	}
+
 	result := database.Execute(tx, sqls1)
 
 	if result {
@@ -340,10 +350,9 @@ func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusI
 
 func Reblog(dbConn *sql.DB, accountID int, reblogStatusID int) int {
 	t := time.Now().Format(time.RFC3339)
-	activityID := auxiliary.RandomNonnegativeInt()
 	conversationID := auxiliary.RandomNonnegativeInt()
 	statusID := auxiliary.RandomNonnegativeInt()
-	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(activityID)
+	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(statusID)
 	var sqls []string
 	hidden := false
 
@@ -361,7 +370,7 @@ func Reblog(dbConn *sql.DB, accountID int, reblogStatusID int) int {
 	sql3 := fmt.Sprintf(
 		"INSERT INTO statuses (id, created_at, updated_at, reblog_of_id, conversation_id, local, account_id, uri) VALUES (%d, '%s', '%s', %d, %d, %t, %d, '%s');",
 		statusID, t, t, reblogStatusID, conversationID, true, accountID, uri)
-	sql4 := insertIntoStreamEntries(activityID, t, accountID, hidden)
+	sql4 := insertIntoStreamEntries(statusID, t, accountID, hidden)
 	sqls = append(sqls, sql2, sql3, sql4)
 	result := database.Execute(tx, sqls)
 	if result {

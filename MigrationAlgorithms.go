@@ -140,7 +140,7 @@ func (t Thread) AggressiveMigration(userid int, srcApp, dstApp string, node *Dep
 		}
 }
 
-//Extending database guarantee to ensure migration correctness and protect application semantics
+//Extending database guarantee to ensure migration correctness (and protect application semantics)
 //we are trying not to lock all application service and other users' data and protect application semantics
 //Our solution is agnostic to threads or concurrent migration
 //we are only interrupting limited things that are going to be migrated and minimizing interruption even not per user basis

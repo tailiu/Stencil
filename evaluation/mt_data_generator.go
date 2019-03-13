@@ -127,39 +127,106 @@ func followFriendsController(dbConn *sql.DB, accountIDs *[]int) {
 	}
 }
 
-func createDirectMessagesThread(dbConn *sql.DB, slicedAccountIDs []int, accountIDs *[]int) {
+func createOneDirectMessage(dbConn *sql.DB, accountID int, accountIDs *[]int) ([]int, int) {
 	var haveMedia bool
+	if auxiliary.RandomNonnegativeIntWithUpperBound(10) == 0 {
+		haveMedia = true
+	} else {
+		haveMedia = false
+	}
+	var mentionedAccounts []int
+	// Each message group initially has 2 - 11 users 
+	numOfMentionedUsers := auxiliary.RandomNonnegativeIntWithUpperBound(10) + 1
+	for i := 0; i < numOfMentionedUsers; i++ {
+		mentionedAccounts = append(mentionedAccounts, 
+			(*accountIDs)[auxiliary.RandomNonnegativeIntWithUpperBound(len(*accountIDs))])
+	}
+	messageID := functions.PublishStatus(dbConn, accountID, auxiliary.RandStrSeq(50), haveMedia, 3, mentionedAccounts)
+	if messageID != -1 {
+		newMessageGroupLog := fmt.Sprintf("User %d creates a message group with %d users",
+			accountID, len(mentionedAccounts) + 1)
+		fmt.Println(newMessageGroupLog)
+	}
+	return mentionedAccounts, messageID
+}
+
+func createDirectMessageGroupsThread(dbConn *sql.DB, slicedAccountIDs []int, accountIDs *[]int) {
 	var numOfMessageGroups int
-	var numOfMentionedUsers int
-	var newMessageGroupLog string
-	accountNum := len(*accountIDs)
 	for _, accountID := range slicedAccountIDs {
-		// Each user creates 0 - 50 message groups
-		numOfMessageGroups = auxiliary.RandomNonnegativeIntWithUpperBound(50)
+		// Each user creates 0 - 10 message groups
+		numOfMessageGroups = auxiliary.RandomNonnegativeIntWithUpperBound(10)
 		for j := 0; j < numOfMessageGroups; j++ {
-			if j % 10 == 0 {
-				haveMedia = true
-			} else {
-				haveMedia = false
+			var newLayer []int
+			var allAccounts []int
+			// Each message group has 0 - 15 messages
+			numOfLayers := auxiliary.RandomNonnegativeIntWithUpperBound(15)
+			for k := 0; k < numOfLayers; k++ {
+				if k == 0 {
+					// Create one direct message with 1 - 10 mentioned users
+					mentionedAccounts, messageID := createOneDirectMessage(dbConn, accountID, accountIDs)
+					if messageID == -1 {
+						break
+					}
+					allAccounts = append(allAccounts, mentionedAccounts...)
+					allAccounts = append(allAccounts, accountID)
+					newLayer = append(newLayer, messageID)
+				} else {
+					// Copy newLayer to layers and set newLayer to nil
+					length := len(newLayer)
+					layers := make([]int, length)
+					copy(layers, newLayer)
+					newLayer = nil
+					for _, replyToStatusID := range layers {
+						// Each message has 0 - 2 replies
+						numOfReplies := auxiliary.RandomNonnegativeIntWithUpperBound(2)
+						for i := 0; i < numOfReplies; i++ {
+							createOneReplyUsingMentionedAccount(dbConn, replyToStatusID, &newLayer, allAccounts, 3)
+						}
+					}	
+				}
+				if len(newLayer) == 0 {
+					break
+				}
 			}
-			var mentionedAccounts []int
-			// Each message group has 2 - 11 users 
-			numOfMentionedUsers = auxiliary.RandomNonnegativeIntWithUpperBound(10) + 1
-			for i := 0; i < numOfMentionedUsers; i++ {
-				mentionedAccounts = append(mentionedAccounts, 
-					(*accountIDs)[auxiliary.RandomNonnegativeIntWithUpperBound(accountNum)])
-			}
-			functions.PublishStatus(dbConn, accountID, auxiliary.RandStrSeq(50), haveMedia, 3, mentionedAccounts)
-			newMessageGroupLog = fmt.Sprintf("User %d creates a message group with %d users",
-				accountID, len(mentionedAccounts) + 1)
-			fmt.Println(newMessageGroupLog)
 		}	
 	}
 }
 
-func createOneReply(dbConn *sql.DB, replyToStatusID int, newLayer *[]int, accountIDs *[]int) {
+func createOneReplyUsingMentionedAccount(dbConn *sql.DB, replyToStatusID int, newLayer *[]int, allAccounts []int, visibility int) {
+	accountID := allAccounts[auxiliary.RandomNonnegativeIntWithUpperBound(len(allAccounts))]
+	for i, targetAccountID := range allAccounts {
+		if targetAccountID == accountID {
+			allAccounts = append(allAccounts[:i], allAccounts[i+1:]...)
+			break
+		}
+	}
+	result := functions.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID, visibility, allAccounts)
+	if result != -1 {
+		newReply := fmt.Sprintf("Create a message %d as a reply to a message %d with visibility %d", result, replyToStatusID, visibility)
+		fmt.Println(newReply)
+		*newLayer = append(*newLayer, result)
+	} else {
+		FailedToCreateNewReply := fmt.Sprintf("Failed to create a reply to a message %d with visibility %d", replyToStatusID, visibility)
+		fmt.Println(FailedToCreateNewReply)
+	}
+}
+
+func createDirectMessagesController(accountIDs *[]int) {
+	j := 0
+	var dbConn *sql.DB
+	for i := 0; i < len(*accountIDs); i++ {
+		// There are about 100,000 accounts, so there will be 100000/500 = 200 threads
+		if i != 0 && i % 500 == 0 {
+			dbConn = database.ConnectToDB(address)
+			go createDirectMessageGroupsThread(dbConn, (*accountIDs)[j:i], accountIDs)
+			j = i
+		}
+	}
+}
+
+func createOneReply(dbConn *sql.DB, replyToStatusID int, newLayer *[]int, accountIDs *[]int, visibility int, mentionedAccounts []int) {
 	accountID := (*accountIDs)[auxiliary.RandomNonnegativeIntWithUpperBound(len(*accountIDs))]
-	result := functions.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID)
+	result := functions.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID, 0, mentionedAccounts)
 	if result != -1 {
 		newReply := fmt.Sprintf("Create a new reply to %d", replyToStatusID)
 		fmt.Println(newReply)
@@ -168,6 +235,7 @@ func createOneReply(dbConn *sql.DB, replyToStatusID int, newLayer *[]int, accoun
 }
 
 func createRepliesToPostsThread(dbConn *sql.DB, slicedPostIDs []int, accountIDs *[]int) {
+	var mentionedAccounts []int
 	for _, postID := range slicedPostIDs {
 		var newLayer []int
 		// Replay layers are 0 - 10 levels
@@ -177,7 +245,7 @@ func createRepliesToPostsThread(dbConn *sql.DB, slicedPostIDs []int, accountIDs 
 				// Each post has 0 - 3 replies
 				numOfReplies := auxiliary.RandomNonnegativeIntWithUpperBound(3)
 				for i := 0; i < numOfReplies; i++ {
-					createOneReply(dbConn, postID, &newLayer, accountIDs)
+					createOneReply(dbConn, postID, &newLayer, accountIDs, 0, mentionedAccounts)
 				}
 			} else {
 				length := len(newLayer)
@@ -186,7 +254,7 @@ func createRepliesToPostsThread(dbConn *sql.DB, slicedPostIDs []int, accountIDs 
 				newLayer = nil
 				// This is a mistake...
 				for _, replyToStatusID := range layers {
-					createOneReply(dbConn, replyToStatusID, &newLayer, accountIDs)
+					createOneReply(dbConn, replyToStatusID, &newLayer, accountIDs, 0, mentionedAccounts)
 				}	
 			}
 			if len(newLayer) == 0 {
@@ -209,19 +277,6 @@ func createRepliesToPostsController(accountIDs *[]int, postIDs *[]int) {
 	}
 }
 
-func createDirectMessagesController(accountIDs *[]int) {
-	j := 0
-	var dbConn *sql.DB
-	for i := 0; i < len(*accountIDs); i++ {
-		// There are about 100,000 accounts, so there will be 100000/1000 = 100 threads
-		if i != 0 && i % 1000 == 0 {
-			dbConn = database.ConnectToDB(address)
-			go createDirectMessagesThread(dbConn, (*accountIDs)[j:i], accountIDs)
-			j = i
-		}
-	}
-}
-
 
 func main() {
 	dbConn := database.ConnectToDB(address)
@@ -236,9 +291,9 @@ func main() {
 	// }
 	// createPublicPostsController(getAllAccountIDs(dbConn))
 	// followFriendsController(dbConn, getAllAccountIDs(dbConn))
-	// createDirectMessagesController(getAllAccountIDs(dbConn))
+	// createRepliesToPostsController(getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
 
-	createRepliesToPostsController(getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
+	createDirectMessagesController(getAllAccountIDs(dbConn))
 
 	for {
 		fmt.Scanln()

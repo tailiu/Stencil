@@ -23,7 +23,6 @@
 yarn-debug.log*
 .yarn-integrity
 
-package.json
 package-lock.json
 
 # Ignore all media
