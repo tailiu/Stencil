@@ -3,107 +3,236 @@
         {
             "name" : "root",
             "members" : {
-                "member1":"accounts",
-                "member2":"users",
-                "member3":"account_stats"
+                "member1":"users",
+                "member2":"people"
             },
             "keys":{
-                "id":"member1.id"
+                "user_id":"member1.id",
+                "person_id":"member2.id"
             },
             "inner_dependencies" : [
                 {
-                    "member1.id":"member2.account_id"
-                },
-                {
-                    "member1.id":"member3.account_id"
+                    "member1.id":"member2.owner_id"
                 }
             ]
+        },
+        {
+            "name":"profile",
+            "members":{
+                "member1":"profiles"
+            },
+            "keys":{
+                "id":"member1.id",
+                "person_id":"member1.person_id"
+            }
+        },
+        {
+            "name":"post",
+            "members":{
+                "member1":"posts"
+            },
+            "keys":{
+                "id":"member1.id",
+                "guid":"member1.guid"
+            },
+            "restrictions":{
+                "col":"member1.type",
+                "val":"StatusMessage"
+            }
+        },
+        {
+            "name":"reshare",
+            "members":{
+                "member1":"posts"
+            },
+            "keys":{
+                "id":"member1.id",
+                "root_guid":"member1.root_guid"
+            },
+            "restrictions":{
+                "col":"member1.type",
+                "val":"Reshare"
+            }
+        },
+        {
+            "name":"aspect",
+            "members":{
+                "member1":"aspects",
+                "member2":"aspect_visibilities",
+                "member3":"aspect_memberships"
+            },
+            "keys":{
+                "id":"member1.id",
+                "aspect_visibilities":"member2.id",
+                "aspect_memberships":"member3.id",
+                "shareable_id":"member2.shareable_id",
+                "shareable_type":"member2.shareable_type",
+                "user_id":"member1.user_id"
+            },
+            "inner_dependencies":[
+                {
+                    "member1.id" : "member2.aspect_id",
+                    "member2.id" : "member3.aspect_id"
+                }
+            ]
+        },
+        {
+            "name":"contact",
+            "members":{
+                "member1":"contacts"
+            },
+            "keys":{
+                "id":"member1.id",
+                "user_id":"member1.user_id",
+                "receiving":"member1.receiving"
+            }
+        },
+        {
+            "name":"comment",
+            "members":{
+                "member1":"comments"
+            },
+            "keys":{
+                "id":"member1.id",
+                "author_id":"member1.author_id",
+                "commentable_id":"member1.commentable_id"
+            }
+        },
+        {
+            "name":"like",
+            "members":{
+                "member1":"likes"
+            },
+            "keys":{
+                "id":"member1.id",
+                "author_id":"member1.author_id",
+                "post_id":"member1.target_id"
+            }
+        },
+        {
+            "name":"notification",
+            "members":{
+                "member1":"notifications",
+                "member2":"notification_actors"
+            },
+            "keys":{
+                "id":"member1.id",
+                "notification_id":"member2.notification_id",
+                "recipient_id":"member1.recipient_id",
+                "target_id":"member1.target_id",
+                "type":"member1.target_type",
+                "author_id":"member2.person_id"
+            },
+            "inner_dependencies":[
+                {
+                    "member1.id":"member2.notification_id"
+                }
+            ]
+        },
+        {
+            "name":"conversation",
+            "members":{
+                "member1":"conversations",
+                "member2":"conversation_visibilities"
+            },
+            "keys":{
+                "id":"member1.id",
+                "author_id":"member1.author_id"
+            },
+            "inner_dependencies":[
+                {
+                    "member1.id":"member2.conversation_id"
+                }
+            ]
+        },
+        {
+            "name":"message",
+            "members":{
+                "member1":"messages"
+            },
+            "keys":{
+                "id":"member1.id",
+                "author_id":"member1.author_id",
+                "conversation_id":"member1.conversation_id"
+            }
         }
     ],
+
 	"dependencies": [
         {
-            "tag": "People",
-            "depends_on": "Users",
-            "conditions": [
-                {   "tag_attr": "owner_id",
-                    "depends_on_attr": "id"
+            "tag": "profile",
+            "depends_on": [
+                {
+                    "tag":"root",
+                    "conditions": [
+                        {   
+                            "tag_attr": "person_id",
+                            "depends_on_attr": "person_id"
+                        }
+                    ]
                 }
             ]
         },
         {
-            "tag": "Profiles",
-            "depends_on": "People",
+            "tag": "post",
+            "depends_on": [{"tag":"root",
             "conditions": [
-                {   "tag_attr": "person_id",
-                    "depends_on_attr": "id"
+                {   "tag_attr": "id",
+                    "depends_on_attr": "person_id"
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Posts",
-            "depends_on": "People",
+            "tag": "Reshare",
+            "depends_on": [{"tag":"Posts",
             "conditions": [
-                {   "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                {   
+                    "tag_attr": "root_guid",
+                    "depends_on_attr": "guid"
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Posts",
-            "depends_on": "Posts",
+            "tag": "Post",
+            "depends_on": [{"tag":"Aspect",
             "conditions": [
-                {   "tag_attr": "root_guid",
-                    "depends_on_attr": "guid",
-                    "type": {
-                        "col":"type",
-                        "val":"Reshare"
-                    }
+                {   
+                    "tag_attr": "id",
+                    "depends_on_attr": "shareable_id",
+                    "restrictions": [{
+                        "col":"shareable_type",
+                        "val":"Post"
+                    }]
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Aspect_Visibilities",
-            "depends_on": "Posts",
+            "tag": "Aspect",
+            "depends_on": [{"tag":"root",
             "conditions": [
-                {   "tag_attr": "shareable_id",
-                    "depends_on_attr": "id"
+                {
+                    "tag_attr": "user_id",
+                    "depends_on_attr": "user_id"
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Aspect_Visibilities",
-            "depends_on": "Aspects",
-            "conditions": [
-                {   "tag_attr": "aspect_id",
-                    "depends_on_attr": "id"
-                }
-            ]
-        },
-        {
-            "tag": "Aspects",
-            "depends_on": "Users",
-            "conditions": [
-                {   "tag_attr": "user_id",
-                    "depends_on_attr": "id"
-                }
-            ]
-        },
-        {
-            "tag": "Comments",
-            "depends_on": "Posts",
+            "tag": "Comment",
+            "depends_on": [{"tag":"Post",
             "conditions": [
                 {   "tag_attr": "commentable_id",
                     "depends_on_attr": "id"
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Notifications",
-            "depends_on": "Posts",
+            "tag": "Notification",
+            "depends_on": [{"tag":"Post",
             "conditions": [
-                {   "tag_attr": "target_id",
+                {   
+                    "tag_attr": "target_id",
                     "depends_on_attr": "id",
-                    "type": [
+                    "restrictions": [
                         {
                             "col":"type",
                             "val":"Notifications::Reshared"
@@ -118,145 +247,158 @@
                         }
                     ]
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Notifications",
-            "depends_on": "People",
+            "tag": "Notification",
+            "depends_on": [{"tag":"root",
             "conditions": [
-                {   "tag_attr": "target_id",
-                    "depends_on_attr": "id",
-                    "type": [{
-                        "col":"type",
-                        "val":"Notifications::StartedSharing"
-                    }]
+                {   
+                    "tag_attr": "recipient_id",
+                    "depends_on_attr": "user_id"
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Notification_Actors",
-            "depends_on": "Notifications",
+            "tag": "Like",
+            "depends_on": [{"tag":"Post",
             "conditions": [
-                {   "tag_attr": "notification_id",
+                {   "tag_attr": "post_id",
                     "depends_on_attr": "id"
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Notification_Actors",
-            "depends_on": "People",
-            "conditions": [
-                {   "tag_attr": "person_id",
-                    "depends_on_attr": "id"
-                }
-            ]
-        },
-        {
-            "tag": "Participations",
-            "depends_on": "People",
-            "conditions": [
-                {   "tag_attr": "author_id",
-                    "depends_on_attr": "id",
-                }
-            ]
-        },
-        {
-            "tag": "Participations",
-            "depends_on": "Posts",
-            "conditions": [
-                {   "tag_attr": "target_id",
-                    "depends_on_attr": "id",
-                    "type": [{
-                        "col":"target_type",
-                        "val":"Post"
-                    }]
-                }
-            ]
-        },
-        {
-            "tag": "Likes",
-            "depends_on": "Posts",
-            "conditions": [
-                {   "tag_attr": "target_id",
-                    "depends_on_attr": "id"
-                }
-            ]
-        },
-        {
-            "tag": "Messages",
-            "depends_on": "Conversations",
+            "tag": "Message",
+            "depends_on": [{"tag":"Conversation",
             "conditions": [
                 {   "tag_attr": "conversation_id",
                     "depends_on_attr": "id"
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Conversations",
-            "depends_on": "People",
+            "tag": "Conversation",
+            "depends_on": [{"tag":"root",
             "conditions": [
-                {   "tag_attr": "author_id",
+                {   
+                    "tag_attr": "author_id",
                     "depends_on_attr": "id"
                 }
-            ]
+            ]}]
         },
         {
-            "tag": "Contacts",
-            "depends_on": "People",
+            "tag": "Contact",
+            "depends_on": [{"tag":"root",
             "conditions": [
-                {   "tag_attr": "user_id",
-                    "depends_on_attr": "id"
+                {   
+                    "tag_attr": "user_id",
+                    "depends_on_attr": "id",
+                    "restrictions":[
+                        {
+                            "col":"receiving",
+                            "val":"t"
+                        }
+                    ]
                 }
-            ]
+            ]}]
         }
     ],
 
 
     "ownership": [{
-        "tag": "Comment",
-            "depends_on": "People",
+        "tag": "comment",
+            "owned_by": "root",
             "conditions": [
                 {   "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "person_id"
                 }
             ]
        },
        {
-        "tag": "Message",
-            "depends_on": "People",
+        "tag": "message",
+            "owned_by": "root",
             "conditions": [
                 {   "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "person_id"
                 }
             ]
         },
         {
-            "tag": "Conversations",
-            "depends_on": "People",
+            "tag": "conversation",
+            "owned_by": "root",
             "conditions": [
-                {   "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                {   
+                    "tag_attr": "author_id",
+                    "owner_attr": "person_id"
                 }
             ]
         },
         {
-            "tag": "Contacts",
-            "depends_on": "People",
+            "tag": "contact",
+            "owned_by": "root",
+            "conditions": [
+                {   
+                    "tag_attr": "user_id",
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "like",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "post",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "notification",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "author_id",
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "aspect",
+            "owned_by": "root",
             "conditions": [
                 {   "tag_attr": "user_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "user_id"
                 }
             ]
         },
         {
-            "tag": "Likes",
-            "depends_on": "People",
+            "tag": "profile",
+            "owned_by": "root",
+            "conditions": [
+                {   "tag_attr": "person_id",
+                    "owner_attr": "person_id"
+                }
+            ]
+        },
+        {
+            "tag": "reshare",
+            "owned_by": "root",
             "conditions": [
                 {   "tag_attr": "author_id",
-                    "depends_on_attr": "id"
+                    "owner_attr": "person_id"
                 }
             ]
         }
 
     ]
 }
+

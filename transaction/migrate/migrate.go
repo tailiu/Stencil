@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"transaction/atomicity"
 	"transaction/config"
 	"transaction/db"
 	"transaction/qr"
-	"strconv"
 
 	escape "github.com/tj/go-pg-escape"
 )
@@ -205,9 +205,9 @@ func migrateOneLogicalRow(QR *qr.QR, tgt_app_ID string, base_row_id string) erro
 // }
 
 func rollbackOneRow(undo_action sql.NullString) {
-	parameters := strings.Fields(undo_action.String)
+	// parameters := strings.Fields(undo_action.String)
 
-	QR := qr.NewQR(parameters[0], "stencil")
+	// QR := qr.NewQR(parameters[0], "stencil")
 
 	// updQ := QR.PhyUpdateAppIDByRowID(parameters[1], parameters[2], []string{parameters[3]})
 	// fmt.Println(updQ)
@@ -234,14 +234,14 @@ func RollbackMigration(txn_id int) {
 		// fmt.Printf("%s %s\n", action_type, undo_action)
 
 		switch action_type {
-			case "COMMIT":
-				log.Fatal("Can't abort an already completed action.")
-			case "ABORT", "ABORTED":
-				log.Fatal("Can't abort an already aborted action.")
-			case "CHANGE":
-				rollbackOneRow(undo_action)
-			case "BEGIN_TRANSACTION":
-				break
+		case "COMMIT":
+			log.Fatal("Can't abort an already completed action.")
+		case "ABORT", "ABORTED":
+			log.Fatal("Can't abort an already aborted action.")
+		case "CHANGE":
+			rollbackOneRow(undo_action)
+		case "BEGIN_TRANSACTION":
+			break
 		}
 	}
 
