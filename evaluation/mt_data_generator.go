@@ -52,6 +52,8 @@ func getAllPostIDs(dbConn *sql.DB) *[]int {
 	return &postIDs
 } 
 
+/************************************** Create Users ***********************************************************/
+
 func createUsers(dbConn *sql.DB, num int, c chan int) {
 	for i := 0; i < num; i++ {
 		newUser := functions.User{
@@ -66,6 +68,10 @@ func createUsers(dbConn *sql.DB, num int, c chan int) {
 	}
 	c <- num
 }
+
+/*************************************************************************************************/
+
+/**************************************** Create Public Posts *********************************************************/
 
 func createPostsThread(dbConn *sql.DB, slicedAccountIDs []int) {
 	var haveMedia bool
@@ -101,6 +107,10 @@ func createPublicPostsController(accountIDs *[]int) {
 	}
 }
 
+/*************************************************************************************************/
+
+/***************************************** Follow Friends ********************************************************/
+
 func followFriendsThread(dbConn *sql.DB, slicedAccountIDs []int, accountIDs *[]int) {
 	var targetAccountID int
 	for _, accountID := range slicedAccountIDs {
@@ -127,6 +137,10 @@ func followFriendsController(dbConn *sql.DB, accountIDs *[]int) {
 	}
 }
 
+/*************************************************************************************************/
+
+/******************************* Create Message Groups ****************************************************/
+
 func createOneDirectMessage(dbConn *sql.DB, accountID int, accountIDs *[]int) ([]int, int) {
 	var haveMedia bool
 	if auxiliary.RandomNonnegativeIntWithUpperBound(10) == 0 {
@@ -148,6 +162,25 @@ func createOneDirectMessage(dbConn *sql.DB, accountID int, accountIDs *[]int) ([
 		fmt.Println(newMessageGroupLog)
 	}
 	return mentionedAccounts, messageID
+}
+
+func createOneReplyUsingMentionedAccount(dbConn *sql.DB, replyToStatusID int, newLayer *[]int, allAccounts []int, visibility int) {
+	accountID := allAccounts[auxiliary.RandomNonnegativeIntWithUpperBound(len(allAccounts))]
+	for i, targetAccountID := range allAccounts {
+		if targetAccountID == accountID {
+			allAccounts = append(allAccounts[:i], allAccounts[i+1:]...)
+			break
+		}
+	}
+	result := functions.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID, visibility, allAccounts)
+	if result != -1 {
+		newReply := fmt.Sprintf("Create a message %d as a reply to a message %d with visibility %d", result, replyToStatusID, visibility)
+		fmt.Println(newReply)
+		*newLayer = append(*newLayer, result)
+	} else {
+		FailedToCreateNewReply := fmt.Sprintf("Failed to create a reply to a message %d with visibility %d", replyToStatusID, visibility)
+		fmt.Println(FailedToCreateNewReply)
+	}
 }
 
 func createDirectMessageGroupsThread(dbConn *sql.DB, slicedAccountIDs []int, accountIDs *[]int) {
@@ -192,25 +225,6 @@ func createDirectMessageGroupsThread(dbConn *sql.DB, slicedAccountIDs []int, acc
 	}
 }
 
-func createOneReplyUsingMentionedAccount(dbConn *sql.DB, replyToStatusID int, newLayer *[]int, allAccounts []int, visibility int) {
-	accountID := allAccounts[auxiliary.RandomNonnegativeIntWithUpperBound(len(allAccounts))]
-	for i, targetAccountID := range allAccounts {
-		if targetAccountID == accountID {
-			allAccounts = append(allAccounts[:i], allAccounts[i+1:]...)
-			break
-		}
-	}
-	result := functions.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID, visibility, allAccounts)
-	if result != -1 {
-		newReply := fmt.Sprintf("Create a message %d as a reply to a message %d with visibility %d", result, replyToStatusID, visibility)
-		fmt.Println(newReply)
-		*newLayer = append(*newLayer, result)
-	} else {
-		FailedToCreateNewReply := fmt.Sprintf("Failed to create a reply to a message %d with visibility %d", replyToStatusID, visibility)
-		fmt.Println(FailedToCreateNewReply)
-	}
-}
-
 func createDirectMessagesController(accountIDs *[]int) {
 	j := 0
 	var dbConn *sql.DB
@@ -223,6 +237,10 @@ func createDirectMessagesController(accountIDs *[]int) {
 		}
 	}
 }
+
+/*************************************************************************************************/
+
+/******************************* Create Replies To Posts ****************************************************/
 
 func createOneReply(dbConn *sql.DB, replyToStatusID int, newLayer *[]int, accountIDs *[]int, visibility int, mentionedAccounts []int) {
 	accountID := (*accountIDs)[auxiliary.RandomNonnegativeIntWithUpperBound(len(*accountIDs))]
@@ -277,6 +295,7 @@ func createRepliesToPostsController(accountIDs *[]int, postIDs *[]int) {
 	}
 }
 
+/*************************************************************************************************/
 
 func main() {
 	dbConn := database.ConnectToDB(address)

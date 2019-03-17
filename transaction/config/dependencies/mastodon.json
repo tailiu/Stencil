@@ -34,7 +34,8 @@
                 "member1":"statuses",
                 "member2":"status_stats",
                 "member3":"mentions",
-                "member4":"media_attachments"
+                "member4":"media_attachments",
+                "member5":"stream_entries"
             },
             "keys": {
                 "conversation_id":"member1.conversation_id",
@@ -52,6 +53,9 @@
                 },
                 {
                     "member1.id":"member4.status_id"
+                },
+                {
+                    "member1.id":"member5.activity_id"
                 }
             ]
         },
@@ -61,7 +65,7 @@
                 "member1": "follows"
             },
             "keys": {
-                "account_id": "account_id" 
+                "account_id": "member1.account_id" 
             } 
         },
         {
@@ -70,14 +74,8 @@
                 "member1": "favourites"
             },
             "keys": {
-                "id": "id"
+                "id": "member1.id"
             } 
-        },
-        {
-            "tag" : "stream_entries",
-            "members" : {
-                "member1":
-            }
         }
     ],
 	"dependencies": [
