@@ -201,6 +201,16 @@ func main() {
 		fmt.Println(appConfig)
 	}
 
+	// settingsFileName := "mappings"
+	// fromApp := "mastodon"
+	// toApp := "diaspora"
+	// if schemaMappings, varsAndFuncs, err := config.ReadSchemaMappingSettings(settingsFileName, fromApp, toApp); err != nil {
+	// 	log.Fatal(err)
+	// } else {
+	// 	fmt.Println(schemaMappings, varsAndFuncs["status_type"])
+	// }
+
+
 	// initAppLevelMigration(7, "app1", "app5")
 	// initStencilMigration(61, "app3", "app4")
 	// QR := qr.NewQR("app1")

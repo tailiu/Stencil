@@ -42,8 +42,9 @@
                             "updated_at":"accounts.updated_at"
                         }
                     },
-                    "profiles":{"conditions":{},
-                    "map":{
+                    "profiles":{
+                        "conditions":{},
+                        "map":{
                             "bio":"accounts.note",
                             "image_url":"accounts.avatar_remote_url",
                             "created_at":"accounts.created_at",
@@ -109,86 +110,86 @@
                     }
                 }
             ],
-        "conversations": [
-            {
-                "conversations":{
-                    "id":"id",
-                    "created_at":"created_at",
-                    "updated_at":"updated_at",
-                    "guid":"$guid"
-                }
-            }
-        ],
-        "favourites": [
-            {
-                "likes":{
-                    "id":"id",
-                    "target_id":"status_id",
-                    "created_at":"created_at",
-                    "updated_at":"updated_at",
-                    "author_id":"account_id",
-                    "target_type":"$like_target_type"
-                }
-            }
-        ],
-        "follows":[
-            {
-                "contacts":{
-                    "conditions":{},
-                    "map":{ 
+            "conversations": [
+                {
+                    "conversations":{
                         "id":"id",
                         "created_at":"created_at",
                         "updated_at":"updated_at",
-                        "user_id":"account_id",
-                        "person_id":"target_account_id",
-                        "sharing":"F",
-                        "receiving":"T"
+                        "guid":"$guid"
                     }
                 }
-            },
-            {
-                "contacts":{
-                    "conditions":{},
-                    "map":{ 
+            ],
+            "favourites": [
+                {
+                    "likes":{
                         "id":"id",
+                        "target_id":"status_id",
                         "created_at":"created_at",
                         "updated_at":"updated_at",
-                        "person_id":"account_id",
-                        "user_id":"target_account_id",
-                        "sharing":"T",
-                        "receiving":"F"
+                        "author_id":"account_id",
+                        "target_type":"$like_target_type"
                     }
                 }
-            }
-        ],
-        "mentions":[
-            {
-                "mentions":{
-                    "conditions":{
-                        "reply": "True"
-                    },
-                    "map":{
-                        "id":"id",
-                        "person_id":"account_id",
-                        "mentions_container_id":"status_id",
-                        "mentions_container_type":"$mentions_type1"
+            ],
+            "follows":[
+                {
+                    "contacts":{
+                        "conditions":{},
+                        "map":{ 
+                            "id":"id",
+                            "created_at":"created_at",
+                            "updated_at":"updated_at",
+                            "user_id":"account_id",
+                            "person_id":"target_account_id",
+                            "sharing":"F",
+                            "receiving":"T"
+                        }
+                    }
+                },
+                {
+                    "contacts":{
+                        "conditions":{},
+                        "map":{ 
+                            "id":"id",
+                            "created_at":"created_at",
+                            "updated_at":"updated_at",
+                            "person_id":"account_id",
+                            "user_id":"target_account_id",
+                            "sharing":"T",
+                            "receiving":"F"
+                        }
                     }
                 }
-            },
-            {
-                "mentions":{
-                    "conditions":{
-                        "reply": "False"
-                    },
-                    "map":{
-                        "id":"id",
-                        "person_id":"account_id",
-                        "mentions_container_id":"status_id",
-                        "mentions_container_type":"$mentions_type2"
+            ],
+            "mentions":[
+                {
+                    "mentions":{
+                        "conditions":{
+                            "reply": "True"
+                        },
+                        "map":{
+                            "id":"id",
+                            "person_id":"account_id",
+                            "mentions_container_id":"status_id",
+                            "mentions_container_type":"$mentions_type1"
+                        }
+                    }
+                },
+                {
+                    "mentions":{
+                        "conditions":{
+                            "reply": "False"
+                        },
+                        "map":{
+                            "id":"id",
+                            "person_id":"account_id",
+                            "mentions_container_id":"status_id",
+                            "mentions_container_type":"$mentions_type2"
+                        }
                     }
                 }
-            }
-        ]
+            ]
         }, 
         "twitter": {
             

@@ -22,6 +22,8 @@ import (
 
 type Mapping map[string]map[string]map[string]map[string]string
 
+type VarsAndFuncs map[string]string
+
 type DataQuery struct {
 	SQL, Table string
 }
@@ -143,54 +145,91 @@ func GetSchemaMappingsFromDB(app string) Mapping {
 	return mappings
 }
 
-func ReadAppSettings(app string, readMappingsFromJSON bool) (Settings, error) {
+// func ReadAppSettings(app string, readMappingsFromJSON bool) (Settings, error) {
 
-	var settings Settings
-	appSettingsFile := "./config/app_settings/" + app + ".json"
-	jsonAsBytes, err := ioutil.ReadFile(appSettingsFile)
-	if err != nil {
-		fmt.Println(err)
-		return settings, errors.New("can't open file")
-	}
-	json := string(jsonAsBytes)
-	settings.UserTable = gjson.Get(json, "user_table").String()
-	settings.KeyCol = gjson.Get(json, "key_column").String()
-	if readMappingsFromJSON {
-		settings.Mappings = GetSchemaMappingsFromJSON(json)
-	} else {
-		settings.Mappings = GetSchemaMappingsFromDB(app)
-	}
-	return settings, nil
+	// var settings Settings
+	// appSettingsFile := "./config/app_settings/" + app + ".json"
+	// jsonAsBytes, err := ioutil.ReadFile(appSettingsFile)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return settings, errors.New("can't open file")
+	// }
+	// json := string(jsonAsBytes)
+	// settings.UserTable = gjson.Get(json, "user_table").String()
+	// settings.KeyCol = gjson.Get(json, "key_column").String()
+	// if readMappingsFromJSON {
+	// 	settings.Mappings = GetSchemaMappingsFromJSON(json)
+	// } else {
+	// 	settings.Mappings = GetSchemaMappingsFromDB(app)
+	// }
+	// return settings, nil
+// }
+
+// func GetSchemaMappingsFromJSON(json string) Mapping {
+
+// 	returnmap := make(Mapping)
+// 	mappings := gjson.Get(json, "mappings")
+// 	mappings.ForEach(func(appName, appJSON gjson.Result) bool {
+// 		returnmap[appName.String()] = make(map[string]map[string]map[string]string)
+// 		appXPath := fmt.Sprintf("mappings.%s", appName.String())
+// 		appMapping := gjson.Get(json, appXPath)
+// 		appMapping.ForEach(func(tableName, tableVal gjson.Result) bool {
+// 			returnmap[appName.String()][tableName.String()] = make(map[string]map[string]string)
+// 			tabXPath := fmt.Sprintf(appXPath+".%s", tableName.String())
+// 			tabMapping := gjson.Get(json, tabXPath)
+// 			tabMapping.ForEach(func(mTabName, mTabVal gjson.Result) bool {
+// 				returnmap[appName.String()][tableName.String()][mTabName.String()] = make(map[string]string)
+// 				mTabXPath := fmt.Sprintf(tabXPath+".%s", mTabName.String())
+// 				mTabMapping := gjson.Get(json, mTabXPath)
+// 				mTabMapping.ForEach(func(colName, colMapping gjson.Result) bool {
+// 					returnmap[appName.String()][tableName.String()][mTabName.String()][colName.String()] = colMapping.String()
+// 					return true
+// 				})
+// 				return true
+// 			})
+// 			return true
+// 		})
+// 		return true
+// 	})
+// 	return returnmap
+// }
+
+func getSchemaMappingsFromJSONStr(json string, fromApp string, toApp string) Mapping {
+	mappings := make(Mapping)
+	kvs := gjson.Get(json, fromApp + "." + toApp)
+	kvs.ForEach(func(fromTables, v1 gjson.Result) bool {
+		mappings[fromTables.String()] = make(map[string]map[string]map[string]string)
+		toTables := gjson.Get(json, fromTables.String())
+	})
+	fmt.Println(kvs.String())
+	return mappings
 }
 
-func GetSchemaMappingsFromJSON(json string) Mapping {
-
-	returnmap := make(Mapping)
-	mappings := gjson.Get(json, "mappings")
-	mappings.ForEach(func(appName, appJSON gjson.Result) bool {
-		returnmap[appName.String()] = make(map[string]map[string]map[string]string)
-		appXPath := fmt.Sprintf("mappings.%s", appName.String())
-		appMapping := gjson.Get(json, appXPath)
-		appMapping.ForEach(func(tableName, tableVal gjson.Result) bool {
-			returnmap[appName.String()][tableName.String()] = make(map[string]map[string]string)
-			tabXPath := fmt.Sprintf(appXPath+".%s", tableName.String())
-			tabMapping := gjson.Get(json, tabXPath)
-			tabMapping.ForEach(func(mTabName, mTabVal gjson.Result) bool {
-				returnmap[appName.String()][tableName.String()][mTabName.String()] = make(map[string]string)
-				mTabXPath := fmt.Sprintf(tabXPath+".%s", mTabName.String())
-				mTabMapping := gjson.Get(json, mTabXPath)
-				mTabMapping.ForEach(func(colName, colMapping gjson.Result) bool {
-					returnmap[appName.String()][tableName.String()][mTabName.String()][colName.String()] = colMapping.String()
-					return true
-				})
-				return true
-			})
-			return true
-		})
+func getVarsAndFuncsFromJSONStr(json string, fromApp string) VarsAndFuncs {
+	mappings := make(VarsAndFuncs)
+	kvs := gjson.Get(json, fromApp + ".values")
+	kvs.ForEach(func(key, value gjson.Result) bool {
+		mappings[key.String()] = value.String()
 		return true
 	})
-	return returnmap
+	return mappings
 }
+
+func ReadSchemaMappingSettings(fileName string, fromApp string, toApp string) (Mapping, VarsAndFuncs, error) {
+	mappings := make(Mapping)
+	varsAndFuncs := make(VarsAndFuncs)
+	schemaMappingFile := "./config/app_settings/" + fileName + ".json"
+	jsonAsBytes, err := ioutil.ReadFile(schemaMappingFile)
+	if err != nil {
+		fmt.Println(err)
+		return mappings, varsAndFuncs, errors.New("can't open file")
+	}
+
+	json := string(jsonAsBytes)
+	varsAndFuncs = getVarsAndFuncsFromJSONStr(json, fromApp)
+	mappings = getSchemaMappingsFromJSONStr(json, fromApp, toApp)
+	return mappings, varsAndFuncs, nil
+} 
 
 /*********************--end
  * Functions
