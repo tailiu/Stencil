@@ -71,6 +71,88 @@ type Settings struct {
 ***************************/
 
 /*********************--bgn
+ * AppConfig Struct Methods
+***************************/
+
+func (self AppConfig) GetTag(tagName string) *Tag {
+
+	for _, tag := range self.Tags {
+		if strings.EqualFold(tag.Name, tagName) {
+			return &tag
+		}
+	}
+	return nil
+}
+
+func (self AppConfig) GetDependency(tagName string) *Dependency {
+
+	for _, dep := range self.Dependencies {
+		if strings.EqualFold(dep.Tag, tagName) {
+			return &dep
+		}
+	}
+	return nil
+}
+
+func (self AppConfig) CheckDependency(tagName, dependsOn string) bool {
+
+	if deps := self.GetDependency(tagName); deps != nil {
+		for _, dep := range deps.DependsOn {
+			if strings.EqualFold(dep.Tag, dependsOn) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+func (self AppConfig) FindSubDependencies(tagName string, depList *[]Dependency) bool {
+
+	// if deps := self.GetDependency(tagName); deps != nil {
+	// 	for _, dep := range deps.DependsOn {
+
+	// 	}
+	// }
+
+	return false
+}
+
+func (self AppConfig) GetOwnership(tagName string) *Ownership {
+
+	for _, own := range self.Ownerships {
+		if strings.EqualFold(own.Tag, tagName) {
+			return &own
+		}
+	}
+	return nil
+}
+
+func (self AppConfig) GetRootQ() *string {
+	uid := "$1"
+	if root := self.GetTag("root"); root != nil {
+		sql := "SELECT * FROM %s WHERE %s "
+		if len(root.InnerDependencies) > 0 {
+			joins := ""
+			where := root.Keys["root_id"] + " = " + uid
+			for _, inDep := range root.InnerDependencies {
+				for mapFrom, mapTo := range inDep {
+					mapFromItems := strings.Split(mapFrom, ".")
+					mapToItems := strings.Split(mapTo, ".")
+					fmt.Println(mapFromItems, mapToItems)
+				}
+			}
+			sql = fmt.Sprintf(sql, joins, where)
+		} else {
+			table := root.Members["member1"]
+			where := root.Keys["root_id"] + " = " + uid
+			sql = fmt.Sprintf(sql, table, where)
+		}
+	}
+
+	return nil
+}
+
+/*********************--bgn
  * Functions
 ***************************/
 

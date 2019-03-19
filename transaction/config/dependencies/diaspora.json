@@ -7,6 +7,7 @@
                 "member2":"people"
             },
             "keys":{
+                "root_id":"member1.id",
                 "user_id":"member1.id",
                 "person_id":"member2.id"
             },

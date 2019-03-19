@@ -26,6 +26,50 @@ import (
 // 	}
 // }
 
+func prepareDataQueries(appconfig config.AppConfig) []config.DataQuery {
+
+	var sqls []config.DataQuery
+
+	// sql := fmt.Sprintf("SELECT %s.* FROM %s WHERE %s = $1 ", settings.UserTable, settings.UserTable, settings.KeyCol, settings.UserTable)
+	// sqls = append(sqls, config.DataQuery{SQL: sql, Table: settings.UserTable})
+
+	// for _, dependency := range dependencies {
+	// 	if strings.ToLower(settings.UserTable) == strings.ToLower(dependency.DependsOn) {
+
+	// 		var subDeps []config.Dependency
+	// 		subDeps = append(subDeps, dependency)
+	// 		traverseDependencies(dependency.Tag, dependencies, &subDeps)
+
+	// 		for _, subDep := range subDeps {
+	// 			sql = fmt.Sprintf("SELECT %s.* FROM %s ", subDep.Tag, subDep.Tag)
+	// 			dep := subDep
+	// 			for true {
+	// 				sql += fmt.Sprintf(" JOIN %s ON ", dep.DependsOn)
+	// 				for i, condition := range dep.Conditions {
+	// 					sql += fmt.Sprintf("%s.%s = %s.%s", dep.Tag, condition.TagAttr, dep.DependsOn, condition.DependsOnAttr)
+	// 					if i < len(dep.Conditions)-1 {
+	// 						sql += " AND "
+	// 					}
+	// 				}
+	// 				if strings.EqualFold(dep.DependsOn, settings.UserTable) {
+	// 					sql += fmt.Sprintf(" WHERE %s.%s = $1 ", settings.UserTable, settings.KeyCol, subDep.Tag)
+	// 					break
+	// 				} else {
+	// 					var e error
+	// 					dep, e = config.FindDependencyByDependsOn(dep.DependsOn, subDeps)
+	// 					if e == nil && !strings.EqualFold(dep.DependsOn, settings.UserTable) {
+	// 						// fmt.Println("!!! Couldn't find dependency tag that depends on ", dep.DependsOn)
+	// 						break
+	// 					}
+	// 				}
+	// 			}
+	// 			sqls = append(sqls, config.DataQuery{SQL: sql, Table: subDep.Tag})
+	// 		}
+	// 	}
+	// }
+	return sqls
+}
+
 // func prepareAppLevelData(settings config.Settings, dependencies []config.Dependency) []config.DataQuery {
 
 // 	// todo: handle self-dependencies ** properly **. some cases are failing, rn. :S
@@ -199,6 +243,8 @@ func main() {
 	} else {
 		log.Println("App Config Fetched")
 		fmt.Println(appConfig)
+		fmt.Println(appConfig.GetRootQ())
+		// prepareDataQueries(appConfig)
 	}
 
 	// initAppLevelMigration(7, "app1", "app5")
