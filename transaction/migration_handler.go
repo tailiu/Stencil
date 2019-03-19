@@ -193,22 +193,22 @@ import (
 
 func main() {
 
-	srcApp := "diaspora"
-	if appConfig, err := config.ReadAppConfig(srcApp); err != nil {
-		log.Fatal(err)
-	} else {
-		log.Println("App Config Fetched")
-		fmt.Println(appConfig)
-	}
-
-	// settingsFileName := "mappings"
-	// fromApp := "mastodon"
-	// toApp := "diaspora"
-	// if schemaMappings, varsAndFuncs, err := config.ReadSchemaMappingSettings(settingsFileName, fromApp, toApp); err != nil {
+	// srcApp := "diaspora"
+	// if appConfig, err := config.ReadAppConfig(srcApp); err != nil {
 	// 	log.Fatal(err)
 	// } else {
-	// 	fmt.Println(schemaMappings, varsAndFuncs["status_type"])
+	// 	log.Println("App Config Fetched")
+	// 	fmt.Println(appConfig.Tags[0])
 	// }
+
+	settingsFileName := "mappings"
+	// fromApp := "mastodon"
+	// toApp := "diaspora"
+	if schemaMappings, err := config.ReadSchemaMappingSettings(settingsFileName); err != nil {
+		log.Fatal(err)
+	} else {
+		fmt.Println(schemaMappings)
+	}
 
 
 	// initAppLevelMigration(7, "app1", "app5")
