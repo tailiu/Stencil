@@ -9,12 +9,20 @@ import (
 	"transaction/helper"
 )
 
-func addUserToApplication(userid string, dstApp config.AppConfig) {
+func addUserToApplication(uid string, dstApp config.AppConfig) {
 
 }
 
-func checkUserInApp(userid string, dstApp config.AppConfig) bool {
+func removeUserFromApplication(uid string, srcApp config.AppConfig) {
+
+}
+
+func checkUserInApp(uid string, dstApp config.AppConfig) bool {
 	return true
+}
+
+func UpdateMigrationState(uid string, srcApp, dstApp config.AppConfig) {
+
 }
 
 func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
@@ -188,6 +196,10 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *D
 	return nil
 }
 
+func migrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
+
+}
+
 func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode) {
 	// try:
 	if node.Tag == "root" && !checkUserInApp(uid, dstApp) {
@@ -202,21 +214,21 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 		fmt.Println("------------------------------------------------------------------------")
 		MigrateProcess(uid, srcApp, dstApp, child)
 	}
-	// 	acquirePredicateLock(*node)
-	// 	for child := randomlyGetAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
-	// 		AggressiveMigration(userid, srcApp, dstApp, child)
-	// 	}
-	// 	migrateNode(*node) // Log before migrating
-	// 	releasePredicateLock(*node)
+	// acquirePredicateLock(*node)
+	// for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
+	// 	MigrateProcess(uid, srcApp, dstApp, child)
+	// }
+	migrateNode(node, srcApp, dstApp) // Log before migrating
+	// releasePredicateLock(*node)
 	// catch NodeNotFound:
-	// 	t.releaseAllLocks()
-	// 	if t.Root {
-	// 		AggressiveMigration(userid, srcApp, dstApp, t.Root)
-	// 	}else{
-	// 		if checkUserInApp(userid, srcApp){
-	// 			removeUserFromApplication(userid, srcApp)
-	// 		}
-	// 		UpdateMigrationState(userid, srcApp, dstApp)
-	// 		log.Println("Congratulations, this migration worker has finished it's job!")
-	// 	}
+	// t.releaseAllLocks()
+	if node.Tag == "root" {
+		MigrateProcess(uid, srcApp, dstApp, GetRoot(srcApp, uid))
+	} else {
+		if checkUserInApp(uid, srcApp) {
+			removeUserFromApplication(uid, srcApp)
+		}
+		UpdateMigrationState(uid, srcApp, dstApp)
+		log.Println("Congratulations, this migration worker has finished it's job!")
+	}
 }
