@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 
 	_ "github.com/lib/pq" // postgres driver
@@ -24,7 +25,8 @@ func GetDBConn(app string) *sql.DB {
 
 	if _, ok := dbConns[app]; !ok {
 		log.Println("Creating new db conn for:", app)
-		dbConnAddr := "postgresql://root@10.224.45.158:26257/%s?sslmode=disable"
+		// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
+		dbConnAddr := "user=root dbname=%s host=10.230.12.75 port=26257 sslmode=disable client_encoding=UTF8"
 		dbConn, err := sql.Open("postgres", fmt.Sprintf(dbConnAddr, app))
 		if err != nil {
 			fmt.Println("error connecting to the db app:", app)
@@ -36,13 +38,13 @@ func GetDBConn(app string) *sql.DB {
 	return dbConns[app]
 }
 
-func DataCall(app, sql string, args ...interface{}) []map[string]string {
-
-	var result []map[string]string
+func GetColumnsForTable(app, table string) ([]string, string) {
+	var resultList []string
+	resultStr := ""
 
 	db := GetDBConn(app)
 
-	rows, err := db.Query(sql, args...)
+	rows, err := db.Query("SHOW COLUMNS FROM " + table)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +54,6 @@ func DataCall(app, sql string, args ...interface{}) []map[string]string {
 	}
 
 	for rows.Next() {
-		data := make(map[string]string)
 		columns := make([]string, len(cols))
 		columnPointers := make([]interface{}, len(cols))
 		for i := range columns {
@@ -62,11 +63,87 @@ func DataCall(app, sql string, args ...interface{}) []map[string]string {
 		rows.Scan(columnPointers...)
 
 		for i, col := range cols {
-			data[col] = columns[i]
+
+			if strings.EqualFold(col, "column_name") {
+				resultList = append(resultList, columns[i])
+				// resultStr += fmt.Sprintf("IFNULL(%s.%s, 'NULL') AS \"%s.%s\",", table, columns[i], table, columns[i])
+				resultStr += table + "." + columns[i] + " AS \"" + table + "." + columns[i] + "\","
+			}
+
 		}
-		result = append(result, data)
+
 	}
 	rows.Close()
+	return resultList, strings.Trim(resultStr, ",")
+}
+
+func GetRow(rows *sql.Rows) map[string]interface{} {
+	var myMap = make(map[string]interface{})
+
+	colNames, err := rows.Columns()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cols := make([]interface{}, len(colNames))
+	colPtrs := make([]interface{}, len(colNames))
+	for i := 0; i < len(colNames); i++ {
+		colPtrs[i] = &cols[i]
+	}
+	// for rows.Next() {
+	err = rows.Scan(colPtrs...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i, col := range cols {
+		myMap[colNames[i]] = col
+	}
+	// Do something with the map
+	for key, val := range myMap {
+		fmt.Println("Key:", key, "Value Type:", reflect.TypeOf(val))
+	}
+	// }
+	return myMap
+}
+
+func DataCall(app, SQL string, args ...interface{}) []map[string]interface{} {
+
+	var result []map[string]interface{}
+
+	db := GetDBConn(app)
+
+	if rows, err := db.Query(SQL, args...); err != nil {
+		log.Println(SQL, args)
+		log.Fatal(err)
+	} else {
+
+		if colNames, err := rows.Columns(); err != nil {
+			log.Fatal(err)
+		} else {
+
+			for rows.Next() {
+				var data = make(map[string]interface{})
+				cols := make([]interface{}, len(colNames))
+				colPtrs := make([]interface{}, len(colNames))
+				for i := 0; i < len(colNames); i++ {
+					colPtrs[i] = &cols[i]
+				}
+				// for rows.Next() {
+				err = rows.Scan(colPtrs...)
+				if err != nil {
+					log.Fatal(err)
+				}
+				for i, col := range cols {
+					data[colNames[i]] = col
+				}
+				// Do something with the map
+				// for key, val := range data {
+				// 	fmt.Println("Key:", key, "Value Type:", reflect.TypeOf(val), fmt.Sprint(val))
+				// }
+				result = append(result, data)
+			}
+			rows.Close()
+		}
+	}
 	return result
 }
 

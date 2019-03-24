@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"transaction/config"
+	"transaction/migrate"
 )
 
 /*********************--bgn
@@ -238,14 +239,33 @@ func prepareDataQueries(appconfig config.AppConfig) []config.DataQuery {
 func main() {
 
 	srcApp := "diaspora"
-	if appConfig, err := config.ReadAppConfig(srcApp); err != nil {
+	dstApp := "mastodon"
+
+	uid := "647"
+
+	if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
 		log.Fatal(err)
 	} else {
-		log.Println("App Config Fetched")
-		fmt.Println(appConfig)
-		fmt.Println(appConfig.GetRootQ())
-		// prepareDataQueries(appConfig)
+		if dstAppConfig, err := config.CreateAppConfig(dstApp); err != nil {
+			log.Fatal(err)
+		} else {
+			if rootNode := migrate.GetRoot(srcAppConfig, uid); rootNode != nil {
+				migrate.MigrateProcess(uid, srcAppConfig, dstAppConfig, rootNode)
+			} else {
+				fmt.Println("Root Node can't be fetched!")
+			}
+		}
+
 	}
+
+	// settingsFileName := "mappings"
+	// // fromApp := "mastodon"
+	// // toApp := "diaspora"
+	// if schemaMappings, err := config.ReadSchemaMappingSettings(settingsFileName); err != nil {
+	// 	log.Fatal(err)
+	// } else {
+	// 	fmt.Println(schemaMappings)
+	// }
 
 	// initAppLevelMigration(7, "app1", "app5")
 	// initStencilMigration(61, "app3", "app4")

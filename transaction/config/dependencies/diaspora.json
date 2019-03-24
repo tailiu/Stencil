@@ -7,6 +7,7 @@
                 "member2":"people"
             },
             "keys":{
+                "id":"member1.id",
                 "root_id":"member1.id",
                 "user_id":"member1.id",
                 "person_id":"member2.id"
@@ -34,12 +35,14 @@
             },
             "keys":{
                 "id":"member1.id",
-                "guid":"member1.guid"
+                "author_id":"member1.author_id",
+                "guid":"member1.guid",
+                "type":"member1.type"
             },
-            "restrictions":{
-                "col":"member1.type",
+            "restrictions":[{
+                "col":"type",
                 "val":"StatusMessage"
-            }
+            }]
         },
         {
             "name":"reshare",
@@ -48,12 +51,14 @@
             },
             "keys":{
                 "id":"member1.id",
-                "root_guid":"member1.root_guid"
+                "root_guid":"member1.root_guid",
+                "type":"member1.type",
+                "author_id":"member1.author_id"
             },
-            "restrictions":{
-                "col":"member1.type",
+            "restrictions":[{
+                "col":"type",
                 "val":"Reshare"
-            }
+            }]
         },
         {
             "name":"aspect",
@@ -72,8 +77,10 @@
             },
             "inner_dependencies":[
                 {
-                    "member1.id" : "member2.aspect_id",
-                    "member2.id" : "member3.aspect_id"
+                    "member1.id" : "member2.aspect_id"
+                },
+                {
+                    "member1.id": "member3.aspect_id"
                 }
             ]
         },
@@ -176,16 +183,20 @@
         },
         {
             "tag": "post",
-            "depends_on": [{"tag":"root",
-            "conditions": [
-                {   "tag_attr": "id",
-                    "depends_on_attr": "person_id"
+            "depends_on": [
+                {
+                    "tag":"root",
+                    "conditions": [
+                        {   "tag_attr": "author_id",
+                            "depends_on_attr": "person_id"
+                        }
+                    ]
                 }
-            ]}]
+            ]
         },
         {
-            "tag": "Reshare",
-            "depends_on": [{"tag":"Posts",
+            "tag": "reshare",
+            "depends_on": [{"tag":"post",
             "conditions": [
                 {   
                     "tag_attr": "root_guid",
@@ -194,21 +205,17 @@
             ]}]
         },
         {
-            "tag": "Post",
-            "depends_on": [{"tag":"Aspect",
+            "tag": "post",
+            "depends_on": [{"tag":"aspect",
             "conditions": [
                 {   
                     "tag_attr": "id",
-                    "depends_on_attr": "shareable_id",
-                    "restrictions": [{
-                        "col":"shareable_type",
-                        "val":"Post"
-                    }]
+                    "depends_on_attr": "shareable_id"
                 }
             ]}]
         },
         {
-            "tag": "Aspect",
+            "tag": "aspect",
             "depends_on": [{"tag":"root",
             "conditions": [
                 {
@@ -218,8 +225,8 @@
             ]}]
         },
         {
-            "tag": "Comment",
-            "depends_on": [{"tag":"Post",
+            "tag": "comment",
+            "depends_on": [{"tag":"post",
             "conditions": [
                 {   "tag_attr": "commentable_id",
                     "depends_on_attr": "id"
@@ -227,8 +234,8 @@
             ]}]
         },
         {
-            "tag": "Notification",
-            "depends_on": [{"tag":"Post",
+            "tag": "notification",
+            "depends_on": [{"tag":"post",
             "conditions": [
                 {   
                     "tag_attr": "target_id",
@@ -251,7 +258,7 @@
             ]}]
         },
         {
-            "tag": "Notification",
+            "tag": "notification",
             "depends_on": [{"tag":"root",
             "conditions": [
                 {   
@@ -261,7 +268,7 @@
             ]}]
         },
         {
-            "tag": "Like",
+            "tag": "like",
             "depends_on": [{"tag":"Post",
             "conditions": [
                 {   "tag_attr": "post_id",
@@ -270,7 +277,7 @@
             ]}]
         },
         {
-            "tag": "Message",
+            "tag": "message",
             "depends_on": [{"tag":"Conversation",
             "conditions": [
                 {   "tag_attr": "conversation_id",
@@ -279,7 +286,7 @@
             ]}]
         },
         {
-            "tag": "Conversation",
+            "tag": "conversation",
             "depends_on": [{"tag":"root",
             "conditions": [
                 {   
@@ -289,7 +296,7 @@
             ]}]
         },
         {
-            "tag": "Contact",
+            "tag": "contact",
             "depends_on": [{"tag":"root",
             "conditions": [
                 {   
