@@ -196,12 +196,14 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *D
 	return nil
 }
 
-func migrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
+func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
 
 }
 
 func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode) {
+
 	// try:
+
 	if node.Tag == "root" && !checkUserInApp(uid, dstApp) {
 		addUserToApplication(uid, dstApp)
 	}
@@ -218,17 +220,19 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 	// for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
 	// 	MigrateProcess(uid, srcApp, dstApp, child)
 	// }
-	migrateNode(node, srcApp, dstApp) // Log before migrating
+	MigrateNode(node, srcApp, dstApp) // Log before migrating
 	// releasePredicateLock(*node)
+
 	// catch NodeNotFound:
+
 	// t.releaseAllLocks()
-	if node.Tag == "root" {
-		MigrateProcess(uid, srcApp, dstApp, GetRoot(srcApp, uid))
-	} else {
-		if checkUserInApp(uid, srcApp) {
-			removeUserFromApplication(uid, srcApp)
-		}
-		UpdateMigrationState(uid, srcApp, dstApp)
-		log.Println("Congratulations, this migration worker has finished it's job!")
-	}
+	// if node.Tag == "root" {
+	// 	MigrateProcess(uid, srcApp, dstApp, GetRoot(srcApp, uid))
+	// } else {
+	// 	if checkUserInApp(uid, srcApp) {
+	// 		removeUserFromApplication(uid, srcApp)
+	// 	}
+	// 	UpdateMigrationState(uid, srcApp, dstApp)
+	// 	log.Println("Congratulations, this migration worker has finished it's job!")
+	// }
 }

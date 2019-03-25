@@ -1,7 +1,3 @@
-/*
- * Configuration Reader/Exporter
- */
-
 package config
 
 import (
@@ -10,32 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 )
-
-/****************** Dependencies Functions ***********************/
-
-func FindDependency(tag, depends_on string, dependencies []Dependency) (Dependency, error) {
-
-	for _, dependency := range dependencies {
-		if strings.ToLower(dependency.Tag) == strings.ToLower(tag) {
-			// && strings.ToLower(dependency.DependsOn) == strings.ToLower(depends_on)
-
-			return dependency, nil
-		}
-	}
-	return *new(Dependency), errors.New("dependency doesn't exist")
-}
-
-func FindDependencyByDependsOn(depends_on string, dependencies []Dependency) (Dependency, error) {
-
-	for _, dependency := range dependencies {
-		if strings.ToLower(dependency.Tag) == strings.ToLower(depends_on) {
-			return dependency, nil
-		}
-	}
-	return *new(Dependency), errors.New("dependency doesn't exist")
-}
 
 func CreateAppConfig(app string) (AppConfig, error) {
 
@@ -59,8 +30,6 @@ func CreateAppConfig(app string) (AppConfig, error) {
 	return appConfig, nil
 }
 
-/****************** Shema Mappings Functions ***********************/
-
 func ReadSchemaMappingSettings(fileName string) (SchemaMappings, error) {
 	var schemaMappings SchemaMappings
 
@@ -79,7 +48,3 @@ func ReadSchemaMappingSettings(fileName string) (SchemaMappings, error) {
 
 	return schemaMappings, nil
 }
-
-/*********************--end
- * Functions
-***************************/
