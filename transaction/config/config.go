@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 func CreateAppConfig(app string) (AppConfig, error) {
@@ -30,10 +31,10 @@ func CreateAppConfig(app string) (AppConfig, error) {
 	return appConfig, nil
 }
 
-func ReadSchemaMappingSettings(fileName string) (SchemaMappings, error) {
+func GetSchemaMappings() (SchemaMappings, error) {
 	var schemaMappings SchemaMappings
 
-	schemaMappingFile := "./config/app_settings/" + fileName + ".json"
+	schemaMappingFile := "./config/app_settings/mappings.json"
 	jsonFile, err := os.Open(schemaMappingFile)
 	if err != nil {
 		fmt.Println(err)
@@ -47,4 +48,19 @@ func ReadSchemaMappingSettings(fileName string) (SchemaMappings, error) {
 	json.Unmarshal(jsonAsBytes, &schemaMappings)
 
 	return schemaMappings, nil
+}
+
+func GetSchemaMappingsFor(srcApp, dstApp string) *SchemaMapping {
+	if schemaMappings, err := GetSchemaMappings(); err == nil {
+		for _, schemaMapping := range schemaMappings.AllMappings {
+			if strings.EqualFold(srcApp, schemaMapping.FromApp) {
+				for _, mappingToApp := range schemaMapping.ToApps {
+					if strings.EqualFold(dstApp, mappingToApp.Name) {
+						return &schemaMapping
+					}
+				}
+			}
+		}
+	}
+	return nil
 }

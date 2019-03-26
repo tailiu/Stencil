@@ -197,7 +197,11 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *D
 }
 
 func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
-
+	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
+		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
+	} else {
+		log.Fatal(fmt.Sprintf("Mappings found from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
+	}
 }
 
 func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode) {
