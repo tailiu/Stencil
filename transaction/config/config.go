@@ -20,7 +20,7 @@ import (
 /****************** Shema Mappings Structs ***********************/
 
 type SchemaMappings struct {
-	AllMappings []SchemaMapping	`json:"allMappings"`
+	AllMappings []SchemaMapping		`json:"allMappings"`
 }
 
 type SchemaMapping struct {

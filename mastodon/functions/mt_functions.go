@@ -6,13 +6,13 @@ package functions
 
 import (
 	"database/sql"
-	"evaluation/database"
+	"mastodon/database"
     "fmt"
 	"log"
 	"time"
 	"strconv"
 	"encoding/json"
-	"evaluation/auxiliary"
+	"mastodon/auxiliary"
 	_ "github.com/lib/pq"
 )
 

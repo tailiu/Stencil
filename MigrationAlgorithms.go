@@ -181,7 +181,6 @@ func GetMigratedData() {
 }
 
 func DisplayController(migrationID int) {
-
 	for migratedNode := GetMigratedNode(migrationID); 
 		!IsMigrationComplete(migrationID);  
 		migratedNode = GetMigratedNode(migrationID){
