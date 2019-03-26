@@ -16,6 +16,20 @@ func (self AppConfig) GetTag(tagName string) (Tag, error) {
 	return *new(Tag), nil
 }
 
+func (self AppConfig) GetTagMembers(tagName string) ([]string, error) {
+
+	var tagMembers []string
+
+	if tag, err := self.GetTag(tagName); err == nil {
+		for _, member := range tag.Members {
+			tagMembers = append(tagMembers, member)
+		}
+	} else {
+		return tagMembers, errors.New("Tag Not Found")
+	}
+	return tagMembers, nil
+}
+
 func (self AppConfig) GetDependency(tagName string) (Dependency, error) {
 
 	for _, dep := range self.Dependencies {

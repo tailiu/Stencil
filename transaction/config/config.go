@@ -50,13 +50,13 @@ func GetSchemaMappings() (SchemaMappings, error) {
 	return schemaMappings, nil
 }
 
-func GetSchemaMappingsFor(srcApp, dstApp string) *SchemaMapping {
+func GetSchemaMappingsFor(srcApp, dstApp string) *MappedApp {
 	if schemaMappings, err := GetSchemaMappings(); err == nil {
 		for _, schemaMapping := range schemaMappings.AllMappings {
 			if strings.EqualFold(srcApp, schemaMapping.FromApp) {
-				for _, mappingToApp := range schemaMapping.ToApps {
-					if strings.EqualFold(dstApp, mappingToApp.Name) {
-						return &schemaMapping
+				for _, mappedApp := range schemaMapping.ToApps {
+					if strings.EqualFold(dstApp, mappedApp.Name) {
+						return &mappedApp
 					}
 				}
 			}
