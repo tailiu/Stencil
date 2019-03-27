@@ -25,8 +25,7 @@ func GetDBConn(app string) *sql.DB {
 
 	if _, ok := dbConns[app]; !ok {
 		log.Println("Creating new db conn for:", app)
-		// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
-		dbConnAddr := "user=root dbname=%s host=10.230.12.75 port=26257 sslmode=disable client_encoding=UTF8"
+		dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
 		dbConn, err := sql.Open("postgres", fmt.Sprintf(dbConnAddr, app))
 		if err != nil {
 			fmt.Println("error connecting to the db app:", app)

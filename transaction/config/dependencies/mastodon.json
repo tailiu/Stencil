@@ -21,7 +21,7 @@
             ]
         },
         {
-            "tag" : "conversations",
+            "name" : "conversations",
             "members" : {
                 "member1":"conversations"
             },
@@ -30,7 +30,7 @@
             }
         },
         {
-            "tag" : "statuses",
+            "name" : "statuses",
             "members" : {
                 "member1":"statuses",
                 "member2":"status_stats",
@@ -61,7 +61,7 @@
             ]
         },
         {
-            "tag" : "follows",
+            "name" : "follows",
             "members" : {
                 "member1": "follows"
             },
@@ -70,7 +70,7 @@
             } 
         },
         {
-            "tag" : "favourites",
+            "name" : "favourites",
             "members" : {
                 "member1": "favourites"
             },

@@ -5,9 +5,9 @@
 package main
 
 import (
-	"evaluation/functions"
-	"evaluation/database"
-	"evaluation/auxiliary"
+	"mastodon/functions"
+	"mastodon/database"
+	"mastodon/auxiliary"
     "fmt"
 	"log"
 	"database/sql"
@@ -311,8 +311,7 @@ func main() {
 	// createPublicPostsController(getAllAccountIDs(dbConn))
 	// followFriendsController(dbConn, getAllAccountIDs(dbConn))
 	// createRepliesToPostsController(getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
-
-	createDirectMessagesController(getAllAccountIDs(dbConn))
+	// createDirectMessagesController(getAllAccountIDs(dbConn))
 
 	for {
 		fmt.Scanln()

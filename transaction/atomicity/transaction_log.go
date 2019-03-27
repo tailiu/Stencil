@@ -21,6 +21,20 @@ func randomNonnegativeInt() int {
 	return rand.Intn(2147483647)
 }
 
+func CreateTxnLogTable() {
+	stencilDB := db.GetDBConn(StencilDBName)
+	op := `CREATE TABLE txn_log (
+			id SERIAL PRIMARY KEY, 
+			action_id INT NOT NULL, 
+			action_type string NOT NULL CHECK (action_type IN ('COMMIT','ABORT','ABORTED', 'CHANGE', 'BEGIN_TRANSACTION')),
+			undo_action string, 
+			INDEX action_id_index (action_id),
+			display_hint string)`
+	if _, err := stencilDB.Exec(op); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func BeginTransaction() *Log_txn {
 	txn_id := randomNonnegativeInt()
 
@@ -33,9 +47,9 @@ func BeginTransaction() *Log_txn {
 	return &Log_txn{DBconn: stencilDB, Txn_id: txn_id}
 }
 
-func LogChange(srcAppID, tgtAppID, table, row_id string, log_txn *Log_txn) {
-	undo_action := fmt.Sprintf("%s %s %s %s", tgtAppID, srcAppID, table, row_id)
-	op := fmt.Sprintf("INSERT INTO txn_log (action_id, action_type, undo_action) VALUES (%d, 'CHANGE', '%s');", log_txn.Txn_id, undo_action)
+func LogChange(undo_action string, display_hint []byte, log_txn *Log_txn) {
+	op := fmt.Sprintf("INSERT INTO txn_log (action_id, action_type, undo_action, display_hint) VALUES (%d, 'CHANGE', '%s', '%s');", 
+					log_txn.Txn_id, undo_action, display_hint)
 	if _, err := log_txn.DBconn.Exec(op); err != nil {
 		log.Fatal(err)
 	}
