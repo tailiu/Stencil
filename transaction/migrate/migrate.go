@@ -197,7 +197,59 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *D
 }
 
 func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
+	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
+		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
+	} else {
+		if nodeTag, err := srcApp.GetTag(node.Tag); err == nil {
+			for _, appMapping := range mappings.Mappings {
+				if tagMembers, err := srcApp.GetTagMembers(nodeTag.Name); err == nil {
+					if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
+						if len(tagMembers) == len(appMapping.FromTables) {
+							fmt.Println("Fully Mapped:", mappedTables)
+							for _, toTable := range appMapping.ToTables {
+								if len(toTable.Conditions) > 0 {
+									breakCondition := false
+									fmt.Println("toTable.Conditions", toTable.Conditions)
+									for conditionKey, conditionVal := range toTable.Conditions {
+										if nodeVal := node.GetValueForKey(conditionKey); nodeVal != nil {
+											if !strings.EqualFold(*nodeVal, conditionVal) {
+												breakCondition = true
+												fmt.Println(*nodeVal, "!=", conditionVal)
+											} else {
+												fmt.Println(*nodeVal, "==", conditionVal)
+											}
+										}
+									}
+									if breakCondition {
+										continue // Move on to the next mapping.
+									}
+								}
+								cols, vals := "", ""
+								for toAttr, fromAttr := range toTable.Mapping {
+									if val := node.GetValueForKey(fromAttr); val != nil {
+										vals += fmt.Sprintf("'%s',", *val)
+										cols += fmt.Sprintf("%s,", toAttr)
+									}
+								}
+								if cols != "" && vals != "" {
+									cols := strings.Trim(cols, ",")
+									vals := strings.Trim(vals, ",")
+									isql := fmt.Sprintf("INSERT INTO %s (%s) VALUEs (%s);", toTable.Table, cols, vals)
+									fmt.Println("** Insert Query:", isql)
+								} else {
+									fmt.Println("## Insert Query Error:", cols, vals)
+								}
 
+							}
+						} else {
+							fmt.Println("Partially Mapped:", mappedTables)
+						}
+					}
+				}
+			}
+		}
+		log.Fatal(fmt.Sprintf("Mappings found from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
+	}
 }
 
 func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode) {

@@ -11,33 +11,19 @@ type SchemaMappings struct {
 }
 
 type SchemaMapping struct {
-	FromApp   string          `json:"fromApp"`
-	VarsFuncs VarsFuncsConfig `json:"varsFuncs"`
-	ToApps    []MappedToApp   `json:"toApps"`
+	FromApp string      `json:"fromApp"`
+	ToApps  []MappedApp `json:"toApps"`
 }
 
-type VarsFuncsConfig struct {
-	Funcs []Func `json:"funcs"`
-	Vars  []Vars `json:"vars"`
-}
-
-type Func struct {
-	Name          string `json:"name"`
-	MappingToFunc string `json:"mapping"`
-}
-
-type Vars struct {
-	Name         string `json:"name"`
-	MappingToVar string `json:"mapping"`
-}
-
-type MappedToApp struct {
-	Name     string    `json:"app"`
-	Mappings []Mapping `json:"mappings"`
+type MappedApp struct {
+	Name     string              `json:"app"`
+	Methods  []map[string]string `json:"methods"`
+	Input    []map[string]string `json:"inputs"`
+	Mappings []Mapping           `json:"mappings"`
 }
 
 type Mapping struct {
-	FromTables string    `json:"fromTables"`
+	FromTables []string  `json:"fromTables"`
 	ToTables   []ToTable `json:"toTables"`
 }
 
