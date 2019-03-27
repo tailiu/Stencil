@@ -5,7 +5,7 @@ import (
 	"transaction/atomicity"
 	"encoding/json"
 	"log"
-	// "fmt"
+	"fmt"
 	"strconv"
 	"transaction/display"
 	"transaction/db"
@@ -72,7 +72,17 @@ func genDummyMigrationLogs() {
 }
 
 func main() {
-	genDummyMigrationLogs()
+	// genDummyMigrationLogs()
+
 
 	// display.UpdateDisplayFlag(dbConn, 1, "account_id", true)
+	dbConn := db.GetDBConn(StencilDBName)
+	// display.CreateDisplayFlagsTable(dbConn)
+
+	display_flag, err := display.CheckDisplayFlag(dbConn, 1233, "jjjj")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(display_flag)
+	}
 }

@@ -3,36 +3,27 @@ package main
 import (
 	"fmt"
 	"log"
-	// "transaction/config"
 	// "transaction/atomicity"
 	"transaction/db"
+	"transaction/display"
+	"transaction/dependency_handler"
+	"transaction/config"
 	"database/sql"
 	"time"
 	"encoding/json"
+	"strconv"
+	// "errors"
 )
 
 const StencilDBName = "stencil"
-const maxDataPerThread = 20
 const checkInterval = 200 * time.Millisecond
-
-type HintStruct struct {
-	Table string		`json:"Table"`
-	Key string			`json:"Key"`
-	Value string		`json:"Value"`
-	ValueType string	`json:"ValueType"`
-} 
-
-type MigratedData struct {
-	log_id int
-	data sql.NullString
-}
 
 var displayedData = make(map[string]int)
 
-func procData(rawData []sql.NullString) []HintStruct {
-	var processedData []HintStruct
+func procData(rawData []sql.NullString) []display.HintStruct {
+	var processedData []display.HintStruct
 	for _, oneData := range rawData {
-		var oneSetOfHints []HintStruct
+		var oneSetOfHints []display.HintStruct
 		json.Unmarshal([]byte(oneData.String), &oneSetOfHints)
 		for _, hint := range oneSetOfHints {
 			processedData = append(processedData, hint)
@@ -41,7 +32,7 @@ func procData(rawData []sql.NullString) []HintStruct {
 	return processedData
 }
 
-func getMigratedData(migrationID int, dbConn *sql.DB) []HintStruct {
+func getMigratedData(migrationID int, dbConn *sql.DB) []display.HintStruct {
 	var displayHints []sql.NullString
 	var hintString sql.NullString
 
@@ -84,58 +75,41 @@ func checkMigrationComplete(migrationID int, dbConn *sql.DB) bool {
 	return complete
 }
 
-// func distributeCheckDisplayTasks(migratedData []MigratedData, secondRound bool) {
-// 	j := 0
-// 	for i := 0; i < len(migratedData); i++ {
-// 		if (i + 1) % maxDataPerThread == 0 {
-// 			go checkDisplay(migratedData[j:i+1], secondRound)
-// 			j = i + 1
-// 		}
-// 	}
-// 	if j != len(migratedData) {
-// 		go checkDisplay(migratedData[j:len(migratedData)], secondRound)
-// 	}
-// }
-
-func DisplayThread(migrationID int) {
+func DisplayThread(appConfig config.AppConfig, migrationID int) {
 	var secondRound bool
 	dbConn := db.GetDBConn(StencilDBName)
 
 	// For now just assume this is an infinite loop
 	for migratedData := getMigratedData(migrationID, dbConn); checkMigrationComplete(migrationID, dbConn); migratedData = getMigratedData(migrationID, dbConn) {
-		// distributeCheckDisplayTasks(migratedData, secondRound)
-		checkDisplay(migratedData, secondRound)
+		for _, oneMigratedData := range migratedData {
+			checkDisplayOneMigratedData(dbConn, oneMigratedData, migratedData, secondRound)
+		}
 		time.Sleep(checkInterval)
 	}
 
 	secondRound = true
 }
 
-// func alreadyDisplayed(data) (bool, error) {
 
-// }
-
-// func checkDisplayOneData(oneData ,secondRound bool) bool {
-// 	displayed, err = alreadyDisplayed(oneData)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		continue
-// 	}
-// 	if displayed {
-// 		return true
-// 	} else {
-
-// 	}
-// }
-
-func checkDisplay(migratedData []HintStruct, secondRound bool) {
-	for _, oneData := range migratedData {
-		fmt.Println(oneData)
-		// for _, oneData := range oneSetOfData {
-		// 	fmt.Println(oneData)
-		// 	// checkDisplayOneData(oneData, secondRound)
-		// }
+func checkDisplayOneMigratedData(dbConn *sql.DB, oneMigratedData display.HintStruct, migratedData []display.HintStruct, secondRound bool) (bool, error) {
+	// fmt.Println(oneMigratedData)
+	val, err1 := strconv.Atoi(oneMigratedData.Value)
+	if err1 != nil {
+		log.Fatal(err1)
 	}
+	displayed, err2 := display.CheckDisplayFlag(dbConn, val, oneMigratedData.Table)
+	// fmt.Println(displayed)
+	if err2 != nil {
+		fmt.Println(err2)
+	} else {
+		if displayed {
+			return true, nil
+		} else {
+			// dependency_handler.CheckNodeComplete()
+			
+		}
+	}
+	return false, nil
 }
 
 // func DisplayController(migrationID int) {
@@ -178,14 +152,30 @@ func checkDisplay(migratedData []HintStruct, secondRound bool) {
 // }
 
 func main() {
+	dstApp := "mastodon"
+	
+	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+		fmt.Println(err)
+	} else {
+		// fmt.Println(appConfig)
+		// fmt.Println(appConfig.Tags)
+		hint := display.HintStruct {
+			Table: "accounts",
+			Key: "id",
+			Value: "123232", 
+			ValueType: "int",
+		} 
+		dependency_handler.CheckNodeComplete(appConfig.Tags, hint)
+		// DisplayThread(appConfig, 808810123)
+	}
+
 	// atomicity.CreateTxnLogTable()
-	DisplayThread(1134814368)
 
 	// dbConn := db.GetDBConn(StencilDBName)
 	// data := getMigratedData(1134814368, dbConn)
 	// fmt.Println(data)
 
-	// var displayHints []HintStruct 
+	// var displayHints []display.HintStruct 
 	// json.Unmarshal([]byte(data[2].data.String), &displayHints)
 
 	// fmt.Println(displayHints)

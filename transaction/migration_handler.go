@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"transaction/config"
+	"transaction/migrate"
 )
 
 /*********************--bgn
@@ -25,6 +26,50 @@ import (
 // 		}
 // 	}
 // }
+
+func prepareDataQueries(appconfig config.AppConfig) []config.DataQuery {
+
+	var sqls []config.DataQuery
+
+	// sql := fmt.Sprintf("SELECT %s.* FROM %s WHERE %s = $1 ", settings.UserTable, settings.UserTable, settings.KeyCol, settings.UserTable)
+	// sqls = append(sqls, config.DataQuery{SQL: sql, Table: settings.UserTable})
+
+	// for _, dependency := range dependencies {
+	// 	if strings.ToLower(settings.UserTable) == strings.ToLower(dependency.DependsOn) {
+
+	// 		var subDeps []config.Dependency
+	// 		subDeps = append(subDeps, dependency)
+	// 		traverseDependencies(dependency.Tag, dependencies, &subDeps)
+
+	// 		for _, subDep := range subDeps {
+	// 			sql = fmt.Sprintf("SELECT %s.* FROM %s ", subDep.Tag, subDep.Tag)
+	// 			dep := subDep
+	// 			for true {
+	// 				sql += fmt.Sprintf(" JOIN %s ON ", dep.DependsOn)
+	// 				for i, condition := range dep.Conditions {
+	// 					sql += fmt.Sprintf("%s.%s = %s.%s", dep.Tag, condition.TagAttr, dep.DependsOn, condition.DependsOnAttr)
+	// 					if i < len(dep.Conditions)-1 {
+	// 						sql += " AND "
+	// 					}
+	// 				}
+	// 				if strings.EqualFold(dep.DependsOn, settings.UserTable) {
+	// 					sql += fmt.Sprintf(" WHERE %s.%s = $1 ", settings.UserTable, settings.KeyCol, subDep.Tag)
+	// 					break
+	// 				} else {
+	// 					var e error
+	// 					dep, e = config.FindDependencyByDependsOn(dep.DependsOn, subDeps)
+	// 					if e == nil && !strings.EqualFold(dep.DependsOn, settings.UserTable) {
+	// 						// fmt.Println("!!! Couldn't find dependency tag that depends on ", dep.DependsOn)
+	// 						break
+	// 					}
+	// 				}
+	// 			}
+	// 			sqls = append(sqls, config.DataQuery{SQL: sql, Table: subDep.Tag})
+	// 		}
+	// 	}
+	// }
+	return sqls
+}
 
 // func prepareAppLevelData(settings config.Settings, dependencies []config.Dependency) []config.DataQuery {
 
@@ -193,23 +238,34 @@ import (
 
 func main() {
 
-	// srcApp := "diaspora"
-	// if appConfig, err := config.ReadAppConfig(srcApp); err != nil {
-	// 	log.Fatal(err)
-	// } else {
-	// 	log.Println("App Config Fetched")
-	// 	fmt.Println(appConfig.Tags[0])
-	// }
+	srcApp := "diaspora"
+	dstApp := "mastodon"
 
-	settingsFileName := "mappings"
-	// fromApp := "mastodon"
-	// toApp := "diaspora"
-	if schemaMappings, err := config.ReadSchemaMappingSettings(settingsFileName); err != nil {
+	uid := "647"
+
+	if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
 		log.Fatal(err)
 	} else {
-		fmt.Println(schemaMappings)
+		if dstAppConfig, err := config.CreateAppConfig(dstApp); err != nil {
+			log.Fatal(err)
+		} else {
+			if rootNode := migrate.GetRoot(srcAppConfig, uid); rootNode != nil {
+				migrate.MigrateProcess(uid, srcAppConfig, dstAppConfig, rootNode)
+			} else {
+				fmt.Println("Root Node can't be fetched!")
+			}
+		}
+
 	}
 
+	// settingsFileName := "mappings"
+	// // fromApp := "mastodon"
+	// // toApp := "diaspora"
+	// if schemaMappings, err := config.ReadSchemaMappingSettings(settingsFileName); err != nil {
+	// 	log.Fatal(err)
+	// } else {
+	// 	fmt.Println(schemaMappings)
+	// }
 
 	// initAppLevelMigration(7, "app1", "app5")
 	// initStencilMigration(61, "app3", "app4")

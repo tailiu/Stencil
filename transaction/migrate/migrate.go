@@ -1,249 +1,238 @@
 package migrate
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
-	"transaction/atomicity"
 	"transaction/config"
 	"transaction/db"
-	"transaction/qr"
-
-	escape "github.com/tj/go-pg-escape"
+	"transaction/helper"
 )
 
-func MoveData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mapping, uid int) error {
+func addUserToApplication(uid string, dstApp config.AppConfig) {
 
-	if appMapping, ok := mappings[tgtApp]; ok {
-
-		if tableMapping, ok := appMapping[strings.ToLower(sql.Table)]; ok {
-
-			srcDB := db.GetDBConn(srcApp)
-			tgtDB := db.GetDBConn(tgtApp)
-
-			for {
-
-				row, err := db.DataCall1(srcApp, sql.SQL, uid)
-				if err == nil {
-
-					ttx, err := tgtDB.Begin()
-					if err != nil {
-						log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
-						return err
-					}
-
-					stx, err := srcDB.Begin()
-					if err != nil {
-						log.Println("ERROR! SOURCE TRANSACTION CAN'T BEGIN")
-						return err
-					}
-
-					defer ttx.Rollback()
-					defer stx.Rollback()
-
-					ucond := ""
-
-					for col, val := range row {
-						if !strings.EqualFold(col, "mark_delete") && val != "" {
-							ucond += fmt.Sprintf(" %s = %s AND", col, escape.Literal(val))
-						}
-						// fmt.Println("col", col, "data", columns[i])
-					}
-
-					ucond = strings.TrimSuffix(ucond, "AND")
-					usql := fmt.Sprintf("UPDATE %s SET mark_delete = 'true' WHERE %s", sql.Table, ucond)
-
-					if _, err = stx.Exec(usql); err != nil {
-						fmt.Println(">>>>>>>>>>> Can't update!", err)
-						return err
-					} else {
-						fmt.Println("Updated!")
-					}
-
-					for tgtTable, tgtMap := range tableMapping {
-
-						var cols, vals string
-						for scol, tcol := range tgtMap {
-							cols += tcol + ","
-							vals += escape.Literal(row[scol]) + ","
-						}
-						cols = strings.TrimSuffix(cols, ",")
-						vals = strings.TrimSuffix(vals, ",")
-						insql := escape.Escape("INSERT INTO %s (%s) VALUES (%s)", tgtTable, cols, vals)
-
-						if _, err = ttx.Exec(insql); err != nil {
-							log.Println("# Can't insert!", err)
-							return err
-						} else {
-							fmt.Println("Inserted!")
-						}
-					}
-
-					stx.Commit()
-					ttx.Commit()
-				} else if err != nil {
-					log.Println("# No more rows!")
-					break
-				}
-
-			}
-			return nil
-		}
-		return errors.New("mapping doesn't exist for table:" + sql.Table)
-	}
-	return errors.New("mapping doesn't exist for app:" + tgtApp)
 }
 
-func MigrateData(srcApp, tgtApp string, sql config.DataQuery, mappings config.Mapping, uid int, log_txn *atomicity.Log_txn) error {
+func removeUserFromApplication(uid string, srcApp config.AppConfig) {
 
-	if appMapping, ok := mappings[tgtApp]; ok {
-
-		if _, ok := appMapping[strings.ToLower(sql.Table)]; ok {
-
-			srcAppID, err := db.GetAppId(srcApp)
-
-			if err != nil {
-				panic("Crashing" + err.Error())
-			} else {
-				// fmt.Println("SrcApp ID:" + srcAppID)
-			}
-
-			tgtAppID, err := db.GetAppId(tgtApp)
-			if err != nil {
-				panic("Crashing" + err.Error())
-			} else {
-				// fmt.Println("TgtApp ID:" + tgtAppID)
-			}
-
-			QR := qr.NewQR(srcAppID, "stencil")
-			TgtQR := qr.NewQR(tgtAppID, "stencil")
-
-			sql.SQL = strings.Replace(sql.SQL, "$1", fmt.Sprintf("'%d'", uid), 1)
-
-			// transform a logical request into a physical request
-			if psqls := QR.Resolve(sql.SQL, true); len(psqls) > 0 {
-				psql := psqls[0]
-				log.Println("IN MIGRATE:", psql)
-				for {
-					// according to this physical request, find one result
-					if data, err := db.DataCall1("stencil", psql); err == nil {
-						// log.Println("Data:", data)
-						// according to the row_id of the result,
-						if len(data["base_row_id"]) > 0 {
-							// form queries to update records with the same row_id in different physical tables
-							// updQ := QR.PhyUpdateAppIDByRowID(TgtQR.AppID, sql.Table, []string{data["base_row_id"]})
-
-							// before migrating, log the logical query
-							atomicity.LogChange(QR.AppID, TgtQR.AppID, sql.Table, data["base_row_id"], log_txn)
-
-							// defer tx.Rollback()
-
-							// migrateOneLogicalRow(updQ, QR)
-							migrateOneLogicalRow(QR, TgtQR.AppID, data["base_row_id"])
-						}
-					} else if err != nil {
-						log.Println("# No more rows!")
-						break
-					}
-				}
-			} else {
-				log.Println("Can't convert to physical query!")
-			}
-			log.Println("Migration complete!")
-			return nil
-		}
-		return errors.New("mapping doesn't exist for table:" + sql.Table)
-	}
-	return errors.New("mapping doesn't exist for app:" + tgtApp)
 }
 
-func migrateOneLogicalRow(QR *qr.QR, tgt_app_ID string, base_row_id string) error {
-	tx, err := QR.DB.Begin()
-	if err != nil {
-		log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
-		return err
-	}
-	int_tgt_app_ID, err := strconv.Atoi(tgt_app_ID)
-	int_base_row_id, err1 := strconv.Atoi(base_row_id)
-	if err != nil || err1 != nil {
-		log.Println("ERROR! CONVERT STRING APP_ID OR ROW_ID TO INT ERROR")
-	}
-	msql := fmt.Sprintf("UPDATE row_desc SET app_id = %d WHERE row_id = %d;", int_tgt_app_ID, int_base_row_id)
-	log.Println(msql)
-	if _, err = tx.Exec(msql); err != nil {
-		log.Println(">> Can't update!", err)
-		return err
-	}
-	tx.Commit()
+func checkUserInApp(uid string, dstApp config.AppConfig) bool {
+	return true
+}
 
+func UpdateMigrationState(uid string, srcApp, dstApp config.AppConfig) {
+
+}
+
+func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
+	tagName := "root"
+	if root, err := appConfig.GetTag(tagName); err == nil {
+		sql := "SELECT %s FROM %s WHERE %s "
+		rootTable, rootCol := appConfig.GetItemsFromKey(root, "root_id")
+		where := fmt.Sprintf("%s.%s = $1", rootTable, rootCol)
+		if len(root.InnerDependencies) > 0 {
+			cols := ""
+			joinMap := appConfig.CreateInDepMap(root)
+			seenMap := make(map[string]bool)
+			joinStr := ""
+			for fromTable, toTablesMap := range joinMap {
+				if _, ok := seenMap[fromTable]; !ok {
+					joinStr += fromTable
+					_, colStr := db.GetColumnsForTable(appConfig.AppName, fromTable)
+					cols += colStr + ","
+				}
+				for toTable, conditions := range toTablesMap {
+					if conditions != nil {
+						conditions = append(conditions, joinMap[toTable][fromTable]...)
+						if joinMap[toTable][fromTable] != nil {
+							joinMap[toTable][fromTable] = nil
+						}
+						joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
+						_, colStr := db.GetColumnsForTable(appConfig.AppName, toTable)
+						cols += colStr + ","
+						seenMap[toTable] = true
+					}
+				}
+				seenMap[fromTable] = true
+			}
+			sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where)
+		} else {
+			table := root.Members["member1"]
+			_, cols := db.GetColumnsForTable(appConfig.AppName, table)
+			sql = fmt.Sprintf(sql, cols, table, where)
+		}
+		rootNode := new(DependencyNode)
+		rootNode.Tag = "root"
+		rootNode.SQL = sql
+		// fmt.Println(sql)
+		rootNode.Data = db.DataCall(appConfig.AppName, sql, uid)
+		return rootNode
+	}
 	return nil
 }
 
-// // migrate one or several physical rows with the same Row_ID, which corresponds to one logical row
-// func migrateOneLogicalRow(updQ []string, QR *qr.QR) error {
-// 	tx, err := QR.DB.Begin()
-// 	if err != nil {
-// 		log.Println("ERROR! TARGET TRANSACTION CAN'T BEGIN")
-// 		return err
-// 	}
+// Handle restrictions tag in depends on conditions
+func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfig, dep config.Dependency) string {
+	where := ""
+	if tag, err := appConfig.GetTag(dep.Tag); err == nil {
+		for _, depOn := range dep.DependsOn {
+			if depOnTag, err := appConfig.GetTag(depOn.Tag); err == nil {
+				if strings.EqualFold(depOnTag.Name, node.Tag) {
+					// fmt.Println(tag.Name, depOnTag.Name)
+					for _, condition := range depOn.Conditions {
+						conditionStr := ""
+						tagAttr, err := appConfig.ResolveTagAttr(tag.Name, condition.TagAttr)
+						if err != nil {
+							log.Println(err, tag.Name, condition.TagAttr)
+							break
+						}
+						depOnAttr, err := appConfig.ResolveTagAttr(depOnTag.Name, condition.DependsOnAttr)
+						if err != nil {
+							log.Println(err, depOnTag.Name, condition.DependsOnAttr)
+							break
+						}
+						// fmt.Print(tagAttr, "==", depOnAttr, " | ")
+						for _, datum := range node.Data {
+							if _, ok := datum[depOnAttr]; ok {
+								// fmt.Println(depOnAttr, datum[depOnAttr])
+								if conditionStr != "" || where != "" {
+									conditionStr += " AND "
+								}
+								conditionStr += fmt.Sprintf("%s = '%v'", tagAttr, datum[depOnAttr])
+							} else {
+								fmt.Println(depOnAttr, "doesn't exist in ", depOnTag.Name)
+							}
+						}
+						if len(condition.Restrictions) > 0 {
+							restrictions := ""
+							for _, restriction := range condition.Restrictions {
+								if restrictions != "" {
+									restrictions += " OR "
+								}
+								if restrictionAttr, err := appConfig.ResolveTagAttr(tag.Name, restriction["col"]); err == nil {
+									restrictions += fmt.Sprintf(" %s = '%s' ", restrictionAttr, restriction["val"])
+								}
 
-// 	// update each physical row
-// 	for _, usql := range updQ {
-// 		log.Println(usql)
-// 		if _, err = tx.Exec(usql); err != nil {
-// 			log.Println(">> Can't update!", err)
-// 			return err
-// 		}
-// 	}
-
-// 	tx.Commit()
-
-// 	return nil
-// }
-
-func rollbackOneRow(undo_action sql.NullString) {
-	// parameters := strings.Fields(undo_action.String)
-
-	// QR := qr.NewQR(parameters[0], "stencil")
-
-	// updQ := QR.PhyUpdateAppIDByRowID(parameters[1], parameters[2], []string{parameters[3]})
-	// fmt.Println(updQ)
-
-	// migrateOneLogicalRow(updQ, QR)
+							}
+							if restrictions == "" {
+								log.Fatal(condition.Restrictions)
+							}
+							conditionStr += fmt.Sprintf(" AND (%s) ", restrictions)
+						}
+						where += conditionStr
+					}
+				}
+			}
+		}
+	}
+	return where
 }
 
-func RollbackMigration(txn_id int) {
-	stencilDB := db.GetDBConn(atomicity.StencilDBName)
+func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *DependencyNode {
 
-	getLogRecords := fmt.Sprintf("SELECT action_type, undo_action FROM txn_log WHERE action_id = %d ORDER BY PRIMARY KEY txn_log DESC", txn_id)
-	rows, err := stencilDB.Query(getLogRecords)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
+	for _, dep := range helper.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag)) {
+		if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
+			limit := " LIMIT 1 "
+			orderby := " ORDER BY random() "
+			if child, err := appConfig.GetTag(dep.Tag); err == nil {
+				sql := "SELECT %s FROM %s WHERE %s %s %s"
+				if len(child.Restrictions) > 0 {
+					restrictions := ""
+					for _, restriction := range child.Restrictions {
+						if restrictions != "" {
+							restrictions += " OR "
+						}
+						if restrictionAttr, err := appConfig.ResolveTagAttr(child.Name, restriction["col"]); err == nil {
+							restrictions += fmt.Sprintf(" %s = '%s' ", restrictionAttr, restriction["val"])
+						}
 
-	for rows.Next() {
-		var action_type string
-		var undo_action sql.NullString
-		if err := rows.Scan(&action_type, &undo_action); err != nil {
-			log.Fatal(err)
+					}
+					where += fmt.Sprintf(" AND (%s) ", restrictions)
+				}
+				if len(child.InnerDependencies) > 0 {
+					cols := ""
+					joinMap := appConfig.CreateInDepMap(child)
+					seenMap := make(map[string]bool)
+					joinStr := ""
+					for fromTable, toTablesMap := range joinMap {
+						if _, ok := seenMap[fromTable]; !ok {
+							joinStr += fromTable
+							_, colStr := db.GetColumnsForTable(appConfig.AppName, fromTable)
+							cols += colStr + ","
+						}
+						for toTable, conditions := range toTablesMap {
+							if conditions != nil {
+								conditions = append(conditions, joinMap[toTable][fromTable]...)
+								if joinMap[toTable][fromTable] != nil {
+									joinMap[toTable][fromTable] = nil
+								}
+								// joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
+								joinStr += fmt.Sprintf(" JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
+								_, colStr := db.GetColumnsForTable(appConfig.AppName, toTable)
+								cols += colStr + ","
+								seenMap[toTable] = true
+							}
+						}
+						seenMap[fromTable] = true
+					}
+					sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where, orderby, limit)
+				} else {
+					table := child.Members["member1"]
+					_, cols := db.GetColumnsForTable(appConfig.AppName, table)
+					sql = fmt.Sprintf(sql, cols, table, where, orderby, limit)
+				}
+				if nodeData := db.DataCall(appConfig.AppName, sql); len(nodeData) > 0 {
+					newNode := new(DependencyNode)
+					newNode.Tag = dep.Tag
+					newNode.SQL = sql
+					newNode.Data = nodeData
+					// fmt.Println(sql)
+					return newNode
+				}
+			}
 		}
-		// fmt.Printf("%s %s\n", action_type, undo_action)
+	}
+	return nil
+}
 
-		switch action_type {
-		case "COMMIT":
-			log.Fatal("Can't abort an already completed action.")
-		case "ABORT", "ABORTED":
-			log.Fatal("Can't abort an already aborted action.")
-		case "CHANGE":
-			rollbackOneRow(undo_action)
-		case "BEGIN_TRANSACTION":
-			break
-		}
+func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
+
+}
+
+func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode) {
+
+	// try:
+
+	if node.Tag == "root" && !checkUserInApp(uid, dstApp) {
+		addUserToApplication(uid, dstApp)
 	}
 
-	atomicity.LogOutcome(&atomicity.Log_txn{DBconn: stencilDB, Txn_id: txn_id}, "ABORTED")
+	for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
+		fmt.Println("------------------------------------------------------------------------")
+		log.Println("Current Node:", node.Tag)
+		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		log.Println("Child Node:", child.Tag)
+		fmt.Println("------------------------------------------------------------------------")
+		MigrateProcess(uid, srcApp, dstApp, child)
+	}
+	// acquirePredicateLock(*node)
+	// for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
+	// 	MigrateProcess(uid, srcApp, dstApp, child)
+	// }
+	MigrateNode(node, srcApp, dstApp) // Log before migrating
+	// releasePredicateLock(*node)
+
+	// catch NodeNotFound:
+
+	// t.releaseAllLocks()
+	// if node.Tag == "root" {
+	// 	MigrateProcess(uid, srcApp, dstApp, GetRoot(srcApp, uid))
+	// } else {
+	// 	if checkUserInApp(uid, srcApp) {
+	// 		removeUserFromApplication(uid, srcApp)
+	// 	}
+	// 	UpdateMigrationState(uid, srcApp, dstApp)
+	// 	log.Println("Congratulations, this migration worker has finished it's job!")
+	// }
 }
