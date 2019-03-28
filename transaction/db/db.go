@@ -11,6 +11,8 @@ import (
 	"log"
 	"reflect"
 	"strings"
+	"strconv"
+	"transaction/display"
 
 	_ "github.com/lib/pq" // postgres driver
 )
@@ -235,4 +237,69 @@ func GetPK(app, table string) []string {
 	}
 	rows.Close()
 	return result
+}
+
+func getAllColsOfOneRow(dbConn *sql.DB, query string) map[string]string {
+	rows, err := dbConn.Query(query)
+	defer rows.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cols, err := rows.Columns()
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	data := make(map[string]string)
+
+	for rows.Next() {
+		columns := make([]string, len(cols))
+		columnPointers := make([]interface{}, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+
+		rows.Scan(columnPointers...)
+
+		for i, colName := range cols {
+			data[colName] = columns[i]
+		}
+	}
+
+	return data
+}
+
+func GetOneRowBasedOnHint(dbConn *sql.DB, app string, hint display.HintStruct) (map[string]string, error) {
+	var query string
+	switch valueType := hint.ValueType; valueType {
+		case "int":
+			value, err := strconv.Atoi(hint.Value)
+			if err != nil {
+				log.Fatal(err)
+			}
+			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1", hint.Table, hint.Key, value)
+		default:
+			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1", hint.Table, hint.Key, hint.Value)
+	}
+	
+	data := getAllColsOfOneRow(dbConn, query)
+
+	if len(data) == 0 {
+		return nil, errors.New("Check Remaining Data Exists Error: Original Data Not Exists")
+	} else {
+		return data, nil
+	}
+}
+
+func GetOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string) (map[string]string, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
+	data := getAllColsOfOneRow(dbConn, query)
+	if len(data) == 0 {
+		return nil, errors.New("Check Remaining Data Exists Error: Data Not Exists")
+	} else {
+		return data, nil
+	}
+
+	return data, nil
 }

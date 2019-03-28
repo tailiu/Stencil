@@ -154,6 +154,7 @@ func checkDisplayOneMigratedData(dbConn *sql.DB, oneMigratedData display.HintStr
 func main() {
 	dstApp := "mastodon"
 	
+	dbConn := db.GetDBConn(dstApp)
 	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
 		fmt.Println(err)
 	} else {
@@ -162,10 +163,10 @@ func main() {
 		hint := display.HintStruct {
 			Table: "accounts",
 			Key: "id",
-			Value: "123232", 
+			Value: "51117", 
 			ValueType: "int",
 		} 
-		dependency_handler.CheckNodeComplete(appConfig.Tags, hint)
+		dependency_handler.CheckNodeComplete(appConfig.Tags, hint, dstApp, dbConn)
 		// DisplayThread(appConfig, 808810123)
 	}
 
