@@ -6,10 +6,7 @@ package helper
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
-	"time"
-	"transaction/config"
 )
 
 func Linebreak(ch string, times ...int) {
@@ -34,21 +31,4 @@ func Contains(list []string, str string) bool {
 		}
 	}
 	return false
-}
-
-func Reverse(numbers []config.DataQuery) {
-	for i, j := 0, len(numbers)-1; i < j; i, j = i+1, j-1 {
-		numbers[i], numbers[j] = numbers[j], numbers[i]
-	}
-}
-
-func ShuffleDependencies(vals []config.Dependency) []config.Dependency {
-	rand.Seed(time.Now().UnixNano())
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	ret := make([]config.Dependency, len(vals))
-	perm := r.Perm(len(vals))
-	for i, randIndex := range perm {
-		ret[i] = vals[randIndex]
-	}
-	return ret
 }

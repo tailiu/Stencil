@@ -7,6 +7,11 @@ type DependencyNode struct {
 }
 
 type WaitingNode struct {
-	members []map[string]bool
-	sqls    []map[string]string
+	ContainsNodes []DependencyNode
+	LookingFor    []string
+	Criteria      map[string]interface{}
+}
+
+type WaitingList struct {
+	Nodes []WaitingNode
 }

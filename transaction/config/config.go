@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 func CreateAppConfig(app string) (AppConfig, error) {
@@ -63,4 +65,21 @@ func GetSchemaMappingsFor(srcApp, dstApp string) *MappedApp {
 		}
 	}
 	return nil
+}
+
+func ShuffleDependencies(vals []Dependency) []Dependency {
+	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]Dependency, len(vals))
+	perm := r.Perm(len(vals))
+	for i, randIndex := range perm {
+		ret[i] = vals[randIndex]
+	}
+	return ret
+}
+
+func Reverse(numbers []DataQuery) {
+	for i, j := 0, len(numbers)-1; i < j; i, j = i+1, j-1 {
+		numbers[i], numbers[j] = numbers[j], numbers[i]
+	}
 }
