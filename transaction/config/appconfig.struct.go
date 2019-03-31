@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"transaction/helper"
+
+	"github.com/drgrib/maps"
 )
 
 func (self AppConfig) GetTag(tagName string) (Tag, error) {
@@ -84,39 +87,35 @@ func (self AppConfig) GetItemsFromKey(tag Tag, key string) (string, string) {
 	return Table, Col
 }
 
-func (self AppConfig) ResolveTagAttr(tagName, attr string) (string, error) {
+func (tag Tag) ResolveTagAttr(attr string) (string, error) {
 
-	if tag, err := self.GetTag(tagName); err == nil {
-		if _, ok := tag.Keys[attr]; ok {
-			keyItems := strings.Split(tag.Keys[attr], ".")
-			if _, ok := tag.Members[keyItems[0]]; ok {
-				Table := tag.Members[keyItems[0]]
-				Col := keyItems[1]
-				return fmt.Sprintf("%s.%s", Table, Col), nil
-			} else {
-				return "", errors.New("Tag Not Resolved, Member Not Found")
-			}
+	if _, ok := tag.Keys[attr]; ok {
+		keyItems := strings.Split(tag.Keys[attr], ".")
+		if _, ok := tag.Members[keyItems[0]]; ok {
+			Table := tag.Members[keyItems[0]]
+			Col := keyItems[1]
+			return fmt.Sprintf("%s.%s", Table, Col), nil
 		} else {
-			return "", errors.New("Tag Not Resolved, Attr Not Found in Tag Keys")
+			return "", errors.New("Tag Not Resolved, Member Not Found")
 		}
 	}
-	return "", errors.New("Tag Not Resolved")
+	return "", errors.New("Tag Not Resolved, Attr Not Found in Tag Keys")
 }
 
-func (self AppConfig) CreateInDepMap(tag Tag) map[string]map[string][]string {
+func (self Tag) CreateInDepMap() map[string]map[string][]string {
 
 	joinMap := make(map[string]map[string][]string)
 
-	for _, inDep := range tag.InnerDependencies {
+	for _, inDep := range self.InnerDependencies {
 		for mapFrom, mapTo := range inDep {
 
 			mapFromItems := strings.Split(mapFrom, ".")
 			mapToItems := strings.Split(mapTo, ".")
 
-			mapFromTable := tag.Members[mapFromItems[0]]
+			mapFromTable := self.Members[mapFromItems[0]]
 			mapFromCol := mapFromItems[1]
 
-			mapToTable := tag.Members[mapToItems[0]]
+			mapToTable := self.Members[mapToItems[0]]
 			mapToCol := mapToItems[1]
 
 			if _, ok := joinMap[mapFromTable]; !ok {
@@ -129,4 +128,25 @@ func (self AppConfig) CreateInDepMap(tag Tag) map[string]map[string][]string {
 	}
 
 	return joinMap
+}
+
+func (self AppConfig) GetTagsByTables(tables []string) []Tag {
+	var tags []Tag
+	// no member can appear in more than one tag
+	for _, tag := range self.Tags {
+		if overlap := helper.IntersectString(maps.GetValuesStringString(tag.Members), tables); len(overlap) > 0 {
+			tags = append(tags, tag)
+		}
+	}
+	return tags
+}
+
+func (self Dependency) GetConditionsForTag(tagName string) []DCondition {
+
+	for _, dependsOn := range self.DependsOn {
+		if strings.EqualFold(dependsOn.Tag, tagName) {
+			return dependsOn.Conditions
+		}
+	}
+	return nil
 }

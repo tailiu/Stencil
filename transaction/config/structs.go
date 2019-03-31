@@ -18,7 +18,7 @@ type SchemaMapping struct {
 type MappedApp struct {
 	Name     string              `json:"app"`
 	Methods  []map[string]string `json:"methods"`
-	Input    []map[string]string `json:"inputs"`
+	Inputs   []map[string]string `json:"inputs"`
 	Mappings []Mapping           `json:"mappings"`
 }
 

@@ -33,7 +33,7 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 		where := fmt.Sprintf("%s.%s = $1", rootTable, rootCol)
 		if len(root.InnerDependencies) > 0 {
 			cols := ""
-			joinMap := appConfig.CreateInDepMap(root)
+			joinMap := root.CreateInDepMap()
 			seenMap := make(map[string]bool)
 			joinStr := ""
 			for fromTable, toTablesMap := range joinMap {
@@ -82,12 +82,12 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 					// fmt.Println(tag.Name, depOnTag.Name)
 					for _, condition := range depOn.Conditions {
 						conditionStr := ""
-						tagAttr, err := appConfig.ResolveTagAttr(tag.Name, condition.TagAttr)
+						tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
 						if err != nil {
 							log.Println(err, tag.Name, condition.TagAttr)
 							break
 						}
-						depOnAttr, err := appConfig.ResolveTagAttr(depOnTag.Name, condition.DependsOnAttr)
+						depOnAttr, err := depOnTag.ResolveTagAttr(condition.DependsOnAttr)
 						if err != nil {
 							log.Println(err, depOnTag.Name, condition.DependsOnAttr)
 							break
@@ -110,7 +110,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 								if restrictions != "" {
 									restrictions += " OR "
 								}
-								if restrictionAttr, err := appConfig.ResolveTagAttr(tag.Name, restriction["col"]); err == nil {
+								if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
 									restrictions += fmt.Sprintf(" %s = '%s' ", restrictionAttr, restriction["val"])
 								}
 
@@ -131,7 +131,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 
 func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *DependencyNode {
 
-	for _, dep := range helper.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag)) {
+	for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag)) {
 		if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
 			limit := " LIMIT 1 "
 			orderby := " ORDER BY random() "
@@ -143,7 +143,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *D
 						if restrictions != "" {
 							restrictions += " OR "
 						}
-						if restrictionAttr, err := appConfig.ResolveTagAttr(child.Name, restriction["col"]); err == nil {
+						if restrictionAttr, err := child.ResolveTagAttr(restriction["col"]); err == nil {
 							restrictions += fmt.Sprintf(" %s = '%s' ", restrictionAttr, restriction["val"])
 						}
 
@@ -152,7 +152,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *D
 				}
 				if len(child.InnerDependencies) > 0 {
 					cols := ""
-					joinMap := appConfig.CreateInDepMap(child)
+					joinMap := child.CreateInDepMap()
 					seenMap := make(map[string]bool)
 					joinStr := ""
 					for fromTable, toTablesMap := range joinMap {
@@ -233,8 +233,10 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
 										vals += fmt.Sprintf("'%s',", *val)
 										cols += fmt.Sprintf("%s,", toAttr)
 									} else if strings.Contains(fromAttr, "$") {
-										// Resolve Mapping Input
-
+										if inputVal, err := mappings.GetInput(fromAttr); err == nil {
+											vals += fmt.Sprintf("'%s',", inputVal)
+											cols += fmt.Sprintf("%s,", toAttr)
+										}
 									} else if strings.Contains(fromAttr, "#") {
 										// Resolve Mapping Method
 									}
@@ -250,6 +252,7 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
 
 							}
 						} else {
+							fmt.Println("From Tables:", appMapping.FromTables, "Tags:", srcApp.GetTagsByTables(appMapping.FromTables))
 							fmt.Println("Partially Mapped:", mappedTables)
 						}
 					}

@@ -165,9 +165,7 @@
                     ]
                 }
             ]
-        }
-    ],
-    "dependencies2":[
+        },
         {
             "tag": "post",
             "depends_on": [
