@@ -72,7 +72,9 @@ func checkRemainingDataExists(dependencies []map[string]string, members map[stri
 						fmt.Println(err)
 						return nil, false
 					}
-					fmt.Println(data)
+					// fmt.Println(dep)
+					// fmt.Println(data["account_id"])
+					// fmt.Println()
 
 					table1 := strings.Split(dep, ".")[0]
 					key1 := strings.Split(dep, ".")[1]
@@ -122,7 +124,8 @@ func CheckNodeComplete(innerDependencies []config.Tag, hint display.HintStruct, 
 				} else {
 					// Note: we assume that one dependency represents that one row 
 					// 		in one table depends on another row in another table
-					if _, ok:= checkRemainingDataExists(innerDependency.InnerDependencies, innerDependency.Members, hint, app, dbConn); ok {
+					if result, ok:= checkRemainingDataExists(innerDependency.InnerDependencies, innerDependency.Members, hint, app, dbConn); ok {
+						fmt.Println(result)
 						return true
 					} else {
 						return false

@@ -250,23 +250,29 @@ func getAllColsOfOneRow(dbConn *sql.DB, query string) map[string]string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	data := make(map[string]string)
 
 	for rows.Next() {
-		columns := make([]string, len(cols))
+		columns := make([]sql.NullString, len(cols))
 		columnPointers := make([]interface{}, len(cols))
 		for i := range columns {
 			columnPointers[i] = &columns[i]
 		}
-
-		rows.Scan(columnPointers...)
-
+		err1 := rows.Scan(columnPointers...)
+		if err1 != nil {
+			log.Fatal(err1)
+		}
 		for i, colName := range cols {
-			data[colName] = columns[i]
+			if columns[i].Valid {
+				data[colName] = columns[i].String
+			} else {
+				data[colName] = "NULL"
+			}
 		}
 	}
-
+	// fmt.Println(query)
+	// fmt.Println(data)
 	return data
 }
 
@@ -278,13 +284,12 @@ func GetOneRowBasedOnHint(dbConn *sql.DB, app string, hint display.HintStruct) (
 			if err != nil {
 				log.Fatal(err)
 			}
-			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1", hint.Table, hint.Key, value)
+			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", hint.Table, hint.Key, value)
 		default:
-			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1", hint.Table, hint.Key, hint.Value)
+			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1;", hint.Table, hint.Key, hint.Value)
 	}
 	
 	data := getAllColsOfOneRow(dbConn, query)
-
 	if len(data) == 0 {
 		return nil, errors.New("Check Remaining Data Exists Error: Original Data Not Exists")
 	} else {
@@ -293,13 +298,12 @@ func GetOneRowBasedOnHint(dbConn *sql.DB, app string, hint display.HintStruct) (
 }
 
 func GetOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string) (map[string]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
+	// fmt.Println(query)
 	data := getAllColsOfOneRow(dbConn, query)
 	if len(data) == 0 {
 		return nil, errors.New("Check Remaining Data Exists Error: Data Not Exists")
 	} else {
 		return data, nil
 	}
-
-	return data, nil
 }
