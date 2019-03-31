@@ -100,48 +100,6 @@
         },
         {
             "tag": "statuses",
-            "depends_on":[ 
-                {
-                    "tag": "conversations",
-                    "conditions":[
-                        {   
-                            "tag_attr": "conversation_id",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "statuses",
-            "depends_on":[ 
-                {
-                    "tag": "conversations",
-                    "conditions":[
-                        {   
-                            "tag_attr": "conversation_id",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "statuses",
-            "depends_on": [
-                {
-                    "tag":"statuses",
-                    "conditions":[
-                        {   "tag_attr": "reply",
-                            "depends_on_attr": "id"
-                        }
-                    
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "statuses",
             "depends_on": [
                 {
                     "tag":"statuses",
@@ -158,6 +116,15 @@
                             "tag_attr": "conversation_id",
                             "depends_on_attr": "id"
                         }
+                    ]
+                },
+                {
+                    "tag":"statuses",
+                    "conditions":[
+                        {   "tag_attr": "reply",
+                            "depends_on_attr": "id"
+                        }
+                    
                     ]
                 }
             ]
