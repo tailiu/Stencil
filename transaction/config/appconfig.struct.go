@@ -33,6 +33,17 @@ func (self AppConfig) GetTagMembers(tagName string) ([]string, error) {
 	return tagMembers, nil
 }
 
+func (self Tag) GetTagMembers() []string {
+
+	var tagMembers []string
+
+	for _, member := range self.Members {
+		tagMembers = append(tagMembers, member)
+	}
+
+	return tagMembers
+}
+
 func (self AppConfig) GetDependency(tagName string) (Dependency, error) {
 
 	for _, dep := range self.Dependencies {
@@ -43,17 +54,20 @@ func (self AppConfig) GetDependency(tagName string) (Dependency, error) {
 	return *new(Dependency), nil
 }
 
-func (self AppConfig) CheckDependency(tagName, dependsOn string) bool {
+func (self AppConfig) CheckDependency(tagName, dependsOnTag string) (DependsOn, error) {
 
-	if deps, err := self.GetDependency(tagName); err == nil {
-		for _, dep := range deps.DependsOn {
-			if strings.EqualFold(dep.Tag, dependsOn) {
-				return true
+	// if deps, err := self.GetDependency(tagName); err == nil {
+	for _, dep := range self.Dependencies {
+		if strings.EqualFold(dep.Tag, tagName) {
+			for _, dependsOn := range dep.DependsOn {
+				if strings.EqualFold(dependsOn.Tag, dependsOnTag) {
+					return dependsOn, nil
+				}
 			}
 		}
 	}
 
-	return false
+	return *new(DependsOn), nil
 }
 
 func (self AppConfig) GetSubDependencies(tagName string) []Dependency {
