@@ -9,88 +9,31 @@ import (
 	"transaction/helper"
 )
 
+var USEREXISTSINAPP = false
+
 func remove(s []config.Tag, i int) []config.Tag {
 	s[len(s)-1], s[i] = s[i], s[len(s)-1]
 	return s[:len(s)-1]
 }
 
-func addUserToApplication(node *DependencyNode, srcApp, dstApp config.AppConfig) {
+func addUserToApplication(node *DependencyNode, srcApp, dstApp config.AppConfig) bool {
 	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
 		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	} else {
 		tagMembers := node.Tag.GetTagMembers()
 		for _, appMapping := range mappings.Mappings {
-			GenerateInsertQuery(mappings, appMapping.toTables, node)
+			GenerateInsertQuery(mappings, appMapping.ToTables, node)
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
-				adjTags := srcApp.GetTagsByTablesExcept(appMapping.FromTables, node.Tag.Name)
-				for _, dep := range srcApp.GetSubDependencies(node.Tag.Name) {
-					if !config.Contains(adjTags, dep.Tag) {
-						continue
-					}
-					if where := ResolveDependencyConditions(node, srcApp, dep); where != "" {
-						orderby := " ORDER BY random() "
-						if child, err := srcApp.GetTag(dep.Tag); err == nil {
-							sql := "SELECT %s FROM %s WHERE %s %s "
-							if len(child.Restrictions) > 0 {
-								restrictions := ""
-								for _, restriction := range child.Restrictions {
-									if restrictions != "" {
-										restrictions += " OR "
-									}
-									if restrictionAttr, err := child.ResolveTagAttr(restriction["col"]); err == nil {
-										restrictions += fmt.Sprintf(" %s = '%s' ", restrictionAttr, restriction["val"])
-									}
-
-								}
-								where += fmt.Sprintf(" AND (%s) ", restrictions)
-							}
-							if len(child.InnerDependencies) > 0 {
-								cols := ""
-								joinMap := child.CreateInDepMap()
-								seenMap := make(map[string]bool)
-								joinStr := ""
-								for fromTable, toTablesMap := range joinMap {
-									if _, ok := seenMap[fromTable]; !ok {
-										joinStr += fromTable
-										_, colStr := db.GetColumnsForTable(srcApp.AppName, fromTable)
-										cols += colStr + ","
-									}
-									for toTable, conditions := range toTablesMap {
-										if conditions != nil {
-											conditions = append(conditions, joinMap[toTable][fromTable]...)
-											if joinMap[toTable][fromTable] != nil {
-												joinMap[toTable][fromTable] = nil
-											}
-											// joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
-											joinStr += fmt.Sprintf(" JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
-											_, colStr := db.GetColumnsForTable(srcApp.AppName, toTable)
-											cols += colStr + ","
-											seenMap[toTable] = true
-										}
-									}
-									seenMap[fromTable] = true
-								}
-								sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where, orderby)
-							} else {
-								table := child.Members["member1"]
-								_, cols := db.GetColumnsForTable(srcApp.AppName, table)
-								sql = fmt.Sprintf(sql, cols, table, where, orderby)
-							}
-							if nodeData := db.DataCall(srcApp.AppName, sql); len(nodeData) > 0 {
-								newNode := new(DependencyNode)
-								newNode.Tag = child
-								newNode.SQL = sql
-								newNode.Data = nodeData
-								fmt.Println(newNode.sql)
-								// return newNode
-							}
-						}
-					}
+				if len(tagMembers) == len(appMapping.FromTables) {
+					insqls := GenerateInsertQuery(mappings, appMapping.ToTables, node)
+					fmt.Println(insqls)
+					USEREXISTSINAPP = true
+					return true
 				}
 			}
 		}
 	}
-	log.Fatal("FINISHED USER")
+	return false
 }
 
 func removeUserFromApplication(uid string, srcApp config.AppConfig) {
@@ -98,7 +41,7 @@ func removeUserFromApplication(uid string, srcApp config.AppConfig) {
 }
 
 func checkUserInApp(uid string, dstApp config.AppConfig) bool {
-	return false
+	return USEREXISTSINAPP
 }
 
 func UpdateMigrationState(uid string, srcApp, dstApp config.AppConfig) {
@@ -152,7 +95,6 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 	return nil
 }
 
-// Handle restrictions tag in depends on conditions
 func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfig, dep config.Dependency) string {
 	where := ""
 	if tag, err := appConfig.GetTag(dep.Tag); err == nil {
@@ -177,7 +119,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 							}
 							conditionStr += fmt.Sprintf("%s = '%v'", tagAttr, node.Data[depOnAttr])
 						} else {
-							fmt.Println("ResolveDependencyConditions:", depOnAttr, "doesn't exist in ", depOnTag.Name)
+							log.Fatal("ResolveDependencyConditions:", depOnAttr, "doesn't exist in ", depOnTag.Name)
 						}
 						if len(condition.Restrictions) > 0 {
 							restrictions := ""
