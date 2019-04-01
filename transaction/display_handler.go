@@ -179,25 +179,31 @@ func main() {
 	// 	dependency_handler.CheckNodeComplete(appConfig.Tags, hint, dstApp, dbConn)
 	// }
 
-	dstApp := "mastodon"
-	dbConn := db.GetDBConn(dstApp)
-	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-		fmt.Println(err)
-	} else {
-		// fmt.Println(appConfig)
-		// fmt.Println(appConfig.Tags)
-		hint := display.HintStruct {
-			Table: "statuses",
-			Key: "id",
-			Value: "23550", 
-			ValueType: "int",
-		} 
-		dependency_handler.GetOneDataFromParentNode(appConfig, hint, dstApp, dbConn)
-	}
+	// dstApp := "mastodon"
+	// dbConn := db.GetDBConn(dstApp)
+	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	// 	fmt.Println(err)
+	// } else {
+	// 	// fmt.Println(appConfig)
+	// 	// fmt.Println(appConfig.Tags)
+	// 	// hint := display.HintStruct {
+	// 	// 	Table: "statuses",
+	// 	// 	Key: "id",
+	// 	// 	Value: "23550", 
+	// 	// 	ValueType: "int",
+	// 	// } 
+	// 	hint := display.HintStruct {
+	// 		Table: "conversations",
+	// 		Key: "id",
+	// 		Value: "211",
+	// 		ValueType: "int",
+	// 	}
+	// 	dependency_handler.GetOneDataFromParentNode(appConfig, hint, dstApp, dbConn)
+	// }
 
 	// atomicity.CreateTxnLogTable()
 
-	// dbConn := db.GetDBConn(StencilDBName)
+	dbConn := db.GetDBConn(StencilDBName)
 	// data := getMigratedData(1134814368, dbConn)
 	// fmt.Println(data)
 
@@ -208,4 +214,6 @@ func main() {
 	// fmt.Println(displayHints[0].Table)
 
 	// fmt.Println(checkMigrationComplete(1134814368, dbConn))
+
+	display.CreateDisplayFlagsTable(dbConn)
 }
