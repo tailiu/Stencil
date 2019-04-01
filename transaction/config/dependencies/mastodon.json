@@ -42,7 +42,7 @@
                 "conversation_id":"member1.conversation_id",
                 "id":"member1.id",
                 "reply":"member1.in_reply_to_id",
-                "reblog":"member1.reblog_of",
+                "reblog":"member1.reblog_of_id",
                 "account":"member1.account_id"
             },
             "inner_dependencies":[

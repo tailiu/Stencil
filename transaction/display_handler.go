@@ -114,7 +114,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, a
 			if !dependency_handler.CheckNodeComplete(appConfig.Tags, oneMigratedData, dstApp, destAppDBConn) {
 				return false, nil
 			} else {
-
+				// dependency_handler.GetOneDataFromParentNode()
 			}
 		}
 	}
@@ -161,9 +161,25 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, a
 // }
 
 func main() {
-	dstApp := "mastodon"
-	// DisplayThread(dstApp, 808810123)
+	// dstApp := "mastodon"
+	// // DisplayThread(dstApp, 808810123)
 
+	// dbConn := db.GetDBConn(dstApp)
+	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	// 	fmt.Println(err)
+	// } else {
+	// 	// fmt.Println(appConfig)
+	// 	// fmt.Println(appConfig.Tags)
+	// 	hint := display.HintStruct {
+	// 		Table: "accounts",
+	// 		Key: "id",
+	// 		Value: "62632", 
+	// 		ValueType: "int",
+	// 	} 
+	// 	dependency_handler.CheckNodeComplete(appConfig.Tags, hint, dstApp, dbConn)
+	// }
+
+	dstApp := "mastodon"
 	dbConn := db.GetDBConn(dstApp)
 	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
 		fmt.Println(err)
@@ -171,12 +187,12 @@ func main() {
 		// fmt.Println(appConfig)
 		// fmt.Println(appConfig.Tags)
 		hint := display.HintStruct {
-			Table: "accounts",
+			Table: "statuses",
 			Key: "id",
-			Value: "62632", 
+			Value: "23550", 
 			ValueType: "int",
 		} 
-		dependency_handler.CheckNodeComplete(appConfig.Tags, hint, dstApp, dbConn)
+		dependency_handler.GetOneDataFromParentNode(appConfig, hint, dstApp, dbConn)
 	}
 
 	// atomicity.CreateTxnLogTable()

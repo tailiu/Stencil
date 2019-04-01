@@ -9,15 +9,15 @@ import (
 	"log"
 	"database/sql"
 	"strconv"
+	"errors"
+	"mastodon/auxiliary"
 )
+
+const getOneDataFromParentNodeAttemptTimes = 10
 
 type DataInDependencyNode struct {
 	Table 	string
 	Data	map[string]string
-}
-
-func GetParent() {
-
 }
 
 func checkRemainingDataExists(dependencies []map[string]string, members map[string]string, hint display.HintStruct, app string, dbConn *sql.DB) ([]display.HintStruct, bool) {
@@ -36,8 +36,9 @@ func checkRemainingDataExists(dependencies []map[string]string, members map[stri
 			procDependencies[newVal] = append(procDependencies[newVal], newKey)
 		}
 	}
+	fmt.Println(procDependencies)
 
-	data, err := db.GetOneRowBasedOnHint(dbConn, app, hint)
+	data, err := db.GetOneRowBasedOnHint(dbConn, app, hint.Value, hint.ValueType, hint.Key, hint.Table)
 	// fmt.Println(data)
 	if err != nil {
 		log.Println(err)
@@ -74,7 +75,6 @@ func checkRemainingDataExists(dependencies []map[string]string, members map[stri
 					}
 					// fmt.Println(dep)
 					// fmt.Println(data["account_id"])
-					// fmt.Println()
 
 					table1 := strings.Split(dep, ".")[0]
 					key1 := strings.Split(dep, ".")[1]
@@ -113,6 +113,95 @@ func checkRemainingDataExists(dependencies []map[string]string, members map[stri
 	} else {
 		return nil, false
 	}
+}
+
+func getDependsOn(dependencies []config.Dependency, tag string) ([]config.DependsOn, error) {
+	for _, dependency := range dependencies {
+		// fmt.Println(dependency)
+		if dependency.Tag == tag {
+			return dependency.DependsOn, nil
+		}
+	}
+	return nil, errors.New("Cannot Find Any Parent Tags")
+}
+
+func GetTagName(innerDependencies []config.Tag, hint display.HintStruct) (string, error) {
+	for _, innerDependency := range innerDependencies {
+		for _, member := range innerDependency.Members{
+			if hint.Table == member {
+				return innerDependency.Name, nil
+			}
+		}
+	}
+	return "", errors.New("No Corresponding Tag Found!")
+}
+
+func replaceKey(innerDependencies []config.Tag, tag string, key string) string {
+	for _, dependsOnTag := range innerDependencies {
+		if dependsOnTag.Name == tag {
+			// fmt.Println(dependsOnTag)
+			for k, v := range dependsOnTag.Keys {
+				if k == key {
+					member := strings.Split(v, ".")[0]
+					attr := strings.Split(v, ".")[1]
+					for k1, table := range dependsOnTag.Members {
+						if k1 == member {
+							return table + "." + attr
+						}
+					}
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruct, app string, dbConn *sql.DB) (display.HintStruct, error){
+	hintData := display.HintStruct{}
+	data1 := DataInDependencyNode{}
+
+	tag, err := GetTagName(appConfig.Tags, hint)
+	if err != nil {
+		log.Fatal(err)
+	} 
+	
+	dependsOn, err1 := getDependsOn(appConfig.Dependencies, tag)
+	if err1 != nil {
+		log.Println(err1)
+		return hint, err1
+	}
+
+	// fmt.Println(dependsOn)
+	for i := 0; i < getOneDataFromParentNodeAttemptTimes; i ++ {
+		oneDependensOn := dependsOn[auxiliary.RandomNonnegativeIntWithUpperBound(len(dependsOn))]
+		// fmt.Println(oneDependensOn)
+
+		var conditions []string
+		if len(oneDependensOn.Conditions) == 1 {
+			condition := oneDependensOn.Conditions[0]
+			from := replaceKey(appConfig.Tags, tag, condition.TagAttr)
+			to := replaceKey(appConfig.Tags, oneDependensOn.Tag, condition.DependsOnAttr)
+			conditions = append(conditions, from + ":" + to)
+		}
+
+		fmt.Println(conditions)
+		fmt.Println(hint)
+
+		data1.Data, data1.Table, err1 = db.GetOneRowInParentNodeRandomly(dbConn, hint.Value, hint.ValueType, hint.Key, hint.Table, conditions)
+		if err1 != nil {
+			fmt.Println(err1)
+		} else {
+			fmt.Println(data1)
+			break
+		}
+	}
+
+	hintData, err2 := display.TransformRowToHint(dbConn, data1.Data, data1.Table)
+	if err2 != nil {
+		log.Fatal(err2)
+	} 
+	fmt.Println(hintData)
+	return hintData, nil
 }
 
 func CheckNodeComplete(innerDependencies []config.Tag, hint display.HintStruct, app string, dbConn *sql.DB) bool {
