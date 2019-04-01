@@ -9,8 +9,88 @@ import (
 	"transaction/helper"
 )
 
-func addUserToApplication(uid string, dstApp config.AppConfig) {
+func remove(s []config.Tag, i int) []config.Tag {
+	s[len(s)-1], s[i] = s[i], s[len(s)-1]
+	return s[:len(s)-1]
+}
 
+func addUserToApplication(node *DependencyNode, srcApp, dstApp config.AppConfig) {
+	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
+		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
+	} else {
+		tagMembers := node.Tag.GetTagMembers()
+		for _, appMapping := range mappings.Mappings {
+			GenerateInsertQuery(mappings, appMapping.toTables, node)
+			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
+				adjTags := srcApp.GetTagsByTablesExcept(appMapping.FromTables, node.Tag.Name)
+				for _, dep := range srcApp.GetSubDependencies(node.Tag.Name) {
+					if !config.Contains(adjTags, dep.Tag) {
+						continue
+					}
+					if where := ResolveDependencyConditions(node, srcApp, dep); where != "" {
+						orderby := " ORDER BY random() "
+						if child, err := srcApp.GetTag(dep.Tag); err == nil {
+							sql := "SELECT %s FROM %s WHERE %s %s "
+							if len(child.Restrictions) > 0 {
+								restrictions := ""
+								for _, restriction := range child.Restrictions {
+									if restrictions != "" {
+										restrictions += " OR "
+									}
+									if restrictionAttr, err := child.ResolveTagAttr(restriction["col"]); err == nil {
+										restrictions += fmt.Sprintf(" %s = '%s' ", restrictionAttr, restriction["val"])
+									}
+
+								}
+								where += fmt.Sprintf(" AND (%s) ", restrictions)
+							}
+							if len(child.InnerDependencies) > 0 {
+								cols := ""
+								joinMap := child.CreateInDepMap()
+								seenMap := make(map[string]bool)
+								joinStr := ""
+								for fromTable, toTablesMap := range joinMap {
+									if _, ok := seenMap[fromTable]; !ok {
+										joinStr += fromTable
+										_, colStr := db.GetColumnsForTable(srcApp.AppName, fromTable)
+										cols += colStr + ","
+									}
+									for toTable, conditions := range toTablesMap {
+										if conditions != nil {
+											conditions = append(conditions, joinMap[toTable][fromTable]...)
+											if joinMap[toTable][fromTable] != nil {
+												joinMap[toTable][fromTable] = nil
+											}
+											// joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
+											joinStr += fmt.Sprintf(" JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
+											_, colStr := db.GetColumnsForTable(srcApp.AppName, toTable)
+											cols += colStr + ","
+											seenMap[toTable] = true
+										}
+									}
+									seenMap[fromTable] = true
+								}
+								sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where, orderby)
+							} else {
+								table := child.Members["member1"]
+								_, cols := db.GetColumnsForTable(srcApp.AppName, table)
+								sql = fmt.Sprintf(sql, cols, table, where, orderby)
+							}
+							if nodeData := db.DataCall(srcApp.AppName, sql); len(nodeData) > 0 {
+								newNode := new(DependencyNode)
+								newNode.Tag = child
+								newNode.SQL = sql
+								newNode.Data = nodeData
+								fmt.Println(newNode.sql)
+								// return newNode
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	log.Fatal("FINISHED USER")
 }
 
 func removeUserFromApplication(uid string, srcApp config.AppConfig) {
@@ -18,7 +98,7 @@ func removeUserFromApplication(uid string, srcApp config.AppConfig) {
 }
 
 func checkUserInApp(uid string, dstApp config.AppConfig) bool {
-	return true
+	return false
 }
 
 func UpdateMigrationState(uid string, srcApp, dstApp config.AppConfig) {
@@ -79,7 +159,6 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 		for _, depOn := range dep.DependsOn {
 			if depOnTag, err := appConfig.GetTag(depOn.Tag); err == nil {
 				if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
-					// fmt.Println(tag.Name, depOnTag.Name)
 					for _, condition := range depOn.Conditions {
 						conditionStr := ""
 						tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
@@ -92,10 +171,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 							log.Println(err, depOnTag.Name, condition.DependsOnAttr)
 							break
 						}
-						// fmt.Print(tagAttr, "==", depOnAttr, " | ")
-						// for _, datum := range node.Data {
 						if _, ok := node.Data[depOnAttr]; ok {
-							// fmt.Println(depOnAttr, datum[depOnAttr])
 							if conditionStr != "" || where != "" {
 								conditionStr += " AND "
 							}
@@ -103,7 +179,6 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 						} else {
 							fmt.Println("ResolveDependencyConditions:", depOnAttr, "doesn't exist in ", depOnTag.Name)
 						}
-						// }
 						if len(condition.Restrictions) > 0 {
 							restrictions := ""
 							for _, restriction := range condition.Restrictions {
@@ -254,32 +329,23 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 			tagMembers := node.Tag.GetTagMembers()
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
 				if len(tagMembers) == len(appMapping.FromTables) {
-					fmt.Println("Fully Mapped:", mappedTables)
 					isqls := GenerateInsertQuery(mappings, appMapping.ToTables, node)
 					fmt.Println(isqls)
 				} else {
-					// fmt.Println("-- Partially Mapped:", mappedTables)
-					// fmt.Println("From Tables:", appMapping.FromTables, "Tags:", srcApp.GetTagsByTables(appMapping.FromTables))
 					if waitingNode, err := wList.UpdateIfBeingLookedFor(*node); err == nil {
-						// fmt.Println("-- BEING LOOKED FOR!")
 						if waitingNode.IsComplete() {
-							// fmt.Println("-->> IS COMPLETE!")
 							tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
-							// fmt.Println("tempCombinedDataDependencyNode", tempCombinedDataDependencyNode)
 							isqls := GenerateInsertQuery(mappings, appMapping.ToTables, &tempCombinedDataDependencyNode)
 							fmt.Println(isqls)
 						} else {
 							// fmt.Println("-->> IS NOT COMPLETE!")
 						}
-						// fmt.Println("-- WAITING NODE", waitingNode)
-						// fmt.Println("-- WAITING LIST, Nodes in First Waiting Node", len(wList.Nodes[0].ContainsNodes), len(wList.Nodes[0].LookingFor))
 					} else {
 						adjTags := srcApp.GetTagsByTables(appMapping.FromTables)
 						if err := wList.AddNewToWaitingList(*node, adjTags, srcApp); err != nil {
 							fmt.Println("!! ERROR !!", err)
 						}
 					}
-					// fmt.Println("-- WAITING LIST Nodes", len(wList.Nodes))
 				}
 			}
 		}
@@ -292,7 +358,7 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 	// try:
 
 	if strings.EqualFold(node.Tag.Name, "root") && !checkUserInApp(uid, dstApp) {
-		addUserToApplication(uid, dstApp)
+		addUserToApplication(node, srcApp, dstApp)
 	}
 
 	for child := GetAdjNode(node, srcApp, uid, wList); child != nil; child = GetAdjNode(node, srcApp, uid, wList) {

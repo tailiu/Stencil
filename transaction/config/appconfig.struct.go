@@ -155,6 +155,19 @@ func (self AppConfig) GetTagsByTables(tables []string) []Tag {
 	return tags
 }
 
+func (self AppConfig) GetTagsByTablesExcept(tables []string, tagName string) []Tag {
+	var tags []Tag
+	// no member can appear in more than one tag
+	for _, tag := range self.Tags {
+		if overlap := helper.IntersectString(maps.GetValuesStringString(tag.Members), tables); len(overlap) > 0 {
+			if !strings.EqualFold(tag.Name, tagName) {
+				tags = append(tags, tag)
+			}
+		}
+	}
+	return tags
+}
+
 func (self Dependency) GetConditionsForTag(tagName string) []DCondition {
 
 	for _, dependsOn := range self.DependsOn {
@@ -163,4 +176,14 @@ func (self Dependency) GetConditionsForTag(tagName string) []DCondition {
 		}
 	}
 	return nil
+}
+
+func Contains(list []Tag, tagName string) bool {
+	for _, v := range list {
+		// fmt.Println(v, "==", str)
+		if strings.ToLower(v.Name) == strings.ToLower(tagName) {
+			return true
+		}
+	}
+	return false
 }
