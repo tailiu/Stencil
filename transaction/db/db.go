@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"strings"
 	"strconv"
+	"strings"
 	"transaction/display"
 
 	_ "github.com/lib/pq" // postgres driver
@@ -148,7 +148,47 @@ func DataCall(app, SQL string, args ...interface{}) []map[string]interface{} {
 	return result
 }
 
-func DataCall1(app, sql string, args ...interface{}) (map[string]string, error) {
+func DataCall1(app, SQL string, args ...interface{}) map[string]interface{} {
+
+	db := GetDBConn(app)
+
+	if rows, err := db.Query(SQL+" LIMIT 1", args...); err != nil {
+		log.Println(SQL, args)
+		log.Fatal("## DB ERROR: ", err)
+	} else {
+
+		if colNames, err := rows.Columns(); err != nil {
+			log.Fatal(err)
+		} else {
+
+			if rows.Next() {
+				var data = make(map[string]interface{})
+				cols := make([]interface{}, len(colNames))
+				colPtrs := make([]interface{}, len(colNames))
+				for i := 0; i < len(colNames); i++ {
+					colPtrs[i] = &cols[i]
+				}
+				// for rows.Next() {
+				err = rows.Scan(colPtrs...)
+				if err != nil {
+					log.Fatal(err)
+				}
+				for i, col := range cols {
+					data[colNames[i]] = col
+				}
+				// Do something with the map
+				// for key, val := range data {
+				// 	fmt.Println("Key:", key, "Value Type:", reflect.TypeOf(val), fmt.Sprint(val))
+				// }
+				return data
+			}
+			rows.Close()
+		}
+	}
+	return make(map[string]interface{})
+}
+
+func _DataCall1(app, sql string, args ...interface{}) (map[string]string, error) {
 
 	data := make(map[string]string)
 
@@ -190,14 +230,14 @@ func DataCall1(app, sql string, args ...interface{}) (map[string]string, error) 
 	return data, errors.New("no result found for sql: " + sql)
 }
 
-func GetAppId(app_name string) (string, error) {
-	sql := "SELECT row_id from apps WHERE app_name = $1"
+// func GetAppId(app_name string) (string, error) {
+// 	sql := "SELECT row_id from apps WHERE app_name = $1"
 
-	if result, err := DataCall1("stencil", sql, app_name); err == nil {
-		return result["row_id"], nil
-	}
-	return "-1", errors.New("App Not Found: " + app_name)
-}
+// 	if result, err := DataCall1("stencil", sql, app_name); err == nil {
+// 		return result["row_id"], nil
+// 	}
+// 	return "-1", errors.New("App Not Found: " + app_name)
+// }
 
 func GetPK(app, table string) []string {
 
@@ -279,16 +319,16 @@ func getAllColsOfOneRow(dbConn *sql.DB, query string) map[string]string {
 func GetOneRowBasedOnHint(dbConn *sql.DB, app string, hint display.HintStruct) (map[string]string, error) {
 	var query string
 	switch valueType := hint.ValueType; valueType {
-		case "int":
-			value, err := strconv.Atoi(hint.Value)
-			if err != nil {
-				log.Fatal(err)
-			}
-			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", hint.Table, hint.Key, value)
-		default:
-			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1;", hint.Table, hint.Key, hint.Value)
+	case "int":
+		value, err := strconv.Atoi(hint.Value)
+		if err != nil {
+			log.Fatal(err)
+		}
+		query = fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", hint.Table, hint.Key, value)
+	default:
+		query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1;", hint.Table, hint.Key, hint.Value)
 	}
-	
+
 	data := getAllColsOfOneRow(dbConn, query)
 	if len(data) == 0 {
 		return nil, errors.New("Check Remaining Data Exists Error: Original Data Not Exists")

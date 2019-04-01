@@ -5,7 +5,7 @@ import "transaction/config"
 type DependencyNode struct {
 	Tag  config.Tag
 	SQL  string
-	Data []map[string]interface{}
+	Data map[string]interface{}
 }
 
 type WaitingNode struct {
