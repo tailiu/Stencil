@@ -114,7 +114,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, a
 			if !dependency_handler.CheckNodeComplete(appConfig.Tags, oneMigratedData, dstApp, destAppDBConn) {
 				return false, nil
 			} else {
-
+				// dependency_handler.GetOneDataFromParentNode()
 			}
 		}
 	}
@@ -161,27 +161,49 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, a
 // }
 
 func main() {
-	dstApp := "mastodon"
-	// DisplayThread(dstApp, 808810123)
+	// dstApp := "mastodon"
+	// // DisplayThread(dstApp, 808810123)
 
-	dbConn := db.GetDBConn(dstApp)
-	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-		fmt.Println(err)
-	} else {
-		// fmt.Println(appConfig)
-		// fmt.Println(appConfig.Tags)
-		hint := display.HintStruct {
-			Table: "accounts",
-			Key: "id",
-			Value: "62632", 
-			ValueType: "int",
-		} 
-		dependency_handler.CheckNodeComplete(appConfig.Tags, hint, dstApp, dbConn)
-	}
+	// dbConn := db.GetDBConn(dstApp)
+	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	// 	fmt.Println(err)
+	// } else {
+	// 	// fmt.Println(appConfig)
+	// 	// fmt.Println(appConfig.Tags)
+	// 	hint := display.HintStruct {
+	// 		Table: "accounts",
+	// 		Key: "id",
+	// 		Value: "62632", 
+	// 		ValueType: "int",
+	// 	} 
+	// 	dependency_handler.CheckNodeComplete(appConfig.Tags, hint, dstApp, dbConn)
+	// }
+
+	// dstApp := "mastodon"
+	// dbConn := db.GetDBConn(dstApp)
+	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	// 	fmt.Println(err)
+	// } else {
+	// 	// fmt.Println(appConfig)
+	// 	// fmt.Println(appConfig.Tags)
+	// 	// hint := display.HintStruct {
+	// 	// 	Table: "statuses",
+	// 	// 	Key: "id",
+	// 	// 	Value: "23550", 
+	// 	// 	ValueType: "int",
+	// 	// } 
+	// 	hint := display.HintStruct {
+	// 		Table: "conversations",
+	// 		Key: "id",
+	// 		Value: "211",
+	// 		ValueType: "int",
+	// 	}
+	// 	dependency_handler.GetOneDataFromParentNode(appConfig, hint, dstApp, dbConn)
+	// }
 
 	// atomicity.CreateTxnLogTable()
 
-	// dbConn := db.GetDBConn(StencilDBName)
+	dbConn := db.GetDBConn(StencilDBName)
 	// data := getMigratedData(1134814368, dbConn)
 	// fmt.Println(data)
 
@@ -192,4 +214,6 @@ func main() {
 	// fmt.Println(displayHints[0].Table)
 
 	// fmt.Println(checkMigrationComplete(1134814368, dbConn))
+
+	display.CreateDisplayFlagsTable(dbConn)
 }

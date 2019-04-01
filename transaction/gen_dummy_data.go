@@ -5,10 +5,10 @@ import (
 	"transaction/atomicity"
 	"encoding/json"
 	"log"
-	"fmt"
+	// "fmt"
 	"strconv"
-	"transaction/display"
-	"transaction/db"
+	// "transaction/display"
+	// "transaction/db"
 )
 
 const StencilDBName = "stencil"
@@ -28,7 +28,7 @@ type HintStruct struct {
 func genSerializedDisplayHint() []byte {
 	var displayHints []HintStruct
 
-	dbConn := db.GetDBConn(StencilDBName)
+	// dbConn := db.GetDBConn(StencilDBName)
 
 	// Generate 1 - 10 rows for each hint
 	rowNum := auxiliary.RandomNonnegativeIntWithUpperBound(maxRowsPerHint) + 1
@@ -44,7 +44,7 @@ func genSerializedDisplayHint() []byte {
 			ValueType: 	"int",
 		}
 		
-		display.GenDisplayFlag(dbConn, id, table, false)
+		// display.GenDisplayFlag(dbConn, id, table, false)
 		
 		displayHints = append(displayHints, hint)
 	}
@@ -57,32 +57,48 @@ func genSerializedDisplayHint() []byte {
 	return encodedData
 }
 
+// func genDummyMigrationLogs() {
+// 	log_txn, _ := atomicity.BeginTransaction()
+
+// 	var undo_action string
+// 	var display_hint []byte
+// 	for i := 0; i < logEntryNum; i++ {
+// 		undo_action = auxiliary.RandStrSeq(20)
+// 		display_hint = genSerializedDisplayHint()
+// 		atomicity.LogChange(undo_action, display_hint, log_txn)
+// 	}
+
+// 	atomicity.LogOutcome(log_txn, "COMMIT")
+// }
+
 func genDummyMigrationLogs() {
-	log_txn := atomicity.BeginTransaction()
+	log_txn, _ := atomicity.BeginTransaction()
 
 	var undo_action string
-	var display_hint []byte
+	// var display_hint []byte
 	for i := 0; i < logEntryNum; i++ {
 		undo_action = auxiliary.RandStrSeq(20)
-		display_hint = genSerializedDisplayHint()
-		atomicity.LogChange(undo_action, display_hint, log_txn)
+		// display_hint = genSerializedDisplayHint()
+		atomicity.LogChange(undo_action, log_txn)
 	}
 
 	atomicity.LogOutcome(log_txn, "COMMIT")
 }
 
 func main() {
-	// genDummyMigrationLogs()
+	genDummyMigrationLogs()
 
 
 	// display.UpdateDisplayFlag(dbConn, 1, "account_id", true)
-	dbConn := db.GetDBConn(StencilDBName)
+	// dbConn := db.GetDBConn(StencilDBName)
 	// display.CreateDisplayFlagsTable(dbConn)
 
-	display_flag, err := display.CheckDisplayFlag(dbConn, 1233, "jjjj")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(display_flag)
-	}
+	// err := display.GenDisplayFlag(dbConn, "mastodon", "statuses", 1234, false)
+	// err := display.UpdateDisplayFlag(dbConn, "mastodon", "statuses", 1234, true)
+	// flag, err := display.GetDisplayFlag(dbConn, "mastodon", "statuses", 1234)
+	// fmt.Println(flag)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// } 
+	// atomicity.CreateTxnLogTable()
 }
