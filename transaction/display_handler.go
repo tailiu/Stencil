@@ -32,12 +32,12 @@ func procData(rawData []sql.NullString) []display.HintStruct {
 	return processedData
 }
 
-func getMigratedData(migrationID int, dbConn *sql.DB) []display.HintStruct {
+func getMigratedData(migrationID int, stencilDBConn *sql.DB) []display.HintStruct {
 	var displayHints []sql.NullString
 	var hintString sql.NullString
 
 	op := fmt.Sprintf("SELECT display_hint FROM txn_log WHERE action_id = %d", migrationID)
-	rows, err := dbConn.Query(op)
+	rows, err := stencilDBConn.Query(op)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,14 +75,20 @@ func checkMigrationComplete(migrationID int, dbConn *sql.DB) bool {
 	return complete
 }
 
-func DisplayThread(appConfig config.AppConfig, migrationID int) {
+func DisplayThread(dstApp string, migrationID int) {
 	var secondRound bool
-	dbConn := db.GetDBConn(StencilDBName)
+
+	stencilDBConn := db.GetDBConn(StencilDBName)
+	destAppDBConn := db.GetDBConn(dstApp)
+	appConfig, err := config.CreateAppConfig(dstApp)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// For now just assume this is an infinite loop
-	for migratedData := getMigratedData(migrationID, dbConn); checkMigrationComplete(migrationID, dbConn); migratedData = getMigratedData(migrationID, dbConn) {
+	for migratedData := getMigratedData(migrationID, stencilDBConn); checkMigrationComplete(migrationID, stencilDBConn); migratedData = getMigratedData(migrationID, stencilDBConn) {
 		for _, oneMigratedData := range migratedData {
-			checkDisplayOneMigratedData(dbConn, oneMigratedData, migratedData, secondRound)
+			checkDisplayOneMigratedData(stencilDBConn, destAppDBConn, appConfig, oneMigratedData, migratedData, dstApp, secondRound)
 		}
 		time.Sleep(checkInterval)
 	}
@@ -91,13 +97,13 @@ func DisplayThread(appConfig config.AppConfig, migrationID int) {
 }
 
 
-func checkDisplayOneMigratedData(dbConn *sql.DB, oneMigratedData display.HintStruct, migratedData []display.HintStruct, secondRound bool) (bool, error) {
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, migratedData []display.HintStruct, dstApp string, secondRound bool) (bool, error) {
 	// fmt.Println(oneMigratedData)
 	val, err1 := strconv.Atoi(oneMigratedData.Value)
 	if err1 != nil {
-		log.Fatal(err1)
+		log.Fatal("Check  Display One Data: Converting '%s' to Integer Errors", oneMigratedData.Value)
 	}
-	displayed, err2 := display.CheckDisplayFlag(dbConn, val, oneMigratedData.Table)
+	displayed, err2 := display.CheckDisplayFlag(stencilDBConn, val, oneMigratedData.Table)
 	// fmt.Println(displayed)
 	if err2 != nil {
 		fmt.Println(err2)
@@ -105,8 +111,11 @@ func checkDisplayOneMigratedData(dbConn *sql.DB, oneMigratedData display.HintStr
 		if displayed {
 			return true, nil
 		} else {
-			// dependency_handler.CheckNodeComplete()
-			
+			if !dependency_handler.CheckNodeComplete(appConfig.Tags, oneMigratedData, dstApp, destAppDBConn) {
+				return false, nil
+			} else {
+
+			}
 		}
 	}
 	return false, nil
@@ -153,7 +162,9 @@ func checkDisplayOneMigratedData(dbConn *sql.DB, oneMigratedData display.HintStr
 
 func main() {
 	dstApp := "mastodon"
-	
+	// DisplayThread(dstApp, 808810123)
+
+	dbConn := db.GetDBConn(dstApp)
 	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
 		fmt.Println(err)
 	} else {
@@ -162,11 +173,10 @@ func main() {
 		hint := display.HintStruct {
 			Table: "accounts",
 			Key: "id",
-			Value: "123232", 
+			Value: "62632", 
 			ValueType: "int",
 		} 
-		dependency_handler.CheckNodeComplete(appConfig.Tags, hint)
-		// DisplayThread(appConfig, 808810123)
+		dependency_handler.CheckNodeComplete(appConfig.Tags, hint, dstApp, dbConn)
 	}
 
 	// atomicity.CreateTxnLogTable()
