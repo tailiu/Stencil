@@ -250,7 +250,8 @@ func main() {
 			log.Fatal(err)
 		} else {
 			if rootNode := migrate.GetRoot(srcAppConfig, uid); rootNode != nil {
-				migrate.MigrateProcess(uid, srcAppConfig, dstAppConfig, rootNode)
+				var wList = new(migrate.WaitingList)
+				migrate.MigrateProcess(uid, srcAppConfig, dstAppConfig, rootNode, wList)
 			} else {
 				fmt.Println("Root Node can't be fetched!")
 			}

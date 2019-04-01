@@ -63,7 +63,7 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 			sql = fmt.Sprintf(sql, cols, table, where)
 		}
 		rootNode := new(DependencyNode)
-		rootNode.Tag = "root"
+		rootNode.Tag = root
 		rootNode.SQL = sql
 		// fmt.Println(sql)
 		rootNode.Data = db.DataCall(appConfig.AppName, sql, uid)
@@ -78,7 +78,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 	if tag, err := appConfig.GetTag(dep.Tag); err == nil {
 		for _, depOn := range dep.DependsOn {
 			if depOnTag, err := appConfig.GetTag(depOn.Tag); err == nil {
-				if strings.EqualFold(depOnTag.Name, node.Tag) {
+				if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
 					// fmt.Println(tag.Name, depOnTag.Name)
 					for _, condition := range depOn.Conditions {
 						conditionStr := ""
@@ -131,7 +131,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 
 func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *DependencyNode {
 
-	for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag)) {
+	for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag.Name)) {
 		if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
 			limit := " LIMIT 1 "
 			orderby := " ORDER BY random() "
@@ -184,7 +184,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *D
 				}
 				if nodeData := db.DataCall(appConfig.AppName, sql); len(nodeData) > 0 {
 					newNode := new(DependencyNode)
-					newNode.Tag = dep.Tag
+					newNode.Tag = child
 					newNode.SQL = sql
 					newNode.Data = nodeData
 					// fmt.Println(sql)
@@ -196,65 +196,77 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string) *D
 	return nil
 }
 
-func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
+func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *WaitingList) {
 	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
 		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	} else {
-		if nodeTag, err := srcApp.GetTag(node.Tag); err == nil {
-			for _, appMapping := range mappings.Mappings {
-				if tagMembers, err := srcApp.GetTagMembers(nodeTag.Name); err == nil {
-					if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
-						if len(tagMembers) == len(appMapping.FromTables) {
-							fmt.Println("Fully Mapped:", mappedTables)
-							for _, toTable := range appMapping.ToTables {
-								if len(toTable.Conditions) > 0 {
-									breakCondition := false
-									// fmt.Println("toTable.Conditions", toTable.Conditions)
-									for conditionKey, conditionVal := range toTable.Conditions {
-										if nodeVal := node.GetValueForKey(conditionKey); nodeVal != nil {
-											if !strings.EqualFold(*nodeVal, conditionVal) {
-												breakCondition = true
-												fmt.Println(*nodeVal, "!=", conditionVal)
-											} else {
-												// fmt.Println(*nodeVal, "==", conditionVal)
-											}
-										} else {
-											breakCondition = true
-											fmt.Println("Condition Key", conditionKey, "doesn't exist!")
-										}
+		for _, appMapping := range mappings.Mappings {
+			tagMembers := node.Tag.GetTagMembers()
+			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
+				if len(tagMembers) == len(appMapping.FromTables) {
+					fmt.Println("Fully Mapped:", mappedTables)
+					for _, toTable := range appMapping.ToTables {
+						if len(toTable.Conditions) > 0 {
+							breakCondition := false
+							// fmt.Println("toTable.Conditions", toTable.Conditions)
+							for conditionKey, conditionVal := range toTable.Conditions {
+								if nodeVal, err := node.GetValueForKey(conditionKey); err == nil {
+									if !strings.EqualFold(nodeVal, conditionVal) {
+										breakCondition = true
+										fmt.Println(nodeVal, "!=", conditionVal)
+									} else {
+										// fmt.Println(*nodeVal, "==", conditionVal)
 									}
-									if breakCondition {
-										continue // Move on to the next mapping.
-									}
-								}
-								cols, vals := "", ""
-								for toAttr, fromAttr := range toTable.Mapping {
-									if val := node.GetValueForKey(fromAttr); val != nil {
-										vals += fmt.Sprintf("'%s',", *val)
-										cols += fmt.Sprintf("%s,", toAttr)
-									} else if strings.Contains(fromAttr, "$") {
-										if inputVal, err := mappings.GetInput(fromAttr); err == nil {
-											vals += fmt.Sprintf("'%s',", inputVal)
-											cols += fmt.Sprintf("%s,", toAttr)
-										}
-									} else if strings.Contains(fromAttr, "#") {
-										// Resolve Mapping Method
-									}
-								}
-								if cols != "" && vals != "" {
-									cols := strings.Trim(cols, ",")
-									vals := strings.Trim(vals, ",")
-									isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", toTable.Table, cols, vals)
-									fmt.Println("** Insert Query:", isql)
 								} else {
-									fmt.Println("## Insert Query Error:", cols, vals)
+									breakCondition = true
+									fmt.Println("Condition Key", conditionKey, "doesn't exist!")
 								}
-
 							}
-						} else {
-							fmt.Println("From Tables:", appMapping.FromTables, "Tags:", srcApp.GetTagsByTables(appMapping.FromTables))
-							fmt.Println("Partially Mapped:", mappedTables)
+							if breakCondition {
+								continue // Move on to the next mapping.
+							}
 						}
+						cols, vals := "", ""
+						for toAttr, fromAttr := range toTable.Mapping {
+							if val, err := node.GetValueForKey(fromAttr); err == nil {
+								vals += fmt.Sprintf("'%s',", val)
+								cols += fmt.Sprintf("%s,", toAttr)
+							} else if strings.Contains(fromAttr, "$") {
+								if inputVal, err := mappings.GetInput(fromAttr); err == nil {
+									vals += fmt.Sprintf("'%s',", inputVal)
+									cols += fmt.Sprintf("%s,", toAttr)
+								}
+							} else if strings.Contains(fromAttr, "#") {
+								// Resolve Mapping Method
+							}
+						}
+						if cols != "" && vals != "" {
+							cols := strings.Trim(cols, ",")
+							vals := strings.Trim(vals, ",")
+							isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", toTable.Table, cols, vals)
+							fmt.Println("** Insert Query:", isql)
+						} else {
+							fmt.Println("## Insert Query Error:", cols, vals)
+						}
+
+					}
+				} else {
+					fmt.Println("-- Partially Mapped:", mappedTables)
+					fmt.Println("From Tables:", appMapping.FromTables, "Tags:", srcApp.GetTagsByTables(appMapping.FromTables))
+					if isAlreadyWaiting, isBeingLookedFor, _ := wList.Search(*node); isAlreadyWaiting {
+						fmt.Println("-- ALREADY WAITING!")
+					} else if isBeingLookedFor {
+						fmt.Println("-- BEING LOOKED FOR!")
+					} else {
+						fmt.Println("-- NEW WAITING NODE!")
+						adjTags := srcApp.GetTagsByTables(appMapping.FromTables)
+						err := wList.AddNewToWaitingList(*node, adjTags, srcApp)
+						if err != nil {
+							fmt.Println("!! ERROR !!", err)
+						}
+						fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+						log.Println("WaitingList", *wList)
+						log.Println(wList.Search(*node))
 					}
 				}
 			}
@@ -263,11 +275,11 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig) {
 	}
 }
 
-func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode) {
+func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode, wList *WaitingList) {
 
 	// try:
 
-	if node.Tag == "root" && !checkUserInApp(uid, dstApp) {
+	if strings.EqualFold(node.Tag.Name, "root") && !checkUserInApp(uid, dstApp) {
 		addUserToApplication(uid, dstApp)
 	}
 
@@ -277,13 +289,13 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		log.Println("Child Node:", child.Tag)
 		fmt.Println("------------------------------------------------------------------------")
-		MigrateProcess(uid, srcApp, dstApp, child)
+		MigrateProcess(uid, srcApp, dstApp, child, wList)
 	}
 	// acquirePredicateLock(*node)
 	// for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
 	// 	MigrateProcess(uid, srcApp, dstApp, child)
 	// }
-	MigrateNode(node, srcApp, dstApp) // Log before migrating
+	MigrateNode(node, srcApp, dstApp, wList) // Log before migrating
 	// releasePredicateLock(*node)
 
 	// catch NodeNotFound:
