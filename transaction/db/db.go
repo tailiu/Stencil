@@ -11,11 +11,7 @@ import (
 	"log"
 	"reflect"
 	"strconv"
-<<<<<<< HEAD
-=======
 	"strings"
-	"transaction/display"
->>>>>>> 3274999e2bf9a60a1260d310f51dd914ea355bdb
 
 	_ "github.com/lib/pq" // postgres driver
 )
@@ -326,7 +322,7 @@ func getAllColsOfRows(dbConn *sql.DB, query string) []map[string]string {
 func GetPrimaryKeyOfTable(dbConn *sql.DB, table string) (string, error) {
 	query := fmt.Sprintf("SHOW CONSTRAINTS FROM %s;", table)
 	constraints := getAllColsOfRows(dbConn, query)
-	
+
 	for _, constraint := range constraints {
 		if constraint["constraint_type"] == "PRIMARY KEY" {
 			details := constraint["details"]
@@ -335,7 +331,7 @@ func GetPrimaryKeyOfTable(dbConn *sql.DB, table string) (string, error) {
 			s3 := strings.Split(s2, " ")[0]
 			return s3, nil
 		}
-	}  
+	}
 
 	return "", fmt.Errorf("Get Primary Key Error: No Primary Key Found For Table %s", table)
 }
@@ -343,16 +339,16 @@ func GetPrimaryKeyOfTable(dbConn *sql.DB, table string) (string, error) {
 func GetOneRowBasedOnHint(dbConn *sql.DB, app, depDataValue, depDataValueType, depDataKey, depDataTable string) (map[string]string, error) {
 	var query string
 	switch valueType := depDataValueType; valueType {
-		case "int":
-			value, err := strconv.Atoi(depDataValue)
-			if err != nil {
-				log.Fatal(err)
-			}
-			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", depDataTable, depDataKey, value)
-		default:
-			query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1;", depDataTable, depDataKey, depDataValue)
+	case "int":
+		value, err := strconv.Atoi(depDataValue)
+		if err != nil {
+			log.Fatal(err)
+		}
+		query = fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", depDataTable, depDataKey, value)
+	default:
+		query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1;", depDataTable, depDataKey, depDataValue)
 	}
-	
+
 	data := getAllColsOfRows(dbConn, query)
 	if len(data) == 0 {
 		return nil, errors.New("Check Remaining Data Exists Error: Original Data Not Exists")
@@ -374,7 +370,7 @@ func GetOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string)
 
 // NOTE: This should be changed to get one row RANDOMLY!!
 func GetOneRowInParentNodeRandomly(dbConn *sql.DB, depDataValue, depDataValueType, depDataKey, depDataTable string, conditions []string) (map[string]string, string, error) {
-	query := fmt.Sprintf("SELECT %s.* FROM ", "t" + strconv.Itoa(len(conditions)))
+	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
 	from := ""
 	table := ""
 	for i, condition := range conditions {
@@ -387,13 +383,13 @@ func GetOneRowInParentNodeRandomly(dbConn *sql.DB, depDataValue, depDataValueTyp
 		seq1 := "t" + strconv.Itoa(i)
 		seq2 := "t" + strconv.Itoa(i+1)
 		if i == 0 {
-			from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ", 
-						t1, seq1, t2, seq2, seq1, a1, seq2, a2) 
+			from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
+				t1, seq1, t2, seq2, seq1, a1, seq2, a2)
 		} else {
 			from += fmt.Sprintf("JOIN %s %s on %s.%s = %s.%s ",
-						t2, seq2, seq1, a1, seq2, a2)
+				t2, seq2, seq1, a1, seq2, a2)
 		}
-		if i == len(conditions) - 1 {
+		if i == len(conditions)-1 {
 			where := ""
 			if depDataValueType == "int" {
 				val, err := strconv.Atoi(depDataValue)
