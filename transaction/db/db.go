@@ -278,7 +278,7 @@ func GetPK(app, table string) []string {
 	return result
 }
 
-func getAllColsOfRows(dbConn *sql.DB, query string) []map[string]string {
+func GetAllColsOfRows(dbConn *sql.DB, query string) []map[string]string {
 	rows, err := dbConn.Query(query)
 	defer rows.Close()
 	if err != nil {
@@ -321,7 +321,7 @@ func getAllColsOfRows(dbConn *sql.DB, query string) []map[string]string {
 // NOTE: We assume that primary key is only one string!!!
 func GetPrimaryKeyOfTable(dbConn *sql.DB, table string) (string, error) {
 	query := fmt.Sprintf("SHOW CONSTRAINTS FROM %s;", table)
-	constraints := getAllColsOfRows(dbConn, query)
+	constraints := GetAllColsOfRows(dbConn, query)
 
 	for _, constraint := range constraints {
 		if constraint["constraint_type"] == "PRIMARY KEY" {
@@ -349,7 +349,7 @@ func GetOneRowBasedOnHint(dbConn *sql.DB, app, depDataValue, depDataValueType, d
 		query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1;", depDataTable, depDataKey, depDataValue)
 	}
 
-	data := getAllColsOfRows(dbConn, query)
+	data := GetAllColsOfRows(dbConn, query)
 	if len(data) == 0 {
 		return nil, errors.New("Check Remaining Data Exists Error: Original Data Not Exists")
 	} else {
@@ -360,7 +360,7 @@ func GetOneRowBasedOnHint(dbConn *sql.DB, app, depDataValue, depDataValueType, d
 func GetOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string) (map[string]string, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
 	// fmt.Println(query)
-	data := getAllColsOfRows(dbConn, query)
+	data := GetAllColsOfRows(dbConn, query)
 	if len(data) == 0 {
 		return nil, errors.New("Check Remaining Data Exists Error: Data Not Exists")
 	} else {
@@ -368,7 +368,6 @@ func GetOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string)
 	}
 }
 
-// NOTE: This should be changed to get one row RANDOMLY!!
 func GetOneRowInParentNodeRandomly(dbConn *sql.DB, depDataValue, depDataValueType, depDataKey, depDataTable string, conditions []string) (map[string]string, string, error) {
 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
 	from := ""
@@ -396,9 +395,9 @@ func GetOneRowInParentNodeRandomly(dbConn *sql.DB, depDataValue, depDataValueTyp
 				if err != nil {
 					log.Fatal(err)
 				}
-				where = fmt.Sprintf("WHERE %s.%s = %d LIMIT 1;", "t0", depDataKey, val)
+				where = fmt.Sprintf("WHERE %s.%s = %d ORDER BY RANDOM() LIMIT 1;", "t0", depDataKey, val)
 			} else {
-				where = fmt.Sprintf("WHERE %s.%s = '%s' LIMIT 1;", "t0", depDataKey, depDataValue)
+				where = fmt.Sprintf("WHERE %s.%s = '%s' ORDER BY RANDOM() LIMIT 1;", "t0", depDataKey, depDataValue)
 			}
 			table = t2
 			query += from + where
@@ -406,7 +405,7 @@ func GetOneRowInParentNodeRandomly(dbConn *sql.DB, depDataValue, depDataValueTyp
 	}
 	fmt.Println(query)
 
-	data := getAllColsOfRows(dbConn, query)
+	data := GetAllColsOfRows(dbConn, query)
 	if len(data) == 0 {
 		return nil, "", errors.New("Error In Get Data: Fail To Get One Data This Data Depends On")
 	} else {

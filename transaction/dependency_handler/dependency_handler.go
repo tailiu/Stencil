@@ -159,7 +159,7 @@ func GetTagName(innerDependencies []config.Tag, hint display.HintStruct) (string
 func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruct, app string, dbConn *sql.DB) (display.HintStruct, error){
 	hintData := display.HintStruct{}
 	data1 := DataInDependencyNode{}
-	
+
 	tag, err := GetTagName(appConfig.Tags, hint)
 	if err != nil {
 		log.Fatal(err)
@@ -174,7 +174,7 @@ func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruc
 	// fmt.Println(dependsOn)
 	for i := 0; i < getOneDataFromParentNodeAttemptTimes; i ++ {
 		oneDependensOn := dependsOn[auxiliary.RandomNonnegativeIntWithUpperBound(len(dependsOn))]
-		fmt.Println(oneDependensOn)
+		// fmt.Println(oneDependensOn)
 
 		var conditions []string
 		var from, to string
@@ -197,7 +197,7 @@ func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruc
 		}
 
 		fmt.Println(conditions)
-		fmt.Println(hint)
+		// fmt.Println(hint)
 
 		data1.Data, data1.Table, err1 = db.GetOneRowInParentNodeRandomly(dbConn, hint.Value, hint.ValueType, hint.Key, hint.Table, conditions)
 		if err1 != nil {
