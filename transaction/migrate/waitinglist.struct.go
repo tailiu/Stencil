@@ -41,7 +41,7 @@ func (self WaitingList) UpdateIfBeingLookedFor(node DependencyNode) (WaitingNode
 func (self WaitingList) IsAlreadyWaiting(node DependencyNode) bool { // node exists, node is being looked for
 
 	for _, waitingNode := range self.Nodes {
-		for _, containedNode := range waitingNode.ContainsNodes {
+		for _, containedNode := range waitingNode.ContainedNodes {
 			if strings.EqualFold(containedNode.Tag.Name, node.Tag.Name) {
 				if idAttr1, err := containedNode.Tag.ResolveTagAttr("id"); err == nil {
 					if idAttr2, err := node.Tag.ResolveTagAttr("id"); err == nil {
@@ -63,7 +63,7 @@ func (self WaitingList) IsAlreadyWaiting(node DependencyNode) bool { // node exi
 func (waitingList *WaitingList) AddNewToWaitingList(node DependencyNode, adjTags []config.Tag, srcApp config.AppConfig) error {
 
 	waitingNode := new(WaitingNode)
-	waitingNode.ContainsNodes = append(waitingNode.ContainsNodes, node)
+	waitingNode.ContainedNodes = append(waitingNode.ContainedNodes, node)
 	waitingNode.LookingFor = make(map[string]map[string]interface{})
 
 	for _, adjTag := range adjTags {

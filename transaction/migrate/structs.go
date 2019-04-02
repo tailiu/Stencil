@@ -9,11 +9,15 @@ type DependencyNode struct {
 }
 
 type WaitingNode struct {
-	ContainsNodes []DependencyNode
+	ContainedNodes []DependencyNode
 	// LookingFor    []config.Tag
 	LookingFor map[string]map[string]interface{}
 }
 
 type WaitingList struct {
 	Nodes []WaitingNode
+}
+
+type InvalidList struct {
+	Nodes []DependencyNode
 }

@@ -146,7 +146,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 	return where
 }
 
-func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wList *WaitingList) *DependencyNode {
+func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wList *WaitingList, invalidList *InvalidList) *DependencyNode {
 
 	for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag.Name)) {
 		if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
@@ -203,7 +203,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 					newNode.Tag = child
 					newNode.SQL = sql
 					newNode.Data = nodeData
-					if !wList.IsAlreadyWaiting(*newNode) {
+					if !wList.IsAlreadyWaiting(*newNode) && !invalidList.Exists(*newNode) {
 						return newNode
 					}
 				}
@@ -263,15 +263,18 @@ func GenerateInsertQuery(mappings *config.MappedApp, toTables []config.ToTable, 
 	return isqls
 }
 
-func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *WaitingList) {
+func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *WaitingList, invalidList *InvalidList) {
 	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
 		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	} else {
+		mappingFound := false
 		for _, appMapping := range mappings.Mappings {
 			tagMembers := node.Tag.GetTagMembers()
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
+				mappingFound = true
 				if len(tagMembers) == len(appMapping.FromTables) {
 					isqls := GenerateInsertQuery(mappings, appMapping.ToTables, node)
+					invalidList.Add(*node)
 					fmt.Println(isqls)
 				} else {
 					if waitingNode, err := wList.UpdateIfBeingLookedFor(*node); err == nil {
@@ -279,6 +282,7 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 							tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
 							isqls := GenerateInsertQuery(mappings, appMapping.ToTables, &tempCombinedDataDependencyNode)
 							fmt.Println(isqls)
+							invalidList.Add(*node)
 						} else {
 							// fmt.Println("-->> IS NOT COMPLETE!")
 						}
@@ -291,11 +295,15 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 				}
 			}
 		}
+		if !mappingFound {
+			fmt.Println("NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND ")
+			invalidList.Add(*node)
+		}
 		// log.Fatal(fmt.Sprintf("Mappings found from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	}
 }
 
-func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode, wList *WaitingList) {
+func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode, wList *WaitingList, invalidList *InvalidList) {
 
 	// try:
 
@@ -303,19 +311,19 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 		addUserToApplication(node, srcApp, dstApp)
 	}
 
-	for child := GetAdjNode(node, srcApp, uid, wList); child != nil; child = GetAdjNode(node, srcApp, uid, wList) {
-		fmt.Println("------------------------------------------------------------------------")
-		log.Println("Current Node:", node.Tag)
+	for child := GetAdjNode(node, srcApp, uid, wList, invalidList); child != nil; child = GetAdjNode(node, srcApp, uid, wList, invalidList) {
 		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-		log.Println("Child Node:", child.Tag)
-		fmt.Println("------------------------------------------------------------------------")
-		MigrateProcess(uid, srcApp, dstApp, child, wList)
+		nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
+		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
+		fmt.Println("Currrent Node:", node.Tag.Name, "ID:", node.Data[nodeIDAttr])
+		fmt.Println("Adjacent Node:", child.Tag.Name, "ID:", child.Data[childIDAttr])
+		MigrateProcess(uid, srcApp, dstApp, child, wList, invalidList)
 	}
 	// acquirePredicateLock(*node)
 	// for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
 	// 	MigrateProcess(uid, srcApp, dstApp, child)
 	// }
-	MigrateNode(node, srcApp, dstApp, wList) // Log before migrating
+	MigrateNode(node, srcApp, dstApp, wList, invalidList) // Log before migrating
 	// releasePredicateLock(*node)
 
 	// catch NodeNotFound:
