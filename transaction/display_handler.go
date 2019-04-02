@@ -11,7 +11,7 @@ import (
 	"database/sql"
 	"time"
 	"encoding/json"
-	"strconv"
+	// "strconv"
 	// "errors"
 )
 
@@ -75,51 +75,51 @@ func checkMigrationComplete(migrationID int, dbConn *sql.DB) bool {
 	return complete
 }
 
-func DisplayThread(dstApp string, migrationID int) {
-	var secondRound bool
+// func DisplayThread(dstApp string, migrationID int) {
+// 	var secondRound bool
 
-	stencilDBConn := db.GetDBConn(StencilDBName)
-	destAppDBConn := db.GetDBConn(dstApp)
-	appConfig, err := config.CreateAppConfig(dstApp)
-	if err != nil {
-		log.Fatal(err)
-	}
+// 	stencilDBConn := db.GetDBConn(StencilDBName)
+// 	destAppDBConn := db.GetDBConn(dstApp)
+// 	appConfig, err := config.CreateAppConfig(dstApp)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
 
-	// For now just assume this is an infinite loop
-	for migratedData := getMigratedData(migrationID, stencilDBConn); checkMigrationComplete(migrationID, stencilDBConn); migratedData = getMigratedData(migrationID, stencilDBConn) {
-		for _, oneMigratedData := range migratedData {
-			checkDisplayOneMigratedData(stencilDBConn, destAppDBConn, appConfig, oneMigratedData, migratedData, dstApp, secondRound)
-		}
-		time.Sleep(checkInterval)
-	}
+// 	// For now just assume this is an infinite loop
+// 	for migratedData := getMigratedData(migrationID, stencilDBConn); checkMigrationComplete(migrationID, stencilDBConn); migratedData = getMigratedData(migrationID, stencilDBConn) {
+// 		for _, oneMigratedData := range migratedData {
+// 			checkDisplayOneMigratedData(stencilDBConn, destAppDBConn, appConfig, oneMigratedData, migratedData, dstApp, secondRound)
+// 		}
+// 		time.Sleep(checkInterval)
+// 	}
 
-	secondRound = true
-}
+// 	secondRound = true
+// }
 
 
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, migratedData []display.HintStruct, dstApp string, secondRound bool) (bool, error) {
-	// fmt.Println(oneMigratedData)
-	val, err1 := strconv.Atoi(oneMigratedData.Value)
-	if err1 != nil {
-		log.Fatal("Check  Display One Data: Converting '%s' to Integer Errors", oneMigratedData.Value)
-	}
-	displayed, err2 := display.CheckDisplayFlag(stencilDBConn, val, oneMigratedData.Table)
-	// fmt.Println(displayed)
-	if err2 != nil {
-		fmt.Println(err2)
-	} else {
-		if displayed {
-			return true, nil
-		} else {
-			if !dependency_handler.CheckNodeComplete(appConfig.Tags, oneMigratedData, dstApp, destAppDBConn) {
-				return false, nil
-			} else {
-				// dependency_handler.GetOneDataFromParentNode()
-			}
-		}
-	}
-	return false, nil
-}
+// func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, migratedData []display.HintStruct, dstApp string, secondRound bool) (bool, error) {
+// 	// fmt.Println(oneMigratedData)
+// 	val, err1 := strconv.Atoi(oneMigratedData.Value)
+// 	if err1 != nil {
+// 		log.Fatal("Check  Display One Data: Converting '%s' to Integer Errors", oneMigratedData.Value)
+// 	}
+// 	displayed, err2 := display.GetDisplayFlag(stencilDBConn, val, oneMigratedData.Table)
+// 	// fmt.Println(displayed)
+// 	if err2 != nil {
+// 		fmt.Println(err2)
+// 	} else {
+// 		if displayed {
+// 			return true, nil
+// 		} else {
+// 			if !dependency_handler.CheckNodeComplete(appConfig.Tags, oneMigratedData, dstApp, destAppDBConn) {
+// 				return false, nil
+// 			} else {
+// 				// dependency_handler.GetOneDataFromParentNode()
+// 			}
+// 		}
+// 	}
+// 	return false, nil
+// }
 
 // func DisplayController(migrationID int) {
 // 	for migratedNode := GetMigratedData(migrationID); 
@@ -201,7 +201,7 @@ func main() {
 		dependency_handler.GetOneDataFromParentNode(appConfig, hint, dstApp, dbConn)
 	}
 
-	atomicity.CreateTxnLogTable()
+	// atomicity.CreateTxnLogTable()
 
 	// dbConn := db.GetDBConn(StencilDBName)
 	// data := getMigratedData(1134814368, dbConn)
