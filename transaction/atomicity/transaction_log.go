@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 	"transaction/db"
 )
@@ -14,6 +15,40 @@ const StencilDBName = "stencil"
 type Log_txn struct {
 	DBconn *sql.DB
 	Txn_id int
+}
+
+type UndoAction struct {
+	OrgTables []string
+	DstTables []string
+	Data      map[string]interface{}
+}
+
+func (self *UndoAction) AddOrgTable(newTable string) []string {
+	for _, orgTable := range self.OrgTables {
+		if strings.EqualFold(orgTable, newTable) {
+			return self.OrgTables
+		}
+	}
+	self.OrgTables = append(self.OrgTables, newTable)
+	return self.OrgTables
+}
+
+func (self *UndoAction) AddDstTable(newTable string) []string {
+	for _, dstTable := range self.DstTables {
+		if strings.EqualFold(dstTable, newTable) {
+			return self.DstTables
+		}
+	}
+	self.DstTables = append(self.DstTables, newTable)
+	return self.DstTables
+}
+
+func (self *UndoAction) AddData(key string, val interface{}) map[string]interface{} {
+	if len(self.Data) <= 0 {
+		self.Data = make(map[string]interface{})
+	}
+	self.Data[key] = val
+	return self.Data
 }
 
 func randomNonnegativeInt() int {
@@ -47,8 +82,8 @@ func BeginTransaction() (*Log_txn, error) {
 }
 
 func LogChange(undo_action string, log_txn *Log_txn) error {
-	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, undo_action) VALUES (%d, 'CHANGE', '%s');", 
-					log_txn.Txn_id, undo_action)
+	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, undo_action) VALUES (%d, 'CHANGE', '%s');",
+		log_txn.Txn_id, undo_action)
 	if _, err := log_txn.DBconn.Exec(op); err != nil {
 		return err
 	}

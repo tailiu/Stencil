@@ -1,5 +1,7 @@
 package config
 
+import "database/sql"
+
 type DataQuery struct {
 	SQL, Table string
 }
@@ -44,6 +46,7 @@ type AppConfig struct {
 	Tags         []Tag        `json:"tags"`
 	Dependencies []Dependency `json:"dependencies"`
 	Ownerships   []Ownership  `json:"ownership"`
+	DBConn       *sql.DB
 }
 
 type Ownership struct {

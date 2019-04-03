@@ -1,11 +1,14 @@
 package migrate
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
+	"transaction/atomicity"
 	"transaction/config"
 	"transaction/db"
+	"transaction/display"
 	"transaction/helper"
 )
 
@@ -16,17 +19,16 @@ func remove(s []config.Tag, i int) []config.Tag {
 	return s[:len(s)-1]
 }
 
-func addUserToApplication(node *DependencyNode, srcApp, dstApp config.AppConfig) bool {
+func addUserToApplication(node *DependencyNode, srcApp, dstApp config.AppConfig, log_txn *atomicity.Log_txn) bool {
 	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
 		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	} else {
 		tagMembers := node.Tag.GetTagMembers()
 		for _, appMapping := range mappings.Mappings {
-			GenerateInsertQuery(mappings, appMapping.ToTables, node)
+			// GenerateAndInsert(mappings, appMapping.ToTables, node)
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
 				if len(tagMembers) == len(appMapping.FromTables) {
-					insqls := GenerateInsertQuery(mappings, appMapping.ToTables, node)
-					fmt.Println(insqls)
+					GenerateAndInsert(mappings, dstApp, appMapping.ToTables, node, log_txn)
 					USEREXISTSINAPP = true
 					return true
 				}
@@ -62,7 +64,7 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 			for fromTable, toTablesMap := range joinMap {
 				if _, ok := seenMap[fromTable]; !ok {
 					joinStr += fromTable
-					_, colStr := db.GetColumnsForTable(appConfig.AppName, fromTable)
+					_, colStr := db.GetColumnsForTable(appConfig.DBConn, fromTable)
 					cols += colStr + ","
 				}
 				for toTable, conditions := range toTablesMap {
@@ -72,7 +74,7 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 							joinMap[toTable][fromTable] = nil
 						}
 						joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
-						_, colStr := db.GetColumnsForTable(appConfig.AppName, toTable)
+						_, colStr := db.GetColumnsForTable(appConfig.DBConn, toTable)
 						cols += colStr + ","
 						seenMap[toTable] = true
 					}
@@ -82,14 +84,14 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 			sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where)
 		} else {
 			table := root.Members["member1"]
-			_, cols := db.GetColumnsForTable(appConfig.AppName, table)
+			_, cols := db.GetColumnsForTable(appConfig.DBConn, table)
 			sql = fmt.Sprintf(sql, cols, table, where)
 		}
 		rootNode := new(DependencyNode)
 		rootNode.Tag = root
 		rootNode.SQL = sql
 		// fmt.Println(sql)
-		rootNode.Data = db.DataCall1(appConfig.AppName, sql, uid)
+		rootNode.Data = db.DataCall1(appConfig.DBConn, sql, uid)
 		return rootNode
 	}
 	return nil
@@ -174,7 +176,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 					for fromTable, toTablesMap := range joinMap {
 						if _, ok := seenMap[fromTable]; !ok {
 							joinStr += fromTable
-							_, colStr := db.GetColumnsForTable(appConfig.AppName, fromTable)
+							_, colStr := db.GetColumnsForTable(appConfig.DBConn, fromTable)
 							cols += colStr + ","
 						}
 						for toTable, conditions := range toTablesMap {
@@ -185,7 +187,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 								}
 								// joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
 								joinStr += fmt.Sprintf(" JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
-								_, colStr := db.GetColumnsForTable(appConfig.AppName, toTable)
+								_, colStr := db.GetColumnsForTable(appConfig.DBConn, toTable)
 								cols += colStr + ","
 								seenMap[toTable] = true
 							}
@@ -195,10 +197,10 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 					sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where, orderby)
 				} else {
 					table := child.Members["member1"]
-					_, cols := db.GetColumnsForTable(appConfig.AppName, table)
+					_, cols := db.GetColumnsForTable(appConfig.DBConn, table)
 					sql = fmt.Sprintf(sql, cols, table, where, orderby)
 				}
-				if nodeData := db.DataCall1(appConfig.AppName, sql); len(nodeData) > 0 {
+				if nodeData := db.DataCall1(appConfig.DBConn, sql); len(nodeData) > 0 {
 					newNode := new(DependencyNode)
 					newNode.Tag = child
 					newNode.SQL = sql
@@ -213,34 +215,36 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 	return nil
 }
 
-func GenerateInsertQuery(mappings *config.MappedApp, toTables []config.ToTable, node *DependencyNode) []string {
-	var isqls []string
+func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTables []config.ToTable, node *DependencyNode, log_txn *atomicity.Log_txn) {
+	// var isqls []string
 	for _, toTable := range toTables {
 		if len(toTable.Conditions) > 0 {
 			breakCondition := false
-			// fmt.Println("toTable.Conditions", toTable.Conditions)
 			for conditionKey, conditionVal := range toTable.Conditions {
 				if nodeVal, err := node.GetValueForKey(conditionKey); err == nil {
 					if !strings.EqualFold(nodeVal, conditionVal) {
 						breakCondition = true
-						fmt.Println(nodeVal, "!=", conditionVal)
+						log.Println(nodeVal, "!=", conditionVal)
 					} else {
 						// fmt.Println(*nodeVal, "==", conditionVal)
 					}
 				} else {
 					breakCondition = true
-					fmt.Println("Condition Key", conditionKey, "doesn't exist!")
+					log.Println("Condition Key", conditionKey, "doesn't exist!")
 				}
 			}
 			if breakCondition {
 				continue // Move on to the next mapping.
 			}
 		}
+		undoAction := new(atomicity.UndoAction)
 		cols, vals := "", ""
 		for toAttr, fromAttr := range toTable.Mapping {
 			if val, err := node.GetValueForKey(fromAttr); err == nil {
 				vals += fmt.Sprintf("'%s',", val)
 				cols += fmt.Sprintf("%s,", toAttr)
+				undoAction.AddData(fromAttr, val)
+				undoAction.AddOrgTable(strings.Split(fromAttr, ".")[0])
 			} else if strings.Contains(fromAttr, "$") {
 				if inputVal, err := mappings.GetInput(fromAttr); err == nil {
 					vals += fmt.Sprintf("'%s',", inputVal)
@@ -253,17 +257,22 @@ func GenerateInsertQuery(mappings *config.MappedApp, toTables []config.ToTable, 
 		if cols != "" && vals != "" {
 			cols := strings.Trim(cols, ",")
 			vals := strings.Trim(vals, ",")
-			isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", toTable.Table, cols, vals)
-			isqls = append(isqls, isql)
-			// fmt.Println("** Insert Query:", isql)
+			isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ", toTable.Table, cols, vals)
+			undoAction.AddDstTable(toTable.Table)
+			undoActionSerialized, _ := json.Marshal(undoAction)
+			if id, err := db.Insert(dstApp.DBConn, isql); err == nil {
+				atomicity.LogChange(string(undoActionSerialized), log_txn)
+				display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, id, false, log_txn.Txn_id)
+			} else {
+
+			}
 		} else {
 			fmt.Println("## Insert Query Error:", cols, vals)
 		}
 	}
-	return isqls
 }
 
-func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *WaitingList, invalidList *InvalidList) {
+func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *WaitingList, invalidList *InvalidList, log_txn *atomicity.Log_txn) {
 	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
 		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	} else {
@@ -273,15 +282,13 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
 				mappingFound = true
 				if len(tagMembers) == len(appMapping.FromTables) {
-					isqls := GenerateInsertQuery(mappings, appMapping.ToTables, node)
+					GenerateAndInsert(mappings, dstApp, appMapping.ToTables, node, log_txn)
 					invalidList.Add(*node)
-					fmt.Println(isqls)
 				} else {
 					if waitingNode, err := wList.UpdateIfBeingLookedFor(*node); err == nil {
 						if waitingNode.IsComplete() {
 							tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
-							isqls := GenerateInsertQuery(mappings, appMapping.ToTables, &tempCombinedDataDependencyNode)
-							fmt.Println(isqls)
+							GenerateAndInsert(mappings, dstApp, appMapping.ToTables, &tempCombinedDataDependencyNode, log_txn)
 							invalidList.Add(*node)
 						} else {
 							// fmt.Println("-->> IS NOT COMPLETE!")
@@ -293,37 +300,37 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 						}
 					}
 				}
+				break
 			}
 		}
 		if !mappingFound {
-			fmt.Println("NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND NO MAPPING FOUND ")
 			invalidList.Add(*node)
 		}
 		// log.Fatal(fmt.Sprintf("Mappings found from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	}
 }
 
-func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode, wList *WaitingList, invalidList *InvalidList) {
+func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode, wList *WaitingList, invalidList *InvalidList, log_txn *atomicity.Log_txn) {
 
 	// try:
 
 	if strings.EqualFold(node.Tag.Name, "root") && !checkUserInApp(uid, dstApp) {
-		addUserToApplication(node, srcApp, dstApp)
+		addUserToApplication(node, srcApp, dstApp, log_txn)
 	}
 
 	for child := GetAdjNode(node, srcApp, uid, wList, invalidList); child != nil; child = GetAdjNode(node, srcApp, uid, wList, invalidList) {
 		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
-		fmt.Println("Currrent Node:", node.Tag.Name, "ID:", node.Data[nodeIDAttr])
-		fmt.Println("Adjacent Node:", child.Tag.Name, "ID:", child.Data[childIDAttr])
-		MigrateProcess(uid, srcApp, dstApp, child, wList, invalidList)
+		log.Println("Currrent Node:", node.Tag.Name, "ID:", node.Data[nodeIDAttr])
+		log.Println("Adjacent Node:", child.Tag.Name, "ID:", child.Data[childIDAttr])
+		MigrateProcess(uid, srcApp, dstApp, child, wList, invalidList, log_txn)
 	}
 	// acquirePredicateLock(*node)
 	// for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
 	// 	MigrateProcess(uid, srcApp, dstApp, child)
 	// }
-	MigrateNode(node, srcApp, dstApp, wList, invalidList) // Log before migrating
+	MigrateNode(node, srcApp, dstApp, wList, invalidList, log_txn) // Log before migrating
 	// releasePredicateLock(*node)
 
 	// catch NodeNotFound:

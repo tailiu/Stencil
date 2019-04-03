@@ -1,6 +1,7 @@
 package config
 
 import (
+	"diaspora/db"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,6 +30,7 @@ func CreateAppConfig(app string) (AppConfig, error) {
 	json.Unmarshal(byteValue, &appConfig)
 
 	appConfig.AppName = app
+	appConfig.DBConn = db.GetDBConn(app)
 
 	return appConfig, nil
 }
