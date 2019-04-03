@@ -13,20 +13,30 @@ func CreateDisplayFlagsTable(dbConn *sql.DB) {
 			tableName string NOT NULL,
 			id int NOT NULL,
 			display_flag bool default true, 
+			migration_id int,
 			INDEX app_index (app),
 			INDEX id_index (id),
 			INDEX table_index (tableName),
-			INDEX display_flag_index (display_flag))`
+			INDEX display_flag_index (display_flag),
+			INDEX migration_id_index (migration_id))`
 	if _, err := dbConn.Exec(op); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // app: application Name, id: primary key value, table: tableName
-func GenDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool) error {
-	op := fmt.Sprintf("INSERT INTO display_flags (app, tableName, id, display_flag) VALUES ('%s', '%s', %d, %t);",
+func GenDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool, migration_id ...int) error {
+	var op string
+	if len(migration_id) == 0 {
+		op = fmt.Sprintf("INSERT INTO display_flags (app, tableName, id, display_flag) VALUES ('%s', '%s', %d, %t);",
 						app, table, id, display_flag)
-
+	} else if len(migration_id) == 1 {
+		op = fmt.Sprintf("INSERT INTO display_flags (app, tableName, id, display_flag, migration_id) VALUES ('%s', '%s', %d, %t, %d);",
+						app, table, id, display_flag, migration_id[0])
+	} else {
+		return errors.New("Argument Num Error: Please Input Only One Migration ID")
+	}
+	
 	if _, err := dbConn.Exec(op); err != nil {
 		return err
 	}

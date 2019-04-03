@@ -158,7 +158,7 @@ func GetTagName(innerDependencies []config.Tag, hint display.HintStruct) (string
 
 func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruct, app string, dbConn *sql.DB) (display.HintStruct, error){
 	hintData := display.HintStruct{}
-	// data1 := DataInDependencyNode{}
+	data1 := DataInDependencyNode{}
 
 	tag, err := GetTagName(appConfig.Tags, hint)
 	if err != nil {
@@ -174,35 +174,45 @@ func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruc
 	// fmt.Println(dependsOn)
 	for i := 0; i < getOneDataFromParentNodeAttemptTimes; i ++ {
 		oneDependensOn := dependsOn[auxiliary.RandomNonnegativeIntWithUpperBound(len(dependsOn))]
-		fmt.Println(oneDependensOn)
+		// fmt.Println(oneDependensOn)
 
-		// var conditions []string
-		// if len(oneDependensOn.Conditions) == 1 {
-		// 	condition := oneDependensOn.Conditions[0]
-		// 	from := replaceKey(appConfig.Tags, tag, condition.TagAttr)
-		// 	to := replaceKey(appConfig.Tags, oneDependensOn.Tag, condition.DependsOnAttr)
-		// 	conditions = append(conditions, from + ":" + to)
-		// } else {
+		var conditions []string
+		var from, to string
+		if len(oneDependensOn.Conditions) == 1 {
+			condition := oneDependensOn.Conditions[0]
+			from = replaceKey(appConfig.Tags, tag, condition.TagAttr)
+			to = replaceKey(appConfig.Tags, oneDependensOn.Tag, condition.DependsOnAttr)
+			conditions = append(conditions, from + ":" + to)
+		} else {
+			for i, condition := range(oneDependensOn.Conditions) {
+				if i == 0 {
+					from = replaceKey(appConfig.Tags, tag, condition.TagAttr)
+					to = replaceKey(appConfig.Tags, strings.Split(condition.DependsOnAttr, ".")[0], strings.Split(condition.DependsOnAttr, ".")[1])
+				} else if i == len(oneDependensOn.Conditions) - 1 {
+					from = replaceKey(appConfig.Tags, strings.Split(condition.TagAttr, ".")[0], strings.Split(condition.TagAttr, ".")[1])
+					to = replaceKey(appConfig.Tags, oneDependensOn.Tag, condition.DependsOnAttr)
+				} 
+				conditions = append(conditions, from + ":" + to)
+			}
+		}
 
-		// }
-
-		// fmt.Println(conditions)
+		fmt.Println(conditions)
 		// fmt.Println(hint)
 
-		// data1.Data, data1.Table, err1 = db.GetOneRowInParentNodeRandomly(dbConn, hint.Value, hint.ValueType, hint.Key, hint.Table, conditions)
-		// if err1 != nil {
-		// 	fmt.Println(err1)
-		// } else {
-		// 	fmt.Println(data1)
-		// 	break
-		// }
+		data1.Data, data1.Table, err1 = db.GetOneRowInParentNodeRandomly(dbConn, hint.Value, hint.ValueType, hint.Key, hint.Table, conditions)
+		if err1 != nil {
+			fmt.Println(err1)
+		} else {
+			fmt.Println(data1)
+			break
+		}
 	}
 
-	// hintData, err2 := display.TransformRowToHint(dbConn, data1.Data, data1.Table)
-	// if err2 != nil {
-	// 	log.Fatal(err2)
-	// } 
-	// fmt.Println(hintData)
+	hintData, err2 := display.TransformRowToHint(dbConn, data1.Data, data1.Table)
+	if err2 != nil {
+		log.Fatal(err2)
+	} 
+	fmt.Println(hintData)
 	return hintData, nil
 }
 

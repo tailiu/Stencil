@@ -92,7 +92,7 @@
                         },
                         {
                             "tag_attr": "statuses.account",
-                            "depends_on_attr": "root.id"
+                            "depends_on_attr": "id"
                         }
                     ]
                 }

@@ -8,6 +8,14 @@ import (
 	"transaction/db"
 )
 
+// The Key should be the primay key of the Table
+type HintStruct struct {
+	Table string		`json:"Table"`
+	Key string			`json:"Key"`
+	Value string		`json:"Value"`
+	ValueType string	`json:"ValueType"`
+}
+
 // NOTE: We assume that primary key is only one integer value!!!
 func TransformRowToHint(dbConn *sql.DB, row map[string]string, table string) (HintStruct, error) {
 	hintData := HintStruct{}

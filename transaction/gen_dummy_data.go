@@ -7,8 +7,8 @@ import (
 	"log"
 	// "fmt"
 	"strconv"
-	// "transaction/display"
-	// "transaction/db"
+	"transaction/display"
+	"transaction/db"
 )
 
 const StencilDBName = "stencil"
@@ -85,15 +85,23 @@ func genDummyMigrationLogs() {
 	atomicity.LogOutcome(log_txn, "COMMIT")
 }
 
-func main() {
-	genDummyMigrationLogs()
+func genDummyDisplayFlags(migration_id int) {
+	dbConn := db.GetDBConn(StencilDBName)
 
+	for i := 0; i < logEntryNum; i++ {
+		display.GenDisplayFlag(dbConn, "mastodon", "statuses", auxiliary.RandomNonnegativeIntWithUpperBound(999999), false, migration_id)
+	}
+}
+
+func main() {
+	// genDummyMigrationLogs()
+	genDummyDisplayFlags(534782464)
 
 	// display.UpdateDisplayFlag(dbConn, 1, "account_id", true)
 	// dbConn := db.GetDBConn(StencilDBName)
 	// display.CreateDisplayFlagsTable(dbConn)
 
-	// err := display.GenDisplayFlag(dbConn, "mastodon", "statuses", 1234, false)
+	// err := display.GenDisplayFlag(dbConn, "mastodon", "statuses", 545445, false, 12323)
 	// err := display.UpdateDisplayFlag(dbConn, "mastodon", "statuses", 1234, true)
 	// flag, err := display.GetDisplayFlag(dbConn, "mastodon", "statuses", 1234)
 	// fmt.Println(flag)

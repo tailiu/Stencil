@@ -2,16 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
+	// "log"
 	// "transaction/atomicity"
 	"transaction/db"
 	"transaction/display"
-	"transaction/dependency_handler"
-	"transaction/config"
-	"database/sql"
+	// "transaction/dependency_handler"
+	// "transaction/config"
+	// "database/sql"
 	"time"
-	"encoding/json"
-	"strconv"
+	// "strconv"
 	// "errors"
 )
 
@@ -20,106 +19,52 @@ const checkInterval = 200 * time.Millisecond
 
 var displayedData = make(map[string]int)
 
-func procData(rawData []sql.NullString) []display.HintStruct {
-	var processedData []display.HintStruct
-	for _, oneData := range rawData {
-		var oneSetOfHints []display.HintStruct
-		json.Unmarshal([]byte(oneData.String), &oneSetOfHints)
-		for _, hint := range oneSetOfHints {
-			processedData = append(processedData, hint)
-		}
-	}
-	return processedData
-}
-
-func getMigratedData(migrationID int, stencilDBConn *sql.DB) []display.HintStruct {
-	var displayHints []sql.NullString
-	var hintString sql.NullString
-
-	op := fmt.Sprintf("SELECT display_hint FROM txn_log WHERE action_id = %d", migrationID)
-	rows, err := stencilDBConn.Query(op)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := rows.Scan(&hintString); err != nil {
-            log.Fatal(err)
-		}
-		// Only get log entries with display_hint not NULL, so BEGIN, COMMIT, etc. will be ignored 
-		if hintString.Valid {
-			displayHints = append(displayHints, hintString)
-		}
-	}
-
-	// display hints contain info to find data in destination application
-	// E.g.,[{"Table":"conversations","Key":"account_id","Value":"1517102025","ValueType":"int"},
-	// 		{"Table":"account_stats","Key":"account_id","Value":"1918176832","ValueType":"int"}]
-	return procData(displayHints)
-}
-
-func checkMigrationComplete(migrationID int, dbConn *sql.DB) bool {
-	var complete bool
-	op := fmt.Sprintf("SELECT id FROM txn_log WHERE action_id = %d and action_type='COMMIT' LIMIT 1", migrationID)
-	rows, err := dbConn.Query(op)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		complete = true
-	}
-
-	return complete
-}
-
-func DisplayThread(dstApp string, migrationID int) {
-	var secondRound bool
+func DisplayThread(app string, migrationID int) {
+	// var secondRound bool
 
 	stencilDBConn := db.GetDBConn(StencilDBName)
-	destAppDBConn := db.GetDBConn(dstApp)
-	appConfig, err := config.CreateAppConfig(dstApp)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// destAppDBConn := db.GetDBConn(app)
+	// appConfig, err := config.CreateAppConfig(app)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// For now just assume this is an infinite loop
-	for migratedData := getMigratedData(migrationID, stencilDBConn); checkMigrationComplete(migrationID, stencilDBConn); migratedData = getMigratedData(migrationID, stencilDBConn) {
+	for migratedData := display.GetMigratedData(stencilDBConn, app, migrationID); display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetMigratedData(stencilDBConn, app, migrationID) {
 		for _, oneMigratedData := range migratedData {
-			checkDisplayOneMigratedData(stencilDBConn, destAppDBConn, appConfig, oneMigratedData, migratedData, dstApp, secondRound)
+			fmt.Println(oneMigratedData)
+			// checkDisplayOneMigratedData(stencilDBConn, destAppDBConn, appConfig, oneMigratedData, migratedData, app, secondRound)
 		}
 		time.Sleep(checkInterval)
 	}
 
-	secondRound = true
+	// secondRound = true
 }
 
 
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, migratedData []display.HintStruct, dstApp string, secondRound bool) (bool, error) {
-	// fmt.Println(oneMigratedData)
-	val, err1 := strconv.Atoi(oneMigratedData.Value)
-	if err1 != nil {
-		log.Fatal("Check  Display One Data: Converting '%s' to Integer Errors", oneMigratedData.Value)
-	}
-	displayed, err2 := display.CheckDisplayFlag(stencilDBConn, val, oneMigratedData.Table)
-	// fmt.Println(displayed)
-	if err2 != nil {
-		fmt.Println(err2)
-	} else {
-		if displayed {
-			return true, nil
-		} else {
-			if !dependency_handler.CheckNodeComplete(appConfig.Tags, oneMigratedData, dstApp, destAppDBConn) {
-				return false, nil
-			} else {
-				// dependency_handler.GetOneDataFromParentNode()
-			}
-		}
-	}
-	return false, nil
-}
+// func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, migratedData []display.HintStruct, dstApp string, secondRound bool) (bool, error) {
+// 	// fmt.Println(oneMigratedData)
+// 	val, err1 := strconv.Atoi(oneMigratedData.Value)
+// 	if err1 != nil {
+// 		log.Fatal("Check  Display One Data: Converting '%s' to Integer Errors", oneMigratedData.Value)
+// 	}
+// 	displayed, err2 := display.GetDisplayFlag(stencilDBConn, val, oneMigratedData.Table)
+// 	// fmt.Println(displayed)
+// 	if err2 != nil {
+// 		fmt.Println(err2)
+// 	} else {
+// 		if displayed {
+// 			return true, nil
+// 		} else {
+// 			if !dependency_handler.CheckNodeComplete(appConfig.Tags, oneMigratedData, dstApp, destAppDBConn) {
+// 				return false, nil
+// 			} else {
+// 				// dependency_handler.GetOneDataFromParentNode()
+// 			}
+// 		}
+// 	}
+// 	return false, nil
+// }
 
 // func DisplayController(migrationID int) {
 // 	for migratedNode := GetMigratedData(migrationID); 
@@ -161,8 +106,8 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, a
 // }
 
 func main() {
-	// dstApp := "mastodon"
-	// // DisplayThread(dstApp, 808810123)
+	dstApp := "mastodon"
+	DisplayThread(dstApp, 534782464)
 
 	// dbConn := db.GetDBConn(dstApp)
 	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
@@ -184,27 +129,27 @@ func main() {
 	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
 	// 	fmt.Println(err)
 	// } else {
-	// 	// fmt.Println(appConfig)
-	// 	// fmt.Println(appConfig.Tags)
-	// 	// hint := display.HintStruct {
-	// 	// 	Table: "statuses",
-	// 	// 	Key: "id",
-	// 	// 	Value: "23550", 
-	// 	// 	ValueType: "int",
-	// 	// } 
+	// 	fmt.Println(appConfig)
+	// 	fmt.Println(appConfig.Tags)
 	// 	hint := display.HintStruct {
-	// 		Table: "conversations",
+	// 		Table: "statuses",
 	// 		Key: "id",
-	// 		Value: "211",
+	// 		Value: "23550", 
 	// 		ValueType: "int",
-	// 	}
+	// 	} 
+	// 	// hint := display.HintStruct {
+	// 	// 	Table: "conversations",
+	// 	// 	Key: "id",
+	// 	// 	Value: "211",
+	// 	// 	ValueType: "int",
+	// 	// }
 	// 	dependency_handler.GetOneDataFromParentNode(appConfig, hint, dstApp, dbConn)
 	// }
 
 	// atomicity.CreateTxnLogTable()
 
-	dbConn := db.GetDBConn(StencilDBName)
-	// data := getMigratedData(1134814368, dbConn)
+	// dbConn := db.GetDBConn(StencilDBName)
+	// data := getMigratedData("mastodon", 1134814368, dbConn)
 	// fmt.Println(data)
 
 	// var displayHints []display.HintStruct 
@@ -215,5 +160,5 @@ func main() {
 
 	// fmt.Println(checkMigrationComplete(1134814368, dbConn))
 
-	display.CreateDisplayFlagsTable(dbConn)
+	// display.CreateDisplayFlagsTable(dbConn)
 }
