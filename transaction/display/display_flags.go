@@ -10,13 +10,13 @@ import (
 func CreateDisplayFlagsTable(dbConn *sql.DB) {
 	op := `CREATE TABLE display_flags (
 			app string NOT NULL,
-			tableName string NOT NULL,
+			table_name string NOT NULL,
 			id int NOT NULL,
 			display_flag bool default true, 
 			migration_id int,
 			INDEX app_index (app),
 			INDEX id_index (id),
-			INDEX table_index (tableName),
+			INDEX table_index (table_name),
 			INDEX display_flag_index (display_flag),
 			INDEX migration_id_index (migration_id))`
 	if _, err := dbConn.Exec(op); err != nil {
@@ -24,7 +24,7 @@ func CreateDisplayFlagsTable(dbConn *sql.DB) {
 	}
 }
 
-// app: application Name, id: primary key value, table: tableName
+// app: application Name, id: primary key value, table: table_name
 func GenDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool, migration_id ...int) error {
 	var op string
 	if len(migration_id) == 0 {

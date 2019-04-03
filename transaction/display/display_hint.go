@@ -1,32 +1,42 @@
 package display
 
 import (
-	// "fmt"
-	// "errors"
-	// "log"
+	"log"
 	"database/sql"
 	"transaction/db"
+	"strconv"
 )
 
 // The Key should be the primay key of the Table
+// type HintStruct struct {
+// 	Table string		
+// 	id string			
+// 	Value string		
+// 	ValueType string	
+// }
+
+// The Key should be the primay key of the Table
 type HintStruct struct {
-	Table string		`json:"Table"`
-	Key string			`json:"Key"`
-	Value string		`json:"Value"`
-	ValueType string	`json:"ValueType"`
+	Table string		
+	KeyVal map[string]int
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
 func TransformRowToHint(dbConn *sql.DB, row map[string]string, table string) (HintStruct, error) {
-	hintData := HintStruct{}
+	hint := HintStruct{}
 	pk, err := db.GetPrimaryKeyOfTable(dbConn, table)
 	if err != nil {
-		return hintData, err
+		return hint, err
 	} else {
-		hintData.Table = table
-		hintData.Key = pk
-		hintData.Value = row[pk]
-		hintData.ValueType = "int"
+		intPK, err1 := strconv.Atoi(row[pk])
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+		keyVal := map[string]int {
+			pk:	intPK,
+		}
+		hint.Table = table
+		hint.KeyVal = keyVal
 	}
-	return hintData, nil
+	return hint, nil
 }
