@@ -38,6 +38,10 @@ func GetDBConn(app string) *sql.DB {
 	return dbConns[app]
 }
 
+func Insert(app, sql string) error {
+	return errors.New("Insert Failed")
+}
+
 func GetColumnsForTable(app, table string) ([]string, string) {
 	var resultList []string
 	resultStr := ""

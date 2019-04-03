@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"transaction/atomicity"
 	"transaction/config"
 	"transaction/migrate"
 )
@@ -252,7 +253,10 @@ func main() {
 			if rootNode := migrate.GetRoot(srcAppConfig, uid); rootNode != nil {
 				var wList = new(migrate.WaitingList)
 				var invalidList = new(migrate.InvalidList)
-				migrate.MigrateProcess(uid, srcAppConfig, dstAppConfig, rootNode, wList, invalidList)
+				if log_txn, err := atomicity.BeginTransaction(); err == nil {
+					migrate.MigrateProcess(uid, srcAppConfig, dstAppConfig, rootNode, wList, invalidList, log_txn)
+					atomicity.LogOutcome(log_txn, "COMMIT")
+				}
 			} else {
 				fmt.Println("Root Node can't be fetched!")
 			}
