@@ -283,7 +283,7 @@ func GetParentTags(appConfig config.AppConfig, data display.HintStruct) ([]strin
 	}
 }
 
-func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruct, app string, dbConn *sql.DB) (display.HintStruct, error){
+func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig, hint display.HintStruct, app string) (display.HintStruct, error){
 	hintData := display.HintStruct{}
 	data1 := DataInDependencyNode{}
 

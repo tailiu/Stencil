@@ -11,7 +11,7 @@ import (
 	"database/sql"
 	"time"
 	// "strconv"
-	// "errors"
+	"errors"
 )
 
 const checkInterval = 200 * time.Millisecond
@@ -46,19 +46,19 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 	// fmt.Println(displayed)
 	if err1 != nil {
 		fmt.Println(err1)
+		return false, err1
 	} else {
 		if displayed {
 			return true, nil
 		} else {
 			complete, completeDataHints := dependency_handler.CheckNodeComplete(appDBConn, appConfig.Tags, oneMigratedData, app)
 			if !complete {
-				fmt.Println("Data of a Node is Not Complete")
-				return false, nil
+				return false, errors.New("Data of a Node is Not Complete")
 			} else {
-				// fmt.Println("*****************************")
 				tags, err2 := dependency_handler.GetParentTags(appConfig, oneMigratedData)
 				if err2 != nil {
 					fmt.Println(err2)
+					return false, err2
 				} else {
 					// This should not happen in Stencil case, because root node data should
 					// be separated stored
@@ -70,18 +70,38 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 							if tag == "root" {
 								err3 := display.Display(stencilDBConn, app, completeDataHints, pks)
 								if err3 != nil {
-									return false, nil
+									fmt.Println(err3)
+									return false, err3
 								} else {
 									return true, nil
 								}
+							}
+						}
+						oneDataInParentNode, err4 := dependency_handler.GetOneDataFromParentNodeRandomly(appDBConn, appConfig, oneMigratedData, app)
+						if err4 != nil {
+							fmt.Println(err4)
+							return false, err4
+						} else {
+							result, err5 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneDataInParentNode, migratedData, app, pks, secondRound)
+							if err5 != nil {
+								fmt.Println(err5)
+								return false, err5
 							} else {
-								
+								if result {
+									err6 := display.Display(stencilDBConn, app, completeDataHints, pks)
+									if err6 != nil {
+										fmt.Println(err6)
+										return false, err6
+									} else {
+										return true, nil
+									}
+								} else {
+									return false, nil
+								}
 							}
 						}
 					}
 				}
-				// fmt.Println("*****************************")
-				// dependency_handler.GetOneDataFromParentNode()
 			}
 		}
 	}
@@ -129,11 +149,11 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 
 func main() {
 	dstApp := "mastodon"
-	// DisplayThread(dstApp, 534782464)
+	DisplayThread(dstApp, 534782464)
 
-	var completeDataHints []display.HintStruct
-	stencilDBConn, _, _, pks := display.Initialize(dstApp)
-	display.Display(stencilDBConn, dstApp, completeDataHints, pks)
+	// var completeDataHints []display.HintStruct
+	// stencilDBConn, _, _, pks := display.Initialize(dstApp)
+	// display.Display(stencilDBConn, dstApp, completeDataHints, pks)
 
 	// dbConn := db.GetDBConn(dstApp)
 	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
