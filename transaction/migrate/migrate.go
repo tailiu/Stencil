@@ -8,6 +8,7 @@ import (
 	"transaction/atomicity"
 	"transaction/config"
 	"transaction/db"
+	"transaction/display"
 	"transaction/helper"
 )
 
@@ -27,15 +28,13 @@ func addUserToApplication(node *DependencyNode, srcApp, dstApp config.AppConfig,
 			// GenerateAndInsert(mappings, appMapping.ToTables, node)
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
 				if len(tagMembers) == len(appMapping.FromTables) {
-					GenerateAndInsert(mappings, dstApp.AppName, appMapping.ToTables, node, log_txn)
+					GenerateAndInsert(mappings, dstApp, appMapping.ToTables, node, log_txn)
 					USEREXISTSINAPP = true
-					log.Fatal("STOP")
 					return true
 				}
 			}
 		}
 	}
-	log.Fatal("YES STOP")
 	return false
 }
 
@@ -65,7 +64,7 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 			for fromTable, toTablesMap := range joinMap {
 				if _, ok := seenMap[fromTable]; !ok {
 					joinStr += fromTable
-					_, colStr := db.GetColumnsForTable(appConfig.AppName, fromTable)
+					_, colStr := db.GetColumnsForTable(appConfig.DBConn, fromTable)
 					cols += colStr + ","
 				}
 				for toTable, conditions := range toTablesMap {
@@ -75,7 +74,7 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 							joinMap[toTable][fromTable] = nil
 						}
 						joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
-						_, colStr := db.GetColumnsForTable(appConfig.AppName, toTable)
+						_, colStr := db.GetColumnsForTable(appConfig.DBConn, toTable)
 						cols += colStr + ","
 						seenMap[toTable] = true
 					}
@@ -85,14 +84,14 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 			sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where)
 		} else {
 			table := root.Members["member1"]
-			_, cols := db.GetColumnsForTable(appConfig.AppName, table)
+			_, cols := db.GetColumnsForTable(appConfig.DBConn, table)
 			sql = fmt.Sprintf(sql, cols, table, where)
 		}
 		rootNode := new(DependencyNode)
 		rootNode.Tag = root
 		rootNode.SQL = sql
 		// fmt.Println(sql)
-		rootNode.Data = db.DataCall1(appConfig.AppName, sql, uid)
+		rootNode.Data = db.DataCall1(appConfig.DBConn, sql, uid)
 		return rootNode
 	}
 	return nil
@@ -177,7 +176,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 					for fromTable, toTablesMap := range joinMap {
 						if _, ok := seenMap[fromTable]; !ok {
 							joinStr += fromTable
-							_, colStr := db.GetColumnsForTable(appConfig.AppName, fromTable)
+							_, colStr := db.GetColumnsForTable(appConfig.DBConn, fromTable)
 							cols += colStr + ","
 						}
 						for toTable, conditions := range toTablesMap {
@@ -188,7 +187,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 								}
 								// joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
 								joinStr += fmt.Sprintf(" JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
-								_, colStr := db.GetColumnsForTable(appConfig.AppName, toTable)
+								_, colStr := db.GetColumnsForTable(appConfig.DBConn, toTable)
 								cols += colStr + ","
 								seenMap[toTable] = true
 							}
@@ -198,10 +197,10 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 					sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where, orderby)
 				} else {
 					table := child.Members["member1"]
-					_, cols := db.GetColumnsForTable(appConfig.AppName, table)
+					_, cols := db.GetColumnsForTable(appConfig.DBConn, table)
 					sql = fmt.Sprintf(sql, cols, table, where, orderby)
 				}
-				if nodeData := db.DataCall1(appConfig.AppName, sql); len(nodeData) > 0 {
+				if nodeData := db.DataCall1(appConfig.DBConn, sql); len(nodeData) > 0 {
 					newNode := new(DependencyNode)
 					newNode.Tag = child
 					newNode.SQL = sql
@@ -216,7 +215,7 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 	return nil
 }
 
-func GenerateAndInsert(mappings *config.MappedApp, dstApp string, toTables []config.ToTable, node *DependencyNode, log_txn *atomicity.Log_txn) {
+func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTables []config.ToTable, node *DependencyNode, log_txn *atomicity.Log_txn) {
 	// var isqls []string
 	for _, toTable := range toTables {
 		if len(toTable.Conditions) > 0 {
@@ -258,11 +257,12 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp string, toTables []con
 		if cols != "" && vals != "" {
 			cols := strings.Trim(cols, ",")
 			vals := strings.Trim(vals, ",")
-			isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", toTable.Table, cols, vals)
+			isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ", toTable.Table, cols, vals)
 			undoAction.AddDstTable(toTable.Table)
 			undoActionSerialized, _ := json.Marshal(undoAction)
-			if err := db.Insert(dstApp, isql); err == nil {
+			if id, err := db.Insert(dstApp.DBConn, isql); err == nil {
 				atomicity.LogChange(string(undoActionSerialized), log_txn)
+				display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, id, false, log_txn.Txn_id)
 			} else {
 
 			}
@@ -270,7 +270,6 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp string, toTables []con
 			fmt.Println("## Insert Query Error:", cols, vals)
 		}
 	}
-	// fmt.Println(isqls)
 }
 
 func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *WaitingList, invalidList *InvalidList, log_txn *atomicity.Log_txn) {
@@ -283,13 +282,13 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
 				mappingFound = true
 				if len(tagMembers) == len(appMapping.FromTables) {
-					GenerateAndInsert(mappings, dstApp.AppName, appMapping.ToTables, node, log_txn)
+					GenerateAndInsert(mappings, dstApp, appMapping.ToTables, node, log_txn)
 					invalidList.Add(*node)
 				} else {
 					if waitingNode, err := wList.UpdateIfBeingLookedFor(*node); err == nil {
 						if waitingNode.IsComplete() {
 							tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
-							GenerateAndInsert(mappings, dstApp.AppName, appMapping.ToTables, &tempCombinedDataDependencyNode, log_txn)
+							GenerateAndInsert(mappings, dstApp, appMapping.ToTables, &tempCombinedDataDependencyNode, log_txn)
 							invalidList.Add(*node)
 						} else {
 							// fmt.Println("-->> IS NOT COMPLETE!")

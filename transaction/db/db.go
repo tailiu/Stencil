@@ -38,15 +38,22 @@ func GetDBConn(app string) *sql.DB {
 	return dbConns[app]
 }
 
-func Insert(app, sql string) error {
-	return errors.New("Insert Failed")
+func Insert(dbConn *sql.DB, query string) (int, error) {
+
+	lastInsertId := -1
+	err := dbConn.QueryRow(query + " RETURNING id; ").Scan(&lastInsertId)
+	if err != nil || lastInsertId == -1 {
+		log.Println("# Can't insert!", err)
+		return lastInsertId, err
+	}
+	return lastInsertId, err
 }
 
-func GetColumnsForTable(app, table string) ([]string, string) {
+func GetColumnsForTable(db *sql.DB, table string) ([]string, string) {
 	var resultList []string
 	resultStr := ""
 
-	db := GetDBConn(app)
+	// db := GetDBConn(app)
 
 	rows, err := db.Query("SHOW COLUMNS FROM " + table)
 	if err != nil {
@@ -109,11 +116,11 @@ func GetRow(rows *sql.Rows) map[string]interface{} {
 	return myMap
 }
 
-func DataCall(app, SQL string, args ...interface{}) []map[string]interface{} {
+func DataCall(db *sql.DB, SQL string, args ...interface{}) []map[string]interface{} {
 
 	var result []map[string]interface{}
 
-	db := GetDBConn(app)
+	// db := GetDBConn(app)
 
 	if rows, err := db.Query(SQL, args...); err != nil {
 		log.Println(SQL, args)
@@ -151,9 +158,9 @@ func DataCall(app, SQL string, args ...interface{}) []map[string]interface{} {
 	return result
 }
 
-func DataCall1(app, SQL string, args ...interface{}) map[string]interface{} {
+func DataCall1(db *sql.DB, SQL string, args ...interface{}) map[string]interface{} {
 
-	db := GetDBConn(app)
+	// db := GetDBConn(app)
 
 	if rows, err := db.Query(SQL+" LIMIT 1", args...); err != nil {
 		log.Println(SQL, args)
