@@ -28,10 +28,10 @@ func CreateDisplayFlagsTable(dbConn *sql.DB) {
 func GenDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool, migration_id ...int) error {
 	var op string
 	if len(migration_id) == 0 {
-		op = fmt.Sprintf("INSERT INTO display_flags (app, tableName, id, display_flag) VALUES ('%s', '%s', %d, %t);",
+		op = fmt.Sprintf("INSERT INTO display_flags (app, table_name, id, display_flag) VALUES ('%s', '%s', %d, %t);",
 						app, table, id, display_flag)
 	} else if len(migration_id) == 1 {
-		op = fmt.Sprintf("INSERT INTO display_flags (app, tableName, id, display_flag, migration_id) VALUES ('%s', '%s', %d, %t, %d);",
+		op = fmt.Sprintf("INSERT INTO display_flags (app, table_name, id, display_flag, migration_id) VALUES ('%s', '%s', %d, %t, %d);",
 						app, table, id, display_flag, migration_id[0])
 	} else {
 		return errors.New("Argument Num Error: Please Input Only One Migration ID")
@@ -44,7 +44,7 @@ func GenDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool
 }
 
 func UpdateDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool) error {
-	op := fmt.Sprintf("UPDATE display_flags SET display_flag = %t WHERE app = '%s' and tableName = '%s' and id = %d;",
+	op := fmt.Sprintf("UPDATE display_flags SET display_flag = %t WHERE app = '%s' and table_name = '%s' and id = %d;",
 						display_flag, app, table, id)
 	if _, err := dbConn.Exec(op); err != nil {
 		return err
@@ -53,7 +53,7 @@ func UpdateDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag b
 }
 
 func GetDisplayFlag(dbConn *sql.DB, app, table string, id int) (bool, error) {
-	op := fmt.Sprintf("SELECT display_flag FROM display_flags WHERE app = '%s' and tableName = '%s' and id = %d LIMIT 1;",
+	op := fmt.Sprintf("SELECT display_flag FROM display_flags WHERE app = '%s' and table_name = '%s' and id = %d LIMIT 1;",
 						app, table, id)
 	row, err := dbConn.Query(op)
 	if err != nil {

@@ -359,3 +359,22 @@ func GetTablesOfDB(dbConn *sql.DB, app string) []string {
 
 	return tables
 }
+
+func TxnExecute(dbConn *sql.DB, queries []string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, query := range queries {
+		// fmt.Println(query)
+		if _, err := tx.Exec(query); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+	return nil
+			
+}

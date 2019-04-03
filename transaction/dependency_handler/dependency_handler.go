@@ -149,26 +149,28 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 	}
 }
 
-func CheckNodeComplete(dbConn *sql.DB, innerDependencies []config.Tag, hint display.HintStruct, app string) bool {
+func CheckNodeComplete(dbConn *sql.DB, innerDependencies []config.Tag, hint display.HintStruct, app string) (bool, []display.HintStruct) {
 	for _, innerDependency := range innerDependencies {
 		for _, member := range innerDependency.Members{
 			if hint.Table == member {
 				if len(innerDependency.Members) == 1 {
-					return true
+					var completeData []display.HintStruct
+					completeData = append(completeData, hint)
+					return true, completeData
 				} else {
 					// Note: we assume that one dependency represents that one row 
 					// 		in one table depends on another row in another table
-					if result, ok:= checkRemainingDataExists(dbConn, innerDependency.InnerDependencies, innerDependency.Members, hint, app); ok {
-						fmt.Println(result)
-						return true
+					if completeData, ok := checkRemainingDataExists(dbConn, innerDependency.InnerDependencies, innerDependency.Members, hint, app); ok {
+						fmt.Println(completeData)
+						return true, completeData
 					} else {
-						return false
+						return false, nil
 					}
 				}
 			}
 		}
 	}
-	return false
+	return false, nil
 }
 
 /**************************** end **************************/
@@ -254,6 +256,31 @@ func GetTagName(innerDependencies []config.Tag, hint display.HintStruct) (string
 		}
 	}
 	return "", errors.New("No Corresponding Tag Found!")
+}
+
+func GetParentTags(appConfig config.AppConfig, data display.HintStruct) ([]string, error) {
+	tag, err := GetTagName(appConfig.Tags, data)
+	if err != nil {
+		return nil, err
+	}
+	if tag == "root" {
+		return nil, nil
+	}
+
+	var parentTags []string
+	for _, dependency := range appConfig.Dependencies {
+		if dependency.Tag == tag {
+			for _, dependsOn := range dependency.DependsOn {
+				parentTags = append(parentTags, dependsOn.Tag)
+			}
+		}
+	}
+
+	if len(parentTags) == 0 {
+		return nil, errors.New("Check Parent Tag Name error: Does Not Find Any Parent Node!")
+	} else {
+		return parentTags, nil
+	}
 }
 
 func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruct, app string, dbConn *sql.DB) (display.HintStruct, error){

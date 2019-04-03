@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"transaction/db"
 	"transaction/config"
+	"strconv"
 )
 
 const StencilDBName = "stencil"
@@ -38,10 +39,20 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID i
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	// fmt.Println(data)
 	for _, oneData := range data {
-		keyVal := map[string]int {
-			pks[oneData.tablename]
+		hint := HintStruct{}
+		table := oneData["table_name"]
+		intVal, err := strconv.Atoi(oneData["id"])
+		if err != nil {
+			log.Fatal(err)
 		}
-	} 
+		keyVal := map[string]int {
+			pks[table]:	intVal,
+		}
+		hint.Table = table
+		hint.KeyVal = keyVal
+		displayHints = append(displayHints, hint)
+	}
+	// fmt.Println(displayHints)
 	return displayHints
 }
 
@@ -53,4 +64,17 @@ func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 	} else {
 		return true
 	}
+}
+
+func Display(stencilDBConn *sql.DB, app string, dataHints []HintStruct, pks map[string]string) error {
+	var queries []string
+	 
+	for _, dataHint := range dataHints {
+		table := dataHint.Table
+		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = true WHERE app = '%s' and table = '%s' and id = %d;",
+							app, table, dataHint.KeyVal[pks[table]])
+		queries = append(queries, query)
+	}
+
+	return db.TxnExecute(stencilDBConn, queries)
 }
