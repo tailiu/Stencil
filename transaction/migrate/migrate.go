@@ -121,7 +121,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 							}
 							conditionStr += fmt.Sprintf("%s = '%v'", tagAttr, node.Data[depOnAttr])
 						} else {
-							log.Fatal("ResolveDependencyConditions:", depOnAttr, "doesn't exist in ", depOnTag.Name)
+							log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
 						}
 						if len(condition.Restrictions) > 0 {
 							restrictions := ""
@@ -268,11 +268,16 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 			undoActionSerialized, _ := json.Marshal(undoAction)
 			if id, err := db.Insert(dstApp.DBConn, isql, ivals...); err == nil {
 				atomicity.LogChange(string(undoActionSerialized), log_txn)
-				if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, id, false, log_txn.Txn_id); err != nil {
+				displayFlag := false
+				if strings.EqualFold(node.Tag.Name, "root") {
+					displayFlag = true
+				}
+				if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, id, displayFlag, log_txn.Txn_id); err != nil {
 					log.Println("## DISPLAY ERROR!", err)
 				}
 			} else {
-
+				fmt.Println("\n@ERROR")
+				fmt.Println(err)
 			}
 		} else {
 			fmt.Println("## Insert Query Error:", cols, vals)

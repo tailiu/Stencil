@@ -242,7 +242,7 @@ func main() {
 	srcApp := "diaspora"
 	dstApp := "mastodon"
 
-	uid := "647"
+	uid := "2001" // "647", "1000", "2000"
 
 	if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
 		log.Fatal(err)

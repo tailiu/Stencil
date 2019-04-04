@@ -45,8 +45,6 @@ func Insert(dbConn *sql.DB, query string, args ...interface{}) (int, error) {
 	lastInsertId := -1
 	err := dbConn.QueryRow(query+" RETURNING id; ", args...).Scan(&lastInsertId)
 	if err != nil || lastInsertId == -1 {
-		fmt.Println("@ERROR--------------------------------------------------------------")
-		log.Println("# Can't insert!", err)
 		return lastInsertId, err
 	}
 	return lastInsertId, err
@@ -380,5 +378,5 @@ func TxnExecute(dbConn *sql.DB, queries []string) error {
 
 	tx.Commit()
 	return nil
-			
+
 }

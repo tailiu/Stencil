@@ -279,7 +279,7 @@
                 "conditions":[
                    {
                       "tag_attr":"recipient_id",
-                      "depends_on_attr":"user_id"
+                      "depends_on_attr":"person_id"
                    }
                 ]
              }
@@ -321,7 +321,7 @@
                 "conditions":[
                    {
                       "tag_attr":"author_id",
-                      "depends_on_attr":"id"
+                      "depends_on_attr":"person_id"
                    }
                 ]
              }
@@ -335,7 +335,7 @@
                 "conditions":[
                    {
                       "tag_attr":"user_id",
-                      "depends_on_attr":"id",
+                      "depends_on_attr":"person_id",
                       "restrictions":[
                          {
                             "col":"receiving",
