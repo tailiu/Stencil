@@ -239,15 +239,21 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 		}
 		undoAction := new(atomicity.UndoAction)
 		cols, vals := "", ""
+		var ivals []interface{}
 		for toAttr, fromAttr := range toTable.Mapping {
-			if val, err := node.GetValueForKey(fromAttr); err == nil {
-				vals += fmt.Sprintf("'%s',", val)
+			// if val, err := node.GetValueForKey(fromAttr); err == nil {
+			if val, ok := node.Data[fromAttr]; ok {
+				// vals += fmt.Sprintf("'%v',", val)
+				ivals = append(ivals, val)
+				vals += fmt.Sprintf("$%d,", len(ivals))
 				cols += fmt.Sprintf("%s,", toAttr)
 				undoAction.AddData(fromAttr, val)
 				undoAction.AddOrgTable(strings.Split(fromAttr, ".")[0])
 			} else if strings.Contains(fromAttr, "$") {
 				if inputVal, err := mappings.GetInput(fromAttr); err == nil {
-					vals += fmt.Sprintf("'%s',", inputVal)
+					// vals += fmt.Sprintf("'%s',", inputVal)
+					ivals = append(ivals, inputVal)
+					vals += fmt.Sprintf("$%d,", len(ivals))
 					cols += fmt.Sprintf("%s,", toAttr)
 				}
 			} else if strings.Contains(fromAttr, "#") {
@@ -260,9 +266,11 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 			isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ", toTable.Table, cols, vals)
 			undoAction.AddDstTable(toTable.Table)
 			undoActionSerialized, _ := json.Marshal(undoAction)
-			if id, err := db.Insert(dstApp.DBConn, isql); err == nil {
+			if id, err := db.Insert(dstApp.DBConn, isql, ivals...); err == nil {
 				atomicity.LogChange(string(undoActionSerialized), log_txn)
-				display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, id, false, log_txn.Txn_id)
+				if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, id, false, log_txn.Txn_id); err != nil {
+					log.Println("## DISPLAY ERROR!", err)
+				}
 			} else {
 
 			}
@@ -331,6 +339,7 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 	// 	MigrateProcess(uid, srcApp, dstApp, child)
 	// }
 	MigrateNode(node, srcApp, dstApp, wList, invalidList, log_txn) // Log before migrating
+	fmt.Println("------------------------------------------------------------------------")
 	// releasePredicateLock(*node)
 
 	// catch NodeNotFound:
