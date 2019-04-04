@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"strconv"
 	"strings"
 
 	_ "github.com/lib/pq" // postgres driver
@@ -351,79 +350,35 @@ func GetPrimaryKeyOfTable(dbConn *sql.DB, table string) (string, error) {
 	return "", fmt.Errorf("Get Primary Key Error: No Primary Key Found For Table %s", table)
 }
 
-func GetOneRowBasedOnHint(dbConn *sql.DB, app, depDataValue, depDataValueType, depDataKey, depDataTable string) (map[string]string, error) {
-	var query string
-	switch valueType := depDataValueType; valueType {
-	case "int":
-		value, err := strconv.Atoi(depDataValue)
-		if err != nil {
-			log.Fatal(err)
+func GetTablesOfDB(dbConn *sql.DB, app string) []string {
+	query := fmt.Sprintf("SHOW TABLES FROM %s", app)
+	tablesMapArr := GetAllColsOfRows(dbConn, query)
+
+	var tables []string
+	for _, element := range tablesMapArr {
+		for _, table := range element {
+			tables = append(tables, table)
 		}
-		query = fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", depDataTable, depDataKey, value)
-	default:
-		query = fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' LIMIT 1;", depDataTable, depDataKey, depDataValue)
 	}
 
-	data := GetAllColsOfRows(dbConn, query)
-	if len(data) == 0 {
-		return nil, errors.New("Check Remaining Data Exists Error: Original Data Not Exists")
-	} else {
-		return data[0], nil
-	}
+	return tables
 }
 
-func GetOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string) (map[string]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
-	// fmt.Println(query)
-	data := GetAllColsOfRows(dbConn, query)
-	if len(data) == 0 {
-		return nil, errors.New("Check Remaining Data Exists Error: Data Not Exists")
-	} else {
-		return data[0], nil
+func TxnExecute(dbConn *sql.DB, queries []string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
 	}
-}
 
-func GetOneRowInParentNodeRandomly(dbConn *sql.DB, depDataValue, depDataValueType, depDataKey, depDataTable string, conditions []string) (map[string]string, string, error) {
-	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
-	from := ""
-	table := ""
-	for i, condition := range conditions {
-		table1 := strings.Split(condition, ":")[0]
-		table2 := strings.Split(condition, ":")[1]
-		t1 := strings.Split(table1, ".")[0]
-		a1 := strings.Split(table1, ".")[1]
-		t2 := strings.Split(table2, ".")[0]
-		a2 := strings.Split(table2, ".")[1]
-		seq1 := "t" + strconv.Itoa(i)
-		seq2 := "t" + strconv.Itoa(i+1)
-		if i == 0 {
-			from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
-				t1, seq1, t2, seq2, seq1, a1, seq2, a2)
-		} else {
-			from += fmt.Sprintf("JOIN %s %s on %s.%s = %s.%s ",
-				t2, seq2, seq1, a1, seq2, a2)
-		}
-		if i == len(conditions)-1 {
-			where := ""
-			if depDataValueType == "int" {
-				val, err := strconv.Atoi(depDataValue)
-				if err != nil {
-					log.Fatal(err)
-				}
-				where = fmt.Sprintf("WHERE %s.%s = %d ORDER BY RANDOM() LIMIT 1;", "t0", depDataKey, val)
-			} else {
-				where = fmt.Sprintf("WHERE %s.%s = '%s' ORDER BY RANDOM() LIMIT 1;", "t0", depDataKey, depDataValue)
-			}
-			table = t2
-			query += from + where
+	for _, query := range queries {
+		// fmt.Println(query)
+		if _, err := tx.Exec(query); err != nil {
+			tx.Rollback()
+			return err
 		}
 	}
-	fmt.Println(query)
 
-	data := GetAllColsOfRows(dbConn, query)
-	if len(data) == 0 {
-		return nil, "", errors.New("Error In Get Data: Fail To Get One Data This Data Depends On")
-	} else {
-		return data[0], table, nil
-	}
+	tx.Commit()
+	return nil
+			
 }

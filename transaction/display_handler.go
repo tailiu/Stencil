@@ -4,83 +4,122 @@ import (
 	"fmt"
 	// "log"
 	// "transaction/atomicity"
-	"transaction/db"
+	// "transaction/db"
 	"transaction/display"
-	// "transaction/dependency_handler"
-	// "transaction/config"
-	// "database/sql"
+	"transaction/dependency_handler"
+	"transaction/config"
+	"database/sql"
 	"time"
-	// "strconv"
-	// "errors"
+	"errors"
 )
 
-const StencilDBName = "stencil"
 const checkInterval = 200 * time.Millisecond
 
 var displayedData = make(map[string]int)
 
 func DisplayThread(app string, migrationID int) {
-	// var secondRound bool
-
-	stencilDBConn := db.GetDBConn(StencilDBName)
-	// destAppDBConn := db.GetDBConn(app)
-	// appConfig, err := config.CreateAppConfig(app)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	stencilDBConn, appDBConn, appConfig, pks := display.Initialize(app)
 
 	// For now just assume this is an infinite loop
-	for migratedData := display.GetMigratedData(stencilDBConn, app, migrationID); display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetMigratedData(stencilDBConn, app, migrationID) {
+	secondRound := false
+	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); !display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
 		for _, oneMigratedData := range migratedData {
-			fmt.Println(oneMigratedData)
-			// checkDisplayOneMigratedData(stencilDBConn, destAppDBConn, appConfig, oneMigratedData, migratedData, app, secondRound)
+			// fmt.Println(oneMigratedData)
+			checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneMigratedData, app, pks, secondRound)
 		}
 		time.Sleep(checkInterval)
 	}
 
-	// secondRound = true
+	secondRound = true
+	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks)
+	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
+		checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
+	}
 }
 
 
-// func checkDisplayOneMigratedData(stencilDBConn *sql.DB, destAppDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, migratedData []display.HintStruct, dstApp string, secondRound bool) (bool, error) {
-// 	// fmt.Println(oneMigratedData)
-// 	val, err1 := strconv.Atoi(oneMigratedData.Value)
-// 	if err1 != nil {
-// 		log.Fatal("Check  Display One Data: Converting '%s' to Integer Errors", oneMigratedData.Value)
-// 	}
-// 	displayed, err2 := display.GetDisplayFlag(stencilDBConn, val, oneMigratedData.Table)
-// 	// fmt.Println(displayed)
-// 	if err2 != nil {
-// 		fmt.Println(err2)
-// 	} else {
-// 		if displayed {
-// 			return true, nil
-// 		} else {
-// 			if !dependency_handler.CheckNodeComplete(appConfig.Tags, oneMigratedData, dstApp, destAppDBConn) {
-// 				return false, nil
-// 			} else {
-// 				// dependency_handler.GetOneDataFromParentNode()
-// 			}
-// 		}
-// 	}
-// 	return false, nil
-// }
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (bool, error) {
+	// fmt.Println(oneMigratedData)
+	var val int
+	for _, v := range oneMigratedData.KeyVal {
+		val = v
+	}
+	displayed, err1 := display.GetDisplayFlag(stencilDBConn, app, oneMigratedData.Table, val)
 
-// func DisplayController(migrationID int) {
-// 	for migratedNode := GetMigratedData(migrationID); 
-// 		!IsMigrationComplete(migrationID);  
-// 		migratedNode = GetMigratedData(migrationID){
-// 		if migratedNode {
-// 			go CheckDisplay(migratedNode. false)
-// 		}
-// 	}
-// 	// Only Executed After The Migration Is Complete
-// 	// Remaning Migration Nodes:
-// 	// -> The Migrated Nodes In The Destination Application That Still Have Their Migration Flags Raised
-// 	for migratedNode := range GetRemainingMigratedNodes(migrationID){
-// 		go CheckDisplay(migratedNode, true)
-// 	}
-// }
+	// fmt.Println(displayed)
+	if err1 != nil {
+		fmt.Println(err1)
+		return false, err1
+	} else {
+		if displayed {
+			return true, nil
+		} else {
+			complete, completeDataHints := dependency_handler.CheckNodeComplete(appDBConn, appConfig.Tags, oneMigratedData, app)
+			if !complete {
+				return false, errors.New("Data of a Node is Not Complete")
+			} else {
+				tags, err2 := dependency_handler.GetParentTags(appConfig, oneMigratedData)
+				if err2 != nil {
+					fmt.Println(err2)
+					return false, err2
+				} else {
+					// This should not happen in Stencil case, because root node data should
+					// be stored separatedly
+					if tags == nil {
+						fmt.Println("This Data Already Belongs To Root Node!")
+						return true, nil
+					} else {
+						for _, tag := range tags {
+							if tag == "root" {
+								err3 := display.Display(stencilDBConn, app, completeDataHints, pks)
+								if err3 != nil {
+									fmt.Println(err3)
+									return false, err3
+								} else {
+									return true, nil
+								}
+							}
+						}
+						oneDataInParentNode, err4 := dependency_handler.GetOneDataFromParentNodeRandomly(appDBConn, appConfig, oneMigratedData, app)
+						if err4 != nil {
+							fmt.Println(err4)
+							return false, err4
+						} else {
+							result, err5 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneDataInParentNode, app, pks, secondRound)
+							if err5 != nil {
+								fmt.Println(err5)
+								return false, err5
+							} else {
+								if result {
+									err6 := display.Display(stencilDBConn, app, completeDataHints, pks)
+									if err6 != nil {
+										fmt.Println(err6)
+										return false, err6
+									} else {
+										return true, nil
+									}
+								} else {
+									if secondRound && dependency_handler.CheckDisplayCondition() {
+										err6 := display.Display(stencilDBConn, app, completeDataHints, pks)
+										if err6 != nil {
+											fmt.Println(err6)
+											return false, err6
+										} else {
+											return true, nil
+										}
+									} else {
+										return false, nil
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return false, nil
+}
 
 // func CheckDisplay(node *DependencyNode, finalRound bool) bool {
 // 	try:
@@ -105,9 +144,29 @@ func DisplayThread(app string, migrationID int) {
 // 		return false
 // }
 
+// func DisplayController(migrationID int) {
+// 	for migratedNode := GetMigratedData(migrationID); 
+// 		!IsMigrationComplete(migrationID);  
+// 		migratedNode = GetMigratedData(migrationID){
+// 		if migratedNode {
+// 			go CheckDisplay(migratedNode. false)
+// 		}
+// 	}
+// 	// Only Executed After The Migration Is Complete
+// 	// Remaning Migration Nodes:
+// 	// -> The Migrated Nodes In The Destination Application That Still Have Their Migration Flags Raised
+// 	for migratedNode := range GetRemainingMigratedNodes(migrationID){
+// 		go CheckDisplay(migratedNode, true)
+// 	}
+// }
+
 func main() {
 	dstApp := "mastodon"
 	DisplayThread(dstApp, 534782464)
+
+	// var completeDataHints []display.HintStruct
+	// stencilDBConn, _, _, pks := display.Initialize(dstApp)
+	// display.Display(stencilDBConn, dstApp, completeDataHints, pks)
 
 	// dbConn := db.GetDBConn(dstApp)
 	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
@@ -115,13 +174,14 @@ func main() {
 	// } else {
 	// 	// fmt.Println(appConfig)
 	// 	// fmt.Println(appConfig.Tags)
+	// 	keyVal := map[string]int {
+	// 		"id": 62632,
+	// 	}
 	// 	hint := display.HintStruct {
 	// 		Table: "accounts",
-	// 		Key: "id",
-	// 		Value: "62632", 
-	// 		ValueType: "int",
+	// 		KeyVal: keyVal,
 	// 	} 
-	// 	dependency_handler.CheckNodeComplete(appConfig.Tags, hint, dstApp, dbConn)
+	// 	dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
 	// }
 
 	// dstApp := "mastodon"
@@ -129,13 +189,14 @@ func main() {
 	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
 	// 	fmt.Println(err)
 	// } else {
-	// 	fmt.Println(appConfig)
-	// 	fmt.Println(appConfig.Tags)
+	// 	// fmt.Println(appConfig)
+	// 	// fmt.Println(appConfig.Tags)
+	// 	keyVal := map[string]int {
+	// 		"id": 23550,
+	// 	}
 	// 	hint := display.HintStruct {
 	// 		Table: "statuses",
-	// 		Key: "id",
-	// 		Value: "23550", 
-	// 		ValueType: "int",
+	// 		KeyVal: keyVal,
 	// 	} 
 	// 	// hint := display.HintStruct {
 	// 	// 	Table: "conversations",

@@ -20,9 +20,34 @@ type DataInDependencyNode struct {
 	Data	map[string]string
 }
 
-func checkRemainingDataExists(dependencies []map[string]string, members map[string]string, hint display.HintStruct, app string, dbConn *sql.DB) ([]display.HintStruct, bool) {
-	var result []display.HintStruct
+/**************************** Check data in Node complete and return data if it is complete *****************/
 
+func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, depDataValue int) (map[string]string, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", depDataTable, depDataKey, depDataValue)
+
+	data := db.GetAllColsOfRows(dbConn, query)
+	if len(data) == 0 {
+		return nil, errors.New("Check Remaining Data Exists Error: Original Data Not Exists")
+	} else {
+		return data[0], nil
+	}
+}
+
+func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string) (map[string]string, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
+	// fmt.Println(query)
+	data := db.GetAllColsOfRows(dbConn, query)
+	// fmt.Println(data)
+	if len(data) == 0 {
+		return nil, errors.New("Check Remaining Data Exists Error: Data Not Exists")
+	} else {
+		return data[0], nil
+	}
+}
+
+func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint display.HintStruct, app string) ([]display.HintStruct, bool) {
+	var result []display.HintStruct
+	
 	procDependencies := make(map[string][]string)
 	for _, dependency := range dependencies {
 		for k, v := range dependency {
@@ -38,19 +63,19 @@ func checkRemainingDataExists(dependencies []map[string]string, members map[stri
 	}
 	fmt.Println(procDependencies)
 
-	data, err := db.GetOneRowBasedOnHint(dbConn, app, hint.Value, hint.ValueType, hint.Key, hint.Table)
-	// fmt.Println(data)
-	if err != nil {
-		log.Println(err)
-		return nil, false
+	var data map[string]string
+	var err error
+	for k, v := range hint.KeyVal {
+		data, err = getOneRowBasedOnHint(dbConn, app, hint.Table, k, v)
+		if err != nil {
+			log.Println(err)
+			return nil, false
+		}
 	}
+	// fmt.Println(data)
 
-	result = append(result, display.HintStruct{
-		Table:		hint.Table,
-		Key:		hint.Key,
-		Value:		data[hint.Key],
-		ValueType: 	"int",
-	})
+	// fmt.Println(hint)
+	result = append(result, hint)
 
 	queue := []DataInDependencyNode{DataInDependencyNode{
 		Table:	hint.Table,
@@ -68,13 +93,12 @@ func checkRemainingDataExists(dependencies []map[string]string, members map[stri
 					log.Fatal("Dependency Handler: Converting '%s' to Integer Errors", val)
 				}
 				for _, dep := range deps {
-					data, err = db.GetOneRowBasedOnDependency(dbConn, app, intVal, dep)
+					data, err = getOneRowBasedOnDependency(dbConn, app, intVal, dep)
 					if err != nil {
 						fmt.Println(err)
 						return nil, false
 					}
 					// fmt.Println(dep)
-					// fmt.Println(data["account_id"])
 
 					table1 := strings.Split(dep, ".")[0]
 					key1 := strings.Split(dep, ".")[1]
@@ -82,11 +106,21 @@ func checkRemainingDataExists(dependencies []map[string]string, members map[stri
 						Table:	table1,
 						Data:	data,
 					})
+
+					pk, err1 := db.GetPrimaryKeyOfTable(dbConn, table1)
+					if err1 != nil {
+						log.Fatal(err1)
+					}
+					intPK, err2 := strconv.Atoi(data[pk])
+					if err2 != nil {
+						log.Fatal(err2)
+					}
+					keyVal := map[string]int {
+						pk:		intPK,
+					}
 					result = append(result, display.HintStruct{
 						Table:		table1,
-						Key:		key1,
-						Value:		data[key1],
-						ValueType:	"int",
+						KeyVal:		keyVal,
 					})
 
 					deps1 := procDependencies[table1 + "." + key1]
@@ -107,11 +141,79 @@ func checkRemainingDataExists(dependencies []map[string]string, members map[stri
 		}
 	}
 
-	// fmt.Println(procDependencies)
+	fmt.Println(procDependencies)
 	if len(procDependencies) == 0 {
 		return result, true
 	} else {
 		return nil, false
+	}
+}
+
+func CheckNodeComplete(dbConn *sql.DB, innerDependencies []config.Tag, hint display.HintStruct, app string) (bool, []display.HintStruct) {
+	for _, innerDependency := range innerDependencies {
+		for _, member := range innerDependency.Members{
+			if hint.Table == member {
+				if len(innerDependency.Members) == 1 {
+					var completeData []display.HintStruct
+					completeData = append(completeData, hint)
+					return true, completeData
+				} else {
+					// Note: we assume that one dependency represents that one row 
+					// 		in one table depends on another row in another table
+					if completeData, ok := checkRemainingDataExists(dbConn, innerDependency.InnerDependencies, innerDependency.Members, hint, app); ok {
+						fmt.Println(completeData)
+						return true, completeData
+					} else {
+						return false, nil
+					}
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
+/**************************** end **************************/
+
+func getOneRowInParentNodeRandomly(dbConn *sql.DB, hint display.HintStruct, conditions []string) (map[string]string, string, error) {
+	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
+	from := ""
+	table := ""
+	for i, condition := range conditions {
+		table1 := strings.Split(condition, ":")[0]
+		table2 := strings.Split(condition, ":")[1]
+		t1 := strings.Split(table1, ".")[0]
+		a1 := strings.Split(table1, ".")[1]
+		t2 := strings.Split(table2, ".")[0]
+		a2 := strings.Split(table2, ".")[1]
+		seq1 := "t" + strconv.Itoa(i)
+		seq2 := "t" + strconv.Itoa(i+1)
+		if i == 0 {
+			from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
+				t1, seq1, t2, seq2, seq1, a1, seq2, a2)
+		} else {
+			from += fmt.Sprintf("JOIN %s %s on %s.%s = %s.%s ",
+				t2, seq2, seq1, a1, seq2, a2)
+		}
+		if i == len(conditions)-1 {
+			var depDataKey string
+			var depDataValue int
+			for k, v := range hint.KeyVal {
+				depDataKey = k
+				depDataValue = v
+			}
+			where := fmt.Sprintf("WHERE %s.%s = %d ORDER BY RANDOM() LIMIT 1;", "t0", depDataKey, depDataValue)
+			table = t2
+			query += from + where
+		}
+	}
+	fmt.Println(query)
+
+	data := db.GetAllColsOfRows(dbConn, query)
+	if len(data) == 0 {
+		return nil, "", errors.New("Error In Get Data: Fail To Get One Data This Data Depends On")
+	} else {
+		return data[0], table, nil
 	}
 }
 
@@ -147,7 +249,7 @@ func replaceKey(innerDependencies []config.Tag, tag string, key string) string {
 
 func GetTagName(innerDependencies []config.Tag, hint display.HintStruct) (string, error) {
 	for _, innerDependency := range innerDependencies {
-		for _, member := range innerDependency.Members{
+		for _, member := range innerDependency.Members {
 			if hint.Table == member {
 				return innerDependency.Name, nil
 			}
@@ -156,7 +258,32 @@ func GetTagName(innerDependencies []config.Tag, hint display.HintStruct) (string
 	return "", errors.New("No Corresponding Tag Found!")
 }
 
-func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruct, app string, dbConn *sql.DB) (display.HintStruct, error){
+func GetParentTags(appConfig config.AppConfig, data display.HintStruct) ([]string, error) {
+	tag, err := GetTagName(appConfig.Tags, data)
+	if err != nil {
+		return nil, err
+	}
+	if tag == "root" {
+		return nil, nil
+	}
+
+	var parentTags []string
+	for _, dependency := range appConfig.Dependencies {
+		if dependency.Tag == tag {
+			for _, dependsOn := range dependency.DependsOn {
+				parentTags = append(parentTags, dependsOn.Tag)
+			}
+		}
+	}
+
+	if len(parentTags) == 0 {
+		return nil, errors.New("Check Parent Tag Name error: Does Not Find Any Parent Node!")
+	} else {
+		return parentTags, nil
+	}
+}
+
+func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig, hint display.HintStruct, app string) (display.HintStruct, error){
 	hintData := display.HintStruct{}
 	data1 := DataInDependencyNode{}
 
@@ -168,7 +295,7 @@ func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruc
 	dependsOn, err1 := getDependsOn(appConfig.Dependencies, tag)
 	if err1 != nil {
 		log.Println(err1)
-		return hint, err1
+		return hintData, err1
 	}
 
 	// fmt.Println(dependsOn)
@@ -199,7 +326,7 @@ func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruc
 		fmt.Println(conditions)
 		// fmt.Println(hint)
 
-		data1.Data, data1.Table, err1 = db.GetOneRowInParentNodeRandomly(dbConn, hint.Value, hint.ValueType, hint.Key, hint.Table, conditions)
+		data1.Data, data1.Table, err1 = getOneRowInParentNodeRandomly(dbConn, hint, conditions)
 		if err1 != nil {
 			fmt.Println(err1)
 		} else {
@@ -216,24 +343,6 @@ func GetOneDataFromParentNode(appConfig config.AppConfig, hint display.HintStruc
 	return hintData, nil
 }
 
-func CheckNodeComplete(innerDependencies []config.Tag, hint display.HintStruct, app string, dbConn *sql.DB) bool {
-	for _, innerDependency := range innerDependencies {
-		for _, member := range innerDependency.Members{
-			if hint.Table == member {
-				if len(innerDependency.Members) == 1 {
-					return true
-				} else {
-					// Note: we assume that one dependency represents that one row 
-					// 		in one table depends on another row in another table
-					if result, ok:= checkRemainingDataExists(innerDependency.InnerDependencies, innerDependency.Members, hint, app, dbConn); ok {
-						fmt.Println(result)
-						return true
-					} else {
-						return false
-					}
-				}
-			}
-		}
-	}
+func CheckDisplayCondition() bool {
 	return false
 }
