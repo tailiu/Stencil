@@ -10,7 +10,6 @@ import (
 	"transaction/config"
 	"database/sql"
 	"time"
-	// "strconv"
 	"errors"
 )
 
@@ -22,20 +21,24 @@ func DisplayThread(app string, migrationID int) {
 	stencilDBConn, appDBConn, appConfig, pks := display.Initialize(app)
 
 	// For now just assume this is an infinite loop
-	var secondRound bool
-	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
+	secondRound := false
+	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); !display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
 		for _, oneMigratedData := range migratedData {
 			// fmt.Println(oneMigratedData)
-			checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneMigratedData, migratedData, app, pks, secondRound)
+			checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneMigratedData, app, pks, secondRound)
 		}
 		time.Sleep(checkInterval)
 	}
 
 	secondRound = true
+	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks)
+	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
+		checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
+	}
 }
 
 
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, migratedData []display.HintStruct, app string, pks map[string]string, secondRound bool) (bool, error) {
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (bool, error) {
 	// fmt.Println(oneMigratedData)
 	var val int
 	for _, v := range oneMigratedData.KeyVal {
@@ -61,7 +64,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 					return false, err2
 				} else {
 					// This should not happen in Stencil case, because root node data should
-					// be separated stored
+					// be stored separatedly
 					if tags == nil {
 						fmt.Println("This Data Already Belongs To Root Node!")
 						return true, nil
@@ -82,7 +85,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 							fmt.Println(err4)
 							return false, err4
 						} else {
-							result, err5 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneDataInParentNode, migratedData, app, pks, secondRound)
+							result, err5 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneDataInParentNode, app, pks, secondRound)
 							if err5 != nil {
 								fmt.Println(err5)
 								return false, err5
@@ -96,7 +99,17 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 										return true, nil
 									}
 								} else {
-									return false, nil
+									if secondRound && dependency_handler.CheckDisplayCondition() {
+										err6 := display.Display(stencilDBConn, app, completeDataHints, pks)
+										if err6 != nil {
+											fmt.Println(err6)
+											return false, err6
+										} else {
+											return true, nil
+										}
+									} else {
+										return false, nil
+									}
 								}
 							}
 						}

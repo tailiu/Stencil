@@ -342,3 +342,7 @@ func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig
 	fmt.Println(hintData)
 	return hintData, nil
 }
+
+func CheckDisplayCondition() bool {
+	return false
+}
