@@ -71,8 +71,11 @@ func Display(stencilDBConn *sql.DB, app string, dataHints []HintStruct, pks map[
 	 
 	for _, dataHint := range dataHints {
 		table := dataHint.Table
-		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = true WHERE app = '%s' and table = '%s' and id = %d;",
+		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = true WHERE app = '%s' and table_name = '%s' and id = %d;",
 							app, table, dataHint.KeyVal[pks[table]])
+		fmt.Println("**************************************")
+		fmt.Println(query)
+		fmt.Println("**************************************")
 		queries = append(queries, query)
 	}
 

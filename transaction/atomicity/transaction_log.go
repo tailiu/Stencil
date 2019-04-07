@@ -63,6 +63,7 @@ func CreateTxnLogTable() {
 			action_id INT NOT NULL, 
 			action_type string NOT NULL CHECK (action_type IN ('COMMIT','ABORT','ABORTED', 'CHANGE', 'BEGIN_TRANSACTION')),
 			undo_action string, 
+			created_at TIMESTAMP NOT NULL,
 			INDEX action_id_index (action_id));`
 	if _, err := stencilDB.Exec(op); err != nil {
 		log.Fatal(err)
@@ -71,9 +72,11 @@ func CreateTxnLogTable() {
 
 func BeginTransaction() (*Log_txn, error) {
 	txn_id := randomNonnegativeInt()
+	t := time.Now().Format(time.RFC3339)
 
 	stencilDB := db.GetDBConn(StencilDBName)
-	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type) VALUES (%d, 'BEGIN_TRANSACTION');", txn_id)
+	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, 'BEGIN_TRANSACTION', '%s');", 
+					txn_id, t)
 	if _, err := stencilDB.Exec(op); err != nil {
 		return nil, err
 	}
@@ -82,8 +85,9 @@ func BeginTransaction() (*Log_txn, error) {
 }
 
 func LogChange(undo_action string, log_txn *Log_txn) error {
-	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, undo_action) VALUES (%d, 'CHANGE', '%s');",
-		log_txn.Txn_id, undo_action)
+	t := time.Now().Format(time.RFC3339)
+	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, undo_action, created_at) VALUES (%d, 'CHANGE', '%s', '%s');",
+		log_txn.Txn_id, undo_action, t)
 	if _, err := log_txn.DBconn.Exec(op); err != nil {
 		return err
 	}
@@ -91,7 +95,9 @@ func LogChange(undo_action string, log_txn *Log_txn) error {
 }
 
 func LogOutcome(log_txn *Log_txn, outcome string) error {
-	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type) VALUES (%d, '%s');", log_txn.Txn_id, outcome)
+	t := time.Now().Format(time.RFC3339)
+	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, '%s', '%s');", 
+						log_txn.Txn_id, outcome, t)
 	if _, err := log_txn.DBconn.Exec(op); err != nil {
 		return err
 	}

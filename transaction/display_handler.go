@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	// "log"
+	"log"
 	// "transaction/atomicity"
 	// "transaction/db"
 	"transaction/display"
@@ -39,41 +39,42 @@ func DisplayThread(app string, migrationID int) {
 
 
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (bool, error) {
-	// fmt.Println(oneMigratedData)
+	fmt.Println(oneMigratedData)
 	var val int
 	for _, v := range oneMigratedData.KeyVal {
 		val = v
 	}
 	displayed, err1 := display.GetDisplayFlag(stencilDBConn, app, oneMigratedData.Table, val)
 
-	// fmt.Println(displayed)
+	fmt.Println(displayed)
 	if err1 != nil {
-		fmt.Println(err1)
+		log.Fatal(err1)
 		return false, err1
 	} else {
 		if displayed {
 			return true, nil
 		} else {
 			complete, completeDataHints := dependency_handler.CheckNodeComplete(appDBConn, appConfig.Tags, oneMigratedData, app)
+			fmt.Println(complete, completeDataHints)
 			if !complete {
 				return false, errors.New("Data of a Node is Not Complete")
 			} else {
 				tags, err2 := dependency_handler.GetParentTags(appConfig, oneMigratedData)
 				if err2 != nil {
-					fmt.Println(err2)
+					log.Fatal(err2)
 					return false, err2
 				} else {
 					// This should not happen in Stencil case, because root node data should
 					// be stored separatedly
 					if tags == nil {
-						fmt.Println("This Data Already Belongs To Root Node!")
+						log.Fatal("This Data Already Belongs To Root Node!")
 						return true, nil
 					} else {
 						for _, tag := range tags {
 							if tag == "root" {
 								err3 := display.Display(stencilDBConn, app, completeDataHints, pks)
 								if err3 != nil {
-									fmt.Println(err3)
+									log.Fatal(err3)
 									return false, err3
 								} else {
 									return true, nil
@@ -82,18 +83,18 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 						}
 						oneDataInParentNode, err4 := dependency_handler.GetOneDataFromParentNodeRandomly(appDBConn, appConfig, oneMigratedData, app)
 						if err4 != nil {
-							fmt.Println(err4)
+							log.Fatal(err4)
 							return false, err4
 						} else {
 							result, err5 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneDataInParentNode, app, pks, secondRound)
 							if err5 != nil {
-								fmt.Println(err5)
+								log.Fatal(err5)
 								return false, err5
 							} else {
 								if result {
 									err6 := display.Display(stencilDBConn, app, completeDataHints, pks)
 									if err6 != nil {
-										fmt.Println(err6)
+										log.Fatal(err6)
 										return false, err6
 									} else {
 										return true, nil
@@ -102,7 +103,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 									if secondRound && dependency_handler.CheckDisplayCondition() {
 										err6 := display.Display(stencilDBConn, app, completeDataHints, pks)
 										if err6 != nil {
-											fmt.Println(err6)
+											log.Fatal(err6)
 											return false, err6
 										} else {
 											return true, nil
@@ -162,7 +163,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 
 func main() {
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 534782464)
+	DisplayThread(dstApp, 945978681)
 
 	// var completeDataHints []display.HintStruct
 	// stencilDBConn, _, _, pks := display.Initialize(dstApp)
@@ -175,10 +176,10 @@ func main() {
 	// 	// fmt.Println(appConfig)
 	// 	// fmt.Println(appConfig.Tags)
 	// 	keyVal := map[string]int {
-	// 		"id": 62632,
+	// 		"id": 440047296002523137,
 	// 	}
 	// 	hint := display.HintStruct {
-	// 		Table: "accounts",
+	// 		Table: "users",
 	// 		KeyVal: keyVal,
 	// 	} 
 	// 	dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)

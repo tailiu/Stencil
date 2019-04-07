@@ -61,7 +61,7 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 			procDependencies[newVal] = append(procDependencies[newVal], newKey)
 		}
 	}
-	fmt.Println(procDependencies)
+	// fmt.Println(procDependencies)
 
 	var data map[string]string
 	var err error
@@ -72,9 +72,7 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 			return nil, false
 		}
 	}
-	// fmt.Println(data)
 
-	// fmt.Println(hint)
 	result = append(result, hint)
 
 	queue := []DataInDependencyNode{DataInDependencyNode{
@@ -82,7 +80,11 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 		Data:	data,
 	}}
 	for len(queue) != 0 && len(procDependencies) != 0 {
-		dataInDependencyNode, queue := queue[0], queue[1:]
+		// fmt.Println(queue)
+		// fmt.Println(procDependencies)
+
+		dataInDependencyNode := queue[0]
+		queue = queue[1:]
 		
 		table := dataInDependencyNode.Table
 		for col, val := range dataInDependencyNode.Data {
@@ -94,6 +96,8 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 				}
 				for _, dep := range deps {
 					data, err = getOneRowBasedOnDependency(dbConn, app, intVal, dep)
+					// fmt.Println(data)
+					
 					if err != nil {
 						fmt.Println(err)
 						return nil, false
@@ -102,6 +106,7 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 
 					table1 := strings.Split(dep, ".")[0]
 					key1 := strings.Split(dep, ".")[1]
+					// fmt.Println(queue)
 					queue = append(queue, DataInDependencyNode{
 						Table:	table1,
 						Data:	data,
@@ -129,7 +134,7 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 							deps1 = append(deps1[:i], deps1[i+1:]...)
 							break
 						}
-					} 
+					}
 					if len(deps1) == 0 {
 						delete(procDependencies, table1 + "." + key1)
 					} else {
@@ -141,7 +146,8 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 		}
 	}
 
-	fmt.Println(procDependencies)
+	// fmt.Println(procDependencies)
+	// fmt.Println(result)
 	if len(procDependencies) == 0 {
 		return result, true
 	} else {
@@ -207,7 +213,7 @@ func getOneRowInParentNodeRandomly(dbConn *sql.DB, hint display.HintStruct, cond
 			query += from + where
 		}
 	}
-	fmt.Println(query)
+	// fmt.Println(query)
 
 	data := db.GetAllColsOfRows(dbConn, query)
 	if len(data) == 0 {
@@ -323,14 +329,14 @@ func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig
 			}
 		}
 
-		fmt.Println(conditions)
+		// fmt.Println(conditions)
 		// fmt.Println(hint)
 
 		data1.Data, data1.Table, err1 = getOneRowInParentNodeRandomly(dbConn, hint, conditions)
 		if err1 != nil {
 			fmt.Println(err1)
 		} else {
-			fmt.Println(data1)
+			// fmt.Println(data1)
 			break
 		}
 	}
@@ -339,7 +345,7 @@ func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig
 	if err2 != nil {
 		log.Fatal(err2)
 	} 
-	fmt.Println(hintData)
+	// fmt.Println(hintData)
 	return hintData, nil
 }
 
