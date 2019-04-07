@@ -293,7 +293,10 @@
                                         "last_sign_in_at":"users.last_sign_in_at",
                                         "current_sign_in_ip":"users.current_sign_in_ip",
                                         "last_sign_in_ip":"users.last_sign_in_ip",
-                                        "unconfirmed_email":"users.unconfirmed_email"
+                                        "unconfirmed_email":"users.unconfirmed_email",
+                                        "created_at":"users.created_at",
+                                        "updated_at":"users.updated_at",
+                                        "account_id":"people.id"
                                     }
                                 }
                             ]
