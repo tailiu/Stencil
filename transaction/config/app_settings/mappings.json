@@ -91,7 +91,7 @@
                                             "statuses.reply": "False"
                                     },
                                     "mapping": {
-                                        "id":"id",
+                                        "id":"statuses.id",
                                         "author_id":"statuses.account_id",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
@@ -145,9 +145,9 @@
                                     "table": "conversations",
                                     "conditions":[],
                                     "mapping": {
-                                        "id":"id",
-                                        "created_at":"created_at",
-                                        "updated_at":"updated_at",
+                                        "id":"conversations.id",
+                                        "created_at":"conversations.created_at",
+                                        "updated_at":"conversations.updated_at",
                                         "guid":"$guid"
                                     }
                                 }
@@ -160,11 +160,11 @@
                                     "table": "likes",
                                     "conditions":{},
                                     "mapping":{
-                                        "id":"id",
-                                        "target_id":"status_id",
-                                        "created_at":"created_at",
-                                        "updated_at":"updated_at",
-                                        "author_id":"account_id",
+                                        "id":"favourites.id",
+                                        "target_id":"favourites.status_id",
+                                        "created_at":"favourites.created_at",
+                                        "updated_at":"favourites.updated_at",
+                                        "author_id":"favourites.account_id",
                                         "target_type":"$like_target_type"
                                     }
                                 }
@@ -177,26 +177,26 @@
                                     "table": "contacts",
                                     "conditions":{},
                                     "mapping": { 
-                                        "id":"id",
-                                        "created_at":"created_at",
-                                        "updated_at":"updated_at",
-                                        "user_id":"account_id",
-                                        "person_id":"target_account_id",
-                                        "sharing":"F",
-                                        "receiving":"T"
+                                        "id":"follows.id",
+                                        "created_at":"follows.created_at",
+                                        "updated_at":"follows.updated_at",
+                                        "user_id":"follows.account_id",
+                                        "person_id":"follows.target_account_id",
+                                        "sharing":"$F",
+                                        "receiving":"$T"
                                     }
                                 },
                                 {
                                     "table": "contacts",
                                     "conditions":{},
                                     "mapping": { 
-                                        "id":"id",
-                                        "created_at":"created_at",
-                                        "updated_at":"updated_at",
-                                        "person_id":"account_id",
-                                        "user_id":"target_account_id",
-                                        "sharing":"T",
-                                        "receiving":"F"
+                                        "id":"follows.id",
+                                        "created_at":"follows.created_at",
+                                        "updated_at":"follows.updated_at",
+                                        "person_id":"follows.account_id",
+                                        "user_id":"follows.target_account_id",
+                                        "sharing":"$T",
+                                        "receiving":"$F"
                                     }
                                 }
                             ]
@@ -210,9 +210,9 @@
                                         "reply": "True"
                                     },
                                     "mapping":{
-                                        "id":"id",
-                                        "person_id":"account_id",
-                                        "mentions_container_id":"status_id",
+                                        "id":"mentions.id",
+                                        "person_id":"mentions.account_id",
+                                        "mentions_container_id":"mentions.status_id",
                                         "mentions_container_type":"$mentions_type1"
                                     }
                                 },
@@ -222,9 +222,9 @@
                                         "reply": "False"
                                     },
                                     "mapping":{
-                                        "id":"id",
-                                        "person_id":"account_id",
-                                        "mentions_container_id":"status_id",
+                                        "id":"mentions.id",
+                                        "person_id":"mentions.account_id",
+                                        "mentions_container_id":"mentions.status_id",
                                         "mentions_container_type":"$mentions_type2"
                                     }
                                 }
@@ -242,7 +242,7 @@
             "fromApp": "diaspora",
             "toApps": [
                 {
-                    "app": "mastodon",
+                    "name": "mastodon",
                     "methods": [],
                     "inputs": [
                         {
@@ -468,11 +468,11 @@
             },
             "toApps": [
                     {
-                        "app": "mastodon",
+                        "name": "mastodon",
                         "mappings":[]
                     },
                     {
-                        "app": "diaspora",
+                        "name": "diaspora",
                         "mappings":[]
                     }
             ]
