@@ -250,6 +250,10 @@
                         {
                             "name": "returnFollow",
                             "mapping": "func return 'follow'"
+                        },
+                        {
+                            "name": "not",
+                            "mapping": "func not()"
                         }
                     ],
                     "mappings": [
@@ -266,7 +270,7 @@
                                         "updated_at":"accounts.updated_at",
                                         "encrypted_password":"users.encrypted_password",
                                         "avatar": "avatar_remote_url",
-                                        "account_active":"users.disabled",
+                                        "account_active":"#not(users.disabled)",
                                         "handle": "accounts.display_name"
                                     }
                                 },
@@ -294,7 +298,7 @@
                                             "statuses.reblog_of_id": "#isNull"
                                     },
                                     "mapping": {
-                                        "id":"id",
+                                        "id":"statuses.id",
                                         "user_id":"statuses.account_id",
                                         "content":"statuses.text",
                                         "created_at":"statuses.created_at",
@@ -344,10 +348,9 @@
                                     "table": "conversations",
                                     "conditions":{},
                                     "mapping": {
-                                        "id":"id",
-                                        "created_at":"created_at",
-                                        "updated_at":"updated_at",
-                                        "guid":"$guid"
+                                        "id":"conversations.id",
+                                        "created_at":"conversations.created_at",
+                                        "updated_at":"conversations.updated_at"
                                     }
                                 }
                             ]
@@ -359,11 +362,11 @@
                                     "table": "likes",
                                     "conditions":{},
                                     "mapping":{
-                                        "id":"id",
-                                        "tweet_id":"status_id",
-                                        "created_at":"created_at",
-                                        "updated_at":"updated_at",
-                                        "user_id":"account_id"                                    }
+                                        "id":"favourites.id",
+                                        "tweet_id":"favourites.status_id",
+                                        "created_at":"favourites.created_at",
+                                        "updated_at":"favourites.updated_at",
+                                        "user_id":"favourites.account_id"                                    }
                                 }
                             ]
                         },
@@ -374,11 +377,11 @@
                                     "table": "user_actions",
                                     "conditions":{},
                                     "mapping": { 
-                                        "id":"id",
-                                        "created_at":"created_at",
-                                        "updated_at":"updated_at",
-                                        "from_user_id":"account_id",
-                                        "to_user_id":"target_account_id",
+                                        "id":"follows.id",
+                                        "created_at":"follows.created_at",
+                                        "updated_at":"follows.updated_at",
+                                        "from_user_id":"follows.account_id",
+                                        "to_user_id":"follows.target_account_id",
                                         "action_type": "#returnFollow"
                                     }
                                 }
@@ -612,19 +615,177 @@
         },
         {
             "fromApp": "twitter",
-            "varsFuncs":{
-                "funcs": [],
-                "vars": []
-            },
             "toApps": [
-                    {
-                        "name": "mastodon",
-                        "mappings":[]
-                    },
-                    {
-                        "name": "diaspora",
-                        "mappings":[]
-                    }
+                {
+                    "name": "mastodon",
+                    "methods": [
+                        {
+                            "name": "guid",
+                            "mapping": "func uuid.New()"
+                        },
+                        {
+                            "name": "not",
+                            "mapping": "func not()"
+                        }
+                    ],
+                    "mappings":[
+                        {
+                            "fromTables": ["credentials", "users"],
+                            "toTables": [
+                                {
+                                    "table": "accounts",
+                                    "conditions":{},
+                                    "mapping":{
+                                        "id":"users.id",
+                                        "username":"users.name",
+                                        "created_at":"users.created_at",
+                                        "updated_at":"users.updated_at",
+                                        "avatar_remote_url": "users.avatar",
+                                        "display_name": "users.handle"
+                                    }
+                                },
+                                {
+                                    "table": "users",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id": "#guid",
+                                        "email":"credentials.email",
+                                        "account_id":"users.id",
+                                        "encrypted_password":"credentials.password",
+                                        "disabled":"#not(users.account_active)",
+                                        "created_at":"users.created_at",
+                                        "updated_at":"users.updated_at"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["user_actions"],
+                            "toTables": [
+                                {
+                                    "table": "follows",
+                                    "conditions":{
+                                        "user_actions.action_type": "follows"
+                                    },
+                                    "mapping": { 
+                                        "id":"user_actions.id",
+                                        "created_at":"user_actions.created_at",
+                                        "updated_at":"user_actions.updated_at",
+                                        "account_id":"user_actions.from_user_id",
+                                        "target_account_id":"user_actions.to_user_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["likes"],
+                            "toTables": [
+                                {
+                                    "table": "favourites",
+                                    "conditions":{},
+                                    "mapping":{
+                                        "id":"likes.id",
+                                        "status_id":"likes.tweet_id",
+                                        "created_at":"likes.created_at",
+                                        "updated_at":"likes.updated_at",
+                                        "account_id":"likes.user_id"                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["conversations"],
+                            "toTables": [
+                                {
+                                    "table": "conversations",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id":"conversations.id",
+                                        "created_at":"conversations.created_at",
+                                        "updated_at":"conversations.updated_at"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["tweets"],
+                            "toTables": [
+                                {
+                                    "table": "statuses",
+                                    "conditions": {},
+                                    "mapping": {
+                                        "id":"tweets.id",
+                                        "created_at":"tweets.created_at",
+                                        "updated_at":"tweets.updated_at",
+                                        "text":"tweets.content",
+                                        "in_reply_to_id":"tweets.reply_to_id",
+                                        "account_id":"tweets.user_id"
+                                    }
+                                },
+                                {
+                                    "table": "media_attachments",
+                                    "conditions": {},
+                                    "mapping" : {
+                                        "id": "#guid",
+                                        "remote_url": "tweets.tweet_media",
+                                        "status_id": "tweets.id",
+                                        "created_at": "tweets.created_at",
+                                        "updated_at": "tweets.updated_at",
+                                        "account_id": "tweets.user_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["retweets"],
+                            "toTables": [
+                                {
+                                    "table": "statuses",
+                                    "conditions": {},
+                                    "mapping": {
+                                        "id":"retweets.id",
+                                        "created_at":"retweets.created_at",
+                                        "updated_at":"retweets.updated_at",
+                                        "account_id":"retweets.user_id",
+                                        "reblog_of_id":"retweets.tweet_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["messages"],
+                            "toTables": [
+                                {
+                                    "table": "statuses",
+                                    "conditions": {},
+                                    "mapping": {
+                                        "id":"messages.id",
+                                        "created_at":"messages.created_at",
+                                        "updated_at":"messages.updated_at",
+                                        "text":"messages.content",
+                                        "account_id":"messages.user_id",
+                                        "conversation_id":"messages.conversation_id"
+                                    }
+                                },
+                                {
+                                    "table": "media_attachments",
+                                    "conditions": {},
+                                    "mapping" : {
+                                        "id": "#guid",
+                                        "remote_url": "messages.message_media",
+                                        "status_id": "messages.id",
+                                        "created_at": "messages.created_at",
+                                        "updated_at": "messages.updated_at",
+                                        "account_id": "messages.user_id"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "diaspora",
+                    "mappings":[]
+                }
             ]
         }
     ]
