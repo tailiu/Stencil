@@ -20,7 +20,6 @@ var displayedData = make(map[string]int)
 func DisplayThread(app string, migrationID int) {
 	stencilDBConn, appDBConn, appConfig, pks := display.Initialize(app)
 
-	// For now just assume this is an infinite loop
 	secondRound := false
 	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); !display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
 		for _, oneMigratedData := range migratedData {
@@ -54,6 +53,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 		if displayed {
 			return true, nil
 		} else {
+			// This should be different for the second round because, based on config, nodes could be displayed despite incomplete 
 			complete, completeDataHints := dependency_handler.CheckNodeComplete(appDBConn, appConfig.Tags, oneMigratedData, app)
 			fmt.Println(complete, completeDataHints)
 			if !complete {
@@ -64,7 +64,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 					log.Fatal(err2)
 					return false, err2
 				} else {
-					// This should not happen in Stencil case, because root node data should
+					// This should not happen in Stencil's case, because root node data should
 					// be stored separatedly
 					if tags == nil {
 						log.Fatal("This Data Already Belongs To Root Node!")
@@ -81,6 +81,9 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 								}
 							}
 						}
+						// This function should also be different for the second round
+						// because we may end up with always getting some data in a node that could not be displayed but other data in that  
+						// node may have already been displayed
 						oneDataInParentNode, err4 := dependency_handler.GetOneDataFromParentNodeRandomly(appDBConn, appConfig, oneMigratedData, app)
 						if err4 != nil {
 							log.Fatal(err4)
