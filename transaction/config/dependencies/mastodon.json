@@ -58,7 +58,8 @@
                 {
                     "member1.id":"member5.activity_id"
                 }
-            ]
+            ],
+            "setting": "display_based_on_inner_dependencies"
         },
         {
             "name" : "follows",
@@ -67,7 +68,7 @@
             },
             "keys": {
                 "account_id": "member1.account_id" 
-            } 
+            }
         },
         {
             "name" : "favourites",
@@ -76,7 +77,7 @@
             },
             "keys": {
                 "id": "member1.id"
-            } 
+            }
         }
     ],
 	"dependencies": [

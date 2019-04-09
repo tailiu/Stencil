@@ -61,6 +61,7 @@ type Tag struct {
 	Keys              map[string]string   `json:"keys"`
 	InnerDependencies []map[string]string `json:"inner_dependencies"`
 	Restrictions      []map[string]string `json:"restrictions"`
+	Setting			  string			  `json:"setting"`
 }
 
 type Dependency struct {
