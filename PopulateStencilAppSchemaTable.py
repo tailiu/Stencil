@@ -37,33 +37,39 @@ def addSchemaMappings(app_name):
                     for mappedTable in mappedTables:
                         mappedTableName = mappedTable["table"]
                         for mappedCol, mappedFromAttr in mappedTable["mapping"].items():
-                            try:
+                            if "$" in mappedFromAttr or "#" in mappedFromAttr:
+                                print mappedFromAttr
+                            else:
                                 mappedFromAttr = mappedFromAttr.split(".")
+                                print mappedFromAttr
                                 mapperTable = mappedFromAttr[0]
                                 mapperCol = mappedFromAttr[1]
 
                                 sql = "select app_schemas.rowid from app_schemas join app_tables on app_schemas.table_id = app_tables.rowid join apps on apps.rowid = app_tables.app_id where apps.app_name = '%s' and app_tables.table_name = '%s' and app_schemas.column_name = '%s'"
                                 
                                 _sql = sql%(app_name,mapperTable,mapperCol)
+                                print _sql
                                 stencilCursor.execute(_sql)
                                 mapperAttrID = stencilCursor.fetchone()[0]
                                 
                                 _sql = sql%(mappedApp,mappedTableName,mappedCol)
+                                print _sql
                                 stencilCursor.execute(_sql)
                                 mappedAttrID = stencilCursor.fetchone()[0]
 
                                 isql = "INSERT INTO schema_mappings (app1_attribute, app2_attribute) VALUES (%d, %d)"
-                                stencilCursor.execute(isql%(mapperAttrID, mappedAttrID))
+                                # stencilCursor.execute(isql%(mapperAttrID, mappedAttrID))
 
                                 print app_name,mapperTable,mapperCol, "id", mapperAttrID, mappedApp, mappedTableName, mappedCol, "id", mappedAttrID
-                                print isql
-                            except IndexError as e:
-                                print mappedFromAttr, e
-    stencilConn.commit()
+                                print isql%(mapperAttrID, mappedAttrID)
+                                print "------------------------------------------"
+                            # except IndexError as e:
+                                
+    # stencilConn.commit()
 
 
 if __name__ == "__main__":
-    for app_name in ["diaspora", "mastodon"]:
+    for app_name in ["twitter", "diaspora", "mastodon"]:
         # populateAppSchema(app_name)
         addSchemaMappings(app_name)
         # break

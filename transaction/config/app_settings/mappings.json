@@ -145,9 +145,9 @@
                                     "table": "conversations",
                                     "conditions":{},
                                     "mapping": {
-                                        "id":"id",
-                                        "created_at":"created_at",
-                                        "updated_at":"updated_at",
+                                        "id":"conversations.id",
+                                        "created_at":"conversations.created_at",
+                                        "updated_at":"conversations.updated_at",
                                         "guid":"#guid"
                                     }
                                 }
@@ -268,8 +268,7 @@
                                         "name":"accounts.username",
                                         "created_at":"accounts.created_at",
                                         "updated_at":"accounts.updated_at",
-                                        "encrypted_password":"users.encrypted_password",
-                                        "avatar": "avatar_remote_url",
+                                        "avatar": "accounts.avatar_remote_url",
                                         "account_active":"#not(users.disabled)",
                                         "handle": "accounts.display_name"
                                     }
@@ -304,7 +303,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "reply_to_id": "statuses.in_reply_to_id",
-                                        "tweet_media": "statuses.remote_url",
+                                        "tweet_media": "media_attachments.remote_url",
                                         "media_type": "#transformMediaType"
                                     }
                                 },
@@ -331,11 +330,10 @@
                                         "id":"statuses.id",
                                         "user_id":"statuses.account_id",
                                         "conversation_id":"statuses.conversation_id",
-                                        "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "content": "statuses.text",
-                                        "message_media": "statuses.remote_url",
+                                        "message_media": "media_attachments.remote_url",
                                         "media_type": "#transformMediaType"
                                     }
                                 }
@@ -741,7 +739,7 @@
                             "fromTables": ["contacts"],
                             "toTables": [
                                 {
-                                    "table": "user_action",
+                                    "table": "user_actions",
                                     "conditions": {
                                         "contacts.receiving": "true"
                                     },
@@ -1099,19 +1097,19 @@
                             ]
                         },
                         {
-                            "fromTables": ["user_action"],
+                            "fromTables": ["user_actions"],
                             "toTables": [
                                 {
                                     "table": "contacts",
                                     "conditions":{
-                                        "user_action.action_type": "follow"
+                                        "user_actions.action_type": "follow"
                                     },
                                     "mapping": {
-                                        "id":"user_action.id",
-                                        "created_at":"user_action.created_at",
-                                        "updated_at":"user_action.updated_at",
-                                        "user_id":"user_action.from_user_id",
-                                        "person_id":"user_action.to_user_id",
+                                        "id":"user_actions.id",
+                                        "created_at":"user_actions.created_at",
+                                        "updated_at":"user_actions.updated_at",
+                                        "user_id":"user_actions.from_user_id",
+                                        "person_id":"user_actions.to_user_id",
                                         "receiving": "$contact_follow_action"
                                     }
                                 }
