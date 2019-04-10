@@ -5,7 +5,6 @@
 package qr
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -18,178 +17,13 @@ import (
 	"github.com/xwb1989/sqlparser"
 )
 
-type QR struct {
-	DB           *sql.DB
-	PDBNAME      string
-	AppName      string
-	AppID        string
-	BaseMappings []map[string]string
-	SuppMappings []map[string]string
-}
-
-type QI struct {
-	TableName        string
-	Columns          []string
-	Values           []string
-	Conditions       string
-	ColumnsWithTable map[string][]string
-}
-
-func NewQR(app_id, PDBNAME string) *QR {
-	qr := new(QR)
-	// qr.AppName = app_name
-	qr.AppID = app_id
-	qr.PDBNAME = PDBNAME
-	qr.DB = db.GetDBConn(qr.PDBNAME)
-	// qr.SetAppId()
-	qr.GetBaseMappings()
-	qr.GetSupplementaryMappings()
-	return qr
-}
-
-func deleteEmpty(s []string) []string {
-	var r []string
-	for _, str := range s {
-		if str != "" {
-			r = append(r, str)
-		}
+func (self QR) NewRowId() (string, error) {
+	sql := "SELECT unique_rowid() AS rowid"
+	res := db.DataCall1(self.StencilDB, sql)
+	if val, ok := res["rowid"]; ok {
+		return val.(string), nil
 	}
-	return r
-}
-
-func Contains(a []string, x string) bool {
-	x = strings.Trim(strings.ToLower(x), ", ")
-	for _, n := range a {
-		if strings.Contains(n, ".") {
-			n = strings.Split(n, ".")[1]
-		}
-		n = strings.Trim(strings.ToLower(n), ", ")
-		if x == n {
-			return true
-		}
-	}
-	return false
-}
-
-func (self QI) ValueOfColumn(col string) (string, error) {
-
-	for i, c := range self.Columns {
-		if col == c {
-			return self.Values[i], nil
-		}
-	}
-	return "", errors.New("No column: " + col)
-}
-
-func (self QI) Print() {
-
-	fmt.Println(self)
-
-	// for i, c := range self.Columns {
-	// 	fmt.Println("i:", i, "Col:", c, " || Val:", self.Values[i])
-	// }
-}
-
-func (self QR) TestQuery() {
-	q := `INSERT INTO customer (c_id, c_d_id, c_w_id, c_first, c_middle, c_last, c_street_1, c_street_2, c_city, c_state, c_zip, c_phone, c_since, c_credit, c_credit_lim, c_discount, c_balance, c_ytd_payment, c_payment_cnt, c_delivery_cnt, c_data, mark_delete, col33, col32, col27, col38) 
-		  VALUES
-		  (1, 1, 1, 'rb.#y2u\\t(_p', 'OE', 'BARBARBAR', ':XP13%zkV.Ni4LW', 'jZ)VoU1\\3:6%pGb&', 'bx,UCn[(jh]0Y<8', '(v', '562711111', '1276005133733447', '2018-10-17 16:09:46+00:00', 'GC', 50000.0, 0.26560458540916, 
-		  '-99.0', 10.0, 1, 0, 'I1&Wq\\$>n+ubgy$Y(y?ovCL!@kq92@;R./l@O*s^:b"imuK+[MuLECW$pOP9r+=fZn#PyA:W2=+/^Efqbq#D9i8|^;Dx(\\wfx>a#{\\jw{Nzy.hs,:q)H] Uwr^BR^wLSYo(;jUoFGxa4PTZwO?/"sizF,,H#vFI&Rr)K;SQnI[<d2nU[MrB_dx=4nsU[4jMta&Sup#lU*CMzF=RP#N*@$[$(-.H1iL9vZa+G0DAk(L59pV(y&>6wu>s{\\-uTLlS,yKaI;7U8c9a!P996Rz8&7Q=jOUpf*1SYgGBqXvNC@q7xjf?-ZW)G@HTz"]DB)y@+ZdNcano>V@%:1tXg7^%IU^4m?9:txNe:h"2cP
-		  w!<y3"M-#i*7lWDp', true, 'dataforcol33', 'dataforcol32', 'dataforcol27', 'dataforcol42')`
-	q = `
-		INSERT INTO item (i_id, i_im_id, i_name, i_price, i_data, mark_delete) VALUES
-		(1, 4762, '#PyA:W2=+/^Efqbq#D9i', 1.4249650239944, '8|^;Dx(\\wfx>a#{\\jw{Nzy.hs,:q)H] Uwr^BR^w', false)
-	`
-
-	_ = `UPDATE item SET i_id = 129188`
-	_ = `UPDATE item SET i_id = 129188 WHERE mark_delete = false AND i_name = 'zain'`
-	_ = `UPDATE item SET i_id = 129188, i_data = 'blahblah', col31 = '1233' WHERE ark_delete = false AND i_name = 'zain'`
-	_ = `UPDATE customer SET c_id = 129188, c_data = 'blahblah', col38 = '1233' WHERE mark_delete = false AND c_name = 'zain'`
-	_ = `DELETE FROM customer WHERE mark_delete = false AND c_name = 'zain'`
-	_ = `DELETE FROM customer`
-
-	_ = `SELECT c_id, c_data, c_d_id, col38, col27 FROM customer WHERE c_id = '123'`
-
-	_ = `SELECT * FROM customer  WHERE c_id = '1234' AND c_data = 'aw23de'`
-
-	_ = `SELECT * FROM customer WHERE c_id = '5' `
-
-	q = `SELECT * FROM customer`
-
-	_ = `SELECT Customer.* FROM Customer WHERE c_id = '5' AND Customer.mark_delete != 'true'`
-
-	_ = `SELECT History.* FROM History  JOIN Customer ON History.H_C_ID = Customer.C_ID AND History.H_C_D_ID = Customer.C_D_ID AND History.H_C_W_ID = Customer.C_W_ID WHERE Customer.c_id = '5' AND History.mark_delete != 'true'`
-
-	_ = `SELECT Orderr.* FROM Orderr  JOIN Customer ON Orderr.O_C_ID = Customer.C_ID AND Orderr.O_D_ID = Customer.C_D_ID AND Orderr.O_W_ID = Customer.C_W_ID WHERE Customer.c_id = '5' AND Orderr.mark_delete != 'true'`
-
-	_ = `SELECT New_Order.* FROM New_Order  JOIN Orderr ON New_Order.NO_O_ID = Orderr.O_ID AND New_Order.NO_D_ID = Orderr.O_D_ID AND New_Order.NO_W_ID = Orderr.O_W_ID JOIN Customer ON Orderr.O_C_ID = Customer.C_ID AND Orderr.O_D_ID = Customer.C_D_ID AND Orderr.O_W_ID = Customer.C_W_ID WHERE Customer.c_id = '5' AND New_Order.mark_delete != 'true'`
-
-	_ = `SELECT Order_Line.* FROM Order_Line  JOIN Orderr ON Order_Line.OL_O_ID = Orderr.O_ID AND Order_Line.OL_D_ID = Orderr.O_D_ID AND Order_Line.OL_W_ID = Orderr.O_W_ID JOIN Customer ON Orderr.O_C_ID = Customer.C_ID AND Orderr.O_D_ID = Customer.C_D_ID AND Orderr.O_W_ID = Customer.C_W_ID WHERE Customer.c_id = '5' AND Order_Line.mark_delete != 'true'`
-
-	fmt.Println("------------------------------------------------------------------------------")
-	fmt.Println("*QUERY:", q)
-	for i, q := range self.Resolve(q) {
-		fmt.Println("******************************************************************************")
-		fmt.Println(i+1, ":", q)
-	}
-	fmt.Println("------------------------------------------------------------------------------")
-}
-
-func (self QR) NewRowId() string {
-	sql := "Select unique_rowid() as rowid"
-	if res, err := db.DataCall1("stencil", sql); err != nil {
-		return "-1"
-	} else {
-		return res["rowid"]
-	}
-}
-
-func (self *QR) SetAppID(appID string) {
-	self.AppID = appID
-	self.GetBaseMappings()
-	self.GetSupplementaryMappings()
-}
-
-func (self *QR) SetAppId() string {
-	sql := fmt.Sprintf("SELECT row_id from apps WHERE app_name = '%s'", self.AppName)
-	if result, err := db.DataCall1(self.PDBNAME, sql); err == nil {
-		self.AppID = result["row_id"]
-	} else {
-		self.AppID = "-1"
-	}
-	return self.AppID
-}
-
-func (self *QR) GetBaseMappings() {
-	sql := fmt.Sprintf(`SELECT
-							LOWER(app_schemas.table_name) as logical_table, 
-							LOWER(app_schemas.column_name) as logical_column, 
-							LOWER(physical_schema.table_name) as physical_table,  
-							LOWER(physical_schema.column_name) as physical_column
-						FROM 	
-							physical_mappings 
-							JOIN 	app_schemas ON physical_mappings.logical_attribute = app_schemas.row_id
-							JOIN 	physical_schema ON physical_mappings.physical_attribute = physical_schema.row_id
-						WHERE 	app_schemas.app_id  = '%s' `, self.AppID)
-
-	self.BaseMappings = db.DataCall(self.PDBNAME, sql)
-}
-
-func (self *QR) GetSupplementaryMappings() {
-	sql := fmt.Sprintf(`SELECT  LOWER(asm.table_name) as logical_table,
-							LOWER(asm.column_name)  as logical_column,
-							CONCAT('supplementary_',st.row_id::string) as physical_table,
-							LOWER(asm.column_name)  as physical_column
-						FROM 	app_schemas asm JOIN
-						supplementary_tables st ON 
-						st.table_name = asm.table_name AND 
-						st.app_id = asm.app_id
-						WHERE 	asm.app_id  = '%s' AND
-						asm.row_id NOT IN (
-							SELECT logical_attribute FROM physical_mappings
-						)`, self.AppID)
-
-	self.SuppMappings = db.DataCall(self.PDBNAME, sql)
+	return "-1", errors.New("can't get new rowid")
 }
 
 func (self QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string {
@@ -197,10 +31,10 @@ func (self QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string
 	var phyMap = make(map[string][][]string)
 
 	for _, mapping := range append(self.BaseMappings, self.SuppMappings...) {
-		if ltable == mapping["logical_table"] {
-			ptab := mapping["physical_table"]
-			pcol := mapping["physical_column"]
-			lcol := mapping["logical_column"]
+		if strings.EqualFold(ltable, mapping["logical_table"].(string)) {
+			ptab := mapping["physical_table"].(string)
+			pcol := mapping["physical_column"].(string)
+			lcol := mapping["logical_column"].(string)
 			var pair []string
 			pair = append(pair, pcol, lcol)
 			if _, ok := phyMap[ptab]; ok {
@@ -208,10 +42,8 @@ func (self QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string
 			} else {
 				phyMap[ptab] = [][]string{pair}
 			}
-			// fmt.Println(i, pair, mapping)
 		}
 	}
-
 	return phyMap
 }
 
@@ -220,10 +52,10 @@ func (self QR) GetBaseMappingForLogicalTable(ltable string) map[string][][]strin
 	var phyMap = make(map[string][][]string)
 
 	for _, mapping := range self.BaseMappings {
-		if ltable == mapping["logical_table"] {
-			ptab := mapping["physical_table"]
-			pcol := mapping["physical_column"]
-			lcol := mapping["logical_column"]
+		if strings.EqualFold(ltable, mapping["logical_table"].(string)) {
+			ptab := mapping["physical_table"].(string)
+			pcol := mapping["physical_column"].(string)
+			lcol := mapping["logical_column"].(string)
 			var pair []string
 			pair = append(pair, pcol, lcol)
 			if _, ok := phyMap[ptab]; ok {
@@ -371,7 +203,7 @@ func (self QR) ResolveUpdate(sql string) []string {
 	for pt, mapping := range phyMap {
 		updates := ""
 		for _, colmap := range mapping {
-			if val, err := qi.ValueOfColumn(colmap[1]); err == nil {
+			if val, err := qi.valueOfColumn(colmap[1]); err == nil {
 				updates += fmt.Sprintf("%s = %s, ", colmap[0], escape.Literal(val))
 			}
 		}
@@ -418,9 +250,9 @@ func (self QR) GetAffectedRowIDs(table, conds string) []string {
 	pqs := self.ResolveSelect(sql, true)
 
 	if len(pqs) > 0 {
-		for _, rowMap := range db.DataCall("stencil", sql) {
+		for _, rowMap := range db.DataCall(self.StencilDB, sql) {
 			for _, val := range rowMap {
-				rowIDs = append(rowIDs, val)
+				rowIDs = append(rowIDs, val.(string))
 			}
 		}
 	}
@@ -538,7 +370,7 @@ func (self QR) ResolveSelectWithoutJoins(sql string, qi *QI, args ...interface{}
 	for pt, mapping := range phyMap {
 		joined := false
 		for _, colmap := range mapping {
-			if Contains(qi.Columns, colmap[1]) || Contains(qi.Columns, "*") {
+			if contains(qi.Columns, colmap[1]) || contains(qi.Columns, "*") {
 				if cols == "" {
 					cols = fmt.Sprintf("row_desc.row_id AS base_row_id, ")
 				}
@@ -707,29 +539,30 @@ func (self QR) ResolveSelect(sql string, args ...interface{}) []string {
 func (self QR) ResolveInsert(sql string) []string {
 
 	var PQs []string
-	rowID := self.NewRowId()
-	qi := self.GetInsertQueryIngs(sql)
-	newRowSQL := fmt.Sprintf("INSERT INTO row_desc (row_id, app_id, table_name) VALUES ('%s', '%s', '%s')", rowID, self.AppID, qi.TableName)
-	PQs = append(PQs, newRowSQL)
-	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
+	if rowID, err := self.NewRowId(); err == nil {
+		qi := self.GetInsertQueryIngs(sql)
+		newRowSQL := fmt.Sprintf("INSERT INTO row_desc (row_id, app_id, table_name) VALUES ('%s', '%s', '%s')", rowID, self.AppID, qi.TableName)
+		PQs = append(PQs, newRowSQL)
+		phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
 
-	for pt, mapping := range phyMap {
-		isValid := false
-		pqCols := fmt.Sprintf("INSERT INTO %s ( %s_row_id, app_id, ", pt, pt[0:4])
-		pqVals := fmt.Sprintf("VALUES ( '%s','%s',", rowID, self.AppID)
-		for _, colmap := range mapping {
-			if val, err := qi.ValueOfColumn(colmap[1]); err == nil {
-				isValid = true
-				pqCols += fmt.Sprintf("\"%s\", ", colmap[0])
-				pqVals += fmt.Sprintf("%s, ", escape.Literal(val))
-				// pqVals += fmt.Sprintf("E'%s',", val)
+		for pt, mapping := range phyMap {
+			isValid := false
+			pqCols := fmt.Sprintf("INSERT INTO %s ( %s_row_id, app_id, ", pt, pt[0:4])
+			pqVals := fmt.Sprintf("VALUES ( '%s','%s',", rowID, self.AppID)
+			for _, colmap := range mapping {
+				if val, err := qi.valueOfColumn(colmap[1]); err == nil {
+					isValid = true
+					pqCols += fmt.Sprintf("\"%s\", ", colmap[0])
+					pqVals += fmt.Sprintf("%s, ", escape.Literal(val))
+					// pqVals += fmt.Sprintf("E'%s',", val)
+				}
 			}
-		}
-		if isValid {
-			pq := strings.Trim(pqCols, ", ") + ") " + strings.Trim(pqVals, ", ") + ");"
-			PQs = append(PQs, pq)
-		}
+			if isValid {
+				pq := strings.Trim(pqCols, ", ") + ") " + strings.Trim(pqVals, ", ") + ");"
+				PQs = append(PQs, pq)
+			}
 
+		}
 	}
 	return PQs
 }
