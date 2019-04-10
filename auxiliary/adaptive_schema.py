@@ -131,8 +131,12 @@ def genDistanceMatrix(node_vector):
     return euclidean_distances(node_vector)
 
 def bendTheKnee(values):
-    sd = [values[i+1] + values[i-1] - 2 * values[i] for i in range(1, len(values)-1)]
-    return sd.index([max(sd)])
+    try:
+        sd = [values[i+1] + values[i-1] - 2 * values[i] for i in range(1, len(values)-1)]
+        return sd.index([max(sd)])
+    except ValueError as e:
+        print "Got:", e, "| Returning: 0"
+        return 0
 
 def getNumberOfK(node_vector):
 
@@ -150,7 +154,9 @@ def getNumberOfK(node_vector):
     vals = []
     indices = range(0, eigvec.shape[0]) 
     for i in indices:
-        vals.append( np.log(eigval[i] * np.square(np.dot(v1N.T, eigvec[i,:]))))
+        eVal = eigval[i] * np.square(np.dot(v1N.T, eigvec[i,:]))
+        if eVal > 0:
+            vals.append( np.log(eigval[i] * np.square(np.dot(v1N.T, eigvec[i,:]))))
 
     realValues = [abs(v.real) for v in vals]
 
@@ -245,10 +251,6 @@ def createSupplementaryTables():
 
 
 if __name__ == "__main__":
-
-
-    createSupplementaryTables()
-    exit(0)
     
     t = 0.5
 
@@ -270,6 +272,6 @@ if __name__ == "__main__":
         base_tables = genBaseTables(filtered_vector)
         for idx, base_attrs in base_tables.items():
             bt_name = "base_%s_%s" % (table, idx)
-            # print bt_name
+            print bt_name
             createBaseTable(bt_name, base_attrs, app_schemas, trans_attrs)
     createSupplementaryTables()
