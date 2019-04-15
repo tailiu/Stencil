@@ -37,7 +37,9 @@ def addSchemaMappings(app_name):
                     for mappedTable in mappedTables:
                         mappedTableName = mappedTable["table"]
                         for mappedCol, mappedFromAttr in mappedTable["mapping"].items():
-                            try:
+                            if "$" in mappedFromAttr or "#" in mappedFromAttr:
+                                pass
+                            else:
                                 mappedFromAttr = mappedFromAttr.split(".")
                                 mapperTable = mappedFromAttr[0]
                                 mapperCol = mappedFromAttr[1]
@@ -52,18 +54,18 @@ def addSchemaMappings(app_name):
                                 stencilCursor.execute(_sql)
                                 mappedAttrID = stencilCursor.fetchone()[0]
 
-                                isql = "INSERT INTO schema_mappings (app1_attribute, app2_attribute) VALUES (%d, %d)"
+                                isql = "INSERT INTO schema_mappings (source_attribute, dest_attribute) VALUES (%d, %d)"
                                 stencilCursor.execute(isql%(mapperAttrID, mappedAttrID))
 
-                                print app_name,mapperTable,mapperCol, "id", mapperAttrID, mappedApp, mappedTableName, mappedCol, "id", mappedAttrID
-                                print isql
-                            except IndexError as e:
-                                print mappedFromAttr, e
+                                print app_name,mapperTable,mapperCol, mapperAttrID, "=>", mappedApp, mappedTableName, mappedCol, "id", mappedAttrID
+                                # print isql%(mapperAttrID, mappedAttrID)
+                                # print "------------------------------------------"
+                            # except IndexError as e:
+                                
     stencilConn.commit()
 
 
 if __name__ == "__main__":
-    for app_name in ["diaspora", "mastodon"]:
+    for app_name in ["twitter", "diaspora", "mastodon"]:
         # populateAppSchema(app_name)
         addSchemaMappings(app_name)
-        # break
