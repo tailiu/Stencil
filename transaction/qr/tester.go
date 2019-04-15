@@ -1,8 +1,6 @@
 package qr
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func (self QR) TestQuery() {
 	q := `INSERT INTO customer (c_id, c_d_id, c_w_id, c_first, c_middle, c_last, c_street_1, c_street_2, c_city, c_state, c_zip, c_phone, c_since, c_credit, c_credit_lim, c_discount, c_balance, c_ytd_payment, c_payment_cnt, c_delivery_cnt, c_data, mark_delete, col33, col32, col27, col38) 
@@ -40,11 +38,11 @@ func (self QR) TestQuery() {
 
 	_ = `SELECT Order_Line.* FROM Order_Line  JOIN Orderr ON Order_Line.OL_O_ID = Orderr.O_ID AND Order_Line.OL_D_ID = Orderr.O_D_ID AND Order_Line.OL_W_ID = Orderr.O_W_ID JOIN Customer ON Orderr.O_C_ID = Customer.C_ID AND Orderr.O_D_ID = Customer.C_D_ID AND Orderr.O_W_ID = Customer.C_W_ID WHERE Customer.c_id = '5' AND Order_Line.mark_delete != 'true'`
 
-	fmt.Println("------------------------------------------------------------------------------")
+	// fmt.Println("------------------------------------------------------------------------------")
 	fmt.Println("*QUERY:", q)
-	for i, q := range self.Resolve(q) {
-		fmt.Println("******************************************************************************")
-		fmt.Println(i+1, ":", q)
-	}
-	fmt.Println("------------------------------------------------------------------------------")
+	// for i, q := range self.Resolve(q) {
+	// 	fmt.Println("******************************************************************************")
+	// 	fmt.Println(i+1, ":", q)
+	// }
+	// fmt.Println("------------------------------------------------------------------------------")
 }

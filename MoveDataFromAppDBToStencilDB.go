@@ -2,54 +2,45 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"log"
 	"transaction/db"
 	"transaction/qr"
-
-	escape "github.com/tj/go-pg-escape"
 )
 
 func main() {
+
 	stencil := "stencil"
+	stencilDB := db.GetDBConn(stencil)
+
 	appName := "diaspora"
 	appDB := db.GetDBConn(appName)
-	stencilDB := db.GetDBConn(stencil)
+
 	QR := qr.NewQRWithAppName(appName)
 	tables := db.DataCall(appDB, "SHOW TABLES FROM "+appName)
 
 	for _, tableRes := range tables {
-		table := tableRes["table_name"]
-
+		table := tableRes["table_name"].(string)
 		sql := fmt.Sprintf("SELECT * FROM %s", table)
-
-		for rownum, row := range db.DataCall(appName, sql) {
-			cols := ""
-			vals := ""
+		for _, row := range db.DataCall(appDB, sql) {
+			var cols []string
+			var vals []interface{}
 			for col, val := range row {
-				cols += fmt.Sprintf("%s, ", col)
-				vals += strings.TrimPrefix(fmt.Sprintf("%s, ", escape.Literal(val)), "E")
+				cols = append(cols, col)
+				vals = append(vals, val)
 			}
-			insql := escape.Escape("INSERT INTO %s (%s) VALUES (%s)", table, strings.Trim(cols, ", "), strings.Trim(vals, ", "))
-			// fmt.Println(insql)
-
-			// tx, err := stencilDB.Begin()
-			// if err != nil {
-			// 	fmt.Println(err)
-			// 	panic("ERROR! SOURCE TRANSACTION CAN'T BEGIN")
-			// }
-
-			for qnum, pq := range QR.Resolve(insql) {
-				fmt.Println(rownum, qnum, pq)
-
-				// if _, err := tx.Exec(pq); err != nil {
-				// 	fmt.Println(rownum, qnum, pq)
-				// 	fmt.Println(err)
-				// 	panic("Can't Insert")
-				// } else {
-				// 	fmt.Println(rownum, qnum, table, " = Inserted!")
-				// }
+			qi := qr.CreateQI(table, cols, vals, qr.QTInsert)
+			if _, err := stencilDB.Begin(); err != nil {
+				log.Fatal("ERROR! SOURCE TRANSACTION CAN'T BEGIN:", err)
+			} else {
+				for qnum, pq := range QR.ResolveInsert(qi) {
+					fmt.Println(qnum, pq)
+					// if _, err := tx.Exec(pq); err != nil {
+					// 	panic("Can't Insert:", err)
+					// }
+					fmt.Println(qnum, table, " = Inserted!")
+				}
+				// tx.Commit()
 			}
-			// tx.Commit()
 		}
 
 	}

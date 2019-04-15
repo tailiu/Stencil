@@ -241,7 +241,7 @@ def createSupplementaryTables():
         supp_table_id = cur.fetchone()['rowid']
         
         cols = [attr  for attr in column_names.split(',') if len(attr)]
-        cols.insert(0,"supp_rowid SERIAL PRIMARY KEY")
+        cols.insert(0,"rowid SERIAL PRIMARY KEY")
         cols.append("supp_created_at TIMESTAMP DEFAULT now()")
         cols.append("supp_mark_delete BOOL")
         
