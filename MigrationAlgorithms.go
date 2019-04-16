@@ -166,7 +166,7 @@ func (t Thread) NormalMigration(userid int, srcApp, dstApp string, node *Depende
 	catch NodeNotFound:
 		t.releaseAllLocks()
 		if t.Root {
-			AggressiveMigration(userid, srcApp, dstApp, t.Root)
+			NormalMigration(userid, srcApp, dstApp, t.Root)
 		}else{
 			if checkUserInApp(userid, srcApp){
 				removeUserFromApplication(userid, srcApp)
