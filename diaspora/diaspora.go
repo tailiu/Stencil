@@ -12,9 +12,10 @@ import (
 	"time"
 )
 
-func createNewUsers(dbConn *sql.DB, num int) {
+func createNewUsers(dbConn *sql.DB, num, thread int) {
 	for i := 0; i < num; i++ {
-		datagen.NewUser(dbConn)
+		uid, _, _ := datagen.NewUser(dbConn)
+		fmt.Println(fmt.Sprintf("Thread: %3d, User: %4d/%4d | uid : %d", thread, i, num, uid))
 	}
 }
 
@@ -52,7 +53,7 @@ func makeUsersFriends(dbConn *sql.DB, users []*datagen.User) {
 	for uidx, user := range users {
 		helper.Init()
 		indices := rand.Perm(len(users))
-		num_of_friends := helper.RandomNumber(0, 500)
+		num_of_friends := helper.RandomNumber(0, 300)
 		for i := 0; i <= num_of_friends; i++ {
 			if index := indices[i]; index == uidx {
 				continue
@@ -60,11 +61,11 @@ func makeUsersFriends(dbConn *sql.DB, users []*datagen.User) {
 				user2 := users[index]
 				aspect_idx := helper.RandomNumber(0, len(user.Aspects)-1)
 				datagen.FollowUser(dbConn, user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx])
-				log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx]))
+				// log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx]))
 				if helper.RandomNumber(1, 50)%2 == 0 {
 					aspect_idx := helper.RandomNumber(0, len(user2.Aspects)-1)
 					datagen.FollowUser(dbConn, user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx])
-					log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx]))
+					// log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx]))
 				}
 			}
 		}
@@ -206,10 +207,36 @@ func runMakeUsersTalk() {
 	}
 }
 
+func runCreateNewUsers() {
+	// dbConn := db.GetDBConn(config.APP_NAME)
+	for i := 0; i < 100; i++ {
+		go createNewUsers(db.GetDBConn(config.APP_NAME), 500, i)
+	}
+	for {
+		fmt.Scanln()
+	}
+}
+
+func runMakeUsersFriends() {
+	dbConn := db.GetDBConn(config.APP_NAME)
+	users := datagen.GetAllUsersWithAspects(dbConn)
+	num_users := len(users)
+	inc := 500
+	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
+		go makeUsersFriends(db.GetDBConn(config.APP_NAME), users[i:j])
+	}
+
+	for {
+		fmt.Scanln()
+	}
+}
+
 func main() {
 
 	// dbConn := db.GetDBConn(config.APP_NAME)
-	runinteractWithPosts()
+	// runCreateNewUsers()
+	runMakeUsersFriends()
+	// runinteractWithPosts()
 	// runMakeUsersTalk()
 	// users := datagen.GetAllUsersWithAspects(dbConn)
 

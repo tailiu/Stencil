@@ -31,7 +31,7 @@ type Post struct {
 
 func NewUser(dbConn *sql.DB) (int, int, []int) {
 
-	log.Println("Creating new user!")
+	// log.Println("Creating new user!")
 
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -57,8 +57,8 @@ func NewUser(dbConn *sql.DB) (int, int, []int) {
 
 	// SQLs
 
-	sql := "INSERT INTO users (username, serialized_private_key, language, email, encrypted_password, created_at, updated_at, color_theme) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id "
-	user_id, _ := db.RunTxWQnArgsReturningId(tx, sql, username, serialized_private_key, language, email, encrypted_password, time.Now(), time.Now(), color_theme)
+	sql := "INSERT INTO users (username, serialized_private_key, language, email, encrypted_password, created_at, updated_at, color_theme, last_seen, sign_in_count, current_sign_in_ip, last_sign_in_ip, current_sign_in_at, last_sign_in_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id "
+	user_id, _ := db.RunTxWQnArgsReturningId(tx, sql, username, serialized_private_key, language, email, encrypted_password, time.Now(), time.Now(), color_theme, time.Now(), sign_in_count, current_sign_in_ip, last_sign_in_ip, time.Now(), time.Now())
 
 	sql = "INSERT INTO people (guid,diaspora_handle,serialized_public_key,owner_id,created_at,updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
 	person_id, _ := db.RunTxWQnArgsReturningId(tx, sql, guid, diaspora_handle, serialized_public_key, user_id, time.Now(), time.Now())
@@ -66,8 +66,8 @@ func NewUser(dbConn *sql.DB) (int, int, []int) {
 	sql = "INSERT INTO profiles (person_id, created_at, updated_at, full_name) VALUES ($1, $2, $3, $4)"
 	db.RunTxWQnArgs(tx, sql, person_id, time.Now(), time.Now(), full_name)
 
-	sql = "UPDATE users SET unconfirmed_email = NULL, confirm_email_token = NULL WHERE users.unconfirmed_email = $1"
-	db.RunTxWQnArgs(tx, sql, email)
+	// sql = "UPDATE users SET unconfirmed_email = NULL, confirm_email_token = NULL WHERE users.unconfirmed_email = $1"
+	// db.RunTxWQnArgs(tx, sql, email)
 
 	sql = "INSERT INTO aspects (name, user_id, created_at, updated_at, order_id) VALUES ($1, $2, $3, $4, $5)  RETURNING id"
 
@@ -80,15 +80,15 @@ func NewUser(dbConn *sql.DB) (int, int, []int) {
 	// aspect_ids = append(aspect_ids, db.RunTxWQnArgsReturningId(tx, sql, "Work", user_id, time.Now(), time.Now(), 3))
 	// aspect_ids = append(aspect_ids, db.RunTxWQnArgsReturningId(tx, sql, "Acquaintances", user_id, time.Now(), time.Now(), 4))
 
-	sql = "UPDATE users SET sign_in_count = $1, current_sign_in_at = $2, last_sign_in_at = $3, current_sign_in_ip = $4, last_sign_in_ip = $5, updated_at = $6 WHERE users.id = $7"
-	db.RunTxWQnArgs(tx, sql, sign_in_count, time.Now(), time.Now(), current_sign_in_ip, last_sign_in_ip, time.Now(), user_id)
+	// sql = "UPDATE users SET sign_in_count = $1, current_sign_in_at = $2, last_sign_in_at = $3, current_sign_in_ip = $4, last_sign_in_ip = $5, updated_at = $6 WHERE users.id = $7"
+	// db.RunTxWQnArgs(tx, sql, sign_in_count, time.Now(), time.Now(), current_sign_in_ip, last_sign_in_ip, time.Now(), user_id)
 
-	sql = "UPDATE users SET updated_at = $1, last_seen = $2 WHERE users.id = $3 "
-	db.RunTxWQnArgs(tx, sql, time.Now(), time.Now(), user_id)
+	// sql = "UPDATE users SET updated_at = $1, last_seen = $2 WHERE users.id = $3 "
+	// db.RunTxWQnArgs(tx, sql, time.Now(), time.Now(), user_id)
 
 	tx.Commit()
 
-	log.Println("New user created with id", user_id)
+	// log.Println("New user created with id", user_id)
 
 	return user_id, person_id, aspect_ids
 }
@@ -252,7 +252,7 @@ func NewLike(dbConn *sql.DB, post_id, person_id, post_owner_id int) (int, error)
 
 func FollowUser(dbConn *sql.DB, person_id_1, person_id_2, aspect_id int) {
 
-	log.Println("Creating new follow!")
+	// log.Println("Creating new follow!")
 
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -294,7 +294,7 @@ func FollowUser(dbConn *sql.DB, person_id_1, person_id_2, aspect_id int) {
 
 	tx.Commit()
 
-	log.Println("New contact created.")
+	// log.Println("New contact created.")
 }
 
 func ContactExists(dbConn *sql.DB, person_id_1, person_id_2 int) (bool, string) {
