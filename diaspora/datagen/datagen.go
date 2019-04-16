@@ -95,8 +95,6 @@ func NewUser(dbConn *sql.DB) (int, int, []int) {
 
 func NewPost(dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int {
 
-	log.Println("Creating new post!")
-
 	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Fatal("create post transaction can't even begin")
@@ -109,11 +107,8 @@ func NewPost(dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int {
 
 	// SQLs
 
-	sql := "INSERT INTO posts (author_id, guid, type, text, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	post_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id, guid, post_type, text, time.Now(), time.Now())
-
-	sql = "UPDATE posts SET updated_at = $1, interacted_at = $2 WHERE posts.id = $3"
-	db.RunTxWQnArgs(tx, sql, time.Now(), time.Now(), post_id)
+	sql := "INSERT INTO posts (author_id, guid, type, text, created_at, updated_at, interacted_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
+	post_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id, guid, post_type, text, time.Now(), time.Now(), time.Now())
 
 	sql = "INSERT INTO aspect_visibilities (shareable_id, aspect_id) VALUES ($1, $2)"
 
@@ -127,8 +122,6 @@ func NewPost(dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int {
 	db.RunTxWQnArgs(tx, sql, post_id, user_id)
 
 	tx.Commit()
-
-	log.Println("New post created with id", post_id)
 
 	return post_id
 }
@@ -254,6 +247,9 @@ func FollowUser(dbConn *sql.DB, person_id_1, person_id_2, aspect_id int) {
 
 	// log.Println("Creating new follow!")
 
+	ok1, contact_id1 := ContactExists(dbConn, person_id_2, person_id_1)
+	ok2, contact_id2 := ContactExists(dbConn, person_id_1, person_id_2)
+
 	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Fatal("create follow transaction can't even begin")
@@ -266,16 +262,17 @@ func FollowUser(dbConn *sql.DB, person_id_1, person_id_2, aspect_id int) {
 
 	// SQLs
 
-	if ok, contact_id := ContactExists(dbConn, person_id_2, person_id_1); ok {
+	if ok1 {
 		sql := "UPDATE contacts SET sharing = $1, updated_at = $2 WHERE contacts.id = $3"
-		db.RunTxWQnArgs(tx, sql, "t", time.Now(), contact_id)
-		if ok, contact_id := ContactExists(dbConn, person_id_1, person_id_2); ok {
+		db.RunTxWQnArgs(tx, sql, "t", time.Now(), contact_id1)
+		if ok2 {
 			sql = "UPDATE contacts SET receiving = $1, updated_at = $2 WHERE contacts.id = $3"
-			db.RunTxWQnArgs(tx, sql, "t", time.Now(), contact_id)
+			db.RunTxWQnArgs(tx, sql, "t", time.Now(), contact_id2)
 			sql = "INSERT INTO aspect_memberships (aspect_id,contact_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
-			db.RunTxWQnArgs(tx, sql, aspect_id, contact_id, time.Now(), time.Now())
+			db.RunTxWQnArgs(tx, sql, aspect_id, contact_id2, time.Now(), time.Now())
 		}
 	} else {
+
 		sql := "INSERT INTO contacts (user_id,person_id,created_at,updated_at,receiving) VALUES ($1, $2, $3, $4, $5) RETURNING id"
 		contact_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id_1, person_id_2, time.Now(), time.Now(), "t")
 
@@ -294,13 +291,14 @@ func FollowUser(dbConn *sql.DB, person_id_1, person_id_2, aspect_id int) {
 
 	tx.Commit()
 
-	// log.Println("New contact created.")
 }
 
 func ContactExists(dbConn *sql.DB, person_id_1, person_id_2 int) (bool, string) {
 
-	sql := "SELECT id FROM contacts WHERE user_id = $1 AND person_id = $2 LIMIT 1"
-	res := db.DataCall(dbConn, sql, person_id_1, person_id_2)
+	sql := "SELECT id FROM contacts WHERE user_id = $1 AND person_id = $2"
+	// log.Println("checking", sql, person_id_1, person_id_2)
+	res := db.DataCall1(dbConn, sql, person_id_1, person_id_2)
+	// log.Println("result of contact exists", res)
 	if len(res) > 0 {
 		return true, res[0]["id"]
 	}

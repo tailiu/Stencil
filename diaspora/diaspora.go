@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+func WaitForAWhile() {
+	time.Sleep(10 * time.Minute)
+}
+
 func createNewUsers(dbConn *sql.DB, num, thread int) {
 	for i := 0; i < num; i++ {
 		uid, _, _ := datagen.NewUser(dbConn)
@@ -19,61 +23,39 @@ func createNewUsers(dbConn *sql.DB, num, thread int) {
 	}
 }
 
-func blockAUser() {
+func createNewPostsForUsers(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 
-}
-
-func createNewPostsForUsers(dbConn *sql.DB, users []*datagen.User) {
-
-	for _, user := range users {
+	for uidx, user := range users {
 		num_of_posts := helper.RandomNumber(0, 500)
 		for i := 0; i <= num_of_posts; i++ {
+			log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uidx, len(users), i, num_of_posts))
 			datagen.NewPost(dbConn, user.User_ID, user.Person_ID, user.Aspects)
 		}
 	}
-}
-
-func createNewCommentsOnPosts(dbConn *sql.DB, users []*datagen.User) {
-
-	// for _, user := range users {
-	// 	friends_of_user := datagen.GetFriendsOfUser(dbConn, user.User_ID)
-	// 	num_of_posts := helper.RandomNumber(0, 500)
-	// 	for i := 0; i <= num_of_posts; i++ {
-	// 		datagen.NewPost(dbConn, user.User_ID, user.Person_ID, user.Aspects)
-	// 	}
-	// }
 }
 
 func createNewMentionsForUsers(dbConn *sql.DB, users []*datagen.User) {
 
 }
 
-func makeUsersFriends(dbConn *sql.DB, users []*datagen.User) {
+func makeUsersFriends(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 
 	for uidx, user := range users {
-		helper.Init()
 		indices := rand.Perm(len(users))
 		num_of_friends := helper.RandomNumber(0, 300)
 		for i := 0; i <= num_of_friends; i++ {
-			if index := indices[i]; index == uidx {
-				continue
-			} else {
+			if index := indices[i]; index != uidx {
+				log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d", thread_num, uidx, len(users), i, num_of_friends))
 				user2 := users[index]
 				aspect_idx := helper.RandomNumber(0, len(user.Aspects)-1)
 				datagen.FollowUser(dbConn, user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx])
-				// log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx]))
 				if helper.RandomNumber(1, 50)%2 == 0 {
 					aspect_idx := helper.RandomNumber(0, len(user2.Aspects)-1)
 					datagen.FollowUser(dbConn, user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx])
-					// log.Println(fmt.Sprintf("User: %d added User: %d to Aspect: %d", user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx]))
 				}
 			}
 		}
 	}
-}
-
-func WaitForAWhile() {
-	time.Sleep(10 * time.Minute)
 }
 
 func makeUsersTalk(dbConn *sql.DB, users []*datagen.User, thread_num int) {
@@ -116,8 +98,8 @@ func makeUsersTalk(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 
 }
 
+// comments, like and reshare friends posts
 func interactWithPosts(dbConn *sql.DB, users []*datagen.User, thread_num int) {
-	// comments, like and reshare friends posts
 
 	num_users := len(users)
 	for uidx, user := range users {
@@ -221,9 +203,26 @@ func runMakeUsersFriends() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	num_users := len(users)
+	inc := 1000
+	// makeUsersFriends(dbConn, users, 0)
+
+	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
+		go makeUsersFriends(dbConn, users[i:j], thread_num)
+	}
+
+	for {
+		fmt.Scanln()
+	}
+}
+
+func runCreateNewPosts() {
+	dbConn := db.GetDBConn(config.APP_NAME)
+	users := datagen.GetAllUsersWithAspects(dbConn)
+	num_users := len(users)
 	inc := 500
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
-		go makeUsersFriends(db.GetDBConn(config.APP_NAME), users[i:j])
+		thread_num := j / inc
+		go createNewPostsForUsers(dbConn, users[i:j], thread_num)
 	}
 
 	for {
@@ -236,6 +235,7 @@ func main() {
 	// dbConn := db.GetDBConn(config.APP_NAME)
 	// runCreateNewUsers()
 	runMakeUsersFriends()
+	// runCreateNewPosts()
 	// runinteractWithPosts()
 	// runMakeUsersTalk()
 	// users := datagen.GetAllUsersWithAspects(dbConn)
