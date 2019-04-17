@@ -35,6 +35,7 @@ func NewUser(dbConn *sql.DB) (int, int, []int) {
 
 	tx, err := dbConn.Begin()
 	if err != nil {
+		log.Println(err)
 		log.Fatal("create user transaction can't even begin")
 	}
 
@@ -97,7 +98,8 @@ func NewPost(dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int {
 
 	tx, err := dbConn.Begin()
 	if err != nil {
-		log.Fatal("create post transaction can't even begin")
+		log.Println("create post transaction can't even begin")
+		return -1
 	}
 
 	// Params

@@ -45,6 +45,9 @@ func makeUsersFriends(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 		indices := rand.Perm(len(users))
 		num_of_friends := helper.RandomNumber(0, 300)
 		for i := 0; i <= num_of_friends; i++ {
+			if i >= len(indices) {
+				break
+			}
 			if index := indices[i]; index != uidx {
 				log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d", thread_num, uidx, len(users), i, num_of_friends))
 				user2 := users[index]
@@ -182,18 +185,18 @@ func runMakeUsersTalk() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 
-	makeUsersTalk(dbConn, users, 0)
+	// makeUsersTalk(dbConn, users, 0)
 
-	// num_users := len(users)
-	// inc := 1000
+	num_users := len(users)
+	inc := 500
 
-	// for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
-	// 	go makeUsersTalk(dbConn, users[i:j], thread_num)
-	// }
+	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
+		go makeUsersTalk(dbConn, users[i:j], thread_num)
+	}
 
-	// for {
-	// 	fmt.Scanln()
-	// }
+	for {
+		fmt.Scanln()
+	}
 }
 
 func runCreateNewUsers() {
@@ -210,7 +213,7 @@ func runMakeUsersFriends() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	num_users := len(users)
-	inc := 500
+	inc := 100
 	// makeUsersFriends(dbConn, users, 0)
 
 	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
@@ -226,7 +229,7 @@ func runCreateNewPosts() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	num_users := len(users)
-	inc := 500
+	inc := 100
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
 		go createNewPostsForUsers(dbConn, users[i:j], thread_num)
@@ -254,7 +257,7 @@ func main() {
 	case "friends":
 		fmt.Println("Making People Friends!")
 		runMakeUsersFriends()
-	case "new_users":
+	case "newusers":
 		fmt.Println("Creating New Users!")
 		runCreateNewUsers()
 	}

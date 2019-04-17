@@ -11,9 +11,12 @@ import (
 
 func GetDBConn(dbname string) *sql.DB {
 
-	dbConnAddr := "postgresql://%s@%s:%s/%s?sslmode=disable"
-	dbConn, err := sql.Open("postgres",
-		fmt.Sprintf(dbConnAddr, config.DB_USER, config.DB_ADDR, config.DB_PORT, dbname))
+	// dbConnAddr := "postgresql://%s@%s:%s/%s?sslmode=disable"
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
+		"password=%s dbname=%s sslmode=disable", config.DB_ADDR, config.DB_PORT, config.DB_USER, config.DB_PASSWORD, dbname)
+
+	dbConn, err := sql.Open("postgres", psqlInfo)
+	// sql.Open("postgres",fmt.Sprintf(dbConnAddr, config.DB_USER, config.DB_ADDR, config.DB_PORT, dbname))
 	if err != nil {
 		log.Println("Can't connect to DB:", dbname)
 		log.Fatal(err)
