@@ -18,7 +18,7 @@ type SchemaMapping struct {
 }
 
 type MappedApp struct {
-	Name     string              `json:"app"`
+	Name     string              `json:"name"`
 	Methods  []map[string]string `json:"methods"`
 	Inputs   []map[string]string `json:"inputs"`
 	Mappings []Mapping           `json:"mappings"`
@@ -61,7 +61,7 @@ type Tag struct {
 	Keys              map[string]string   `json:"keys"`
 	InnerDependencies []map[string]string `json:"inner_dependencies"`
 	Restrictions      []map[string]string `json:"restrictions"`
-	Setting			  string			  `json:"setting"`
+	Setting           string              `json:"setting"`
 }
 
 type Dependency struct {

@@ -525,9 +525,10 @@ func GetFriendsOfUser(dbConn *sql.DB, user_id int) []*User {
 	var users []*User
 
 	sql := `SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects, contacts.id as contact_id, am.aspect_id as contact_aspect
-			FROM contacts JOIN aspect_memberships am on contacts.id = am.contact_id
-			JOIN users on users.id = contacts.person_id
-			JOIN people on users.id = people.owner_id
+			FROM contacts 
+			JOIN aspect_memberships am on contacts.id = am.contact_id
+			JOIN people on people.id = contacts.user_id
+			JOIN users on users.id = people.owner_id
 			JOIN aspects on aspects.user_id = users.id
 			WHERE contacts.user_id = $1 AND contacts.sharing = true
 			GROUP BY users.id, people.id, contacts.id, am.aspect_id

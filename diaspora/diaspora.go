@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -59,9 +60,10 @@ func makeUsersFriends(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 }
 
 func makeUsersTalk(dbConn *sql.DB, users []*datagen.User, thread_num int) {
+	fmt.Println(fmt.Sprintf("Thread # %d, reporting for duty! ", thread_num))
 	num_users := len(users)
 	for uidx, user := range users {
-		friends_of_user := datagen.GetFriendsOfUser(dbConn, user.User_ID)
+		friends_of_user := datagen.GetFriendsOfUser(dbConn, user.Person_ID)
 		num_frnds := len(friends_of_user)
 		for fidx, friend := range friends_of_user {
 			if helper.RandomNumber(1, 100)%3 == 0 {
@@ -69,7 +71,7 @@ func makeUsersTalk(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 				if err == nil {
 					num_of_msgs := helper.RandomNumber(50, 1000)
 					for i := 0; i <= num_of_msgs; {
-						fmt.Println(fmt.Sprintf("{THREAD: %d} [Users %d/%d | Frnds %d/%d] | UserID: %d, FriendID:%d | Conversation: %d | Msg # %d ", thread_num, uidx, num_users, fidx, num_frnds, user.Person_ID, friend.Person_ID, conversation_id, i))
+						fmt.Println(fmt.Sprintf("{THREAD: %3d} [Users %4d/%4d | Frnds %3d/%3d] | Msg # %3d/%3d | Conversation: %d", thread_num, uidx, num_users, fidx, num_frnds, i, num_of_msgs, conversation_id))
 						if helper.RandomNumber(1, 100)%2 == 0 {
 							_, err := datagen.NewMessage(dbConn, friend.Person_ID, conversation_id, conversation_visibilities_id)
 							if err != nil {
@@ -87,7 +89,7 @@ func makeUsersTalk(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 							i++
 						}
 					}
-					datagen.UpdateConversation(dbConn, conversation_id, conversation_visibilities_id)
+					// datagen.UpdateConversation(dbConn, conversation_id, conversation_visibilities_id)
 				} else {
 					log.Println(err)
 					WaitForAWhile()
@@ -103,13 +105,16 @@ func interactWithPosts(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 
 	num_users := len(users)
 	for uidx, user := range users {
-		friends_of_user := datagen.GetFriendsOfUser(dbConn, user.User_ID)
+		friends_of_user := datagen.GetFriendsOfUser(dbConn, user.Person_ID)
 		posts := datagen.GetPostsForUser(dbConn, user.Person_ID)
+		if len(posts) <= 0 || len(friends_of_user) <= 0 {
+			continue
+		}
 		num_frnds, num_posts := len(friends_of_user), helper.RandomNumber(0, len(posts))
 		for pidx, post := range posts[0:num_posts] {
 			for fidx, friend := range friends_of_user {
 				thereIsAnError := true
-				fmt.Println(fmt.Sprintf("{THREAD: %3d} Users %3d/%4d | Frnds %3d/%4d | Posts %4d/%4d ", thread_num, uidx, num_users, fidx, num_frnds, pidx, num_posts))
+				log.Println(fmt.Sprintf("{THREAD: %3d} Users %3d/%4d | Frnds %3d/%4d | Posts %4d/%4d ", thread_num, uidx, num_users, fidx, num_frnds, pidx, num_posts))
 
 				if helper.RandomNumber(1, 100)%4 == 0 { // 25%, Friend Likes The Post
 					if _, err := datagen.NewLike(dbConn, post.ID, friend.Person_ID, user.Person_ID); err != nil {
@@ -161,11 +166,10 @@ func runinteractWithPosts() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	num_users := len(users)
-	inc := 100
+	inc := 500
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
-		go interactWithPosts(db.GetDBConn(config.APP_NAME), users[i:j], thread_num)
-		// fmt.Println(i, j, num_users, thread_num)
+		go interactWithPosts(dbConn, users[i:j], thread_num)
 	}
 
 	for {
@@ -174,19 +178,22 @@ func runinteractWithPosts() {
 }
 
 func runMakeUsersTalk() {
-	dbConn := db.GetDBConn(config.APP_NAME)
-	users := datagen.GetAllUsersWithAspectsExcept(dbConn, "author_id", "conversations")
-	num_users := len(users)
-	inc := 100
-	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
-		thread_num := j / inc
-		go makeUsersTalk(db.GetDBConn(config.APP_NAME), users[i:j], thread_num)
-		// fmt.Println(i, j, num_users, thread_num)
-	}
 
-	for {
-		fmt.Scanln()
-	}
+	dbConn := db.GetDBConn(config.APP_NAME)
+	users := datagen.GetAllUsersWithAspects(dbConn)
+
+	makeUsersTalk(dbConn, users, 0)
+
+	// num_users := len(users)
+	// inc := 1000
+
+	// for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
+	// 	go makeUsersTalk(dbConn, users[i:j], thread_num)
+	// }
+
+	// for {
+	// 	fmt.Scanln()
+	// }
 }
 
 func runCreateNewUsers() {
@@ -203,7 +210,7 @@ func runMakeUsersFriends() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	num_users := len(users)
-	inc := 1000
+	inc := 500
 	// makeUsersFriends(dbConn, users, 0)
 
 	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
@@ -232,12 +239,23 @@ func runCreateNewPosts() {
 
 func main() {
 
-	// dbConn := db.GetDBConn(config.APP_NAME)
-	// runCreateNewUsers()
-	runMakeUsersFriends()
-	// runCreateNewPosts()
-	// runinteractWithPosts()
-	// runMakeUsersTalk()
-	// users := datagen.GetAllUsersWithAspects(dbConn)
+	arg := os.Args[1]
 
+	switch arg {
+	case "posts":
+		fmt.Println("Creating New Posts!")
+		runCreateNewPosts()
+	case "comments":
+		fmt.Println("Interacting With Posts!")
+		runinteractWithPosts()
+	case "messages":
+		fmt.Println("Creating New Messages!")
+		runMakeUsersTalk()
+	case "friends":
+		fmt.Println("Making People Friends!")
+		runMakeUsersFriends()
+	case "new_users":
+		fmt.Println("Creating New Users!")
+		runCreateNewUsers()
+	}
 }
