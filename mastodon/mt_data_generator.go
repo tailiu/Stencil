@@ -303,12 +303,12 @@ func main() {
 	// threadNum := 1
 	// c := make(chan int, threadNum)
 	// for i := 0; i < threadNum; i++ {
-		// go createUsers(dbConn, 50000/threadNum, c)
+	// 	go createUsers(dbConn, 50000/threadNum, c)
 	// }
 	// for i := range c {
 	// 	fmt.Println(i)
 	// }
-	// createPublicPostsController(getAllAccountIDs(dbConn))
+	createPublicPostsController(getAllAccountIDs(dbConn))
 	// followFriendsController(dbConn, getAllAccountIDs(dbConn))
 	// createRepliesToPostsController(getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
 	// createDirectMessagesController(getAllAccountIDs(dbConn))
