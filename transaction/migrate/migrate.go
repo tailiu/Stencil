@@ -21,7 +21,7 @@ func remove(s []config.Tag, i int) []config.Tag {
 
 func addUserToApplication(node *DependencyNode, srcApp, dstApp config.AppConfig, log_txn *atomicity.Log_txn) bool {
 	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
-		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
+		log.Fatal(fmt.Sprintf("addUserToApplication: Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	} else {
 		tagMembers := node.Tag.GetTagMembers()
 		for _, appMapping := range mappings.Mappings {
@@ -121,6 +121,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 							}
 							conditionStr += fmt.Sprintf("%s = '%v'", tagAttr, node.Data[depOnAttr])
 						} else {
+							fmt.Println(depOnTag)
 							log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
 						}
 						if len(condition.Restrictions) > 0 {
