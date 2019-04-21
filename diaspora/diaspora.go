@@ -113,7 +113,7 @@ func interactWithPosts(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 		num_frnds, num_posts := len(friends_of_user), helper.RandomNumber(0, len(posts))
 		for pidx, post := range posts[0:num_posts] {
 			for fidx, friend := range friends_of_user {
-				log.Println(fmt.Sprintf("{THREAD: %3d} Users %3d/%4d | Frnds %3d/%4d | Posts %4d/%4d ", thread_num, uidx, num_users, fidx, num_frnds, pidx, num_posts))
+				fmt.Println(fmt.Sprintf("{THREAD: %3d} Users %3d/%4d | Frnds %3d/%4d | Posts %4d/%4d ", thread_num, uidx, num_users, fidx, num_frnds, pidx, num_posts))
 
 				if helper.RandomNumber(1, 100)%4 == 0 { // 25%, Friend Likes The Post
 					datagen.NewLike(dbConn, post.ID, friend.Person_ID, user.Person_ID)
@@ -141,7 +141,7 @@ func runinteractWithPosts() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	num_users := len(users)
-	inc := 1000
+	inc := 500
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
 		go interactWithPosts(db.GetDBConn(config.APP_NAME), users[i:j], thread_num)
@@ -185,7 +185,7 @@ func runMakeUsersFriends() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	num_users := len(users)
-	inc := 100
+	inc := 500
 	// makeUsersFriends(dbConn, users, 0)
 
 	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
