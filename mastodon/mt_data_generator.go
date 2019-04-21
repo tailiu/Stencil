@@ -13,7 +13,16 @@ import (
 	"database/sql"
 )
 
-var address = "postgresql://root@10.230.12.75:26257/mastodon?sslmode=disable"
+const (
+	host     = "10.230.12.75"
+	port     = 5432
+	user     = "cow"
+	password = "123456"
+	dbname   = "mastodon"
+)
+
+var address = fmt.Sprintf("host=%s port=%d user=%s "+" password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
 
 func getAllAccountIDs(dbConn *sql.DB) *[]int{
 	sql1 := fmt.Sprintf("SELECT id FROM accounts ORDER BY id;")
@@ -225,13 +234,13 @@ func createDirectMessageGroupsThread(dbConn *sql.DB, slicedAccountIDs []int, acc
 	}
 }
 
-func createDirectMessagesController(accountIDs *[]int) {
+func createDirectMessagesController(dbConn *sql.DB, accountIDs *[]int) {
 	j := 0
-	var dbConn *sql.DB
+	// var dbConn *sql.DB
 	for i := 0; i < len(*accountIDs); i++ {
 		// There are about 100,000 accounts, so there will be 100000/500 = 200 threads
 		if i != 0 && i % 500 == 0 {
-			dbConn = database.ConnectToDB(address)
+			// dbConn = database.ConnectToDB(address)
 			go createDirectMessageGroupsThread(dbConn, (*accountIDs)[j:i], accountIDs)
 			j = i
 		}
@@ -282,13 +291,13 @@ func createRepliesToPostsThread(dbConn *sql.DB, slicedPostIDs []int, accountIDs 
 	}
 }
 
-func createRepliesToPostsController(accountIDs *[]int, postIDs *[]int) {
+func createRepliesToPostsController(dbConn *sql.DB, accountIDs *[]int, postIDs *[]int) {
 	postNum, j := len(*postIDs), 0
-	var dbConn *sql.DB
+	// var dbConn *sql.DB
 	for i := 0; i < postNum; i++ {
 		// There are about 20,000,000 posts, so there will be 20000000/200000 = 100 threads
 		if i != 0 && i % 200000 == 0 {
-			dbConn = database.ConnectToDB(address)
+			// dbConn = database.ConnectToDB(address)
 			go createRepliesToPostsThread(dbConn, (*postIDs)[j:i], accountIDs)
 			j = i
 		}
@@ -300,7 +309,7 @@ func createRepliesToPostsController(accountIDs *[]int, postIDs *[]int) {
 func main() {
 	dbConn := database.ConnectToDB(address)
 
-	// threadNum := 1
+	// threadNum := 10
 	// c := make(chan int, threadNum)
 	// for i := 0; i < threadNum; i++ {
 	// 	go createUsers(dbConn, 50000/threadNum, c)
@@ -308,10 +317,10 @@ func main() {
 	// for i := range c {
 	// 	fmt.Println(i)
 	// }
-	createPublicPostsController(getAllAccountIDs(dbConn))
+	// createPublicPostsController(getAllAccountIDs(dbConn))
 	// followFriendsController(dbConn, getAllAccountIDs(dbConn))
-	// createRepliesToPostsController(getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
-	// createDirectMessagesController(getAllAccountIDs(dbConn))
+	// createRepliesToPostsController(dbConn, getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
+	createDirectMessagesController(dbConn, getAllAccountIDs(dbConn))
 
 	for {
 		fmt.Scanln()

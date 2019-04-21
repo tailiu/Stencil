@@ -17,6 +17,13 @@ import (
 
 var dbConns map[string]*sql.DB
 
+const (
+	host     = "10.230.12.75"
+	port     = 5432
+	user     = "cow"
+	password = "123456"
+)
+
 func GetDBConn(app string) *sql.DB {
 
 	if dbConns == nil {
@@ -25,8 +32,9 @@ func GetDBConn(app string) *sql.DB {
 
 	if _, ok := dbConns[app]; !ok {
 		log.Println("Creating new db conn for:", app)
-		dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
-		dbConn, err := sql.Open("postgres", fmt.Sprintf(dbConnAddr, app))
+		address := fmt.Sprintf("host=%s port=%d user=%s "+" password=%s dbname=%s sslmode=disable",
+								host, port, user, password, app)
+		dbConn, err := sql.Open("postgres", address)
 		if err != nil {
 			fmt.Println("error connecting to the db app:", app)
 			log.Fatal(err)

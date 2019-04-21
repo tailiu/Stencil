@@ -61,10 +61,9 @@ func CreateTxnLogTable() {
 	op := `CREATE TABLE txn_logs (
 			id SERIAL PRIMARY KEY, 
 			action_id INT NOT NULL, 
-			action_type string NOT NULL CHECK (action_type IN ('COMMIT','ABORT','ABORTED', 'CHANGE', 'BEGIN_TRANSACTION')),
-			undo_action string, 
-			created_at TIMESTAMP NOT NULL,
-			INDEX action_id_index (action_id));`
+			action_type varchar NOT NULL CHECK (action_type IN ('COMMIT','ABORT','ABORTED', 'CHANGE', 'BEGIN_TRANSACTION')),
+			undo_action varchar, 
+			created_at TIMESTAMP NOT NULL);`
 	if _, err := stencilDB.Exec(op); err != nil {
 		log.Fatal(err)
 	}

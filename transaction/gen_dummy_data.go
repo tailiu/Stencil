@@ -98,8 +98,8 @@ func main() {
 	// genDummyDisplayFlags(534782464)
 
 	// display.UpdateDisplayFlag(dbConn, 1, "account_id", true)
-	dbConn := db.GetDBConn(StencilDBName)
-	display.CreateDisplayFlagsTable(dbConn)
+	// dbConn := db.GetDBConn(StencilDBName)
+	// display.CreateDisplayFlagsTable(dbConn)
 
 	// err := display.GenDisplayFlag(dbConn, "mastodon", "statuses", 545445, false, 12323)
 	// err := display.UpdateDisplayFlag(dbConn, "mastodon", "statuses", 1234, true)
@@ -108,7 +108,7 @@ func main() {
 	// if err != nil {
 	// 	fmt.Println(err)
 	// } 
-	// atomicity.CreateTxnLogTable()
+	atomicity.CreateTxnLogTable()
 	// txn_id, err := atomicity.BeginTransaction()
 	// atomicity.LogChange("999", txn_id)
 	// atomicity.LogOutcome(txn_id, "COMMIT")
