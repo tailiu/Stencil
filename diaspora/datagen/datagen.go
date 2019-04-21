@@ -330,24 +330,20 @@ func NewReshare(dbConn *sql.DB, post Post, person_id int) (int, error) {
 
 	// SQLs
 
-	sql := "INSERT INTO posts (author_id, public, guid, type, text, created_at, updated_at, root_guid) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"
-	if reshare_id, err := db.RunTxWQnArgsReturningId(tx, sql, person_id, "t", uuid.New(), "Reshare", post.Text, time.Now(), time.Now(), post.GUID); err == nil {
-		sql = "UPDATE posts SET updated_at = $1, interacted_at = $2 WHERE posts.id = $3 "
-		if err := db.RunTxWQnArgs(tx, sql, time.Now(), time.Now(), reshare_id); err == nil {
-			sql = "UPDATE posts SET reshares_count = reshares_count+1 WHERE posts.type IN ('StatusMessage') AND posts.id = $1 "
-			if err := db.RunTxWQnArgs(tx, sql, post.ID); err == nil {
+	sql := "INSERT INTO posts (author_id, public, guid, type, text, created_at, updated_at, root_guid, interacted_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id"
+	if reshare_id, err := db.RunTxWQnArgsReturningId(tx, sql, person_id, "t", uuid.New(), "Reshare", post.Text, time.Now(), time.Now(), post.GUID, time.Now()); err == nil {
+		sql = "UPDATE posts SET reshares_count = reshares_count+1 WHERE posts.type IN ('StatusMessage') AND posts.id = $1 "
+		if err := db.RunTxWQnArgs(tx, sql, post.ID); err == nil {
+			sql = "INSERT INTO participations (guid, target_id, target_type, author_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
+			if err := db.RunTxWQnArgs(tx, sql, uuid.New(), reshare_id, target_type, post.Author, time.Now(), time.Now()); err == nil {
 				sql = "INSERT INTO participations (guid, target_id, target_type, author_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
-				if err := db.RunTxWQnArgs(tx, sql, uuid.New(), reshare_id, target_type, post.Author, time.Now(), time.Now()); err == nil {
-					sql = "INSERT INTO participations (guid, target_id, target_type, author_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
-					if err := db.RunTxWQnArgs(tx, sql, uuid.New(), post.ID, target_type, person_id, time.Now(), time.Now()); err == nil {
-						sql = "INSERT INTO notifications (target_type, target_id, recipient_id, created_at, updated_at, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-						if notif_id, err := db.RunTxWQnArgsReturningId(tx, sql, target_type, post.ID, post.Author, time.Now(), time.Now(), notif_type); err == nil {
-							sql := "INSERT INTO notification_actors (notification_id, person_id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
-							if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
-								tx.Commit()
-								return reshare_id, err
-							}
-							return -1, err
+				if err := db.RunTxWQnArgs(tx, sql, uuid.New(), post.ID, target_type, person_id, time.Now(), time.Now()); err == nil {
+					sql = "INSERT INTO notifications (target_type, target_id, recipient_id, created_at, updated_at, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+					if notif_id, err := db.RunTxWQnArgsReturningId(tx, sql, target_type, post.ID, post.Author, time.Now(), time.Now(), notif_type); err == nil {
+						sql := "INSERT INTO notification_actors (notification_id, person_id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
+						if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
+							tx.Commit()
+							return reshare_id, err
 						}
 						return -1, err
 					}
@@ -363,19 +359,19 @@ func NewReshare(dbConn *sql.DB, post Post, person_id int) (int, error) {
 
 }
 
-func NewConversation(dbConn *sql.DB, person_id_1, person_id_2 int) (int, int, error) {
+func NewConversation(dbConn *sql.DB, person_id_1, person_id_2 int) (int, error) {
 
-	// log.Println("Creating new conversation!")
+	// log.Println("person_id_1, person_id_2: ", person_id_1, person_id_2)
 
 	tx, err := dbConn.Begin()
 	if err != nil {
-		log.Fatal("create conversation transaction can't even begin")
+		log.Println("create conversation transaction can't even begin")
+		return -1, errors.New("create conversation transaction can't begin")
 	}
 
 	// Params
 
 	subject := helper.RandomText(helper.RandomNumber(5, 15))
-	msg_text := helper.RandomText(helper.RandomNumber(20, 100))
 	guid := uuid.New()
 
 	// SQLs
@@ -383,79 +379,61 @@ func NewConversation(dbConn *sql.DB, person_id_1, person_id_2 int) (int, int, er
 	sql := "INSERT INTO conversations (subject,guid,author_id,created_at,updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id"
 	conversation_id, err := db.RunTxWQnArgsReturningId(tx, sql, subject, guid, person_id_1, time.Now(), time.Now())
 
-	if err == nil {
-		sql = "INSERT INTO conversation_visibilities (conversation_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
-		db.RunTxWQnArgs(tx, sql, conversation_id, person_id_1, time.Now(), time.Now())
+	if err == nil && conversation_id != -1 {
 
-		sql = "INSERT INTO conversation_visibilities (conversation_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
-		conversation_visibilities_id, err := db.RunTxWQnArgsReturningId(tx, sql, conversation_id, person_id_2, time.Now(), time.Now())
+		log.Println("New conversation created with id", conversation_id)
 
-		if err == nil {
+		sql = "INSERT INTO conversation_visibilities (conversation_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)"
+		err = db.RunTxWQnArgs(tx, sql, conversation_id, person_id_1, time.Now(), time.Now(), conversation_id, person_id_2, time.Now(), time.Now())
 
-			sql = "INSERT INTO messages (conversation_id,author_id,guid,text,created_at,updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-			if err := db.RunTxWQnArgs(tx, sql, conversation_id, person_id_1, guid, msg_text, time.Now(), time.Now()); err == nil {
+		// sql = "INSERT INTO conversation_visibilities (conversation_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
+		// db.RunTxWQnArgs(tx, sql, conversation_id, person_id_2, time.Now(), time.Now())
 
-				// sql = "UPDATE conversations SET updated_at = $1 WHERE conversations.id = $2 "
-				// db.RunTxWQnArgs(tx, sql, time.Now(), conversation_id)
-
-				// sql = "UPDATE conversation_visibilities SET unread = $1, updated_at = $2 WHERE conversation_visibilities.id = $3 "
-				// db.RunTxWQnArgs(tx, sql, 1, time.Now(), conversation_visibilities_id)
-
-				tx.Commit()
-				return conversation_id, conversation_visibilities_id, err
-			}
+		if err == nil && conversation_id != -1 {
+			tx.Commit()
+			NewMessage(dbConn, person_id_1, conversation_id)
+			return conversation_id, err
 		}
 	}
 
-	// log.Println("New conversation created with id", conversation_id)
-
-	return -1, -1, err
+	return -1, err
 }
 
-func NewMessage(dbConn *sql.DB, person_id, conversation_id, conversation_visibilities_id int) (int, error) {
-
-	// log.Println("Creating new message!")
+func NewMessage(dbConn *sql.DB, person_id, conversation_id int) (int, error) {
 
 	tx, err := dbConn.Begin()
 	if err != nil {
-		log.Fatal("create message transaction can't even begin")
+		log.Println("create message transaction can't even begin")
+		return -1, errors.New("Message Transaction can't begin")
 	}
 
-	// Params
-
-	msg_text := helper.RandomText(helper.RandomNumber(20, 100))
-	guid := uuid.New()
+	msgtext := helper.RandomText(helper.RandomNumber(20, 100))
 
 	// SQLs
 
 	sql := "INSERT INTO messages (conversation_id,author_id,guid,text,created_at,updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	msg_id, err := db.RunTxWQnArgsReturningId(tx, sql, conversation_id, person_id, guid, msg_text, time.Now(), time.Now())
+	msgid, err := db.RunTxWQnArgsReturningId(tx, sql, conversation_id, person_id, uuid.New(), msgtext, time.Now(), time.Now())
 
-	// sql = "UPDATE conversations SET updated_at = $1 WHERE conversations.id = $2 "
-	// db.RunTxWQnArgs(tx, sql, time.Now(), conversation_id)
-
-	// sql = "UPDATE conversation_visibilities SET unread = $1, updated_at = $2 WHERE conversation_visibilities.id = $3"
-	// db.RunTxWQnArgs(tx, sql, 1, time.Now(), conversation_visibilities_id)
 	if err == nil {
 		tx.Commit()
 	}
 
-	// log.Println("New message created with id", msg_id)
-	return msg_id, err
+	return msgid, err
 }
 
-func UpdateConversation(dbConn *sql.DB, conversation_id, conversation_visibilities_id int) {
+func UpdateConversation(dbConn *sql.DB, conversation_id int) {
 
 	tx, err := dbConn.Begin()
 	if err != nil {
-		log.Fatal("create message transaction can't even begin")
+		log.Println("UpdateConversation transaction can't even begin")
+		return
 	}
 
 	sql := "UPDATE conversations SET updated_at = $1 WHERE conversations.id = $2 "
 	db.RunTxWQnArgs(tx, sql, time.Now(), conversation_id)
 
-	sql = "UPDATE conversation_visibilities SET unread = $1, updated_at = $2 WHERE conversation_visibilities.id = $3"
-	db.RunTxWQnArgs(tx, sql, 1, time.Now(), conversation_visibilities_id)
+	// sql = "UPDATE conversation_visibilities SET unread = $1, updated_at = $2 WHERE conversation_visibilities.id = $3"
+	// db.RunTxWQnArgs(tx, sql, 1, time.Now(), conversation_visibilities_id)
 
 	tx.Commit()
 }
