@@ -9,16 +9,11 @@ import (
 
 func CreateDisplayFlagsTable(dbConn *sql.DB) {
 	op := `CREATE TABLE display_flags (
-			app string NOT NULL,
-			table_name string NOT NULL,
+			app varchar NOT NULL,
+			table_name varchar NOT NULL,
 			id int NOT NULL,
 			display_flag bool default true, 
-			migration_id int,
-			INDEX app_index (app),
-			INDEX id_index (id),
-			INDEX table_index (table_name),
-			INDEX display_flag_index (display_flag),
-			INDEX migration_id_index (migration_id))`
+			migration_id int);`
 	if _, err := dbConn.Exec(op); err != nil {
 		log.Fatal(err)
 	}
