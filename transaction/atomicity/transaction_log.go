@@ -10,8 +10,6 @@ import (
 	"transaction/db"
 )
 
-const StencilDBName = "stencil"
-
 type Log_txn struct {
 	DBconn *sql.DB
 	Txn_id int
@@ -57,7 +55,7 @@ func randomNonnegativeInt() int {
 }
 
 func CreateTxnLogTable() {
-	stencilDB := db.GetDBConn(StencilDBName)
+	stencilDB := db.GetDBConn(db.STENCIL_DB)
 	op := `CREATE TABLE txn_logs (
 			id SERIAL PRIMARY KEY, 
 			action_id INT NOT NULL, 
@@ -74,9 +72,9 @@ func BeginTransaction() (*Log_txn, error) {
 	txn_id := randomNonnegativeInt()
 	t := time.Now().Format(time.RFC3339)
 
-	stencilDB := db.GetDBConn(StencilDBName)
-	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, 'BEGIN_TRANSACTION', '%s');", 
-					txn_id, t)
+	stencilDB := db.GetDBConn(db.STENCIL_DB)
+	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, 'BEGIN_TRANSACTION', '%s');",
+		txn_id, t)
 	if _, err := stencilDB.Exec(op); err != nil {
 		return nil, err
 	}
@@ -96,10 +94,14 @@ func LogChange(undo_action string, log_txn *Log_txn) error {
 
 func LogOutcome(log_txn *Log_txn, outcome string) error {
 	t := time.Now().Format(time.RFC3339)
-	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, '%s', '%s');", 
-						log_txn.Txn_id, outcome, t)
+	op := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, '%s', '%s');",
+		log_txn.Txn_id, outcome, t)
 	if _, err := log_txn.DBconn.Exec(op); err != nil {
 		return err
 	}
 	return nil
+}
+
+func CloseDBConn(log_txn *Log_txn) {
+	log_txn.DBconn.Close()
 }

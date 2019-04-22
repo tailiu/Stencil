@@ -1,7 +1,6 @@
 package config
 
 import (
-	"diaspora/db"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"transaction/db"
 )
 
 func CreateAppConfig(app string) (AppConfig, error) {
