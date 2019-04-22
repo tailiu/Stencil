@@ -15,15 +15,6 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 )
 
-var dbConns map[string]*sql.DB
-
-const (
-	host     = "10.230.12.75"
-	port     = 5432
-	user     = "cow"
-	password = "123456"
-)
-
 func GetDBConn(app string) *sql.DB {
 
 	if dbConns == nil {
@@ -45,6 +36,14 @@ func GetDBConn(app string) *sql.DB {
 	}
 	// log.Println("Returning dbconn for:", app)
 	return dbConns[app]
+}
+
+func CloseDBConn(app string) {
+	if _, ok := dbConns[app]; ok {
+		dbConns[app].Close()
+		delete(dbConns, app)
+		log.Println("DBConn closed for:", app)
+	}
 }
 
 func Insert(dbConn *sql.DB, query string, args ...interface{}) (int, error) {
@@ -393,16 +392,15 @@ func TxnExecute(dbConn *sql.DB, queries []string) error {
 
 }
 
-func LogError(dbquery, args, migration_id, dst_app, qerr string) error {
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", DB_ADDR, DB_PORT, DB_USER, DB_PASSWORD, STENCIL_DB)
+func SaveForEvaluation(dbConn *sql.DB, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID string) error {
+	query := "INSERT INTO evaluation (src_app, dst_app, src_table, dst_table, src_id, dst_id, src_cols, dst_cols, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
+	_, err := Insert(dbConn, query, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID)
+	return err
+}
 
-	if dbConn, dberr := sql.Open("postgres", psqlInfo); dberr != nil {
-		fmt.Println("error connecting to the db app:", STENCIL_DB)
-		return dberr
-	} else {
-		query := "INSERT INTO error_log (query, args, migration_id, dst_app, error) VALUES ($1, $2, $3, $4, $5)"
-		_, err := dbConn.Query(query, dbquery, args, migration_id, dst_app, qerr)
-		dbConn.Close()
-		return err
-	}
+func LogError(dbConn *sql.DB, dbquery, args, migration_id, dst_app, qerr string) error {
+
+	query := "INSERT INTO error_log (query, args, migration_id, dst_app, error) VALUES ($1, $2, $3, $4, $5)"
+	_, err := Insert(dbConn, query, dbquery, args, migration_id, dst_app, qerr)
+	return err
 }

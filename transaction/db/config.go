@@ -1,5 +1,9 @@
 package db
 
+import "database/sql"
+
+var dbConns map[string]*sql.DB
+
 const STENCIL_DB = "stencil"
 const DB_ADDR = "10.230.12.75"
 const DB_PORT = "5432"

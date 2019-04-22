@@ -102,5 +102,5 @@ func LogOutcome(log_txn *Log_txn, outcome string) error {
 }
 
 func CloseDBConn(log_txn *Log_txn) {
-	log_txn.DBconn.Close()
+	db.CloseDBConn(db.STENCIL_DB)
 }

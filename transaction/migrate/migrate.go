@@ -249,6 +249,7 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 		}
 		undoAction := new(atomicity.UndoAction)
 		cols, vals := "", ""
+		orgCols := ""
 		var ivals []interface{}
 		for toAttr, fromAttr := range toTable.Mapping {
 			// if val, err := node.GetValueForKey(fromAttr); err == nil {
@@ -257,6 +258,7 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 				ivals = append(ivals, val)
 				vals += fmt.Sprintf("$%d,", len(ivals))
 				cols += fmt.Sprintf("%s,", toAttr)
+				orgCols += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
 				undoAction.AddData(fromAttr, val)
 				undoAction.AddOrgTable(strings.Split(fromAttr, ".")[0])
 			} else if strings.Contains(fromAttr, "$") {
@@ -265,12 +267,14 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 					ivals = append(ivals, inputVal)
 					vals += fmt.Sprintf("$%d,", len(ivals))
 					cols += fmt.Sprintf("%s,", toAttr)
+					orgCols += fmt.Sprintf("%s,", fromAttr)
 				}
 			} else if strings.Contains(fromAttr, "#") {
 				// Resolve Mapping Method
 			}
 		}
 		if cols != "" && vals != "" {
+			orgCols := strings.Trim(orgCols, ",")
 			cols := strings.Trim(cols, ",")
 			vals := strings.Trim(vals, ",")
 			isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ", toTable.Table, cols, vals)
@@ -286,12 +290,22 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 					log.Println("## DISPLAY ERROR!", err)
 					errs = append(errs, err)
 				}
+				for _, fromTable := range undoAction.OrgTables {
+					srcID := "0"
+					if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
+						srcID = fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
+					}
+					if serr := db.SaveForEvaluation(log_txn.DBconn, "diaspora", dstApp.AppName, strings.Join(undoAction.OrgTables, ","), toTable.Table, srcID, fmt.Sprint(id), orgCols, cols, fmt.Sprint(log_txn.Txn_id)); serr != nil {
+						log.Fatal(serr)
+					}
+				}
+
 			} else {
 				fmt.Println("\n@ERROR")
 				fmt.Println("@SQL:", isql)
 				fmt.Println("@ARGS:", ivals)
 				fmt.Println(err)
-				db.LogError(isql, fmt.Sprint(ivals), fmt.Sprint(log_txn.Txn_id), dstApp.AppName, err.Error())
+				db.LogError(log_txn.DBconn, isql, fmt.Sprint(ivals), fmt.Sprint(log_txn.Txn_id), dstApp.AppName, err.Error())
 				errs = append(errs, err)
 			}
 		} else {
