@@ -1,7 +1,6 @@
 package config
 
 import (
-	"diaspora/db"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +9,10 @@ import (
 	"os"
 	"strings"
 	"time"
+	"transaction/db"
 )
+
+var SchemaMappingsObj *SchemaMappings
 
 func CreateAppConfig(app string) (AppConfig, error) {
 
@@ -24,34 +26,37 @@ func CreateAppConfig(app string) (AppConfig, error) {
 		return appConfig, errors.New("can't open file")
 	}
 
-	defer jsonFile.Close()
-
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	json.Unmarshal(byteValue, &appConfig)
 
 	appConfig.AppName = app
 	appConfig.DBConn = db.GetDBConn(app)
 
+	jsonFile.Close()
+
 	return appConfig, nil
 }
 
-func GetSchemaMappings() (SchemaMappings, error) {
-	var schemaMappings SchemaMappings
+func GetSchemaMappings() (*SchemaMappings, error) {
+	if SchemaMappingsObj == nil {
 
-	schemaMappingFile := "./config/app_settings/mappings.json"
-	jsonFile, err := os.Open(schemaMappingFile)
-	if err != nil {
-		fmt.Println(err)
-		return schemaMappings, errors.New("can't open schema mapping json file")
+		SchemaMappingsObj = new(SchemaMappings)
+
+		schemaMappingFile := "./config/app_settings/mappings.json"
+		jsonFile, err := os.Open(schemaMappingFile)
+		if err != nil {
+			fmt.Println(err)
+			return SchemaMappingsObj, errors.New("can't open schema mapping json file")
+		}
+		// defer the closing of our jsonFile so that we can parse it later on
+
+		jsonAsBytes, _ := ioutil.ReadAll(jsonFile)
+
+		json.Unmarshal(jsonAsBytes, SchemaMappingsObj)
+
+		jsonFile.Close()
 	}
-	// defer the closing of our jsonFile so that we can parse it later on
-	defer jsonFile.Close()
-
-	jsonAsBytes, _ := ioutil.ReadAll(jsonFile)
-
-	json.Unmarshal(jsonAsBytes, &schemaMappings)
-
-	return schemaMappings, nil
+	return SchemaMappingsObj, nil
 }
 
 func GetSchemaMappingsFor(srcApp, dstApp string) *MappedApp {

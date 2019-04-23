@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -13,6 +14,10 @@ import (
 )
 
 var USEREXISTSINAPP = false
+
+func ResetUserExistsInApp() {
+	USEREXISTSINAPP = false
+}
 
 func remove(s []config.Tag, i int) []config.Tag {
 	s[len(s)-1], s[i] = s[i], s[len(s)-1]
@@ -28,7 +33,8 @@ func addUserToApplication(node *DependencyNode, srcApp, dstApp config.AppConfig,
 			// GenerateAndInsert(mappings, appMapping.ToTables, node)
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
 				if len(tagMembers) == len(appMapping.FromTables) {
-					GenerateAndInsert(mappings, dstApp, appMapping.ToTables, node, log_txn)
+					errs := GenerateAndInsert(mappings, dstApp, appMapping.ToTables, node, log_txn)
+					fmt.Println(errs)
 					USEREXISTSINAPP = true
 					return true
 				}
@@ -93,6 +99,8 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 		// fmt.Println(sql)
 		rootNode.Data = db.DataCall1(appConfig.DBConn, sql, uid)
 		return rootNode
+	} else {
+		log.Fatal("Can't fetch tag:", tagName)
 	}
 	return nil
 }
@@ -216,8 +224,9 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 	return nil
 }
 
-func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTables []config.ToTable, node *DependencyNode, log_txn *atomicity.Log_txn) {
+func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTables []config.ToTable, node *DependencyNode, log_txn *atomicity.Log_txn) []error {
 	// var isqls []string
+	var errs []error
 	for _, toTable := range toTables {
 		if len(toTable.Conditions) > 0 {
 			breakCondition := false
@@ -240,6 +249,7 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 		}
 		undoAction := new(atomicity.UndoAction)
 		cols, vals := "", ""
+		orgCols, orgColsLeft := "", ""
 		var ivals []interface{}
 		for toAttr, fromAttr := range toTable.Mapping {
 			// if val, err := node.GetValueForKey(fromAttr); err == nil {
@@ -248,6 +258,7 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 				ivals = append(ivals, val)
 				vals += fmt.Sprintf("$%d,", len(ivals))
 				cols += fmt.Sprintf("%s,", toAttr)
+				orgCols += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
 				undoAction.AddData(fromAttr, val)
 				undoAction.AddOrgTable(strings.Split(fromAttr, ".")[0])
 			} else if strings.Contains(fromAttr, "$") {
@@ -256,12 +267,16 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 					ivals = append(ivals, inputVal)
 					vals += fmt.Sprintf("$%d,", len(ivals))
 					cols += fmt.Sprintf("%s,", toAttr)
+					orgCols += fmt.Sprintf("%s,", fromAttr)
 				}
 			} else if strings.Contains(fromAttr, "#") {
 				// Resolve Mapping Method
+			} else {
+				orgColsLeft += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
 			}
 		}
 		if cols != "" && vals != "" {
+			orgCols := strings.Trim(orgCols, ",")
 			cols := strings.Trim(cols, ",")
 			vals := strings.Trim(vals, ",")
 			isql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ", toTable.Table, cols, vals)
@@ -275,15 +290,32 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 				}
 				if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, id, displayFlag, log_txn.Txn_id); err != nil {
 					log.Println("## DISPLAY ERROR!", err)
+					errs = append(errs, err)
 				}
+				for _, fromTable := range undoAction.OrgTables {
+					srcID := "0"
+					if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
+						srcID = fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
+					}
+					if serr := db.SaveForEvaluation(log_txn.DBconn, "diaspora", dstApp.AppName, fromTable, toTable.Table, srcID, fmt.Sprint(id), orgCols, cols, fmt.Sprint(log_txn.Txn_id)); serr != nil {
+						log.Fatal(serr)
+					}
+				}
+
 			} else {
 				fmt.Println("\n@ERROR")
+				fmt.Println("@SQL:", isql)
+				fmt.Println("@ARGS:", ivals)
 				fmt.Println(err)
+				db.LogError(log_txn.DBconn, isql, fmt.Sprint(ivals), fmt.Sprint(log_txn.Txn_id), dstApp.AppName, err.Error())
+				errs = append(errs, err)
 			}
 		} else {
-			fmt.Println("## Insert Query Error:", cols, vals)
+			errs = append(errs, errors.New("Insert Query Error"))
+			log.Fatal("## Insert Query Error:", cols, vals)
 		}
 	}
+	return errs
 }
 
 func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *WaitingList, invalidList *InvalidList, log_txn *atomicity.Log_txn) {
@@ -319,6 +351,15 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 		}
 		if !mappingFound {
 			invalidList.Add(*node)
+			for _, tagMember := range node.Tag.Members {
+				if _, ok := node.Data[fmt.Sprintf("%s.id", tagMember)]; ok {
+					srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", tagMember)])
+					if serr := db.SaveForEvaluation(log_txn.DBconn, "diaspora", dstApp.AppName, tagMember, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(log_txn.Txn_id)); serr != nil {
+						log.Fatal(serr)
+					}
+				}
+			}
+			// fmt.Println(node)
 		}
 		// log.Fatal(fmt.Sprintf("Mappings found from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	}
@@ -329,6 +370,7 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 	// try:
 
 	if strings.EqualFold(node.Tag.Name, "root") && !checkUserInApp(uid, dstApp) {
+		log.Println("++ Adding User from ", srcApp.AppName, " to ", dstApp.AppName)
 		addUserToApplication(node, srcApp, dstApp, log_txn)
 	}
 
@@ -336,15 +378,20 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
-		log.Println("Currrent Node:", node.Tag.Name, "ID:", node.Data[nodeIDAttr])
-		log.Println("Adjacent Node:", child.Tag.Name, "ID:", child.Data[childIDAttr])
+		log.Println("-- Currrent Node:", node.Tag.Name, "ID:", node.Data[nodeIDAttr])
+		log.Println("-- Adjacent Node:", child.Tag.Name, "ID:", child.Data[childIDAttr])
 		MigrateProcess(uid, srcApp, dstApp, child, wList, invalidList, log_txn)
 	}
 	// acquirePredicateLock(*node)
 	// for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
 	// 	MigrateProcess(uid, srcApp, dstApp, child)
 	// }
-	MigrateNode(node, srcApp, dstApp, wList, invalidList, log_txn) // Log before migrating
+
+	if !strings.EqualFold(node.Tag.Name, "root") {
+		log.Println("++ Began migrating node *", node.Tag.Name, "from", srcApp.AppName, "to", dstApp.AppName)
+		MigrateNode(node, srcApp, dstApp, wList, invalidList, log_txn) // Log before migrating
+		log.Println("++ Finished migrating node *", node.Tag.Name, "from", srcApp.AppName, "to", dstApp.AppName)
+	}
 	fmt.Println("------------------------------------------------------------------------")
 	// releasePredicateLock(*node)
 

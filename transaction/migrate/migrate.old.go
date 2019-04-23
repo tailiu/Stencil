@@ -209,7 +209,7 @@ func rollbackOneRow(undo_action sql.NullString) {
 }
 
 func RollbackMigration(txn_id int) {
-	stencilDB := db.GetDBConn(atomicity.StencilDBName)
+	stencilDB := db.GetDBConn(db.STENCIL_DB)
 
 	getLogRecords := fmt.Sprintf("SELECT action_type, undo_action FROM txn_log WHERE action_id = %d ORDER BY PRIMARY KEY txn_log DESC", txn_id)
 	rows, err := stencilDB.Query(getLogRecords)

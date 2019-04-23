@@ -15,15 +15,6 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 )
 
-var dbConns map[string]*sql.DB
-
-const (
-	host     = "10.230.12.75"
-	port     = 5432
-	user     = "cow"
-	password = "123456"
-)
-
 func GetDBConn(app string) *sql.DB {
 
 	if dbConns == nil {
@@ -32,9 +23,11 @@ func GetDBConn(app string) *sql.DB {
 
 	if _, ok := dbConns[app]; !ok {
 		log.Println("Creating new db conn for:", app)
-		address := fmt.Sprintf("host=%s port=%d user=%s "+" password=%s dbname=%s sslmode=disable",
-								host, port, user, password, app)
-		dbConn, err := sql.Open("postgres", address)
+		psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
+			"password=%s dbname=%s sslmode=disable", DB_ADDR, DB_PORT, DB_USER, DB_PASSWORD, app)
+		// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
+		// fmt.Println(psqlInfo)
+		dbConn, err := sql.Open("postgres", psqlInfo)
 		if err != nil {
 			fmt.Println("error connecting to the db app:", app)
 			log.Fatal(err)
@@ -45,10 +38,18 @@ func GetDBConn(app string) *sql.DB {
 	return dbConns[app]
 }
 
+func CloseDBConn(app string) {
+	if _, ok := dbConns[app]; ok {
+		dbConns[app].Close()
+		delete(dbConns, app)
+		log.Println("DBConn closed for:", app)
+	}
+}
+
 func Insert(dbConn *sql.DB, query string, args ...interface{}) (int, error) {
 
-	fmt.Println("@SQL:", query)
-	fmt.Println("@ARGS:", args)
+	// fmt.Println("@SQL:", query)
+	// fmt.Println("@ARGS:", args)
 
 	lastInsertId := -1
 	err := dbConn.QueryRow(query+" RETURNING id; ", args...).Scan(&lastInsertId)
@@ -64,7 +65,9 @@ func GetColumnsForTable(db *sql.DB, table string) ([]string, string) {
 
 	// db := GetDBConn(app)
 
-	rows, err := db.Query("SHOW COLUMNS FROM " + table)
+	query := "select column_name, data_type, is_nullable, column_default, generation_expression from INFORMATION_SCHEMA.COLUMNS where table_name = $1;"
+	rows, err := db.Query(query, table)
+	// rows, err := db.Query("SHOW COLUMNS FROM " + table)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,7 +133,7 @@ func DataCall(db *sql.DB, SQL string, args ...interface{}) []map[string]interfac
 	var result []map[string]interface{}
 
 	// db := GetDBConn(app)
-
+	// log.Println(SQL, args)
 	if rows, err := db.Query(SQL, args...); err != nil {
 		log.Println(SQL, args)
 		log.Fatal(err)
@@ -170,7 +173,7 @@ func DataCall(db *sql.DB, SQL string, args ...interface{}) []map[string]interfac
 func DataCall1(db *sql.DB, SQL string, args ...interface{}) map[string]interface{} {
 
 	// db := GetDBConn(app)
-
+	// log.Println(SQL, args)
 	if rows, err := db.Query(SQL+" LIMIT 1", args...); err != nil {
 		log.Println(SQL, args)
 		log.Fatal("## DB ERROR: ", err)
@@ -387,4 +390,17 @@ func TxnExecute(dbConn *sql.DB, queries []string) error {
 	tx.Commit()
 	return nil
 
+}
+
+func SaveForEvaluation(dbConn *sql.DB, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID string) error {
+	query := "INSERT INTO evaluation (src_app, dst_app, src_table, dst_table, src_id, dst_id, src_cols, dst_cols, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
+	_, err := Insert(dbConn, query, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID)
+	return err
+}
+
+func LogError(dbConn *sql.DB, dbquery, args, migration_id, dst_app, qerr string) error {
+
+	query := "INSERT INTO error_log (query, args, migration_id, dst_app, error) VALUES ($1, $2, $3, $4, $5)"
+	_, err := Insert(dbConn, query, dbquery, args, migration_id, dst_app, qerr)
+	return err
 }

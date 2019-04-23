@@ -242,24 +242,31 @@ func main() {
 	srcApp := "diaspora"
 	dstApp := "mastodon"
 
-	uid := "443222289129242625" // "647", "1000", "2000"
-
-	if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
-		log.Fatal(err)
-	} else {
-		if dstAppConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	// uid := "11" // "647", "1000", "2000"
+	for uid := 4521; uid <= 4530; uid += 1 {
+		if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
 			log.Fatal(err)
 		} else {
-			if rootNode := migrate.GetRoot(srcAppConfig, uid); rootNode != nil {
-				var wList = new(migrate.WaitingList)
-				var invalidList = new(migrate.InvalidList)
-				if log_txn, err := atomicity.BeginTransaction(); err == nil {
-					migrate.MigrateProcess(uid, srcAppConfig, dstAppConfig, rootNode, wList, invalidList, log_txn)
-					atomicity.LogOutcome(log_txn, "COMMIT")
-				}
+			if dstAppConfig, err := config.CreateAppConfig(dstApp); err != nil {
+				log.Fatal(err)
 			} else {
-				fmt.Println("Root Node can't be fetched!")
+				migrate.ResetUserExistsInApp()
+				if rootNode := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid)); rootNode != nil {
+					var wList = new(migrate.WaitingList)
+					var invalidList = new(migrate.InvalidList)
+					if logTxn, err := atomicity.BeginTransaction(); err == nil {
+						migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, invalidList, logTxn)
+						atomicity.LogOutcome(logTxn, "COMMIT")
+						atomicity.CloseDBConn(logTxn)
+					} else {
+						log.Println("Can't begin migration transaction", err)
+					}
+				} else {
+					fmt.Println("Root Node can't be fetched!")
+				}
+				dstAppConfig.CloseDBConn()
 			}
+			srcAppConfig.CloseDBConn()
 		}
 
 	}

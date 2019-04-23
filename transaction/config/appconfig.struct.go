@@ -4,10 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"transaction/db"
 	"transaction/helper"
 
 	"github.com/drgrib/maps"
 )
+
+func (self *AppConfig) CloseDBConn() {
+
+	db.CloseDBConn(self.AppName)
+}
 
 func (self AppConfig) GetTag(tagName string) (Tag, error) {
 
