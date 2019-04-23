@@ -243,7 +243,7 @@ func main() {
 	dstApp := "mastodon"
 
 	// uid := "11" // "647", "1000", "2000"
-	for uid := 4512; uid <= 4515; uid += 1 {
+	for uid := 4521; uid <= 4530; uid += 1 {
 		if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
 			log.Fatal(err)
 		} else {

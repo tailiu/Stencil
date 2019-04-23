@@ -249,7 +249,7 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 		}
 		undoAction := new(atomicity.UndoAction)
 		cols, vals := "", ""
-		orgCols := ""
+		orgCols, orgColsLeft := "", ""
 		var ivals []interface{}
 		for toAttr, fromAttr := range toTable.Mapping {
 			// if val, err := node.GetValueForKey(fromAttr); err == nil {
@@ -271,6 +271,8 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 				}
 			} else if strings.Contains(fromAttr, "#") {
 				// Resolve Mapping Method
+			} else {
+				orgColsLeft += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
 			}
 		}
 		if cols != "" && vals != "" {
@@ -295,7 +297,7 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 					if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
 						srcID = fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
 					}
-					if serr := db.SaveForEvaluation(log_txn.DBconn, "diaspora", dstApp.AppName, strings.Join(undoAction.OrgTables, ","), toTable.Table, srcID, fmt.Sprint(id), orgCols, cols, fmt.Sprint(log_txn.Txn_id)); serr != nil {
+					if serr := db.SaveForEvaluation(log_txn.DBconn, "diaspora", dstApp.AppName, fromTable, toTable.Table, srcID, fmt.Sprint(id), orgCols, cols, fmt.Sprint(log_txn.Txn_id)); serr != nil {
 						log.Fatal(serr)
 					}
 				}
@@ -349,6 +351,15 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 		}
 		if !mappingFound {
 			invalidList.Add(*node)
+			for _, tagMember := range node.Tag.Members {
+				if _, ok := node.Data[fmt.Sprintf("%s.id", tagMember)]; ok {
+					srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", tagMember)])
+					if serr := db.SaveForEvaluation(log_txn.DBconn, "diaspora", dstApp.AppName, tagMember, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(log_txn.Txn_id)); serr != nil {
+						log.Fatal(serr)
+					}
+				}
+			}
+			// fmt.Println(node)
 		}
 		// log.Fatal(fmt.Sprintf("Mappings found from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
 	}
@@ -377,9 +388,9 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 	// }
 
 	if !strings.EqualFold(node.Tag.Name, "root") {
-		log.Println("++ Began migrating node ", node.Tag.Name, "from", srcApp.AppName, "to", dstApp.AppName)
+		log.Println("++ Began migrating node *", node.Tag.Name, "from", srcApp.AppName, "to", dstApp.AppName)
 		MigrateNode(node, srcApp, dstApp, wList, invalidList, log_txn) // Log before migrating
-		log.Println("++ Finished migrating node ", node.Tag.Name, "from", srcApp.AppName, "to", dstApp.AppName)
+		log.Println("++ Finished migrating node *", node.Tag.Name, "from", srcApp.AppName, "to", dstApp.AppName)
 	}
 	fmt.Println("------------------------------------------------------------------------")
 	// releasePredicateLock(*node)
