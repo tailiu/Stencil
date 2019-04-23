@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
 	"transaction/atomicity"
 	"transaction/config"
 	"transaction/migrate"
@@ -239,37 +240,49 @@ func prepareDataQueries(appconfig config.AppConfig) []config.DataQuery {
 
 func main() {
 
+	var wg sync.WaitGroup
+
 	srcApp := "diaspora"
 	dstApp := "mastodon"
+	threads_num := 5
+	uid := 4711
+	// startFrom, inc := 4670, 10
+	// for uid := startFrom; uid < startFrom+inc; uid += 1 {
+	wg.Add(threads_num)
 
-	// uid := "11" // "647", "1000", "2000"
-	for uid := 4521; uid <= 4530; uid += 1 {
-		if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
-			log.Fatal(err)
-		} else {
-			if dstAppConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	for thread_id := 1; thread_id <= threads_num; thread_id++ {
+		go func() {
+			defer wg.Done()
+			if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
 				log.Fatal(err)
 			} else {
-				migrate.ResetUserExistsInApp()
-				if rootNode := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid)); rootNode != nil {
-					var wList = new(migrate.WaitingList)
-					var invalidList = new(migrate.InvalidList)
-					if logTxn, err := atomicity.BeginTransaction(); err == nil {
-						migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, invalidList, logTxn)
-						atomicity.LogOutcome(logTxn, "COMMIT")
-						atomicity.CloseDBConn(logTxn)
-					} else {
-						log.Println("Can't begin migration transaction", err)
-					}
+				if dstAppConfig, err := config.CreateAppConfig(dstApp); err != nil {
+					log.Fatal(err)
 				} else {
-					fmt.Println("Root Node can't be fetched!")
+					migrate.ResetUserExistsInApp()
+					if rootNode := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid)); rootNode != nil {
+						var wList = new(migrate.WaitingList)
+						var invalidList = new(migrate.InvalidList)
+						if logTxn, err := atomicity.BeginTransaction(); err == nil {
+							migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, invalidList, logTxn)
+							atomicity.LogOutcome(logTxn, "COMMIT")
+							atomicity.CloseDBConn(logTxn)
+						} else {
+							log.Println("Can't begin migration transaction", err)
+						}
+					} else {
+						fmt.Println("Root Node can't be fetched!")
+					}
+					dstAppConfig.CloseDBConn()
 				}
-				dstAppConfig.CloseDBConn()
+				srcAppConfig.CloseDBConn()
 			}
-			srcAppConfig.CloseDBConn()
-		}
-
+		}()
 	}
+
+	wg.Wait()
+
+	// }
 
 	// settingsFileName := "mappings"
 	// // fromApp := "mastodon"

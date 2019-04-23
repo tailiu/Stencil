@@ -15,27 +15,42 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 )
 
+// func GetDBConn(app string) *sql.DB {
+
+// 	if dbConns == nil {
+// 		dbConns = make(map[string]*sql.DB)
+// 	}
+
+// 	if _, ok := dbConns[app]; !ok {
+// 		log.Println("Creating new db conn for:", app)
+// 		psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
+// 			"password=%s dbname=%s sslmode=disable", DB_ADDR, DB_PORT, DB_USER, DB_PASSWORD, app)
+// 		// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
+// 		// fmt.Println(psqlInfo)
+// 		dbConn, err := sql.Open("postgres", psqlInfo)
+// 		if err != nil {
+// 			fmt.Println("error connecting to the db app:", app)
+// 			log.Fatal(err)
+// 		}
+// 		dbConns[app] = dbConn
+// 	}
+// 	// log.Println("Returning dbconn for:", app)
+// 	return dbConns[app]
+// }
+
 func GetDBConn(app string) *sql.DB {
 
-	if dbConns == nil {
-		dbConns = make(map[string]*sql.DB)
+	log.Println("Creating new db conn for:", app)
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
+		"password=%s dbname=%s sslmode=disable", DB_ADDR, DB_PORT, DB_USER, DB_PASSWORD, app)
+	// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
+	// fmt.Println(psqlInfo)
+	dbConn, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		fmt.Println("error connecting to the db app:", app)
+		log.Fatal(err)
 	}
-
-	if _, ok := dbConns[app]; !ok {
-		log.Println("Creating new db conn for:", app)
-		psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
-			"password=%s dbname=%s sslmode=disable", DB_ADDR, DB_PORT, DB_USER, DB_PASSWORD, app)
-		// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
-		// fmt.Println(psqlInfo)
-		dbConn, err := sql.Open("postgres", psqlInfo)
-		if err != nil {
-			fmt.Println("error connecting to the db app:", app)
-			log.Fatal(err)
-		}
-		dbConns[app] = dbConn
-	}
-	// log.Println("Returning dbconn for:", app)
-	return dbConns[app]
+	return dbConn
 }
 
 func CloseDBConn(app string) {
