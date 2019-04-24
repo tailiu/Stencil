@@ -1,13 +1,25 @@
 import proc_data as pd
 import database as db
 import graph as g
+import datetime
 
-def lengthVsSize(stencilConnection, stencilCursor, destApp, startTime = None, endTime = None):
+def _log(fileName, l):
+    f = open(fileName, "a")
+    f.write("************************************\n")
+    f.write(str(datetime.datetime.now()))
+    for data in l:
+        f.write("[")
+        f.write(", ".join([str(i) for i in data]))
+        f.write("]\n")
+    f.write("************************************\n")
+    f.close()
+
+def timeVsSize(stencilConnection, stencilCursor, destApp, startTime = None, endTime = None):
     if startTime == None or endTime == None:
         migrationIDs = pd.getAllMigrationIDs(stencilConnection, stencilCursor)
     else:
         migrationIDs = pd.getMigrationIDsBetweenTimestamps(stencilConnection, stencilCursor, startTime, endTime)
-    length = []
+    time = []
     size = []
     for migrationID in migrationIDs:
         print migrationID
@@ -15,9 +27,10 @@ def lengthVsSize(stencilConnection, stencilCursor, destApp, startTime = None, en
         if  l == None:
             continue
         else:
-            length.append(l)
+            time.append(l)
             size.append(pd.getMigratedDataSize(destApp, migrationID, stencilCursor))
-    g.line(size, length, "Migration Size (MB)", "Migration Length (s)")
+    _log("timeVsSize", [time, size])
+    g.line(size, time, "Migration Size (KB)", "Migration Time (s)")
 
 def allLeftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp):
     migrationIDs = pd.getAllMigrationIDs(stencilConnection, stencilCursor)
@@ -30,14 +43,19 @@ def allLeftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp
         if leftData1 == None or leftData2 == None or migratedData == None:
             continue
         l.append((leftData1 + leftData2)/ float(migratedData + leftData1 + leftData2))
-    print l
+    _log("allLeftData", [l])
     g.cumulativeGraph(l, "Percentage of Data Left", "Probability")
 
 stencilDB, srcApp, destApp, migrationID = "stencil", "diaspora", "mastodon", 1017008071
 stencilConnection, stencilCursor = db.connDB(stencilDB)
-# lengthVsSize(stencilConnection, stencilCursor, destApp)
-# lengthVsSize(stencilConnection, stencilCursor, destApp, "2019-04-24 11:32:00", "2019-04-24 12:09:00")
-allLeftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp)
+timeVsSize(stencilConnection, stencilCursor, destApp, "2019-03-24 11:32:00", "2019-04-24 11:31:00") # 1 thread
+# timeVsSize(stencilConnection, stencilCursor, destApp, "2019-04-24 11:32:00", "2019-04-24 12:09:00") # 5 threads
+# timeVsSize(stencilConnection, stencilCursor, destApp, "2019-04-24 12:10:00", "2019-04-24 13:04:00") # 10 threads
+# timeVsSize(stencilConnection, stencilCursor, destApp, "2019-04-24 13:09:00", "2019-04-24 15:45:00") # 20 threads
+
+# allLeftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp)
+
+
 
 # print len(pd.getMigrationIDsBetweenTimestamps(stencilConnection, stencilCursor, "2019-04-24 11:32:00", "2019-04-24 12:09:00"))
 # l = {0.123, 0.123, 0.123, 0.123, 0.123, 0.123, 0.123, 0.123, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.8}

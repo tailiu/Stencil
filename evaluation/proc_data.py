@@ -37,7 +37,7 @@ def getMigratedDataSize(destApp, migrationID, stencilCursor):
         if row[8] == "n/a":
             continue
         size = _getAColumnSize(destAppCursor, row[8].split(","), row[4], row[6])
-        totalSize += float(size) / 10**6
+        totalSize += float(size) / 10**3
     db.closeDB(destAppConn)
     return totalSize
 
@@ -80,7 +80,7 @@ def getSizeOfLeftDataInMigratedRows(srcApp, migrationID, stencilCursor):
         size = _getAColumnSize(srcAppCursor, leftData[key], key.split(":")[0], key.split(":")[1])
         if size == None:
             return
-        totalSize += float(size) / 10**6
+        totalSize += float(size) / 10**3
     
     db.closeDB(srcAppConn)
     return totalSize
@@ -98,7 +98,7 @@ def getSizeOfDataWithEntireRowLeft(srcApp, migrationID, stencilCursor):
         size = _getAColumnSize(srcAppCursor, allCols, row[3], row[5])
         if size == None:
             return
-        totalSize += float(size) / 10**6
+        totalSize += float(size) / 10**3
     
     db.closeDB(srcAppConn)
     return totalSize
