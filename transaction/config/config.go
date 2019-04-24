@@ -37,7 +37,7 @@ func CreateAppConfig(app string) (AppConfig, error) {
 	return appConfig, nil
 }
 
-func GetSchemaMappings() (*SchemaMappings, error) {
+func LoadSchemaMappings() (*SchemaMappings, error) {
 	if SchemaMappingsObj == nil {
 
 		SchemaMappingsObj = new(SchemaMappings)
@@ -60,7 +60,7 @@ func GetSchemaMappings() (*SchemaMappings, error) {
 }
 
 func GetSchemaMappingsFor(srcApp, dstApp string) *MappedApp {
-	if schemaMappings, err := GetSchemaMappings(); err == nil {
+	if schemaMappings, err := LoadSchemaMappings(); err == nil {
 		for _, schemaMapping := range schemaMappings.AllMappings {
 			if strings.EqualFold(srcApp, schemaMapping.FromApp) {
 				for _, mappedApp := range schemaMapping.ToApps {
