@@ -18,6 +18,11 @@ def getDataFromDatabase(cursor, query):
     cursor.execute(query)
     return cursor.fetchall()
 
-def updateOrInsertDataToDatabase(connection, cursor, query):
+def updateOrInsertDataToDatabase(cursor, query):
     cursor.execute(query)
     connection.commit()
+
+def getColsOfTable(cursor, table):
+    query = "Select * FROM {} LIMIT 1".format(table)
+    cursor.execute(query)
+    return  [desc[0] for desc in cursor.description]
