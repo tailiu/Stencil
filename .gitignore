@@ -1,3 +1,5 @@
 .DS_Store
 github.com/
 .vscode/
+evaluation/*.pyc
+evaluation/timeVsSize
