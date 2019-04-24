@@ -238,6 +238,11 @@ func prepareDataQueries(appconfig config.AppConfig) []config.DataQuery {
  * Main
 ***************************/
 
+type ThreadChannel struct {
+	Finished  bool
+	Thread_id int
+}
+
 func main() {
 
 	var wg sync.WaitGroup
@@ -245,42 +250,66 @@ func main() {
 	srcApp := "diaspora"
 	dstApp := "mastodon"
 	threads_num := 5
-	uid := 4711
+	uid := 4713
+	commitChannel := make(chan ThreadChannel)
 	// startFrom, inc := 4670, 10
 	// for uid := startFrom; uid < startFrom+inc; uid += 1 {
-	wg.Add(threads_num)
-
-	for thread_id := 1; thread_id <= threads_num; thread_id++ {
-		go func() {
-			defer wg.Done()
-			if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
-				log.Fatal(err)
-			} else {
-				if dstAppConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	config.LoadSchemaMappings()
+	logTxn, err := atomicity.BeginTransaction()
+	if err == nil {
+		for thread_id := 1; thread_id <= threads_num; thread_id++ {
+			wg.Add(1)
+			go func(thread_id int, commitChannel chan ThreadChannel) {
+				defer wg.Done()
+				if srcAppConfig, err := config.CreateAppConfig(srcApp); err != nil {
+					commitChannel <- ThreadChannel{Finished: false, Thread_id: thread_id}
 					log.Fatal(err)
 				} else {
-					migrate.ResetUserExistsInApp()
-					if rootNode := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid)); rootNode != nil {
-						var wList = new(migrate.WaitingList)
-						var invalidList = new(migrate.InvalidList)
-						if logTxn, err := atomicity.BeginTransaction(); err == nil {
-							migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, invalidList, logTxn)
-							atomicity.LogOutcome(logTxn, "COMMIT")
-							atomicity.CloseDBConn(logTxn)
-						} else {
-							log.Println("Can't begin migration transaction", err)
-						}
+					if dstAppConfig, err := config.CreateAppConfig(dstApp); err != nil {
+						commitChannel <- ThreadChannel{Finished: false, Thread_id: thread_id}
+						log.Fatal(err)
 					} else {
-						fmt.Println("Root Node can't be fetched!")
+						migrate.ResetUserExistsInApp()
+						if rootNode := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid)); rootNode != nil {
+							var wList = new(migrate.WaitingList)
+							var invalidList = new(migrate.InvalidList)
+
+							migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, invalidList, logTxn)
+
+						} else {
+							fmt.Println("Root Node can't be fetched!")
+						}
+						// dstAppConfig.CloseDBConn()
 					}
-					dstAppConfig.CloseDBConn()
+					// srcAppConfig.CloseDBConn()
+					commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 				}
-				srcAppConfig.CloseDBConn()
-			}
+			}(thread_id, commitChannel)
+		}
+		go func() {
+			wg.Wait()
+			close(commitChannel)
 		}()
+	} else {
+		log.Println("Can't begin migration transaction", err)
+		atomicity.LogOutcome(logTxn, "ABORT")
+		// atomicity.CloseDBConn(logTxn)
 	}
 
-	wg.Wait()
+	txnCommit := true
+
+	for threadResponse := range commitChannel {
+		fmt.Println("THREAD FINISHED WORKING", threadResponse)
+		if !threadResponse.Finished {
+			txnCommit = false
+		}
+	}
+
+	if txnCommit {
+		atomicity.LogOutcome(logTxn, "COMMIT")
+	} else {
+		atomicity.LogOutcome(logTxn, "ABORT")
+	}
 
 	// }
 

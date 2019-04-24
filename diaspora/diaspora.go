@@ -201,7 +201,7 @@ func runCreateNewPosts() {
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	num_users := len(users)
-	inc := 100
+	inc := 500
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
 		go createNewPostsForUsers(dbConn, users[i:j], thread_num)
