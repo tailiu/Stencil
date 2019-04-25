@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"transaction/atomicity"
 	"transaction/config"
@@ -249,8 +250,9 @@ func main() {
 
 	srcApp := "diaspora"
 	dstApp := "mastodon"
-	threads_num := 5
-	uid := 4713
+	threads_num := 50
+	// uid := 4716
+	uid := os.Args[1]
 	commitChannel := make(chan ThreadChannel)
 	// startFrom, inc := 4670, 10
 	// for uid := startFrom; uid < startFrom+inc; uid += 1 {
@@ -279,9 +281,9 @@ func main() {
 						} else {
 							fmt.Println("Root Node can't be fetched!")
 						}
-						// dstAppConfig.CloseDBConn()
+						dstAppConfig.CloseDBConn()
 					}
-					// srcAppConfig.CloseDBConn()
+					srcAppConfig.CloseDBConn()
 					commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 				}
 			}(thread_id, commitChannel)

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"transaction/db"
 	"transaction/helper"
 
 	"github.com/drgrib/maps"
@@ -12,7 +11,8 @@ import (
 
 func (self *AppConfig) CloseDBConn() {
 
-	db.CloseDBConn(self.AppName)
+	// db.CloseDBConn(self.AppName)
+	self.DBConn.Close()
 }
 
 func (self AppConfig) GetTag(tagName string) (Tag, error) {
