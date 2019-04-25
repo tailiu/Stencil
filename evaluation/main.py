@@ -6,7 +6,7 @@ import datetime
 def _log(fileName, l):
     f = open(fileName, "a")
     f.write("************************************\n")
-    f.write(str(datetime.datetime.now()))
+    f.write(str(datetime.datetime.now()) + "\n")
     for data in l:
         f.write("[")
         f.write(", ".join([str(i) for i in data]))
@@ -30,32 +30,41 @@ def timeVsSize(stencilConnection, stencilCursor, destApp, startTime = None, endT
             time.append(l)
             size.append(pd.getMigratedDataSize(destApp, migrationID, stencilCursor))
     _log("timeVsSize", [time, size])
-    g.line(size, time, "Migration Size (KB)", "Migration Time (s)")
+    g.line(size, time, "Migration Size (KB)", "Migration Time (s)", "Migration Time Vs Migration Size")
 
-def allLeftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp):
+
+def leftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp, dataLeftInBrokenRows = False):
     migrationIDs = pd.getAllMigrationIDs(stencilConnection, stencilCursor)
     l = []
     for migrationID in migrationIDs:
         print migrationID
         leftData1 = pd.getSizeOfLeftDataInMigratedRows(srcApp, migrationID, stencilCursor)
-        leftData2 = pd.getSizeOfDataWithEntireRowLeft(srcApp, migrationID, stencilCursor)
+        leftData2 = 0
+        if not dataLeftInBrokenRows:
+            leftData2 = pd.getSizeOfDataWithEntireRowLeft(srcApp, migrationID, stencilCursor)
         migratedData = pd.getMigratedDataSize(destApp, migrationID, stencilCursor)
         if leftData1 == None or leftData2 == None or migratedData == None:
             continue
         l.append((leftData1 + leftData2)/ float(migratedData + leftData1 + leftData2))
-    _log("allLeftData", [l])
-    g.cumulativeGraph(l, "Percentage of Data Left", "Probability")
+    if not dataLeftInBrokenRows:
+        _log("allLeftData", [l])
+        g.cumulativeGraph(l, "Percentage of Data Left", "Probability")
+    else:
+        _log("dataLeftInBrokenRows", [l])
+        g.cumulativeGraph(l, "Percentage of Data Left in Broken Rows", "Probability")
 
 stencilDB, srcApp, destApp, migrationID = "stencil", "diaspora", "mastodon", 1017008071
 stencilConnection, stencilCursor = db.connDB(stencilDB)
-timeVsSize(stencilConnection, stencilCursor, destApp, "2019-03-24 11:32:00", "2019-04-24 11:31:00") # 1 thread
+# timeVsSize(stencilConnection, stencilCursor, destApp, "2019-03-24 11:32:00", "2019-04-24 11:31:00") # 1 thread
 # timeVsSize(stencilConnection, stencilCursor, destApp, "2019-04-24 11:32:00", "2019-04-24 12:09:00") # 5 threads
 # timeVsSize(stencilConnection, stencilCursor, destApp, "2019-04-24 12:10:00", "2019-04-24 13:04:00") # 10 threads
 # timeVsSize(stencilConnection, stencilCursor, destApp, "2019-04-24 13:09:00", "2019-04-24 15:45:00") # 20 threads
+# timeVsSize(stencilConnection, stencilCursor, destApp, "2019-04-24 15:46:00", "2019-04-25 10:43:00") # 50 threads
+# timeVsSize(stencilConnection, stencilCursor, destApp, "2019-04-25 10:43:00", "2019-09-24 15:45:00") # 100 threads
+# leftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp)
+leftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp, True)
 
-# allLeftDataCumulativeGraph(stencilConnection, stencilCursor, destApp, srcApp)
-
-
+# g.allTimeVsSizeGraph()
 
 # print len(pd.getMigrationIDsBetweenTimestamps(stencilConnection, stencilCursor, "2019-04-24 11:32:00", "2019-04-24 12:09:00"))
 # l = {0.123, 0.123, 0.123, 0.123, 0.123, 0.123, 0.123, 0.123, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.8}
