@@ -3,3 +3,5 @@ github.com/
 .vscode/
 evaluation/*.pyc
 evaluation/timeVsSize
+evaluation/allLeftData
+evaluation/dataLeftInBrokenRows

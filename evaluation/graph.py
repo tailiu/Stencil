@@ -2,21 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def line(x, y, xlabel, ylabel, title):
-    order = np.argsort(x)
-    xs = np.array(x)[order]
-    ys = np.array(y)[order]
+    xs, ys = _sortX(x, y)
 
     ax = plt.axes()
     ax.plot(xs, ys)
     plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.show()
-
-def cumulativeGraph(data, xlabel, ylabel):
-    data = sorted(data)
-    plt.hist(data, cumulative=-1, normed=1, bins=200)
-    # plt.xticks([i+0.5 for i in years], years)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.show()
@@ -36,20 +26,23 @@ def allTimeVsSizeGraph():
     size10 = [31.041, 68.524, 44.397, 58.553, 75.691, 81.437, 71.899, 77.584, 27.834, 72.646, 63.287, 71.227, 74.669, 76.551, 81.175, 29.301, 73.077, 53.395, 68.428, 52.869, 70.972, 111.495, 45.592, 26.826, 88.091, 69.695, 82.592, 64.639, 64.197, 49.479, 65.438, 65.642, 83.034, 63.013, 78.999, 76.937, 92.042, 68.906, 48.458, 87.899, 37.698, 83.956, 96.677, 44.362, 232.932, 53.766, 52.214]
     time20 = [15.0, 19.0, 34.0, 26.0, 28.0, 19.0, 30.0, 25.0, 29.0, 35.0, 30.0, 23.0, 49.0, 37.0, 22.0, 18.0, 35.0, 56.0, 25.0, 33.0, 39.0, 31.0, 25.0, 15.0, 33.0, 30.0, 14.0, 41.0, 23.0, 22.0, 33.0, 43.0, 52.0, 32.0, 16.0, 29.0, 39.0]
     size20 = [69.183, 75.598, 108.264, 89.473, 64.494, 68.87, 95.124, 113.605, 103.342, 97.62, 107.476, 91.052, 94.362, 97.126, 61.361, 55.099, 114.561, 155.053, 50.327, 98.267, 124.004, 123.421, 87.25, 33.076, 96.094, 77.739, 70.433, 80.978, 73.795, 46.224, 111.104, 117.368, 125.679, 79.785, 53.69, 99.498, 119.092]
-    time50 = [27.0, 103.0, 52.0, 59.0, 37.0, 51.0, 45.0, 35.0, 58.0, 33.0, 36.0, 50.0, 46.0, 45.0, 43.0, 39.0, 38.0, 33.0, 59.0, 52.0, 49.0, 44.0, 39.0, 46.0, 43.0, 47.0, 65.0, 40.0, 55.0, 43.0, 56.0, 39.0, 23.0, 42.0, 44.0]
-    size50 = [30.951, 49.233, 106.624, 171.421, 63.501, 155.913, 103.731, 104.741, 85.585, 72.551, 113.563, 129.329, 161.271, 127.562, 127.597, 95.924, 87.029, 82.599, 108.92, 150.595, 101.914, 94.587, 124.269, 104.568, 126.174, 116.509, 131.7, 101.499, 133.518, 115.901, 136.263, 74.569, 46.985, 126.102, 96.857]
+    time50 = [27.0, 52.0, 59.0, 37.0, 51.0, 45.0, 35.0, 58.0, 33.0, 36.0, 50.0, 46.0, 45.0, 43.0, 39.0, 38.0, 33.0, 59.0, 52.0, 49.0, 44.0, 39.0, 46.0, 43.0, 47.0, 65.0, 40.0, 55.0, 43.0, 56.0, 39.0, 23.0, 42.0, 44.0]
+    size50 = [30.951, 106.624, 171.421, 63.501, 155.913, 103.731, 104.741, 85.585, 72.551, 113.563, 129.329, 161.271, 127.562, 127.597, 95.924, 87.029, 82.599, 108.92, 150.595, 101.914, 94.587, 124.269, 104.568, 126.174, 116.509, 131.7, 101.499, 133.518, 115.901, 136.263, 74.569, 46.985, 126.102, 96.857]
+    time100 = [239.0, 145.0, 365.0, 216.0, 321.0, 272.0, 99.0, 291.0, 60.0, 278.0, 194.0, 328.0, 165.0]
+    size100 = [125.168, 76.55, 112.667, 70.996, 133.86, 115.32, 51.697, 91.589, 53.582, 100.272, 65.797, 87.995, 74.439]
 
-    times = [time1, time5, time10, time20, time50]
-    sizes = [size1, size5, size10, size20, size50]
+    times = [time1, time5, time10, time20, time50, time100]
+    sizes = [size1, size5, size10, size20, size50, size100]
 
     fig, axs = plt.subplots(2, 3, constrained_layout=True)
 
     titles = {
-        0: "1 Migration Thread",
-        1: "5 Migration Threads",
-        2: "10 Migration Threads",
-        3: "20 Migration Threads",
-        4: "50 Migration Threads"
+        0: "(a) 1 Migration Thread",
+        1: "(b) 5 Migration Threads",
+        2: "(c) 10 Migration Threads",
+        3: "(d) 20 Migration Threads",
+        4: "(e) 50 Migration Threads",
+        5: "(f) 100 Migration Threads"
     }
 
     for i in range(len(times)):
@@ -73,9 +66,31 @@ def allTimeVsSizeGraph():
             size50, time50 = _sortX(size50, time50)
             axs[1, 1].plot(size50, time50)
             axs[1, 1].set_title(titles[i])
+        elif i == 5:
+            size100, time100 = _sortX(size100, time100)
+            axs[1, 2].plot(size100, time100)
+            axs[1, 2].set_title(titles[i])
 
     for ax in axs.flat:
         ax.set(xlabel="Migration Size (KB)", ylabel="Migration Time (s)")
 
+    for time in times:
+        print len(time)
+
     plt.show()
 
+def cumulativeGraph(data, xlabel, ylabel):
+    data = sorted(data)
+    plt.hist(data, cumulative=0, normed=1, bins=100)
+    # plt.xticks([i+0.5 for i in years], years)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()
+
+def barGraph(x, y, xlabel, ylabel, step):
+    plt.bar(x, y, width=5, align="edge", edgecolor='white')
+    x.append(100)
+    plt.xticks(x)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()
