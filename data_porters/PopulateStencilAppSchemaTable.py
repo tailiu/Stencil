@@ -3,17 +3,18 @@ import json
 
 def populateAppSchema(app_name):
 
-    appConn     = psycopg2.connect(dbname=app_name, user="root", host="10.230.12.75", port="26257")
-    stencilConn = psycopg2.connect(dbname="stencil", user="root", host="10.230.12.75", port="26257")
+    appConn     = psycopg2.connect(dbname=app_name, user="cow", password="123456" ,host="10.230.12.75", port="5432")
+    stencilConn = psycopg2.connect(dbname="stencil", user="cow", password="123456" , host="10.230.12.75", port="5432")
     appCursor, stencilCursor = appConn.cursor(), stencilConn.cursor()
 
-    table_sql = "SELECT app_tables.rowid, app_tables.table_name FROM app_tables JOIN apps ON app_tables.app_id = apps.rowid WHERE apps.app_name = '%s'"%app_name
+    table_sql = "SELECT app_tables.pk, app_tables.table_name FROM app_tables JOIN apps ON app_tables.app_id = apps.pk WHERE apps.app_name = '%s'"%app_name
     stencilCursor.execute(table_sql)
 
     for trow in stencilCursor.fetchall():
         table_id = trow[0]
         table_name = trow[1]
-        columns_sql = 'SHOW COLUMNS FROM "%s"' % table_name
+        # columns_sql = 'SHOW COLUMNS FROM "%s"' % table_name
+        columns_sql = "select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'" % table_name
         appCursor.execute(columns_sql)
         for crow in appCursor.fetchall():
             column_name = crow[0]
@@ -24,7 +25,7 @@ def populateAppSchema(app_name):
 
 def addSchemaMappings(app_name):
     with open('./transaction/config/app_settings/mappings.json', 'r') as mappingFile: file_data = mappingFile.read()
-    stencilConn = psycopg2.connect(dbname="stencil", user="root", host="10.230.12.75", port="26257")
+    stencilConn = psycopg2.connect(dbname="stencil", user="cow", password="123456", host="10.230.12.75", port="5432")
     stencilCursor = stencilConn.cursor()
     mappings = json.loads(file_data)
     for appMapping in mappings["allMappings"]:
@@ -44,7 +45,7 @@ def addSchemaMappings(app_name):
                                 mapperTable = mappedFromAttr[0]
                                 mapperCol = mappedFromAttr[1]
 
-                                sql = "select app_schemas.rowid from app_schemas join app_tables on app_schemas.table_id = app_tables.rowid join apps on apps.rowid = app_tables.app_id where apps.app_name = '%s' and app_tables.table_name = '%s' and app_schemas.column_name = '%s'"
+                                sql = "select app_schemas.pk from app_schemas join app_tables on app_schemas.table_id = app_tables.pk join apps on apps.pk = app_tables.app_id where apps.app_name = '%s' and app_tables.table_name = '%s' and app_schemas.column_name = '%s'"
                                 
                                 _sql = sql%(app_name,mapperTable,mapperCol)
                                 stencilCursor.execute(_sql)
