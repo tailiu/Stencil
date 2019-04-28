@@ -102,4 +102,21 @@ def getSizeOfDataWithEntireRowLeft(srcApp, migrationID, stencilCursor):
     
     db.closeDB(srcAppConn)
     return totalSize
+
+def getPercentageInIntervals(data, step):
+    totalSize = len(data)
+    percentage = []
+    currStep = step
+    while currStep <= 1.00000001:
+        num = 0
+        for d in data:
+            if currStep == 1.0:
+                if d <= currStep and d >= currStep - step:
+                    num += 1
+            else:
+                if d < currStep and d >= currStep - step:
+                    num += 1
+        percentage.append(num/float(totalSize))
+        currStep += step
+    return percentage
     
