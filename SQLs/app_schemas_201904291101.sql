@@ -1,4 +1,4 @@
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+﻿INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
 (110,'id','integer',NULL,'2019-04-25 12:29:23.115')
 ,(110,'conversation_id','bigint',NULL,'2019-04-25 12:29:23.115')
 ,(110,'user_id','bigint',NULL,'2019-04-25 12:29:23.115')
@@ -548,12 +548,10 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(53,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(53,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(53,'conversation_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(53,'participant_account_ids','ARRAY',NULL,'2019-04-25 12:31:11.464')
+,(53,'last_status_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(53,'status_ids','ARRAY',NULL,'2019-04-25 12:31:11.464')
-,(53,'last_status_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(53,'lock_version','integer',NULL,'2019-04-25 12:31:11.464')
+(53,'lock_version','integer',NULL,'2019-04-25 12:31:11.464')
 ,(53,'unread','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(54,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(54,'domain','character varying',NULL,'2019-04-25 12:31:11.464')
@@ -561,11 +559,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(54,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(54,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(55,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(55,'content','text',NULL,'2019-04-25 12:31:11.464')
+,(55,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(55,'content','text',NULL,'2019-04-25 12:31:11.464')
-,(55,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(55,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+(55,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(55,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(55,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(56,'id','bigint',NULL,'2019-04-25 12:31:11.464')
@@ -573,11 +571,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(56,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(56,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(56,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(57,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(57,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(57,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(57,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(57,'statuses_count','bigint',NULL,'2019-04-25 12:31:11.464')
+(57,'statuses_count','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(57,'following_count','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(57,'followers_count','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(57,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
@@ -585,11 +583,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(57,'last_status_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(58,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(58,'tag_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(58,'accounts_count','bigint',NULL,'2019-04-25 12:31:11.464')
+,(58,'hidden','boolean',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(58,'accounts_count','bigint',NULL,'2019-04-25 12:31:11.464')
-,(58,'hidden','boolean',NULL,'2019-04-25 12:31:11.464')
-,(58,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+(58,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(58,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(59,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(59,'text','text',NULL,'2019-04-25 12:31:11.464')
@@ -597,11 +595,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(59,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(60,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(60,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(60,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(60,'action','integer',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(60,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(60,'action','integer',NULL,'2019-04-25 12:31:11.464')
-,(60,'text','text',NULL,'2019-04-25 12:31:11.464')
+(60,'text','text',NULL,'2019-04-25 12:31:11.464')
 ,(60,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(60,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(61,'id','bigint',NULL,'2019-04-25 12:31:11.464')
@@ -609,11 +607,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(61,'domain','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'secret','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'private_key','text',NULL,'2019-04-25 12:31:11.464')
+,(61,'public_key','text',NULL,'2019-04-25 12:31:11.464')
+,(61,'remote_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(61,'public_key','text',NULL,'2019-04-25 12:31:11.464')
-,(61,'remote_url','character varying',NULL,'2019-04-25 12:31:11.464')
-,(61,'salmon_url','character varying',NULL,'2019-04-25 12:31:11.464')
+(61,'salmon_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'hub_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(61,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
@@ -621,11 +619,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(61,'display_name','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'uri','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'url','character varying',NULL,'2019-04-25 12:31:11.464')
+,(61,'avatar_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
+,(61,'avatar_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(61,'avatar_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
-,(61,'avatar_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
-,(61,'avatar_file_size','integer',NULL,'2019-04-25 12:31:11.464')
+(61,'avatar_file_size','integer',NULL,'2019-04-25 12:31:11.464')
 ,(61,'avatar_updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(61,'header_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'header_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
@@ -633,11 +631,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(61,'header_updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(61,'avatar_remote_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'subscription_expires_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(61,'silenced','boolean',NULL,'2019-04-25 12:31:11.464')
+,(61,'suspended','boolean',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(61,'silenced','boolean',NULL,'2019-04-25 12:31:11.464')
-,(61,'suspended','boolean',NULL,'2019-04-25 12:31:11.464')
-,(61,'locked','boolean',NULL,'2019-04-25 12:31:11.464')
+(61,'locked','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(61,'header_remote_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'last_webfingered_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(61,'inbox_url','character varying',NULL,'2019-04-25 12:31:11.464')
@@ -645,46 +643,47 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(61,'shared_inbox_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'followers_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'protocol','integer',NULL,'2019-04-25 12:31:11.464')
+,(61,'memorial','boolean',NULL,'2019-04-25 12:31:11.464')
+,(61,'moved_to_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(61,'memorial','boolean',NULL,'2019-04-25 12:31:11.464')
-,(61,'moved_to_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(61,'featured_collection_url','character varying',NULL,'2019-04-25 12:31:11.464')
+(61,'featured_collection_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'fields','jsonb',NULL,'2019-04-25 12:31:11.464')
 ,(61,'actor_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(61,'discoverable','boolean',NULL,'2019-04-25 12:31:11.464')
-,(61,'also_known_as','ARRAY',NULL,'2019-04-25 12:31:11.464')
 ,(62,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(62,'tag_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(63,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(63,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(63,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(63,'action','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(63,'target_type','character varying',NULL,'2019-04-25 12:31:11.464')
-,(63,'target_id','bigint',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(63,'target_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(63,'recorded_changes','text',NULL,'2019-04-25 12:31:11.464')
 ,(63,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(63,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(64,'key','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(64,'value','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(64,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(64,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(64,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(65,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(65,'user_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(65,'dump_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(65,'dump_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
+,(53,'status_ids','int8[]',NULL,'2019-04-25 12:31:11.464')
+,(61,'also_known_as','varchar',NULL,'2019-04-25 12:31:11.464')
 ,(65,'dump_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(65,'dump_file_size','integer',NULL,'2019-04-25 12:31:11.464')
 ,(65,'dump_updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(65,'processed','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(65,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(65,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(66,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(66,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(66,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+(66,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(66,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(66,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(66,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
@@ -693,10 +692,10 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(67,'conversation_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(67,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(68,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(68,'uri','character varying',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(68,'uri','character varying',NULL,'2019-04-25 12:31:11.464')
-,(68,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+(68,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(68,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(69,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(69,'shortcode','character varying',NULL,'2019-04-25 12:31:11.464')
@@ -705,10 +704,10 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(69,'image_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(69,'image_file_size','integer',NULL,'2019-04-25 12:31:11.464')
 ,(69,'image_updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(69,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(69,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-,(69,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+(69,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(69,'disabled','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(69,'uri','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(69,'image_remote_url','character varying',NULL,'2019-04-25 12:31:11.464')
@@ -717,11 +716,10 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(70,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(70,'expires_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(70,'phrase','text',NULL,'2019-04-25 12:31:11.464')
+,(70,'irreversible','boolean',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(70,'context','ARRAY',NULL,'2019-04-25 12:31:11.464')
-,(70,'irreversible','boolean',NULL,'2019-04-25 12:31:11.464')
-,(70,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+(70,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(70,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(70,'whole_word','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(71,'id','bigint',NULL,'2019-04-25 12:31:11.464')
@@ -729,11 +727,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(71,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(71,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(71,'severity','integer',NULL,'2019-04-25 12:31:11.464')
+,(71,'reject_media','boolean',NULL,'2019-04-25 12:31:11.464')
+,(71,'reject_reports','boolean',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(71,'reject_media','boolean',NULL,'2019-04-25 12:31:11.464')
-,(71,'reject_reports','boolean',NULL,'2019-04-25 12:31:11.464')
-,(72,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+(72,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(72,'domain','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(72,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(72,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
@@ -741,11 +739,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(73,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(73,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(73,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(73,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(74,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(73,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(74,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(74,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+(74,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(74,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(74,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(74,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
@@ -753,11 +751,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(74,'uri','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(75,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(75,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(75,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(75,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(75,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-,(75,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(75,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+(75,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(75,'show_reblogs','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(75,'uri','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(76,'id','bigint',NULL,'2019-04-25 12:31:11.464')
@@ -765,11 +763,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(76,'uid','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(76,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(76,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(76,'user_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(77,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(76,'user_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(77,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(77,'type','integer',NULL,'2019-04-25 12:31:11.464')
+(77,'type','integer',NULL,'2019-04-25 12:31:11.464')
 ,(77,'approved','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(77,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(77,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
@@ -777,11 +775,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(77,'data_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(77,'data_file_size','integer',NULL,'2019-04-25 12:31:11.464')
 ,(77,'data_updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(77,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(78,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(77,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(78,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(78,'user_id','bigint',NULL,'2019-04-25 12:31:11.464')
+(78,'user_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(78,'code','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(78,'expires_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(78,'max_uses','integer',NULL,'2019-04-25 12:31:11.464')
@@ -789,11 +787,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(78,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(78,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(78,'autofollow','boolean',NULL,'2019-04-25 12:31:11.464')
+,(79,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(79,'list_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(79,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(79,'list_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(79,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+(79,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(79,'follow_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(80,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(80,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
@@ -801,11 +799,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(80,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(80,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(81,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(81,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(81,'file_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(81,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(81,'file_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
-,(81,'file_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
+(81,'file_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(81,'file_file_size','integer',NULL,'2019-04-25 12:31:11.464')
 ,(81,'file_updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(81,'remote_url','character varying',NULL,'2019-04-25 12:31:11.464')
@@ -813,11 +811,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(81,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(81,'shortcode','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(81,'type','integer',NULL,'2019-04-25 12:31:11.464')
+,(81,'file_meta','json',NULL,'2019-04-25 12:31:11.464')
+,(81,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(81,'file_meta','json',NULL,'2019-04-25 12:31:11.464')
-,(81,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(81,'description','text',NULL,'2019-04-25 12:31:11.464')
+(81,'description','text',NULL,'2019-04-25 12:31:11.464')
 ,(81,'scheduled_status_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(82,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(82,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
@@ -825,11 +823,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(82,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(82,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(82,'silent','boolean',NULL,'2019-04-25 12:31:11.464')
+,(83,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(83,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(83,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(83,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-,(83,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+(83,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(83,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(83,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(83,'hide_notifications','boolean',NULL,'2019-04-25 12:31:11.464')
@@ -837,11 +835,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(84,'activity_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(84,'activity_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(84,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(84,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(84,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(84,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-,(84,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(84,'from_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+(84,'from_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(85,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(85,'token','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(85,'expires_in','integer',NULL,'2019-04-25 12:31:11.464')
@@ -849,11 +847,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(85,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(85,'revoked_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(85,'scopes','character varying',NULL,'2019-04-25 12:31:11.464')
+,(85,'application_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(85,'resource_owner_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(85,'application_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(85,'resource_owner_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(86,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+(86,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(86,'token','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(86,'refresh_token','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(86,'expires_in','integer',NULL,'2019-04-25 12:31:11.464')
@@ -861,11 +859,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(86,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(86,'scopes','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(86,'application_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(86,'resource_owner_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(87,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(86,'resource_owner_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(87,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(87,'name','character varying',NULL,'2019-04-25 12:31:11.464')
+(87,'name','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(87,'uid','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(87,'secret','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(87,'redirect_uri','text',NULL,'2019-04-25 12:31:11.464')
@@ -873,11 +871,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(87,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(87,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(87,'superapp','boolean',NULL,'2019-04-25 12:31:11.464')
+,(87,'website','character varying',NULL,'2019-04-25 12:31:11.464')
+,(87,'owner_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(87,'website','character varying',NULL,'2019-04-25 12:31:11.464')
-,(87,'owner_type','character varying',NULL,'2019-04-25 12:31:11.464')
-,(87,'owner_id','bigint',NULL,'2019-04-25 12:31:11.464')
+(87,'owner_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(87,'confidential','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(88,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(88,'database','text',NULL,'2019-04-25 12:31:11.464')
@@ -885,11 +883,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(88,'relation','text',NULL,'2019-04-25 12:31:11.464')
 ,(88,'size','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(88,'captured_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(89,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(89,'url','character varying',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(89,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(89,'url','character varying',NULL,'2019-04-25 12:31:11.464')
-,(89,'title','character varying',NULL,'2019-04-25 12:31:11.464')
+(89,'title','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(89,'description','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(89,'image_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(89,'image_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
@@ -897,11 +895,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(89,'image_updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(89,'type','integer',NULL,'2019-04-25 12:31:11.464')
 ,(89,'html','text',NULL,'2019-04-25 12:31:11.464')
+,(89,'author_name','character varying',NULL,'2019-04-25 12:31:11.464')
+,(89,'author_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(89,'author_name','character varying',NULL,'2019-04-25 12:31:11.464')
-,(89,'author_url','character varying',NULL,'2019-04-25 12:31:11.464')
-,(89,'provider_name','character varying',NULL,'2019-04-25 12:31:11.464')
+(89,'provider_name','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(89,'provider_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(89,'width','integer',NULL,'2019-04-25 12:31:11.464')
 ,(89,'height','integer',NULL,'2019-04-25 12:31:11.464')
@@ -909,11 +907,11 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(89,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(89,'embed_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(90,'preview_card_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(90,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(91,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(90,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(91,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(91,'inbox_url','character varying',NULL,'2019-04-25 12:31:11.464')
+(91,'inbox_url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(91,'follow_activity_id','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(91,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(91,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
@@ -921,182 +919,184 @@ INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","ti
 ,(92,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(92,'content','text',NULL,'2019-04-25 12:31:11.464')
 ,(92,'report_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(92,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(92,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ;
 INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(92,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(92,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-,(92,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+(92,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(93,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(93,'status_ids','ARRAY',NULL,'2019-04-25 12:31:11.464')
 ,(93,'comment','text',NULL,'2019-04-25 12:31:11.464')
 ,(93,'action_taken','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(93,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(93,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(93,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(93,'action_taken_by_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(93,'action_taken_by_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(93,'target_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(93,'assigned_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(94,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(94,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(94,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(94,'scheduled_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(94,'params','jsonb',NULL,'2019-04-25 12:31:11.464')
 ,(95,'version','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(96,'session_id','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(96,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(96,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(96,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(96,'user_agent','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(96,'ip','inet',NULL,'2019-04-25 12:31:11.464')
-,(96,'access_token_id','bigint',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(96,'access_token_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(96,'user_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(96,'web_push_subscription_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(97,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(97,'var','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(97,'value','text',NULL,'2019-04-25 12:31:11.464')
 ,(97,'thing_type','character varying',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(97,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(97,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(97,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(97,'thing_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(98,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(98,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(98,'var','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(98,'file_file_name','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(98,'file_content_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(98,'file_file_size','integer',NULL,'2019-04-25 12:31:11.464')
 ,(98,'file_updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(98,'meta','json',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(98,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(98,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(98,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(99,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(99,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(99,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(99,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(99,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(99,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(100,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(100,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(100,'replies_count','bigint',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(100,'reblogs_count','bigint',NULL,'2019-04-25 12:31:11.464')
+,(100,'reblogs_count','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(100,'favourites_count','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(100,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-,(100,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(100,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(101,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(101,'uri','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(101,'text','text',NULL,'2019-04-25 12:31:11.464')
 ,(101,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(101,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(101,'in_reply_to_id','bigint',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(101,'reblog_of_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(101,'reblog_of_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(101,'url','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(101,'sensitive','boolean',NULL,'2019-04-25 12:31:11.464')
-,(101,'visibility','integer',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(101,'visibility','integer',NULL,'2019-04-25 12:31:11.464')
 ,(101,'spoiler_text','text',NULL,'2019-04-25 12:31:11.464')
 ,(101,'reply','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(101,'language','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(101,'conversation_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(101,'local','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(101,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(101,'application_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(101,'application_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(101,'in_reply_to_account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(102,'status_id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(102,'tag_id','bigint',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(102,'tag_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(103,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(103,'activity_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(103,'activity_type','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(103,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(103,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(103,'hidden','boolean',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(103,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(103,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(104,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(104,'callback_url','character varying',NULL,'2019-04-25 12:31:11.464')
-,(104,'secret','character varying',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(104,'secret','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(104,'expires_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(104,'confirmed','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(104,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(104,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(104,'last_successful_delivery_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(104,'domain','character varying',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(104,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(104,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(105,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(105,'name','character varying',NULL,'2019-04-25 12:31:11.464')
-,(105,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(105,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(105,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(106,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(106,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(106,'uri','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(106,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(106,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(107,'id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(107,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(107,'email','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(107,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-,(107,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(107,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(107,'encrypted_password','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(107,'reset_password_token','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(107,'reset_password_sent_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(107,'remember_created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(107,'sign_in_count','integer',NULL,'2019-04-25 12:31:11.464')
 ,(107,'current_sign_in_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(107,'last_sign_in_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(107,'last_sign_in_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(107,'current_sign_in_ip','inet',NULL,'2019-04-25 12:31:11.464')
 ,(107,'last_sign_in_ip','inet',NULL,'2019-04-25 12:31:11.464')
-,(107,'admin','boolean',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(107,'admin','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(107,'confirmation_token','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(107,'confirmed_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(107,'confirmation_sent_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(107,'unconfirmed_email','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(107,'locale','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(107,'encrypted_otp_secret','character varying',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(107,'encrypted_otp_secret_iv','character varying',NULL,'2019-04-25 12:31:11.464')
+,(107,'encrypted_otp_secret_iv','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(107,'encrypted_otp_secret_salt','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(107,'consumed_timestep','integer',NULL,'2019-04-25 12:31:11.464')
-,(107,'otp_required_for_login','boolean',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(107,'otp_required_for_login','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(107,'last_emailed_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-,(107,'otp_backup_codes','ARRAY',NULL,'2019-04-25 12:31:11.464')
-,(107,'filtered_languages','ARRAY',NULL,'2019-04-25 12:31:11.464')
+,(107,'filtered_languages','varchar',NULL,'2019-04-25 12:31:11.464')
 ,(107,'account_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(107,'disabled','boolean',NULL,'2019-04-25 12:31:11.464')
 ,(107,'moderator','boolean',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(107,'invite_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(107,'invite_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(107,'remember_token','character varying',NULL,'2019-04-25 12:31:11.464')
-,(107,'chosen_languages','ARRAY',NULL,'2019-04-25 12:31:11.464')
 ,(107,'created_by_application_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(108,'id','bigint',NULL,'2019-04-25 12:31:11.464')
-,(108,'endpoint','character varying',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(108,'endpoint','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(108,'key_p256dh','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(108,'key_auth','character varying',NULL,'2019-04-25 12:31:11.464')
 ,(108,'data','json',NULL,'2019-04-25 12:31:11.464')
 ,(108,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
-;
-INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
-(108,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+,(108,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(108,'access_token_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(108,'user_id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(109,'id','bigint',NULL,'2019-04-25 12:31:11.464')
 ,(109,'data','json',NULL,'2019-04-25 12:31:11.464')
-,(109,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
+;
+INSERT INTO public.app_schemas (table_id,column_name,data_type,"constraints","timestamp") VALUES 
+(109,'created_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(109,'updated_at','timestamp without time zone',NULL,'2019-04-25 12:31:11.464')
 ,(109,'user_id','bigint',NULL,'2019-04-25 12:31:11.464')
+,(53,'participant_account_ids','int8[]',NULL,'2019-04-25 12:31:11.464')
+,(70,'context','varchar',NULL,'2019-04-25 12:31:11.464')
+,(93,'status_ids','int8[]',NULL,'2019-04-25 12:31:11.464')
+,(107,'otp_backup_codes','varchar',NULL,'2019-04-25 12:31:11.464')
+,(107,'chosen_languages','varchar',NULL,'2019-04-25 12:31:11.464')
 ;
