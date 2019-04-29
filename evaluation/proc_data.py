@@ -119,4 +119,9 @@ def getPercentageInIntervals(data, step):
         percentage.append(num/float(totalSize))
         currStep += step
     return percentage
-    
+
+def calComplement(data):
+    result = []
+    for i in data:
+        result.append(1 - i)
+    return result

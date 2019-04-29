@@ -88,7 +88,7 @@ def cumulativeGraph(data, xlabel, ylabel):
     plt.show()
 
 def barGraph(x, y, xlabel, ylabel, step):
-    plt.bar(x, y, width=5, align="edge", edgecolor='white')
+    plt.bar(x, y, width=step, align="edge", edgecolor='white')
     x.append(100)
     plt.xticks(x)
     plt.xlabel(xlabel)
