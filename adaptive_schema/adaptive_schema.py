@@ -10,8 +10,8 @@ from scipy.spatial.distance import pdist
 import matplotlib.pyplot as plt
 
 def getDBConn(db, cursor_dict=False):
-    conn = psycopg2.connect(dbname=db, user="root", host="10.230.12.75", port="26257")
-    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) 
+    conn = psycopg2.connect(dbname=db, user="cow", password="123456", host="10.230.12.75", port="5432")
+    # conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) 
     if cursor_dict is True:
         cursor = conn.cursor(cursor_factory = RealDictCursor)
     else:
@@ -21,13 +21,13 @@ def getDBConn(db, cursor_dict=False):
 db, cur = getDBConn("stencil", True)
 
 def getAppNameById(app_id):
-    sql = "SELECT app_name FROM apps WHERE rowid = " + str(app_id)
+    sql = "SELECT app_name FROM apps WHERE pk = " + str(app_id)
     cur.execute(sql)
     try: return cur.fetchone()["app_name"]
     except: return None
 
 def getAppSchemas():
-    sql = "SELECT app_id, table_name, column_name, app_schemas.rowid as column_id, app_name FROM app_schemas JOIN app_tables ON app_tables.rowid = app_schemas.table_id JOIN apps ON app_tables.app_id = apps.rowid"
+    sql = "SELECT app_id, table_name, column_name, app_schemas.pk as column_id, app_name FROM app_schemas JOIN app_tables ON app_tables.pk = app_schemas.table_id JOIN apps ON app_tables.app_id = apps.pk"
     cur.execute(sql)
     return cur.fetchall()
 
@@ -36,23 +36,23 @@ def getSchemaMappings():
     #     SELECT as1.app_id AS app1, as1.table_name AS table1, as1.column_name AS col1, sm.source_attribute,
     #         as2.app_id AS app2, as2.table_name AS table2, as2.column_name AS col2, sm.dest_attribute
     #     FROM app_schemas as1 
-    #     JOIN schema_mappings sm ON as1.rowid = sm.source_attribute
+    #     JOIN schema_mappings sm ON as1.pk = sm.source_attribute
     #     JOIN schema_mappings sm2 ON sm.source_attribute = sm2.dest_attribute AND sm.dest_attribute = sm2.source_attribute
-    #     JOIN app_schemas as2 ON as2.rowid = sm.dest_attribute
-    #     WHERE sm.rowid < sm2.rowid 
+    #     JOIN app_schemas as2 ON as2.pk = sm.dest_attribute
+    #     WHERE sm.pk < sm2.pk 
     #     ORDER BY as1.app_id
     # """
 
     sql = """
-            select a1.rowid AS app1, at1.table_name AS table1, as1.column_name AS col1, sm.source_attribute, a2.rowid AS app2, at2.table_name AS table2, as2.column_name AS col2, sm.dest_attribute
+            select a1.pk AS app1, at1.table_name AS table1, as1.column_name AS col1, sm.source_attribute, a2.pk AS app2, at2.table_name AS table2, as2.column_name AS col2, sm.dest_attribute
             from schema_mappings sm 
-            join app_schemas as1 on sm.source_attribute = as1.rowid 
-            join app_tables at1 on as1.table_id = at1.rowid
-            join apps a1 on at1.app_id = a1.rowid
-            join app_schemas as2 on sm.dest_attribute = as2.rowid
-            join app_tables at2 on as2.table_id = at2.rowid
-            join apps a2 on at2.app_id = a2.rowid
-            ORDER BY a1.rowid
+            join app_schemas as1 on sm.source_attribute = as1.pk 
+            join app_tables at1 on as1.table_id = at1.pk
+            join apps a1 on at1.app_id = a1.pk
+            join app_schemas as2 on sm.dest_attribute = as2.pk
+            join app_tables at2 on as2.table_id = at2.pk
+            join apps a2 on at2.app_id = a2.pk
+            ORDER BY a1.pk
     """
 
     cur.execute(sql)
@@ -180,7 +180,7 @@ def createTable(name, attrs):
     isql =  "INSERT INTO PHYSICAL_SCHEMA (table_name, column_name) VALUES " + \
             ", ".join(["('%s','%s')" % (name, attr.split()[0]) for attr in attrs])
 
-    attrs.insert(0,"rowid SERIAL PRIMARY KEY")
+    attrs.insert(0,"pk SERIAL PRIMARY KEY")
     attrs.append("base_mark_delete BOOL")
     tsql = "CREATE TABLE %s ( %s )" % (name, ', '.join(attrs))
     
@@ -196,19 +196,19 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
     # isql =  "INSERT INTO PHYSICAL_SCHEMA (table_name, column_name) VALUES " + ", ".join(["('%s','%s')" % (name, attr) for attr in attrs])
 
     for attr_id, attr_name in attrs.items():
-        isql =  "INSERT INTO PHYSICAL_SCHEMA (table_name, column_name) VALUES ('%s', '%s') RETURNING rowid" % (name, attr_name)
+        isql =  "INSERT INTO PHYSICAL_SCHEMA (table_name, column_name) VALUES ('%s', '%s') RETURNING pk" % (name, attr_name)
         print isql
         cur.execute(isql)
-        phy_attr_id = cur.fetchone()['rowid']
+        phy_attr_id = cur.fetchone()['pk']
         mapped_attrs = [attr_id] + trans_attrs[attr_id]
         pmsql = "INSERT INTO PHYSICAL_MAPPINGS (logical_attribute, physical_attribute) VALUES " + ", ".join(["('%s', '%s')" % (attr_id,phy_attr_id) for attr_id in mapped_attrs])
         print pmsql
         cur.execute(pmsql)
 
-    attrs_with_type = [attr + " STRING" for attr in attrs.values()]
-    attrs_with_type.insert(0,"app_id STRING")
-    # attrs_with_type.insert(0,"base_rowid SERIAL PRIMARY KEY")
-    attrs_with_type.insert(0,"rowid SERIAL PRIMARY KEY")
+    attrs_with_type = [attr + " varchar" for attr in attrs.values()]
+    attrs_with_type.insert(0,"app_id varchar")
+    # attrs_with_type.insert(0,"base_pk SERIAL PRIMARY KEY")
+    attrs_with_type.insert(0,"pk SERIAL PRIMARY KEY")
     attrs_with_type.append("base_created_at TIMESTAMP DEFAULT now()")
     attrs_with_type.append("base_mark_delete BOOL")
     tsql = "CREATE TABLE %s ( %s )" % (name, ', '.join(attrs_with_type))
@@ -218,9 +218,9 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
 def createSupplementaryTables():
 
     sql = """
-        SELECT app_id, table_id, ltrim(concat_agg(concat('"',column_name,'"',' ',data_type)||','), ',') as column_names, ltrim(concat_agg(app_schemas.rowid::text||','), ',') as column_ids
-        FROM app_schemas JOIN app_tables ON app_schemas.table_id = app_tables.rowid 
-        WHERE app_schemas.rowid NOT IN (SELECT logical_attribute FROM physical_mappings) 
+        SELECT  app_id, table_id, string_agg(concat('"',column_name, '"', ' ', data_type),',') as column_names, string_agg(app_schemas.pk::varchar,',') as column_ids
+        FROM app_schemas JOIN app_tables ON app_schemas.table_id = app_tables.pk 
+        WHERE app_schemas.pk NOT IN (SELECT logical_attribute FROM physical_mappings) 
         GROUP BY app_id, table_id
         ORDER BY app_id
     """
@@ -234,14 +234,14 @@ def createSupplementaryTables():
         column_ids  = row["column_ids"]
         print app_id, table_id, column_names
 
-        insql = "INSERT INTO SUPPLEMENTARY_TABLES (table_id) VALUES(%d) RETURNING rowid" % (table_id)
+        insql = "INSERT INTO SUPPLEMENTARY_TABLES (table_id) VALUES(%d) RETURNING pk" % (table_id)
         print insql
         cur.execute(insql)
         
-        supp_table_id = cur.fetchone()['rowid']
+        supp_table_id = cur.fetchone()['pk']
         
         cols = [attr  for attr in column_names.split(',') if len(attr)]
-        cols.insert(0,"rowid SERIAL PRIMARY KEY")
+        cols.insert(0,"pk SERIAL PRIMARY KEY")
         cols.append("supp_created_at TIMESTAMP DEFAULT now()")
         cols.append("supp_mark_delete BOOL")
         
