@@ -41,9 +41,9 @@ func (self QI) GenSQL() (string, []interface{}) {
 		var cols, vals []string
 		for i, col := range self.Columns {
 			cols = append(cols, col)
-			vals = append(vals, fmt.Sprintf("$%s", i+1))
+			vals = append(vals, fmt.Sprintf("$%d", i+1))
 		}
-		q := fmt.Sprintf("INSERT INTO (%s) VALUES (%s)", strings.Join(cols, ","), strings.Join(vals, ","))
+		q := fmt.Sprintf("INSERT INTO \"%s\" (%s) VALUES (%s)", self.TableName, strings.Join(cols, ","), strings.Join(vals, ","))
 		return q, self.Values
 	}
 	fmt.Println("!!! Unable to identify query type.", self.Type)

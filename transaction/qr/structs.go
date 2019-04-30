@@ -15,8 +15,8 @@ type QR struct {
 	StencilDB    *sql.DB
 	AppName      string
 	AppID        string
-	BaseMappings []map[string]interface{}
-	SuppMappings []map[string]interface{}
+	BaseMappings []map[string]string
+	SuppMappings []map[string]string
 }
 
 // QI: Query Ingredients

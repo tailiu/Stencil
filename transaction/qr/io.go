@@ -27,9 +27,9 @@ func NewQRWithAppID(app_id string) *QR {
 }
 
 func (self *QR) setAppID() error {
-	sql := fmt.Sprintf("SELECT rowid from apps WHERE app_name = '%s'", self.AppName)
+	sql := fmt.Sprintf("SELECT pk from apps WHERE app_name = '%s'", self.AppName)
 	result := db.DataCall1(self.StencilDB, sql)
-	if val, ok := result["rowid"]; ok {
+	if val, ok := result["pk"]; ok {
 		self.AppID = fmt.Sprint(val)
 		return nil
 	}
@@ -48,33 +48,47 @@ func (self *QR) setAppName() error {
 
 func (self *QR) getBaseMappings() {
 	sql := fmt.Sprintf(`SELECT
-							LOWER(app_schemas.table_name) as logical_table, 
+							LOWER(app_tables.table_name) as logical_table, 
 							LOWER(app_schemas.column_name) as logical_column, 
 							LOWER(physical_schema.table_name) as physical_table,  
 							LOWER(physical_schema.column_name) as physical_column
 						FROM 	
 							physical_mappings 
-							JOIN 	app_schemas ON physical_mappings.logical_attribute = app_schemas.rowid
-							JOIN 	app_tables ON app_schemas.table_id = app_tables.rowid
-							JOIN 	physical_schema ON physical_mappings.physical_attribute = physical_schema.rowid
+							JOIN 	app_schemas ON physical_mappings.logical_attribute = app_schemas.pk
+							JOIN 	app_tables ON app_schemas.table_id = app_tables.pk
+							JOIN 	physical_schema ON physical_mappings.physical_attribute = physical_schema.pk
 						WHERE 	app_tables.app_id  = '%s' `, self.AppID)
 
-	self.BaseMappings = db.DataCall(self.StencilDB, sql)
+	// self.BaseMappings = db.DataCall(self.StencilDB, sql)
+	for _, mapping := range db.DataCall(self.StencilDB, sql) {
+		mappingStr := make(map[string]string)
+		for key, val := range mapping {
+			mappingStr[key] = fmt.Sprint(val)
+		}
+		self.BaseMappings = append(self.BaseMappings, mappingStr)
+	}
 }
 
 func (self *QR) getSupplementaryMappings() {
-	sql := fmt.Sprintf(`SELECT  LOWER(asm.table_name) as logical_table,
+	sql := fmt.Sprintf(`SELECT  
+							LOWER(app_tables.table_name) as logical_table,
 							LOWER(asm.column_name)  as logical_column,
-							CONCAT('supplementary_',st.rowid::string) as physical_table,
+							CONCAT('supplementary_',st.pk) as physical_table,
 							LOWER(asm.column_name)  as physical_column
-						FROM 	app_schemas asm JOIN
-						supplementary_tables st ON 
-						st.table_name = asm.table_name AND 
-						st.app_id = asm.app_id
-						WHERE 	asm.app_id  = '%s' AND
-						asm.rowid NOT IN (
-							SELECT logical_attribute FROM physical_mappings
-						)`, self.AppID)
+						FROM 	app_schemas asm 
+								JOIN app_tables on app_tables.pk = asm.table_id
+								JOIN supplementary_tables st ON st.table_id = asm.table_id
+						WHERE 	app_tables.app_id  = '%s' AND
+								asm.pk NOT IN (
+									SELECT logical_attribute FROM physical_mappings
+								)`, self.AppID)
 
-	self.SuppMappings = db.DataCall(self.StencilDB, sql)
+	// self.SuppMappings = db.DataCall(self.StencilDB, sql)
+	for _, mapping := range db.DataCall(self.StencilDB, sql) {
+		mappingStr := make(map[string]string)
+		for key, val := range mapping {
+			mappingStr[key] = fmt.Sprint(val)
+		}
+		self.SuppMappings = append(self.SuppMappings, mappingStr)
+	}
 }
