@@ -304,10 +304,10 @@ func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig
 		return hintData, err1
 	}
 
-	// fmt.Println(dependsOn)
+	// fmt.Println("all depends on ", dependsOn)
 	for i := 0; i < getOneDataFromParentNodeAttemptTimes; i ++ {
 		oneDependensOn := dependsOn[auxiliary.RandomNonnegativeIntWithUpperBound(len(dependsOn))]
-		// fmt.Println(oneDependensOn)
+		// fmt.Println("depends on ", oneDependensOn)
 
 		var conditions []string
 		var from, to string

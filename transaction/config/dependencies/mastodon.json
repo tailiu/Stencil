@@ -76,7 +76,7 @@
                 "member1": "favourites"
             },
             "keys": {
-                "id": "member1.id"
+                "status_id": "member1.status_id"
             }
         }
     ],
@@ -151,7 +151,7 @@
                     "tag": "statuses",
                     "conditions": [
                         {
-                            "tag_attr": "id",
+                            "tag_attr": "status_id",
                             "depends_on_attr": "id"
                         }
                     ]

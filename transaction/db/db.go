@@ -362,12 +362,14 @@ func GetPrimaryKeyOfTable(dbConn *sql.DB, table string) (string, error) {
 	primaryKey := GetAllColsOfRows(dbConn, query)
 	
 	if len(primaryKey) == 0 {
+		fmt.Println("GOOOOO1 ", table)
 		return "", fmt.Errorf("Get Primary Key Error: No Primary Key Found For Table %s", table)
 	}
 
 	if pk, ok := primaryKey[0]["column_name"]; ok {
 		return pk, nil
 	} else {
+		fmt.Println("GOOOOO ", table)
 		return "", fmt.Errorf("Get Primary Key Error: No Primary Key Found For Table %s", table)
 	}
 }
