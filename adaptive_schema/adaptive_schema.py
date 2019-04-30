@@ -201,7 +201,7 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
         cur.execute(isql)
         phy_attr_id = cur.fetchone()['pk']
         mapped_attrs = [attr_id] + trans_attrs[attr_id]
-        pmsql = "INSERT INTO PHYSICAL_MAPPINGS (logical_attribute, physical_attribute) VALUES " + ", ".join(["('%s', '%s')" % (attr_id,phy_attr_id) for attr_id in mapped_attrs])
+        pmsql = "INSERT INTO PHYSICAL_MAPPINGS (logical_attribute, physical_attribute) VALUES " + ", ".join(["('%s', '%s')" % (attr_id,phy_attr_id) for attr_id in set(mapped_attrs)])
         print pmsql
         cur.execute(pmsql)
 

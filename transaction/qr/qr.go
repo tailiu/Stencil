@@ -17,10 +17,10 @@ import (
 )
 
 func (self QR) NewRowId() (string, error) {
-	sql := "SELECT unique_rowid() AS rowid"
+	sql := "SELECT nextval('row_desc_rowid_seq'::regclass) AS rowid"
 	res := db.DataCall1(self.StencilDB, sql)
 	if val, ok := res["rowid"]; ok {
-		return val.(string), nil
+		return fmt.Sprint(val), nil
 	}
 	return "-1", errors.New("can't get new rowid")
 }
@@ -30,12 +30,15 @@ func (self QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string
 	var phyMap = make(map[string][][]string)
 
 	for _, mapping := range append(self.BaseMappings, self.SuppMappings...) {
-		if strings.EqualFold(ltable, mapping["logical_table"].(string)) {
-			ptab := mapping["physical_table"].(string)
-			pcol := mapping["physical_column"].(string)
-			lcol := mapping["logical_column"].(string)
+		// fmt.Println("mapping", mapping)
+		// fmt.Println("-------")
+		if strings.EqualFold(ltable, mapping["logical_table"]) {
+			ptab := mapping["physical_table"]
+			pcol := mapping["physical_column"]
+			lcol := mapping["logical_column"]
 			var pair []string
 			pair = append(pair, pcol, lcol)
+			// fmt.Println("pair", pair)
 			if _, ok := phyMap[ptab]; ok {
 				phyMap[ptab] = append(phyMap[ptab], pair)
 			} else {
@@ -51,10 +54,10 @@ func (self QR) GetBaseMappingForLogicalTable(ltable string) map[string][][]strin
 	var phyMap = make(map[string][][]string)
 
 	for _, mapping := range self.BaseMappings {
-		if strings.EqualFold(ltable, mapping["logical_table"].(string)) {
-			ptab := mapping["physical_table"].(string)
-			pcol := mapping["physical_column"].(string)
-			lcol := mapping["logical_column"].(string)
+		if strings.EqualFold(ltable, mapping["logical_table"]) {
+			ptab := mapping["physical_table"]
+			pcol := mapping["physical_column"]
+			lcol := mapping["logical_column"]
 			var pair []string
 			pair = append(pair, pcol, lcol)
 			if _, ok := phyMap[ptab]; ok {
@@ -295,9 +298,10 @@ func (self QR) ResolveInsert(qi *QI) []*QI {
 
 	var PQIs []*QI
 	if rowID, err := self.NewRowId(); err == nil {
+		log.Println("Got row id:", rowID)
 		// newRowSQL := fmt.Sprintf("INSERT INTO row_desc (row_id, app_id, table_name) VALUES ('%s', '%s', '%s')", rowID, self.AppID, qi.TableName)
-		newRowCols := []string{"rowid", "app_id", "table_name"}
-		newRowVals := []interface{}{rowID, self.AppID, qi.TableName}
+		newRowCols := []string{"rowid", "app_id"}
+		newRowVals := []interface{}{rowID, self.AppID}
 		newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
 		PQIs = append(PQIs, newRowQI)
 		phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
@@ -305,9 +309,9 @@ func (self QR) ResolveInsert(qi *QI) []*QI {
 		for pt, mapping := range phyMap {
 			isValid := false
 			// pqCols := fmt.Sprintf("INSERT INTO %s ( rowid, app_id, ", pt, pt[0:4])
-			pqiCols := []string{"rowid", "app_id"}
+			pqiCols := []string{"pk"}
 			// pqVals := fmt.Sprintf("VALUES ( '%s','%s',", rowID, self.AppID)
-			pqiVals := []interface{}{rowID, self.AppID}
+			pqiVals := []interface{}{rowID}
 			for _, colmap := range mapping {
 				if val, err := qi.valueOfColumn(colmap[1]); err == nil {
 					isValid = true

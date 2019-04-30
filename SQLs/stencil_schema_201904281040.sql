@@ -167,3 +167,22 @@ CREATE TABLE public.evaluation (
 	migration_id varchar NULL,
 	created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE row_desc(
+    rowid SERIAL primary key NOT NULL,
+    app_id varchar NULL,
+	copy_on_write bool default false,
+	created_at timestamp not null DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.row_desc (
+	rowid serial NOT NULL,
+	app_id int4 NULL,
+	copy_on_write bool NULL DEFAULT false,
+	created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT row_desc_pkey PRIMARY KEY (rowid),
+	CONSTRAINT row_desc_apps_fk FOREIGN KEY (app_id) REFERENCES apps(pk)
+);
+CREATE INDEX row_desc_app_id_idx ON public.row_desc USING btree (app_id);
+CREATE INDEX row_desc_row_id_app_id_idx ON public.row_desc USING btree (app_id, rowid);
+CREATE INDEX row_desc_rowid_idx ON public.row_desc USING btree (rowid);
