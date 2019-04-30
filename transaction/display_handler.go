@@ -19,9 +19,13 @@ var displayedData = make(map[string]int)
 
 func DisplayThread(app string, migrationID int) {
 	stencilDBConn, appDBConn, appConfig, pks := display.Initialize(app)
-
+	
+	fmt.Println("--------- First Phase --------")
 	secondRound := false
-	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); !display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
+	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); 
+			!display.CheckMigrationComplete(stencilDBConn, migrationID);
+			migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
+		
 		for _, oneMigratedData := range migratedData {
 			// fmt.Println(oneMigratedData)
 			checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneMigratedData, app, pks, secondRound)
@@ -29,6 +33,7 @@ func DisplayThread(app string, migrationID int) {
 		time.Sleep(checkInterval)
 	}
 
+	fmt.Println("--------- Second Phase ---------")
 	secondRound = true
 	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
@@ -166,7 +171,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 
 func main() {
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 945978681)
+	DisplayThread(dstApp, 857232446)
 
 	// var completeDataHints []display.HintStruct
 	// stencilDBConn, _, _, pks := display.Initialize(dstApp)

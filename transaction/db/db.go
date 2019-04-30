@@ -358,24 +358,22 @@ func GetAllColsOfRows(dbConn *sql.DB, query string) []map[string]string {
 
 // NOTE: We assume that primary key is only one string!!!
 func GetPrimaryKeyOfTable(dbConn *sql.DB, table string) (string, error) {
-	query := fmt.Sprintf("SHOW CONSTRAINTS FROM %s;", table)
-	constraints := GetAllColsOfRows(dbConn, query)
-
-	for _, constraint := range constraints {
-		if constraint["constraint_type"] == "PRIMARY KEY" {
-			details := constraint["details"]
-			s1 := strings.Split(details, "(")[1]
-			s2 := strings.Split(s1, ")")[0]
-			s3 := strings.Split(s2, " ")[0]
-			return s3, nil
-		}
+	query := fmt.Sprintf("SELECT c.column_name FROM information_schema.key_column_usage AS c LEFT JOIN information_schema.table_constraints AS t ON t.constraint_name = c.constraint_name WHERE t.table_name = '%s' AND t.constraint_type = 'PRIMARY KEY';", table)
+	primaryKey := GetAllColsOfRows(dbConn, query)
+	
+	if len(primaryKey) == 0 {
+		return "", fmt.Errorf("Get Primary Key Error: No Primary Key Found For Table %s", table)
 	}
 
-	return "", fmt.Errorf("Get Primary Key Error: No Primary Key Found For Table %s", table)
+	if pk, ok := primaryKey[0]["column_name"]; ok {
+		return pk, nil
+	} else {
+		return "", fmt.Errorf("Get Primary Key Error: No Primary Key Found For Table %s", table)
+	}
 }
 
 func GetTablesOfDB(dbConn *sql.DB, app string) []string {
-	query := fmt.Sprintf("SHOW TABLES FROM %s", app)
+	query := fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
 	tablesMapArr := GetAllColsOfRows(dbConn, query)
 
 	var tables []string
