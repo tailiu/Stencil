@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"transaction/db"
 	"strconv"
+	"transaction/config"
+	"errors"
 )
 
 // The Key should be the primay key of the Table
@@ -39,4 +41,15 @@ func TransformRowToHint(dbConn *sql.DB, row map[string]string, table string) (Hi
 		hint.KeyVal = keyVal
 	}
 	return hint, nil
+}
+
+func (hint HintStruct) GetTagName(tags []config.Tag) (string, error) {
+	for _, tag := range tags {
+		for _, member := range tag.Members {
+			if hint.Table == member {
+				return tag.Name, nil
+			}
+		}
+	}
+	return "", errors.New("No Corresponding Tag Found!")
 }

@@ -59,7 +59,7 @@
                     "member1.id":"member5.activity_id"
                 }
             ],
-            "setting": "display_based_on_inner_dependencies"
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name" : "follows",

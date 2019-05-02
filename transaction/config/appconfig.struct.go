@@ -174,6 +174,21 @@ func (self AppConfig) GetTagsByTablesExcept(tables []string, tagName string) []T
 	return tags
 }
 
+func (self AppConfig) GetTagDisplaySetting(tagName string) (string, error) {
+	
+	for _, tag := range self.Tags {
+		if tag.Name == tagName {
+			if tag.Display_setting != "" {
+				return tag.Display_setting, nil
+			} else {
+				return "default_display_setting", nil
+			} 
+		} 
+	} 
+
+	return "", errors.New("Error: No Tag Found For the Provided TagName")
+}
+
 func (self Dependency) GetConditionsForTag(tagName string) []DCondition {
 
 	for _, dependsOn := range self.DependsOn {

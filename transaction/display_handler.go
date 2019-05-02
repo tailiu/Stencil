@@ -61,7 +61,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 			return true, nil
 		} else {
 			// This should be different for the second round because, based on config, nodes could be displayed despite incomplete 
-			complete, completeDataHints := dependency_handler.CheckNodeComplete(appDBConn, appConfig.Tags, oneMigratedData, app)
+			completeDataHints, complete := dependency_handler.CheckNodeComplete(&appConfig, oneMigratedData)
 			// fmt.Println(complete, completeDataHints)
 			if !complete {
 				return false, errors.New("Data of a Node is Not Complete")
@@ -74,7 +74,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 					// This should not happen in Stencil's case, because root node data should
 					// be stored separatedly
 					if tags == nil {
-						log.Println("This Data Already Belongs To Root Node!")
+						log.Println("This Data Belongs To Root Node!")
 						return true, nil
 					} else {
 						for _, tag := range tags {
@@ -173,27 +173,47 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 
 func main() {
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 857232446)
+	// DisplayThread(dstApp, 857232446)
 
 	// var completeDataHints []display.HintStruct
 	// stencilDBConn, _, _, pks := display.Initialize(dstApp)
 	// display.Display(stencilDBConn, dstApp, completeDataHints, pks)
 
 	// dbConn := db.GetDBConn(dstApp)
-	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-	// 	fmt.Println(err)
-	// } else {
-	// 	// fmt.Println(appConfig)
-	// 	// fmt.Println(appConfig.Tags)
-	// 	keyVal := map[string]int {
-	// 		"id": 440047296002523137,
-	// 	}
-	// 	hint := display.HintStruct {
-	// 		Table: "users",
-	// 		KeyVal: keyVal,
-	// 	} 
-	// 	dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
-	// }
+	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+		fmt.Println(err)
+	} else {
+		// keyVal := map[string]int {
+		// 	"id": 14435263,
+		// }
+		// hint := display.HintStruct {
+		// 	Table: "favourites",
+		// 	KeyVal: keyVal,
+		// } 
+
+		keyVal := map[string]int {
+			"id": 4630,
+		}
+		hint := display.HintStruct {
+			Table: "accounts",
+			KeyVal: keyVal,
+		} 
+
+		// keyVal := map[string]int {
+		// 	"id": 28300,
+		// }
+		// hint := display.HintStruct {
+		// 	Table: "status_stats",
+		// 	KeyVal: keyVal,
+		// } 
+		// dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
+		data, err := dependency_handler.GetTobeCheckedDataInNode(&appConfig, hint)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(data)
+		}
+	}
 
 	// dstApp := "mastodon"
 	// dbConn := db.GetDBConn(dstApp)
