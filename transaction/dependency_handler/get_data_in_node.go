@@ -29,7 +29,7 @@ func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string)
 	data := db.GetAllColsOfRows(dbConn, query)
 	// fmt.Println(data)
 	if len(data) == 0 {
-		return nil, errors.New("Error: the Remaining Data in a Node Does Not Exist")
+		return nil, errors.New("Error: Cannot Find One Remaining Data in the Node")
 	} else {
 		return data[0], nil
 	}
@@ -51,7 +51,7 @@ func getRemainingData(dbConn *sql.DB, dependencies []map[string]string, members 
 			procDependencies[newVal] = append(procDependencies[newVal], newKey)
 		}
 	}
-	fmt.Println(procDependencies)
+	// fmt.Println(procDependencies)
 
 	var data map[string]string
 	var err error
@@ -90,8 +90,8 @@ func getRemainingData(dbConn *sql.DB, dependencies []map[string]string, members 
 					
 					if err != nil {
 						// fmt.Println(err)
-						fmt.Println(result)
-						return nil, err
+						// fmt.Println(result)
+						continue
 					}
 					// fmt.Println(dep)
 
@@ -160,7 +160,7 @@ func GetDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]disp
 			}
 		}
 	}
-	return []display.HintStruct{}, errors.New("Error: the hint does not match any tags")
+	return nil, errors.New("Error: the hint does not match any tags")
 }
 
 
@@ -171,15 +171,23 @@ func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint displa
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Println(tagName)
 
 	displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
+	// Whether a node is complete or not, get all the data in a node. 
+	// If the node is complete, err is nil, otherwise, err is "node is not complete".
 	if data, err = GetDataInNode(appConfig, hint); err != nil {
+		// The setting "default_display_setting" means only display a node when the node is complete.
+		// Therefore, return nil and error message when node is not complete. 
 		if displaySetting == "default_display_setting" {
 			return nil, err
+		// The setting "display_based_on_inner_dependencies" means display as much data in a node as possible
+		// based on inner dependencies. 
+		// Note: if a piece of data in a node depends on some data not existing in the node,
+		// it cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {
 			return data, err
 		}
+	// If a node is complete, return all the data in the node regardless of the setting.
 	} else {
 		return data, nil
 	}

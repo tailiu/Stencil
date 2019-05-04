@@ -191,25 +191,26 @@ func main() {
 		// 	KeyVal: keyVal,
 		// } 
 
-		// keyVal := map[string]int {
-		// 	"id": 4630,
-		// }
-		// hint := display.HintStruct {
-		// 	Table: "accounts",
-		// 	KeyVal: keyVal,
-		// } 
-
 		keyVal := map[string]int {
-			"id": 28300,
+			"id": 4630,
 		}
 		hint := display.HintStruct {
-			Table: "status_stats",
+			Table: "accounts",
 			KeyVal: keyVal,
 		} 
+
+		// keyVal := map[string]int {
+		// 	"id": 28300,
+		// }
+		// hint := display.HintStruct {
+		// 	Table: "status_stats",
+		// 	KeyVal: keyVal,
+		// } 
 		// dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
 		data, err := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, hint)
 		if err != nil {
 			fmt.Println(err)
+			fmt.Println(data)
 		} else {
 			fmt.Println(data)
 		}
