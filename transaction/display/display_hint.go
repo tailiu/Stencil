@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"transaction/config"
 	"errors"
+	"strings"
 )
 
 // The Key should be the primay key of the Table
@@ -52,4 +53,34 @@ func (hint HintStruct) GetTagName(tags []config.Tag) (string, error) {
 		}
 	}
 	return "", errors.New("No Corresponding Tag Found!")
+}
+
+func (hint HintStruct) GetMemberID(appConfig *config.AppConfig, tagName string) (string, error) {
+	for _, tag := range appConfig.Tags {
+		if tag.Name == tagName {
+			for memberID, memberTable := range tag.Members {
+				if memberTable == hint.Table {
+					return memberID, nil
+				}
+			}
+		}
+	}
+	return "", errors.New("No Corresponding Tag Found!")
+}
+
+func (hint HintStruct) GetDependsOnTables(appConfig *config.AppConfig, tagName string, memberID string) ([]string) {
+	var dependsOnTables []string
+	for _, tag := range appConfig.Tags {
+		if tag.Name == tagName {
+			for _, innerDependency := range tag.InnerDependencies {
+				for dependsOnMember, member := range innerDependency {
+					if memberID == strings.Split(member, ".")[0] {
+						table, _ := appConfig.GetTableByMemberID(tagName, strings.Split(dependsOnMember, ".")[0])
+						dependsOnTables = append(dependsOnTables, table)
+					}
+				}
+			}
+		}
+	}
+	return dependsOnTables
 }

@@ -35,7 +35,7 @@ func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string)
 	}
 }
 
-func getRemainingData(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint display.HintStruct, app string) ([]display.HintStruct, error) {
+func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint display.HintStruct, app string) ([]display.HintStruct, error) {
 	var result []display.HintStruct
 	
 	procDependencies := make(map[string][]string)
@@ -146,7 +146,7 @@ func getRemainingData(dbConn *sql.DB, dependencies []map[string]string, members 
 	}
 }
 
-func GetDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, error) {
+func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, error) {
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members{
 			if hint.Table == member {
@@ -155,7 +155,7 @@ func GetDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]disp
 				} else {
 					// Note: we assume that one dependency represents that one row 
 					// 		in one table depends on another row in another table
-					return getRemainingData(appConfig.DBConn, tag.InnerDependencies, tag.Members, hint, appConfig.AppName)
+					return getRemainingDataInNode(appConfig.DBConn, tag.InnerDependencies, tag.Members, hint, appConfig.AppName)
 				}
 			}
 		}
@@ -163,6 +163,47 @@ func GetDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]disp
 	return nil, errors.New("Error: the hint does not match any tags")
 }
 
+// A recursive function checks whether all the data one data recursively depends on exists
+// We only checks whether the table depended on exists, which is sufficient for now 
+func checkDependsOnExists(appConfig *config.AppConfig, allData []display.HintStruct, tagName string, data display.HintStruct) bool {
+	memberID, _ := data.GetMemberID(appConfig, tagName)
+	// fmt.Println(memberID)
+	dependsOnTables := data.GetDependsOnTables(appConfig, tagName, memberID)
+	// fmt.Println(dependsOnTables)
+	if len(dependsOnTables) == 0 {
+		return true
+	} else {
+		for _, dependsOnTable := range dependsOnTables {
+			exists := false
+			for _, oneData := range allData {
+				if oneData.Table == dependsOnTable {
+					if !checkDependsOnExists(appConfig, allData, tagName, oneData) {
+						return false
+					} else {
+						exists = true
+						break
+					}
+				}
+			}
+			if !exists {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []display.HintStruct, tagName string) []display.HintStruct {
+	var trimmedData []display.HintStruct
+	
+	for _, data := range allData {
+		if checkDependsOnExists(appConfig, allData, tagName, data) {
+			trimmedData = append(trimmedData, data)
+		}
+	}
+
+	return trimmedData
+}
 
 func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, error) {
 	var data []display.HintStruct
@@ -175,17 +216,18 @@ func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint displa
 	displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
 	// Whether a node is complete or not, get all the data in a node. 
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err = GetDataInNode(appConfig, hint); err != nil {
-		// The setting "default_display_setting" means only display a node when the node is complete.
+	if data, err = getDataInNode(appConfig, hint); err != nil {
+		// The setting "default_display_setting" means only display a node when the node is complete.	
 		// Therefore, return nil and error message when node is not complete. 
 		if displaySetting == "default_display_setting" {
 			return nil, err
 		// The setting "display_based_on_inner_dependencies" means display as much data in a node as possible
 		// based on inner dependencies. 
 		// Note: if a piece of data in a node depends on some data not existing in the node,
-		// it cannot be displayed.
+		// it needs to be deleted from the data set and cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {
-			return data, err
+			// fmt.Println(data)
+			return trimDataBasedOnInnerDependencies(appConfig, data, tagName), err
 		}
 	// If a node is complete, return all the data in the node regardless of the setting.
 	} else {

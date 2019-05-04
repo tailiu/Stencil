@@ -189,6 +189,21 @@ func (self AppConfig) GetTagDisplaySetting(tagName string) (string, error) {
 	return "", errors.New("Error: No Tag Found For the Provided TagName")
 }
 
+func (self AppConfig) GetTableByMemberID(tagName string, checkedMemberID string) (string, error) {
+
+	for _, tag := range self.Tags {
+		if tag.Name == tagName {
+			for memberID, memberTable := range tag.Members {
+				if memberID == checkedMemberID {
+					return memberTable, nil
+				}
+			}
+		}
+	}
+
+	return "", errors.New("Error: No Table Found For the Provided Member ID")
+}
+
 func (self Dependency) GetConditionsForTag(tagName string) []DCondition {
 
 	for _, dependsOn := range self.DependsOn {

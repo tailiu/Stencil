@@ -61,7 +61,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 			return true, nil
 		} else {
 			// This should be different for the second round because, based on config, nodes could be displayed despite incomplete 
-			completeDataHints, err1 := dependency_handler.GetDataInNode(&appConfig, oneMigratedData)
+			completeDataHints, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, oneMigratedData)
 			// fmt.Println(complete, completeDataHints)
 			if err1 != nil {
 				return false, err1
