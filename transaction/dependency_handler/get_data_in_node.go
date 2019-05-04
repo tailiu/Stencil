@@ -17,7 +17,7 @@ func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, 
 
 	data := db.GetAllColsOfRows(dbConn, query)
 	if len(data) == 0 {
-		return nil, errors.New("Check Remaining Data Exists Error: Original Data Not Exists")
+		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
 	} else {
 		return data[0], nil
 	}
@@ -29,13 +29,13 @@ func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string)
 	data := db.GetAllColsOfRows(dbConn, query)
 	// fmt.Println(data)
 	if len(data) == 0 {
-		return nil, errors.New("Check Remaining Data Exists Error: Data Not Exists")
+		return nil, errors.New("Error: the Remaining Data in a Node Does Not Exist")
 	} else {
 		return data[0], nil
 	}
 }
 
-func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint display.HintStruct, app string) ([]display.HintStruct, bool) {
+func getRemainingData(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint display.HintStruct, app string) ([]display.HintStruct, error) {
 	var result []display.HintStruct
 	
 	procDependencies := make(map[string][]string)
@@ -51,15 +51,15 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 			procDependencies[newVal] = append(procDependencies[newVal], newKey)
 		}
 	}
-	// fmt.Println(procDependencies)
+	fmt.Println(procDependencies)
 
 	var data map[string]string
 	var err error
 	for k, v := range hint.KeyVal {
 		data, err = getOneRowBasedOnHint(dbConn, app, hint.Table, k, v)
 		if err != nil {
-			log.Println(err)
-			return nil, false
+			// log.Println(err)
+			return nil, err
 		}
 	}
 
@@ -82,15 +82,16 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 				// We assume that this is an integer value otherwise we have to define it in dependency config
 				intVal, err := strconv.Atoi(val)
 				if err != nil {
-					log.Fatal("Dependency Handler: Converting '%s' to Integer Errors", val)
+					log.Fatal("Error in Getting Data in Node: Converting '%s' to Integer", val)
 				}
 				for _, dep := range deps {
 					data, err = getOneRowBasedOnDependency(dbConn, app, intVal, dep)
 					// fmt.Println(data)
 					
 					if err != nil {
-						fmt.Println(err)
-						return nil, false
+						// fmt.Println(err)
+						fmt.Println(result)
+						return nil, err
 					}
 					// fmt.Println(dep)
 
@@ -139,32 +140,49 @@ func checkRemainingDataExists(dbConn *sql.DB, dependencies []map[string]string, 
 	// fmt.Println(procDependencies)
 	// fmt.Println(result)
 	if len(procDependencies) == 0 {
-		return result, true
+		return result, nil
 	} else {
-		return nil, false
+		return result, errors.New("Error: node is not complete")
 	}
 }
 
-func CheckNodeComplete(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, bool) {
+func GetDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, error) {
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members{
 			if hint.Table == member {
 				if len(tag.Members) == 1 {
-					var completeData []display.HintStruct
-					completeData = append(completeData, hint)
-					return completeData, true
+					return []display.HintStruct{hint}, nil
 				} else {
 					// Note: we assume that one dependency represents that one row 
 					// 		in one table depends on another row in another table
-					if completeData, ok := checkRemainingDataExists(appConfig.DBConn, tag.InnerDependencies, tag.Members, hint, appConfig.AppName); ok {
-						fmt.Println(completeData)
-						return completeData, true
-					} else {
-						return nil, false
-					}
+					return getRemainingData(appConfig.DBConn, tag.InnerDependencies, tag.Members, hint, appConfig.AppName)
 				}
 			}
 		}
 	}
-	return nil, false
+	return []display.HintStruct{}, errors.New("Error: the hint does not match any tags")
+}
+
+
+func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, error) {
+	var data []display.HintStruct
+
+	tagName, err := hint.GetTagName(appConfig.Tags)
+	if err != nil {
+		return nil, err
+	}
+	// fmt.Println(tagName)
+
+	displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
+	if data, err = GetDataInNode(appConfig, hint); err != nil {
+		if displaySetting == "default_display_setting" {
+			return nil, err
+		} else if displaySetting == "display_based_on_inner_dependencies" {
+			return data, err
+		}
+	} else {
+		return data, nil
+	}
+
+	panic("Should never happen")
 }

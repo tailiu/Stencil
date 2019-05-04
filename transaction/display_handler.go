@@ -10,7 +10,7 @@ import (
 	"transaction/config"
 	"database/sql"
 	"time"
-	"errors"
+	// "errors"
 )
 
 const checkInterval = 200 * time.Millisecond
@@ -50,21 +50,21 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 	for _, v := range oneMigratedData.KeyVal {
 		val = v
 	}
-	displayed, err1 := display.GetDisplayFlag(stencilDBConn, app, oneMigratedData.Table, val)
+	displayed, err0 := display.GetDisplayFlag(stencilDBConn, app, oneMigratedData.Table, val)
 
 	fmt.Println("Displayed: ", displayed)
-	if err1 != nil {
-		log.Println(err1)
-		return false, err1
+	if err0 != nil {
+		log.Println(err0)
+		return false, err0
 	} else {
 		if displayed {
 			return true, nil
 		} else {
 			// This should be different for the second round because, based on config, nodes could be displayed despite incomplete 
-			completeDataHints, complete := dependency_handler.CheckNodeComplete(&appConfig, oneMigratedData)
+			completeDataHints, err1 := dependency_handler.GetDataInNode(&appConfig, oneMigratedData)
 			// fmt.Println(complete, completeDataHints)
-			if !complete {
-				return false, errors.New("Data of a Node is Not Complete")
+			if err1 != nil {
+				return false, err1
 			} else {
 				tags, err2 := dependency_handler.GetParentTags(appConfig, oneMigratedData)
 				if err2 != nil {
@@ -191,23 +191,23 @@ func main() {
 		// 	KeyVal: keyVal,
 		// } 
 
-		keyVal := map[string]int {
-			"id": 4630,
-		}
-		hint := display.HintStruct {
-			Table: "accounts",
-			KeyVal: keyVal,
-		} 
-
 		// keyVal := map[string]int {
-		// 	"id": 28300,
+		// 	"id": 4630,
 		// }
 		// hint := display.HintStruct {
-		// 	Table: "status_stats",
+		// 	Table: "accounts",
 		// 	KeyVal: keyVal,
 		// } 
+
+		keyVal := map[string]int {
+			"id": 28300,
+		}
+		hint := display.HintStruct {
+			Table: "status_stats",
+			KeyVal: keyVal,
+		} 
 		// dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
-		data, err := dependency_handler.GetTobeCheckedDataInNode(&appConfig, hint)
+		data, err := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, hint)
 		if err != nil {
 			fmt.Println(err)
 		} else {
