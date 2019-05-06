@@ -95,7 +95,8 @@
                             "tag_attr": "statuses.account",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         },
@@ -104,11 +105,14 @@
             "depends_on": [
                 {
                     "tag":"statuses",
+                    "as": "S1",
                     "conditions":[
                         {   "tag_attr": "reblog",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_existence": "reblog",
+                    "display_setting": "parent_node_not_displays_with_check"
                 },
                 {
                     "tag":"conversations",
@@ -117,18 +121,24 @@
                             "tag_attr": "conversation_id",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_not_displays_without_check",
+                    "_comment":"because Diaspora does not have conversations, so display_setting has to be changed from parent_node_partially_displays to this"
                 },
                 {
                     "tag":"statuses",
+                    "as": "S2",
                     "conditions":[
                         {   "tag_attr": "reply",
                             "depends_on_attr": "id"
                         }
                     
-                    ]
+                    ],
+                    "display_existence": "reply",
+                    "display_setting": "parent_node_not_displays_with_check"
                 }
-            ]
+            ],
+            "combined_display_setting":"conversations or S1 or S2"
         },
         {
             "tag": "follows",
@@ -140,7 +150,8 @@
                             "tag_attr": "account_id",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         },
@@ -154,7 +165,8 @@
                             "tag_attr": "status_id",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         }

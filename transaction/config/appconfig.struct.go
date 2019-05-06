@@ -204,6 +204,23 @@ func (self AppConfig) GetTableByMemberID(tagName string, checkedMemberID string)
 	return "", errors.New("Error: No Table Found For the Provided Member ID")
 }
 
+func (self AppConfig) GetDependsOnTables(tagName string, memberID string) ([]string) {
+	var dependsOnTables []string
+	for _, tag := range self.Tags {
+		if tag.Name == tagName {
+			for _, innerDependency := range tag.InnerDependencies {
+				for dependsOnMember, member := range innerDependency {
+					if memberID == strings.Split(member, ".")[0] {
+						table, _ := self.GetTableByMemberID(tagName, strings.Split(dependsOnMember, ".")[0])
+						dependsOnTables = append(dependsOnTables, table)
+					}
+				}
+			}
+		}
+	}
+	return dependsOnTables
+}
+
 func (self Dependency) GetConditionsForTag(tagName string) []DCondition {
 
 	for _, dependsOn := range self.DependsOn {

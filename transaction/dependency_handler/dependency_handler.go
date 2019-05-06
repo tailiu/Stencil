@@ -85,31 +85,6 @@ func replaceKey(innerDependencies []config.Tag, tag string, key string) string {
 	return ""
 }
 
-func GetParentTags(appConfig config.AppConfig, data display.HintStruct) ([]string, error) {
-	tag, err := data.GetTagName(appConfig.Tags)
-	if err != nil {
-		return nil, err
-	}
-	if tag == "root" {
-		return nil, nil
-	}
-
-	var parentTags []string
-	for _, dependency := range appConfig.Dependencies {
-		if dependency.Tag == tag {
-			for _, dependsOn := range dependency.DependsOn {
-				parentTags = append(parentTags, dependsOn.Tag)
-			}
-		}
-	}
-
-	if len(parentTags) == 0 {
-		return nil, errors.New("Check Parent Tag Name error: Does Not Find Any Parent Node!")
-	} else {
-		return parentTags, nil
-	}
-}
-
 func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig, hint display.HintStruct, app string) (display.HintStruct, error){
 	hintData := display.HintStruct{}
 	data1 := DataInDependencyNode{}

@@ -168,7 +168,7 @@ func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]disp
 func checkDependsOnExists(appConfig *config.AppConfig, allData []display.HintStruct, tagName string, data display.HintStruct) bool {
 	memberID, _ := data.GetMemberID(appConfig, tagName)
 	// fmt.Println(memberID)
-	dependsOnTables := data.GetDependsOnTables(appConfig, tagName, memberID)
+	dependsOnTables := appConfig.GetDependsOnTables(tagName, memberID)
 	// fmt.Println(dependsOnTables)
 	if len(dependsOnTables) == 0 {
 		return true
