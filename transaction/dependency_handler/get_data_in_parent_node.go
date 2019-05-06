@@ -85,7 +85,7 @@ func replaceKey(innerDependencies []config.Tag, tag string, key string) string {
 	return ""
 }
 
-func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig, hint display.HintStruct, app string) (display.HintStruct, error){
+func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig, hint display.HintStruct, app string, tag string) (display.HintStruct, error){
 	hintData := display.HintStruct{}
 	data1 := DataInDependencyNode{}
 

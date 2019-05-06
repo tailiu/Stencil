@@ -65,13 +65,17 @@ type Tag struct {
 }
 
 type Dependency struct {
-	Tag       string      `json:"tag"`
-	DependsOn []DependsOn `json:"depends_on"`
+	Tag       				string      	`json:"tag"`
+	DependsOn 				[]DependsOn 	`json:"depends_on"`
+	CombinedDisplaySetting 	string			`json:"combined_display_setting"`
 }
 
 type DependsOn struct {
-	Tag        string       `json:"tag"`
-	Conditions []DCondition `json:"conditions"`
+	Tag        			string      `json:"tag"`
+	As 		   			string		`json:"as"`
+	DisplayExistence	string		`json:"display_existence"`
+	DisplaySetting		string		`json:"display_setting"`
+	Conditions []DCondition 		`json:"conditions"`
 }
 
 type DCondition struct {
