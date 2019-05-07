@@ -8,6 +8,7 @@ import (
 	"strings"
 	"strconv"
 	"errors"
+	"log"
 )
 
 func getHintsInParentNode(appConfig *config.AppConfig, hint display.HintStruct, conditions []string) ([]display.HintStruct, error) {
@@ -47,7 +48,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hint display.HintStruct, 
 	data := db.GetAllColsOfRows(appConfig.DBConn, query)
 	
 	if len(data) == 0 {
-		return nil, errors.New("Error In Get Data: Fail To Get Any Data This Data Depends On")
+		return nil, errors.New("Fail To Get Any Data in the Parent Node")
 	} else {
 		var result []display.HintStruct
 		for _, oneData := range data {
@@ -62,15 +63,15 @@ func getHintsInParentNode(appConfig *config.AppConfig, hint display.HintStruct, 
 	}
 }
 
-func replaceKey(innerDependencies []config.Tag, tag string, key string) string {
-	for _, dependsOnTag := range innerDependencies {
-		if dependsOnTag.Name == tag {
-			// fmt.Println(dependsOnTag)
-			for k, v := range dependsOnTag.Keys {
+func replaceKey(appConfig *config.AppConfig, tag string, key string) string {
+	for _, tag1 := range appConfig.Tags {
+		if tag1.Name == tag {
+			// fmt.Println(tag)
+			for k, v := range tag1.Keys {
 				if k == key {
 					member := strings.Split(v, ".")[0]
 					attr := strings.Split(v, ".")[1]
-					for k1, table := range dependsOnTag.Members {
+					for k1, table := range tag1.Members {
 						if k1 == member {
 							return table + "." + attr
 						}
@@ -82,8 +83,44 @@ func replaceKey(innerDependencies []config.Tag, tag string, key string) string {
 	return ""
 }
 
+func dataFromParentNodeExists(appConfig *config.AppConfig, hint display.HintStruct, pTag string) bool {
+	displayExistenceSetting, _ := hint.GetDisplayExistenceSetting(appConfig, pTag)
+
+	if displayExistenceSetting == "" {
+		return true
+	} else {
+		fmt.Println(displayExistenceSetting)
+		tag, _ := hint.GetTagName(appConfig)
+		col := strings.Split(replaceKey(appConfig, tag, displayExistenceSetting), ".")[1]
+		var dataKey string
+		var dataValue int
+		for k, v := range hint.KeyVal {
+			dataKey = k
+			dataValue = v
+		}
+		query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = %d;", col, hint.Table, dataKey, dataValue)
+		fmt.Println(query)
+		data := db.GetAllColsOfRows(appConfig.DBConn, query)
+		if len(data) == 0 {
+			log.Fatal("Data is missing??")
+		} else {
+			if data[0][col] == "NULL" {
+				return false
+			} else {
+				return true
+			}
+		}
+	}
+
+	panic("Should never happen")
+}
+
 // Note: this function may return multiple hints based on dependencies
 func GetdataFromParentNode(appConfig *config.AppConfig, hint display.HintStruct, pTag string) ([]display.HintStruct, error) {
+
+	if !dataFromParentNodeExists(appConfig, hint, pTag) {
+		return nil, fmt.Errorf("This Data Does not Depend on Any Data in the Parent Node %s", pTag)
+	}
 
 	tag, _ := hint.GetTagName(appConfig)
 	conditions, _ := appConfig.GetDependsOnConditions(tag, pTag)
@@ -94,17 +131,17 @@ func GetdataFromParentNode(appConfig *config.AppConfig, hint display.HintStruct,
 
 	if len(conditions) == 1 {
 		condition := conditions[0]
-		from = replaceKey(appConfig.Tags, tag, condition.TagAttr)
-		to = replaceKey(appConfig.Tags, pTag, condition.DependsOnAttr)
+		from = replaceKey(appConfig, tag, condition.TagAttr)
+		to = replaceKey(appConfig, pTag, condition.DependsOnAttr)
 		proConditions = append(proConditions, from + ":" + to)
 	} else {
 		for i, condition := range(conditions) {
 			if i == 0 {
-				from = replaceKey(appConfig.Tags, tag, condition.TagAttr)
-				to = replaceKey(appConfig.Tags, strings.Split(condition.DependsOnAttr, ".")[0], strings.Split(condition.DependsOnAttr, ".")[1])
+				from = replaceKey(appConfig, tag, condition.TagAttr)
+				to = replaceKey(appConfig, strings.Split(condition.DependsOnAttr, ".")[0], strings.Split(condition.DependsOnAttr, ".")[1])
 			} else if i == len(conditions) - 1 {
-				from = replaceKey(appConfig.Tags, strings.Split(condition.TagAttr, ".")[0], strings.Split(condition.TagAttr, ".")[1])
-				to = replaceKey(appConfig.Tags, pTag, condition.DependsOnAttr)
+				from = replaceKey(appConfig, strings.Split(condition.TagAttr, ".")[0], strings.Split(condition.TagAttr, ".")[1])
+				to = replaceKey(appConfig, pTag, condition.DependsOnAttr)
 			} 
 			proConditions = append(proConditions, from + ":" + to)
 		}
@@ -116,6 +153,6 @@ func GetdataFromParentNode(appConfig *config.AppConfig, hint display.HintStruct,
 	return getHintsInParentNode(appConfig, hint, proConditions)
 }
 
-func CheckDisplayCondition() bool {
-	return false
-}
+// func CheckDisplayCondition() bool {
+// 	return false
+// }

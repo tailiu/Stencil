@@ -108,3 +108,30 @@ func (hint HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig 
 
 	return alias, errors.New("No Corresponding Tag for the Provided Alias Found!")
 }
+
+func (hint HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig, pTag string) (string, error) {
+	tag, err := hint.GetTagName(appConfig)
+	if err != nil {
+		return "", err
+	}
+
+	for _, dependency := range appConfig.Dependencies {
+		if dependency.Tag == tag {
+			for _, dependsOn := range dependency.DependsOn {
+				if dependsOn.As != "" {
+					if dependsOn.As == pTag {
+						return dependsOn.DisplayExistence, nil
+					} else {
+						continue
+					}
+				} else {
+					if dependsOn.Tag == pTag {
+						return dependsOn.DisplayExistence, nil
+					}
+				}
+			}
+		}
+	}
+
+	return "", errors.New("Find display existence error!")
+}

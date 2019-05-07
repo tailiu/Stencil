@@ -97,7 +97,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 					err6 := display.Display(stencilDBConn, app, notDisplayedData, pks)
 					if err6 != nil {
 						log.Fatal(err6)
-					}
+					} 
 					returnResultBasedOnNodeCompleteness(err1)
 				} 
 
@@ -110,13 +110,15 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 						err3 := display.Display(stencilDBConn, app, dataInNode, pks)
 						if err3 != nil {
 							log.Fatal(err3)
-						} else {
-							returnResultBasedOnNodeCompleteness(err1)
 						}
+						returnResultBasedOnNodeCompleteness(err1)
 					} else {
 
 						for _, pTag := range pTags {
 							dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(&appConfig, oneMigratedData, pTag)
+							if err4 != nil {
+								
+							}
 							fmt.Println(dataInParentNode, err4)
 						}
 						
@@ -211,8 +213,8 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 // }
 
 func main() {
-	dstApp := "mastodon"
-	DisplayThread(dstApp, 857232446)
+	// dstApp := "mastodon"
+	// DisplayThread(dstApp, 857232446)
 
 	// // var dataInNode []display.HintStruct
 	// // stencilDBConn, _, _, pks := display.Initialize(dstApp)
@@ -255,33 +257,33 @@ func main() {
 	// 	}
 	// }
 
-	// dstApp := "mastodon"
-	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-	// 	fmt.Println(err)
-	// } else {
-	// 	// fmt.Println(appConfig)
-	// 	// fmt.Println(appConfig.Tags)
-	// 	keyVal := map[string]int {
-	// 		"id": 32,
-	// 	}
-	// 	hint := display.HintStruct {
-	// 		Table: "statuses",
-	// 		KeyVal: keyVal,
-	// 	} 
-	// 	// hint := display.HintStruct {
-	// 	// 	Table: "conversations",
-	// 	// 	Key: "id",
-	// 	// 	Value: "211",
-	// 	// 	ValueType: "int",
-	// 	// }
-	// 	fmt.Println(hint.GetParentTags(&appConfig))
-	// 	data, err := dependency_handler.GetdataFromParentNode(&appConfig, hint, "S2")
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	} else {
-	// 		fmt.Println(data)
-	// 	}
-	// }
+	dstApp := "mastodon"
+	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+		fmt.Println(err)
+	} else {
+		// fmt.Println(appConfig)
+		// fmt.Println(appConfig.Tags)
+		keyVal := map[string]int {
+			"id": 32999907,
+		}
+		hint := display.HintStruct {
+			Table: "statuses",
+			KeyVal: keyVal,
+		} 
+		// hint := display.HintStruct {
+		// 	Table: "conversations",
+		// 	Key: "id",
+		// 	Value: "211",
+		// 	ValueType: "int",
+		// }
+		fmt.Println(hint.GetParentTags(&appConfig))
+		data, err := dependency_handler.GetdataFromParentNode(&appConfig, hint, "S2")
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(data)
+		}
+	}
 
 	// atomicity.CreateTxnLogTable()
 
