@@ -208,7 +208,7 @@ func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []dis
 func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, error) {
 	var data []display.HintStruct
 
-	tagName, err := hint.GetTagName(appConfig.Tags)
+	tagName, err := hint.GetTagName(appConfig)
 	if err != nil {
 		return nil, err
 	}

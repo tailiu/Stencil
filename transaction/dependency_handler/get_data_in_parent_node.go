@@ -6,14 +6,11 @@ import (
 	"transaction/db"
 	"fmt"
 	"strings"
-	"log"
-	"database/sql"
 	"strconv"
 	"errors"
-	"mastodon/auxiliary"
 )
 
-func getOneRowInParentNodeRandomly(dbConn *sql.DB, hint display.HintStruct, conditions []string) (map[string]string, string, error) {
+func getHintsInParentNode(appConfig *config.AppConfig, hint display.HintStruct, conditions []string) ([]display.HintStruct, error) {
 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
 	from := ""
 	table := ""
@@ -40,29 +37,29 @@ func getOneRowInParentNodeRandomly(dbConn *sql.DB, hint display.HintStruct, cond
 				depDataKey = k
 				depDataValue = v
 			}
-			where := fmt.Sprintf("WHERE %s.%s = %d ORDER BY RANDOM() LIMIT 1;", "t0", depDataKey, depDataValue)
+			where := fmt.Sprintf("WHERE %s.%s = %d;", "t0", depDataKey, depDataValue)
 			table = t2
 			query += from + where
 		}
 	}
-	// fmt.Println(query)
+	fmt.Println(query)
 
-	data := db.GetAllColsOfRows(dbConn, query)
+	data := db.GetAllColsOfRows(appConfig.DBConn, query)
+	
 	if len(data) == 0 {
-		return nil, "", errors.New("Error In Get Data: Fail To Get One Data This Data Depends On")
+		return nil, errors.New("Error In Get Data: Fail To Get Any Data This Data Depends On")
 	} else {
-		return data[0], table, nil
-	}
-}
-
-func getDependsOn(dependencies []config.Dependency, tag string) ([]config.DependsOn, error) {
-	for _, dependency := range dependencies {
-		// fmt.Println(dependency)
-		if dependency.Tag == tag {
-			return dependency.DependsOn, nil
+		var result []display.HintStruct
+		for _, oneData := range data {
+			oneHint, err := display.TransformRowToHint(appConfig.DBConn, oneData, table)
+			if err != nil {
+				return nil, err
+			} else {
+				result = append(result, oneHint)
+			}
 		}
+		return result, nil
 	}
-	return nil, errors.New("Cannot Find Any Parent Tags")
 }
 
 func replaceKey(innerDependencies []config.Tag, tag string, key string) string {
@@ -85,64 +82,38 @@ func replaceKey(innerDependencies []config.Tag, tag string, key string) string {
 	return ""
 }
 
-func GetOneDataFromParentNodeRandomly(dbConn *sql.DB, appConfig config.AppConfig, hint display.HintStruct, app string, tag string) (display.HintStruct, error){
-	hintData := display.HintStruct{}
-	data1 := DataInDependencyNode{}
+// Note: this function may return multiple hints based on dependencies
+func GetdataFromParentNode(appConfig *config.AppConfig, hint display.HintStruct, pTag string) ([]display.HintStruct, error) {
 
-	tag, err := hint.GetTagName(appConfig.Tags)
-	if err != nil {
-		log.Fatal(err)
-	} 
-	
-	dependsOn, err1 := getDependsOn(appConfig.Dependencies, tag)
-	if err1 != nil {
-		log.Println(err1)
-		return hintData, err1
-	}
+	tag, _ := hint.GetTagName(appConfig)
+	conditions, _ := appConfig.GetDependsOnConditions(tag, pTag)
+	pTag, _ = hint.GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig, pTag)
 
-	// fmt.Println("all depends on ", dependsOn)
-	for i := 0; i < getOneDataFromParentNodeAttemptTimes; i ++ {
-		oneDependensOn := dependsOn[auxiliary.RandomNonnegativeIntWithUpperBound(len(dependsOn))]
-		// fmt.Println("depends on ", oneDependensOn)
+	var proConditions []string
+	var from, to string
 
-		var conditions []string
-		var from, to string
-		if len(oneDependensOn.Conditions) == 1 {
-			condition := oneDependensOn.Conditions[0]
-			from = replaceKey(appConfig.Tags, tag, condition.TagAttr)
-			to = replaceKey(appConfig.Tags, oneDependensOn.Tag, condition.DependsOnAttr)
-			conditions = append(conditions, from + ":" + to)
-		} else {
-			for i, condition := range(oneDependensOn.Conditions) {
-				if i == 0 {
-					from = replaceKey(appConfig.Tags, tag, condition.TagAttr)
-					to = replaceKey(appConfig.Tags, strings.Split(condition.DependsOnAttr, ".")[0], strings.Split(condition.DependsOnAttr, ".")[1])
-				} else if i == len(oneDependensOn.Conditions) - 1 {
-					from = replaceKey(appConfig.Tags, strings.Split(condition.TagAttr, ".")[0], strings.Split(condition.TagAttr, ".")[1])
-					to = replaceKey(appConfig.Tags, oneDependensOn.Tag, condition.DependsOnAttr)
-				} 
-				conditions = append(conditions, from + ":" + to)
-			}
-		}
-
-		// fmt.Println(conditions)
-		// fmt.Println(hint)
-
-		data1.Data, data1.Table, err1 = getOneRowInParentNodeRandomly(dbConn, hint, conditions)
-		if err1 != nil {
-			fmt.Println(err1)
-		} else {
-			// fmt.Println(data1)
-			break
+	if len(conditions) == 1 {
+		condition := conditions[0]
+		from = replaceKey(appConfig.Tags, tag, condition.TagAttr)
+		to = replaceKey(appConfig.Tags, pTag, condition.DependsOnAttr)
+		proConditions = append(proConditions, from + ":" + to)
+	} else {
+		for i, condition := range(conditions) {
+			if i == 0 {
+				from = replaceKey(appConfig.Tags, tag, condition.TagAttr)
+				to = replaceKey(appConfig.Tags, strings.Split(condition.DependsOnAttr, ".")[0], strings.Split(condition.DependsOnAttr, ".")[1])
+			} else if i == len(conditions) - 1 {
+				from = replaceKey(appConfig.Tags, strings.Split(condition.TagAttr, ".")[0], strings.Split(condition.TagAttr, ".")[1])
+				to = replaceKey(appConfig.Tags, pTag, condition.DependsOnAttr)
+			} 
+			proConditions = append(proConditions, from + ":" + to)
 		}
 	}
 
-	hintData, err2 := display.TransformRowToHint(dbConn, data1.Data, data1.Table)
-	if err2 != nil {
-		log.Fatal(err2)
-	} 
-	// fmt.Println(hintData)
-	return hintData, nil
+	// fmt.Println(proConditions)
+	// fmt.Println(hint)
+
+	return getHintsInParentNode(appConfig, hint, proConditions)
 }
 
 func CheckDisplayCondition() bool {
