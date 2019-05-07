@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	host     = "10.230.12.75"
+	host     = "10.230.12.86"
 	port     = 5432
 	user     = "cow"
 	password = "123456"
@@ -309,7 +309,7 @@ func createRepliesToPostsController(dbConn *sql.DB, accountIDs *[]int, postIDs *
 func main() {
 	dbConn := database.ConnectToDB(address)
 
-	// threadNum := 10
+	// threadNum := 50
 	// c := make(chan int, threadNum)
 	// for i := 0; i < threadNum; i++ {
 	// 	go createUsers(dbConn, 50000/threadNum, c)
@@ -318,9 +318,9 @@ func main() {
 	// 	fmt.Println(i)
 	// }
 	// createPublicPostsController(getAllAccountIDs(dbConn))
-	// followFriendsController(dbConn, getAllAccountIDs(dbConn))
+	followFriendsController(dbConn, getAllAccountIDs(dbConn))
 	// createRepliesToPostsController(dbConn, getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
-	createDirectMessagesController(dbConn, getAllAccountIDs(dbConn))
+	// createDirectMessagesController(dbConn, getAllAccountIDs(dbConn))
 
 	for {
 		fmt.Scanln()

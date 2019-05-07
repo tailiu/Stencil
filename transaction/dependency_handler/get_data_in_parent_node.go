@@ -119,7 +119,7 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hint display.HintStru
 func GetdataFromParentNode(appConfig *config.AppConfig, hint display.HintStruct, pTag string) ([]display.HintStruct, error) {
 
 	if !dataFromParentNodeExists(appConfig, hint, pTag) {
-		return nil, fmt.Errorf("This Data Does not Depend on Any Data in the Parent Node %s", pTag)
+		return nil, errors.New("This Data Does not Depend on Any Data in the Parent Node")
 	}
 
 	tag, _ := hint.GetTagName(appConfig)

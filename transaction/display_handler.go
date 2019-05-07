@@ -10,7 +10,7 @@ import (
 	"transaction/config"
 	"database/sql"
 	"time"
-	// "errors"
+	"errors"
 )
 
 const checkInterval = 200 * time.Millisecond
@@ -113,13 +113,26 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 						}
 						returnResultBasedOnNodeCompleteness(err1)
 					} else {
-
+						pTagConditions := make(map[string]bool)
 						for _, pTag := range pTags {
 							dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(&appConfig, oneMigratedData, pTag)
+							// fmt.Println(dataInParentNode, err4)
 							if err4 != nil {
-								
+								if err4 == errors.New("This Data Does not Depend on Any Data in the Parent Node") {
+									pTagConditions[pTag] = true
+								} else if err4 == errors.New("Fail To Get Any Data in the Parent Node") {
+									if !secondRound {
+										pTagConditions[pTag] = false
+									} else {
+										dependency_handler.GetDisplaySettingInDependencies(&appConfig, oneMigratedData, pTag)
+									}
+								}
+							} else {
+								for _, oneDataInParentNode := range dataInParentNode {
+									// checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneDataInParentNode, app, pks, secondRound)
+									fmt.Println(oneDataInParentNode)
+								}
 							}
-							fmt.Println(dataInParentNode, err4)
 						}
 						
 
@@ -213,77 +226,79 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 // }
 
 func main() {
-	// dstApp := "mastodon"
+	dstApp := "mastodon"
 	// DisplayThread(dstApp, 857232446)
 
 	// // var dataInNode []display.HintStruct
 	// // stencilDBConn, _, _, pks := display.Initialize(dstApp)
 	// // display.Display(stencilDBConn, dstApp, dataInNode, pks)
 
-	// // dbConn := db.GetDBConn(dstApp)
-	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-	// 	fmt.Println(err)
-	// } else {
-	// 	// keyVal := map[string]int {
-	// 	// 	"id": 14435263,
-	// 	// }
-	// 	// hint := display.HintStruct {
-	// 	// 	Table: "favourites",
-	// 	// 	KeyVal: keyVal,
-	// 	// } 
-
-	// 	// keyVal := map[string]int {
-	// 	// 	"id": 4630,
-	// 	// }
-	// 	// hint := display.HintStruct {
-	// 	// 	Table: "accounts",
-	// 	// 	KeyVal: keyVal,
-	// 	// } 
-
-	// 	keyVal := map[string]int {
-	// 		"id": 28300,
-	// 	}
-	// 	hint := display.HintStruct {
-	// 		Table: "status_stats",
-	// 		KeyVal: keyVal,
-	// 	} 
-	// 	// dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
-	// 	data, err := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, hint)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		fmt.Println(data)
-	// 	} else {
-	// 		fmt.Println(data)
-	// 	}
-	// }
-
-	dstApp := "mastodon"
+	// dbConn := db.GetDBConn(dstApp)
 	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
 		fmt.Println(err)
 	} else {
-		// fmt.Println(appConfig)
-		// fmt.Println(appConfig.Tags)
+
+		// keyVal := map[string]int {
+		// 	"id": 14435263,
+		// }
+		// hint := display.HintStruct {
+		// 	Table: "favourites",
+		// 	KeyVal: keyVal,
+		// } 
+
+		// keyVal := map[string]int {
+		// 	"id": 4630,
+		// }
+		// hint := display.HintStruct {
+		// 	Table: "accounts",
+		// 	KeyVal: keyVal,
+		// } 
+
 		keyVal := map[string]int {
-			"id": 32999907,
+			"id": 28300,
 		}
 		hint := display.HintStruct {
-			Table: "statuses",
+			Table: "status_stats",
 			KeyVal: keyVal,
 		} 
-		// hint := display.HintStruct {
-		// 	Table: "conversations",
-		// 	Key: "id",
-		// 	Value: "211",
-		// 	ValueType: "int",
-		// }
-		fmt.Println(hint.GetParentTags(&appConfig))
-		data, err := dependency_handler.GetdataFromParentNode(&appConfig, hint, "S2")
+		fmt.Println(dependency_handler.GetDisplaySettingInDependencies(&appConfig, hint, "S1"))
+		// dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
+		data, err := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, hint)
 		if err != nil {
 			fmt.Println(err)
+			fmt.Println(data)
 		} else {
 			fmt.Println(data)
 		}
 	}
+
+	// dstApp := "mastodon"
+	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	// 	fmt.Println(err)
+	// } else {
+	// 	// fmt.Println(appConfig)
+	// 	// fmt.Println(appConfig.Tags)
+	// 	keyVal := map[string]int {
+	// 		"id": 32999907,
+	// 	}
+	// 	hint := display.HintStruct {
+	// 		Table: "statuses",
+	// 		KeyVal: keyVal,
+	// 	} 
+	// 	// hint := display.HintStruct {
+	// 	// 	Table: "conversations",
+	// 	// 	Key: "id",
+	// 	// 	Value: "211",
+	// 	// 	ValueType: "int",
+	// 	// }
+	// 	fmt.Println(hint.GetParentTags(&appConfig))
+	// 	data, err := dependency_handler.GetdataFromParentNode(&appConfig, hint, "S2")
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	} else {
+	// 		fmt.Println(data)
+	// 	}
+	// }
 
 	// atomicity.CreateTxnLogTable()
 

@@ -416,7 +416,3 @@ func LogError(dbConn *sql.DB, dbquery, args, migration_id, dst_app, qerr string)
 	_, err := Insert(dbConn, query, dbquery, args, migration_id, dst_app, qerr)
 	return err
 }
-
-// func CheckColumnNull() (bool, error) {
-
-// }

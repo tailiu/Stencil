@@ -174,6 +174,44 @@ func (self AppConfig) GetTagsByTablesExcept(tables []string, tagName string) []T
 	return tags
 }
 
+func (self AppConfig) GetDependsOnTables(tagName string, memberID string) ([]string) {
+	var dependsOnTables []string
+	for _, tag := range self.Tags {
+		if tag.Name == tagName {
+			for _, innerDependency := range tag.InnerDependencies {
+				for dependsOnMember, member := range innerDependency {
+					if memberID == strings.Split(member, ".")[0] {
+						table, _ := self.GetTableByMemberID(tagName, strings.Split(dependsOnMember, ".")[0])
+						dependsOnTables = append(dependsOnTables, table)
+					}
+				}
+			}
+		}
+	}
+	return dependsOnTables
+}
+
+func (self Dependency) GetConditionsForTag(tagName string) []DCondition {
+
+	for _, dependsOn := range self.DependsOn {
+		if strings.EqualFold(dependsOn.Tag, tagName) {
+			return dependsOn.Conditions
+		}
+	}
+	return nil
+}
+
+func Contains(list []Tag, tagName string) bool {
+	for _, v := range list {
+		// fmt.Println(v, "==", str)
+		if strings.ToLower(v.Name) == strings.ToLower(tagName) {
+			return true
+		}
+	}
+	return false
+}
+
+
 func (self AppConfig) GetTagDisplaySetting(tagName string) (string, error) {
 	
 	for _, tag := range self.Tags {
@@ -220,39 +258,25 @@ func (self *AppConfig) GetDependsOnConditions(tagName string, pTagName string) (
 	return nil, errors.New("Error: No Conditions Found")
 }
 
-func (self AppConfig) GetDependsOnTables(tagName string, memberID string) ([]string) {
-	var dependsOnTables []string
-	for _, tag := range self.Tags {
-		if tag.Name == tagName {
-			for _, innerDependency := range tag.InnerDependencies {
-				for dependsOnMember, member := range innerDependency {
-					if memberID == strings.Split(member, ".")[0] {
-						table, _ := self.GetTableByMemberID(tagName, strings.Split(dependsOnMember, ".")[0])
-						dependsOnTables = append(dependsOnTables, table)
+func (self *AppConfig) GetDepDisplaySetting(tag string, pTag string) (string, error) {
+
+	for _, dependency := range self.Dependencies {
+		if dependency.Tag == tag {
+			for _, dependsOn := range dependency.DependsOn {
+				if dependsOn.As != "" {
+					if dependsOn.As == pTag {
+						return dependsOn.DisplaySetting, nil
+					} else {
+						continue
+					}
+				} else {
+					if dependsOn.Tag == pTag {
+						return dependsOn.DisplaySetting, nil
 					}
 				}
 			}
 		}
 	}
-	return dependsOnTables
-}
 
-func (self Dependency) GetConditionsForTag(tagName string) []DCondition {
-
-	for _, dependsOn := range self.DependsOn {
-		if strings.EqualFold(dependsOn.Tag, tagName) {
-			return dependsOn.Conditions
-		}
-	}
-	return nil
-}
-
-func Contains(list []Tag, tagName string) bool {
-	for _, v := range list {
-		// fmt.Println(v, "==", str)
-		if strings.ToLower(v.Name) == strings.ToLower(tagName) {
-			return true
-		}
-	}
-	return false
+	return "", errors.New("No dependency display setting is found!")
 }

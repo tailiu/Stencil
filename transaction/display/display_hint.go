@@ -10,14 +10,6 @@ import (
 )
 
 // The Key should be the primay key of the Table
-// type HintStruct struct {
-// 	Table string		
-// 	id string			
-// 	Value string		
-// 	ValueType string	
-// }
-
-// The Key should be the primay key of the Table
 type HintStruct struct {
 	Table string		
 	KeyVal map[string]int
