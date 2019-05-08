@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"database/sql"
+	"time"
 )
 
 func CreateDisplayFlagsTable(dbConn *sql.DB) {
@@ -13,7 +14,9 @@ func CreateDisplayFlagsTable(dbConn *sql.DB) {
 			table_name varchar NOT NULL,
 			id int NOT NULL,
 			display_flag bool default true, 
-			migration_id int);`
+			migration_id int,
+			created_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL);`
 	if _, err := dbConn.Exec(op); err != nil {
 		log.Fatal(err)
 	}
@@ -22,12 +25,14 @@ func CreateDisplayFlagsTable(dbConn *sql.DB) {
 // app: application Name, id: primary key value, table: table_name
 func GenDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool, migration_id ...int) error {
 	var op string
+	t := time.Now().Format(time.RFC3339)
+
 	if len(migration_id) == 0 {
-		op = fmt.Sprintf("INSERT INTO display_flags (app, table_name, id, display_flag) VALUES ('%s', '%s', %d, %t);",
-						app, table, id, display_flag)
+		op = fmt.Sprintf("INSERT INTO display_flags (app, table_name, id, display_flag, created_at, updated_at) VALUES ('%s', '%s', %d, %t, '%s', '%s');",
+						app, table, id, display_flag, t, t)
 	} else if len(migration_id) == 1 {
-		op = fmt.Sprintf("INSERT INTO display_flags (app, table_name, id, display_flag, migration_id) VALUES ('%s', '%s', %d, %t, %d);",
-						app, table, id, display_flag, migration_id[0])
+		op = fmt.Sprintf("INSERT INTO display_flags (app, table_name, id, display_flag, migration_id, created_at, updated_at) VALUES ('%s', '%s', %d, %t, %d, '%s', '%s');",
+						app, table, id, display_flag, migration_id[0], t, t)
 	} else {
 		return errors.New("Argument Num Error: Please Input Only One Migration ID")
 	}
@@ -39,8 +44,9 @@ func GenDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool
 }
 
 func UpdateDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool) error {
-	op := fmt.Sprintf("UPDATE display_flags SET display_flag = %t WHERE app = '%s' and table_name = '%s' and id = %d;",
-						display_flag, app, table, id)
+	t := time.Now().Format(time.RFC3339)
+	op := fmt.Sprintf("UPDATE display_flags SET display_flag = %t, updated_at = '%s' WHERE app = '%s' and table_name = '%s' and id = %d;",
+						display_flag, t, app, table, id)
 	if _, err := dbConn.Exec(op); err != nil {
 		return err
 	}

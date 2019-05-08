@@ -31,7 +31,7 @@ func returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting string
 			return false
 		}
 	} else {
-		if displaySetting == "parent_node_not_displays_with_check" or displaySetting == "parent_node_not_displays_without_check" {
+		if displaySetting == "parent_node_not_displays_with_check" || displaySetting == "parent_node_not_displays_without_check" {
 			return true
 		} else {
 			return false
@@ -47,8 +47,13 @@ func returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting strin
 	}
 }
 
-func checkDisplayConditions() bool {
-
+func checkDisplayConditions(appConfig *config.AppConfig, pTagConditions map[string]bool, oneMigratedData display.HintStruct) bool {
+	for _, result := range pTagConditions {
+		if result {
+			return true
+		} 
+	}
+	return false
 }
 
 func DisplayThread(app string, migrationID int) {
@@ -79,148 +84,99 @@ func DisplayThread(app string, migrationID int) {
 }
 
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (string, error) {
-	// var val int
-	// for _, v := range oneMigratedData.KeyVal {
-	// 	val = v
-	// }
-	// displayed, err0 := display.GetDisplayFlag(stencilDBConn, app, oneMigratedData.Table, val)
 
-	// fmt.Println("Displayed: ", displayed)
-	// if err0 != nil {
-	// 	log.Println(err0)
-	// 	return false, err0
-	// } else {
-	// 	// There could be a case where only this data of a node has been displayed and other data in that node
-	// 	// is not displayed, but we still return true because  
-	// 	if displayed {
-	// 		return true, nil
-	// 	} else {
+	fmt.Println("Check Data ", oneMigratedData)
+	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, oneMigratedData)
+	if dataInNode == nil {
+		log.Println(err1)
+		return "No Data In a Node Can be Displayed", err1
+	} else {
 
-			fmt.Println("Check Data ", oneMigratedData)
-			dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, oneMigratedData)
-			if dataInNode == nil {
-				log.Println(err1)
-				return "No Data In a Node Can be Displayed", err1
+		var displayedData, notDisplayedData []display.HintStruct
+		for _, oneDataInNode := range dataInNode {
+			var val int
+			for _, v := range oneDataInNode.KeyVal {
+				val = v
+			}
+			displayed, err0 := display.GetDisplayFlag(stencilDBConn, app, oneDataInNode.Table, val)
+			if err0 != nil {
+				log.Fatal(err0)
+			}
+			if !displayed {
+				notDisplayedData = append(notDisplayedData, oneDataInNode)
 			} else {
+				displayedData = append(displayedData, oneDataInNode)
+			}
+		}
+		// Note: This will be changed when considering ongoing application services 
+		// and the existence of other display threads !!
+		if len(displayedData) != 0 {
+			err6 := display.Display(stencilDBConn, app, notDisplayedData, pks)
+			if err6 != nil {
+				log.Fatal(err6)
+			} 
+			returnResultBasedOnNodeCompleteness(err1)
+		} 
 
-				var displayedData, notDisplayedData []display.HintStruct
-				for _, oneDataInNode := range dataInNode {
-					var val int
-					for _, v := range oneDataInNode.KeyVal {
-						val = v
+		pTags, err2 := oneMigratedData.GetParentTags(&appConfig)
+		if err2 != nil {
+			log.Fatal(err2)
+		} else {
+			if pTags == nil {
+				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
+				err3 := display.Display(stencilDBConn, app, dataInNode, pks)
+				if err3 != nil {
+					log.Fatal(err3)
+				}
+				returnResultBasedOnNodeCompleteness(err1)
+			} else {
+				pTagConditions := make(map[string]bool)
+				for _, pTag := range pTags {
+					dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(&appConfig, oneMigratedData, pTag)
+					// fmt.Println(dataInParentNode, err4)
+					displaySetting, err5 := dependency_handler.GetDisplaySettingInDependencies(&appConfig, oneMigratedData, pTag)
+					if err5 != nil {
+						log.Fatal(err5)
 					}
-					displayed, err0 := display.GetDisplayFlag(stencilDBConn, app, oneDataInNode.Table, val)
-					if err0 != nil {
-						log.Fatal(err0)
-					}
-					if !displayed {
-						notDisplayedData = append(notDisplayedData, oneDataInNode)
+					if err4 != nil {
+						switch err4 {
+						case errors.New("This Data Does not Depend on Any Data in the Parent Node"):
+							pTagConditions[pTag] = true
+						case errors.New("Fail To Get Any Data in the Parent Node"):
+							pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+						}
 					} else {
-						displayedData = append(displayedData, oneDataInNode)
+						// For now, there is no case where there is more than one piece of data in a parent node
+						if len(dataInParentNode) != 1 {
+							log.Fatal("Find more than one piece of data in a parent node!!")
+						}
+						result, err7 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, dataInParentNode[0], app, pks, secondRound)
+						if err7 != nil {
+							log.Println(err7)
+						}
+						switch result {
+						case "No Data In a Node Can be Displayed":
+							pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+						case "Data In a Node Can be partially Displayed":
+							pTagConditions[pTag] = returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
+						case "Data In a Node Can be completely Displayed":
+							pTagConditions[pTag] = true
+						}
 					}
 				}
-				// Note: This will be changed when considering ongoing application services 
-				// and the existence of other display threads !!
-				if len(displayedData) != 0 {
-					err6 := display.Display(stencilDBConn, app, notDisplayedData, pks)
-					if err6 != nil {
-						log.Fatal(err6)
-					} 
-					returnResultBasedOnNodeCompleteness(err1)
-				} 
-
-				pTags, err2 := oneMigratedData.GetParentTags(&appConfig)
-				if err2 != nil {
-					log.Fatal(err2)
-				} else {
-					if pTags == nil {
-						log.Println("This Data's Tag Does not Depend on Any Other Tag!")
-						err3 := display.Display(stencilDBConn, app, dataInNode, pks)
-						if err3 != nil {
-							log.Fatal(err3)
-						}
-						returnResultBasedOnNodeCompleteness(err1)
-					} else {
-						pTagConditions := make(map[string]bool)
-						for _, pTag := range pTags {
-							dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(&appConfig, oneMigratedData, pTag)
-							// fmt.Println(dataInParentNode, err4)
-							displaySetting, err5 := dependency_handler.GetDisplaySettingInDependencies(&appConfig, oneMigratedData, pTag)
-							if err5 != nil {
-								log.Fatal(err5)
-							}
-							if err4 != nil {
-								switch err4 {
-								case errors.New("This Data Does not Depend on Any Data in the Parent Node"):
-									pTagConditions[pTag] = true
-								case errors.New("Fail To Get Any Data in the Parent Node"):
-									pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
-								}
-							} else {
-								// For now, there is no case where there is more than one piece of data in a parent node
-								if len(dataInParentNode) != 1 {
-									log.Fatal("Find more than one piece of data in a parent node!!")
-								}
-								result, err7 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, dataInParentNode[0], app, pks, secondRound)
-								if err7 != nil {
-									log.Println(err7)
-								}
-								switch result {
-								case "No Data In a Node Can be Displayed":
-									pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
-								case "Data In a Node Can be partially Displayed":
-									pTagConditions[pTag] = returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
-								case "Data In a Node Can be completely Displayed":
-									pTagConditions[pTag] = true
-								}
-							}
-						}
-						checkResult := checkDisplayConditions(pTagConditions)
-						
-
-
-						// This function should also be different for the second round
-						// because we may end up with always getting some data in a node that could not be displayed but other data in that  
-						// node may have already been displayed
-						// oneDataInParentNode, err4 := dependency_handler.GetOneDataFromParentNodeRandomly(appDBConn, appConfig, oneMigratedData, app)
-						// if err4 != nil {
-						// 	log.Println(err4)
-						// 	return false, err4
-						// } else {
-						// 	result, err5 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneDataInParentNode, app, pks, secondRound)
-						// 	if err5 != nil {
-						// 		log.Println(err5)
-						// 		return false, err5
-						// 	} else {
-						// 		if result {
-						// 			err6 := display.Display(stencilDBConn, app, dataInNode, pks)
-						// 			if err6 != nil {
-						// 				log.Println(err6)
-						// 				return false, err6
-						// 			} else {
-						// 				return true, nil
-						// 			}
-						// 		} else {
-						// 			if secondRound && dependency_handler.CheckDisplayCondition() {
-						// 				err6 := display.Display(stencilDBConn, app, dataInNode, pks)
-						// 				if err6 != nil {
-						// 					log.Println(err6)
-						// 					return false, err6
-						// 				} else {
-						// 					return true, nil
-						// 				}
-						// 			} else {
-						// 				return false, nil
-						// 			}
-						// 		}
-						// 	}
-						// }
+				if checkResult := checkDisplayConditions(&appConfig, pTagConditions, oneMigratedData); checkResult {
+					err8 := display.Display(stencilDBConn, app, dataInNode, pks)
+					if err8 != nil {
+						log.Fatal(err8)
 					}
+					returnResultBasedOnNodeCompleteness(err1)
+				} else {
+					return "No Data In a Node Can be Displayed", errors.New("Display Setting does not allow the data in the node to be displayed")
 				}
 			}
-	// 	}
-	// }
-	return "", nil
+		}
+	}
+	panic("Should never happen here")
 }
 
 // func CheckDisplay(oneUndisplayedMigratedData dataStruct, finalRound bool) bool {
@@ -268,8 +224,8 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 // }
 
 func main() {
-	// dstApp := "mastodon"
-	// DisplayThread(dstApp, 857232446)
+	dstApp := "mastodon"
+	DisplayThread(dstApp, 857232446)
 
 	// // var dataInNode []display.HintStruct
 	// // stencilDBConn, _, _, pks := display.Initialize(dstApp)
