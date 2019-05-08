@@ -23,6 +23,34 @@ func returnResultBasedOnNodeCompleteness(err error) (string, error) {
 	}
 }
 
+func returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting string, secondRound bool) bool {
+	if !secondRound {
+		if displaySetting != "parent_node_not_displays_without_check" {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		if displaySetting == "parent_node_not_displays_with_check" or displaySetting == "parent_node_not_displays_without_check" {
+			return true
+		} else {
+			return false
+		}
+	}
+}
+
+func returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting string) bool {
+	if displaySetting != "parent_node_complete_displays" {
+		return true
+	} else {
+		return false
+	}
+}
+
+func checkDisplayConditions() bool {
+
+}
+
 func DisplayThread(app string, migrationID int) {
 	fmt.Println("--------- Start of Display Check ---------")
 
@@ -117,23 +145,37 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 						for _, pTag := range pTags {
 							dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(&appConfig, oneMigratedData, pTag)
 							// fmt.Println(dataInParentNode, err4)
+							displaySetting, err5 := dependency_handler.GetDisplaySettingInDependencies(&appConfig, oneMigratedData, pTag)
+							if err5 != nil {
+								log.Fatal(err5)
+							}
 							if err4 != nil {
-								if err4 == errors.New("This Data Does not Depend on Any Data in the Parent Node") {
+								switch err4 {
+								case errors.New("This Data Does not Depend on Any Data in the Parent Node"):
 									pTagConditions[pTag] = true
-								} else if err4 == errors.New("Fail To Get Any Data in the Parent Node") {
-									if !secondRound {
-										pTagConditions[pTag] = false
-									} else {
-										dependency_handler.GetDisplaySettingInDependencies(&appConfig, oneMigratedData, pTag)
-									}
+								case errors.New("Fail To Get Any Data in the Parent Node"):
+									pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
 								}
 							} else {
-								for _, oneDataInParentNode := range dataInParentNode {
-									// checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneDataInParentNode, app, pks, secondRound)
-									fmt.Println(oneDataInParentNode)
+								// For now, there is no case where there is more than one piece of data in a parent node
+								if len(dataInParentNode) != 1 {
+									log.Fatal("Find more than one piece of data in a parent node!!")
+								}
+								result, err7 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, dataInParentNode[0], app, pks, secondRound)
+								if err7 != nil {
+									log.Println(err7)
+								}
+								switch result {
+								case "No Data In a Node Can be Displayed":
+									pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+								case "Data In a Node Can be partially Displayed":
+									pTagConditions[pTag] = returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
+								case "Data In a Node Can be completely Displayed":
+									pTagConditions[pTag] = true
 								}
 							}
 						}
+						checkResult := checkDisplayConditions(pTagConditions)
 						
 
 
@@ -226,7 +268,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 // }
 
 func main() {
-	dstApp := "mastodon"
+	// dstApp := "mastodon"
 	// DisplayThread(dstApp, 857232446)
 
 	// // var dataInNode []display.HintStruct
@@ -234,43 +276,43 @@ func main() {
 	// // display.Display(stencilDBConn, dstApp, dataInNode, pks)
 
 	// dbConn := db.GetDBConn(dstApp)
-	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-		fmt.Println(err)
-	} else {
+	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	// 	fmt.Println(err)
+	// } else {
 
-		// keyVal := map[string]int {
-		// 	"id": 14435263,
-		// }
-		// hint := display.HintStruct {
-		// 	Table: "favourites",
-		// 	KeyVal: keyVal,
-		// } 
+	// 	// keyVal := map[string]int {
+	// 	// 	"id": 14435263,
+	// 	// }
+	// 	// hint := display.HintStruct {
+	// 	// 	Table: "favourites",
+	// 	// 	KeyVal: keyVal,
+	// 	// } 
 
-		// keyVal := map[string]int {
-		// 	"id": 4630,
-		// }
-		// hint := display.HintStruct {
-		// 	Table: "accounts",
-		// 	KeyVal: keyVal,
-		// } 
+	// 	// keyVal := map[string]int {
+	// 	// 	"id": 4630,
+	// 	// }
+	// 	// hint := display.HintStruct {
+	// 	// 	Table: "accounts",
+	// 	// 	KeyVal: keyVal,
+	// 	// } 
 
-		keyVal := map[string]int {
-			"id": 28300,
-		}
-		hint := display.HintStruct {
-			Table: "status_stats",
-			KeyVal: keyVal,
-		} 
-		fmt.Println(dependency_handler.GetDisplaySettingInDependencies(&appConfig, hint, "S1"))
-		// dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
-		data, err := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, hint)
-		if err != nil {
-			fmt.Println(err)
-			fmt.Println(data)
-		} else {
-			fmt.Println(data)
-		}
-	}
+	// 	keyVal := map[string]int {
+	// 		"id": 28300,
+	// 	}
+	// 	hint := display.HintStruct {
+	// 		Table: "status_stats",
+	// 		KeyVal: keyVal,
+	// 	} 
+	// 	fmt.Println(dependency_handler.GetDisplaySettingInDependencies(&appConfig, hint, "S1"))
+	// 	// dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
+	// 	data, err := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, hint)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		fmt.Println(data)
+	// 	} else {
+	// 		fmt.Println(data)
+	// 	}
+	// }
 
 	// dstApp := "mastodon"
 	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {

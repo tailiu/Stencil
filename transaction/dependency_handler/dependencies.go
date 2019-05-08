@@ -18,7 +18,7 @@ func GetDisplaySettingInDependencies(appConfig *config.AppConfig, hint display.H
 	}
 
 	if setting == "" {
-		return "parent_node_complete", nil
+		return "parent_node_complete_displays", nil
 	} else {
 		return setting, nil
 	}
