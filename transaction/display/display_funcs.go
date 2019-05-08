@@ -7,6 +7,7 @@ import (
 	"transaction/db"
 	"transaction/config"
 	"strconv"
+	"time"
 )
 
 const StencilDBName = "stencil"
@@ -71,11 +72,12 @@ func Display(stencilDBConn *sql.DB, app string, dataHints []HintStruct, pks map[
 	 
 	for _, dataHint := range dataHints {
 		table := dataHint.Table
-		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = true WHERE app = '%s' and table_name = '%s' and id = %d;",
-							app, table, dataHint.KeyVal[pks[table]])
-		fmt.Println("**************************************")
-		fmt.Println(query)
-		fmt.Println("**************************************")
+		t := time.Now().Format(time.RFC3339)
+		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = true, updated_at = '%s' WHERE app = '%s' and table_name = '%s' and id = %d;",
+							t, app, table, dataHint.KeyVal[pks[table]])
+		log.Println("**************************************")
+		log.Println(query)
+		log.Println("**************************************")
 		queries = append(queries, query)
 	}
 

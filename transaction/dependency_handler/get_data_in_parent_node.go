@@ -43,7 +43,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hint display.HintStruct, 
 			query += from + where
 		}
 	}
-	fmt.Println(query)
+	// fmt.Println(query)
 
 	data := db.GetAllColsOfRows(appConfig.DBConn, query)
 	
@@ -89,7 +89,7 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hint display.HintStru
 	if displayExistenceSetting == "" {
 		return true
 	} else {
-		fmt.Println(displayExistenceSetting)
+		// fmt.Println(displayExistenceSetting)
 		tag, _ := hint.GetTagName(appConfig)
 		col := strings.Split(replaceKey(appConfig, tag, displayExistenceSetting), ".")[1]
 		var dataKey string
@@ -118,9 +118,10 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hint display.HintStru
 // Note: this function may return multiple hints based on dependencies
 func GetdataFromParentNode(appConfig *config.AppConfig, hint display.HintStruct, pTag string) ([]display.HintStruct, error) {
 
-	if !dataFromParentNodeExists(appConfig, hint, pTag) {
-		return nil, errors.New("This Data Does not Depend on Any Data in the Parent Node")
-	}
+	// Before getting data from a parent node, we check the existence of the data based on the cols of a child node
+	// if !dataFromParentNodeExists(appConfig, hint, pTag) {
+	// 	return nil, errors.New("This Data Does not Depend on Any Data in the Parent Node")
+	// }
 
 	tag, _ := hint.GetTagName(appConfig)
 	conditions, _ := appConfig.GetDependsOnConditions(tag, pTag)

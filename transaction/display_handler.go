@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	// "transaction/atomicity"
+	"fmt"
 	// "transaction/db"
 	"transaction/display"
 	"transaction/dependency_handler"
@@ -57,11 +56,11 @@ func checkDisplayConditions(appConfig *config.AppConfig, pTagConditions map[stri
 }
 
 func DisplayThread(app string, migrationID int) {
-	fmt.Println("--------- Start of Display Check ---------")
+	log.Println("--------- Start of Display Check ---------")
 
 	stencilDBConn, appDBConn, appConfig, pks := display.Initialize(app)
 	
-	fmt.Println("--------- First Phase --------")
+	log.Println("--------- First Phase --------")
 	secondRound := false
 	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); 
 			!display.CheckMigrationComplete(stencilDBConn, migrationID);
@@ -73,19 +72,19 @@ func DisplayThread(app string, migrationID int) {
 		time.Sleep(checkInterval)
 	}
 
-	fmt.Println("--------- Second Phase ---------")
+	log.Println("--------- Second Phase ---------")
 	secondRound = true
 	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 		checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
 	}
 
-	fmt.Println("--------- End of Display Check ---------")
+	log.Println("--------- End of Display Check ---------")
 }
 
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (string, error) {
 
-	fmt.Println("Check Data ", oneMigratedData)
+	log.Println("Check Data ", oneMigratedData)
 	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, oneMigratedData)
 	if dataInNode == nil {
 		log.Println(err1)
@@ -115,7 +114,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 			if err6 != nil {
 				log.Fatal(err6)
 			} 
-			returnResultBasedOnNodeCompleteness(err1)
+			return returnResultBasedOnNodeCompleteness(err1)
 		} 
 
 		pTags, err2 := oneMigratedData.GetParentTags(&appConfig)
@@ -128,7 +127,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 				if err3 != nil {
 					log.Fatal(err3)
 				}
-				returnResultBasedOnNodeCompleteness(err1)
+				return returnResultBasedOnNodeCompleteness(err1)
 			} else {
 				pTagConditions := make(map[string]bool)
 				for _, pTag := range pTags {
@@ -169,14 +168,14 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 					if err8 != nil {
 						log.Fatal(err8)
 					}
-					returnResultBasedOnNodeCompleteness(err1)
+					return returnResultBasedOnNodeCompleteness(err1)
 				} else {
 					return "No Data In a Node Can be Displayed", errors.New("Display Setting does not allow the data in the node to be displayed")
 				}
 			}
 		}
 	}
-	panic("Should never happen here")
+	panic("Should never happen here!")
 }
 
 // func CheckDisplay(oneUndisplayedMigratedData dataStruct, finalRound bool) bool {
@@ -224,8 +223,8 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 // }
 
 func main() {
-	dstApp := "mastodon"
-	DisplayThread(dstApp, 857232446)
+	// dstApp := "mastodon"
+	// DisplayThread(dstApp, 857232446)
 
 	// // var dataInNode []display.HintStruct
 	// // stencilDBConn, _, _, pks := display.Initialize(dstApp)
@@ -270,33 +269,40 @@ func main() {
 	// 	}
 	// }
 
-	// dstApp := "mastodon"
-	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-	// 	fmt.Println(err)
-	// } else {
-	// 	// fmt.Println(appConfig)
-	// 	// fmt.Println(appConfig.Tags)
-	// 	keyVal := map[string]int {
-	// 		"id": 32999907,
-	// 	}
-	// 	hint := display.HintStruct {
-	// 		Table: "statuses",
-	// 		KeyVal: keyVal,
-	// 	} 
-	// 	// hint := display.HintStruct {
-	// 	// 	Table: "conversations",
-	// 	// 	Key: "id",
-	// 	// 	Value: "211",
-	// 	// 	ValueType: "int",
-	// 	// }
-	// 	fmt.Println(hint.GetParentTags(&appConfig))
-	// 	data, err := dependency_handler.GetdataFromParentNode(&appConfig, hint, "S2")
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	} else {
-	// 		fmt.Println(data)
-	// 	}
-	// }
+	dstApp := "mastodon"
+	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+		fmt.Println(err)
+	} else {
+		// fmt.Println(appConfig)
+		// fmt.Println(appConfig.Tags)
+		// keyVal := map[string]int {
+		// 	"id": 32999907,
+		// }
+		// hint := display.HintStruct {
+		// 	Table: "statuses",
+		// 	KeyVal: keyVal,
+		// } 
+		keyVal := map[string]int {
+			"id": 60204,
+		}
+		hint := display.HintStruct {
+			Table: "status_stats",
+			KeyVal: keyVal,
+		} 
+		// hint := display.HintStruct {
+		// 	Table: "conversations",
+		// 	Key: "id",
+		// 	Value: "211",
+		// 	ValueType: "int",
+		// }
+		fmt.Println(hint.GetParentTags(&appConfig))
+		data, err := dependency_handler.GetdataFromParentNode(&appConfig, hint, "S2")
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(data)
+		}
+	}
 
 	// atomicity.CreateTxnLogTable()
 

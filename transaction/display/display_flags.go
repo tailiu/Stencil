@@ -47,6 +47,9 @@ func UpdateDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag b
 	t := time.Now().Format(time.RFC3339)
 	op := fmt.Sprintf("UPDATE display_flags SET display_flag = %t, updated_at = '%s' WHERE app = '%s' and table_name = '%s' and id = %d;",
 						display_flag, t, app, table, id)
+	fmt.Println("**************************************")
+	fmt.Println(op)
+	fmt.Println("**************************************")
 	if _, err := dbConn.Exec(op); err != nil {
 		return err
 	}
