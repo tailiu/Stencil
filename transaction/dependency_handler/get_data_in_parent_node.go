@@ -11,22 +11,33 @@ import (
 	"log"
 )
 
-func getHintsInParentNode(appConfig *config.AppConfig, hint display.HintStruct, conditions []string) ([]display.HintStruct, error) {
+func getHintsInParentNode(appConfig *config.AppConfig, hints []display.HintStruct, conditions []string) ([]display.HintStruct, error) {
 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
 	from := ""
 	table := ""
+	hintID := -1
 	for i, condition := range conditions {
-		table1 := strings.Split(condition, ":")[0]
-		table2 := strings.Split(condition, ":")[1]
-		t1 := strings.Split(table1, ".")[0]
-		a1 := strings.Split(table1, ".")[1]
-		t2 := strings.Split(table2, ".")[0]
-		a2 := strings.Split(table2, ".")[1]
+		tableAttr1 := strings.Split(condition, ":")[0]
+		tableAttr2 := strings.Split(condition, ":")[1]
+		t1 := strings.Split(tableAttr1, ".")[0]
+		a1 := strings.Split(tableAttr1, ".")[1]
+		t2 := strings.Split(tableAttr2, ".")[0]
+		a2 := strings.Split(tableAttr2, ".")[1]
 		seq1 := "t" + strconv.Itoa(i)
 		seq2 := "t" + strconv.Itoa(i+1)
 		if i == 0 {
-			from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
-				t1, seq1, t2, seq2, seq1, a1, seq2, a2)
+			for j, hint := range hints {
+				if hint.Table == t1 {
+					hintID = j
+				}
+			}
+			if hintID == -1 {
+				// In this case, since data may be incomplete, we cannot get the data in the parent node
+				return nil, errors.New("Fail To Get Any Data in the Parent Node")
+			} else {
+				from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
+					t1, seq1, t2, seq2, seq1, a1, seq2, a2)
+			}
 		} else {
 			from += fmt.Sprintf("JOIN %s %s on %s.%s = %s.%s ",
 				t2, seq2, seq1, a1, seq2, a2)
@@ -34,7 +45,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hint display.HintStruct, 
 		if i == len(conditions)-1 {
 			var depDataKey string
 			var depDataValue int
-			for k, v := range hint.KeyVal {
+			for k, v := range hints[hintID].KeyVal {
 				depDataKey = k
 				depDataValue = v
 			}
@@ -43,7 +54,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hint display.HintStruct, 
 			query += from + where
 		}
 	}
-	// fmt.Println(query)
+	fmt.Println(query)
 
 	data := db.GetAllColsOfRows(appConfig.DBConn, query)
 	
@@ -83,49 +94,58 @@ func replaceKey(appConfig *config.AppConfig, tag string, key string) string {
 	return ""
 }
 
-func dataFromParentNodeExists(appConfig *config.AppConfig, hint display.HintStruct, pTag string) bool {
-	displayExistenceSetting, _ := hint.GetDisplayExistenceSetting(appConfig, pTag)
+func dataFromParentNodeExists(appConfig *config.AppConfig, hints []display.HintStruct, pTag string) (bool, error) {
+	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(appConfig, pTag)
 
+	// If display existence setting is not set, then we have to try to get data in the parent node in any case
 	if displayExistenceSetting == "" {
-		return true
+		return true, nil
 	} else {
 		// fmt.Println(displayExistenceSetting)
-		tag, _ := hint.GetTagName(appConfig)
-		col := strings.Split(replaceKey(appConfig, tag, displayExistenceSetting), ".")[1]
-		var dataKey string
-		var dataValue int
-		for k, v := range hint.KeyVal {
-			dataKey = k
-			dataValue = v
-		}
-		query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = %d;", col, hint.Table, dataKey, dataValue)
-		fmt.Println(query)
-		data := db.GetAllColsOfRows(appConfig.DBConn, query)
-		if len(data) == 0 {
-			log.Fatal("Data is missing??")
-		} else {
-			if data[0][col] == "NULL" {
-				return false
-			} else {
-				return true
+		tag, _ := hints[0].GetTagName(appConfig)
+		tableCol := replaceKey(appConfig, tag, displayExistenceSetting)
+		table := strings.Split(tableCol, ".")[0]
+		col := strings.Split(tableCol, ".")[1]
+		for _, hint := range hints {
+			if hint.Table == table {
+				var dataKey string
+				var dataValue int
+				for k, v := range hint.KeyVal {
+					dataKey = k
+					dataValue = v
+				}
+				query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = %d;", col, hint.Table, dataKey, dataValue)
+				fmt.Println(query)
+				data := db.GetAllColsOfRows(appConfig.DBConn, query)
+				if len(data) == 0 {
+					log.Fatal("Data is missing??")
+				} else {
+					if data[0][col] == "NULL" {
+						return false, errors.New("This Data Does not Depend on Any Data in the Parent Node")
+					} else {
+						return true, nil
+					}
+				}
 			}
 		}
+		
 	}
-
-	panic("Should never happen")
+	// In this case, since data may be incomplete, we cannot find the existence of the data in a parent node
+	// This also implies that it cannot find any data in a parent node
+	return false, errors.New("Fail To Get Any Data in the Parent Node") 
 }
 
 // Note: this function may return multiple hints based on dependencies
-func GetdataFromParentNode(appConfig *config.AppConfig, hint display.HintStruct, pTag string) ([]display.HintStruct, error) {
+func GetdataFromParentNode(appConfig *config.AppConfig, hints []display.HintStruct, pTag string) ([]display.HintStruct, error) {
 
 	// Before getting data from a parent node, we check the existence of the data based on the cols of a child node
-	// if !dataFromParentNodeExists(appConfig, hint, pTag) {
-	// 	return nil, errors.New("This Data Does not Depend on Any Data in the Parent Node")
-	// }
+	if exists, err := dataFromParentNodeExists(appConfig, hints, pTag); !exists {
+		return nil, err
+	}
 
-	tag, _ := hint.GetTagName(appConfig)
+	tag, _ := hints[0].GetTagName(appConfig)
 	conditions, _ := appConfig.GetDependsOnConditions(tag, pTag)
-	pTag, _ = hint.GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig, pTag)
+	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig, pTag)
 
 	var proConditions []string
 	var from, to string
@@ -148,10 +168,10 @@ func GetdataFromParentNode(appConfig *config.AppConfig, hint display.HintStruct,
 		}
 	}
 
-	// fmt.Println(proConditions)
-	// fmt.Println(hint)
+	fmt.Println(proConditions)
+	// fmt.Println(hints)
 
-	return getHintsInParentNode(appConfig, hint, proConditions)
+	return getHintsInParentNode(appConfig, hints, proConditions)
 }
 
 // func CheckDisplayCondition() bool {

@@ -8,8 +8,8 @@ import (
 	"transaction/dependency_handler"
 	"transaction/config"
 	"database/sql"
-	"time"
 	"errors"
+	"time"
 )
 
 const checkInterval = 200 * time.Millisecond
@@ -56,6 +56,7 @@ func checkDisplayConditions(appConfig *config.AppConfig, pTagConditions map[stri
 }
 
 func DisplayThread(app string, migrationID int) {
+	startTime := time.Now()
 	log.Println("--------- Start of Display Check ---------")
 
 	stencilDBConn, appDBConn, appConfig, pks := display.Initialize(app)
@@ -80,6 +81,8 @@ func DisplayThread(app string, migrationID int) {
 	}
 
 	log.Println("--------- End of Display Check ---------")
+	endTime := time.Now()
+	log.Println("Time used: ", endTime.Sub(startTime))
 }
 
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (string, error) {
@@ -131,7 +134,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 			} else {
 				pTagConditions := make(map[string]bool)
 				for _, pTag := range pTags {
-					dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(&appConfig, oneMigratedData, pTag)
+					dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(&appConfig, dataInNode, pTag)
 					// fmt.Println(dataInParentNode, err4)
 					displaySetting, err5 := dependency_handler.GetDisplaySettingInDependencies(&appConfig, oneMigratedData, pTag)
 					if err5 != nil {
@@ -223,8 +226,8 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 // }
 
 func main() {
-	// dstApp := "mastodon"
-	// DisplayThread(dstApp, 857232446)
+	dstApp := "mastodon"
+	DisplayThread(dstApp, 857232446)
 
 	// // var dataInNode []display.HintStruct
 	// // stencilDBConn, _, _, pks := display.Initialize(dstApp)
@@ -269,40 +272,42 @@ func main() {
 	// 	}
 	// }
 
-	dstApp := "mastodon"
-	if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-		fmt.Println(err)
-	} else {
-		// fmt.Println(appConfig)
-		// fmt.Println(appConfig.Tags)
-		// keyVal := map[string]int {
-		// 	"id": 32999907,
-		// }
-		// hint := display.HintStruct {
-		// 	Table: "statuses",
-		// 	KeyVal: keyVal,
-		// } 
-		keyVal := map[string]int {
-			"id": 60204,
-		}
-		hint := display.HintStruct {
-			Table: "status_stats",
-			KeyVal: keyVal,
-		} 
-		// hint := display.HintStruct {
-		// 	Table: "conversations",
-		// 	Key: "id",
-		// 	Value: "211",
-		// 	ValueType: "int",
-		// }
-		fmt.Println(hint.GetParentTags(&appConfig))
-		data, err := dependency_handler.GetdataFromParentNode(&appConfig, hint, "S2")
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println(data)
-		}
-	}
+	// dstApp := "mastodon"
+	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
+	// 	fmt.Println(err)
+	// } else {
+	// 	// fmt.Println(appConfig)
+	// 	// fmt.Println(appConfig.Tags)
+	// 	keyVal := map[string]int {
+	// 		"id": 32999907,
+	// 	}
+	// 	hint2 := display.HintStruct {
+	// 		Table: "statuses",
+	// 		KeyVal: keyVal,
+	// 	} 
+	// 	keyVal1 := map[string]int {
+	// 		"id": 60204,
+	// 	}
+	// 	hint1 := display.HintStruct {
+	// 		Table: "status_stats",
+	// 		KeyVal: keyVal1,
+	// 	} 
+	// 	// hint := display.HintStruct {
+	// 	// 	Table: "conversations",
+	// 	// 	Key: "id",
+	// 	// 	Value: "211",
+	// 	// 	ValueType: "int",
+	// 	// }
+	// 	var hints []display.HintStruct
+	// 	hints = append(hints, hint2, hint1)
+	// 	// fmt.Println(hint.GetParentTags(&appConfig))
+	// 	data, err := dependency_handler.GetdataFromParentNode(&appConfig, hints, "S2")
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	} else {
+	// 		fmt.Println(data)
+	// 	}
+	// }
 
 	// atomicity.CreateTxnLogTable()
 
@@ -319,4 +324,14 @@ func main() {
 	// fmt.Println(checkMigrationComplete(1134814368, dbConn))
 
 	// display.CreateDisplayFlagsTable(dbConn)
+
+	// t1 := time.Now()
+	// time.Sleep(200 * time.Millisecond)
+	// t2 := time.Now()
+
+	// fmt.Println(t1)
+	// fmt.Println(t2)
+
+	// diff := t2.Sub(t1)
+	// fmt.Println("time used ", diff)
 }
