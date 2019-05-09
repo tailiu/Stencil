@@ -318,8 +318,8 @@ func main() {
 	// 	fmt.Println(i)
 	// }
 	// createPublicPostsController(getAllAccountIDs(dbConn))
-	followFriendsController(dbConn, getAllAccountIDs(dbConn))
-	// createRepliesToPostsController(dbConn, getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
+	// followFriendsController(dbConn, getAllAccountIDs(dbConn))
+	createRepliesToPostsController(dbConn, getAllAccountIDs(dbConn), getAllPostIDs(dbConn))
 	// createDirectMessagesController(dbConn, getAllAccountIDs(dbConn))
 
 	for {
