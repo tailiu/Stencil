@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"fmt"
+	// "fmt"
 	// "transaction/db"
 	"transaction/display"
 	"transaction/dependency_handler"
@@ -135,16 +135,16 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 				pTagConditions := make(map[string]bool)
 				for _, pTag := range pTags {
 					dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(&appConfig, dataInNode, pTag)
-					// fmt.Println(dataInParentNode, err4)
+					log.Println(dataInParentNode, err4)
 					displaySetting, err5 := dependency_handler.GetDisplaySettingInDependencies(&appConfig, oneMigratedData, pTag)
 					if err5 != nil {
 						log.Fatal(err5)
 					}
 					if err4 != nil {
-						switch err4 {
-						case errors.New("This Data Does not Depend on Any Data in the Parent Node"):
+						switch err4.Error() {
+						case "This Data Does not Depend on Any Data in the Parent Node":
 							pTagConditions[pTag] = true
-						case errors.New("Fail To Get Any Data in the Parent Node"):
+						case "Fail To Get Any Data in the Parent Node":
 							pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
 						}
 					} else {
@@ -156,6 +156,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 						if err7 != nil {
 							log.Println(err7)
 						}
+						log.Println(result, err7)
 						switch result {
 						case "No Data In a Node Can be Displayed":
 							pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
@@ -166,6 +167,10 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 						}
 					}
 				}
+				log.Println(pTagConditions)
+				// For now, without checking the combined_display_setting, 
+				// this check display condition func will return true 
+				// as long as one pTagCondition is true
 				if checkResult := checkDisplayConditions(&appConfig, pTagConditions, oneMigratedData); checkResult {
 					err8 := display.Display(stencilDBConn, app, dataInNode, pks)
 					if err8 != nil {
@@ -227,7 +232,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 
 func main() {
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 857232446)
+	DisplayThread(dstApp, 1371416299)
 
 	// // var dataInNode []display.HintStruct
 	// // stencilDBConn, _, _, pks := display.Initialize(dstApp)

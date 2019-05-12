@@ -18,7 +18,8 @@
                 {
                     "member1.id":"member3.account_id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name" : "conversations",

@@ -173,7 +173,3 @@ func GetdataFromParentNode(appConfig *config.AppConfig, hints []display.HintStru
 
 	return getHintsInParentNode(appConfig, hints, proConditions)
 }
-
-// func CheckDisplayCondition() bool {
-// 	return false
-// }
