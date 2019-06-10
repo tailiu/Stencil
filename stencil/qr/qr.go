@@ -5,24 +5,20 @@
 package qr
 
 import (
-	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"regexp"
-	"stencil/db"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq" // postgres driver
 	escape "github.com/tj/go-pg-escape"
 )
 
-func (self QR) NewRowId() (string, error) {
-	sql := "SELECT nextval('row_desc_rowid_seq'::regclass) AS rowid"
-	res := db.DataCall1(self.StencilDB, sql)
-	if val, ok := res["rowid"]; ok {
-		return fmt.Sprint(val), nil
-	}
-	return "-1", errors.New("can't get new rowid")
+func (self QR) NewRowId() int32 {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Int31n(2147483647) //9223372036854775807
 }
 
 func (self QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string {
@@ -294,41 +290,40 @@ func (self QR) ResolveSelect(sql string, args ...interface{}) []string {
 	}
 }
 
-func (self QR) ResolveInsert(qi *QI) []*QI {
+func (self QR) ResolveInsert(qi *QI) ([]*QI, int32) {
 
 	var PQIs []*QI
-	if rowID, err := self.NewRowId(); err == nil {
-		log.Println("Got row id:", rowID)
-		// newRowSQL := fmt.Sprintf("INSERT INTO row_desc (row_id, app_id, table_name) VALUES ('%s', '%s', '%s')", rowID, self.AppID, qi.TableName)
-		newRowCols := []string{"rowid", "app_id"}
-		newRowVals := []interface{}{rowID, self.AppID}
-		newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
-		PQIs = append(PQIs, newRowQI)
-		phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
+	rowID := self.NewRowId()
+	// log.Println("Got row id:", rowID)
+	// newRowSQL := fmt.Sprintf("INSERT INTO row_desc (row_id, app_id, table_name) VALUES ('%s', '%s', '%s')", rowID, self.AppID, qi.TableName)
+	newRowCols := []string{"rowid", "app_id"}
+	newRowVals := []interface{}{rowID, self.AppID}
+	newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
+	PQIs = append(PQIs, newRowQI)
+	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
 
-		for pt, mapping := range phyMap {
-			isValid := false
-			// pqCols := fmt.Sprintf("INSERT INTO %s ( rowid, app_id, ", pt, pt[0:4])
-			pqiCols := []string{"pk"}
-			// pqVals := fmt.Sprintf("VALUES ( '%s','%s',", rowID, self.AppID)
-			pqiVals := []interface{}{rowID}
-			for _, colmap := range mapping {
-				if val, err := qi.valueOfColumn(colmap[1]); err == nil {
-					isValid = true
-					pqiCols = append(pqiCols, colmap[0])
-					pqiVals = append(pqiVals, val)
-					// pqVals += fmt.Sprintf("E'%s',", val)
-				}
+	for pt, mapping := range phyMap {
+		isValid := false
+		// pqCols := fmt.Sprintf("INSERT INTO %s ( rowid, app_id, ", pt, pt[0:4])
+		pqiCols := []string{"pk"}
+		// pqVals := fmt.Sprintf("VALUES ( '%s','%s',", rowID, self.AppID)
+		pqiVals := []interface{}{rowID}
+		for _, colmap := range mapping {
+			if val, err := qi.valueOfColumn(colmap[1]); err == nil {
+				isValid = true
+				pqiCols = append(pqiCols, colmap[0])
+				pqiVals = append(pqiVals, val)
+				// pqVals += fmt.Sprintf("E'%s',", val)
 			}
-			if isValid {
-				// pqi := strings.Trim(pqCols, ", ") + ") " + strings.Trim(pqVals, ", ") + ");"
-				pqi := CreateQI(pt, pqiCols, pqiVals, QTInsert)
-				PQIs = append(PQIs, pqi)
-			}
-
 		}
+		if isValid {
+			// pqi := strings.Trim(pqCols, ", ") + ") " + strings.Trim(pqVals, ", ") + ");"
+			pqi := CreateQI(pt, pqiCols, pqiVals, QTInsert)
+			PQIs = append(PQIs, pqi)
+		}
+
 	}
-	return PQIs
+	return PQIs, rowID
 }
 
 // func (self QR) Resolve(sql string, args ...interface{}) []string {

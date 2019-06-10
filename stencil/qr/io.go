@@ -1,10 +1,23 @@
 package qr
 
 import (
-	"db"
 	"errors"
 	"fmt"
+	"stencil/db"
 )
+
+func NewQR(app_name, app_id string) *QR {
+	qr := new(QR)
+	qr.AppName = app_name
+	qr.AppID = app_id
+	qr.StencilDB = db.GetDBConn("stencil")
+	fmt.Println("Fetching Base Mappings...")
+	qr.getBaseMappings()
+	fmt.Println("Fetching Supplementary Mappings...")
+	qr.getSupplementaryMappings()
+	fmt.Println("QR Created")
+	return qr
+}
 
 func NewQRWithAppName(app_name string) *QR {
 	qr := new(QR)

@@ -1,7 +1,6 @@
 package qr
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -15,32 +14,32 @@ func (self QR) TestQuery(qtype string) {
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	// scanner := bufio.NewScanner(file)
 
-	for scanner.Scan() {
-		fmt.Println("******************************************************************************")
-		q := fmt.Sprint(scanner.Text())
-		fmt.Println(q)
-		switch qtype {
-		case "insert":
-			for i, q := range self.ResolveInsert(q) {
+	// for scanner.Scan() {
+	// 	fmt.Println("******************************************************************************")
+	// 	q := fmt.Sprint(scanner.Text())
+	// 	fmt.Println(q)
+	// 	switch qtype {
+	// 	case "insert":
+	// 		for i, q := range self.ResolveInsert(q) {
 
-				fmt.Println(i+1, ":", q)
-			}
-		case "update":
-			for i, q := range self.ResolveUpdate(q) {
-				fmt.Println(i+1, ":", q)
-			}
-		case "select":
-			for i, q := range self.ResolveSelect(q) {
-				fmt.Println(i+1, ":", q)
-			}
-		case "delete":
-			for i, q := range self.ResolveDelete(q) {
-				fmt.Println(i+1, ":", q)
-			}
-		}
-	}
+	// 			fmt.Println(i+1, ":", q)
+	// 		}
+	// 	case "update":
+	// 		for i, q := range self.ResolveUpdate(q) {
+	// 			fmt.Println(i+1, ":", q)
+	// 		}
+	// 	case "select":
+	// 		for i, q := range self.ResolveSelect(q) {
+	// 			fmt.Println(i+1, ":", q)
+	// 		}
+	// 	case "delete":
+	// 		for i, q := range self.ResolveDelete(q) {
+	// 			fmt.Println(i+1, ":", q)
+	// 		}
+	// 	}
+	// }
 }
 
 // func (self QR) TestQuery() {
