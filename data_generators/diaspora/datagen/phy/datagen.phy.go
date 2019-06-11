@@ -1,6 +1,7 @@
 package phy
 
 import (
+	"database/sql"
 	"diaspora/datagen"
 	"diaspora/db"
 	"diaspora/helper"
@@ -18,7 +19,7 @@ import (
 type User datagen.User
 type Post datagen.Post
 
-func NewUser(QR *qr.QR) (int32, int32, []string) {
+func NewUser(QR *qr.QR, dbConn *sql.DB) (int32, int32, []string) {
 
 	var QIs []*qr.QI
 
@@ -39,8 +40,6 @@ func NewUser(QR *qr.QR) (int32, int32, []string) {
 
 	// sql := "INSERT INTO users (username, serialized_private_key, language, email, encrypted_password, created_at, updated_at, color_theme, last_seen, sign_in_count, current_sign_in_ip, last_sign_in_ip, current_sign_in_at, last_sign_in_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id "
 	// user_id, _ := db.RunTxWQnArgsReturningId(tx, sql, username, serialized_private_key, language, email, encrypted_password, time.Now(), time.Now(), color_theme, time.Now(), sign_in_count, current_sign_in_ip, last_sign_in_ip, time.Now(), time.Now())
-
-	// var cols []string
 
 	cols := []string{"username", "serialized_private_key", "language", "email", "encrypted_password", "created_at", "updated_at", "color_theme", "last_seen", "sign_in_count", "current_sign_in_ip", "last_sign_in_ip", "current_sign_in_at", "last_sign_in_at"}
 	vals := []interface{}{username, serialized_private_key, language, email, encrypted_password, time.Now(), time.Now(), color_theme, time.Now(), sign_in_count, current_sign_in_ip, last_sign_in_ip, time.Now(), time.Now()}
@@ -81,7 +80,7 @@ func NewUser(QR *qr.QR) (int32, int32, []string) {
 		aspect_ids = append(aspect_ids, fmt.Sprint(aspect_id))
 	}
 
-	tx, err := QR.StencilDB.Begin()
+	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Println(err)
 		log.Fatal("create user transaction can't even begin")
@@ -89,22 +88,27 @@ func NewUser(QR *qr.QR) (int32, int32, []string) {
 		success := true
 		for _, qi := range QIs {
 			query, args := qi.GenSQL()
+			// fmt.Println(query)
 			if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
 				success = false
+				fmt.Println("Some error:", err)
+				break
 			}
 		}
 		if success {
-			fmt.Println("SUCCESS!")
-			// tx.Commit()
+			// fmt.Println("SUCCESS!")
+			tx.Commit()
 		}
 	}
+	// tx.Rollback()
+	// log.Fatal("stop")
 
 	return user_id, person_id, aspect_ids
 }
 
-func NewPost(QR *qr.QR, user_id, person_id int, aspect_ids []int) int {
+func NewPost(QR *qr.QR, dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int {
 
-	tx, err := QR.StencilDB.Begin()
+	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Println("create post transaction can't even begin")
 		return -1
@@ -458,6 +462,26 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 			GROUP BY user_id, person_id
 			ORDER BY random()`
 
+	fq := qr.CreateQS(QR)
+	// fq.ColSimple("users.*")
+	fq.ColSimple("users.id")
+	fq.ColAlias("users.id", "user_id")
+	fq.ColAlias("people.id", "person_id")
+	fq.ColAlias("aspects.id", "aspect_id")
+	fq.FromSimple("users")
+	fq.FromJoin("people", "users.id=people.owner_id")
+	fq.FromJoin("aspects", "users.id=aspects.user_id")
+
+	q := qr.CreateQS(QR)
+	q.ColSimple("user_id,person_id")
+	q.ColFunction("string_agg(%s::text, ',')", "aspect_id", "aspects")
+	q.FromQuery(fq)
+	q.GroupBy("user_id,person_id")
+	q.OrderBy("random()")
+
+	sql = q.GenSQL()
+	fmt.Println(sql)
+
 	res := db.DataCall(QR.StencilDB, sql)
 
 	for _, row := range res {
@@ -472,7 +496,7 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 		user.Aspects = aspect_ids
 		users = append(users, user)
 	}
-
+	fmt.Println(users)
 	return users
 }
 
@@ -490,6 +514,22 @@ func GetAllUsersWithAspectsExcept(QR *qr.QR, column, table string) []*User {
 			)
 			GROUP BY user_id, person_id
 			ORDER BY random()`, column, table)
+
+	fq := qr.CreateQS(QR)
+	wq := qr.CreateQS(QR)
+	q := qr.CreateQS(QR)
+	q.ColSimple("col_name")
+	q.ColAlias("col_name", "alias")
+	q.ColFunction("string_agg(col_name::text, ',')", "aspect_id", "aspects")
+	q.FromSimple("tab_name")
+	q.FromJoin("tab_name", "tab_name.col1 = tab_name2.col2")
+	q.FromQuery(fq)
+	q.WhereSimple("col != val")
+	q.WhereOperator("and", "col != val")
+	q.WhereQuery("not in", wq)
+	q.GroupBy("cols")
+	q.OrderBy("cols")
+
 	res := db.DataCall(QR.StencilDB, sql)
 
 	for _, row := range res {

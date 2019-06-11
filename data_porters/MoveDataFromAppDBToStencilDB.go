@@ -3,33 +3,35 @@ package main
 import (
 	"fmt"
 	"log"
-	"transaction/db"
-	"transaction/qr"
+	"stencil/db"
+	"stencil/qr"
 )
 
 func main() {
 
-	stencil := "stencil"
-	stencilDB := db.GetDBConn(stencil)
+	stencildb := "stencil"
+	stencilDB := db.GetDBConn(stencildb)
 
-	appName := "diaspora"
+	appName, appID := "diaspora", "1"
 	appDB := db.GetDBConn(appName)
 
-	QR := qr.NewQRWithAppName(appName)
+	QR := qr.NewQR(appName, appID)
 	tables := db.DataCall(appDB, "select table_name from information_schema.tables where table_schema = 'public' and table_name = 'users'")
 	orderby := "id"
+
 	for _, tableRes := range tables {
 		log.Println("Table:", tableRes)
 		table := tableRes["table_name"].(string)
 		res := db.DataCall1(appDB, fmt.Sprintf("SELECT COUNT(*) as num FROM \"%s\"", table))
 		if val, ok := res["num"]; ok {
 			rowcount := int(val.(int64))
-			// log.Fatal(rowcount)
 			log.Println(rowcount)
-			limit := 50000
+			limit := 5000
 			for i := 0; i < rowcount; i += limit {
+				// fmt.Println("processing row", i)
 				sql := fmt.Sprintf("SELECT * FROM \"%s\" ORDER BY %s ASC LIMIT %d OFFSET %d", table, orderby, limit, i)
-				for _, row := range db.DataCall(appDB, sql) {
+				for count, row := range db.DataCall(appDB, sql) {
+					// fmt.Println("processing rowcount", count)
 					var cols []string
 					var vals []interface{}
 					for col, val := range row {
@@ -40,7 +42,9 @@ func main() {
 					if _, err := stencilDB.Begin(); err != nil {
 						log.Fatal("ERROR! SOURCE TRANSACTION CAN'T BEGIN:", err)
 					} else {
-						for qnum, pqi := range QR.ResolveInsert(qi) {
+						resolvedQI, pk := QR.ResolveInsert(qi)
+						fmt.Print("@@ PQ PK => ", pk)
+						for qnum, pqi := range resolvedQI {
 							fmt.Print("@@ PQ => ")
 							pq, args := pqi.GenSQL()
 							fmt.Println(pq)

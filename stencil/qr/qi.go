@@ -9,6 +9,15 @@ import (
 	"github.com/xwb1989/sqlparser"
 )
 
+func CreateQI(table string, cols []string, vals []interface{}, qtype string) *QI {
+	qi := new(QI)
+	qi.TableName = table
+	qi.Columns = cols
+	qi.Values = vals
+	qi.Type = qtype
+	return qi
+}
+
 func (self QI) valueOfColumn(col string) (interface{}, error) {
 
 	for i, c := range self.Columns {
@@ -48,15 +57,6 @@ func (self QI) GenSQL() (string, []interface{}) {
 	}
 	fmt.Println("!!! Unable to identify query type.", self.Type)
 	return "", self.Values
-}
-
-func CreateQI(table string, cols []string, vals []interface{}, qtype string) *QI {
-	qi := new(QI)
-	qi.TableName = table
-	qi.Columns = cols
-	qi.Values = vals
-	qi.Type = qtype
-	return qi
 }
 
 func getInsertQueryIngs(sql string) *QI {

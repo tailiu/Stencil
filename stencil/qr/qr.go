@@ -136,7 +136,7 @@ func (self QR) GetBaseMappingForLogicalTable(ltable string) map[string][][]strin
 // 	return rowIDs
 // }
 
-func (self QR) getPhyTabCol(ltabcol string) (string, string) {
+func (self QR) GetPhyTabCol(ltabcol string) (string, string) {
 
 	tab := strings.Trim(strings.Split(ltabcol, ".")[0], " ")
 	col := strings.Trim(strings.Split(ltabcol, ".")[1], " ")

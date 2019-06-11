@@ -28,3 +28,13 @@ type QI struct {
 	ColumnsWithTable map[string][]string
 	Type             string
 }
+
+type QS struct {
+	QR      *QR
+	Columns []string
+	From    string
+	Where   string
+	Group   string
+	Order   string
+	seen    map[string]bool
+}

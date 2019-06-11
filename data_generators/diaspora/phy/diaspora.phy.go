@@ -1,12 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"diaspora/config"
 	"diaspora/datagen/phy"
 	"diaspora/helper"
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
+	"stencil/db"
 	"stencil/qr"
 	"time"
 )
@@ -17,20 +20,20 @@ func WaitForAWhile() {
 	time.Sleep(10 * time.Minute)
 }
 
-func createNewUsers(num, thread int) {
+func createNewUsers(dbConn *sql.DB, num, thread int) {
 	for i := 0; i < num; i++ {
-		uid, _, _ := phy.NewUser(QR)
+		uid, _, _ := phy.NewUser(QR, dbConn)
 		fmt.Println(fmt.Sprintf("Thread: %3d, User: %4d/%4d | uid : %d", thread, i, num, uid))
 	}
 }
 
-func createNewPostsForUsers(users []*phy.User, thread_num int) {
+func createNewPostsForUsers(dbConn *sql.DB, users []*phy.User, thread_num int) {
 
 	for uidx, user := range users {
 		num_of_posts := helper.RandomNumber(0, 500)
 		for i := 0; i <= num_of_posts; i++ {
 			log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uidx, len(users), i, num_of_posts))
-			phy.NewPost(QR, user.User_ID, user.Person_ID, user.Aspects)
+			phy.NewPost(QR, dbConn, user.User_ID, user.Person_ID, user.Aspects)
 		}
 	}
 }
@@ -168,9 +171,10 @@ func runMakeUsersTalk() {
 }
 
 func runCreateNewUsers() {
-	// dbConn := db.GetDBConn(config.APP_NAME)
+
 	for i := 0; i < 100; i++ {
-		go createNewUsers(500, i)
+		dbConn := db.GetDBConn(config.STENCILDB)
+		go createNewUsers(dbConn, 50000, i)
 	}
 	for {
 		fmt.Scanln()
@@ -195,11 +199,13 @@ func runMakeUsersFriends() {
 func runCreateNewPosts() {
 
 	users := phy.GetAllUsersWithAspects(QR)
+	return
 	num_users := len(users)
 	inc := 500
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
-		go createNewPostsForUsers(users[i:j], thread_num)
+		dbConn := db.GetDBConn(config.STENCILDB)
+		go createNewPostsForUsers(dbConn, users[i:j], thread_num)
 	}
 
 	for {
@@ -209,25 +215,25 @@ func runCreateNewPosts() {
 
 func main() {
 
-	createNewUsers(1, 0)
+	// createNewUsers(1, 0)
 
-	// arg := os.Args[1]
+	arg := os.Args[1]
 
-	// switch arg {
-	// case "posts":
-	// 	fmt.Println("Creating New Posts!")
-	// 	runCreateNewPosts()
-	// case "comments":
-	// 	fmt.Println("Interacting With Posts!")
-	// 	runinteractWithPosts()
-	// case "messages":
-	// 	fmt.Println("Creating New Messages!")
-	// 	runMakeUsersTalk()
-	// case "friends":
-	// 	fmt.Println("Making People Friends!")
-	// 	runMakeUsersFriends()
-	// case "newusers":
-	// 	fmt.Println("Creating New Users!")
-	// 	runCreateNewUsers()
-	// }
+	switch arg {
+	case "posts":
+		fmt.Println("Creating New Posts!")
+		runCreateNewPosts()
+	case "comments":
+		fmt.Println("Interacting With Posts!")
+		runinteractWithPosts()
+	case "messages":
+		fmt.Println("Creating New Messages!")
+		runMakeUsersTalk()
+	case "friends":
+		fmt.Println("Making People Friends!")
+		runMakeUsersFriends()
+	case "newusers":
+		fmt.Println("Creating New Users!")
+		runCreateNewUsers()
+	}
 }
