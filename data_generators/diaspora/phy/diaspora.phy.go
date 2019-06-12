@@ -174,7 +174,7 @@ func runCreateNewUsers() {
 
 	for i := 0; i < 100; i++ {
 		dbConn := db.GetDBConn(config.STENCILDB)
-		go createNewUsers(dbConn, 50000, i)
+		go createNewUsers(dbConn, 5000, i)
 	}
 	for {
 		fmt.Scanln()
@@ -199,15 +199,14 @@ func runMakeUsersFriends() {
 func runCreateNewPosts() {
 
 	users := phy.GetAllUsersWithAspects(QR)
-	return
 	num_users := len(users)
-	inc := 500
+	inc := 5000
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
 		dbConn := db.GetDBConn(config.STENCILDB)
 		go createNewPostsForUsers(dbConn, users[i:j], thread_num)
+		// break
 	}
-
 	for {
 		fmt.Scanln()
 	}
@@ -221,19 +220,19 @@ func main() {
 
 	switch arg {
 	case "posts":
-		fmt.Println("Creating New Posts!")
+		// fmt.Println("Creating New Posts!")
 		runCreateNewPosts()
 	case "comments":
-		fmt.Println("Interacting With Posts!")
+		// fmt.Println("Interacting With Posts!")
 		runinteractWithPosts()
 	case "messages":
-		fmt.Println("Creating New Messages!")
+		// fmt.Println("Creating New Messages!")
 		runMakeUsersTalk()
 	case "friends":
-		fmt.Println("Making People Friends!")
+		// fmt.Println("Making People Friends!")
 		runMakeUsersFriends()
 	case "newusers":
-		fmt.Println("Creating New Users!")
+		// fmt.Println("Creating New Users!")
 		runCreateNewUsers()
 	}
 }
