@@ -19,7 +19,7 @@ import (
 type User datagen.User
 type Post datagen.Post
 
-func NewUser(QR *qr.QR, dbConn *sql.DB) (int32, int32, []string) {
+func NewUser(QR *qr.QR, dbConn *sql.DB) (int32, int32, []int32) {
 
 	var QIs []*qr.QI
 
@@ -36,48 +36,51 @@ func NewUser(QR *qr.QR, dbConn *sql.DB) (int32, int32, []string) {
 	sign_in_count := 1
 	current_sign_in_ip := "127.0.0.1"
 	last_sign_in_ip := "127.0.0.1"
-	var aspect_ids []string
+	var aspect_ids []int32
 
 	// sql := "INSERT INTO users (username, serialized_private_key, language, email, encrypted_password, created_at, updated_at, color_theme, last_seen, sign_in_count, current_sign_in_ip, last_sign_in_ip, current_sign_in_at, last_sign_in_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id "
 	// user_id, _ := db.RunTxWQnArgsReturningId(tx, sql, username, serialized_private_key, language, email, encrypted_password, time.Now(), time.Now(), color_theme, time.Now(), sign_in_count, current_sign_in_ip, last_sign_in_ip, time.Now(), time.Now())
-
-	cols := []string{"username", "serialized_private_key", "language", "email", "encrypted_password", "created_at", "updated_at", "color_theme", "last_seen", "sign_in_count", "current_sign_in_ip", "last_sign_in_ip", "current_sign_in_at", "last_sign_in_at"}
-	vals := []interface{}{username, serialized_private_key, language, email, encrypted_password, time.Now(), time.Now(), color_theme, time.Now(), sign_in_count, current_sign_in_ip, last_sign_in_ip, time.Now(), time.Now()}
+	user_id := QR.NewRowId()
+	cols := []string{"id", "username", "serialized_private_key", "language", "email", "encrypted_password", "created_at", "updated_at", "color_theme", "last_seen", "sign_in_count", "current_sign_in_ip", "last_sign_in_ip", "current_sign_in_at", "last_sign_in_at"}
+	vals := []interface{}{user_id, username, serialized_private_key, language, email, encrypted_password, time.Now(), time.Now(), color_theme, time.Now(), sign_in_count, current_sign_in_ip, last_sign_in_ip, time.Now(), time.Now()}
 	qi := qr.CreateQI("users", cols, vals, qr.QTInsert)
 
-	userQIs, user_id := QR.ResolveInsert(qi)
+	userQIs := QR.ResolveInsert(qi, user_id)
 	QIs = append(QIs, userQIs...)
 
 	// sql = "INSERT INTO people (guid,diaspora_handle,serialized_public_key,owner_id,created_at,updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
 	// person_id, _ := db.RunTxWQnArgsReturningId(tx, sql, guid, diaspora_handle, serialized_public_key, user_id, time.Now(), time.Now())
 
-	cols = []string{"guid", "diaspora_handle", "serialized_public_key", "owner_id", "created_at", "updated_at"}
-	vals = []interface{}{guid, diaspora_handle, serialized_public_key, user_id, time.Now(), time.Now()}
+	person_id := QR.NewRowId()
+	cols = []string{"id", "guid", "diaspora_handle", "serialized_public_key", "owner_id", "created_at", "updated_at"}
+	vals = []interface{}{person_id, guid, diaspora_handle, serialized_public_key, user_id, time.Now(), time.Now()}
 	qi = qr.CreateQI("people", cols, vals, qr.QTInsert)
 
-	peopleQIs, person_id := QR.ResolveInsert(qi)
+	peopleQIs := QR.ResolveInsert(qi, person_id)
 	QIs = append(QIs, peopleQIs...)
 
 	// sql = "INSERT INTO profiles (person_id, created_at, updated_at, full_name) VALUES ($1, $2, $3, $4)"
 	// db.RunTxWQnArgs(tx, sql, person_id, time.Now(), time.Now(), full_name)
 
-	cols = []string{"person_id", "created_at", "updated_at", "full_name"}
-	vals = []interface{}{person_id, time.Now(), time.Now(), full_name}
+	profile_id := QR.NewRowId()
+	cols = []string{"id", "person_id", "created_at", "updated_at", "full_name"}
+	vals = []interface{}{profile_id, person_id, time.Now(), time.Now(), full_name}
 	qi = qr.CreateQI("profiles", cols, vals, qr.QTInsert)
 
-	profileQIs, _ := QR.ResolveInsert(qi)
+	profileQIs := QR.ResolveInsert(qi, profile_id)
 	QIs = append(QIs, profileQIs...)
 
 	// sql = "INSERT INTO aspects (name, user_id, created_at, updated_at, order_id) VALUES ($1, $2, $3, $4, $5)  RETURNING id"
 
-	cols = []string{"name", "user_id", "created_at", "updated_at", "order_id"}
+	cols = []string{"id", "name", "user_id", "created_at", "updated_at", "order_id"}
 	for idx, aspect_name := range []string{"Family", "Friends", "Work", "Acquaintances"} {
-		vals = []interface{}{aspect_name, user_id, time.Now(), time.Now(), idx + 1}
+		aspect_id := QR.NewRowId()
+		vals = []interface{}{aspect_id, aspect_name, user_id, time.Now(), time.Now(), idx + 1}
 		qi = qr.CreateQI("aspects", cols, vals, qr.QTInsert)
-		aspectQI, aspect_id := QR.ResolveInsert(qi)
+		aspectQI := QR.ResolveInsert(qi, aspect_id)
 		QIs = append(QIs, aspectQI...)
 		// aspect_id, _ := db.RunTxWQnArgsReturningId(tx, sql, aspect_name, user_id, time.Now(), time.Now(), idx+1)
-		aspect_ids = append(aspect_ids, fmt.Sprint(aspect_id))
+		aspect_ids = append(aspect_ids, aspect_id)
 	}
 
 	tx, err := dbConn.Begin()
@@ -106,13 +109,9 @@ func NewUser(QR *qr.QR, dbConn *sql.DB) (int32, int32, []string) {
 	return user_id, person_id, aspect_ids
 }
 
-func NewPost(QR *qr.QR, dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int {
+func NewPost(QR *qr.QR, dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int32 {
 
-	tx, err := dbConn.Begin()
-	if err != nil {
-		log.Println("create post transaction can't even begin")
-		return -1
-	}
+	var QIs []*qr.QI
 
 	// Params
 	guid := uuid.New()
@@ -121,21 +120,65 @@ func NewPost(QR *qr.QR, dbConn *sql.DB, user_id, person_id int, aspect_ids []int
 
 	// SQLs
 
-	sql := "INSERT INTO posts (author_id, guid, type, text, created_at, updated_at, interacted_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
-	post_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id, guid, post_type, text, time.Now(), time.Now(), time.Now())
+	// sql := "INSERT INTO posts (author_id, guid, type, text, created_at, updated_at, interacted_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
+	// post_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id, guid, post_type, text, time.Now(), time.Now(), time.Now())
 
-	sql = "INSERT INTO aspect_visibilities (shareable_id, aspect_id) VALUES ($1, $2)"
+	post_id := QR.NewRowId()
+	cols := []string{"id", "author_id", "guid", "type", "text", "created_at", "updated_at", "interacted_at"}
+	vals := []interface{}{post_id, person_id, guid, post_type, text, time.Now(), time.Now(), time.Now()}
+	qi := qr.CreateQI("posts", cols, vals, qr.QTInsert)
+
+	postQIs := QR.ResolveInsert(qi, post_id)
+	QIs = append(QIs, postQIs...)
+
+	// sql = "INSERT INTO aspect_visibilities (shareable_id, aspect_id) VALUES ($1, $2)"
 
 	for _, aid := range aspect_ids {
 		if helper.RandomNumber(1, 50)%2 == 0 {
-			db.RunTxWQnArgs(tx, sql, post_id, aid)
+			av_id := QR.NewRowId()
+			cols = []string{"id", "shareable_id", "aspect_id"}
+			vals = []interface{}{av_id, post_id, aid}
+			qi = qr.CreateQI("aspect_visibilities", cols, vals, qr.QTInsert)
+
+			avQIs := QR.ResolveInsert(qi, av_id)
+			QIs = append(QIs, avQIs...)
+			// db.RunTxWQnArgs(tx, sql, post_id, aid)
 		}
 	}
 
-	sql = "INSERT INTO share_visibilities (shareable_id, user_id) VALUES ($1, $2)"
-	db.RunTxWQnArgs(tx, sql, post_id, user_id)
+	// sql = "INSERT INTO share_visibilities (shareable_id, user_id) VALUES ($1, $2)"
+	// db.RunTxWQnArgs(tx, sql, post_id, user_id)
 
-	tx.Commit()
+	sv_id := QR.NewRowId()
+	cols = []string{"id", "shareable_id", "user_id"}
+	vals = []interface{}{sv_id, post_id, user_id}
+	qi = qr.CreateQI("share_visibilities", cols, vals, qr.QTInsert)
+
+	avQIs := QR.ResolveInsert(qi, sv_id)
+	QIs = append(QIs, avQIs...)
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		log.Println(err)
+		log.Fatal("create post transaction can't even begin")
+	} else {
+		success := true
+		for _, qi := range QIs {
+			query, args := qi.GenSQL()
+			// fmt.Println(query)
+			if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
+				success = false
+				fmt.Println("Some error:", err)
+				break
+			}
+		}
+		if success {
+			// fmt.Println("~ success")
+			tx.Commit()
+		}
+	}
+
+	// tx.Commit()
 
 	return post_id
 }
@@ -450,37 +493,110 @@ func UpdateConversation(QR *qr.QR, conversation_id int) {
 	tx.Commit()
 }
 
+func GetAllUsersWithAspectsNew(QR *qr.QR) []*User {
+
+	var users []*User
+
+	log.Println("fetching users")
+	qu := qr.CreateQS(QR)
+	qu.ColAlias("users.id", "user_id")
+	qu.FromSimple("users")
+	// qu.LimitResult("10")
+	fmt.Println(qu.GenSQL())
+	res_users := db.DataCall(QR.StencilDB, qu.GenSQL())
+
+	log.Println("fetching people")
+	qp := qr.CreateQS(QR)
+	qp.ColAlias("people.owner_id", "user_id")
+	qp.ColAlias("people.id", "person_id")
+	qp.FromSimple("people")
+	// qp.LimitResult("10")
+	fmt.Println(qp.GenSQL())
+	res_people := db.DataCall(QR.StencilDB, qp.GenSQL())
+
+	log.Println("fetching aspects")
+	qa := qr.CreateQS(QR)
+	qa.ColSimple("aspects.user_id")
+	qa.ColAlias("aspects.id", "aspect_id")
+	qa.FromSimple("aspects")
+	// qa.LimitResult("100")
+	fmt.Println(qa.GenSQL())
+	res_aspects := db.DataCall(QR.StencilDB, qa.GenSQL())
+
+	log.Println("looping")
+	for _, user := range res_users {
+		newuser := new(User)
+		newuser.User_ID, _ = strconv.Atoi(user["user_id"])
+
+		for _, person := range res_people {
+			if strings.EqualFold(user["user_id"], person["user_id"]) {
+				newuser.Person_ID, _ = strconv.Atoi(person["person_id"])
+				break
+			}
+		}
+
+		var aspect_ids []int
+		for _, aspect := range res_aspects {
+			if strings.EqualFold(user["user_id"], aspect["user_id"]) {
+				aspect_id, _ := strconv.Atoi(aspect["aspect_id"])
+				aspect_ids = append(aspect_ids, aspect_id)
+				if len(aspect_ids) >= 4 {
+					break
+				}
+			}
+		}
+
+		newuser.Aspects = aspect_ids
+		users = append(users, newuser)
+		fmt.Println(newuser)
+	}
+
+	return users
+}
+
 func GetAllUsersWithAspects(QR *qr.QR) []*User {
 
 	var users []*User
 
-	sql := `SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
-			FROM (
-				SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
-				FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
-			) tab
-			GROUP BY user_id, person_id
-			ORDER BY random()`
+	// sql := `SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
+	// 		FROM (
+	// 			SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
+	// 			FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+	// 		) tab
+	// 		GROUP BY user_id, person_id
+	// 		ORDER BY random()`
 
-	fq := qr.CreateQS(QR)
-	// fq.ColSimple("users.*")
-	fq.ColSimple("users.id")
-	fq.ColAlias("users.id", "user_id")
-	fq.ColAlias("people.id", "person_id")
-	fq.ColAlias("aspects.id", "aspect_id")
-	fq.FromSimple("users")
-	fq.FromJoin("people", "users.id=people.owner_id")
-	fq.FromJoin("aspects", "users.id=aspects.user_id")
+	sql := `
+		SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects from
+		(SELECT supplementary_676.id as user_id, supplementary_654.pk as person_id, supplementary_630.id as aspect_id
+			FROM  supplementary_654 
+			JOIN supplementary_676 ON supplementary_676.id = supplementary_654.owner_id  
+			JOIN supplementary_630 ON supplementary_630.user_id = supplementary_654.owner_id
+		) tab
+		GROUP BY tab.user_id, tab.person_id
+	`
 
-	q := qr.CreateQS(QR)
-	q.ColSimple("user_id,person_id")
-	q.ColFunction("string_agg(%s::text, ',')", "aspect_id", "aspects")
-	q.FromQuery(fq)
-	q.GroupBy("user_id,person_id")
-	q.OrderBy("random()")
+	sql = `select * from diaspora_users_with_aspects`
 
-	sql = q.GenSQL()
-	fmt.Println(sql)
+	// fq := qr.CreateQS(QR)
+	// // fq.ColSimple("users.*")
+	// fq.ColSimple("users.id")
+	// fq.ColAlias("users.id", "user_id")
+	// fq.ColAlias("people.id", "person_id")
+	// fq.ColAlias("aspects.id", "aspect_id")
+	// fq.FromSimple("users")
+	// fq.FromJoin("people", "users.id=people.owner_id")
+	// fq.FromJoin("aspects", "users.id=aspects.user_id")
+
+	// q := qr.CreateQS(QR)
+	// q.ColSimple("user_id,person_id")
+	// q.ColFunction("string_agg(%s::text, ',')", "aspect_id", "aspects")
+	// q.FromQuery(fq)
+	// q.GroupBy("user_id,person_id")
+	// q.OrderBy("random()")
+
+	// sql := q.GenSQL()
+	// fmt.Println(sql)
 
 	res := db.DataCall(QR.StencilDB, sql)
 
@@ -495,8 +611,8 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 		}
 		user.Aspects = aspect_ids
 		users = append(users, user)
+		// fmt.Println(user)
 	}
-	fmt.Println(users)
 	return users
 }
 
@@ -504,16 +620,33 @@ func GetAllUsersWithAspectsExcept(QR *qr.QR, column, table string) []*User {
 
 	var users []*User
 
-	sql := fmt.Sprintf(`SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
-			FROM (
-				SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
-				FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
-			) tab
-			WHERE user_id NOT IN (
-				SELECT DISTINCT %s FROM %s
-			)
-			GROUP BY user_id, person_id
-			ORDER BY random()`, column, table)
+	// sql := fmt.Sprintf(`SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
+	// 		FROM (
+	// 			SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
+	// 			FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+	// 		) tab
+	// 		WHERE user_id NOT IN (
+	// 			SELECT DISTINCT %s FROM %s
+	// 		)
+	// 		GROUP BY user_id, person_id
+	// 		ORDER BY random()`, column, table)
+
+	// sql := "SELECT id as user_id FROM users"
+	// sql := "SELECT id as person_id FROM people"
+	// sql := "SELECT id as aspect_id FROM aspects"
+
+	// qu := qr.CreateQS(QR)
+	// qu.ColAlias("id", "user_id")
+	// qu.FromSimple("users")
+	// res := db.DataCall(QR.StencilDB, sql)
+
+	// qp := qr.CreateQS(QR)
+	// qp.ColAlias("id", "user_id")
+	// qp.FromSimple("people")
+
+	// qa := qr.CreateQS(QR)
+	// qa.ColAlias("id", "user_id")
+	// qa.FromSimple("aspects")
 
 	fq := qr.CreateQS(QR)
 	wq := qr.CreateQS(QR)
@@ -524,11 +657,13 @@ func GetAllUsersWithAspectsExcept(QR *qr.QR, column, table string) []*User {
 	q.FromSimple("tab_name")
 	q.FromJoin("tab_name", "tab_name.col1 = tab_name2.col2")
 	q.FromQuery(fq)
-	q.WhereSimple("col != val")
-	q.WhereOperator("and", "col != val")
+	// q.WhereSimple("col != val")
+	// q.WhereOperator("and", "col != val")
 	q.WhereQuery("not in", wq)
 	q.GroupBy("cols")
 	q.OrderBy("cols")
+
+	sql := q.GenSQL()
 
 	res := db.DataCall(QR.StencilDB, sql)
 

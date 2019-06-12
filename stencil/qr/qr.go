@@ -290,10 +290,10 @@ func (self QR) ResolveSelect(sql string, args ...interface{}) []string {
 	}
 }
 
-func (self QR) ResolveInsert(qi *QI) ([]*QI, int32) {
+func (self QR) ResolveInsert(qi *QI, rowID int32) []*QI {
 
 	var PQIs []*QI
-	rowID := self.NewRowId()
+	// rowID := self.NewRowId()
 	// log.Println("Got row id:", rowID)
 	// newRowSQL := fmt.Sprintf("INSERT INTO row_desc (row_id, app_id, table_name) VALUES ('%s', '%s', '%s')", rowID, self.AppID, qi.TableName)
 	newRowCols := []string{"rowid", "app_id"}
@@ -323,7 +323,7 @@ func (self QR) ResolveInsert(qi *QI) ([]*QI, int32) {
 		}
 
 	}
-	return PQIs, rowID
+	return PQIs
 }
 
 // func (self QR) Resolve(sql string, args ...interface{}) []string {

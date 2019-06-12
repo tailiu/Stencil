@@ -79,6 +79,9 @@ func (self *QS) FromSimple(table string) {
 	}
 }
 
+// some problems here
+// multiple physical tables can appear, should be legal.
+// need to carefully consider the need of qr.seen map. Probably don't need it. Need a work around.
 func (self *QS) FromJoin(table, condition string) {
 	// condition: previous_table.column=current_table.column
 
@@ -93,7 +96,8 @@ func (self *QS) FromJoin(table, condition string) {
 	prev := curr_tab
 
 	for ptab := range phyTab {
-		if _, ok := self.seen[ptab]; !ok {
+		// if _, ok := self.seen[ptab]; !ok {
+		if !strings.EqualFold(curr_tab, ptab) {
 			self.From += fmt.Sprintf("JOIN %s ON %s.pk = %s.pk ", ptab, prev, ptab)
 			prev = ptab
 		}
@@ -104,11 +108,18 @@ func (self *QS) FromQuery(qs *QS) {
 	self.From = fmt.Sprintf("(%s) tab ", qs.GenSQL())
 }
 
-func (self *QS) WhereSimple(condition string) {
-
+func (self *QS) WhereSimple(col1, op, col2 string) {
+	ptab1, pcol1 := self.QR.GetPhyTabCol(col1)
+	ptab2, pcol2 := self.QR.GetPhyTabCol(col2)
+	self.Where = fmt.Sprintf("%s.%s %s %s.%s", ptab1, pcol1, op, ptab2, pcol2)
 }
 
-func (self *QS) WhereOperator(operator, condition string) { // AND, OR
+func (self *QS) WhereSimpleVal(col, op, val string) {
+	ptab, pcol := self.QR.GetPhyTabCol(col)
+	self.Where = fmt.Sprintf("%s.%s %s '%s'", ptab, pcol, op, val)
+}
+
+func (self *QS) WhereOperator(operator, col1, op, col2 string) { // AND, OR
 
 }
 
@@ -124,6 +135,10 @@ func (self *QS) OrderBy(cols string) {
 	self.Order = cols
 }
 
+func (self *QS) LimitResult(limit string) {
+	self.Limit = limit
+}
+
 func (self QS) GenSQL() string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
 	if len(self.Where) > 0 {
@@ -134,6 +149,9 @@ func (self QS) GenSQL() string {
 	}
 	if len(self.Order) > 0 {
 		sql += fmt.Sprintf("ORDER BY %s ", self.Order)
+	}
+	if len(self.Limit) > 0 {
+		sql += fmt.Sprintf("LIMIT %s ", self.Limit)
 	}
 	// fmt.Println("WHERE", self.Where)
 	// fmt.Println("GROUPBY", self.Group)

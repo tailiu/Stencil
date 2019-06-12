@@ -36,5 +36,6 @@ type QS struct {
 	Where   string
 	Group   string
 	Order   string
+	Limit   string
 	seen    map[string]bool
 }

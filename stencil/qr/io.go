@@ -81,6 +81,8 @@ func (self *QR) getBaseMappings() {
 							JOIN 	physical_schema ON physical_mappings.physical_attribute = physical_schema.pk
 						WHERE 	app_tables.app_id  = '%s' `, self.AppID)
 
+	sql = `SELECT * FROM diaspora_base_mappings`
+
 	// self.BaseMappings = db.DataCall(self.StencilDB, sql)
 	for _, mapping := range db.DataCall(self.StencilDB, sql) {
 		mappingStr := make(map[string]string)
@@ -104,6 +106,8 @@ func (self *QR) getSupplementaryMappings() {
 								asm.pk NOT IN (
 									SELECT logical_attribute FROM physical_mappings
 								)`, self.AppID)
+
+	sql = `SELECT * FROM diaspora_supplementary_mappings`
 
 	// self.SuppMappings = db.DataCall(self.StencilDB, sql)
 	for _, mapping := range db.DataCall(self.StencilDB, sql) {

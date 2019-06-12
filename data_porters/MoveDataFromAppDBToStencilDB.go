@@ -42,8 +42,8 @@ func main() {
 					if _, err := stencilDB.Begin(); err != nil {
 						log.Fatal("ERROR! SOURCE TRANSACTION CAN'T BEGIN:", err)
 					} else {
-						resolvedQI, pk := QR.ResolveInsert(qi)
-						fmt.Print("@@ PQ PK => ", pk)
+						resolvedQI := QR.ResolveInsert(qi)
+						// fmt.Print("@@ PQ PK => ", pk)
 						for qnum, pqi := range resolvedQI {
 							fmt.Print("@@ PQ => ")
 							pq, args := pqi.GenSQL()
