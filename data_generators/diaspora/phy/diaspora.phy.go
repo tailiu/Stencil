@@ -30,7 +30,7 @@ func createNewUsers(dbConn *sql.DB, num, thread int) {
 func createNewPostsForUsers(dbConn *sql.DB, users []*phy.User, thread_num int) {
 
 	for uidx, user := range users {
-		num_of_posts := helper.RandomNumber(0, 500)
+		num_of_posts := helper.RandomNumber(100, 5000)
 		for i := 0; i <= num_of_posts; i++ {
 			log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uidx, len(users), i, num_of_posts))
 			phy.NewPost(QR, dbConn, user.User_ID, user.Person_ID, user.Aspects)
@@ -42,44 +42,41 @@ func createNewMentionsForUsers(users []*phy.User) {
 
 }
 
-func makeUsersFriends(users []*phy.User, thread_num int) {
+func makeUsersFriends(dbConn *sql.DB, users []*phy.User, thread_num int) {
 
 	for uidx, user := range users {
 		indices := rand.Perm(len(users))
-		num_of_friends := helper.RandomNumber(0, 300)
-		for i := 0; i <= num_of_friends; i++ {
-			if i >= len(indices) {
-				break
-			}
+		num_of_friends := helper.RandomNumber(10, len(users))
+		for i := 0; i <= num_of_friends && i < len(indices); i++ {
 			if index := indices[i]; index != uidx {
 				log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d", thread_num, uidx, len(users), i, num_of_friends))
 				user2 := users[index]
 				aspect_idx := helper.RandomNumber(0, len(user.Aspects)-1)
-				phy.FollowUser(QR, user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx])
+				phy.FollowUser(QR, dbConn, user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx])
 				if helper.RandomNumber(1, 50)%2 == 0 {
 					aspect_idx := helper.RandomNumber(0, len(user2.Aspects)-1)
-					phy.FollowUser(QR, user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx])
+					phy.FollowUser(QR, dbConn, user2.Person_ID, user.Person_ID, user2.Aspects[aspect_idx])
 				}
 			}
 		}
 	}
 }
 
-func makeUsersTalk(users []*phy.User, thread_num int) {
+func makeUsersTalk(dbConn *sql.DB, users []*phy.User, thread_num int) {
 	fmt.Println(fmt.Sprintf("Thread # %d, reporting for duty! ", thread_num))
 	num_users := len(users)
 	for uidx, user := range users {
-		friends_of_user := phy.GetFriendsOfUser(QR, user.User_ID)
+		friends_of_user := phy.GetFriendsOfUser(QR, user.Person_ID)
 		num_frnds := len(friends_of_user)
 		for fidx, friend := range friends_of_user {
 			if helper.RandomNumber(1, 100)%3 == 0 {
-				conversation_id, err := phy.NewConversation(QR, user.Person_ID, friend.Person_ID)
+				conversation_id, err := phy.NewConversation(QR, dbConn, fmt.Sprint(user.Person_ID), fmt.Sprint(friend.Person_ID))
 				if err == nil && conversation_id != -1 {
 					num_of_msgs := helper.RandomNumber(50, 1000)
 					for i := 0; i <= num_of_msgs; {
 						fmt.Println(fmt.Sprintf("{THREAD: %3d} [Users %4d/%4d | Frnds %3d/%3d] | Msg # %3d/%3d | Conversation: %d", thread_num, uidx, num_users, fidx, num_frnds, i, num_of_msgs, conversation_id))
 						if helper.RandomNumber(1, 100)%2 == 0 {
-							_, err := phy.NewMessage(QR, friend.Person_ID, conversation_id)
+							err := phy.NewMessage(QR, dbConn, fmt.Sprint(friend.Person_ID), fmt.Sprint(conversation_id))
 							if err != nil {
 								log.Println(err)
 								WaitForAWhile()
@@ -87,7 +84,7 @@ func makeUsersTalk(users []*phy.User, thread_num int) {
 							i++
 						}
 						if helper.RandomNumber(1, 100)%4 != 0 {
-							_, err := phy.NewMessage(QR, user.Person_ID, conversation_id)
+							err := phy.NewMessage(QR, dbConn, fmt.Sprint(user.Person_ID), fmt.Sprint(conversation_id))
 							if err != nil {
 								log.Println(err)
 								WaitForAWhile()
@@ -95,7 +92,7 @@ func makeUsersTalk(users []*phy.User, thread_num int) {
 							i++
 						}
 					}
-					phy.UpdateConversation(QR, conversation_id)
+					// phy.UpdateConversation(QR, dbConn, conversation_id)
 				}
 			}
 		}
@@ -104,12 +101,14 @@ func makeUsersTalk(users []*phy.User, thread_num int) {
 }
 
 // comments, like and reshare friends posts
-func interactWithPosts(users []*phy.User, thread_num int) {
+func interactWithPosts(dbConn *sql.DB, users []*phy.User, thread_num int) {
 
 	num_users := len(users)
 	for uidx, user := range users {
-		friends_of_user := phy.GetFriendsOfUser(QR, user.User_ID)
-		posts := phy.GetPostsForUser(QR, user.Person_ID)
+		log.Println("Fetching friends")
+		friends_of_user := phy.GetFriendsOfUser(QR, user.Person_ID)
+		log.Println("Fetching posts")
+		posts := phy.GetPostsForUser(QR, dbConn, user.Person_ID)
 		if len(posts) <= 0 || len(friends_of_user) <= 0 {
 			continue
 		}
@@ -118,23 +117,23 @@ func interactWithPosts(users []*phy.User, thread_num int) {
 			for fidx, friend := range friends_of_user {
 				fmt.Println(fmt.Sprintf("{THREAD: %3d} Users %3d/%4d | Frnds %3d/%4d | Posts %4d/%4d ", thread_num, uidx, num_users, fidx, num_frnds, pidx, num_posts))
 
-				if helper.RandomNumber(1, 100)%4 == 0 { // 25%, Friend Likes The Post
-					phy.NewLike(QR, post.ID, friend.Person_ID, user.Person_ID)
-				}
+				// if helper.RandomNumber(1, 100)%4 == 0 { // 25%, Friend Likes The Post
+				// 	phy.NewLike(QR, dbConn, post.ID, friend.Person_ID, user.Person_ID)
+				// }
 				if helper.RandomNumber(1, 100)%10 == 0 { // 10%, Friend Reshares The Post
-					phy.NewReshare(QR, *post, friend.Person_ID)
+					phy.NewReshare(QR, dbConn, *post, friend.Person_ID)
 				}
-				if helper.RandomNumber(1, 100)%5 == 0 { // 20%, Comments On The Post
-					loopcount := helper.RandomNumber(1, 10)
-					for l := 0; l < loopcount; l++ {
-						if helper.RandomNumber(1, 100)%2 == 0 { // Friend Comments
-							phy.NewComment(QR, post.ID, friend.Person_ID, user.Person_ID)
-						}
-						if helper.RandomNumber(1, 100)%2 == 0 { // Owner Comments
-							phy.NewComment(QR, post.ID, user.Person_ID, user.Person_ID)
-						}
-					}
-				}
+				// if helper.RandomNumber(1, 100)%5 == 0 { // 20%, Comments On The Post
+				// 	loopcount := helper.RandomNumber(1, 10)
+				// 	for l := 0; l < loopcount; l++ {
+				// 		if helper.RandomNumber(1, 100)%2 == 0 { // Friend Comments
+				// 			phy.NewComment(QR, dbConn, post.ID, friend.Person_ID, user.Person_ID)
+				// 		}
+				// 		if helper.RandomNumber(1, 100)%2 == 0 { // Owner Comments
+				// 			phy.NewComment(QR, dbConn, post.ID, user.Person_ID, user.Person_ID)
+				// 		}
+				// 	}
+				// }
 			}
 		}
 	}
@@ -143,10 +142,12 @@ func interactWithPosts(users []*phy.User, thread_num int) {
 func runinteractWithPosts() {
 	users := phy.GetAllUsersWithAspects(QR)
 	num_users := len(users)
-	inc := 500
+	inc := 50
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
+		dbConn := db.GetDBConn(config.STENCILDB)
 		thread_num := j / inc
-		go interactWithPosts(users[i:j], thread_num)
+		go interactWithPosts(dbConn, users[i:j], thread_num)
+		// break
 	}
 
 	for {
@@ -159,10 +160,12 @@ func runMakeUsersTalk() {
 	users := phy.GetAllUsersWithAspects(QR)
 
 	num_users := len(users)
-	inc := 500
+	inc := 10
 
 	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
-		go makeUsersTalk(users[i:j], thread_num)
+		dbConn := db.GetDBConn(config.STENCILDB)
+		go makeUsersTalk(dbConn, users[i:j], thread_num)
+		// break
 	}
 
 	for {
@@ -174,7 +177,7 @@ func runCreateNewUsers() {
 
 	for i := 0; i < 100; i++ {
 		dbConn := db.GetDBConn(config.STENCILDB)
-		go createNewUsers(dbConn, 5000, i)
+		go createNewUsers(dbConn, 10, i)
 	}
 	for {
 		fmt.Scanln()
@@ -185,10 +188,12 @@ func runMakeUsersFriends() {
 
 	users := phy.GetAllUsersWithAspects(QR)
 	num_users := len(users)
-	inc := 500
+	inc := 100
 
 	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
-		go makeUsersFriends(users[i:j], thread_num)
+		dbConn := db.GetDBConn(config.STENCILDB)
+		go makeUsersFriends(dbConn, users[i:j], thread_num)
+		// break
 	}
 
 	for {
@@ -200,7 +205,7 @@ func runCreateNewPosts() {
 
 	users := phy.GetAllUsersWithAspects(QR)
 	num_users := len(users)
-	inc := 5000
+	inc := 10
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
 		dbConn := db.GetDBConn(config.STENCILDB)

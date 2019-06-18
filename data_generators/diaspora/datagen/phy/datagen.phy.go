@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"stencil/qr"
 	"strconv"
 	"strings"
@@ -18,6 +19,8 @@ import (
 
 type User datagen.User
 type Post datagen.Post
+
+var flog, err = os.Create("./datagen.log")
 
 func NewUser(QR *qr.QR, dbConn *sql.DB) (int32, int32, []int32) {
 
@@ -183,12 +186,13 @@ func NewPost(QR *qr.QR, dbConn *sql.DB, user_id, person_id int, aspect_ids []int
 	return post_id
 }
 
-func NewComment(QR *qr.QR, post_id, person_id, post_owner_id int) (int, error) {
+func NewComment(QR *qr.QR, dbConn *sql.DB, post_id, person_id, post_owner_id int) {
 
-	// log.Println("Creating new comment!")
+	var QIs []*qr.QI
 
-	tx, err := QR.StencilDB.Begin()
+	tx, err := dbConn.Begin()
 	if err != nil {
+		log.Println(err)
 		log.Fatal("create comment transaction can't even begin")
 	}
 
@@ -198,71 +202,128 @@ func NewComment(QR *qr.QR, post_id, person_id, post_owner_id int) (int, error) {
 	guid := uuid.New()
 	target_type := "Post"
 	notif_type := "Notifications::CommentOnPost"
+	notif_id := QR.NewRowId()
 	// SQLs
 
-	sql := "INSERT INTO comments (text,commentable_id,author_id,guid,created_at,updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	if comment_id, err := db.RunTxWQnArgsReturningId(tx, sql, text, post_id, person_id, guid, time.Now(), time.Now()); err == nil {
-		sql = "UPDATE posts SET updated_at = $1 WHERE posts.id = $2 "
-		if err := db.RunTxWQnArgs(tx, sql, time.Now(), post_id); err == nil {
-			sql = "UPDATE posts SET comments_count = comments_count+1 WHERE posts.type IN ('StatusMessage') AND posts.id = $1"
-			if err := db.RunTxWQnArgs(tx, sql, post_id); err == nil {
-				sql = "UPDATE posts SET updated_at = $1, interacted_at = $2 WHERE posts.id = $3 "
-				if err := db.RunTxWQnArgs(tx, sql, time.Now(), time.Now(), post_id); err == nil {
-					sql = "INSERT INTO notifications (target_type,target_id,recipient_id,created_at,updated_at,type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-					if notif_id, err := db.RunTxWQnArgsReturningId(tx, sql, target_type, post_id, post_owner_id, time.Now(), time.Now(), notif_type); err == nil {
-						sql = "INSERT INTO notification_actors (notification_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
-						if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
-							tx.Commit()
-							// log.Println("New comment created with id", comment_id)
-							return comment_id, err
-						}
-						return -1, err
-					}
-					return -1, err
-				}
-				return -1, err
-			}
-			return -1, err
-		}
-		return -1, err
+	{
+		id := QR.NewRowId()
+		cols := []string{"id", "text", "commentable_id", "author_id", "guid", "created_at", "updated_at"}
+		vals := []interface{}{id, text, post_id, person_id, guid, time.Now(), time.Now()}
+		qi := qr.CreateQI("comments", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, id)
+		QIs = append(QIs, qis...)
 	}
-	return -1, errors.New("No Comment Created")
+
+	{
+		qu := qr.CreateQU(QR)
+		qu.SetTable("posts")
+		qu.SetUpdate_("posts.comments_count", "comments_count::int + 1")
+		qu.SetWhere("posts.type", "=", "StatusMessage")
+		qu.SetWhere("posts.id", "=", fmt.Sprint(post_id))
+		for _, sql := range qu.GenSQL() {
+			if err := db.RunTxWQnArgs(tx, sql); err != nil {
+				return
+			}
+		}
+	}
+
+	{
+		cols := []string{"id", "target_type", "target_id", "recipient_id", "created_at", "updated_at", "type"}
+		vals := []interface{}{notif_id, target_type, post_id, post_owner_id, time.Now(), time.Now(), notif_type}
+		qi := qr.CreateQI("notifications", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, notif_id)
+		QIs = append(QIs, qis...)
+	}
+
+	{
+		id := QR.NewRowId()
+		cols := []string{"id", "notification_id", "person_id", "created_at", "updated_at"}
+		vals := []interface{}{id, notif_id, person_id, time.Now(), time.Now()}
+		qi := qr.CreateQI("notification_actors", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, id)
+		QIs = append(QIs, qis...)
+	}
+
+	success := true
+	for _, qi := range QIs {
+		query, args := qi.GenSQL()
+		// log.Fatal(query)
+		if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
+			success = false
+			fmt.Println("Some error:", err)
+			break
+		}
+	}
+	if success {
+		// fmt.Println("~ success")
+		tx.Commit()
+	}
 }
 
-func GetPostsForUser(QR *qr.QR, user_id int) []*Post {
+func GetPostsForUser(QR *qr.QR, dbConn *sql.DB, user_id int) []*Post {
 
 	var posts []*Post
 
-	sql := `SELECT id, guid, author_id, text 
-			FROM POSTS 
-			WHERE author_id = $1 AND id NOT IN (
-				SELECT distinct(target_id) FROM likes
-				UNION
-				SELECT distinct(commentable_id) FROM comments
-			)
-			order by random()`
+	// sql := `SELECT id, guid, author_id, text
+	// 		FROM posts
+	// 		WHERE author_id = $1 AND id NOT IN (
+	// 			SELECT distinct(target_id) FROM likes
+	// 			UNION
+	// 			SELECT distinct(commentable_id) FROM comments
+	// 		)
+	// 		order by random()`
 
-	for _, row := range db.DataCall(QR.StencilDB, sql, user_id) {
-		if pid, err := strconv.Atoi(row["id"]); err == nil {
-			if uid, err := strconv.Atoi(row["author_id"]); err == nil {
-				post := new(Post)
-				post.Author = uid
-				post.ID = pid
-				post.GUID = row["guid"]
-				post.Text = row["text"]
-				posts = append(posts, post)
+	interactedAlready := make(map[string]bool)
+
+	qComments := qr.CreateQS(QR)
+	qComments.ColFunction("distinct(%s)", "comments.commentable_id", "post_id")
+	qComments.FromSimple("comments")
+	for _, row := range db.DataCall(dbConn, qComments.GenSQL()) {
+		interactedAlready[row["post_id"]] = true
+	}
+
+	qLikes := qr.CreateQS(QR)
+	qLikes.ColFunction("distinct(%s)", "likes.target_id", "post_id")
+	qLikes.FromSimple("likes")
+	for _, row := range db.DataCall(dbConn, qLikes.GenSQL()) {
+		interactedAlready[row["post_id"]] = true
+	}
+
+	qPosts := qr.CreateQS(QR)
+	qPosts.ColSimple("posts.id")
+	qPosts.ColSimple("posts.guid")
+	qPosts.ColSimple("posts.author_id")
+	qPosts.ColSimple("posts.text")
+	qPosts.FromSimple("posts")
+	qPosts.WhereSimpleVal("posts.author_id", "=", fmt.Sprint(user_id))
+	qPosts.OrderBy("random()")
+
+	for _, row := range db.DataCall(dbConn, qPosts.GenSQL()) {
+		if _, ok := interactedAlready[row["id"]]; !ok {
+			if pid, err := strconv.Atoi(row["id"]); err == nil {
+				if uid, err := strconv.Atoi(row["author_id"]); err == nil {
+					post := new(Post)
+					post.Author = uid
+					post.ID = pid
+					post.GUID = row["guid"]
+					post.Text = row["text"]
+					posts = append(posts, post)
+					// fmt.Println(post)
+				}
 			}
+		} else {
+			// fmt.Println("skipped")
 		}
 	}
 
 	return posts
 }
 
-func NewLike(QR *qr.QR, post_id, person_id, post_owner_id int) (int, error) {
+func NewLike(QR *qr.QR, dbConn *sql.DB, post_id, person_id, post_owner_id int) {
 
-	// log.Println("Creating new like!")
+	var QIs []*qr.QI
 
-	tx, err := QR.StencilDB.Begin()
+	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Fatal("create like transaction can't even begin")
 	}
@@ -272,89 +333,208 @@ func NewLike(QR *qr.QR, post_id, person_id, post_owner_id int) (int, error) {
 	guid := uuid.New()
 	target_type := "Post"
 	notif_type := "Notifications::Liked"
+	notif_id := QR.NewRowId()
 
-	// SQLs
-
-	sql := "INSERT INTO likes (target_id, author_id, guid, created_at, updated_at, target_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	if like_id, err := db.RunTxWQnArgsReturningId(tx, sql, post_id, person_id, guid, time.Now(), time.Now(), target_type); err == nil {
-		sql = "UPDATE posts SET likes_count = likes_count+1 WHERE posts.type IN ('StatusMessage') AND posts.id = $1"
-		if err := db.RunTxWQnArgs(tx, sql, post_id); err == nil {
-			sql = "INSERT INTO notifications (target_type,target_id,recipient_id,created_at, updated_at, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-			if notif_id, err := db.RunTxWQnArgsReturningId(tx, sql, target_type, post_id, post_owner_id, time.Now(), time.Now(), notif_type); err == nil {
-				sql = "INSERT INTO notification_actors (notification_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
-				if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
-					sql = "INSERT INTO participations (guid,target_id,target_type,author_id,created_at,updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
-					if err := db.RunTxWQnArgs(tx, sql, guid, post_id, target_type, person_id, time.Now(), time.Now()); err == nil {
-						tx.Commit()
-						// log.Println("New like created with id", like_id)
-						return like_id, err
-					}
-					return -1, err
-				}
-				return -1, err
-			}
-			return -1, err
-		}
-		return -1, err
+	{
+		id := QR.NewRowId()
+		cols := []string{"id", "target_id", "author_id", "guid", "created_at", "updated_at", "target_type"}
+		vals := []interface{}{id, post_id, person_id, guid, time.Now(), time.Now(), target_type}
+		qi := qr.CreateQI("likes", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, id)
+		QIs = append(QIs, qis...)
 	}
-	return -1, errors.New("No Like Created")
+
+	{
+		qu := qr.CreateQU(QR)
+		qu.SetTable("posts")
+		qu.SetUpdate_("posts.likes_count", "likes_count::int + 1")
+		qu.SetWhere("posts.type", "=", "StatusMessage")
+		qu.SetWhere("posts.id", "=", fmt.Sprint(post_id))
+		for _, sql := range qu.GenSQL() {
+			if err := db.RunTxWQnArgs(tx, sql); err != nil {
+				return
+			}
+		}
+	}
+
+	{
+		cols := []string{"id", "target_type", "target_id", "recipient_id", "created_at", "updated_at", "type"}
+		vals := []interface{}{notif_id, target_type, post_id, post_owner_id, time.Now(), time.Now(), notif_type}
+		qi := qr.CreateQI("notifications", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, notif_id)
+		QIs = append(QIs, qis...)
+	}
+
+	{
+		id := QR.NewRowId()
+		cols := []string{"id", "notification_id", "person_id", "created_at", "updated_at"}
+		vals := []interface{}{id, notif_id, person_id, time.Now(), time.Now()}
+		qi := qr.CreateQI("notification_actors", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, id)
+		QIs = append(QIs, qis...)
+	}
+
+	success := true
+	for _, qi := range QIs {
+		query, args := qi.GenSQL()
+		// log.Fatal(query)
+		if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
+			success = false
+			fmt.Println("Some error:", err)
+			break
+		}
+	}
+	if success {
+		// fmt.Println("~ success")
+		tx.Commit()
+	}
 }
 
-func FollowUser(QR *qr.QR, person_id_1, person_id_2, aspect_id int) {
+func FollowUser(QR *qr.QR, dbConn *sql.DB, person_id_1, person_id_2, aspect_id int) {
 
+	var QIs []*qr.QI
 	// log.Println("Creating new follow!")
 
 	ok1, contact_id1 := ContactExists(QR, person_id_2, person_id_1)
 	ok2, contact_id2 := ContactExists(QR, person_id_1, person_id_2)
 
-	tx, err := QR.StencilDB.Begin()
+	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Fatal("create follow transaction can't even begin")
 	}
 
 	// Params
 
-	target_type := "Person"
-	notif_type := "Notifications::StartedSharing"
+	success := true
 
 	// SQLs
 
 	if ok1 {
-		sql := "UPDATE contacts SET sharing = $1, updated_at = $2 WHERE contacts.id = $3"
-		db.RunTxWQnArgs(tx, sql, "t", time.Now(), contact_id1)
+		// sql := "UPDATE contacts SET sharing = $1, updated_at = $2 WHERE contacts.id = $3"
+		qu := qr.CreateQU(QR)
+		qu.SetTable("contacts")
+		qu.SetUpdate("contacts.sharing", "t")
+		qu.SetUpdate_("contacts.updated_at", "current_timestamp")
+		qu.SetWhere("contacts.id", "=", contact_id1)
+		for _, sql := range qu.GenSQL() {
+			// fmt.Println(sql)
+			if err := db.RunTxWQnArgs(tx, sql); err != nil {
+				return
+			}
+		}
+
 		if ok2 {
-			sql = "UPDATE contacts SET receiving = $1, updated_at = $2 WHERE contacts.id = $3"
-			db.RunTxWQnArgs(tx, sql, "t", time.Now(), contact_id2)
-			sql = "INSERT INTO aspect_memberships (aspect_id,contact_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
-			db.RunTxWQnArgs(tx, sql, aspect_id, contact_id2, time.Now(), time.Now())
+			// sql = "UPDATE contacts SET receiving = $1, updated_at = $2 WHERE contacts.id = $3"
+			qu := qr.CreateQU(QR)
+			qu.SetTable("contacts")
+			qu.SetUpdate("contacts.receiving", "t")
+			qu.SetUpdate_("contacts.updated_at", "current_timestamp")
+			qu.SetWhere("contacts.id", "=", contact_id2)
+			for _, sql := range qu.GenSQL() {
+				// fmt.Println(sql)
+				if err := db.RunTxWQnArgs(tx, sql); err != nil {
+
+				}
+			}
+
+			// sql = "INSERT INTO aspect_memberships (aspect_id,aspect_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
+			am_id := QR.NewRowId()
+			cols := []string{"id", "aspect_id", "contact_id", "created_at", "updated_at"}
+			vals := []interface{}{am_id, aspect_id, contact_id2, time.Now(), time.Now()}
+			qi := qr.CreateQI("aspect_memberships", cols, vals, qr.QTInsert)
+
+			amQIs := QR.ResolveInsert(qi, am_id)
+			QIs = append(QIs, amQIs...)
+			// db.RunTxWQnArgs(tx, sql, aspect_id, contact_id2, time.Now(), time.Now())
 		}
 	} else {
 
-		sql := "INSERT INTO contacts (user_id,person_id,created_at,updated_at,receiving) VALUES ($1, $2, $3, $4, $5) RETURNING id"
-		contact_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id_1, person_id_2, time.Now(), time.Now(), "t")
+		// sql := "INSERT INTO contacts (user_id,person_id,created_at,updated_at,receiving) VALUES ($1, $2, $3, $4, $5) RETURNING id"
+		//contact_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id_1, person_id_2, time.Now(), time.Now(), "t")
 
-		sql = "INSERT INTO contacts (user_id,person_id,created_at,updated_at,sharing) VALUES ($1, $2, $3, $4, $5)"
-		db.RunTxWQnArgs(tx, sql, person_id_2, person_id_1, time.Now(), time.Now(), "t")
+		contact1_id := QR.NewRowId()
+		cols1 := []string{"id", "user_id", "person_id", "created_at", "updated_at", "receiving"}
+		vals1 := []interface{}{contact1_id, person_id_1, person_id_2, time.Now(), time.Now(), "t"}
+		q_contact1 := qr.CreateQI("contacts", cols1, vals1, qr.QTInsert)
 
-		sql = "INSERT INTO aspect_memberships (aspect_id,contact_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
-		db.RunTxWQnArgs(tx, sql, aspect_id, contact_id, time.Now(), time.Now())
+		contact1QIs := QR.ResolveInsert(q_contact1, contact1_id)
+		QIs = append(QIs, contact1QIs...)
+
+		// sql = "INSERT INTO contacts (user_id,person_id,created_at,updated_at,sharing) VALUES ($1, $2, $3, $4, $5)"
+		// db.RunTxWQnArgs(tx, sql, person_id_2, person_id_1, time.Now(), time.Now(), "t")
+
+		contact2_id := QR.NewRowId()
+		cols2 := []string{"id", "user_id", "person_id", "created_at", "updated_at", "receiving"}
+		vals2 := []interface{}{contact2_id, person_id_2, person_id_1, time.Now(), time.Now(), "t"}
+		q_contact2 := qr.CreateQI("contacts", cols2, vals2, qr.QTInsert)
+
+		contact2QIs := QR.ResolveInsert(q_contact2, contact2_id)
+		QIs = append(QIs, contact2QIs...)
+
+		// sql = "INSERT INTO aspect_memberships (aspect_id,contact_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
+		// db.RunTxWQnArgs(tx, sql, aspect_id, contact_id, time.Now(), time.Now())
+
+		am_id := QR.NewRowId()
+		cols := []string{"id", "aspect_id", "contact_id", "created_at", "updated_at"}
+		vals := []interface{}{am_id, aspect_id, contact1_id, time.Now(), time.Now()}
+		qi := qr.CreateQI("aspect_memberships", cols, vals, qr.QTInsert)
+
+		amQIs := QR.ResolveInsert(qi, am_id)
+		QIs = append(QIs, amQIs...)
 	}
 
-	sql := "INSERT INTO notifications (target_type,target_id,recipient_id,created_at,updated_at,type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	notif_id, _ := db.RunTxWQnArgsReturningId(tx, sql, target_type, person_id_1, person_id_2, time.Now(), time.Now(), notif_type)
+	target_type := "Person"
+	notif_type := "Notifications::StartedSharing"
 
-	sql = "INSERT INTO notification_actors (notification_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
-	db.RunTxWQnArgs(tx, sql, notif_id, person_id_1, time.Now(), time.Now())
+	// sql := "INSERT INTO notifications (target_type,target_id,recipient_id,created_at,updated_at,type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+	// notif_id, _ := db.RunTxWQnArgsReturningId(tx, sql, target_type, person_id_1, person_id_2, time.Now(), time.Now(), notif_type)
 
-	tx.Commit()
+	notif_id := QR.NewRowId()
+	cols := []string{"id", "target_type", "target_id", "recipient_id", "created_at", "updated_at", "type"}
+	vals := []interface{}{notif_id, target_type, person_id_1, person_id_2, time.Now(), time.Now(), notif_type}
+	notif_qi := qr.CreateQI("notifications", cols, vals, qr.QTInsert)
 
+	notifQIs := QR.ResolveInsert(notif_qi, notif_id)
+	QIs = append(QIs, notifQIs...)
+
+	// sql = "INSERT INTO notification_actors (notification_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
+	// db.RunTxWQnArgs(tx, sql, notif_id, person_id_1, time.Now(), time.Now())
+
+	notif_actor_id := QR.NewRowId()
+	cols = []string{"id", "notification_id", "person_id", "created_at", "updated_at"}
+	vals = []interface{}{notif_actor_id, notif_id, person_id_1, time.Now(), time.Now()}
+	notif_actor_qi := qr.CreateQI("notification_actors", cols, vals, qr.QTInsert)
+
+	notifactorQIs := QR.ResolveInsert(notif_actor_qi, notif_actor_id)
+	QIs = append(QIs, notifactorQIs...)
+
+	for _, qi := range QIs {
+		query, args := qi.GenSQL()
+		if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
+			success = false
+			fmt.Println("Some error:", err)
+			break
+		}
+	}
+	if success {
+		// fmt.Println("~ success")
+		tx.Commit()
+	}
 }
 
 func ContactExists(QR *qr.QR, person_id_1, person_id_2 int) (bool, string) {
 
-	sql := "SELECT id FROM contacts WHERE user_id = $1 AND person_id = $2"
+	// sql := "SELECT id FROM contacts WHERE user_id = $1 AND person_id = $2"\
+
+	q := qr.CreateQS(QR)
+	q.ColSimple("contacts.id")
+	q.FromSimple("contacts")
+	q.WhereSimpleVal("contacts.user_id", "=", fmt.Sprint(person_id_1))
+	q.WhereOperatorVal("AND", "contacts.person_id", "=", fmt.Sprint(person_id_2))
+	sql := q.GenSQL()
+	// fmt.Println(sql)
 	// log.Println("checking", sql, person_id_1, person_id_2)
-	res := db.DataCall1(QR.StencilDB, sql, person_id_1, person_id_2)
+	res := db.DataCall1(QR.StencilDB, sql)
 	// log.Println("result of contact exists", res)
 	if len(res) > 0 {
 		return true, res[0]["id"]
@@ -371,9 +551,11 @@ func AspectMembershipExists(QR *qr.QR, contact_id, aspect_id int) bool {
 	return false
 }
 
-func NewReshare(QR *qr.QR, post Post, person_id int) (int, error) {
+func NewReshare(QR *qr.QR, dbConn *sql.DB, post Post, person_id int) {
 
-	tx, err := QR.StencilDB.Begin()
+	var QIs []*qr.QI
+
+	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Fatal("create comment transaction can't even begin")
 	}
@@ -382,43 +564,88 @@ func NewReshare(QR *qr.QR, post Post, person_id int) (int, error) {
 
 	target_type := "Post"
 	notif_type := "Notifications::Reshared"
+	notif_id := QR.NewRowId()
 
-	// SQLs
-
-	sql := "INSERT INTO posts (author_id, public, guid, type, text, created_at, updated_at, root_guid, interacted_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id"
-	if reshare_id, err := db.RunTxWQnArgsReturningId(tx, sql, person_id, "t", uuid.New(), "Reshare", post.Text, time.Now(), time.Now(), post.GUID, time.Now()); err == nil {
-		sql = "UPDATE posts SET reshares_count = reshares_count+1 WHERE posts.type IN ('StatusMessage') AND posts.id = $1 "
-		if err := db.RunTxWQnArgs(tx, sql, post.ID); err == nil {
-			sql = "INSERT INTO participations (guid, target_id, target_type, author_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
-			if err := db.RunTxWQnArgs(tx, sql, uuid.New(), reshare_id, target_type, post.Author, time.Now(), time.Now()); err == nil {
-				sql = "INSERT INTO participations (guid, target_id, target_type, author_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
-				if err := db.RunTxWQnArgs(tx, sql, uuid.New(), post.ID, target_type, person_id, time.Now(), time.Now()); err == nil {
-					sql = "INSERT INTO notifications (target_type, target_id, recipient_id, created_at, updated_at, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-					if notif_id, err := db.RunTxWQnArgsReturningId(tx, sql, target_type, post.ID, post.Author, time.Now(), time.Now(), notif_type); err == nil {
-						sql := "INSERT INTO notification_actors (notification_id, person_id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
-						if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
-							tx.Commit()
-							return reshare_id, err
-						}
-						return -1, err
-					}
-					return -1, err
-				}
-				return -1, err
-			}
-			return -1, err
-		}
-		return -1, err
+	{
+		id := QR.NewRowId()
+		cols := []string{"id", "author_id", "public", "guid", "type", "text", "created_at", "updated_at", "root_guid", "interacted_at"}
+		vals := []interface{}{id, person_id, "t", uuid.New(), "Reshare", post.Text, time.Now(), time.Now(), post.GUID, time.Now()}
+		qi := qr.CreateQI("posts", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, id)
+		QIs = append(QIs, qis...)
 	}
-	return -1, errors.New("No Reshare Created")
 
+	{
+		qu := qr.CreateQU(QR)
+		qu.SetTable("posts")
+		qu.SetUpdate_("posts.reshares_count", "reshares_count::int +1")
+		qu.SetWhere("posts.type", "=", "StatusMessage")
+		qu.SetWhere("posts.id", "=", fmt.Sprint(post.ID))
+		for _, sql := range qu.GenSQL() {
+			if err := db.RunTxWQnArgs(tx, sql); err != nil {
+				return
+			}
+		}
+	}
+
+	{
+		id := QR.NewRowId()
+		cols := []string{"id", "guid", "target_id", "target_type", "author_id", "created_at", "updated_at"}
+		vals := []interface{}{id, uuid.New(), post.ID, target_type, post.Author, time.Now(), time.Now()}
+		qi := qr.CreateQI("participations", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, id)
+		QIs = append(QIs, qis...)
+	}
+
+	{
+		id := QR.NewRowId()
+		cols := []string{"id", "guid", "target_id", "target_type", "author_id", "created_at", "updated_at"}
+		vals := []interface{}{id, uuid.New(), post.ID, target_type, person_id, time.Now(), time.Now()}
+		qi := qr.CreateQI("participations", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, id)
+		QIs = append(QIs, qis...)
+	}
+
+	{
+		cols := []string{"id", "target_type", "target_id", "recipient_id", "created_at", "updated_at", "type"}
+		vals := []interface{}{notif_id, target_type, post.ID, post.Author, time.Now(), time.Now(), notif_type}
+		qi := qr.CreateQI("notifications", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, notif_id)
+		QIs = append(QIs, qis...)
+	}
+
+	{
+		id := QR.NewRowId()
+		cols := []string{"id", "notification_id", "person_id", "created_at", "updated_at"}
+		vals := []interface{}{id, notif_id, person_id, time.Now(), time.Now()}
+		qi := qr.CreateQI("notification_actors", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, id)
+		QIs = append(QIs, qis...)
+	}
+
+	success := true
+	for _, qi := range QIs {
+		query, args := qi.GenSQL()
+		// log.Fatal(query)
+		if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
+			success = false
+			fmt.Println("Some error:", err)
+			break
+		}
+	}
+	if success {
+		// fmt.Println("~ success")
+		tx.Commit()
+	}
 }
 
-func NewConversation(QR *qr.QR, person_id_1, person_id_2 int) (int, error) {
+func NewConversation(QR *qr.QR, dbConn *sql.DB, person_id_1, person_id_2 string) (int32, error) {
 
 	// log.Println("person_id_1, person_id_2: ", person_id_1, person_id_2)
 
-	tx, err := QR.StencilDB.Begin()
+	var QIs []*qr.QI
+
+	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Println("create conversation transaction can't even begin")
 		return -1, errors.New("create conversation transaction can't begin")
@@ -428,64 +655,112 @@ func NewConversation(QR *qr.QR, person_id_1, person_id_2 int) (int, error) {
 
 	subject := helper.RandomText(helper.RandomNumber(5, 15))
 	guid := uuid.New()
+	conversation_id := QR.NewRowId()
 
-	// SQLs
+	{
+		cols := []string{"id", "subject", "guid", "author_id", "created_at", "updated_at"}
+		vals := []interface{}{conversation_id, subject, guid, person_id_1, time.Now(), time.Now()}
+		qi := qr.CreateQI("conversations", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, conversation_id)
+		QIs = append(QIs, qis...)
+	}
 
-	sql := "INSERT INTO conversations (subject,guid,author_id,created_at,updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id"
-	conversation_id, err := db.RunTxWQnArgsReturningId(tx, sql, subject, guid, person_id_1, time.Now(), time.Now())
+	{
+		conversation_visibilities_id := QR.NewRowId()
+		cols := []string{"id", "conversation_id", "person_id", "created_at", "updated_at"}
+		vals := []interface{}{conversation_visibilities_id, conversation_id, person_id_1, time.Now(), time.Now()}
+		qi := qr.CreateQI("conversation_visibilities", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, conversation_visibilities_id)
+		QIs = append(QIs, qis...)
+	}
 
-	if err == nil && conversation_id != -1 {
+	{
+		conversation_visibilities_id := QR.NewRowId()
+		cols := []string{"id", "conversation_id", "person_id", "created_at", "updated_at"}
+		vals := []interface{}{conversation_visibilities_id, conversation_id, person_id_2, time.Now(), time.Now()}
+		qi := qr.CreateQI("conversation_visibilities", cols, vals, qr.QTInsert)
+		qis := QR.ResolveInsert(qi, conversation_visibilities_id)
+		QIs = append(QIs, qis...)
+	}
 
-		log.Println("New conversation created with id", conversation_id)
+	msgQIs := GenNewMessage(QR, person_id_1, fmt.Sprint(conversation_id))
+	QIs = append(QIs, msgQIs...)
 
-		sql = "INSERT INTO conversation_visibilities (conversation_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)"
-		err = db.RunTxWQnArgs(tx, sql, conversation_id, person_id_1, time.Now(), time.Now(), conversation_id, person_id_2, time.Now(), time.Now())
-
-		// sql = "INSERT INTO conversation_visibilities (conversation_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
-		// db.RunTxWQnArgs(tx, sql, conversation_id, person_id_2, time.Now(), time.Now())
-
-		if err == nil && conversation_id != -1 {
-			tx.Commit()
-			NewMessage(QR, person_id_1, conversation_id)
-			return conversation_id, err
+	success := true
+	for _, qi := range QIs {
+		query, args := qi.GenSQL()
+		// fmt.Println(query, args)
+		if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
+			success = false
+			fmt.Println("Some error:", err)
+			break
 		}
+	}
+	if success {
+		// fmt.Println("~ successconvo")
+		tx.Commit()
+		return conversation_id, err
 	}
 
 	return -1, err
 }
 
-func NewMessage(QR *qr.QR, person_id, conversation_id int) (int, error) {
-
-	tx, err := QR.StencilDB.Begin()
-	if err != nil {
-		log.Println("create message transaction can't even begin")
-		return -1, errors.New("Message Transaction can't begin")
-	}
+func GenNewMessage(QR *qr.QR, person_id, conversation_id string) []*qr.QI {
 
 	msgtext := helper.RandomText(helper.RandomNumber(20, 100))
+	message_id := QR.NewRowId()
+	cols := []string{"id", "conversation_id", "author_id", "guid", "text", "created_at", "updated_at"}
+	vals := []interface{}{message_id, conversation_id, person_id, uuid.New(), msgtext, time.Now(), time.Now()}
+	qi := qr.CreateQI("messages", cols, vals, qr.QTInsert)
+	return QR.ResolveInsert(qi, message_id)
+}
 
-	// SQLs
+func NewMessage(QR *qr.QR, dbConn *sql.DB, person_id, conversation_id string) error {
 
-	sql := "INSERT INTO messages (conversation_id,author_id,guid,text,created_at,updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	msgid, err := db.RunTxWQnArgsReturningId(tx, sql, conversation_id, person_id, uuid.New(), msgtext, time.Now(), time.Now())
+	tx, err := dbConn.Begin()
+	if err != nil {
+		log.Println("create message transaction can't even begin")
+		return errors.New("Message Transaction can't begin")
+	}
 
-	if err == nil {
+	success := true
+	for _, qi := range GenNewMessage(QR, person_id, conversation_id) {
+		query, args := qi.GenSQL()
+		if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
+			success = false
+			fmt.Println("Some error:", err)
+			break
+		}
+	}
+	if success {
+		// fmt.Println("~ successmsg")
 		tx.Commit()
 	}
 
-	return msgid, err
+	return err
 }
 
-func UpdateConversation(QR *qr.QR, conversation_id int) {
+func UpdateConversation(QR *qr.QR, dbConn *sql.DB, conversation_id int) {
 
-	tx, err := QR.StencilDB.Begin()
+	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Println("UpdateConversation transaction can't even begin")
 		return
 	}
 
-	sql := "UPDATE conversations SET updated_at = $1 WHERE conversations.id = $2 "
-	db.RunTxWQnArgs(tx, sql, time.Now(), conversation_id)
+	// sql := "UPDATE conversations SET updated_at = $1 WHERE conversations.id = $2 "
+	// db.RunTxWQnArgs(tx, sql, time.Now(), conversation_id)
+
+	qu := qr.CreateQU(QR)
+	qu.SetTable("conversations")
+	qu.SetUpdate_("conversations.updated_at", "current_timestamp")
+	qu.SetWhere("conversations.id", "=", fmt.Sprint(conversation_id))
+	for _, sql := range qu.GenSQL() {
+		// fmt.Println(sql)
+		if err := db.RunTxWQnArgs(tx, sql); err != nil {
+			return
+		}
+	}
 
 	// sql = "UPDATE conversation_visibilities SET unread = $1, updated_at = $2 WHERE conversation_visibilities.id = $3"
 	// db.RunTxWQnArgs(tx, sql, 1, time.Now(), conversation_visibilities_id)
@@ -566,17 +841,17 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 	// 		GROUP BY user_id, person_id
 	// 		ORDER BY random()`
 
-	sql := `
-		SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects from
-		(SELECT supplementary_676.id as user_id, supplementary_654.pk as person_id, supplementary_630.id as aspect_id
-			FROM  supplementary_654 
-			JOIN supplementary_676 ON supplementary_676.id = supplementary_654.owner_id  
-			JOIN supplementary_630 ON supplementary_630.user_id = supplementary_654.owner_id
-		) tab
-		GROUP BY tab.user_id, tab.person_id
-	`
+	// sql := `
+	// 	SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects from
+	// 	(SELECT supplementary_676.id as user_id, supplementary_654.pk as person_id, supplementary_630.id as aspect_id
+	// 		FROM  supplementary_654
+	// 		JOIN supplementary_676 ON supplementary_676.id = supplementary_654.owner_id
+	// 		JOIN supplementary_630 ON supplementary_630.user_id = supplementary_654.owner_id
+	// 	) tab
+	// 	GROUP BY tab.user_id, tab.person_id
+	// `
 
-	sql = `select * from diaspora_users_with_aspects`
+	sql := `select * from diaspora_users_with_aspects`
 
 	// fq := qr.CreateQS(QR)
 	// // fq.ColSimple("users.*")
@@ -683,21 +958,61 @@ func GetAllUsersWithAspectsExcept(QR *qr.QR, column, table string) []*User {
 	return users
 }
 
-func GetFriendsOfUser(QR *qr.QR, user_id int) []*User {
+func GetFriendsOfUser(QR *qr.QR, person_id int) []*User {
 
 	var users []*User
 
-	sql := `SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects, contacts.id as contact_id, am.aspect_id as contact_aspect
-			FROM contacts 
-			JOIN aspect_memberships am on contacts.id = am.contact_id
-			JOIN people on people.id = contacts.user_id
-			JOIN users on users.id = people.owner_id
-			JOIN aspects on aspects.user_id = users.id
-			WHERE contacts.user_id = $1 AND contacts.sharing = true
-			GROUP BY users.id, people.id, contacts.id, am.aspect_id
-		`
+	// sql := `SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects, contacts.id as contact_id, am.aspect_id as contact_aspect
+	// 		FROM contacts
+	// 		JOIN aspect_memberships am on contacts.id = am.contact_id
+	// 		JOIN people on people.id = contacts.user_id
+	// 		JOIN users on users.id = people.owner_id
+	// 		JOIN aspects on aspects.user_id = users.id
+	// 		WHERE contacts.user_id = $1 AND contacts.sharing = true
+	// 		GROUP BY users.id, people.id, contacts.id, am.aspect_id
+	// 	`
 
-	res := db.DataCall(QR.StencilDB, sql, user_id)
+	// fq := qr.CreateQS(QR)
+	// fq.ColAlias("users.id", "user_id")
+	// fq.ColAlias("people.id", "person_id")
+	// fq.ColAlias("contacts.id", "contact_id")
+	// fq.ColFunction("string_agg(%s::text, ',')", "aspects.id", "aspects")
+	// fq.ColAlias("aspect_memberships.aspect_id", "contact_aspect")
+	// fq.FromSimple("contacts")
+	// fq.FromJoin("aspect_memberships", "contacts.id=aspect_memberships.contact_id")
+	// fq.FromJoin("people", "contacts.user_id=people.id")
+	// fq.FromJoin("users", "people.owner_id=users.id")
+	// fq.FromJoin("aspects", "users.id=aspects.user_id")
+	// fq.WhereSimpleVal("contacts.user_id", "=", fmt.Sprint(user_id))
+	// fq.WhereOperatorBool("AND", "contacts.sharing", "=", "true")
+	// fq.GroupBy("users.id")
+	// fq.GroupBy("people.id")
+	// fq.GroupBy("contacts.id")
+	// fq.GroupBy("aspect_memberships.aspect_id")
+
+	// log.Fatal(fq.GenSQL())
+
+	sql := `
+		SELECT supplementary_676.id as user_id,
+		base_people_1.id as person_id,
+		base_contacts_1.id as contact_id,
+		string_agg(supplementary_630.id::text, ',') as aspects,
+		supplementary_628.aspect_id as contact_aspect 
+		FROM  base_contacts_1  
+		JOIN supplementary_638 ON base_contacts_1.pk = supplementary_638.pk 
+		JOIN supplementary_628 ON base_contacts_1.id::text = supplementary_628.contact_id::text 
+		JOIN base_people_1 ON base_contacts_1.user_id::text = base_people_1.id::text 
+		JOIN base_users_1 ON base_people_1.pk = base_users_1.pk 
+		JOIN supplementary_654 ON base_users_1.pk = supplementary_654.pk 
+		JOIN supplementary_676 ON supplementary_654.owner_id::text = supplementary_676.id::text 
+		JOIN base_users_2 ON supplementary_676.pk = base_users_2.pk 
+		JOIN base_users_1 buser1 ON base_users_2.pk = buser1.pk 
+		JOIN supplementary_630 ON supplementary_676.id::text = supplementary_630.user_id::text 
+		WHERE  base_contacts_1.user_id = $1  AND supplementary_638.sharing = true  
+		GROUP BY supplementary_676.id , base_people_1.id , base_contacts_1.id , supplementary_628.aspect_id 
+	`
+
+	res := db.DataCall(QR.StencilDB, sql, person_id)
 
 	for _, row := range res {
 		user := new(User)

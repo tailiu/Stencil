@@ -88,7 +88,8 @@ func (self *QS) FromJoin(table, condition string) {
 	condition_tokens := strings.Split(condition, "=")
 	prev_tab, prev_col := self.QR.GetPhyTabCol(condition_tokens[0])
 	curr_tab, curr_col := self.QR.GetPhyTabCol(condition_tokens[1])
-	self.From += fmt.Sprintf("JOIN %s ON %s.%s = %s.%s AND %s.pk = %s.pk ", curr_tab, prev_tab, prev_col, curr_tab, curr_col, prev_tab, curr_tab)
+	// self.From += fmt.Sprintf("JOIN %s ON %s.%s = %s.%s AND %s.pk = %s.pk ", curr_tab, prev_tab, prev_col, curr_tab, curr_col, prev_tab, curr_tab)
+	self.From += fmt.Sprintf("JOIN %s ON %s.%s::text = %s.%s::text ", curr_tab, prev_tab, prev_col, curr_tab, curr_col)
 	self.seen[curr_tab] = true
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
@@ -111,24 +112,39 @@ func (self *QS) FromQuery(qs *QS) {
 func (self *QS) WhereSimple(col1, op, col2 string) {
 	ptab1, pcol1 := self.QR.GetPhyTabCol(col1)
 	ptab2, pcol2 := self.QR.GetPhyTabCol(col2)
-	self.Where = fmt.Sprintf("%s.%s %s %s.%s", ptab1, pcol1, op, ptab2, pcol2)
+	self.Where = fmt.Sprintf(" %s.%s %s %s.%s ", ptab1, pcol1, op, ptab2, pcol2)
 }
 
 func (self *QS) WhereSimpleVal(col, op, val string) {
 	ptab, pcol := self.QR.GetPhyTabCol(col)
-	self.Where = fmt.Sprintf("%s.%s %s '%s'", ptab, pcol, op, val)
+	self.Where = fmt.Sprintf(" %s.%s %s '%s' ", ptab, pcol, op, val)
 }
 
 func (self *QS) WhereOperator(operator, col1, op, col2 string) { // AND, OR
 
 }
 
+func (self *QS) WhereOperatorVal(operator, col, op, val string) { // AND, OR
+	ptab, pcol := self.QR.GetPhyTabCol(col)
+	self.Where += fmt.Sprintf(" %s %s.%s %s '%s' ", operator, ptab, pcol, op, val)
+}
+
+func (self *QS) WhereOperatorBool(operator, col, op, val string) { // AND, OR
+	ptab, pcol := self.QR.GetPhyTabCol(col)
+	self.Where += fmt.Sprintf(" %s %s.%s %s %s ", operator, ptab, pcol, op, val)
+}
+
 func (self *QS) WhereQuery(condition string, qs *QS) { // IN, NOT IN
 
 }
 
-func (self *QS) GroupBy(cols string) {
-	self.Group = cols
+func (self *QS) GroupBy(col string) {
+	ptab, pcol := self.QR.GetPhyTabCol(col)
+	if strings.EqualFold(self.Group, "") {
+		self.Group = fmt.Sprintf("%s.%s", ptab, pcol)
+	} else {
+		self.Group += fmt.Sprintf(", %s.%s", ptab, pcol)
+	}
 }
 
 func (self *QS) OrderBy(cols string) {
@@ -156,5 +172,6 @@ func (self QS) GenSQL() string {
 	// fmt.Println("WHERE", self.Where)
 	// fmt.Println("GROUPBY", self.Group)
 	// fmt.Println("ORDERBY", self.Order)
+	// fmt.Println(sql)
 	return sql
 }

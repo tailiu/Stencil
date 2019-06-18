@@ -19,7 +19,6 @@ type QR struct {
 	SuppMappings []map[string]string
 }
 
-// QI: Query Ingredients
 type QI struct {
 	TableName        string
 	Columns          []string
@@ -38,4 +37,13 @@ type QS struct {
 	Order   string
 	Limit   string
 	seen    map[string]bool
+}
+
+type QU struct {
+	QR              *QR
+	Tables          map[string]bool
+	Update          map[string]string
+	Where           map[string]string
+	affected_tables []string
+	affected_rows   []string
 }

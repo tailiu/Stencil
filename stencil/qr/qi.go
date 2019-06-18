@@ -21,7 +21,7 @@ func CreateQI(table string, cols []string, vals []interface{}, qtype string) *QI
 func (self QI) valueOfColumn(col string) (interface{}, error) {
 
 	for i, c := range self.Columns {
-		if col == c {
+		if strings.EqualFold(col, c) {
 			return self.Values[i], nil
 		}
 	}
