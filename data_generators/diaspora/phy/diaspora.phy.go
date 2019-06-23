@@ -11,6 +11,7 @@ import (
 	"os"
 	"stencil/db"
 	"stencil/qr"
+	"strings"
 	"time"
 )
 
@@ -101,7 +102,7 @@ func makeUsersTalk(dbConn *sql.DB, users []*phy.User, thread_num int) {
 }
 
 // comments, like and reshare friends posts
-func interactWithPosts(dbConn *sql.DB, users []*phy.User, thread_num int) {
+func interactWithPosts(dbConn *sql.DB, users []*phy.User, thread_num int, itype string) {
 
 	num_users := len(users)
 	for uidx, user := range users {
@@ -117,36 +118,36 @@ func interactWithPosts(dbConn *sql.DB, users []*phy.User, thread_num int) {
 			for fidx, friend := range friends_of_user {
 				fmt.Println(fmt.Sprintf("{THREAD: %3d} Users %3d/%4d | Frnds %3d/%4d | Posts %4d/%4d ", thread_num, uidx, num_users, fidx, num_frnds, pidx, num_posts))
 
-				// if helper.RandomNumber(1, 100)%4 == 0 { // 25%, Friend Likes The Post
-				// 	phy.NewLike(QR, dbConn, post.ID, friend.Person_ID, user.Person_ID)
-				// }
-				if helper.RandomNumber(1, 100)%10 == 0 { // 10%, Friend Reshares The Post
+				if strings.EqualFold(itype, "likes") && helper.RandomNumber(1, 100)%4 == 0 { // 25%, Friend Likes The Post
+					phy.NewLike(QR, dbConn, post.ID, friend.Person_ID, user.Person_ID)
+				}
+				if strings.EqualFold(itype, "reshares") && helper.RandomNumber(1, 100)%10 == 0 { // 10%, Friend Reshares The Post
 					phy.NewReshare(QR, dbConn, *post, friend.Person_ID)
 				}
-				// if helper.RandomNumber(1, 100)%5 == 0 { // 20%, Comments On The Post
-				// 	loopcount := helper.RandomNumber(1, 10)
-				// 	for l := 0; l < loopcount; l++ {
-				// 		if helper.RandomNumber(1, 100)%2 == 0 { // Friend Comments
-				// 			phy.NewComment(QR, dbConn, post.ID, friend.Person_ID, user.Person_ID)
-				// 		}
-				// 		if helper.RandomNumber(1, 100)%2 == 0 { // Owner Comments
-				// 			phy.NewComment(QR, dbConn, post.ID, user.Person_ID, user.Person_ID)
-				// 		}
-				// 	}
-				// }
+				if strings.EqualFold(itype, "comments") && helper.RandomNumber(1, 100)%5 == 0 { // 20%, Comments On The Post
+					loopcount := helper.RandomNumber(1, 10)
+					for l := 0; l < loopcount; l++ {
+						if helper.RandomNumber(1, 100)%2 == 0 { // Friend Comments
+							phy.NewComment(QR, dbConn, post.ID, friend.Person_ID, user.Person_ID)
+						}
+						if helper.RandomNumber(1, 100)%2 == 0 { // Owner Comments
+							phy.NewComment(QR, dbConn, post.ID, user.Person_ID, user.Person_ID)
+						}
+					}
+				}
 			}
 		}
 	}
 }
 
-func runinteractWithPosts() {
+func runinteractWithPosts(itype string) {
 	users := phy.GetAllUsersWithAspects(QR)
 	num_users := len(users)
 	inc := 50
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		dbConn := db.GetDBConn(config.STENCILDB)
 		thread_num := j / inc
-		go interactWithPosts(dbConn, users[i:j], thread_num)
+		go interactWithPosts(dbConn, users[i:j], thread_num, itype)
 		// break
 	}
 
@@ -188,7 +189,7 @@ func runMakeUsersFriends() {
 
 	users := phy.GetAllUsersWithAspects(QR)
 	num_users := len(users)
-	inc := 100
+	inc := 50
 
 	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
 		dbConn := db.GetDBConn(config.STENCILDB)
@@ -229,7 +230,13 @@ func main() {
 		runCreateNewPosts()
 	case "comments":
 		// fmt.Println("Interacting With Posts!")
-		runinteractWithPosts()
+		runinteractWithPosts("comments")
+	case "likes":
+		// fmt.Println("Interacting With Posts!")
+		runinteractWithPosts("likes")
+	case "reshares":
+		// fmt.Println("Interacting With Posts!")
+		runinteractWithPosts("reshares")
 	case "messages":
 		// fmt.Println("Creating New Messages!")
 		runMakeUsersTalk()

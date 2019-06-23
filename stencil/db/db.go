@@ -184,6 +184,16 @@ func DataCall(db *sql.DB, SQL string, args ...interface{}) []map[string]interfac
 	return result
 }
 
+func Delete(db *sql.DB, SQL string, args ...interface{}) error {
+
+	if _, err := db.Query(SQL, args...); err != nil {
+		log.Println(SQL, args)
+		log.Fatal("## DB ERROR: ", err)
+		return err
+	}
+	return nil
+}
+
 func DataCall1(db *sql.DB, SQL string, args ...interface{}) map[string]interface{} {
 
 	// db := GetDBConn(app)
@@ -359,7 +369,7 @@ func GetAllColsOfRows(dbConn *sql.DB, query string) []map[string]string {
 func GetPrimaryKeyOfTable(dbConn *sql.DB, table string) (string, error) {
 	query := fmt.Sprintf("SELECT c.column_name FROM information_schema.key_column_usage AS c LEFT JOIN information_schema.table_constraints AS t ON t.constraint_name = c.constraint_name WHERE t.table_name = '%s' AND t.constraint_type = 'PRIMARY KEY';", table)
 	primaryKey := GetAllColsOfRows(dbConn, query)
-	
+
 	if len(primaryKey) == 0 {
 		return "", fmt.Errorf("Get Primary Key Error: No Primary Key Found For Table %s", table)
 	}

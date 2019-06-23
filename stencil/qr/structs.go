@@ -29,14 +29,15 @@ type QI struct {
 }
 
 type QS struct {
-	QR      *QR
-	Columns []string
-	From    string
-	Where   string
-	Group   string
-	Order   string
-	Limit   string
-	seen    map[string]bool
+	QR           *QR
+	Columns      []string
+	From         string
+	Where        string
+	Group        string
+	Order        string
+	Limit        string
+	tableAliases map[string]map[string]string
+	seen         map[string]bool
 }
 
 type QU struct {

@@ -37,6 +37,35 @@ func (self QI) Print() {
 	// }
 }
 
+func (self *QI) ResolveInsert(QR *QR, rowID int32) []*QI {
+
+	var PQIs []*QI
+	newRowCols := []string{"rowid", "app_id"}
+	newRowVals := []interface{}{rowID, QR.AppID}
+	newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
+	PQIs = append(PQIs, newRowQI)
+	phyMap := QR.GetPhyMappingForLogicalTable(self.TableName)
+
+	for pt, mapping := range phyMap {
+		isValid := false
+		pqiCols := []string{"pk"}
+		pqiVals := []interface{}{rowID}
+		for _, colmap := range mapping {
+			if val, err := self.valueOfColumn(colmap[1]); err == nil {
+				isValid = true
+				pqiCols = append(pqiCols, colmap[0])
+				pqiVals = append(pqiVals, val)
+			}
+		}
+		if isValid {
+			pqi := CreateQI(pt, pqiCols, pqiVals, QTInsert)
+			PQIs = append(PQIs, pqi)
+		}
+
+	}
+	return PQIs
+}
+
 func (self QI) GenSQL() (string, []interface{}) {
 
 	switch self.Type {

@@ -142,7 +142,7 @@ func (self Tag) CreateInDepMap() map[string]map[string][]string {
 				joinMap[mapFromTable] = make(map[string][]string)
 			}
 
-			condition := fmt.Sprintf("%s.%s = %s.%s", mapToTable, mapToCol, mapFromTable, mapFromCol)
+			condition := fmt.Sprintf("%s.%s=%s.%s", mapFromTable, mapFromCol, mapToTable, mapToCol)
 			joinMap[mapFromTable][mapToTable] = append(joinMap[mapFromTable][mapToTable], condition)
 		}
 	}

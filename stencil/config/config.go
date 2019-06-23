@@ -7,17 +7,17 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"stencil/db"
+	"stencil/qr"
 	"strings"
 	"time"
 )
 
 var SchemaMappingsObj *SchemaMappings
 
-func CreateAppConfig(app string) (AppConfig, error) {
+func CreateAppConfig(app, app_id string) (AppConfig, error) {
 
 	var appConfig AppConfig
-	dconfig := "./config/dependencies/" + app + ".json"
+	dconfig := "../config/dependencies/" + app + ".json"
 	jsonFile, err := os.Open(dconfig)
 
 	if err != nil {
@@ -30,7 +30,9 @@ func CreateAppConfig(app string) (AppConfig, error) {
 	json.Unmarshal(byteValue, &appConfig)
 
 	appConfig.AppName = app
-	appConfig.DBConn = db.GetDBConn(app)
+	appConfig.AppID = app_id
+	// appConfig.DBConn = db.GetDBConn(app)
+	appConfig.QR = qr.NewQR(app, app_id)
 
 	jsonFile.Close()
 
@@ -42,7 +44,7 @@ func LoadSchemaMappings() (*SchemaMappings, error) {
 
 		SchemaMappingsObj = new(SchemaMappings)
 
-		schemaMappingFile := "./config/app_settings/mappings.json"
+		schemaMappingFile := "../config/app_settings/mappings.json"
 		jsonFile, err := os.Open(schemaMappingFile)
 		if err != nil {
 			fmt.Println(err)
@@ -89,4 +91,9 @@ func Reverse(numbers []DataQuery) {
 	for i, j := 0, len(numbers)-1; i < j; i, j = i+1, j-1 {
 		numbers[i], numbers[j] = numbers[j], numbers[i]
 	}
+}
+
+func remove(s []Tag, i int) []Tag {
+	s[len(s)-1], s[i] = s[i], s[len(s)-1]
+	return s[:len(s)-1]
 }

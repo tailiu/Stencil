@@ -6,7 +6,9 @@ package helper
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 func Linebreak(ch string, times ...int) {
@@ -31,4 +33,33 @@ func Contains(list []string, str string) bool {
 		}
 	}
 	return false
+}
+
+func Init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+func RandomNumber(min, max int) int {
+	Init()
+	return rand.Intn(max-min) + min
+}
+
+func RandomChars(n int) string {
+	Init()
+	var letters = []rune("zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBAabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func RandomString(n int) string {
+	Init()
+	var letters = []rune("_9876543210zyxwvutsrqponmlkjihgfedcba0123456789_ZYXWVUTSRQPONMLKJIHGFEDCBA0123456789_abcdefghijklmnopqrstuvwxyz_9876543210ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
+	b := make([]rune, n-1)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return RandomChars(1) + string(b)
 }

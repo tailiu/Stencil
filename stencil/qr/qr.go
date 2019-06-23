@@ -141,6 +141,11 @@ func (self QR) GetPhyTabCol(ltabcol string) (string, string) {
 	tab := strings.Trim(strings.Split(ltabcol, ".")[0], " ")
 	col := strings.Trim(strings.Split(ltabcol, ".")[1], " ")
 
+	return self.GetPhyTabCol_(tab, col)
+}
+
+func (self QR) GetPhyTabCol_(tab, col string) (string, string) {
+
 	phyMap := self.GetPhyMappingForLogicalTable(tab)
 
 	for pt, mapping := range phyMap {

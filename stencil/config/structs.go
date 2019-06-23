@@ -1,6 +1,9 @@
 package config
 
-import "database/sql"
+import (
+	"database/sql"
+	"stencil/qr"
+)
 
 type DataQuery struct {
 	SQL, Table string
@@ -43,10 +46,12 @@ type App struct {
 
 type AppConfig struct {
 	AppName      string
+	AppID        string
 	Tags         []Tag        `json:"tags"`
 	Dependencies []Dependency `json:"dependencies"`
 	Ownerships   []Ownership  `json:"ownership"`
 	DBConn       *sql.DB
+	QR           *qr.QR
 }
 
 type Ownership struct {
@@ -65,17 +70,17 @@ type Tag struct {
 }
 
 type Dependency struct {
-	Tag       				string      	`json:"tag"`
-	DependsOn 				[]DependsOn 	`json:"depends_on"`
-	CombinedDisplaySetting 	string			`json:"combined_display_setting"`
+	Tag                    string      `json:"tag"`
+	DependsOn              []DependsOn `json:"depends_on"`
+	CombinedDisplaySetting string      `json:"combined_display_setting"`
 }
 
 type DependsOn struct {
-	Tag        			string      `json:"tag"`
-	As 		   			string		`json:"as"`
-	DisplayExistence	string		`json:"display_existence"`
-	DisplaySetting		string		`json:"display_setting"`
-	Conditions []DCondition 		`json:"conditions"`
+	Tag              string       `json:"tag"`
+	As               string       `json:"as"`
+	DisplayExistence string       `json:"display_existence"`
+	DisplaySetting   string       `json:"display_setting"`
+	Conditions       []DCondition `json:"conditions"`
 }
 
 type DCondition struct {

@@ -12,8 +12,8 @@ import (
 
 const StencilDBName = "stencil"
 
-func Initialize(app string) (*sql.DB, *sql.DB, config.AppConfig, map[string]string) {
-	appConfig, err := config.CreateAppConfig(app)
+func Initialize(app, app_id string) (*sql.DB, *sql.DB, config.AppConfig, map[string]string) {
+	appConfig, err := config.CreateAppConfig(app, app_id)
 	if err != nil {
 		log.Fatal(err)
 	}

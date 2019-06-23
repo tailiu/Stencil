@@ -214,18 +214,18 @@ func NewComment(QR *qr.QR, dbConn *sql.DB, post_id, person_id, post_owner_id int
 		QIs = append(QIs, qis...)
 	}
 
-	{
-		qu := qr.CreateQU(QR)
-		qu.SetTable("posts")
-		qu.SetUpdate_("posts.comments_count", "comments_count::int + 1")
-		qu.SetWhere("posts.type", "=", "StatusMessage")
-		qu.SetWhere("posts.id", "=", fmt.Sprint(post_id))
-		for _, sql := range qu.GenSQL() {
-			if err := db.RunTxWQnArgs(tx, sql); err != nil {
-				return
-			}
-		}
-	}
+	// {
+	// 	qu := qr.CreateQU(QR)
+	// 	qu.SetTable("posts")
+	// 	qu.SetUpdate_("posts.comments_count", "comments_count::int + 1")
+	// 	qu.SetWhere("posts.type", "=", "StatusMessage")
+	// 	qu.SetWhere("posts.id", "=", fmt.Sprint(post_id))
+	// 	for _, sql := range qu.GenSQL() {
+	// 		if err := db.RunTxWQnArgs(tx, sql); err != nil {
+	// 			return
+	// 		}
+	// 	}
+	// }
 
 	{
 		cols := []string{"id", "target_type", "target_id", "recipient_id", "created_at", "updated_at", "type"}
@@ -344,18 +344,18 @@ func NewLike(QR *qr.QR, dbConn *sql.DB, post_id, person_id, post_owner_id int) {
 		QIs = append(QIs, qis...)
 	}
 
-	{
-		qu := qr.CreateQU(QR)
-		qu.SetTable("posts")
-		qu.SetUpdate_("posts.likes_count", "likes_count::int + 1")
-		qu.SetWhere("posts.type", "=", "StatusMessage")
-		qu.SetWhere("posts.id", "=", fmt.Sprint(post_id))
-		for _, sql := range qu.GenSQL() {
-			if err := db.RunTxWQnArgs(tx, sql); err != nil {
-				return
-			}
-		}
-	}
+	// {
+	// 	qu := qr.CreateQU(QR)
+	// 	qu.SetTable("posts")
+	// 	qu.SetUpdate_("posts.likes_count", "likes_count::int + 1")
+	// 	qu.SetWhere("posts.type", "=", "StatusMessage")
+	// 	qu.SetWhere("posts.id", "=", fmt.Sprint(post_id))
+	// 	for _, sql := range qu.GenSQL() {
+	// 		if err := db.RunTxWQnArgs(tx, sql); err != nil {
+	// 			return
+	// 		}
+	// 	}
+	// }
 
 	{
 		cols := []string{"id", "target_type", "target_id", "recipient_id", "created_at", "updated_at", "type"}
@@ -575,18 +575,18 @@ func NewReshare(QR *qr.QR, dbConn *sql.DB, post Post, person_id int) {
 		QIs = append(QIs, qis...)
 	}
 
-	{
-		qu := qr.CreateQU(QR)
-		qu.SetTable("posts")
-		qu.SetUpdate_("posts.reshares_count", "reshares_count::int +1")
-		qu.SetWhere("posts.type", "=", "StatusMessage")
-		qu.SetWhere("posts.id", "=", fmt.Sprint(post.ID))
-		for _, sql := range qu.GenSQL() {
-			if err := db.RunTxWQnArgs(tx, sql); err != nil {
-				return
-			}
-		}
-	}
+	// {
+	// 	qu := qr.CreateQU(QR)
+	// 	qu.SetTable("posts")
+	// 	qu.SetUpdate_("posts.reshares_count", "reshares_count::int +1")
+	// 	qu.SetWhere("posts.type", "=", "StatusMessage")
+	// 	qu.SetWhere("posts.id", "=", fmt.Sprint(post.ID))
+	// 	for _, sql := range qu.GenSQL() {
+	// 		if err := db.RunTxWQnArgs(tx, sql); err != nil {
+	// 			return
+	// 		}
+	// 	}
+	// }
 
 	{
 		id := QR.NewRowId()
