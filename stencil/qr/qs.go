@@ -9,7 +9,7 @@ import (
 func CreateQS(QR *QR) *QS {
 	qs := new(QS)
 	qs.seen = make(map[string]bool)
-	qs.tableAliases = make(map[string]map[string]string)
+	qs.TableAliases = make(map[string]map[string]string)
 	qs.QR = QR
 	return qs
 }
@@ -65,6 +65,21 @@ func (self *QS) ColFunction(funcStmt, col, alias string) {
 	}
 }
 
+func (self *QS) ColNull(col string) {
+	pColName := fmt.Sprintf("NULL as %s", col)
+	self.Columns = append(self.Columns, pColName)
+}
+
+func (self *QS) getTableAlias(ltab, ptab string) string {
+	if _, ok := self.TableAliases[ltab]; !ok {
+		self.TableAliases[ltab] = make(map[string]string)
+	}
+	if _, ok := self.TableAliases[ltab][ptab]; !ok {
+		self.TableAliases[ltab][ptab] = helper.RandomString(10)
+	}
+	return self.TableAliases[ltab][ptab]
+}
+
 func (self *QS) FromSimple(table string) {
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
@@ -75,7 +90,7 @@ func (self *QS) FromSimple(table string) {
 			if prev == "" {
 				self.From += fmt.Sprintf(" %s %s ", ptab, self.getTableAlias(table, ptab))
 			} else {
-				self.From += fmt.Sprintf(" JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
+				self.From += fmt.Sprintf(" LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
 			}
 			prev = ptab
 			self.seen[ptab] = true
@@ -83,9 +98,6 @@ func (self *QS) FromSimple(table string) {
 	}
 }
 
-// some problems here
-// multiple physical tables can appear, should be legal.
-// need to carefully consider the need of qr.seen map. Probably don't need it. Need a work around.
 func (self *QS) FromJoin(table, condition string) {
 	// condition: previous_table.column=current_table.column
 
@@ -93,7 +105,7 @@ func (self *QS) FromJoin(table, condition string) {
 	prev_tab, prev_col := self.QR.GetPhyTabCol(condition_tokens[0])
 	curr_tab, curr_col := self.QR.GetPhyTabCol(condition_tokens[1])
 	// self.From += fmt.Sprintf("JOIN %s ON %s.%s = %s.%s AND %s.pk = %s.pk ", curr_tab, prev_tab, prev_col, curr_tab, curr_col, prev_tab, curr_tab)
-	self.From += fmt.Sprintf("JOIN %s %s ON %s.%s::text = %s.%s::text ", curr_tab, self.getTableAlias(table, curr_tab), self.getTableAlias(table, prev_tab), prev_col, self.getTableAlias(table, curr_tab), curr_col)
+	self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.%s::text = %s.%s::text ", curr_tab, self.getTableAlias(table, curr_tab), self.getTableAlias(table, prev_tab), prev_col, self.getTableAlias(table, curr_tab), curr_col)
 	self.seen[curr_tab] = true
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
@@ -103,23 +115,13 @@ func (self *QS) FromJoin(table, condition string) {
 	for ptab := range phyTab {
 		// if _, ok := self.seen[ptab]; !ok {
 		if !strings.EqualFold(curr_tab, ptab) {
-			self.From += fmt.Sprintf("JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
+			self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
 			prev = ptab
 		}
 	}
 }
 
-func (self *QS) getTableAlias(ltab, ptab string) string {
-	if _, ok := self.tableAliases[ltab]; !ok {
-		self.tableAliases[ltab] = make(map[string]string)
-	}
-	if _, ok := self.tableAliases[ltab][ptab]; !ok {
-		self.tableAliases[ltab][ptab] = helper.RandomString(10)
-	}
-	return self.tableAliases[ltab][ptab]
-}
-
-func (self *QS) FromJoin2(table string, conditions []string) {
+func (self *QS) FromJoinList(table string, conditions []string) {
 
 	// condition: previous_table.column=current_table.column
 
@@ -136,7 +138,7 @@ func (self *QS) FromJoin2(table string, conditions []string) {
 		pconditions = append(pconditions, fmt.Sprintf(" %s.%s::text = %s.%s::text ", self.getTableAlias(lhs_table, prev_tab), prev_col, self.getTableAlias(rhs_table, curr_tab), curr_col))
 	}
 
-	self.From += fmt.Sprintf("JOIN %s %s ON %s ", curr_tab, self.getTableAlias(table, curr_tab), strings.Join(pconditions, "AND"))
+	self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s ", curr_tab, self.getTableAlias(table, curr_tab), strings.Join(pconditions, "AND"))
 	self.seen[curr_tab] = true
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
@@ -146,7 +148,7 @@ func (self *QS) FromJoin2(table string, conditions []string) {
 	for ptab := range phyTab {
 		// if _, ok := self.seen[ptab]; !ok {
 		if !strings.EqualFold(curr_tab, ptab) {
-			self.From += fmt.Sprintf("JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
+			self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
 			prev = ptab
 		}
 	}
@@ -159,12 +161,23 @@ func (self *QS) FromQuery(qs *QS) {
 func (self *QS) WhereSimple(col1, op, col2 string) {
 	ptab1, pcol1 := self.QR.GetPhyTabCol(col1)
 	ptab2, pcol2 := self.QR.GetPhyTabCol(col2)
-	self.Where = fmt.Sprintf(" %s.%s %s %s.%s ", ptab1, pcol1, op, ptab2, pcol2)
+	table1 := strings.Split(col1, ".")[0]
+	table2 := strings.Split(col2, ".")[0]
+	self.Where = fmt.Sprintf(" %s.%s %s %s.%s ", self.getTableAlias(table1, ptab1), pcol1, op, self.getTableAlias(table2, ptab2), pcol2)
 }
 
 func (self *QS) WhereSimpleVal(col, op, val string) {
 	ptab, pcol := self.QR.GetPhyTabCol(col)
-	self.Where = fmt.Sprintf(" %s.%s %s '%s' ", ptab, pcol, op, val)
+	table := strings.Split(col, ".")[0]
+	self.Where = fmt.Sprintf(" %s.%s %s '%s' ", self.getTableAlias(table, ptab), pcol, op, val)
+}
+
+func (self *QS) WhereSimpleInterface(col, op string, val interface{}) {
+	ptab, pcol := self.QR.GetPhyTabCol(col)
+	self.vals = append(self.vals, val)
+	table := strings.Split(col, ".")[0]
+	// self.Where = fmt.Sprintf(" %s.%s %s $%d ", ptab, pcol, op, len(self.vals))
+	self.Where = fmt.Sprintf("%s.%s::text %s '%s' ", self.getTableAlias(table, ptab), pcol, op, fmt.Sprint(val))
 }
 
 func (self *QS) WhereOperator(operator, col1, op, col2 string) { // AND, OR
@@ -173,16 +186,40 @@ func (self *QS) WhereOperator(operator, col1, op, col2 string) { // AND, OR
 
 func (self *QS) WhereOperatorVal(operator, col, op, val string) { // AND, OR
 	ptab, pcol := self.QR.GetPhyTabCol(col)
-	self.Where += fmt.Sprintf(" %s %s.%s %s '%s' ", operator, ptab, pcol, op, val)
+	table := strings.Split(col, ".")[0]
+	self.Where += fmt.Sprintf(" %s %s.%s %s '%s' ", operator, self.getTableAlias(table, ptab), pcol, op, val)
+}
+
+func (self *QS) WhereOperatorInterface(operator, col, op string, val interface{}) { // AND, OR
+	ptab, pcol := self.QR.GetPhyTabCol(col)
+	table := strings.Split(col, ".")[0]
+	self.vals = append(self.vals, val)
+	if len(self.Where) > 0 {
+		// self.Where += fmt.Sprintf(" %s %s.%s %s $%d ", operator, self.getTableAlias(table, ptab), pcol, op, len(self.vals))
+		self.Where += fmt.Sprintf(" %s %s.%s::text %s '%s' ", operator, self.getTableAlias(table, ptab), pcol, op, fmt.Sprint(val))
+	} else {
+		// self.Where = fmt.Sprintf("%s.%s %s $%d ", ptab, pcol, op, len(self.vals))
+		self.Where = fmt.Sprintf("%s.%s::text %s '%s' ", self.getTableAlias(table, ptab), pcol, op, fmt.Sprint(val))
+	}
 }
 
 func (self *QS) WhereOperatorBool(operator, col, op, val string) { // AND, OR
 	ptab, pcol := self.QR.GetPhyTabCol(col)
-	self.Where += fmt.Sprintf(" %s %s.%s %s %s ", operator, ptab, pcol, op, val)
+	table := strings.Split(col, ".")[0]
+	self.Where += fmt.Sprintf(" %s %s.%s %s %s ", operator, self.getTableAlias(table, ptab), pcol, op, val)
 }
 
 func (self *QS) WhereQuery(condition string, qs *QS) { // IN, NOT IN
 
+}
+
+func (self *QS) WhereString(operator, condition string) { // AND, OR, NOT
+
+	if len(self.Where) > 0 {
+		self.Where += fmt.Sprintf(" %s (%s)", operator, condition)
+	} else {
+		self.Where = fmt.Sprintf("(%s)", condition)
+	}
 }
 
 func (self *QS) GroupBy(col string) {

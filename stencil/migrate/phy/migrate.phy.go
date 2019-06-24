@@ -46,11 +46,11 @@ func GetRoot(appConfig config.AppConfig, uid string, log_txn *transaction.Log_tx
 	tagName := "root"
 	if root, err := appConfig.GetTag(tagName); err == nil {
 		var sql string
+		qs := qr.CreateQS(appConfig.QR)
 		rootTable, rootCol := appConfig.GetItemsFromKey(root, "root_id")
 		if len(root.InnerDependencies) > 0 {
 			joinMap := root.CreateInDepMap()
 			seenMap := make(map[string]bool)
-			qs := qr.CreateQS(appConfig.QR)
 			for fromTable, toTablesMap := range joinMap {
 				if _, ok := seenMap[fromTable]; !ok {
 					qs.FromSimple(fromTable)
@@ -62,28 +62,24 @@ func GetRoot(appConfig config.AppConfig, uid string, log_txn *transaction.Log_tx
 						if joinMap[toTable][fromTable] != nil {
 							joinMap[toTable][fromTable] = nil
 						}
-						qs.FromJoin2(toTable, conditions)
+						qs.FromJoinList(toTable, conditions)
 						qs.ColSimple(toTable + ".*")
 						seenMap[toTable] = true
 					}
 				}
 				seenMap[fromTable] = true
 			}
-			sql = qs.GenSQL()
 		} else {
 			table := root.Members["member1"]
-			qs := qr.CreateQS(appConfig.QR)
 			qs.FromSimple(table)
 			qs.ColSimple(rootTable + ".*")
-			qs.WhereSimpleVal(rootTable+"."+rootCol, "=", uid)
-			sql = qs.GenSQL()
 		}
+		qs.WhereSimpleVal(rootTable+"."+rootCol, "=", uid)
+		sql = qs.GenSQL()
 		rootNode := new(m2.DependencyNode)
 		rootNode.Tag = root
 		rootNode.SQL = sql
-		fmt.Println(sql)
 		rootNode.Data = db.DataCall1(log_txn.DBconn, sql)
-		// fmt.Println(rootNode.Data)
 		return rootNode
 	} else {
 		log.Fatal("Can't fetch tag:", tagName)
@@ -91,126 +87,123 @@ func GetRoot(appConfig config.AppConfig, uid string, log_txn *transaction.Log_tx
 	return nil
 }
 
-func ResolveDependencyConditions(node *m2.DependencyNode, appConfig config.AppConfig, dep config.Dependency) string {
-	where := ""
-	if tag, err := appConfig.GetTag(dep.Tag); err == nil {
-		for _, depOn := range dep.DependsOn {
-			if depOnTag, err := appConfig.GetTag(depOn.Tag); err == nil {
-				if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
-					for _, condition := range depOn.Conditions {
-						conditionStr := ""
-						tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
-						if err != nil {
-							log.Println(err, tag.Name, condition.TagAttr)
-							break
-						}
-						depOnAttr, err := depOnTag.ResolveTagAttr(condition.DependsOnAttr)
-						if err != nil {
-							log.Println(err, depOnTag.Name, condition.DependsOnAttr)
-							break
-						}
-						if _, ok := node.Data[depOnAttr]; ok {
-							if conditionStr != "" || where != "" {
-								conditionStr += " AND "
-							}
-							conditionStr += fmt.Sprintf("%s = '%v'", tagAttr, node.Data[depOnAttr])
-						} else {
-							fmt.Println(depOnTag)
-							log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
-						}
-						if len(condition.Restrictions) > 0 {
-							restrictions := ""
-							for _, restriction := range condition.Restrictions {
-								if restrictions != "" {
-									restrictions += " OR "
-								}
-								if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
-									restrictions += fmt.Sprintf(" %s = '%s' ", restrictionAttr, restriction["val"])
-								}
+func ResolveDependencyConditions(node *m2.DependencyNode, appConfig config.AppConfig, dep config.Dependency, tag config.Tag, qs *qr.QS) string {
 
-							}
-							if restrictions == "" {
-								log.Fatal(condition.Restrictions)
-							}
-							conditionStr += fmt.Sprintf(" AND (%s) ", restrictions)
-						}
-						where += conditionStr
+	where := qr.CreateQS(appConfig.QR)
+	where.TableAliases = qs.TableAliases
+	for _, depOn := range dep.DependsOn {
+		if depOnTag, err := appConfig.GetTag(depOn.Tag); err == nil {
+			if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
+				for _, condition := range depOn.Conditions {
+					conditionStr := qr.CreateQS(appConfig.QR)
+					conditionStr.TableAliases = qs.TableAliases
+					tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
+					if err != nil {
+						log.Println(err, tag.Name, condition.TagAttr)
+						break
 					}
+					depOnAttr, err := depOnTag.ResolveTagAttr(condition.DependsOnAttr)
+					if err != nil {
+						log.Println(err, depOnTag.Name, condition.DependsOnAttr)
+						break
+					}
+					if _, ok := node.Data[depOnAttr]; ok {
+						conditionStr.WhereOperatorInterface("AND", tagAttr, "=", node.Data[depOnAttr])
+					} else {
+						fmt.Println(depOnTag)
+						log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
+					}
+					if len(condition.Restrictions) > 0 {
+						restrictions := qr.CreateQS(appConfig.QR)
+						restrictions.TableAliases = qs.TableAliases
+						for _, restriction := range condition.Restrictions {
+							if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
+								restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
+							}
+
+						}
+						if restrictions.Where == "" {
+							log.Fatal(condition.Restrictions)
+						}
+						// log.Fatal("restrictions.Where", restrictions.Where)
+						conditionStr.WhereString("AND", restrictions.Where)
+					}
+					// log.Fatal("conditionStr.Where", conditionStr.Where)
+					where.WhereString("AND", conditionStr.Where)
 				}
 			}
 		}
 	}
-	return where
+	// log.Fatal("where.Where", where.Where)
+	return where.Where
 }
 
-func GetAdjNode(node *m2.DependencyNode, appConfig config.AppConfig, uid string, wList *m2.WaitingList, invalidList *m2.InvalidList) *m2.DependencyNode {
+func GetAdjNode(node *m2.DependencyNode, appConfig config.AppConfig, uid string, wList *m2.WaitingList, invalidList *m2.InvalidList, log_txn *transaction.Log_txn) *m2.DependencyNode {
 
-	for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag.Name)) {
-		if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
-			orderby := " ORDER BY random() "
-			if child, err := appConfig.GetTag(dep.Tag); err == nil {
-				sql := "SELECT %s FROM %s WHERE %s %s "
-				if len(child.Restrictions) > 0 {
-					restrictions := ""
-					for _, restriction := range child.Restrictions {
-						if restrictions != "" {
-							restrictions += " OR "
-						}
-						if restrictionAttr, err := child.ResolveTagAttr(restriction["col"]); err == nil {
-							restrictions += fmt.Sprintf(" %s = '%s' ", restrictionAttr, restriction["val"])
-						}
-
+	// for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag.Name)) {
+	for _, dep := range appConfig.GetSubDependencies(node.Tag.Name) {
+		// if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
+		if child, err := appConfig.GetTag(dep.Tag); err == nil {
+			var sql string
+			qs := qr.CreateQS(appConfig.QR)
+			if len(child.InnerDependencies) > 0 {
+				joinMap := child.CreateInDepMap()
+				seenMap := make(map[string]bool)
+				for fromTable, toTablesMap := range joinMap {
+					fmt.Println(fromTable)
+					if _, ok := seenMap[fromTable]; !ok {
+						qs.FromSimple(fromTable)
+						qs.ColSimple(fromTable + ".*")
 					}
-					where += fmt.Sprintf(" AND (%s) ", restrictions)
-				}
-				if len(child.InnerDependencies) > 0 {
-					cols := ""
-					joinMap := child.CreateInDepMap()
-					seenMap := make(map[string]bool)
-					joinStr := ""
-					for fromTable, toTablesMap := range joinMap {
-						if _, ok := seenMap[fromTable]; !ok {
-							joinStr += fromTable
-							_, colStr := db.GetColumnsForTable(appConfig.DBConn, fromTable)
-							cols += colStr + ","
-						}
-						for toTable, conditions := range toTablesMap {
-							if conditions != nil {
-								conditions = append(conditions, joinMap[toTable][fromTable]...)
-								if joinMap[toTable][fromTable] != nil {
-									joinMap[toTable][fromTable] = nil
-								}
-								// joinStr += " JOIN " + toTable + " ON " + strings.Join(conditions, " AND ")
-								joinStr += fmt.Sprintf(" JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
-								_, colStr := db.GetColumnsForTable(appConfig.DBConn, toTable)
-								cols += colStr + ","
-								seenMap[toTable] = true
+					for toTable, conditions := range toTablesMap {
+						if conditions != nil {
+							conditions = append(conditions, joinMap[toTable][fromTable]...)
+							if joinMap[toTable][fromTable] != nil {
+								joinMap[toTable][fromTable] = nil
 							}
+							qs.FromJoinList(toTable, conditions)
+							qs.ColSimple(toTable + ".*")
+							seenMap[toTable] = true
 						}
-						seenMap[fromTable] = true
 					}
-					sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr, where, orderby)
-				} else {
-					table := child.Members["member1"]
-					// _, cols := db.GetColumnsForTable(appConfig.DBConn, table)
-					// sql = fmt.Sprintf(sql, cols, table, where, orderby)
-					qs := qr.CreateQS(appConfig.QR)
-					qs.FromSimple(table)
-					qs.ColSimple(table + ".*")
-					// qs.WhereSimpleVal(table+"."+rootCol, "=", uid)
-					sql = qs.GenSQL()
+					seenMap[fromTable] = true
 				}
-				if nodeData := db.DataCall1(appConfig.DBConn, sql); len(nodeData) > 0 {
-					newNode := new(m2.DependencyNode)
-					newNode.Tag = child
-					newNode.SQL = sql
-					newNode.Data = nodeData
-					if !wList.IsAlreadyWaiting(*newNode) && !invalidList.Exists(*newNode) {
-						return newNode
+			} else {
+				table := child.Members["member1"]
+				qs = qr.CreateQS(appConfig.QR)
+				qs.FromSimple(table)
+				qs.ColSimple(table + ".*")
+
+				// qs.WhereSimpleVal(table+"."+rootCol, "=", uid)
+			}
+			if len(child.Restrictions) > 0 {
+				restrictions := qr.CreateQS(appConfig.QR)
+				restrictions.TableAliases = qs.TableAliases
+				for _, restriction := range child.Restrictions {
+					if restrictionAttr, err := child.ResolveTagAttr(restriction["col"]); err == nil {
+						restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
 					}
+
+				}
+				// log.Fatal("restrictions2.Where", restrictions.Where)
+				qs.WhereString("AND", restrictions.Where)
+			}
+			where := ResolveDependencyConditions(node, appConfig, dep, child, qs)
+			qs.WhereString("AND", where)
+			qs.OrderBy("random()")
+			sql = qs.GenSQL()
+			// fmt.Println("** PHY SQL:", sql)
+			if nodeData := db.DataCall1(log_txn.DBconn, sql); len(nodeData) > 0 {
+				newNode := new(m2.DependencyNode)
+				newNode.Tag = child
+				newNode.SQL = sql
+				newNode.Data = nodeData
+				if !wList.IsAlreadyWaiting(*newNode) && !invalidList.Exists(*newNode) {
+					return newNode
 				}
 			}
 		}
+		// }
 	}
 	return nil
 }
@@ -363,7 +356,7 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *m2.Depend
 		addUserToApp(uid, dstApp.AppID, log_txn)
 	}
 
-	for child := GetAdjNode(node, srcApp, uid, wList, invalidList); child != nil; child = GetAdjNode(node, srcApp, uid, wList, invalidList) {
+	for child := GetAdjNode(node, srcApp, uid, wList, invalidList, log_txn); child != nil; child = GetAdjNode(node, srcApp, uid, wList, invalidList, log_txn) {
 		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
