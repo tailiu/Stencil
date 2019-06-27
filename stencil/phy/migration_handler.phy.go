@@ -37,7 +37,6 @@ func main() {
 		threads_num := 1
 
 		var wList = new(m2.WaitingList)
-		var invalidList = new(m2.InvalidList)
 
 		for thread_id := 1; thread_id <= threads_num; thread_id++ {
 			wg.Add(1)
@@ -52,7 +51,7 @@ func main() {
 						log.Fatal(err)
 					} else {
 						if rootNode := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid), logTxn); rootNode != nil {
-							migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, invalidList, logTxn)
+							migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, logTxn)
 						} else {
 							fmt.Println("Root Node can't be fetched!")
 						}
