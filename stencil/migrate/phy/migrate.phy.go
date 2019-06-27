@@ -78,6 +78,7 @@ func GetRoot(appConfig config.AppConfig, uid string, log_txn *transaction.Log_tx
 			qs.ColPK(rootTable)
 		}
 		qs.WhereSimpleVal(rootTable+"."+rootCol, "=", uid)
+		qs.WhereMFlag("EXISTS", "0", appConfig.AppID)
 		sql = qs.GenSQL()
 		rootNode := new(m2.DependencyNode)
 		rootNode.Tag = root
@@ -196,6 +197,7 @@ func GetAdjNode(node *m2.DependencyNode, appConfig config.AppConfig, uid string,
 			where := ResolveDependencyConditions(node, appConfig, dep, child, qs)
 			qs.WhereString("AND", where)
 			qs.OrderBy("random()")
+			qs.WhereMFlag("EXISTS", "0", appConfig.AppID)
 			sql = qs.GenSQL()
 			// fmt.Println("** PHY SQL:", sql)
 			if nodeData := db.DataCall1(log_txn.DBconn, sql); len(nodeData) > 0 {
@@ -401,12 +403,16 @@ func UpdateRowDesc(mappings *config.MappedApp, dstApp config.AppConfig, toTables
 					pk := fmt.Sprint(val)
 					if !helper.Contains(updated, pk) {
 						if err := db.SetAppID(tx, pk, dstApp.AppID); err == nil {
-							updated = append(updated, pk)
+							if err := db.SetMFlag(tx, pk, "1"); err == nil {
+								updated = append(updated, pk)
+							} else {
+								tx.Rollback()
+								fmt.Println("\n@ERROR_SET_MFLAG:", err)
+								return false
+							}
 						} else {
 							tx.Rollback()
-							fmt.Println("\n@ERROR:", err)
-							// db.LogError(log_txn.DBconn, usql, "", fmt.Sprint(log_txn.Txn_id), dstApp.AppName, err.Error())
-							// errs = append(errs, err)
+							fmt.Println("\n@ERROR_SET_APPID:", err)
 							return false
 						}
 					}

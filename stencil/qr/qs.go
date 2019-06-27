@@ -243,6 +243,17 @@ func (self *QS) WhereString(operator, condition string) { // AND, OR, NOT
 	}
 }
 
+func (self *QS) WhereMFlag(condition, flag, app_id string) { // EXISTS/NOT EXISTS, 0,1,2
+	var pkcols []string
+	for _, pTables := range self.TableAliases {
+		for _, alias := range pTables {
+			pkcols = append(pkcols, alias+".pk")
+		}
+	}
+	q := fmt.Sprintf("%s (SELECT 1 FROM row_desc WHERE app_id = %s AND mflag IN (%s) AND rowid IN (%s))", condition, app_id, flag, strings.Join(pkcols, ","))
+	self.WhereString("AND", q)
+}
+
 func (self *QS) GroupBy(col string) {
 	ptab, pcol := self.QR.GetPhyTabCol(col)
 	if strings.EqualFold(self.Group, "") {
