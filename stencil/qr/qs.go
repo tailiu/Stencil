@@ -70,6 +70,27 @@ func (self *QS) ColNull(col string) {
 	self.Columns = append(self.Columns, pColName)
 }
 
+// func (self *QS) getTableAlias(ltab, ptab string) string {
+// 	if _, ok := self.TableAliases[ltab]; !ok {
+// 		self.TableAliases[ltab] = make(map[string]string)
+// 	}
+// 	if _, ok := self.TableAliases[ltab][ptab]; !ok {
+// 		self.TableAliases[ltab][ptab] = helper.RandomString(10)
+// 	}
+// 	return self.TableAliases[ltab][ptab]
+// }
+
+func (self *QS) ColPK(table string) {
+	for ptab, _ := range self.QR.GetPhyMappingForLogicalTable(table) {
+		alias := self.getTableAlias(table, ptab)
+		pColName := fmt.Sprintf("%s.pk as \"pk.%s.%s\"", alias, table, alias)
+		if !helper.Contains(self.Columns, pColName) {
+			self.Columns = append(self.Columns, pColName)
+		}
+		// break
+	}
+}
+
 func (self *QS) getTableAlias(ltab, ptab string) string {
 	if _, ok := self.TableAliases[ltab]; !ok {
 		self.TableAliases[ltab] = make(map[string]string)

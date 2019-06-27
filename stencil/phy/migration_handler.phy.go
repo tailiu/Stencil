@@ -22,19 +22,23 @@ type ThreadChannel struct {
 
 func main() {
 
-	var wg sync.WaitGroup
+	if logTxn, err := transaction.BeginTransaction(); err == nil {
 
-	srcApp, srcAppID := "diaspora", "1"
-	dstApp, dstAppID := "mastodon", "2"
-	threads_num := 1
-	// uid := 4716
-	uid := os.Args[1]
-	commitChannel := make(chan ThreadChannel)
-	// startFrom, inc := 4670, 10
-	// for uid := startFrom; uid < startFrom+inc; uid += 1 {
-	config.LoadSchemaMappings()
-	logTxn, err := transaction.BeginTransaction()
-	if err == nil {
+		srcApp, srcAppID := "diaspora", "1"
+		dstApp, dstAppID := "mastodon", "2"
+
+		config.LoadSchemaMappings()
+
+		uid := os.Args[1] // uid := 4716
+		migrate.RemoveUserFromApp(uid, dstAppID, logTxn)
+
+		var wg sync.WaitGroup
+		commitChannel := make(chan ThreadChannel)
+		threads_num := 1
+
+		var wList = new(m2.WaitingList)
+		var invalidList = new(m2.InvalidList)
+
 		for thread_id := 1; thread_id <= threads_num; thread_id++ {
 			wg.Add(1)
 			go func(thread_id int, commitChannel chan ThreadChannel) {
@@ -47,13 +51,8 @@ func main() {
 						commitChannel <- ThreadChannel{Finished: false, Thread_id: thread_id}
 						log.Fatal(err)
 					} else {
-						migrate.RemoveUserFromApp(uid, dstAppID, logTxn)
 						if rootNode := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid), logTxn); rootNode != nil {
-							var wList = new(m2.WaitingList)
-							var invalidList = new(m2.InvalidList)
-
 							migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, invalidList, logTxn)
-
 						} else {
 							fmt.Println("Root Node can't be fetched!")
 						}
@@ -68,28 +67,27 @@ func main() {
 			wg.Wait()
 			close(commitChannel)
 		}()
+
+		txnCommit := true
+
+		for threadResponse := range commitChannel {
+			fmt.Println("THREAD FINISHED WORKING", threadResponse)
+			if !threadResponse.Finished {
+				txnCommit = false
+			}
+		}
+
+		if txnCommit {
+			transaction.LogOutcome(logTxn, "COMMIT")
+		} else {
+			transaction.LogOutcome(logTxn, "ABORT")
+		}
+
 	} else {
 		log.Println("Can't begin migration transaction", err)
 		transaction.LogOutcome(logTxn, "ABORT")
 		// transaction.CloseDBConn(logTxn)
 	}
-
-	txnCommit := true
-
-	for threadResponse := range commitChannel {
-		fmt.Println("THREAD FINISHED WORKING", threadResponse)
-		if !threadResponse.Finished {
-			txnCommit = false
-		}
-	}
-
-	if txnCommit {
-		transaction.LogOutcome(logTxn, "COMMIT")
-	} else {
-		transaction.LogOutcome(logTxn, "ABORT")
-	}
-
-	// }
 
 	// settingsFileName := "mappings"
 	// // fromApp := "mastodon"

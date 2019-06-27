@@ -62,15 +62,32 @@ func CloseDBConn(app string) {
 
 func Insert(dbConn *sql.DB, query string, args ...interface{}) (int, error) {
 
-	// fmt.Println("@SQL:", query)
-	// fmt.Println("@ARGS:", args)
-
 	lastInsertId := -1
 	err := dbConn.QueryRow(query+" RETURNING id; ", args...).Scan(&lastInsertId)
 	if err != nil || lastInsertId == -1 {
 		return lastInsertId, err
 	}
 	return lastInsertId, err
+}
+
+func UpdateTx(tx *sql.Tx, query string, args ...interface{}) error {
+
+	_, err := tx.Exec(query, args...)
+	return err
+}
+
+func SetAppID(tx *sql.Tx, pk, app_id string) error {
+
+	q := "UPDATE row_desc SET app_id = $1 WHERE rowid = $2"
+	_, err := tx.Exec(q, app_id, pk)
+	return err
+}
+
+func SetMFlag(tx *sql.Tx, pk, flag string) error {
+
+	q := "UPDATE row_desc SET mflag = $1 WHERE rowid = $2"
+	_, err := tx.Exec(q, flag, pk)
+	return err
 }
 
 func GetColumnsForTable(db *sql.DB, table string) ([]string, string) {

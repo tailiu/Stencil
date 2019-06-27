@@ -19,5 +19,5 @@ type WaitingList struct {
 }
 
 type InvalidList struct {
-	Nodes []DependencyNode
+	Nodes []*DependencyNode
 }

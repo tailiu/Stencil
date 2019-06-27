@@ -21,6 +21,12 @@ type UndoAction struct {
 	Data      map[string]interface{}
 }
 
+type UndoActionP struct {
+	SrcApp string
+	DstApp string
+	PK     string
+}
+
 func (self *UndoAction) AddOrgTable(newTable string) []string {
 	for _, orgTable := range self.OrgTables {
 		if strings.EqualFold(orgTable, newTable) {

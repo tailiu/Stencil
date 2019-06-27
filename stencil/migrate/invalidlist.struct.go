@@ -21,14 +21,14 @@ func (self InvalidList) Exists(node DependencyNode) bool {
 	return false
 }
 
-func (self *InvalidList) Add(node DependencyNode) {
-	node.SQL = ""
-	if idAttr, err := node.Tag.ResolveTagAttr("id"); err == nil {
-		for key := range node.Data {
-			if !strings.EqualFold(key, idAttr) {
-				delete(node.Data, key)
-			}
-		}
-	}
-	self.Nodes = append(self.Nodes, node)
+func (self *InvalidList) Add(node *DependencyNode) {
+	iNode := node
+	// if idAttr, err := iNode.Tag.ResolveTagAttr("id"); err == nil {
+	// 	for key := range iNode.Data {
+	// 		if !strings.EqualFold(key, idAttr) {
+	// 			delete(iNode.Data, key)
+	// 		}
+	// 	}
+	// }
+	self.Nodes = append(self.Nodes, iNode)
 }

@@ -28,7 +28,7 @@ func Linebreak(ch string, times ...int) {
 func Contains(list []string, str string) bool {
 	for _, v := range list {
 		// fmt.Println(v, "==", str)
-		if strings.ToLower(v) == strings.ToLower(str) {
+		if strings.EqualFold(v, str) {
 			return true
 		}
 	}

@@ -329,13 +329,13 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 				mappingFound = true
 				if len(tagMembers) == len(appMapping.FromTables) {
 					GenerateAndInsert(mappings, dstApp, appMapping.ToTables, node, log_txn)
-					invalidList.Add(*node)
+					invalidList.Add(node)
 				} else {
 					if waitingNode, err := wList.UpdateIfBeingLookedFor(*node); err == nil {
 						if waitingNode.IsComplete() {
 							tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
 							GenerateAndInsert(mappings, dstApp, appMapping.ToTables, &tempCombinedDataDependencyNode, log_txn)
-							invalidList.Add(*node)
+							invalidList.Add(node)
 						} else {
 							// fmt.Println("-->> IS NOT COMPLETE!")
 						}
@@ -350,7 +350,7 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 			}
 		}
 		if !mappingFound {
-			invalidList.Add(*node)
+			invalidList.Add(node)
 			for _, tagMember := range node.Tag.Members {
 				if _, ok := node.Data[fmt.Sprintf("%s.id", tagMember)]; ok {
 					srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", tagMember)])

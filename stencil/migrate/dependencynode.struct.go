@@ -33,3 +33,10 @@ func (self DependencyNode) GetValueForKey(key string) (string, error) {
 	// }
 	return "", errors.New("No value found for " + key)
 }
+
+func (self *DependencyNode) Copy(node DependencyNode) {
+
+	self.Tag = node.Tag
+	self.SQL = node.SQL
+	self.Data = node.Data
+}
