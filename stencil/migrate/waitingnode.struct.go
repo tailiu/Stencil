@@ -1,6 +1,6 @@
 package migrate
 
-func (self *WaitingNode) Update(node DependencyNode) {
+func (self *WaitingNode) Update(node *DependencyNode) {
 	self.ContainedNodes = append(self.ContainedNodes, node)
 	delete(self.LookingFor, node.Tag.Name)
 }

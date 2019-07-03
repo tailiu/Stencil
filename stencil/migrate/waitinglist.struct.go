@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func (self WaitingList) UpdateIfBeingLookedFor(node DependencyNode) (WaitingNode, error) { // node exists, node is being looked for
+func (self WaitingList) UpdateIfBeingLookedFor(node *DependencyNode) (*WaitingNode, error) { // node exists, node is being looked for
 
 	for i, waitingNode := range self.Nodes {
 		if lookingFor, ok := waitingNode.LookingFor[node.Tag.Name]; ok {
@@ -35,7 +35,7 @@ func (self WaitingList) UpdateIfBeingLookedFor(node DependencyNode) (WaitingNode
 		}
 	}
 
-	return *new(WaitingNode), errors.New("Not Found In Waiting List")
+	return nil, errors.New("Not Found In Waiting List")
 }
 
 func (self WaitingList) IsAlreadyWaiting(node DependencyNode) bool { // node exists, node is being looked for
@@ -43,10 +43,12 @@ func (self WaitingList) IsAlreadyWaiting(node DependencyNode) bool { // node exi
 	for _, waitingNode := range self.Nodes {
 		for _, containedNode := range waitingNode.ContainedNodes {
 			if strings.EqualFold(containedNode.Tag.Name, node.Tag.Name) {
+				fmt.Println("*********************************************** waiting tag FOUND!")
 				if idAttr1, err := containedNode.Tag.ResolveTagAttr("id"); err == nil {
 					if idAttr2, err := node.Tag.ResolveTagAttr("id"); err == nil {
 						idAttr1val, err1 := containedNode.GetValueForKey(idAttr1)
 						idAttr2val, err2 := node.GetValueForKey(idAttr2)
+						fmt.Println(idAttr1val, "=", idAttr2val, "?")
 						if err1 == nil && err2 == nil && strings.EqualFold(idAttr1val, idAttr2val) {
 							return true
 						}
@@ -60,31 +62,34 @@ func (self WaitingList) IsAlreadyWaiting(node DependencyNode) bool { // node exi
 	return false
 }
 
-func (waitingList *WaitingList) AddNewToWaitingList(node DependencyNode, adjTags []config.Tag, srcApp config.AppConfig) error {
+func (waitingList *WaitingList) AddNewToWaitingList(node *DependencyNode, adjTags []config.Tag, srcApp config.AppConfig) error {
 
 	waitingNode := new(WaitingNode)
 	waitingNode.ContainedNodes = append(waitingNode.ContainedNodes, node)
 	waitingNode.LookingFor = make(map[string]map[string]interface{})
 
 	for _, adjTag := range adjTags {
+		fmt.Println(adjTag.Name, "=", node.Tag.Name, "?")
 		if strings.EqualFold(adjTag.Name, node.Tag.Name) {
+			fmt.Println(adjTag.Name, "=", node.Tag.Name, "?")
 			continue
 		}
 		if dependsOn, err := srcApp.CheckDependency(node.Tag.Name, adjTag.Name); err == nil {
+			fmt.Println(fmt.Sprintf("dependency exists between [%s] and [%s].", node.Tag.Name, adjTag.Name))
 			for _, condition := range dependsOn.Conditions {
 				for _, restriction := range condition.Restrictions {
 					if attr, err := adjTag.ResolveTagAttr(restriction["col"]); err == nil {
 						// for _, datum := range node.Data {
 						if _, ok := node.Data[attr]; ok {
 							if !strings.EqualFold(node.Data[attr].(string), restriction["value"]) {
-								return errors.New(fmt.Sprintf("AddToWaitingList: Restriction Failed: %s != %s", node.Data[attr].(string), restriction["value"]))
+								return fmt.Errorf("AddToWaitingList: Restriction Failed: %s != %s", node.Data[attr].(string), restriction["value"])
 							}
 						} else {
-							return errors.New(fmt.Sprintf("AddToWaitingList: Restriction Attr [%s] not found in Node [%s]", restriction["col"], node.Tag))
+							return fmt.Errorf("AddToWaitingList: Restriction Attr [%s] not found in Node [%s]", restriction["col"], node.Tag)
 						}
 						// }
 					} else {
-						return errors.New(fmt.Sprintf("AddToWaitingList: Restriction Attr [%s] not found in tag key list [%s]", restriction["col"], adjTag))
+						return fmt.Errorf("AddToWaitingList: Restriction Attr [%s] not found in tag key list [%s]", restriction["col"], adjTag)
 					}
 				}
 				waitingNode.LookingFor[adjTag.Name] = make(map[string]interface{})
@@ -95,14 +100,14 @@ func (waitingList *WaitingList) AddNewToWaitingList(node DependencyNode, adjTags
 						if _, ok := node.Data[dependsOnAttr]; ok {
 							waitingNode.LookingFor[adjTag.Name][tagAttr] = node.Data[dependsOnAttr]
 						} else {
-							return errors.New(fmt.Sprintf("AddToWaitingList: Criteria failed. Can't find attribute [%s] in data node [%s]", tagAttr, node.Data))
+							return fmt.Errorf("AddToWaitingList: Criteria failed. Can't find attribute [%s] in data node [%s]", tagAttr, node.Data)
 						}
 						// }
 					} else {
-						return errors.New(fmt.Sprintf("AddToWaitingList: Attr can't be resolved [%s], [%s]", condition.DependsOnAttr, adjTag))
+						return fmt.Errorf("AddToWaitingList: Attr can't be resolved [%s], [%s]", condition.DependsOnAttr, adjTag)
 					}
 				} else {
-					return errors.New(fmt.Sprintf("AddToWaitingList: Attr can't be resolved [%s], [%s]", condition.TagAttr, adjTag))
+					return fmt.Errorf("AddToWaitingList: Attr can't be resolved [%s], [%s]", condition.TagAttr, adjTag)
 				}
 			}
 		} else {
@@ -111,8 +116,15 @@ func (waitingList *WaitingList) AddNewToWaitingList(node DependencyNode, adjTags
 	}
 
 	if len(waitingNode.LookingFor) > 0 {
-		waitingList.Nodes = append(waitingList.Nodes, *waitingNode)
+		waitingList.Nodes = append(waitingList.Nodes, waitingNode)
 	}
+
+	// fmt.Println("node", node.Data)
+	// fmt.Println("adjTags", adjTags)
+	// fmt.Println("waitingNode.LookingFor", waitingNode.LookingFor)
+	// fmt.Println("waitingNode.ContainedNodes", waitingNode.ContainedNodes)
+	// fmt.Println("waitingList.Nodes", waitingList.Nodes)
+	// log.Fatal("check here")
 
 	return nil
 }

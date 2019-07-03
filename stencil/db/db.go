@@ -100,6 +100,13 @@ func SetMFlag(tx *sql.Tx, pk, flag string) error {
 	return err
 }
 
+func MUpdate(tx *sql.Tx, pk, flag, app_id string) error {
+
+	q := "UPDATE row_desc SET mflag = $1, app_id = $2 WHERE rowid = $3"
+	_, err := tx.Exec(q, flag, app_id, pk)
+	return err
+}
+
 func GetColumnsForTable(db *sql.DB, table string) ([]string, string) {
 	var resultList []string
 	resultStr := ""

@@ -210,20 +210,28 @@ func UpdateRowDesc(mappings *config.MappedApp, dstApp config.AppConfig, toTables
 			for col, val := range node.Data {
 				if strings.Contains(col, "pk.") {
 					pk := fmt.Sprint(val)
-					if !helper.Contains(updated, pk) {
-						if err := db.SetAppID(tx, pk, dstApp.AppID); err == nil {
-							if err := db.SetMFlag(tx, pk, "1"); err == nil {
-								updated = append(updated, pk)
-							} else {
-								tx.Rollback()
-								fmt.Println("\n@ERROR_SET_MFLAG:", err)
-								return err
-							}
+					if val != nil && !helper.Contains(updated, pk) {
+						if err := db.MUpdate(tx, pk, "1", dstApp.AppID); err == nil {
+							updated = append(updated, pk)
 						} else {
 							tx.Rollback()
-							fmt.Println("\n@ERROR_SET_APPID:", err)
+							fmt.Println("\n@ERROR_MUpdate:", err)
+							log.Fatal("pk:", pk, "appid", dstApp.AppID)
 							return err
 						}
+						// if err := db.SetAppID(tx, pk, dstApp.AppID); err == nil {
+						// 	if err := db.SetMFlag(tx, pk, "1"); err == nil {
+						// 		updated = append(updated, pk)
+						// 	} else {
+						// 		tx.Rollback()
+						// 		fmt.Println("\n@ERROR_SET_MFLAG:", err)
+						// 		return err
+						// 	}
+						// } else {
+						// 	tx.Rollback()
+						// 	fmt.Println("\n@ERROR_SET_APPID:", err)
+						// 	return err
+						// }
 					}
 				}
 			}
@@ -294,23 +302,31 @@ func MigrateNode(node *m2.DependencyNode, srcApp, dstApp config.AppConfig, wList
 			tagMembers := node.Tag.GetTagMembers()
 			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
 				mappingFound = true
-				if len(tagMembers) == len(appMapping.FromTables) {
+				// if len(tagMembers) == len(appMapping.FromTables) {
+				if helper.Sublist(tagMembers, appMapping.FromTables) {
 					return UpdateRowDesc(mappings, dstApp, appMapping.ToTables, node, dbConn)
 				} else {
 					log.Println("!! Node [", node.Tag.Name, "] needs to wait?")
-					if waitingNode, err := wList.UpdateIfBeingLookedFor(*node); err == nil {
+					log.Println("tagMembers:", tagMembers, "appMapping.FromTables", appMapping.FromTables)
+					if waitingNode, err := wList.UpdateIfBeingLookedFor(node); err == nil {
 						log.Println("!! Node [", node.Tag.Name, "] updated an existing waiting node!")
 						if waitingNode.IsComplete() {
-							log.Println("!! Node [", node.Tag.Name, "] completed a waiting node!")
+							log.Println("!! Node [", node.Tag.Name, "] COMPLETED a waiting node!")
 							tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
 							return UpdateRowDesc(mappings, dstApp, appMapping.ToTables, &tempCombinedDataDependencyNode, dbConn)
 						} else {
-							log.Println("!! Node [", node.Tag.Name, "] added to an incomplete waiting node!")
+							log.Println("!! Node [", node.Tag.Name, "] added to an INCOMPLETE waiting node!")
 							return nil
 						}
 					} else {
 						adjTags := srcApp.GetTagsByTables(appMapping.FromTables)
-						return wList.AddNewToWaitingList(*node, adjTags, srcApp)
+						if err := wList.AddNewToWaitingList(node, adjTags, srcApp); err == nil {
+							log.Println("!! Node [", node.Tag.Name, "] added to a NEW waiting node!")
+							return errors.New("1")
+						} else {
+							log.Println("!! Node [", node.Tag.Name, "] ", err)
+							return err
+						}
 						// if err := wList.AddNewToWaitingList(*node, adjTags, srcApp); err != nil {
 						// 	fmt.Println("!! ERROR WHILE TRYING TO ADD TO WAITING LIST !!", err)
 						// 	return err
@@ -373,11 +389,11 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *m2.Depend
 	if err := MigrateNode(node, srcApp, dstApp, wList, log_txn, dbConn, unmappedTags); err == nil {
 		log.Println(fmt.Sprintf("x%dx Finished  node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
 	} else {
+		log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
 		if strings.EqualFold(err.Error(), "0") {
 			log.Println(err)
 			return err
 		}
-		log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
 	}
 
 	fmt.Println("------------------------------------------------------------------------")

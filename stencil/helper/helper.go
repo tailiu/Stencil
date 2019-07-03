@@ -6,6 +6,7 @@ package helper
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"strings"
 	"time"
@@ -62,4 +63,27 @@ func RandomString(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return RandomChars(1) + string(b)
+}
+
+func Sublist(first, second []string) bool {
+
+	set := make(map[string]int)
+
+	for _, value := range first {
+		value = strings.ToLower(value)
+		set[value] = 1
+	}
+
+	for _, value := range second {
+		value = strings.ToLower(value)
+		if _, found := set[value]; !found {
+			fmt.Println("value not found", value)
+			fmt.Println("1:", first)
+			fmt.Println("2:", second)
+			log.Fatal("check")
+			return false
+		}
+	}
+	// fmt.Println("IS SUBSET!!!!")
+	return true
 }

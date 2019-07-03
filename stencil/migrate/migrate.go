@@ -389,7 +389,7 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 					GenerateAndInsert(mappings, dstApp, appMapping.ToTables, node, log_txn)
 					invalidList.Add(node)
 				} else {
-					if waitingNode, err := wList.UpdateIfBeingLookedFor(*node); err == nil {
+					if waitingNode, err := wList.UpdateIfBeingLookedFor(node); err == nil {
 						if waitingNode.IsComplete() {
 							tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
 							GenerateAndInsert(mappings, dstApp, appMapping.ToTables, &tempCombinedDataDependencyNode, log_txn)
@@ -399,7 +399,7 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 						}
 					} else {
 						adjTags := srcApp.GetTagsByTables(appMapping.FromTables)
-						if err := wList.AddNewToWaitingList(*node, adjTags, srcApp); err != nil {
+						if err := wList.AddNewToWaitingList(node, adjTags, srcApp); err != nil {
 							fmt.Println("!! ERROR !!", err)
 						}
 					}

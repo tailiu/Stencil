@@ -37,7 +37,7 @@ func main() {
 
 		var wg sync.WaitGroup
 		commitChannel := make(chan ThreadChannel)
-		threads_num := 10
+		threads_num := 1
 
 		var wList = new(m2.WaitingList)
 		unmappedTags := m2.UnmappedTags{Mutex: &sync.Mutex{}}
