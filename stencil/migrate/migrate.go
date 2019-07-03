@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,7 +57,7 @@ func UpdateMigrationState(uid string, srcApp, dstApp config.AppConfig) {
 
 }
 
-func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
+func GetRoot(appConfig config.AppConfig, uid string) (*DependencyNode, error) {
 	tagName := "root"
 	if root, err := appConfig.GetTag(tagName); err == nil {
 		sql := "SELECT %s FROM %s WHERE %s "
@@ -97,12 +98,11 @@ func GetRoot(appConfig config.AppConfig, uid string) *DependencyNode {
 		rootNode.Tag = root
 		rootNode.SQL = sql
 		// fmt.Println(sql)
-		rootNode.Data = db.DataCall1(appConfig.DBConn, sql, uid)
-		return rootNode
+		rootNode.Data, err = db.DataCall1(appConfig.DBConn, sql, uid)
+		return rootNode, err
 	} else {
-		log.Fatal("Can't fetch tag:", tagName)
+		return nil, errors.New("Can't fetch tag:" + tagName)
 	}
-	return nil
 }
 
 func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfig, dep config.Dependency) string {
@@ -157,7 +157,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 	return where
 }
 
-func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wList *WaitingList, invalidList *InvalidList) *DependencyNode {
+func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wList *WaitingList, invalidList *InvalidList) (*DependencyNode, error) {
 
 	for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag.Name)) {
 		if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
@@ -209,19 +209,23 @@ func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wL
 					_, cols := db.GetColumnsForTable(appConfig.DBConn, table)
 					sql = fmt.Sprintf(sql, cols, table, where, orderby)
 				}
-				if nodeData := db.DataCall1(appConfig.DBConn, sql); len(nodeData) > 0 {
-					newNode := new(DependencyNode)
-					newNode.Tag = child
-					newNode.SQL = sql
-					newNode.Data = nodeData
-					if !wList.IsAlreadyWaiting(*newNode) && !invalidList.Exists(*newNode) {
-						return newNode
+				if nodeData, err := db.DataCall1(appConfig.DBConn, sql); err == nil {
+					if len(nodeData) > 0 {
+						newNode := new(DependencyNode)
+						newNode.Tag = child
+						newNode.SQL = sql
+						newNode.Data = nodeData
+						if !wList.IsAlreadyWaiting(*newNode) && !invalidList.Exists(*newNode) {
+							return newNode, nil
+						}
 					}
+				} else {
+					return nil, err
 				}
 			}
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTables []config.ToTable, node *DependencyNode, log_txn *transaction.Log_txn) []error {
@@ -318,6 +322,60 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 	return errs
 }
 
+func GetMappedDataForTable(mappings *config.MappedApp, toTable config.ToTable, node *DependencyNode) (string, string, string, []interface{}) {
+	cols, vals, orgCols, orgColsLeft := "", "", "", ""
+	var ivals []interface{}
+	for toAttr, fromAttr := range toTable.Mapping {
+		// if val, err := node.GetValueForKey(fromAttr); err == nil {
+		if val, ok := node.Data[fromAttr]; ok {
+			// vals += fmt.Sprintf("'%v',", val)
+			ivals = append(ivals, val)
+			vals += fmt.Sprintf("$%d,", len(ivals))
+			cols += fmt.Sprintf("%s,", toAttr)
+			orgCols += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
+		} else if strings.Contains(fromAttr, "$") {
+			if inputVal, err := mappings.GetInput(fromAttr); err == nil {
+				// vals += fmt.Sprintf("'%s',", inputVal)
+				ivals = append(ivals, inputVal)
+				vals += fmt.Sprintf("$%d,", len(ivals))
+				cols += fmt.Sprintf("%s,", toAttr)
+				orgCols += fmt.Sprintf("%s,", fromAttr)
+			}
+		} else if strings.Contains(fromAttr, "#") {
+			// Resolve Mapping Method
+		} else {
+			orgColsLeft += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
+		}
+	}
+	orgCols = strings.Trim(orgCols, ",")
+	cols = strings.Trim(cols, ",")
+	vals = strings.Trim(vals, ",")
+	return cols, vals, orgCols, ivals
+}
+
+func PostProcessInsert(id int, dstApp config.AppConfig, toTable config.ToTable, log_txn *transaction.Log_txn, cols, orgCols string, node *DependencyNode, dbConn *sql.DB) {
+	undoAction := new(transaction.UndoAction)
+	undoAction.AddDstTable(toTable.Table)
+	undoActionSerialized, _ := json.Marshal(undoAction)
+	transaction.LogChange(string(undoActionSerialized), log_txn)
+	displayFlag := false
+	if strings.EqualFold(node.Tag.Name, "root") {
+		displayFlag = true
+	}
+	if err := display.GenDisplayFlag(dbConn, dstApp.AppName, toTable.Table, id, displayFlag, log_txn.Txn_id); err != nil {
+		log.Println("## DISPLAY ERROR!", err)
+	}
+	for _, fromTable := range undoAction.OrgTables {
+		srcID := "0"
+		if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
+			srcID = fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
+		}
+		if serr := db.SaveForEvaluation(dbConn, "diaspora", dstApp.AppName, fromTable, toTable.Table, srcID, fmt.Sprint(id), orgCols, cols, fmt.Sprint(log_txn.Txn_id)); serr != nil {
+			log.Fatal(serr)
+		}
+	}
+}
+
 func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *WaitingList, invalidList *InvalidList, log_txn *transaction.Log_txn) {
 	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
 		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
@@ -365,7 +423,7 @@ func MigrateNode(node *DependencyNode, srcApp, dstApp config.AppConfig, wList *W
 	}
 }
 
-func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode, wList *WaitingList, invalidList *InvalidList, log_txn *transaction.Log_txn) {
+func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *DependencyNode, wList *WaitingList, invalidList *InvalidList, log_txn *transaction.Log_txn) error {
 
 	// try:
 
@@ -374,13 +432,18 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 		addUserToApplication(node, srcApp, dstApp, log_txn)
 	}
 
-	for child := GetAdjNode(node, srcApp, uid, wList, invalidList); child != nil; child = GetAdjNode(node, srcApp, uid, wList, invalidList) {
+	for child, err := GetAdjNode(node, srcApp, uid, wList, invalidList); child != nil; child, err = GetAdjNode(node, srcApp, uid, wList, invalidList) {
+		if err != nil {
+			return err
+		}
 		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
 		log.Println("-- Currrent Node:", node.Tag.Name, "ID:", node.Data[nodeIDAttr])
 		log.Println("-- Adjacent Node:", child.Tag.Name, "ID:", child.Data[childIDAttr])
-		MigrateProcess(uid, srcApp, dstApp, child, wList, invalidList, log_txn)
+		if mErr := MigrateProcess(uid, srcApp, dstApp, child, wList, invalidList, log_txn); mErr != nil {
+			return mErr
+		}
 	}
 	// acquirePredicateLock(*node)
 	// for child := GetAdjNode(node, srcApp, uid); child != nil; child = GetAdjNode(node, srcApp, uid) {
@@ -407,4 +470,5 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *Dependenc
 	// 	UpdateMigrationState(uid, srcApp, dstApp)
 	// 	log.Println("Congratulations, this migration worker has finished it's job!")
 	// }
+	return nil
 }

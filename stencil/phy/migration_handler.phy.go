@@ -9,10 +9,12 @@ import (
 	"log"
 	"os"
 	"stencil/config"
+	"stencil/db"
 	m2 "stencil/migrate"
 	migrate "stencil/migrate/phy"
 	"stencil/transaction"
 	"sync"
+	"time"
 )
 
 type ThreadChannel struct {
@@ -30,18 +32,22 @@ func main() {
 		config.LoadSchemaMappings()
 
 		uid := os.Args[1] // uid := 4716
-		migrate.RemoveUserFromApp(uid, dstAppID, logTxn)
+
+		// migrate.RemoveUserFromApp(uid, dstAppID, logTxn)
 
 		var wg sync.WaitGroup
 		commitChannel := make(chan ThreadChannel)
-		threads_num := 1
+		threads_num := 10
 
 		var wList = new(m2.WaitingList)
+		unmappedTags := m2.UnmappedTags{Mutex: &sync.Mutex{}}
 
 		for thread_id := 1; thread_id <= threads_num; thread_id++ {
+			time.Sleep(time.Millisecond * 300)
 			wg.Add(1)
 			go func(thread_id int, commitChannel chan ThreadChannel) {
 				defer wg.Done()
+
 				if srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID); err != nil {
 					commitChannel <- ThreadChannel{Finished: false, Thread_id: thread_id}
 					log.Fatal(err)
@@ -50,15 +56,22 @@ func main() {
 						commitChannel <- ThreadChannel{Finished: false, Thread_id: thread_id}
 						log.Fatal(err)
 					} else {
-						if rootNode := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid), logTxn); rootNode != nil {
-							migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, logTxn)
-						} else {
-							fmt.Println("Root Node can't be fetched!")
+						for {
+							dbConn := db.GetDBConn("stencil")
+							if rootNode, err := migrate.GetRoot(srcAppConfig, fmt.Sprint(uid), dbConn); rootNode != nil && err == nil {
+								if err := migrate.MigrateProcess(fmt.Sprint(uid), srcAppConfig, dstAppConfig, rootNode, wList, logTxn, dbConn, &unmappedTags, thread_id); err != nil {
+									dbConn.Close()
+									continue
+								}
+							} else {
+								fmt.Println("Root Node can't be fetched!", err)
+							}
+							dbConn.Close()
+							break
 						}
-						// dstAppConfig.CloseDBConn()
 					}
-					// srcAppConfig.CloseDBConn()
 					commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
+
 				}
 			}(thread_id, commitChannel)
 		}

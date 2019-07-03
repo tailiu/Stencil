@@ -14,6 +14,10 @@ import (
 
 var SchemaMappingsObj *SchemaMappings
 
+func Init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 func CreateAppConfig(app, app_id string) (AppConfig, error) {
 
 	var appConfig AppConfig
@@ -77,7 +81,7 @@ func GetSchemaMappingsFor(srcApp, dstApp string) *MappedApp {
 }
 
 func ShuffleDependencies(vals []Dependency) []Dependency {
-	rand.Seed(time.Now().UnixNano())
+	Init()
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	ret := make([]Dependency, len(vals))
 	perm := r.Perm(len(vals))

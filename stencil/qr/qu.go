@@ -68,7 +68,7 @@ func (self *QU) SetWhereOperator_(logop, col, op, val string) {
 
 }
 
-func (self *QU) GetAffectedRows() {
+func (self *QU) GetAffectedRows() error {
 
 	join, where, prev := "", "", ""
 	for _, table := range self.affected_tables {
@@ -88,16 +88,22 @@ func (self *QU) GetAffectedRows() {
 	}
 
 	sql := fmt.Sprintf("SELECT %s.pk FROM %s WHERE %s", strings.Join(self.affected_tables, ".pk,"), join, where)
-	res := db.DataCall(self.QR.StencilDB, sql)
 
-	for _, row := range res {
-		for _, val := range row {
-			pk := fmt.Sprint(val)
-			if len(pk) > 0 {
-				self.affected_rows = append(self.affected_rows, pk)
+	if res, err := db.DataCall(self.QR.StencilDB, sql); err == nil {
+
+		for _, row := range res {
+			for _, val := range row {
+				pk := fmt.Sprint(val)
+				if len(pk) > 0 {
+					self.affected_rows = append(self.affected_rows, pk)
+				}
 			}
 		}
+	} else {
+		return err
 	}
+
+	return nil
 
 	// for table := range self.affected_tables {
 	// 	sql := fmt.Sprintf("SELECT pk FROM %s WHERE %s", table, self.Where[table])

@@ -8,6 +8,10 @@ const (
 	QTSelect = "Select"
 	QTUpdate = "Update"
 	QTDelete = "Delete"
+	EXISTS   = "EXISTS"
+	NEXISTS  = "NOT EXISTS"
+	IN       = "IN"
+	NOTIN    = "NOT IN"
 )
 
 // QR: Query Resolver

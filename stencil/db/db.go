@@ -60,6 +60,16 @@ func CloseDBConn(app string) {
 	}
 }
 
+func Delete(db *sql.DB, SQL string, args ...interface{}) error {
+
+	if _, err := db.Query(SQL, args...); err != nil {
+		log.Println(SQL, args)
+		log.Fatal("## DB ERROR: ", err)
+		return err
+	}
+	return nil
+}
+
 func Insert(dbConn *sql.DB, query string, args ...interface{}) (int, error) {
 
 	lastInsertId := -1
@@ -159,20 +169,19 @@ func GetRow(rows *sql.Rows) map[string]interface{} {
 	return myMap
 }
 
-func DataCall(db *sql.DB, SQL string, args ...interface{}) []map[string]interface{} {
-
-	var result []map[string]interface{}
+func DataCall(db *sql.DB, SQL string, args ...interface{}) ([]map[string]interface{}, error) {
 
 	// db := GetDBConn(app)
 	// log.Println(SQL, args)
 	if rows, err := db.Query(SQL, args...); err != nil {
 		log.Println(SQL, args)
-		log.Fatal(err)
+		return nil, err
 	} else {
 
 		if colNames, err := rows.Columns(); err != nil {
-			log.Fatal(err)
+			return nil, err
 		} else {
+			var result []map[string]interface{}
 
 			for rows.Next() {
 				var data = make(map[string]interface{})
@@ -196,34 +205,25 @@ func DataCall(db *sql.DB, SQL string, args ...interface{}) []map[string]interfac
 				result = append(result, data)
 			}
 			rows.Close()
+			return result, nil
 		}
 	}
-	return result
 }
 
-func Delete(db *sql.DB, SQL string, args ...interface{}) error {
-
-	if _, err := db.Query(SQL, args...); err != nil {
-		log.Println(SQL, args)
-		log.Fatal("## DB ERROR: ", err)
-		return err
-	}
-	return nil
-}
-
-func DataCall1(db *sql.DB, SQL string, args ...interface{}) map[string]interface{} {
+func DataCall1(db *sql.DB, SQL string, args ...interface{}) (map[string]interface{}, error) {
 
 	// db := GetDBConn(app)
 	// log.Println(SQL, args)
 	if rows, err := db.Query(SQL+" LIMIT 1", args...); err != nil {
 		log.Println(SQL, args)
-		log.Fatal("## DB ERROR: ", err)
+		log.Println("## DB ERROR: ", err)
+		return nil, err
 	} else {
+		defer rows.Close()
 
 		if colNames, err := rows.Columns(); err != nil {
-			log.Fatal(err)
+			return nil, err
 		} else {
-
 			if rows.Next() {
 				var data = make(map[string]interface{})
 				cols := make([]interface{}, len(colNames))
@@ -243,12 +243,12 @@ func DataCall1(db *sql.DB, SQL string, args ...interface{}) map[string]interface
 				// for key, val := range data {
 				// 	fmt.Println("Key:", key, "Value Type:", reflect.TypeOf(val), fmt.Sprint(val))
 				// }
-				return data
+				return data, nil
+			} else {
+				return nil, nil
 			}
-			rows.Close()
 		}
 	}
-	return make(map[string]interface{})
 }
 
 func _DataCall1(app, sql string, args ...interface{}) (map[string]string, error) {

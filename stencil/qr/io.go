@@ -49,26 +49,34 @@ func NewQRWithAppID(app_id string) *QR {
 
 func (self *QR) setAppID() error {
 	sql := fmt.Sprintf("SELECT pk from apps WHERE app_name = '%s'", self.AppName)
-	result := db.DataCall1(self.StencilDB, sql)
-	if val, ok := result["pk"]; ok {
-		fmt.Println("App ID:", val)
-		self.AppID = fmt.Sprint(val)
-		return nil
+	if result, err := db.DataCall1(self.StencilDB, sql); err == nil {
+		if val, ok := result["pk"]; ok {
+			fmt.Println("App ID:", val)
+			self.AppID = fmt.Sprint(val)
+			return nil
+		} else {
+			return errors.New("Can't find pk in Query Results!")
+		}
+	} else {
+		return err
 	}
-	return errors.New("can't set app name")
 }
 
 func (self *QR) setAppName() error {
 	sql := fmt.Sprintf("SELECT app_name from apps WHERE app_id = '%s'", self.AppID)
-	result := db.DataCall1(self.StencilDB, sql)
-	if val, ok := result["app_name"]; ok {
-		self.AppName = fmt.Sprint(val)
-		return nil
+	if result, err := db.DataCall1(self.StencilDB, sql); err == nil {
+		if val, ok := result["app_name"]; ok {
+			self.AppName = fmt.Sprint(val)
+			return nil
+		} else {
+			return errors.New("Can't find app_name in Query Results!")
+		}
+	} else {
+		return err
 	}
-	return errors.New("can't set app name")
 }
 
-func (self *QR) getBaseMappings() {
+func (self *QR) getBaseMappings() error {
 	// sql := fmt.Sprintf(`SELECT
 	// 						LOWER(app_tables.table_name) as logical_table,
 	// 						LOWER(app_schemas.column_name) as logical_column,
@@ -84,16 +92,21 @@ func (self *QR) getBaseMappings() {
 	sql := `SELECT * FROM diaspora_base_mappings`
 
 	// self.BaseMappings = db.DataCall(self.StencilDB, sql)
-	for _, mapping := range db.DataCall(self.StencilDB, sql) {
-		mappingStr := make(map[string]string)
-		for key, val := range mapping {
-			mappingStr[key] = fmt.Sprint(val)
+	if result, err := db.DataCall(self.StencilDB, sql); err == nil {
+		for _, mapping := range result {
+			mappingStr := make(map[string]string)
+			for key, val := range mapping {
+				mappingStr[key] = fmt.Sprint(val)
+			}
+			self.BaseMappings = append(self.BaseMappings, mappingStr)
 		}
-		self.BaseMappings = append(self.BaseMappings, mappingStr)
+		return nil
+	} else {
+		return err
 	}
 }
 
-func (self *QR) getSupplementaryMappings() {
+func (self *QR) getSupplementaryMappings() error {
 	// sql := fmt.Sprintf(`SELECT
 	// 						LOWER(app_tables.table_name) as logical_table,
 	// 						LOWER(asm.column_name)  as logical_column,
@@ -110,11 +123,16 @@ func (self *QR) getSupplementaryMappings() {
 	sql := `SELECT * FROM diaspora_supplementary_mappings`
 
 	// self.SuppMappings = db.DataCall(self.StencilDB, sql)
-	for _, mapping := range db.DataCall(self.StencilDB, sql) {
-		mappingStr := make(map[string]string)
-		for key, val := range mapping {
-			mappingStr[key] = fmt.Sprint(val)
+	if result, err := db.DataCall(self.StencilDB, sql); err == nil {
+		for _, mapping := range result {
+			mappingStr := make(map[string]string)
+			for key, val := range mapping {
+				mappingStr[key] = fmt.Sprint(val)
+			}
+			self.SuppMappings = append(self.SuppMappings, mappingStr)
 		}
-		self.SuppMappings = append(self.SuppMappings, mappingStr)
+		return nil
+	} else {
+		return err
 	}
 }

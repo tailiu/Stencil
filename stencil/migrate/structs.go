@@ -1,6 +1,9 @@
 package migrate
 
-import "stencil/config"
+import (
+	"stencil/config"
+	"sync"
+)
 
 type DependencyNode struct {
 	Tag  config.Tag
@@ -20,4 +23,9 @@ type WaitingList struct {
 
 type InvalidList struct {
 	Nodes []*DependencyNode
+}
+
+type UnmappedTags struct {
+	Mutex *sync.Mutex
+	tags  []string
 }
