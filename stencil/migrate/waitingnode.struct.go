@@ -12,9 +12,9 @@ func (self WaitingNode) IsComplete() bool {
 	return true
 }
 
-func (self WaitingNode) GenDependencyDataNode() DependencyNode {
+func (self WaitingNode) GenDependencyDataNode() *DependencyNode {
 
-	var dependencyNode DependencyNode
+	dependencyNode := new(DependencyNode)
 	dependencyNode.Data = make(map[string]interface{})
 	for _, containedNode := range self.ContainedNodes {
 		for key, val := range containedNode.Data {

@@ -44,48 +44,65 @@ func UpdateMigrationState(uid string, srcApp, dstApp config.AppConfig) {
 
 }
 
+func GetDataNodeQS(tag config.Tag, appConfig config.AppConfig) *qr.QS {
+	qs := qr.CreateQS(appConfig.QR)
+	if len(tag.InnerDependencies) > 0 {
+		joinMap := tag.CreateInDepMap()
+		seenMap := make(map[string]bool)
+		for fromTable, toTablesMap := range joinMap {
+			if _, ok := seenMap[fromTable]; !ok {
+				qs.FromSimple(fromTable)
+				qs.ColSimple(fromTable + ".*")
+				qs.ColPK(fromTable)
+			}
+			for toTable, conditions := range toTablesMap {
+				if conditions != nil {
+					conditions = append(conditions, joinMap[toTable][fromTable]...)
+					if joinMap[toTable][fromTable] != nil {
+						joinMap[toTable][fromTable] = nil
+					}
+					qs.FromJoinList(toTable, conditions)
+					qs.ColSimple(toTable + ".*")
+					qs.ColPK(toTable)
+					seenMap[toTable] = true
+				}
+			}
+			seenMap[fromTable] = true
+		}
+	} else {
+		table := tag.Members["member1"]
+		qs = qr.CreateQS(appConfig.QR)
+		qs.FromSimple(table)
+		qs.ColPK(table)
+		qs.ColSimple(table + ".*")
+	}
+	if len(tag.Restrictions) > 0 {
+		restrictions := qr.CreateQS(appConfig.QR)
+		restrictions.TableAliases = qs.TableAliases
+		for _, restriction := range tag.Restrictions {
+			if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
+				restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
+			}
+
+		}
+		qs.WhereString("AND", restrictions.Where)
+	}
+	return qs
+}
+
 func GetRoot(appConfig config.AppConfig, uid string, dbConn *sql.DB) (*m2.DependencyNode, error) {
 	tagName := "root"
 	if root, err := appConfig.GetTag(tagName); err == nil {
-		var sql string
-		qs := qr.CreateQS(appConfig.QR)
+		qs := GetDataNodeQS(root, appConfig)
 		rootTable, rootCol := appConfig.GetItemsFromKey(root, "root_id")
-		if len(root.InnerDependencies) > 0 {
-			joinMap := root.CreateInDepMap()
-			seenMap := make(map[string]bool)
-			for fromTable, toTablesMap := range joinMap {
-				if _, ok := seenMap[fromTable]; !ok {
-					qs.FromSimple(fromTable)
-					qs.ColSimple(fromTable + ".*")
-					qs.ColPK(fromTable)
-				}
-				for toTable, conditions := range toTablesMap {
-					if conditions != nil {
-						conditions = append(conditions, joinMap[toTable][fromTable]...)
-						if joinMap[toTable][fromTable] != nil {
-							joinMap[toTable][fromTable] = nil
-						}
-						qs.FromJoinList(toTable, conditions)
-						qs.ColSimple(toTable + ".*")
-						qs.ColPK(toTable)
-						seenMap[toTable] = true
-					}
-				}
-				seenMap[fromTable] = true
-			}
-		} else {
-			table := root.Members["member1"]
-			qs.FromSimple(table)
-			qs.ColSimple(rootTable + ".*")
-			qs.ColPK(rootTable)
-		}
 		qs.WhereSimpleVal(rootTable+"."+rootCol, "=", uid)
 		qs.WhereMFlag(qr.EXISTS, "0", appConfig.AppID)
-		sql = qs.GenSQL()
-		rootNode := new(m2.DependencyNode)
-		rootNode.Tag = root
-		rootNode.SQL = sql
-		if rootNode.Data, err = db.DataCall1(dbConn, sql); err == nil && len(rootNode.Data) > 0 {
+		sql := qs.GenSQL()
+		if data, err := db.DataCall1(dbConn, sql); err == nil && len(data) > 0 {
+			rootNode := new(m2.DependencyNode)
+			rootNode.Tag = root
+			rootNode.SQL = sql
+			rootNode.Data = data
 			return rootNode, nil
 		} else {
 			return nil, err
@@ -99,66 +116,23 @@ func GetRoot(appConfig config.AppConfig, uid string, dbConn *sql.DB) (*m2.Depend
 func GetAdjNode(node *m2.DependencyNode, appConfig config.AppConfig, uid string, wList *m2.WaitingList, dbConn *sql.DB, unmappedTags *m2.UnmappedTags) (*m2.DependencyNode, error) {
 
 	for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag.Name)) {
-		// for _, dep := range appConfig.GetSubDependencies(node.Tag.Name) {
-		// if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
 		if unmappedTags.Exists(dep.Tag) {
 			continue
 		}
 		if child, err := appConfig.GetTag(dep.Tag); err == nil {
-			var sql string
-			qs := qr.CreateQS(appConfig.QR)
-			if len(child.InnerDependencies) > 0 {
-				joinMap := child.CreateInDepMap()
-				seenMap := make(map[string]bool)
-				for fromTable, toTablesMap := range joinMap {
-					if _, ok := seenMap[fromTable]; !ok {
-						qs.FromSimple(fromTable)
-						qs.ColSimple(fromTable + ".*")
-						qs.ColPK(fromTable)
-					}
-					for toTable, conditions := range toTablesMap {
-						if conditions != nil {
-							conditions = append(conditions, joinMap[toTable][fromTable]...)
-							if joinMap[toTable][fromTable] != nil {
-								joinMap[toTable][fromTable] = nil
-							}
-							qs.FromJoinList(toTable, conditions)
-							qs.ColSimple(toTable + ".*")
-							qs.ColPK(toTable)
-							seenMap[toTable] = true
-						}
-					}
-					seenMap[fromTable] = true
-				}
-			} else {
-				table := child.Members["member1"]
-				qs = qr.CreateQS(appConfig.QR)
-				qs.FromSimple(table)
-				qs.ColPK(table)
-				qs.ColSimple(table + ".*")
+			qs := GetDataNodeQS(child, appConfig)
+			if where := ResolveDependencyConditions(node, appConfig, dep, child, qs); where != "" {
+				qs.WhereString("AND", where)
 			}
-			if len(child.Restrictions) > 0 {
-				restrictions := qr.CreateQS(appConfig.QR)
-				restrictions.TableAliases = qs.TableAliases
-				for _, restriction := range child.Restrictions {
-					if restrictionAttr, err := child.ResolveTagAttr(restriction["col"]); err == nil {
-						restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
-					}
-
-				}
-				qs.WhereString("AND", restrictions.Where)
-			}
-			where := ResolveDependencyConditions(node, appConfig, dep, child, qs)
-			qs.WhereString("AND", where)
 			qs.WhereMFlag(qr.EXISTS, "0", appConfig.AppID)
 			qs.OrderBy("random()")
-			sql = qs.GenSQL()
-			if nodeData, err := db.DataCall1(dbConn, sql); err == nil {
-				if len(nodeData) > 0 {
+			sql := qs.GenSQL()
+			if data, err := db.DataCall1(dbConn, sql); err == nil {
+				if len(data) > 0 {
 					newNode := new(m2.DependencyNode)
 					newNode.Tag = child
 					newNode.SQL = sql
-					newNode.Data = nodeData
+					newNode.Data = data
 					if !wList.IsAlreadyWaiting(*newNode) {
 						return newNode, nil
 					}
@@ -194,7 +168,7 @@ func CheckMappingConditions(toTable config.ToTable, node *m2.DependencyNode) boo
 	return breakCondition
 }
 
-func UpdateRowDesc(mappings *config.MappedApp, dstApp config.AppConfig, toTables []config.ToTable, node *m2.DependencyNode, dbConn *sql.DB) error {
+func UpdateRowDesc(mappings *config.MappedApp, srcApp, dstApp config.AppConfig, toTables []config.ToTable, node *m2.DependencyNode, dbConn *sql.DB, log_txn *transaction.Log_txn) error {
 
 	if tx, err := dbConn.Begin(); err != nil {
 		log.Println("Can't create UpdateRowDesc transaction!")
@@ -213,6 +187,9 @@ func UpdateRowDesc(mappings *config.MappedApp, dstApp config.AppConfig, toTables
 					if val != nil && !helper.Contains(updated, pk) {
 						if err := db.MUpdate(tx, pk, "1", dstApp.AppID); err == nil {
 							updated = append(updated, pk)
+							if undoActionJSON, err := transaction.GenUndoActionJSON(updated, dstApp.AppID, srcApp.AppID); err == nil {
+								transaction.LogChange(undoActionJSON, log_txn)
+							}
 						} else {
 							tx.Rollback()
 							fmt.Println("\n@ERROR_MUpdate:", err)
@@ -293,70 +270,63 @@ func ResolveDependencyConditions(node *m2.DependencyNode, appConfig config.AppCo
 	return where.Where
 }
 
-func MigrateNode(node *m2.DependencyNode, srcApp, dstApp config.AppConfig, wList *m2.WaitingList, log_txn *transaction.Log_txn, dbConn *sql.DB, unmappedTags *m2.UnmappedTags) error {
-	if mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName); mappings == nil {
-		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
-	} else {
-		mappingFound := false
-		for _, appMapping := range mappings.Mappings {
-			tagMembers := node.Tag.GetTagMembers()
-			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
-				mappingFound = true
-				// if len(tagMembers) == len(appMapping.FromTables) {
-				if helper.Sublist(tagMembers, appMapping.FromTables) {
-					return UpdateRowDesc(mappings, dstApp, appMapping.ToTables, node, dbConn)
-				} else {
-					log.Println("!! Node [", node.Tag.Name, "] needs to wait?")
-					log.Println("tagMembers:", tagMembers, "appMapping.FromTables", appMapping.FromTables)
-					if waitingNode, err := wList.UpdateIfBeingLookedFor(node); err == nil {
-						log.Println("!! Node [", node.Tag.Name, "] updated an existing waiting node!")
-						if waitingNode.IsComplete() {
-							log.Println("!! Node [", node.Tag.Name, "] COMPLETED a waiting node!")
-							tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
-							return UpdateRowDesc(mappings, dstApp, appMapping.ToTables, &tempCombinedDataDependencyNode, dbConn)
-						} else {
-							log.Println("!! Node [", node.Tag.Name, "] added to an INCOMPLETE waiting node!")
-							return nil
-						}
-					} else {
-						adjTags := srcApp.GetTagsByTables(appMapping.FromTables)
-						if err := wList.AddNewToWaitingList(node, adjTags, srcApp); err == nil {
-							log.Println("!! Node [", node.Tag.Name, "] added to a NEW waiting node!")
-							return errors.New("1")
-						} else {
-							log.Println("!! Node [", node.Tag.Name, "] ", err)
-							return err
-						}
-						// if err := wList.AddNewToWaitingList(*node, adjTags, srcApp); err != nil {
-						// 	fmt.Println("!! ERROR WHILE TRYING TO ADD TO WAITING LIST !!", err)
-						// 	return err
-						// } else {
-						// 	log.Println("!! Node [", node.Tag.Name, "] added to a new waiting node!")
-						// 	return true
-						// }
-					}
-				}
-				// break
-				// return true
-			}
+func HandleWaitingList(mappings *config.MappedApp, appMapping config.Mapping, tagMembers []string, node *m2.DependencyNode, srcApp, dstApp config.AppConfig, wList *m2.WaitingList) (*m2.DependencyNode, error) {
+
+	log.Println("!! Node [", node.Tag.Name, "] needs to wait?")
+	log.Println("tagMembers:", tagMembers, "appMapping.FromTables", appMapping.FromTables)
+	if waitingNode, err := wList.UpdateIfBeingLookedFor(node); err == nil {
+		log.Println("!! Node [", node.Tag.Name, "] updated an EXISITNG waiting node!")
+		if waitingNode.IsComplete() {
+			log.Println("!! Node [", node.Tag.Name, "] COMPLETED a waiting node!")
+			tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
+			return tempCombinedDataDependencyNode, nil
 		}
-		if !mappingFound {
-			// set m flag?
-			for _, tagMember := range node.Tag.Members {
-				if _, ok := node.Data[fmt.Sprintf("%s.id", tagMember)]; ok {
-					srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", tagMember)])
-					if serr := db.SaveForEvaluation(dbConn, "diaspora", dstApp.AppName, tagMember, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(log_txn.Txn_id)); serr != nil {
-						log.Fatal(serr)
-					}
-				}
+		return nil, errors.New("1")
+	}
+	adjTags := srcApp.GetTagsByTables(appMapping.FromTables)
+	if err := wList.AddNewToWaitingList(node, adjTags, srcApp); err == nil {
+		log.Println("!! Node [", node.Tag.Name, "] added to a NEW waiting node!")
+		return nil, errors.New("1")
+	} else {
+		log.Println("!! Node [", node.Tag.Name, "] ", err)
+		return nil, err
+	}
+}
+
+func HandleUnmappedTags(node *m2.DependencyNode, dbConn *sql.DB, unmappedTags *m2.UnmappedTags, dstApp config.AppConfig, log_txn *transaction.Log_txn) error {
+	log.Println("!! Couldn't find mappings for the tag [", node.Tag.Name, "]")
+	unmappedTags.Add(node.Tag.Name)
+	// save for evaluation
+	for _, tagMember := range node.Tag.Members {
+		if _, ok := node.Data[fmt.Sprintf("%s.id", tagMember)]; ok {
+			srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", tagMember)])
+			if serr := db.SaveForEvaluation(dbConn, "diaspora", dstApp.AppName, tagMember, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(log_txn.Txn_id)); serr != nil {
+				log.Fatal(serr)
 			}
-			log.Println("!! Couldn't find mappings for the tag [", node.Tag.Name, "]")
-			unmappedTags.Add(node.Tag.Name)
-			return errors.New("1")
 		}
 	}
-	fmt.Println("~~~~~~~~~~~~ why here?")
-	return nil
+	return errors.New("1")
+}
+
+func MigrateNode(node *m2.DependencyNode, srcApp, dstApp config.AppConfig, wList *m2.WaitingList, log_txn *transaction.Log_txn, dbConn *sql.DB, unmappedTags *m2.UnmappedTags) error {
+	mappings := config.GetSchemaMappingsFor(srcApp.AppName, dstApp.AppName)
+	if mappings == nil {
+		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp.AppName, dstApp.AppName))
+	}
+	for _, appMapping := range mappings.Mappings {
+		tagMembers := node.Tag.GetTagMembers()
+		if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
+			if helper.Sublist(tagMembers, appMapping.FromTables) {
+				return UpdateRowDesc(mappings, srcApp, dstApp, appMapping.ToTables, node, dbConn, log_txn)
+			}
+			if wNode, err := HandleWaitingList(mappings, appMapping, tagMembers, node, srcApp, dstApp, wList); wNode != nil && err == nil {
+				return UpdateRowDesc(mappings, srcApp, dstApp, appMapping.ToTables, wNode, dbConn, log_txn)
+			} else {
+				return err
+			}
+		}
+	}
+	return HandleUnmappedTags(node, dbConn, unmappedTags, dstApp, log_txn)
 }
 
 func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *m2.DependencyNode, wList *m2.WaitingList, log_txn *transaction.Log_txn, dbConn *sql.DB, unmappedTags *m2.UnmappedTags, thread_id int) error {

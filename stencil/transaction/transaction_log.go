@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -25,6 +26,20 @@ type UndoActionP struct {
 	SrcApp string
 	DstApp string
 	PK     string
+}
+
+func GenUndoActionJSON(pks []string, dstAppID, srcAppID string) (string, error) {
+	var undoActions []UndoActionP
+
+	for _, pk := range pks {
+		undoAction := UndoActionP{SrcApp: srcAppID, DstApp: dstAppID, PK: pk}
+		undoActions = append(undoActions, undoAction)
+	}
+	if undoActionSerialized, err := json.Marshal(undoActions); err == nil {
+		return fmt.Sprint(undoActionSerialized), nil
+	} else {
+		return "", err
+	}
 }
 
 func (self *UndoAction) AddOrgTable(newTable string) []string {
