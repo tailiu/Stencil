@@ -7,10 +7,12 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
+	"stencil/display"
 	"stencil/helper"
 	m2 "stencil/migrate"
 	"stencil/qr"
 	"stencil/transaction"
+	"strconv"
 	"strings"
 )
 
@@ -40,8 +42,57 @@ func AddUserToApp(uid, app_id string, dbConn *sql.DB) bool {
 	return true
 }
 
-func UpdateMigrationState(uid string, srcApp, dstApp config.AppConfig) {
+func ResolveDependencyConditions(node *m2.DependencyNode, appConfig config.AppConfig, dep config.Dependency, tag config.Tag, qs *qr.QS) {
 
+	where := qr.CreateQS(appConfig.QR)
+	where.TableAliases = qs.TableAliases
+	for _, depOn := range dep.DependsOn {
+		if depOnTag, err := appConfig.GetTag(depOn.Tag); err == nil {
+			if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
+				for _, condition := range depOn.Conditions {
+					conditionStr := qr.CreateQS(appConfig.QR)
+					conditionStr.TableAliases = qs.TableAliases
+					tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
+					if err != nil {
+						log.Println(err, tag.Name, condition.TagAttr)
+						break
+					}
+					depOnAttr, err := depOnTag.ResolveTagAttr(condition.DependsOnAttr)
+					if err != nil {
+						log.Println(err, depOnTag.Name, condition.DependsOnAttr)
+						break
+					}
+					if _, ok := node.Data[depOnAttr]; ok {
+						conditionStr.WhereOperatorInterface("AND", tagAttr, "=", node.Data[depOnAttr])
+					} else {
+						fmt.Println(depOnTag)
+						log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
+					}
+					if len(condition.Restrictions) > 0 {
+						restrictions := qr.CreateQS(appConfig.QR)
+						restrictions.TableAliases = qs.TableAliases
+						for _, restriction := range condition.Restrictions {
+							if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
+								restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
+							}
+
+						}
+						if restrictions.Where == "" {
+							log.Fatal(condition.Restrictions)
+						}
+						// log.Fatal("restrictions.Where", restrictions.Where)
+						conditionStr.WhereString("AND", restrictions.Where)
+					}
+					// log.Fatal("conditionStr.Where", conditionStr.Where)
+					where.WhereString("AND", conditionStr.Where)
+				}
+			}
+		}
+	}
+	// log.Fatal("where.Where", where.Where)
+	if where.Where != "" {
+		qs.WhereString("AND", where.Where)
+	}
 }
 
 func GetDataNodeQS(tag config.Tag, appConfig config.AppConfig) *qr.QS {
@@ -121,9 +172,7 @@ func GetAdjNode(node *m2.DependencyNode, appConfig config.AppConfig, uid string,
 		}
 		if child, err := appConfig.GetTag(dep.Tag); err == nil {
 			qs := GetDataNodeQS(child, appConfig)
-			if where := ResolveDependencyConditions(node, appConfig, dep, child, qs); where != "" {
-				qs.WhereString("AND", where)
-			}
+			ResolveDependencyConditions(node, appConfig, dep, child, qs)
 			qs.WhereMFlag(qr.EXISTS, "0", appConfig.AppID)
 			qs.OrderBy("random()")
 			sql := qs.GenSQL()
@@ -183,12 +232,12 @@ func UpdateRowDesc(mappings *config.MappedApp, srcApp, dstApp config.AppConfig, 
 			}
 			for col, val := range node.Data {
 				if strings.Contains(col, "pk.") {
-					pk := fmt.Sprint(val)
+					pk := strconv.FormatInt(val.(int64), 10)
 					if val != nil && !helper.Contains(updated, pk) {
 						if err := db.MUpdate(tx, pk, "1", dstApp.AppID); err == nil {
 							updated = append(updated, pk)
-							if undoActionJSON, err := transaction.GenUndoActionJSON(updated, dstApp.AppID, srcApp.AppID); err == nil {
-								transaction.LogChange(undoActionJSON, log_txn)
+							if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, pk, false, log_txn.Txn_id); err != nil {
+								log.Fatal("## DISPLAY ERROR!", err)
 							}
 						} else {
 							tx.Rollback()
@@ -214,60 +263,16 @@ func UpdateRowDesc(mappings *config.MappedApp, srcApp, dstApp config.AppConfig, 
 			}
 		}
 		// tx.Rollback()
+		if undoActionJSON, err := transaction.GenUndoActionJSON(updated, srcApp.AppID, dstApp.AppID); err == nil {
+			if log_err := transaction.LogChange(undoActionJSON, log_txn); log_err != nil {
+				log.Fatal("UpdateRowDesc: unable to LogChange", log_err)
+			}
+		} else {
+			log.Fatal("UpdateRowDesc: unable to GenUndoActionJSON", err)
+		}
 		tx.Commit()
 	}
 	return nil
-}
-
-func ResolveDependencyConditions(node *m2.DependencyNode, appConfig config.AppConfig, dep config.Dependency, tag config.Tag, qs *qr.QS) string {
-
-	where := qr.CreateQS(appConfig.QR)
-	where.TableAliases = qs.TableAliases
-	for _, depOn := range dep.DependsOn {
-		if depOnTag, err := appConfig.GetTag(depOn.Tag); err == nil {
-			if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
-				for _, condition := range depOn.Conditions {
-					conditionStr := qr.CreateQS(appConfig.QR)
-					conditionStr.TableAliases = qs.TableAliases
-					tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
-					if err != nil {
-						log.Println(err, tag.Name, condition.TagAttr)
-						break
-					}
-					depOnAttr, err := depOnTag.ResolveTagAttr(condition.DependsOnAttr)
-					if err != nil {
-						log.Println(err, depOnTag.Name, condition.DependsOnAttr)
-						break
-					}
-					if _, ok := node.Data[depOnAttr]; ok {
-						conditionStr.WhereOperatorInterface("AND", tagAttr, "=", node.Data[depOnAttr])
-					} else {
-						fmt.Println(depOnTag)
-						log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
-					}
-					if len(condition.Restrictions) > 0 {
-						restrictions := qr.CreateQS(appConfig.QR)
-						restrictions.TableAliases = qs.TableAliases
-						for _, restriction := range condition.Restrictions {
-							if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
-								restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
-							}
-
-						}
-						if restrictions.Where == "" {
-							log.Fatal(condition.Restrictions)
-						}
-						// log.Fatal("restrictions.Where", restrictions.Where)
-						conditionStr.WhereString("AND", restrictions.Where)
-					}
-					// log.Fatal("conditionStr.Where", conditionStr.Where)
-					where.WhereString("AND", conditionStr.Where)
-				}
-			}
-		}
-	}
-	// log.Fatal("where.Where", where.Where)
-	return where.Where
 }
 
 func HandleWaitingList(mappings *config.MappedApp, appMapping config.Mapping, tagMembers []string, node *m2.DependencyNode, srcApp, dstApp config.AppConfig, wList *m2.WaitingList) (*m2.DependencyNode, error) {
@@ -305,7 +310,40 @@ func HandleUnmappedTags(node *m2.DependencyNode, dbConn *sql.DB, unmappedTags *m
 			}
 		}
 	}
-	return errors.New("1")
+	return errors.New("2")
+}
+
+func HandleUnmappedNode(node *m2.DependencyNode, dbConn *sql.DB, log_txn *transaction.Log_txn) error {
+	if tx, err := dbConn.Begin(); err != nil {
+		log.Println("Can't create UpdateRowDesc transaction!")
+		return errors.New("0")
+	} else {
+		var updated []string
+		for col, val := range node.Data {
+			if strings.Contains(col, "pk.") {
+				pk := fmt.Sprint(val)
+				if val != nil && !helper.Contains(updated, pk) {
+					if err := db.SetMFlag(tx, pk, "1"); err == nil {
+						updated = append(updated, pk)
+					} else {
+						tx.Rollback()
+						fmt.Println("\n@ERROR_MUpdate:", err)
+						log.Fatal("pk:", pk, "appid: unmapped")
+						return err
+					}
+				}
+			}
+		}
+		if undoActionJSON, err := transaction.GenUndoActionJSON(updated, "0", "0"); err == nil {
+			if log_err := transaction.LogChange(undoActionJSON, log_txn); log_err != nil {
+				log.Fatal("HandleUnmappedNode: unable to LogChange", log_err)
+			}
+		} else {
+			log.Fatal("HandleUnmappedNode: unable to GenUndoActionJSON", err)
+		}
+		tx.Commit()
+		return nil
+	}
 }
 
 func MigrateNode(node *m2.DependencyNode, srcApp, dstApp config.AppConfig, wList *m2.WaitingList, log_txn *transaction.Log_txn, dbConn *sql.DB, unmappedTags *m2.UnmappedTags) error {
@@ -326,7 +364,8 @@ func MigrateNode(node *m2.DependencyNode, srcApp, dstApp config.AppConfig, wList
 			}
 		}
 	}
-	return HandleUnmappedTags(node, dbConn, unmappedTags, dstApp, log_txn)
+	return HandleUnmappedNode(node, dbConn, log_txn)
+	// return HandleUnmappedTags(node, dbConn, unmappedTags, dstApp, log_txn)
 }
 
 func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *m2.DependencyNode, wList *m2.WaitingList, log_txn *transaction.Log_txn, dbConn *sql.DB, unmappedTags *m2.UnmappedTags, thread_id int) error {
@@ -348,21 +387,24 @@ func MigrateProcess(uid string, srcApp, dstApp config.AppConfig, node *m2.Depend
 		nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
 		log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", thread_id, node.Tag.Name, node.Data[nodeIDAttr]))
-		log.Println(fmt.Sprintf("~%d~ Adjacent  Node: {%s} ID: %v", thread_id, child.Tag.Name, child.Data[childIDAttr]))
+		log.Println(fmt.Sprintf("~%d~ Adjacent  Node: { %s } ID: %v", thread_id, child.Tag.Name, child.Data[childIDAttr]))
 		if err := MigrateProcess(uid, srcApp, dstApp, child, wList, log_txn, dbConn, unmappedTags, thread_id); err != nil {
 			return err
 		}
 	}
 
-	log.Println(fmt.Sprintf("#%d# Migrating node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
-
+	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
 	if err := MigrateNode(node, srcApp, dstApp, wList, log_txn, dbConn, unmappedTags); err == nil {
-		log.Println(fmt.Sprintf("x%dx Finished  node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
+		log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
 	} else {
-		log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
-		if strings.EqualFold(err.Error(), "0") {
-			log.Println(err)
-			return err
+		if strings.EqualFold(err.Error(), "2") {
+			log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
+		} else {
+			log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", thread_id, node.Tag.Name, srcApp.AppName, dstApp.AppName))
+			if strings.EqualFold(err.Error(), "0") {
+				log.Println(err)
+				return err
+			}
 		}
 	}
 

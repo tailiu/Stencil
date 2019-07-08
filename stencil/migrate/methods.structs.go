@@ -1,7 +1,6 @@
 package migrate
 
 import (
-	"fmt"
 	"stencil/helper"
 )
 
@@ -10,11 +9,9 @@ func (self *UnmappedTags) Exists(tag string) bool {
 }
 
 func (self *UnmappedTags) Add(tag string) {
-	if self.Exists(tag) {
-		return
-	}
 	self.Mutex.Lock()
-	self.tags = append(self.tags, tag)
+	if !self.Exists(tag) {
+		self.tags = append(self.tags, tag)
+	}
 	self.Mutex.Unlock()
-	fmt.Println("==>> ADDED NEW UNMAPPED TAG:", tag, self.tags)
 }

@@ -292,7 +292,7 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 				if strings.EqualFold(node.Tag.Name, "root") {
 					displayFlag = true
 				}
-				if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, id, displayFlag, log_txn.Txn_id); err != nil {
+				if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, string(id), displayFlag, log_txn.Txn_id); err != nil {
 					log.Println("## DISPLAY ERROR!", err)
 					errs = append(errs, err)
 				}
@@ -362,7 +362,7 @@ func PostProcessInsert(id int, dstApp config.AppConfig, toTable config.ToTable, 
 	if strings.EqualFold(node.Tag.Name, "root") {
 		displayFlag = true
 	}
-	if err := display.GenDisplayFlag(dbConn, dstApp.AppName, toTable.Table, id, displayFlag, log_txn.Txn_id); err != nil {
+	if err := display.GenDisplayFlag(dbConn, dstApp.AppName, toTable.Table, string(id), displayFlag, log_txn.Txn_id); err != nil {
 		log.Println("## DISPLAY ERROR!", err)
 	}
 	for _, fromTable := range undoAction.OrgTables {
