@@ -86,6 +86,12 @@ func UpdateTx(tx *sql.Tx, query string, args ...interface{}) error {
 	return err
 }
 
+func NewBag(tx *sql.Tx, rowid, user_id, tagName string) error {
+	query := "INSERT INTO data_bags (rowid, user_id, tag) VALUES ($1, $2, $3)"
+	_, err := tx.Exec(query, rowid, user_id, tagName)
+	return err
+}
+
 func SetAppID(tx *sql.Tx, pk, app_id string) error {
 
 	q := "UPDATE row_desc SET app_id = $1 WHERE rowid = $2"
@@ -105,6 +111,32 @@ func MUpdate(tx *sql.Tx, pk, flag, app_id string) error {
 	q := "UPDATE row_desc SET mflag = $1, app_id = $2 WHERE rowid = $3"
 	_, err := tx.Exec(q, flag, app_id, pk)
 	return err
+}
+
+func RemoveUserFromApp(uid, app_id string, dbConn *sql.DB) bool {
+	sql := "DELETE FROM user_table WHERE user_id = $1 AND app_id = $2"
+	if err := Delete(dbConn, sql, uid, app_id); err == nil {
+		return true
+	}
+	return false
+}
+
+func CheckUserInApp(uid, app_id string, dbConn *sql.DB) bool {
+	sql := "SELECT user_id FROM user_table WHERE user_id = $1 AND app_id = $2"
+	if res, err := DataCall1(dbConn, sql, uid, app_id); err == nil {
+		if len(res) > 0 {
+			return true
+		}
+	} else {
+		log.Fatal(err)
+	}
+	return false
+}
+
+func AddUserToApp(uid, app_id string, dbConn *sql.DB) bool {
+	query := "INSERT INTO user_table (user_id, app_id) VALUES ($1, $2)"
+	dbConn.Exec(query, uid, app_id)
+	return true
 }
 
 func GetColumnsForTable(db *sql.DB, table string) ([]string, string) {

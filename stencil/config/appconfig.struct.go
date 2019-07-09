@@ -3,7 +3,9 @@ package config
 import (
 	"errors"
 	"fmt"
+
 	"stencil/helper"
+	"stencil/qr"
 	"strings"
 
 	"github.com/drgrib/maps"
@@ -278,4 +280,50 @@ func (self *AppConfig) GetDepDisplaySetting(tag string, pTag string) (string, er
 	}
 
 	return "", errors.New("No dependency display setting is found!")
+}
+
+func (self *AppConfig) GetDataNodeQS(tag Tag) *qr.QS {
+	qs := qr.CreateQS(self.QR)
+	if len(tag.InnerDependencies) > 0 {
+		joinMap := tag.CreateInDepMap()
+		seenMap := make(map[string]bool)
+		for fromTable, toTablesMap := range joinMap {
+			if _, ok := seenMap[fromTable]; !ok {
+				qs.FromSimple(fromTable)
+				qs.ColSimple(fromTable + ".*")
+				qs.ColPK(fromTable)
+			}
+			for toTable, conditions := range toTablesMap {
+				if conditions != nil {
+					conditions = append(conditions, joinMap[toTable][fromTable]...)
+					if joinMap[toTable][fromTable] != nil {
+						joinMap[toTable][fromTable] = nil
+					}
+					qs.FromJoinList(toTable, conditions)
+					qs.ColSimple(toTable + ".*")
+					qs.ColPK(toTable)
+					seenMap[toTable] = true
+				}
+			}
+			seenMap[fromTable] = true
+		}
+	} else {
+		table := tag.Members["member1"]
+		qs = qr.CreateQS(self.QR)
+		qs.FromSimple(table)
+		qs.ColPK(table)
+		qs.ColSimple(table + ".*")
+	}
+	if len(tag.Restrictions) > 0 {
+		restrictions := qr.CreateQS(self.QR)
+		restrictions.TableAliases = qs.TableAliases
+		for _, restriction := range tag.Restrictions {
+			if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
+				restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
+			}
+
+		}
+		qs.WhereString("AND", restrictions.Where)
+	}
+	return qs
 }
