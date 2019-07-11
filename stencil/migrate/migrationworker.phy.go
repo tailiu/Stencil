@@ -12,7 +12,6 @@ import (
 	"stencil/transaction"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn) MigrationWorker {
@@ -34,7 +33,7 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 		dstAppConfig: dstAppConfig,
 		mappings:     mappings,
 		wList:        WaitingList{},
-		unmappedTags: UnmappedTags{Mutex: &sync.Mutex{}},
+		unmappedTags: CreateUnmappedTags(),
 		dbConn:       db.GetDBConn("stencil"),
 		logTxn:       logTxn}
 	if err := mWorker.FetchRoot(); err != nil {
@@ -44,7 +43,9 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 }
 
 func (self *MigrationWorker) RenewDBConn() {
-	self.dbConn.Close()
+	if self.dbConn != nil {
+		self.dbConn.Close()
+	}
 	self.dbConn = db.GetDBConn("stencil")
 }
 
@@ -56,15 +57,15 @@ func (self *MigrationWorker) GetRoot() *DependencyNode {
 	return self.root
 }
 
-func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfig, dep config.Dependency, tag config.Tag, qs *qr.QS) {
+func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, dep config.Dependency, tag config.Tag, qs *qr.QS) {
 
-	where := qr.CreateQS(appConfig.QR)
+	where := qr.CreateQS(self.srcAppConfig.QR)
 	where.TableAliases = qs.TableAliases
 	for _, depOn := range dep.DependsOn {
-		if depOnTag, err := appConfig.GetTag(depOn.Tag); err == nil {
+		if depOnTag, err := self.srcAppConfig.GetTag(depOn.Tag); err == nil {
 			if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
 				for _, condition := range depOn.Conditions {
-					conditionStr := qr.CreateQS(appConfig.QR)
+					conditionStr := qr.CreateQS(self.srcAppConfig.QR)
 					conditionStr.TableAliases = qs.TableAliases
 					tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
 					if err != nil {
@@ -83,7 +84,7 @@ func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, a
 						log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
 					}
 					if len(condition.Restrictions) > 0 {
-						restrictions := qr.CreateQS(appConfig.QR)
+						restrictions := qr.CreateQS(self.srcAppConfig.QR)
 						restrictions.TableAliases = qs.TableAliases
 						for _, restriction := range condition.Restrictions {
 							if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
@@ -112,7 +113,7 @@ func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, a
 func (self *MigrationWorker) FetchRoot() error {
 	tagName := "root"
 	if root, err := self.srcAppConfig.GetTag(tagName); err == nil {
-		qs := self.srcAppConfig.GetDataNodeQS(root)
+		qs := self.srcAppConfig.GetTagQS(root)
 		rootTable, rootCol := self.srcAppConfig.GetItemsFromKey(root, "root_id")
 		qs.WhereSimpleVal(rootTable+"."+rootCol, "=", self.uid)
 		qs.WhereMFlag(qr.EXISTS, "0", self.srcAppConfig.AppID)
@@ -125,12 +126,13 @@ func (self *MigrationWorker) FetchRoot() error {
 			self.root = rootNode
 			return nil
 		} else {
+			log.Fatal("Problem getting RootNode data:", err, data)
 			return err
 		}
 	} else {
-		log.Fatal("Can't fetch tag:", tagName)
+		log.Fatal("Can't fetch root tag:", err)
+		return err
 	}
-	return errors.New("some error fetching root node")
 }
 
 func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, error) {
@@ -140,8 +142,8 @@ func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, 
 			continue
 		}
 		if child, err := self.srcAppConfig.GetTag(dep.Tag); err == nil {
-			qs := self.srcAppConfig.GetDataNodeQS(child)
-			self.ResolveDependencyConditions(node, self.srcAppConfig, dep, child, qs)
+			qs := self.srcAppConfig.GetTagQS(child)
+			self.ResolveDependencyConditions(node, dep, child, qs)
 			qs.WhereMFlag(qr.EXISTS, "0", self.srcAppConfig.AppID)
 			qs.OrderBy("random()")
 			sql := qs.GenSQL()
@@ -161,6 +163,28 @@ func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, 
 		}
 	}
 	return nil, nil
+}
+
+func (self *MigrationWorker) GetBagNode(tagName, bagpk string) (*DependencyNode, error) {
+
+	if tag, err := self.srcAppConfig.GetTag(tagName); err == nil {
+		qs := self.srcAppConfig.GetTagQS(tag)
+		qs.WherePK(bagpk)
+		sql := qs.GenSepSQLs()
+		if data, err := db.DataCall1(self.dbConn, sql); err == nil && len(data) > 0 {
+			bagNode := new(DependencyNode)
+			bagNode.Tag = tag
+			bagNode.SQL = sql
+			bagNode.Data = data
+			return bagNode, nil
+		} else {
+			log.Fatal("Problem getting RootNode data:", err, data)
+			return nil, err
+		}
+	} else {
+		log.Fatal("Can't fetch root tag:", err)
+		return nil, err
+	}
 }
 
 func (self *MigrationWorker) CheckMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
@@ -293,7 +317,7 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 				pk := fmt.Sprint(val)
 				if val != nil && !helper.Contains(updated, pk) {
 					if err := db.SetMFlag(tx, pk, "1"); err == nil {
-						if bag_err := db.NewBag(tx, pk, self.uid, node.Tag.Name); bag_err == nil {
+						if bag_err := db.NewBag(tx, pk, self.uid, node.Tag.Name, self.logTxn.Txn_id); bag_err == nil {
 							updated = append(updated, pk)
 						} else {
 							tx.Rollback()
@@ -383,4 +407,46 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode) error {
 	fmt.Println("------------------------------------------------------------------------")
 
 	return nil
+}
+
+func (self *MigrationWorker) MigrateProcessBags() bool {
+	if bags, err := db.GetUserBags(self.dbConn, self.uid, self.srcAppConfig.AppID); err == nil && len(bags) > 0 {
+		for _, bag := range bags {
+			if tag, err := self.srcAppConfig.GetTag(fmt.Sprint(bag["tag"])); err == nil {
+				for _, appMapping := range self.mappings.Mappings {
+					tagMembers := tag.GetTagMembers()
+					if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
+						bagRowIDs := fmt.Sprint(bag["rowids"])
+						if tx, err := self.dbConn.Begin(); err != nil {
+							log.Println("Can't create UpdateRowDesc transaction!")
+							return false
+						} else {
+							if helper.Sublist(tagMembers, appMapping.FromTables) {
+								if err := db.MUpdate(tx, bagRowIDs, "1", self.dstAppConfig.AppID); err != nil {
+									fmt.Println(err)
+									return false
+								}
+								if err := db.DeleteBagsByRowIDS(tx, bagRowIDs); err != nil {
+									fmt.Println(err)
+									return false
+								}
+								log.Println("Bag Migrated:", tag.Name, bagRowIDs)
+								tx.Commit()
+							} else {
+								log.Println("In the waiting list:", tag.Name)
+								//bags waiting list
+							}
+						}
+						break
+					}
+				}
+			} else {
+				log.Fatal("tag cannot be found!", bag)
+			}
+		}
+		fmt.Println("Bags migrated!")
+	} else {
+		fmt.Println("No Bags for this user!", err)
+	}
+	return true
 }

@@ -86,9 +86,25 @@ func UpdateTx(tx *sql.Tx, query string, args ...interface{}) error {
 	return err
 }
 
-func NewBag(tx *sql.Tx, rowid, user_id, tagName string) error {
-	query := "INSERT INTO data_bags (rowid, user_id, tag) VALUES ($1, $2, $3)"
-	_, err := tx.Exec(query, rowid, user_id, tagName)
+func NewBag(tx *sql.Tx, rowid, user_id, tagName string, migration_id int) error {
+	query := "INSERT INTO data_bags (rowid, user_id, tag, migration_id) VALUES ($1, $2, $3, $4)"
+	_, err := tx.Exec(query, rowid, user_id, tagName, migration_id)
+	return err
+}
+
+func GetUserBags(dbConn *sql.DB, user_id, app_id string) ([]map[string]interface{}, error) {
+	query := "SELECT string_agg(data_bags.rowid::varchar, ',') as rowids, data_bags.tag as tag FROM data_bags JOIN row_desc ON data_bags.rowid = row_desc.rowid WHERE data_bags.user_id = $1 AND row_desc.mflag = 1 AND row_desc.app_id = $2 group by data_bags.tag"
+	return DataCall(dbConn, query, user_id, app_id)
+}
+
+func DeleteBag(dbConn *sql.DB, bag_id string) error {
+	query := "DELETE FROM data_bags WHERE pk = $1"
+	return Delete(dbConn, query, bag_id)
+}
+
+func DeleteBagsByRowIDS(tx *sql.Tx, rowids string) error {
+	query := "DELETE FROM data_bags WHERE rowid IN ($1)"
+	_, err := tx.Exec(query, rowids)
 	return err
 }
 
@@ -101,15 +117,22 @@ func SetAppID(tx *sql.Tx, pk, app_id string) error {
 
 func SetMFlag(tx *sql.Tx, pk, flag string) error {
 
-	q := "UPDATE row_desc SET mflag = $1 WHERE rowid = $2"
+	q := "UPDATE row_desc SET mflag = $1 WHERE rowid IN ($2)"
 	_, err := tx.Exec(q, flag, pk)
 	return err
 }
 
 func MUpdate(tx *sql.Tx, pk, flag, app_id string) error {
 
-	q := "UPDATE row_desc SET mflag = $1, app_id = $2 WHERE rowid = $3"
+	q := "UPDATE row_desc SET mflag = $1, app_id = $2 WHERE rowid IN ($3)"
 	_, err := tx.Exec(q, flag, app_id, pk)
+	return err
+}
+
+func BUpdate(dbConn *sql.DB, pk, flag, app_id string) error {
+
+	q := "UPDATE row_desc SET mflag = $1, app_id = $2 WHERE rowid IN ($3)"
+	_, err := dbConn.Exec(q, flag, app_id, pk)
 	return err
 }
 

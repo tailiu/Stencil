@@ -244,6 +244,16 @@ func (self *QS) WhereMFlag(condition, flag, app_id string) { // EXISTS/NOT EXIST
 	self.WhereString("AND", q)
 }
 
+func (self *QS) WherePK(PK string) {
+	var pkcols []string
+	for _, pTables := range self.TableAliases {
+		for _, alias := range pTables {
+			pkcols = append(pkcols, alias+".pk")
+		}
+	}
+	self.WhereString("AND", fmt.Sprintf("'%s' IN (%s)", PK, strings.Join(pkcols, ",")))
+}
+
 func (self *QS) GroupBy(col string) {
 	ptab, pcol := self.QR.GetPhyTabCol(col)
 	if strings.EqualFold(self.Group, "") {
@@ -262,6 +272,27 @@ func (self *QS) LimitResult(limit string) {
 }
 
 func (self QS) GenSQL() string {
+	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
+	if len(self.Where) > 0 {
+		sql += fmt.Sprintf("WHERE %s ", self.Where)
+	}
+	if len(self.Group) > 0 {
+		sql += fmt.Sprintf("GROUP BY %s ", self.Group)
+	}
+	if len(self.Order) > 0 {
+		sql += fmt.Sprintf("ORDER BY %s ", self.Order)
+	}
+	if len(self.Limit) > 0 {
+		sql += fmt.Sprintf("LIMIT %s ", self.Limit)
+	}
+	// fmt.Println("WHERE", self.Where)
+	// fmt.Println("GROUPBY", self.Group)
+	// fmt.Println("ORDERBY", self.Order)
+	// fmt.Println(sql)
+	return sql
+}
+
+func (self QS) GenSepSQLs() string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
 	if len(self.Where) > 0 {
 		sql += fmt.Sprintf("WHERE %s ", self.Where)

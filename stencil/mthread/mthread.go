@@ -15,11 +15,24 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 
 	for threadID := 1; threadID <= threads; threadID++ {
 		time.Sleep(time.Millisecond * 300)
+		// wg.Add(1)
+		// go func(thread_id int, commitChannel chan ThreadChannel) {
+		// 	defer wg.Done()
+		// 	for {
+		// 		if err := mWorker.MigrateProcess(mWorker.GetRoot()); err != nil {
+		// 			mWorker.RenewDBConn()
+		// 			continue
+		// 		}
+		// 		mWorker.Finish()
+		// 		break
+		// 	}
+		// 	commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
+		// }(threadID, commitChannel)
 		wg.Add(1)
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
 			for {
-				if err := mWorker.MigrateProcess(mWorker.GetRoot()); err != nil {
+				if !mWorker.MigrateProcessBags() {
 					mWorker.RenewDBConn()
 					continue
 				}

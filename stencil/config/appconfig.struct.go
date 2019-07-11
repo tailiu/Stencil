@@ -282,7 +282,7 @@ func (self *AppConfig) GetDepDisplaySetting(tag string, pTag string) (string, er
 	return "", errors.New("No dependency display setting is found!")
 }
 
-func (self *AppConfig) GetDataNodeQS(tag Tag) *qr.QS {
+func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
 	qs := qr.CreateQS(self.QR)
 	if len(tag.InnerDependencies) > 0 {
 		joinMap := tag.CreateInDepMap()

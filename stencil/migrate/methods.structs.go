@@ -2,7 +2,12 @@ package migrate
 
 import (
 	"stencil/helper"
+	"sync"
 )
+
+func CreateUnmappedTags() UnmappedTags {
+	return UnmappedTags{Mutex: &sync.Mutex{}}
+}
 
 func (self *UnmappedTags) Exists(tag string) bool {
 	return helper.Contains(self.tags, tag)
