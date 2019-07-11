@@ -42,6 +42,10 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 	return mWorker
 }
 
+func (self *MigrationWorker) GetUserBags() ([]map[string]interface{}, error) {
+	return db.GetUserBags(self.dbConn, self.uid, self.srcAppConfig.AppID)
+}
+
 func (self *MigrationWorker) RenewDBConn() {
 	if self.dbConn != nil {
 		self.dbConn.Close()
@@ -341,7 +345,7 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 			log.Fatal("HandleUnmappedNode: unable to GenUndoActionJSON", err)
 		}
 		tx.Commit()
-		return nil
+		return errors.New("2")
 	}
 }
 
@@ -409,44 +413,40 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode) error {
 	return nil
 }
 
-func (self *MigrationWorker) MigrateProcessBags() bool {
-	if bags, err := db.GetUserBags(self.dbConn, self.uid, self.srcAppConfig.AppID); err == nil && len(bags) > 0 {
-		for _, bag := range bags {
-			if tag, err := self.srcAppConfig.GetTag(fmt.Sprint(bag["tag"])); err == nil {
-				for _, appMapping := range self.mappings.Mappings {
-					tagMembers := tag.GetTagMembers()
-					if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
-						bagRowIDs := fmt.Sprint(bag["rowids"])
-						if tx, err := self.dbConn.Begin(); err != nil {
-							log.Println("Can't create UpdateRowDesc transaction!")
+func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) bool {
+
+	if tag, err := self.srcAppConfig.GetTag(fmt.Sprint(bag["tag"])); err == nil {
+		for _, appMapping := range self.mappings.Mappings {
+			tagMembers := tag.GetTagMembers()
+			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
+				bagRowIDs := fmt.Sprint(bag["rowids"])
+				if tx, err := self.dbConn.Begin(); err != nil {
+					log.Println("Can't create UpdateRowDesc transaction!")
+					return false
+				} else {
+					defer tx.Rollback()
+					if helper.Sublist(tagMembers, appMapping.FromTables) {
+						if err := db.MUpdate(tx, bagRowIDs, "1", self.dstAppConfig.AppID); err != nil {
+							fmt.Println(err)
 							return false
-						} else {
-							if helper.Sublist(tagMembers, appMapping.FromTables) {
-								if err := db.MUpdate(tx, bagRowIDs, "1", self.dstAppConfig.AppID); err != nil {
-									fmt.Println(err)
-									return false
-								}
-								if err := db.DeleteBagsByRowIDS(tx, bagRowIDs); err != nil {
-									fmt.Println(err)
-									return false
-								}
-								log.Println("Bag Migrated:", tag.Name, bagRowIDs)
-								tx.Commit()
-							} else {
-								log.Println("In the waiting list:", tag.Name)
-								//bags waiting list
-							}
 						}
-						break
+						if err := db.DeleteBagsByRowIDS(tx, bagRowIDs); err != nil {
+							fmt.Println(err)
+							return false
+						}
+						log.Println("Bag Migrated:", tag.Name, bagRowIDs)
+						tx.Commit()
+					} else {
+						log.Println("In the waiting list:", tag.Name)
+						//bags waiting list
 					}
 				}
-			} else {
-				log.Fatal("tag cannot be found!", bag)
+				break
 			}
 		}
-		fmt.Println("Bags migrated!")
 	} else {
-		fmt.Println("No Bags for this user!", err)
+		log.Fatal("tag cannot be found!", bag)
 	}
+
 	return true
 }
