@@ -16,6 +16,7 @@ func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", depDataTable, depDataKey, depDataValue)
 
 	data := db.GetAllColsOfRows(dbConn, query)
+
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
 	} else {
@@ -58,7 +59,6 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 	for k, v := range hint.KeyVal {
 		data, err = getOneRowBasedOnHint(dbConn, app, hint.Table, k, v)
 		if err != nil {
-			// log.Println(err)
 			return nil, err
 		}
 	}

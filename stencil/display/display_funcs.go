@@ -12,26 +12,25 @@ import (
 
 const StencilDBName = "stencil"
 
-func Initialize(app, app_id string) (*sql.DB, *sql.DB, config.AppConfig, map[string]string) {
+func Initialize(app, app_id string) (*sql.DB, config.AppConfig, map[string]string) {
 	appConfig, err := config.CreateAppConfig(app, app_id)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	stencilDBConn := db.GetDBConn(StencilDBName)
-	appDBConn := db.GetDBConn(app)
 
 	pks := make(map[string]string)
-	tables := db.GetTablesOfDB(appDBConn, app)
+	tables := db.GetTablesOfDB(appConfig.DBConn, app)
 	for _, table := range tables {
-		pk, err := db.GetPrimaryKeyOfTable(appDBConn, table)
+		pk, err := db.GetPrimaryKeyOfTable(appConfig.DBConn, table)
 		if err != nil {
 			fmt.Println(err)
 		}
 		pks[table] = pk
 	}
 
-	return stencilDBConn, appDBConn, appConfig, pks
+	return stencilDBConn, appConfig, pks
 }
 
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, pks map[string]string) []HintStruct {

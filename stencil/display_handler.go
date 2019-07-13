@@ -57,14 +57,14 @@ func DisplayThread(app string, migrationID int) {
 	startTime := time.Now()
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appDBConn, appConfig, pks := display.Initialize(app)
+	stencilDBConn, appConfig, pks := display.Initialize(app, "")
 
 	log.Println("--------- First Phase --------")
 	secondRound := false
 	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); !display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
 
 		for _, oneMigratedData := range migratedData {
-			checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneMigratedData, app, pks, secondRound)
+			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, app, pks, secondRound)
 		}
 		time.Sleep(checkInterval)
 	}
@@ -73,7 +73,7 @@ func DisplayThread(app string, migrationID int) {
 	secondRound = true
 	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-		checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
+		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
 	}
 
 	log.Println("--------- End of Display Check ---------")
@@ -81,7 +81,7 @@ func DisplayThread(app string, migrationID int) {
 	log.Println("Time used: ", endTime.Sub(startTime))
 }
 
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (string, error) {
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (string, error) {
 
 	log.Println("Check Data ", oneMigratedData)
 	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, oneMigratedData)
@@ -148,7 +148,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 						if len(dataInParentNode) != 1 {
 							log.Fatal("Find more than one piece of data in a parent node!!")
 						}
-						result, err7 := checkDisplayOneMigratedData(stencilDBConn, appDBConn, appConfig, dataInParentNode[0], app, pks, secondRound)
+						result, err7 := checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode[0], app, pks, secondRound)
 						if err7 != nil {
 							log.Println(err7)
 						}
@@ -228,10 +228,24 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appDBConn *sql.DB, appCo
 
 func main() {
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 428301007)
+	DisplayThread(dstApp, 204890627)
+
+	// dbConn := db.GetDBConn(dstApp)
+	// query := "SELECT * FROM statuses WHERE id = 13451190 LIMIT 1;"
+
+	// data := db.GetAllColsOfRows(dbConn, query)
+	// log.Println(data)
+
+	// if len(data) == 0 {
+	// 	return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
+	// } else {
+	// 	return data[0], nil
+	// }	
 
 	// // var dataInNode []display.HintStruct
-	// // stencilDBConn, _, _, pks := display.Initialize(dstApp)
+	// stencilDBConn, _, _, pks := display.Initialize(dstApp)
+	
+
 	// // display.Display(stencilDBConn, dstApp, dataInNode, pks)
 
 	// dbConn := db.GetDBConn(dstApp)
