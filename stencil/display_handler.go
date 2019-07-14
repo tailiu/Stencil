@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"time"
 	"stencil/config"
 	"stencil/dependency_handler"
 	"stencil/display"
-	"time"
+	// "stencil/db"
+	// "stencil/qr"
 )
 
 const checkInterval = 200 * time.Millisecond
@@ -165,7 +167,8 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 						}
 					}
 				}
-				log.Println(pTagConditions)
+				// log.Println(pTagConditions)
+				
 				// For now, without checking the combined_display_setting,
 				// this check display condition func will return true
 				// as long as one pTagCondition is true
@@ -229,8 +232,20 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 // }
 
 func main() {
+	// dbConn := db.GetDBConn("stencil")
+	// appConfig, _ := config.CreateAppConfig("mastodon", "-1")
+	// qs := qr.CreateQS(appConfig.QR)
+	// qs.ColSimple("users.*")
+	// qs.FromSimple("users")
+	// qs.LimitResult("2")
+	// // qs.WhereSimpleVal("users.account_id", "=", "1000")
+	// physicalQuery := qs.GenSQL()
+	// log.Println(physicalQuery)
+	// log.Println(db.GetAllColsOfRows(dbConn, physicalQuery))
+
+	
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 169251812)
+	DisplayThread(dstApp, 533906320)
 
 	// dbConn := db.GetDBConn(dstApp)
 	// query := "SELECT * FROM statuses WHERE id = 13451190 LIMIT 1;"

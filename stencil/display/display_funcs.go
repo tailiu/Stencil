@@ -35,9 +35,10 @@ func Initialize(app, app_id string) (*sql.DB, config.AppConfig, map[string]strin
 
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, pks map[string]string) []HintStruct {
 	var displayHints []HintStruct
-	query := fmt.Sprintf(
-		"SELECT d.table_name, d.id FROM row_desc AS r JOIN display_flags AS d on r.rowid = d.id where app = '%s' and migration_id = %d and mflag = 1;",
-		app, migrationID)
+	// query := fmt.Sprintf(
+	// 	"SELECT d.table_name, d.id FROM row_desc AS r JOIN display_flags AS d on r.rowid = d.id where app = '%s' and migration_id = %d and mflag = 1;",
+	// 	app, migrationID)
+	query := fmt.Sprintf("SELECT * FROM display_flags WHERE app = '%s' and migration_id = %d and display_flag = false", app, migrationID)
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	// fmt.Println(data)
 

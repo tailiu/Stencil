@@ -13,7 +13,10 @@ import (
 )
 
 func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, depDataValue int) (map[string]string, error) {
+	// Need to change here to get physical queries
+	// SELECT * FROM status_stats WHERE id = 128515 LIMIT 1;
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", depDataTable, depDataKey, depDataValue)
+	// log.Println(query)
 
 	data := db.GetAllColsOfRows(dbConn, query)
 
@@ -25,8 +28,10 @@ func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, 
 }
 
 func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string) (map[string]string, error) {
+	// Need to be changed
+	// SELECT * FROM stream_entries WHERE activity_id = 34626520 LIMIT 1;
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
-	// fmt.Println(query)
+
 	data := db.GetAllColsOfRows(dbConn, query)
 	// fmt.Println(data)
 	if len(data) == 0 {

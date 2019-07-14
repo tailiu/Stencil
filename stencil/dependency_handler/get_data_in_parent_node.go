@@ -54,8 +54,9 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []display.HintStruc
 			query += from + where
 		}
 	}
-	fmt.Println(query)
 
+	// Need to be changed
+	// SELECT t1.* FROM statuses t0 JOIN conversations t1 ON t0.conversation_id = t1.id WHERE t0.id = 34647260;
 	data := db.GetAllColsOfRows(appConfig.DBConn, query)
 
 	if len(data) == 0 {
@@ -115,7 +116,11 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hints []display.HintS
 					dataValue = v
 				}
 				query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = %d;", col, hint.Table, dataKey, dataValue)
-				fmt.Println(query)
+				// log.Println("^^^^^^^^^^^^^^^^")
+				// log.Println(query)
+				// log.Println("^^^^^^^^^^^^^^^^")
+				// Need to be changed
+				// SELECT in_reply_to_id FROM statuses WHERE id = 15996494;
 				data := db.GetAllColsOfRows(appConfig.DBConn, query)
 				if len(data) == 0 {
 					log.Fatal("Data is missing??")
@@ -168,7 +173,7 @@ func GetdataFromParentNode(appConfig *config.AppConfig, hints []display.HintStru
 		}
 	}
 
-	fmt.Println(proConditions)
+	// fmt.Println(proConditions)
 	// fmt.Println(hints)
 
 	return getHintsInParentNode(appConfig, hints, proConditions)
