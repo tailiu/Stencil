@@ -35,9 +35,15 @@ func Initialize(app, app_id string) (*sql.DB, config.AppConfig, map[string]strin
 
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, pks map[string]string) []HintStruct {
 	var displayHints []HintStruct
-	query := fmt.Sprintf("SELECT * FROM display_flags WHERE app = '%s' and migration_id = %d and display_flag = false", app, migrationID)
+	query := fmt.Sprintf(
+		"SELECT d.table_name, d.id FROM row_desc AS r JOIN display_flags AS d on r.rowid = d.id where app = '%s' and migration_id = %d and mflag = 1;",
+		app, migrationID)
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	// fmt.Println(data)
+
+	// If we don't use physical schema, both table_name and id are necessary to identify a piece of migratd data.
+	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
+	// We use table_name to optimize performance
 	for _, oneData := range data {
 		hint := HintStruct{}
 		table := oneData["table_name"]

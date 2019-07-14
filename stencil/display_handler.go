@@ -61,8 +61,10 @@ func DisplayThread(app string, migrationID int) {
 
 	log.Println("--------- First Phase --------")
 	secondRound := false
-	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); !display.CheckMigrationComplete(stencilDBConn, migrationID); migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
-
+	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); 
+		!display.CheckMigrationComplete(stencilDBConn, migrationID); 
+		migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
+		
 		for _, oneMigratedData := range migratedData {
 			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, app, pks, secondRound)
 		}
@@ -228,7 +230,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 
 func main() {
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 204890627)
+	DisplayThread(dstApp, 169251812)
 
 	// dbConn := db.GetDBConn(dstApp)
 	// query := "SELECT * FROM statuses WHERE id = 13451190 LIMIT 1;"
