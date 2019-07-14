@@ -2,10 +2,12 @@ package transaction
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
 	"stencil/db"
+	"stencil/helper"
 	"strings"
 	"time"
 )
@@ -21,10 +23,16 @@ type UndoAction struct {
 	Data      map[string]interface{}
 }
 
-type UndoActionP struct {
-	SrcApp string
-	DstApp string
-	PK     string
+func GenUndoActionJSON(pks []string, srcAppID, dstAppID string) (string, error) {
+	undoAction := make(map[string]string)
+	undoAction["srcApp"] = srcAppID
+	undoAction["dstApp"] = dstAppID
+	undoAction["rows"] = strings.Join(helper.DistinctString(pks), ",")
+	if undoActionSerialized, err := json.Marshal(undoAction); err == nil {
+		return string(undoActionSerialized), nil
+	} else {
+		return "", err
+	}
 }
 
 func (self *UndoAction) AddOrgTable(newTable string) []string {
