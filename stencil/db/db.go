@@ -102,9 +102,9 @@ func DeleteBag(dbConn *sql.DB, bag_id string) error {
 	return Delete(dbConn, query, bag_id)
 }
 
-func DeleteBagsByRowIDS(tx *sql.Tx, rowids string) error {
+func DeleteBagsByRowIDS(dbConn *sql.DB, rowids string) error {
 	query := "DELETE FROM data_bags WHERE rowid IN ($1)"
-	_, err := tx.Exec(query, rowids)
+	_, err := dbConn.Exec(query, rowids)
 	return err
 }
 

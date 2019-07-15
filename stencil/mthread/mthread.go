@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"stencil/migrate"
 	"sync"
-	"time"
 )
 
 func ThreadController(mWorker migrate.MigrationWorker) bool {
@@ -13,37 +12,36 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 	commitChannel := make(chan ThreadChannel)
 	threads := 1
 
-	for threadID := 1; threadID <= threads; threadID++ {
-		time.Sleep(time.Millisecond * 300)
-		wg.Add(1)
-		go func(thread_id int, commitChannel chan ThreadChannel) {
-			defer wg.Done()
-			for {
-				if err := mWorker.MigrateProcess(mWorker.GetRoot()); err != nil {
-					mWorker.RenewDBConn()
-					continue
-				}
-				mWorker.Finish()
-				break
-			}
-			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
-		}(threadID, commitChannel)
-	}
+	// for threadID := 1; threadID <= threads; threadID++ {
+	// 	time.Sleep(time.Millisecond * 300)
+	// 	wg.Add(1)
+	// 	go func(thread_id int, commitChannel chan ThreadChannel) {
+	// 		defer wg.Done()
+	// 		for {
+	// 			if err := mWorker.MigrateProcess(mWorker.GetRoot()); err != nil {
+	// 				mWorker.RenewDBConn()
+	// 				continue
+	// 			}
+	// 			break
+	// 		}
+	// 		commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
+	// 	}(threadID, commitChannel)
+	// }
 	if bags, err := mWorker.GetUserBags(); err == nil && len(bags) > 0 {
 		for ibag, bag := range bags {
 			wg.Add(1)
 			go func(thread_id int, commitChannel chan ThreadChannel) {
 				defer wg.Done()
 				for {
-					if !mWorker.MigrateProcessBags(bag) {
+					if err := mWorker.MigrateProcessBags(bag); err != nil {
 						mWorker.RenewDBConn()
 						continue
 					}
-					// mWorker.Finish()
 					break
 				}
 				commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 			}(ibag+threads, commitChannel)
+			break
 		}
 	}
 
@@ -60,5 +58,8 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 			finished = false
 		}
 	}
+
+	mWorker.HandleLeftOverWaitingNodes()
+
 	return finished
 }

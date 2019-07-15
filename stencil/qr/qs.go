@@ -271,7 +271,7 @@ func (self *QS) LimitResult(limit string) {
 	self.Limit = limit
 }
 
-func (self QS) GenSQL() string {
+func (self *QS) GenSQL() string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
 	if len(self.Where) > 0 {
 		sql += fmt.Sprintf("WHERE %s ", self.Where)
@@ -292,7 +292,23 @@ func (self QS) GenSQL() string {
 	return sql
 }
 
-func (self QS) GenSepSQLs() string {
+func (self *QS) GenSQLWith(pks string) string {
+	query := self.GenSQL()
+	var aliasSelects []string
+	for _, pTables := range self.TableAliases {
+		for pTable, alias := range pTables {
+			aliasSelects = append(aliasSelects, fmt.Sprintf("%s as ( select * from %s where pk in (%s)) ", alias, pTable, pks))
+			query = strings.Replace(query, pTable, "", -1)
+		}
+	}
+	if len(aliasSelects) > 0 {
+		with := "with " + strings.Join(aliasSelects, ",")
+		return with + strings.Replace(query, "LEFT JOIN", "FULL JOIN", -1)
+	}
+	return ""
+}
+
+func (self *QS) GenSepSQLs() string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
 	if len(self.Where) > 0 {
 		sql += fmt.Sprintf("WHERE %s ", self.Where)

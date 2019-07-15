@@ -169,12 +169,11 @@ func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, 
 	return nil, nil
 }
 
-func (self *MigrationWorker) GetBagNode(tagName, bagpk string) (*DependencyNode, error) {
+func (self *MigrationWorker) GetBagNode(tagName, bagpks string) (*DependencyNode, error) {
 
 	if tag, err := self.srcAppConfig.GetTag(tagName); err == nil {
 		qs := self.srcAppConfig.GetTagQS(tag)
-		qs.WherePK(bagpk)
-		sql := qs.GenSepSQLs()
+		sql := qs.GenSQLWith(bagpks)
 		if data, err := db.DataCall1(self.dbConn, sql); err == nil && len(data) > 0 {
 			bagNode := new(DependencyNode)
 			bagNode.Tag = tag
@@ -182,11 +181,12 @@ func (self *MigrationWorker) GetBagNode(tagName, bagpk string) (*DependencyNode,
 			bagNode.Data = data
 			return bagNode, nil
 		} else {
-			log.Fatal("Problem getting RootNode data:", err, data)
+			log.Println("sql", sql)
+			log.Fatal("Problem getting BagNode data:", err, data)
 			return nil, err
 		}
 	} else {
-		log.Fatal("Can't fetch root tag:", err)
+		log.Fatal("Can't fetch bag tag:", tagName, err)
 		return nil, err
 	}
 }
@@ -228,7 +228,7 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 				continue
 			}
 			for col, val := range node.Data {
-				if strings.Contains(col, "pk.") {
+				if strings.Contains(col, "pk.") && val != nil {
 					pk := strconv.FormatInt(val.(int64), 10)
 					if val != nil && !helper.Contains(updated, pk) {
 						if err := db.MUpdate(tx, pk, "1", self.dstAppConfig.AppID); err == nil {
@@ -325,7 +325,7 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 							updated = append(updated, pk)
 						} else {
 							tx.Rollback()
-							log.Fatal("\n@ERROR_New_Bag:", bag_err)
+							// log.Fatal("\n@ERROR_New_Bag:", bag_err)
 							return err
 						}
 					} else {
@@ -349,7 +349,7 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 	}
 }
 
-func (self *MigrationWorker) MigrateNode(node *DependencyNode) error {
+func (self *MigrationWorker) MigrateNode(node *DependencyNode, isBag bool) error {
 
 	for _, appMapping := range self.mappings.Mappings {
 		tagMembers := node.Tag.GetTagMembers()
@@ -364,8 +364,19 @@ func (self *MigrationWorker) MigrateNode(node *DependencyNode) error {
 			}
 		}
 	}
+	if isBag {
+		return fmt.Errorf("no mapping found for bag: %s", node.Tag.Name)
+	}
 	return self.HandleUnmappedNode(node)
-	// return HandleUnmappedTags(node, dbConn, unmappedTags, dstApp,  self.logTxn)
+}
+
+func (self *MigrationWorker) HandleLeftOverWaitingNodes() {
+
+	for _, waitingNode := range self.wList.Nodes {
+		for _, containedNode := range waitingNode.ContainedNodes {
+			self.HandleUnmappedNode(containedNode)
+		}
+	}
 }
 
 func (self *MigrationWorker) MigrateProcess(node *DependencyNode) error {
@@ -394,7 +405,7 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode) error {
 	}
 
 	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", self.threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
-	if err := self.MigrateNode(node); err == nil {
+	if err := self.MigrateNode(node, false); err == nil {
 		log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", self.threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
 	} else {
 		if strings.EqualFold(err.Error(), "2") {
@@ -413,40 +424,61 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode) error {
 	return nil
 }
 
-func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) bool {
-
-	if tag, err := self.srcAppConfig.GetTag(fmt.Sprint(bag["tag"])); err == nil {
-		for _, appMapping := range self.mappings.Mappings {
-			tagMembers := tag.GetTagMembers()
-			if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
-				bagRowIDs := fmt.Sprint(bag["rowids"])
-				if tx, err := self.dbConn.Begin(); err != nil {
-					log.Println("Can't create UpdateRowDesc transaction!")
-					return false
-				} else {
-					defer tx.Rollback()
-					if helper.Sublist(tagMembers, appMapping.FromTables) {
-						if err := db.MUpdate(tx, bagRowIDs, "1", self.dstAppConfig.AppID); err != nil {
-							fmt.Println(err)
-							return false
-						}
-						if err := db.DeleteBagsByRowIDS(tx, bagRowIDs); err != nil {
-							fmt.Println(err)
-							return false
-						}
-						log.Println("Bag Migrated:", tag.Name, bagRowIDs)
-						tx.Commit()
-					} else {
-						log.Println("In the waiting list:", tag.Name)
-						//bags waiting list
-					}
-				}
-				break
-			}
-		}
+func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {
+	fmt.Println("Thread init:", fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"]))
+	if bagNode, err := self.GetBagNode(fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"])); err != nil {
+		log.Fatal(err)
+		return nil
 	} else {
-		log.Fatal("tag cannot be found!", bag)
+		if err := self.MigrateNode(bagNode, true); err == nil {
+			if err := db.DeleteBagsByRowIDS(self.dbConn, fmt.Sprint(bag["rowids"])); err != nil {
+				log.Println(err)
+				return err
+			}
+			return nil
+		} else if strings.EqualFold(err.Error(), "0") {
+			log.Println(err)
+			return err
+		}
+		return nil
 	}
 
-	return true
+	// if tag, err := self.srcAppConfig.GetTag(fmt.Sprint(bag["tag"])); err == nil {
+	// 	qs := self.srcAppConfig.GetTagQS(tag)
+	// 	fmt.Println(qs.GenSQLWith(fmt.Sprint(bag["rowids"])))
+
+	// 	for _, appMapping := range self.mappings.Mappings {
+	// 		tagMembers := tag.GetTagMembers()
+	// 		if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
+	// 			bagRowIDs := fmt.Sprint(bag["rowids"])
+	// 			if tx, err := self.dbConn.Begin(); err != nil {
+	// 				log.Println("Can't create UpdateRowDesc transaction!")
+	// 				return false
+	// 			} else {
+	// 				defer tx.Rollback()
+	// 				if helper.Sublist(tagMembers, appMapping.FromTables) {
+	// 					if err := db.MUpdate(tx, bagRowIDs, "1", self.dstAppConfig.AppID); err != nil {
+	// 						fmt.Println(err)
+	// 						return false
+	// 					}
+	// 					if err := db.DeleteBagsByRowIDS(tx, bagRowIDs); err != nil {
+	// 						fmt.Println(err)
+	// 						return false
+	// 					}
+	// 					log.Println("Bag Migrated:", tag.Name, bagRowIDs)
+	// 					tx.Commit()
+	// 				} else {
+	// 					log.Println("In the bag waiting list:", tag.Name)
+	// 					//bags waiting list
+	// 					// put in regular waiting list
+	// 				}
+	// 			}
+	// 			break
+	// 		}
+	// 	}
+	// } else {
+	// 	log.Fatal("tag cannot be found!", bag)
+	// }
+
+	// return true
 }
