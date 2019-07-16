@@ -239,6 +239,7 @@ func DataCall(db *sql.DB, SQL string, args ...interface{}) ([]map[string]interfa
 		log.Println(SQL, args)
 		return nil, err
 	} else {
+		defer rows.Close()
 
 		if colNames, err := rows.Columns(); err != nil {
 			return nil, err
@@ -266,7 +267,6 @@ func DataCall(db *sql.DB, SQL string, args ...interface{}) ([]map[string]interfa
 				// }
 				result = append(result, data)
 			}
-			rows.Close()
 			return result, nil
 		}
 	}

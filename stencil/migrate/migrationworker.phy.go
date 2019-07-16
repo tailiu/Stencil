@@ -169,17 +169,21 @@ func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, 
 	return nil, nil
 }
 
-func (self *MigrationWorker) GetBagNode(tagName, bagpks string) (*DependencyNode, error) {
+func (self *MigrationWorker) GetBagNodes(tagName, bagpks string) ([]*DependencyNode, error) {
 
 	if tag, err := self.srcAppConfig.GetTag(tagName); err == nil {
 		qs := self.srcAppConfig.GetTagQS(tag)
 		sql := qs.GenSQLWith(bagpks)
-		if data, err := db.DataCall1(self.dbConn, sql); err == nil && len(data) > 0 {
-			bagNode := new(DependencyNode)
-			bagNode.Tag = tag
-			bagNode.SQL = sql
-			bagNode.Data = data
-			return bagNode, nil
+		if data, err := db.DataCall(self.dbConn, sql); err == nil && len(data) > 0 {
+			var bagNodes []*DependencyNode
+			for _, datum := range data {
+				bagNode := new(DependencyNode)
+				bagNode.Tag = tag
+				bagNode.SQL = sql
+				bagNode.Data = datum
+				bagNodes = append(bagNodes, bagNode)
+			}
+			return bagNodes, nil
 		} else {
 			log.Println("sql", sql)
 			log.Fatal("Problem getting BagNode data:", err, data)
@@ -426,19 +430,21 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode, threadID int) 
 
 func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {
 	// fmt.Println("Thread init:", fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"]))
-	if bagNode, err := self.GetBagNode(fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"])); err != nil {
+	if bagNodes, err := self.GetBagNodes(fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"])); err != nil {
 		log.Fatal(err)
 		return nil
 	} else {
-		if err := self.MigrateNode(bagNode, true); err == nil {
-			if err := db.DeleteBagsByRowIDS(self.dbConn, fmt.Sprint(bag["rowids"])); err != nil {
+		for _, bagNode := range bagNodes {
+			if err := self.MigrateNode(bagNode, true); err == nil {
+				if err := db.DeleteBagsByRowIDS(self.dbConn, fmt.Sprint(bag["rowids"])); err != nil {
+					log.Println(err)
+					return err
+				}
+				return nil
+			} else if strings.EqualFold(err.Error(), "0") {
 				log.Println(err)
 				return err
 			}
-			return nil
-		} else if strings.EqualFold(err.Error(), "0") {
-			log.Println(err)
-			return err
 		}
 		return nil
 	}
