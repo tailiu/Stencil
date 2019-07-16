@@ -42,5 +42,5 @@ type MigrationWorker struct {
 	root         *DependencyNode
 	dbConn       *sql.DB
 	logTxn       *transaction.Log_txn
-	threadID     int
+	// threadID     int
 }

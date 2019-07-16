@@ -379,7 +379,7 @@ func (self *MigrationWorker) HandleLeftOverWaitingNodes() {
 	}
 }
 
-func (self *MigrationWorker) MigrateProcess(node *DependencyNode) error {
+func (self *MigrationWorker) MigrateProcess(node *DependencyNode, threadID int) error {
 
 	if self.unmappedTags.Exists(node.Tag.Name) {
 		return nil
@@ -397,21 +397,21 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode) error {
 		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
-		log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", self.threadID, node.Tag.Name, node.Data[nodeIDAttr]))
-		log.Println(fmt.Sprintf("~%d~ Adjacent  Node: { %s } ID: %v", self.threadID, child.Tag.Name, child.Data[childIDAttr]))
-		if err := self.MigrateProcess(child); err != nil {
+		log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
+		log.Println(fmt.Sprintf("~%d~ Adjacent  Node: { %s } ID: %v", threadID, child.Tag.Name, child.Data[childIDAttr]))
+		if err := self.MigrateProcess(child, threadID); err != nil {
 			return err
 		}
 	}
 
-	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", self.threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
+	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
 	if err := self.MigrateNode(node, false); err == nil {
-		log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", self.threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
+		log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
 	} else {
 		if strings.EqualFold(err.Error(), "2") {
-			log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", self.threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
+			log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
 		} else {
-			log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", self.threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
+			log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
 			if strings.EqualFold(err.Error(), "0") {
 				log.Println(err)
 				return err
@@ -425,7 +425,7 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode) error {
 }
 
 func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {
-	fmt.Println("Thread init:", fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"]))
+	// fmt.Println("Thread init:", fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"]))
 	if bagNode, err := self.GetBagNode(fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"])); err != nil {
 		log.Fatal(err)
 		return nil
