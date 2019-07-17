@@ -94,31 +94,31 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 		return "No Data In a Node Can be Displayed", err1
 	} else {
 
-		var displayedData, notDisplayedData []display.HintStruct
-		for _, oneDataInNode := range dataInNode {
-			var val int
-			for _, v := range oneDataInNode.KeyVal {
-				val = v
-			}
-			displayed, err0 := display.GetDisplayFlag(stencilDBConn, app, oneDataInNode.Table, val)
-			if err0 != nil {
-				log.Fatal(err0)
-			}
-			if !displayed {
-				notDisplayedData = append(notDisplayedData, oneDataInNode)
-			} else {
-				displayedData = append(displayedData, oneDataInNode)
-			}
-		}
-		// Note: This will be changed when considering ongoing application services
-		// and the existence of other display threads !!
-		if len(displayedData) != 0 {
-			err6 := display.Display(stencilDBConn, app, notDisplayedData, pks)
-			if err6 != nil {
-				log.Fatal(err6)
-			}
-			return returnResultBasedOnNodeCompleteness(err1)
-		}
+		// var displayedData, notDisplayedData []display.HintStruct
+		// for _, oneDataInNode := range dataInNode {
+		// 	var val int
+		// 	for _, v := range oneDataInNode.KeyVal {
+		// 		val = v
+		// 	}
+		// 	displayed, err0 := display.GetDisplayFlag(stencilDBConn, app, oneDataInNode.Table, val)
+		// 	if err0 != nil {
+		// 		log.Fatal(err0)
+		// 	}
+		// 	if !displayed {
+		// 		notDisplayedData = append(notDisplayedData, oneDataInNode)
+		// 	} else {
+		// 		displayedData = append(displayedData, oneDataInNode)
+		// 	}
+		// }
+		// // Note: This will be changed when considering ongoing application services
+		// // and the existence of other display threads !!
+		// if len(displayedData) != 0 {
+		// 	err6 := display.Display(stencilDBConn, app, notDisplayedData, pks)
+		// 	if err6 != nil {
+		// 		log.Fatal(err6)
+		// 	}
+		// 	return returnResultBasedOnNodeCompleteness(err1)
+		// }
 
 		pTags, err2 := oneMigratedData.GetParentTags(&appConfig)
 		if err2 != nil {
@@ -168,7 +168,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 					}
 				}
 				// log.Println(pTagConditions)
-				
+
 				// For now, without checking the combined_display_setting,
 				// this check display condition func will return true
 				// as long as one pTagCondition is true
