@@ -14,9 +14,9 @@ func (self *UnmappedTags) Exists(tag string) bool {
 }
 
 func (self *UnmappedTags) Add(tag string) {
-	self.Mutex.Lock()
+	// self.Mutex.Lock()
 	if !self.Exists(tag) {
 		self.tags = append(self.tags, tag)
 	}
-	self.Mutex.Unlock()
+	// self.Mutex.Unlock()
 }

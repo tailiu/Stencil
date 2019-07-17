@@ -7,6 +7,12 @@ import (
 	"sync"
 )
 
+const (
+	INDEPENDENT = "0"
+	CONSISTENT  = "1"
+	DELETION    = "3"
+)
+
 type DependencyNode struct {
 	Tag  config.Tag
 	SQL  string
@@ -42,5 +48,6 @@ type MigrationWorker struct {
 	root         *DependencyNode
 	dbConn       *sql.DB
 	logTxn       *transaction.Log_txn
-	threadID     int
+	mtype        string
+	// threadID     int
 }
