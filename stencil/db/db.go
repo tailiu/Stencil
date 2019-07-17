@@ -162,6 +162,37 @@ func AddUserToApp(uid, app_id string, dbConn *sql.DB) bool {
 	return true
 }
 
+func DeleteExistingMigrationRegistrations(uid, src_app, dst_app string, dbConn *sql.DB) bool {
+	query := "DELETE FROM migration_registration WHERE user_id = $1 AND src_app = $2 AND dst_app = $3"
+	if _, err := dbConn.Exec(query, uid, src_app, dst_app); err != nil {
+		log.Fatal("DELETE Error in DeleteExistingMigrationRegistrations", err)
+		return false
+	}
+	return true
+}
+
+func CheckMigrationRegistration(uid, src_app, dst_app string, dbConn *sql.DB) bool {
+	sql := "SELECT migration_id FROM migration_registration WHERE user_id = $1 AND src_app = $2 AND dst_app = $3"
+	if res, err := DataCall1(dbConn, sql, uid, src_app, dst_app); err == nil {
+		fmt.Println(res)
+		if len(res) > 0 {
+			return true
+		}
+	} else {
+		log.Fatal(err)
+	}
+	return false
+}
+
+func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID int, dbConn *sql.DB) bool {
+	query := "INSERT INTO migration_registration (migration_id, user_id, src_app, dst_app, migration_type) VALUES ($1, $2, $3, $4, $5)"
+	if _, err := dbConn.Exec(query, migrationID, uid, src_app, dst_app, mtype); err != nil {
+		log.Fatal("Insert Error in RegisterMigration", err)
+		return false
+	}
+	return true
+}
+
 func GetColumnsForTable(db *sql.DB, table string) ([]string, string) {
 	var resultList []string
 	resultStr := ""

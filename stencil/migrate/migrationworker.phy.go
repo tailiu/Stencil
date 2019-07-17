@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn) MigrationWorker {
+func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string) MigrationWorker {
 	srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID)
 	if err != nil {
 		log.Fatal(err)
@@ -35,7 +35,8 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
 		dbConn:       db.GetDBConn("stencil"),
-		logTxn:       logTxn}
+		logTxn:       logTxn,
+		mtype:        mtype}
 	if err := mWorker.FetchRoot(); err != nil {
 		log.Fatal(err)
 	}
@@ -59,6 +60,10 @@ func (self *MigrationWorker) Finish() {
 
 func (self *MigrationWorker) GetRoot() *DependencyNode {
 	return self.root
+}
+
+func (self *MigrationWorker) MType() string {
+	return self.mtype
 }
 
 func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, dep config.Dependency, tag config.Tag, qs *qr.QS) {
@@ -142,9 +147,6 @@ func (self *MigrationWorker) FetchRoot() error {
 func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, error) {
 
 	for _, dep := range config.ShuffleDependencies(self.srcAppConfig.GetSubDependencies(node.Tag.Name)) {
-		if self.unmappedTags.Exists(dep.Tag) {
-			continue
-		}
 		if child, err := self.srcAppConfig.GetTag(dep.Tag); err == nil {
 			qs := self.srcAppConfig.GetTagQS(child)
 			self.ResolveDependencyConditions(node, dep, child, qs)
@@ -383,11 +385,7 @@ func (self *MigrationWorker) HandleLeftOverWaitingNodes() {
 	}
 }
 
-func (self *MigrationWorker) MigrateProcess(node *DependencyNode, threadID int) error {
-
-	if self.unmappedTags.Exists(node.Tag.Name) {
-		return nil
-	}
+func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID int) error {
 
 	if strings.EqualFold(node.Tag.Name, "root") && !db.CheckUserInApp(self.uid, self.dstAppConfig.AppID, self.dbConn) {
 		log.Println("++ Adding User from ", self.srcAppConfig.AppName, " to ", self.dstAppConfig.AppName)
@@ -403,7 +401,7 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode, threadID int) 
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
 		log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
 		log.Println(fmt.Sprintf("~%d~ Adjacent  Node: { %s } ID: %v", threadID, child.Tag.Name, child.Data[childIDAttr]))
-		if err := self.MigrateProcess(child, threadID); err != nil {
+		if err := self.DeletionMigration(child, threadID); err != nil {
 			return err
 		}
 	}
@@ -426,6 +424,16 @@ func (self *MigrationWorker) MigrateProcess(node *DependencyNode, threadID int) 
 	fmt.Println("------------------------------------------------------------------------")
 
 	return nil
+}
+
+func (self *MigrationWorker) RegisterMigration(mtype string) bool {
+	db.DeleteExistingMigrationRegistrations(self.uid, self.srcAppConfig.AppID, self.dstAppConfig.AppID, self.dbConn)
+	if !db.CheckMigrationRegistration(self.uid, self.srcAppConfig.AppID, self.dstAppConfig.AppID, self.dbConn) {
+		return db.RegisterMigration(self.uid, self.srcAppConfig.AppID, self.dstAppConfig.AppID, mtype, self.logTxn.Txn_id, self.dbConn)
+	} else {
+		log.Println("Migration Already Registered!")
+		return true
+	}
 }
 
 func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {
@@ -487,4 +495,14 @@ func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) erro
 	// }
 
 	// return true
+}
+
+func (self *MigrationWorker) ConsistentMigration(node *DependencyNode, threadID int) error {
+
+	return nil
+}
+
+func (self *MigrationWorker) IndependentMigration(node *DependencyNode, threadID int) error {
+
+	return nil
 }
