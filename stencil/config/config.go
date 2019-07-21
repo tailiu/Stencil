@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go/build"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -21,7 +22,7 @@ func Init() {
 func CreateAppConfig(app, app_id string) (AppConfig, error) {
 
 	var appConfig AppConfig
-	dconfig := "../config/dependencies/" + app + ".json"
+	dconfig := build.Default.GOPATH + "/src/stencil/config/dependencies/" + app + ".json"
 	jsonFile, err := os.Open(dconfig)
 
 	if err != nil {
@@ -48,7 +49,7 @@ func LoadSchemaMappings() (*SchemaMappings, error) {
 
 		SchemaMappingsObj = new(SchemaMappings)
 
-		schemaMappingFile := "../config/app_settings/mappings.json"
+		schemaMappingFile := build.Default.GOPATH + "/src/stencil/config/app_settings/mappings.json"
 		jsonFile, err := os.Open(schemaMappingFile)
 		if err != nil {
 			fmt.Println(err)

@@ -162,6 +162,17 @@ func AddUserToApp(uid, app_id string, dbConn *sql.DB) bool {
 	return true
 }
 
+func AddOwnedData(uid, row_id string, dbConn *sql.DB) bool {
+	query := "INSERT INTO owned_data (user_id, row_id) VALUES ($1, $2)"
+	if _, err := dbConn.Exec(query, uid, row_id); err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return true
+		}
+		log.Fatal("Error in db", err)
+	}
+	return true
+}
+
 func DeleteExistingMigrationRegistrations(uid, src_app, dst_app string, dbConn *sql.DB) bool {
 	query := "DELETE FROM migration_registration WHERE user_id = $1 AND src_app = $2 AND dst_app = $3"
 	if _, err := dbConn.Exec(query, uid, src_app, dst_app); err != nil {
