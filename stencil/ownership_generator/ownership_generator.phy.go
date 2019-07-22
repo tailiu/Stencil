@@ -24,16 +24,16 @@ func GetUsersForApp(app_id string) []string {
 	return users
 }
 
-func GenOwnership(users []string, srcApp, srcAppID, dstApp, dstAppID string) {
+func GenOwnership(users []string, srcApp, srcAppID, dstApp, dstAppID string, thead_id int) {
 	for _, uid := range users {
-		log.Println("started ownership gen uid:", uid)
+		log.Println("started ownership gen uid:", uid, "in thread", thead_id)
 		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, nil, "")
 		if err := TraverseDAG(&mWorker, mWorker.GetRoot()); err != nil {
-			log.Println("ERROR in GENOWN for uid:", uid)
+			log.Println("ERROR in GENOWN for uid:", uid, "in thread", thead_id)
 		}
-		log.Println("finished ownership gen uid:", uid)
+		log.Println("finished ownership gen uid:", uid, "in thread", thead_id)
 	}
-	log.Println("finished ownership gen for all users in this thread!")
+	log.Println("finished ownership gen for all users in thread", thead_id)
 }
 
 func TraverseDAG(mWorker *migrate.MigrationWorker, node *migrate.DependencyNode) error {
@@ -48,7 +48,7 @@ func TraverseDAG(mWorker *migrate.MigrationWorker, node *migrate.DependencyNode)
 					for col, val := range data {
 						if strings.Contains(col, "pk.") && val != nil {
 							if success := db.AddOwnedData(mWorker.UserID(), fmt.Sprint(val), mWorker.DBConn); success {
-
+								// fmt.Println(mWorker.UserID(), fmt.Sprint(val))
 							}
 						}
 					}

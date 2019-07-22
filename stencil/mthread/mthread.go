@@ -63,22 +63,24 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}
-	// if bags, err := mWorker.GetUserBags(); err == nil && len(bags) > 0 {
-	// 	for ibag, bag := range bags {
-	// 		wg.Add(1)
-	// 		go func(thread_id int, commitChannel chan ThreadChannel) {
-	// 			defer wg.Done()
-	// 			for {
-	// 				if err := mWorker.MigrateProcessBags(bag); err != nil {
-	// 					mWorker.RenewDBConn()
-	// 					continue
-	// 				}
-	// 				break
-	// 			}
-	// 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
-	// 		}(ibag+threads, commitChannel)
-	// 	}
-	// }
+	if mWorker.MType() == migrate.DELETION {
+		if bags, err := mWorker.GetUserBags(); err == nil && len(bags) > 0 {
+			for ibag, bag := range bags {
+				wg.Add(1)
+				go func(thread_id int, commitChannel chan ThreadChannel) {
+					defer wg.Done()
+					for {
+						if err := mWorker.MigrateProcessBags(bag); err != nil {
+							mWorker.RenewDBConn()
+							continue
+						}
+						break
+					}
+					commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
+				}(ibag+threads, commitChannel)
+			}
+		}
+	}
 
 	go func() {
 		wg.Wait()
