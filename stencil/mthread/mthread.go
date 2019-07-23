@@ -12,7 +12,7 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
-	threads := 1
+	threads := 10
 
 	if mWorker.MType() != migrate.DELETION {
 		if !mWorker.RegisterMigration(mWorker.MType()) {

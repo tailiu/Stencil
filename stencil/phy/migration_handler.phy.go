@@ -19,7 +19,7 @@ func main() {
 		dstApp, dstAppID := "mastodon", "2"
 		uid := os.Args[1]
 
-		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, migrate.CONSISTENT)
+		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, migrate.INDEPENDENT)
 
 		if mthread.ThreadController(mWorker) {
 			transaction.LogOutcome(logTxn, "COMMIT")

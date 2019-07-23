@@ -245,8 +245,9 @@ func (self *MigrationWorker) GetOwnedNodes() ([]*DependencyNode, error) {
 			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
 			qs.WhereMFlag(qr.NEXISTS, "0,1,2", self.DstAppConfig.AppID)
 			qs.OrderBy("random()")
-			qs.LimitResult("500")
+			qs.LimitResult("5000")
 			sql := qs.GenSQL()
+			// fmt.Println(sql)
 			if result, err := db.DataCall(self.DBConn, sql); err == nil {
 				var nodes []*DependencyNode
 				for _, data := range result {
@@ -341,7 +342,7 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 							} else {
 								tx.Rollback()
 								fmt.Println("\n@ERROR_NewRowConsistent:", err)
-								log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+								// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
 								return err
 							}
 						}
@@ -355,7 +356,7 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 							} else {
 								tx.Rollback()
 								fmt.Println("\n@ERROR_NewRowIndependent:", err)
-								log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+								// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
 								return err
 							}
 						}
@@ -570,19 +571,19 @@ func (self *MigrationWorker) ConsistentMigration(threadID int) error {
 		}
 		for _, node := range nodes {
 			nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
-			log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
+			log.Println(fmt.Sprintf("~%d~ | Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
 			if err := self.MigrateNode(node, false); err == nil {
-				log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				log.Println(fmt.Sprintf("x%dx | MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			} else {
-				log.Println(fmt.Sprintf("x%dx RCVD ERR  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+				log.Println(fmt.Sprintf("x%dx | RCVD ERR  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 				if self.unmappedTags.Exists(node.Tag.Name) {
-					log.Println(fmt.Sprintf("x%dx BREKLOOP  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+					log.Println(fmt.Sprintf("x%dx | BREKLOOP  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 					break
 				}
 				if strings.EqualFold(err.Error(), "2") {
-					log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					log.Println(fmt.Sprintf("x%dx | IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 				} else {
-					log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					log.Println(fmt.Sprintf("x%dx | FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 					if strings.EqualFold(err.Error(), "0") {
 						log.Println(err)
 						return err
