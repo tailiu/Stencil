@@ -92,6 +92,12 @@ func NewBag(tx *sql.Tx, rowid, user_id, tagName string, migration_id int) error 
 	return err
 }
 
+func NewRow(tx *sql.Tx, rowid, app_id, mflag string, copy_on_write bool) error {
+	query := "INSERT INTO row_desc (rowid, app_id, copy_on_write, mflag) VALUES ($1, $2, $3, $4)"
+	_, err := tx.Exec(query, rowid, app_id, copy_on_write, mflag)
+	return err
+}
+
 func GetUserBags(dbConn *sql.DB, user_id, app_id string) ([]map[string]interface{}, error) {
 	query := "SELECT string_agg(data_bags.rowid::varchar, ',') as rowids, data_bags.tag as tag FROM data_bags JOIN row_desc ON data_bags.rowid = row_desc.rowid WHERE data_bags.user_id = $1 AND row_desc.mflag = 1 AND row_desc.app_id = $2 group by data_bags.tag"
 	return DataCall(dbConn, query, user_id, app_id)

@@ -18,7 +18,7 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 		if !mWorker.RegisterMigration(mWorker.MType()) {
 			log.Fatal("Unable to register migration!")
 		} else {
-			log.Println("Migration registered!")
+			log.Println("Migration registered:", mWorker.MType())
 		}
 	}
 
@@ -41,7 +41,7 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 			case migrate.CONSISTENT:
 				{
 					for {
-						if err := mWorker.ConsistentMigration(mWorker.GetRoot(), thread_id); err != nil {
+						if err := mWorker.ConsistentMigration(thread_id); err != nil {
 							mWorker.RenewDBConn()
 							continue
 						}
@@ -51,7 +51,7 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 			case migrate.INDEPENDENT:
 				{
 					for {
-						if err := mWorker.IndependentMigration(mWorker.GetRoot(), thread_id); err != nil {
+						if err := mWorker.IndependentMigration(thread_id); err != nil {
 							mWorker.RenewDBConn()
 							continue
 						}

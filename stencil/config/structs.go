@@ -55,9 +55,9 @@ type AppConfig struct {
 }
 
 type Ownership struct {
-	Tag        string              `json:"tag"`
-	DependsOn  string              `json:"owned_by"`
-	Conditions []map[string]string `json:"conditions"`
+	Tag        string       `json:"tag"`
+	OwnedBy    string       `json:"owned_by"`
+	Conditions []DCondition `json:"conditions"`
 }
 
 type Tag struct {

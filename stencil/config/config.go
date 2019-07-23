@@ -92,6 +92,17 @@ func ShuffleDependencies(vals []Dependency) []Dependency {
 	return ret
 }
 
+func ShuffleOwnerships(vals []Ownership) []Ownership {
+	Init()
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]Ownership, len(vals))
+	perm := r.Perm(len(vals))
+	for i, randIndex := range perm {
+		ret[i] = vals[randIndex]
+	}
+	return ret
+}
+
 func Reverse(numbers []DataQuery) {
 	for i, j := 0, len(numbers)-1; i < j; i, j = i+1, j-1 {
 		numbers[i], numbers[j] = numbers[j], numbers[i]
