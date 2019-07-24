@@ -12,13 +12,15 @@ import (
 
 const StencilDBName = "stencil"
 
-func Initialize(app, app_id string) (*sql.DB, config.AppConfig, map[string]string) {
+func Initialize(app string) (*sql.DB, config.AppConfig, map[string]string) {
+	stencilDBConn := db.GetDBConn(StencilDBName)
+
+	app_id := GetAppIDByAppName(stencilDBConn, app)
+
 	appConfig, err := config.CreateAppConfig(app, app_id)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	stencilDBConn := db.GetDBConn(StencilDBName)
 
 	pks := make(map[string]string)
 	tables := db.GetTablesOfDB(appConfig.DBConn, app)
@@ -35,10 +37,10 @@ func Initialize(app, app_id string) (*sql.DB, config.AppConfig, map[string]strin
 
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, pks map[string]string) []HintStruct {
 	var displayHints []HintStruct
-	// query := fmt.Sprintf(
-	// 	"SELECT d.table_name, d.id FROM row_desc AS r JOIN display_flags AS d on r.rowid = d.id where app = '%s' and migration_id = %d and mflag = 1;",
-	// 	app, migrationID)
-	query := fmt.Sprintf("SELECT * FROM display_flags WHERE app = '%s' and migration_id = %d and display_flag = false", app, migrationID)
+	query := fmt.Sprintf(
+		"SELECT d.table_name, d.id FROM row_desc AS r JOIN display_flags AS d on r.rowid = d.id where app = '%s' and migration_id = %d and mflag = 1;",
+		app, migrationID)
+	// query := fmt.Sprintf("SELECT * FROM display_flags WHERE app = '%s' and migration_id = %d and display_flag = false", app, migrationID)
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	// fmt.Println(data)
 

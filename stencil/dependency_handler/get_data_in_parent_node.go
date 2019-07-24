@@ -5,13 +5,28 @@ import (
 	"fmt"
 	"log"
 	"stencil/config"
-	"stencil/db"
 	"stencil/display"
+	"database/sql"
 	"strconv"
 	"strings"
+	// "stencil/qr"
+	// "stencil/db"
 )
 
-func getHintsInParentNode(appConfig *config.AppConfig, hints []display.HintStruct, conditions []string) ([]display.HintStruct, error) {
+// func GetDataFromPhysicalSchemaByJoin(stencilDBConn *sql.DB, QR *qr.QR, cols, from, col, op, val, limit string) []map[string]string {	
+// 	qs := qr.CreateQS(QR)
+// 	qs.ColSimple(cols)
+// 	qs.FromSimple(from)
+// 	qs.WhereSimpleVal(col, op, val)
+// 	qs.LimitResult(limit)
+
+// 	physicalQuery := qs.GenSQL()
+// 	// log.Println(physicalQuery)
+
+// 	return db.GetAllColsOfRows(stencilDBConn, physicalQuery)
+// }
+
+func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hints []display.HintStruct, conditions []string) ([]display.HintStruct, error) {	
 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
 	from := ""
 	table := ""
@@ -55,9 +70,40 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []display.HintStruc
 		}
 	}
 
+	// for i, condition := range conditions {
+	// 	tableAttr1 := strings.Split(condition, ":")[0]
+	// 	tableAttr2 := strings.Split(condition, ":")[1]
+	// 	t1 := strings.Split(tableAttr1, ".")[0]
+	// 	a1 := strings.Split(tableAttr1, ".")[1]
+	// 	t2 := strings.Split(tableAttr2, ".")[0]
+	// 	a2 := strings.Split(tableAttr2, ".")[1]
+	// 	if i == 0 {
+	// 		for j, hint := range hints {
+	// 			if hint.Table == t1 {
+	// 				hintID = j
+	// 			}
+	// 		}
+	// 		if hintID == -1 {
+	// 			// In this case, since data may be incomplete, we cannot get the data in the parent node
+	// 			return nil, errors.New("Fail To Get Any Data in the Parent Node")
+	// 		} else {
+	// 			from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
+	// 				t1, seq1, t2, seq2, seq1, a1, seq2, a2)
+	// 		}
+	// 	}
+	// 	display.GetDataFromPhysicalSchema(stencilDBConn, appConfig.QR, cols, from, col, op, , "1")
+
+	// }
+
+	// log.Println(hints)
+	// log.Println(conditions)
+	// log.Println(query)
+
 	// Need to be changed
+	// condition: [favourites.status_id:statuses.id]
 	// SELECT t1.* FROM statuses t0 JOIN conversations t1 ON t0.conversation_id = t1.id WHERE t0.id = 34647260;
-	data := db.GetAllColsOfRows(appConfig.DBConn, query)
+	// data := GetDataFromPhysicalSchemaByJoin(stencilDBConn, appConfig.QR, )
+	var data []map[string]string
 
 	if len(data) == 0 {
 		return nil, errors.New("Fail To Get Any Data in the Parent Node")
@@ -95,7 +141,7 @@ func replaceKey(appConfig *config.AppConfig, tag string, key string) string {
 	return ""
 }
 
-func dataFromParentNodeExists(appConfig *config.AppConfig, hints []display.HintStruct, pTag string) (bool, error) {
+func dataFromParentNodeExists(stencilDBConn *sql.DB, appConfig *config.AppConfig, hints []display.HintStruct, pTag string) (bool, error) {
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(appConfig, pTag)
 
 	// If display existence setting is not set, then we have to try to get data in the parent node in any case
@@ -108,20 +154,22 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hints []display.HintS
 		table := strings.Split(tableCol, ".")[0]
 		col := strings.Split(tableCol, ".")[1]
 		for _, hint := range hints {
-			if hint.Table == table {
+			hT := hint.Table
+			if hT == table {
 				var dataKey string
 				var dataValue int
 				for k, v := range hint.KeyVal {
 					dataKey = k
 					dataValue = v
 				}
-				query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = %d;", col, hint.Table, dataKey, dataValue)
-				// log.Println("^^^^^^^^^^^^^^^^")
-				// log.Println(query)
-				// log.Println("^^^^^^^^^^^^^^^^")
+				// query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = %d;", col, hint.Table, dataKey, dataValue)
 				// Need to be changed
 				// SELECT in_reply_to_id FROM statuses WHERE id = 15996494;
-				data := db.GetAllColsOfRows(appConfig.DBConn, query)
+				log.Println("-------------------------")
+				data := display.GetDataFromPhysicalSchema(stencilDBConn, appConfig.QR, 
+					hT + "." + col, hT, hT + "." + dataKey, "=", strconv.Itoa(dataValue), "1")
+				log.Println(data)
+				log.Println("-------------------------")
 				if len(data) == 0 {
 					log.Fatal("Data is missing??")
 				} else {
@@ -141,10 +189,10 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hints []display.HintS
 }
 
 // Note: this function may return multiple hints based on dependencies
-func GetdataFromParentNode(appConfig *config.AppConfig, hints []display.HintStruct, pTag string) ([]display.HintStruct, error) {
+func GetdataFromParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hints []display.HintStruct, pTag string) ([]display.HintStruct, error) {
 
 	// Before getting data from a parent node, we check the existence of the data based on the cols of a child node
-	if exists, err := dataFromParentNodeExists(appConfig, hints, pTag); !exists {
+	if exists, err := dataFromParentNodeExists(stencilDBConn, appConfig, hints, pTag); !exists {
 		return nil, err
 	}
 
@@ -176,5 +224,5 @@ func GetdataFromParentNode(appConfig *config.AppConfig, hints []display.HintStru
 	// fmt.Println(proConditions)
 	// fmt.Println(hints)
 
-	return getHintsInParentNode(appConfig, hints, proConditions)
+	return getHintsInParentNode(stencilDBConn, appConfig, hints, proConditions)
 }
