@@ -13,6 +13,7 @@ import (
 type HintStruct struct {
 	Table  string
 	KeyVal map[string]int
+	Data   []map[string]string
 }
 
 // NOTE: We assume that primary key is only one integer value!!!

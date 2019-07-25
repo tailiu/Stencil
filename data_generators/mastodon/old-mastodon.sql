@@ -1857,7 +1857,6 @@ ALTER SEQUENCE public.status_stats_id_seq OWNED BY public.status_stats.id;
 
 --
 -- Name: statuses; Type: TABLE; Schema: public; Owner: mastodon
--- Deleted cols: in_reply_to_id, reply, and in_reply_to_account_id
 --
 
 CREATE TABLE public.statuses (
@@ -1866,16 +1865,19 @@ CREATE TABLE public.statuses (
     text text DEFAULT ''::text NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
+    in_reply_to_id bigint,
     reblog_of_id bigint,
     url character varying,
     sensitive boolean DEFAULT false NOT NULL,
     visibility integer DEFAULT 0 NOT NULL,
     spoiler_text text DEFAULT ''::text NOT NULL,
+    reply boolean DEFAULT false NOT NULL,
     language character varying,
     conversation_id bigint,
     local boolean,
     account_id bigint NOT NULL,
-    application_id bigint
+    application_id bigint,
+    in_reply_to_account_id bigint
 );
 
 
@@ -1894,62 +1896,6 @@ CREATE SEQUENCE public.statuses_id_seq
 
 
 ALTER TABLE public.statuses_id_seq OWNER TO mastodon;
-
---
--- Name: comments; Type: TABLE; Schema: public; Owner: mastodon
--- This is a copied statuses table without reply and reblog_of_id
---
-
-CREATE TABLE public.comments (
-    id bigint DEFAULT public.timestamp_id('statuses'::text) NOT NULL,
-    uri character varying,
-    text text DEFAULT ''::text NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    in_reply_to_id bigint,
-    url character varying,
-    sensitive boolean DEFAULT false NOT NULL,
-    visibility integer DEFAULT 0 NOT NULL,
-    spoiler_text text DEFAULT ''::text NOT NULL,
-    language character varying,
-    conversation_id bigint,
-    local boolean,
-    account_id bigint NOT NULL,
-    application_id bigint,
-    in_reply_to_account_id bigint
-);
-
-
-ALTER TABLE public.comments OWNER TO mastodon;
-
-
---
--- Name: messages; Type: TABLE; Schema: public; Owner: mastodon
--- This is a copied statuses table without reblog_of_id
---
-
-CREATE TABLE public.messages (
-    id bigint DEFAULT public.timestamp_id('statuses'::text) NOT NULL,
-    uri character varying,
-    text text DEFAULT ''::text NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    in_reply_to_id bigint,
-    url character varying,
-    sensitive boolean DEFAULT false NOT NULL,
-    visibility integer DEFAULT 0 NOT NULL,
-    spoiler_text text DEFAULT ''::text NOT NULL,
-    reply boolean DEFAULT false NOT NULL,
-    language character varying,
-    conversation_id bigint,
-    local boolean,
-    account_id bigint NOT NULL,
-    application_id bigint,
-    in_reply_to_account_id bigint
-);
-
-
-ALTER TABLE public.statuses OWNER TO mastodon;
 
 --
 -- Name: statuses_tags; Type: TABLE; Schema: public; Owner: mastodon

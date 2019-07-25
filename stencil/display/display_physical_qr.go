@@ -16,7 +16,7 @@ func GetDataFromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, cols, from, col
 	qs.LimitResult(limit)
 
 	physicalQuery := qs.GenSQL()
-	log.Println(physicalQuery)
+	// log.Println(physicalQuery)
 
 	return db.GetAllColsOfRows(stencilDBConn, physicalQuery)
 }

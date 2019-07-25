@@ -63,21 +63,21 @@ func DisplayThread(app string, migrationID int) {
 
 	log.Println("--------- First Phase --------")
 	secondRound := false
-	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); 
+	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks, appConfig); 
 		!display.CheckMigrationComplete(stencilDBConn, migrationID); 
-		migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
+		migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks, appConfig) {
 
 		for _, oneMigratedData := range migratedData {
-			checkDisplayOneMigratedData(stencilDBConn, &appConfig, oneMigratedData, app, pks, secondRound)
+			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, app, pks, secondRound)
 		}
 		time.Sleep(checkInterval)
 	}
 
 	log.Println("--------- Second Phase ---------")
 	secondRound = true
-	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks)
+	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks, appConfig)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-		checkDisplayOneMigratedData(stencilDBConn, &appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
+		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
 	}
 
 	log.Println("--------- End of Display Check ---------")
@@ -267,7 +267,7 @@ func main() {
 	// log.Println(db.GetAllColsOfRows(dbConn, physicalQuery))
 
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 169251812)
+	DisplayThread(dstApp, 1242116270)
 
 	// dbConn := db.GetDBConn(dstApp)
 	// query := "SELECT * FROM statuses WHERE id = 13451190 LIMIT 1;"

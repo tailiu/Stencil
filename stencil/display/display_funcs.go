@@ -8,11 +8,12 @@ import (
 	"stencil/db"
 	"strconv"
 	"time"
+	"stencil/qr"
 )
 
 const StencilDBName = "stencil"
 
-func Initialize(app string) (*sql.DB, config.AppConfig, map[string]string) {
+func Initialize(app string) (*sql.DB, *config.AppConfig, map[string]string) {
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
 	app_id := GetAppIDByAppName(stencilDBConn, app)
@@ -32,17 +33,17 @@ func Initialize(app string) (*sql.DB, config.AppConfig, map[string]string) {
 		pks[table] = pk
 	}
 
-	return stencilDBConn, appConfig, pks
+	return stencilDBConn, &appConfig, pks
 }
 
-func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, pks map[string]string) []HintStruct {
+func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, pks map[string]string, appConfig *config.AppConfig) []HintStruct {
 	var displayHints []HintStruct
 	query := fmt.Sprintf(
 		"SELECT d.table_name, d.id FROM row_desc AS r JOIN display_flags AS d on r.rowid = d.id where app = '%s' and migration_id = %d and mflag = 1;",
 		app, migrationID)
 	// query := fmt.Sprintf("SELECT * FROM display_flags WHERE app = '%s' and migration_id = %d and display_flag = false", app, migrationID)
 	data := db.GetAllColsOfRows(stencilDBConn, query)
-	// fmt.Println(data)
+	fmt.Println(data)
 
 	// If we don't use physical schema, both table_name and id are necessary to identify a piece of migratd data.
 	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
@@ -50,13 +51,30 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID i
 	for _, oneData := range data {
 		hint := HintStruct{}
 		table := oneData["table_name"]
-		intVal, err := strconv.Atoi(oneData["id"])
+
+		//********
+		log.Println("**************")
+		log.Println(oneData["id"])
+		qs := qr.CreateQS(appConfig.QR)
+		qs.FromSimple(table)
+		qs.ColSimple(table + ".*")
+		queryRow := qs.GenSQLWith(oneData["id"])
+		row, err := db.DataCall1(stencilDBConn, queryRow)
 		if err != nil {
 			log.Fatal(err)
+		}
+		log.Println(row)
+		log.Println("**************")
+		//********
+
+		intVal, err1 := strconv.Atoi(oneData["id"])
+		if err1 != nil {
+			log.Fatal(err1)
 		}
 		keyVal := map[string]int{
 			pks[table]: intVal,
 		}
+		// hint.Data = row
 		hint.Table = table
 		hint.KeyVal = keyVal
 		displayHints = append(displayHints, hint)
