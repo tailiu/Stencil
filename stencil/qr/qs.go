@@ -308,6 +308,22 @@ func (self *QS) GenSQLWith(pks string) string {
 	return ""
 }
 
+func (self *QS) GenSQLWithOwnedData(uid string) string {
+	query := self.GenSQL()
+	var aliasSelects []string
+	for _, pTables := range self.TableAliases {
+		for pTable, alias := range pTables {
+			aliasSelects = append(aliasSelects, fmt.Sprintf("%s as ( select * from %s where pk in (SELECT row_id FROM owned_data WHERE user_id = %s)) ", alias, pTable, uid))
+			query = strings.Replace(query, pTable, "", -1)
+		}
+	}
+	if len(aliasSelects) > 0 {
+		with := "with " + strings.Join(aliasSelects, ",")
+		return with + strings.Replace(query, "LEFT JOIN", "FULL JOIN", -1)
+	}
+	return ""
+}
+
 func (self *QS) GenSepSQLs() string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
 	if len(self.Where) > 0 {

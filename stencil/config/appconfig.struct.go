@@ -93,6 +93,11 @@ func (self AppConfig) GetSubDependencies(tagName string) []Dependency {
 	return deps
 }
 
+func (self AppConfig) GetShuffledOwnerships() []Ownership {
+
+	return ShuffleOwnerships(self.Ownerships)
+}
+
 func (self AppConfig) GetOwnership(tagName string) (Ownership, error) {
 
 	for _, own := range self.Ownerships {

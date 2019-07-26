@@ -40,13 +40,13 @@ type UnmappedTags struct {
 
 type MigrationWorker struct {
 	uid          string
-	srcAppConfig config.AppConfig
-	dstAppConfig config.AppConfig
+	SrcAppConfig config.AppConfig
+	DstAppConfig config.AppConfig
 	mappings     *config.MappedApp
 	wList        WaitingList
 	unmappedTags UnmappedTags
 	root         *DependencyNode
-	dbConn       *sql.DB
+	DBConn       *sql.DB
 	logTxn       *transaction.Log_txn
 	mtype        string
 	// threadID     int

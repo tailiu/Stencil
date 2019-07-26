@@ -12,13 +12,13 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
-	threads := 1
+	threads := 10
 
 	if mWorker.MType() != migrate.DELETION {
 		if !mWorker.RegisterMigration(mWorker.MType()) {
 			log.Fatal("Unable to register migration!")
 		} else {
-			log.Println("Migration registered!")
+			log.Println("Migration registered:", mWorker.MType())
 		}
 	}
 
@@ -41,7 +41,7 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 			case migrate.CONSISTENT:
 				{
 					for {
-						if err := mWorker.ConsistentMigration(mWorker.GetRoot(), thread_id); err != nil {
+						if err := mWorker.ConsistentMigration(thread_id); err != nil {
 							mWorker.RenewDBConn()
 							continue
 						}
@@ -51,7 +51,7 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 			case migrate.INDEPENDENT:
 				{
 					for {
-						if err := mWorker.IndependentMigration(mWorker.GetRoot(), thread_id); err != nil {
+						if err := mWorker.IndependentMigration(thread_id); err != nil {
 							mWorker.RenewDBConn()
 							continue
 						}
@@ -63,22 +63,24 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}
-	// if bags, err := mWorker.GetUserBags(); err == nil && len(bags) > 0 {
-	// 	for ibag, bag := range bags {
-	// 		wg.Add(1)
-	// 		go func(thread_id int, commitChannel chan ThreadChannel) {
-	// 			defer wg.Done()
-	// 			for {
-	// 				if err := mWorker.MigrateProcessBags(bag); err != nil {
-	// 					mWorker.RenewDBConn()
-	// 					continue
-	// 				}
-	// 				break
-	// 			}
-	// 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
-	// 		}(ibag+threads, commitChannel)
-	// 	}
-	// }
+	if mWorker.MType() == migrate.DELETION {
+		if bags, err := mWorker.GetUserBags(); err == nil && len(bags) > 0 {
+			for ibag, bag := range bags {
+				wg.Add(1)
+				go func(thread_id int, commitChannel chan ThreadChannel) {
+					defer wg.Done()
+					for {
+						if err := mWorker.MigrateProcessBags(bag); err != nil {
+							mWorker.RenewDBConn()
+							continue
+						}
+						break
+					}
+					commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
+				}(ibag+threads, commitChannel)
+			}
+		}
+	}
 
 	go func() {
 		wg.Wait()

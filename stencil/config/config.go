@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go/build"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -65,7 +66,7 @@ func LoadSchemaMappings() (*SchemaMappings, error) {
 
 		SchemaMappingsObj = new(SchemaMappings)
 
-		schemaMappingFile := "../config/app_settings/mappings.json"
+		schemaMappingFile := build.Default.GOPATH + "/src/stencil/config/app_settings/mappings.json"
 		jsonFile, err := os.Open(schemaMappingFile)
 		if err != nil {
 			fmt.Println(err)
@@ -101,6 +102,17 @@ func ShuffleDependencies(vals []Dependency) []Dependency {
 	Init()
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	ret := make([]Dependency, len(vals))
+	perm := r.Perm(len(vals))
+	for i, randIndex := range perm {
+		ret[i] = vals[randIndex]
+	}
+	return ret
+}
+
+func ShuffleOwnerships(vals []Ownership) []Ownership {
+	Init()
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]Ownership, len(vals))
 	perm := r.Perm(len(vals))
 	for i, randIndex := range perm {
 		ret[i] = vals[randIndex]

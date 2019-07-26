@@ -29,12 +29,12 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 	}
 	mWorker := MigrationWorker{
 		uid:          uid,
-		srcAppConfig: srcAppConfig,
-		dstAppConfig: dstAppConfig,
+		SrcAppConfig: srcAppConfig,
+		DstAppConfig: dstAppConfig,
 		mappings:     mappings,
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
-		dbConn:       db.GetDBConn("stencil"),
+		DBConn:       db.GetDBConn("stencil"),
 		logTxn:       logTxn,
 		mtype:        mtype}
 	if err := mWorker.FetchRoot(); err != nil {
@@ -44,18 +44,18 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 }
 
 func (self *MigrationWorker) GetUserBags() ([]map[string]interface{}, error) {
-	return db.GetUserBags(self.dbConn, self.uid, self.srcAppConfig.AppID)
+	return db.GetUserBags(self.DBConn, self.uid, self.SrcAppConfig.AppID)
 }
 
 func (self *MigrationWorker) RenewDBConn() {
-	if self.dbConn != nil {
-		self.dbConn.Close()
+	if self.DBConn != nil {
+		self.DBConn.Close()
 	}
-	self.dbConn = db.GetDBConn("stencil")
+	self.DBConn = db.GetDBConn("stencil")
 }
 
 func (self *MigrationWorker) Finish() {
-	self.dbConn.Close()
+	self.DBConn.Close()
 }
 
 func (self *MigrationWorker) GetRoot() *DependencyNode {
@@ -66,15 +66,19 @@ func (self *MigrationWorker) MType() string {
 	return self.mtype
 }
 
+func (self *MigrationWorker) UserID() string {
+	return self.uid
+}
+
 func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, dep config.Dependency, tag config.Tag, qs *qr.QS) {
 
-	where := qr.CreateQS(self.srcAppConfig.QR)
+	where := qr.CreateQS(self.SrcAppConfig.QR)
 	where.TableAliases = qs.TableAliases
 	for _, depOn := range dep.DependsOn {
-		if depOnTag, err := self.srcAppConfig.GetTag(depOn.Tag); err == nil {
+		if depOnTag, err := self.SrcAppConfig.GetTag(depOn.Tag); err == nil {
 			if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
 				for _, condition := range depOn.Conditions {
-					conditionStr := qr.CreateQS(self.srcAppConfig.QR)
+					conditionStr := qr.CreateQS(self.SrcAppConfig.QR)
 					conditionStr.TableAliases = qs.TableAliases
 					tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
 					if err != nil {
@@ -93,7 +97,7 @@ func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, d
 						log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
 					}
 					if len(condition.Restrictions) > 0 {
-						restrictions := qr.CreateQS(self.srcAppConfig.QR)
+						restrictions := qr.CreateQS(self.SrcAppConfig.QR)
 						restrictions.TableAliases = qs.TableAliases
 						for _, restriction := range condition.Restrictions {
 							if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
@@ -119,15 +123,47 @@ func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, d
 	}
 }
 
+func (self *MigrationWorker) ResolveOwnershipConditions(own config.Ownership, tag config.Tag, qs *qr.QS) {
+
+	where := qr.CreateQS(self.SrcAppConfig.QR)
+	where.TableAliases = qs.TableAliases
+	for _, condition := range own.Conditions {
+		conditionStr := qr.CreateQS(self.SrcAppConfig.QR)
+		conditionStr.TableAliases = qs.TableAliases
+		tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
+		if err != nil {
+			fmt.Println("data1", self.root.Data)
+			log.Fatal(err, tag.Name, condition.TagAttr)
+			break
+		}
+		depOnAttr, err := self.root.Tag.ResolveTagAttr(condition.DependsOnAttr)
+		if err != nil {
+			fmt.Println("data2", self.root.Data)
+			log.Fatal(err, tag.Name, condition.DependsOnAttr)
+			break
+		}
+		if _, ok := self.root.Data[depOnAttr]; ok {
+			conditionStr.WhereOperatorInterface("AND", tagAttr, "=", self.root.Data[depOnAttr])
+		} else {
+			fmt.Println("data3", self.root.Data)
+			log.Fatal("ResolveOwnershipConditions:", depOnAttr, " doesn't exist in ", tag.Name)
+		}
+		where.WhereString("AND", conditionStr.Where)
+	}
+	if where.Where != "" {
+		qs.WhereString("AND", where.Where)
+	}
+}
+
 func (self *MigrationWorker) FetchRoot() error {
 	tagName := "root"
-	if root, err := self.srcAppConfig.GetTag(tagName); err == nil {
-		qs := self.srcAppConfig.GetTagQS(root)
-		rootTable, rootCol := self.srcAppConfig.GetItemsFromKey(root, "root_id")
+	if root, err := self.SrcAppConfig.GetTag(tagName); err == nil {
+		qs := self.SrcAppConfig.GetTagQS(root)
+		rootTable, rootCol := self.SrcAppConfig.GetItemsFromKey(root, "root_id")
 		qs.WhereSimpleVal(rootTable+"."+rootCol, "=", self.uid)
-		qs.WhereMFlag(qr.EXISTS, "0", self.srcAppConfig.AppID)
+		qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
 		sql := qs.GenSQL()
-		if data, err := db.DataCall1(self.dbConn, sql); err == nil && len(data) > 0 {
+		if data, err := db.DataCall1(self.DBConn, sql); err == nil && len(data) > 0 {
 			rootNode := new(DependencyNode)
 			rootNode.Tag = root
 			rootNode.SQL = sql
@@ -146,14 +182,14 @@ func (self *MigrationWorker) FetchRoot() error {
 
 func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, error) {
 
-	for _, dep := range config.ShuffleDependencies(self.srcAppConfig.GetSubDependencies(node.Tag.Name)) {
-		if child, err := self.srcAppConfig.GetTag(dep.Tag); err == nil {
-			qs := self.srcAppConfig.GetTagQS(child)
+	for _, dep := range config.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
+		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
+			qs := self.SrcAppConfig.GetTagQS(child)
 			self.ResolveDependencyConditions(node, dep, child, qs)
-			qs.WhereMFlag(qr.EXISTS, "0", self.srcAppConfig.AppID)
+			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
 			qs.OrderBy("random()")
 			sql := qs.GenSQL()
-			if data, err := db.DataCall1(self.dbConn, sql); err == nil {
+			if data, err := db.DataCall1(self.DBConn, sql); err == nil {
 				if len(data) > 0 {
 					newNode := new(DependencyNode)
 					newNode.Tag = child
@@ -173,10 +209,10 @@ func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, 
 
 func (self *MigrationWorker) GetBagNodes(tagName, bagpks string) ([]*DependencyNode, error) {
 
-	if tag, err := self.srcAppConfig.GetTag(tagName); err == nil {
-		qs := self.srcAppConfig.GetTagQS(tag)
+	if tag, err := self.SrcAppConfig.GetTag(tagName); err == nil {
+		qs := self.SrcAppConfig.GetTagQS(tag)
 		sql := qs.GenSQLWith(bagpks)
-		if data, err := db.DataCall(self.dbConn, sql); err == nil && len(data) > 0 {
+		if data, err := db.DataCall(self.DBConn, sql); err == nil && len(data) > 0 {
 			var bagNodes []*DependencyNode
 			for _, datum := range data {
 				bagNode := new(DependencyNode)
@@ -195,6 +231,45 @@ func (self *MigrationWorker) GetBagNodes(tagName, bagpks string) ([]*DependencyN
 		log.Fatal("Can't fetch bag tag:", tagName, err)
 		return nil, err
 	}
+}
+
+func (self *MigrationWorker) GetOwnedNodes() ([]*DependencyNode, error) {
+
+	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
+		if self.unmappedTags.Exists(own.Tag) {
+			continue
+		}
+		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
+			qs := self.SrcAppConfig.GetTagQS(child)
+			self.ResolveOwnershipConditions(own, child, qs)
+			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
+			qs.WhereMFlag(qr.NEXISTS, "0,1,2", self.DstAppConfig.AppID)
+			qs.OrderBy("random()")
+			qs.LimitResult("5000")
+			sql := qs.GenSQL()
+			// fmt.Println(sql)
+			if result, err := db.DataCall(self.DBConn, sql); err == nil {
+				var nodes []*DependencyNode
+				for _, data := range result {
+					if len(data) > 0 {
+						newNode := new(DependencyNode)
+						newNode.Tag = child
+						newNode.SQL = sql
+						newNode.Data = data
+						if !self.wList.IsAlreadyWaiting(*newNode) {
+							nodes = append(nodes, newNode)
+						}
+					}
+				}
+				if len(nodes) > 0 {
+					return nodes, nil
+				}
+			} else {
+				return nil, err
+			}
+		}
+	}
+	return nil, nil
 }
 
 func (self *MigrationWorker) CheckMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
@@ -222,51 +297,75 @@ func (self *MigrationWorker) CheckMappingConditions(toTable config.ToTable, node
 
 func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *DependencyNode) error {
 
-	if tx, err := self.dbConn.Begin(); err != nil {
+	for _, toTable := range toTables {
+		if self.CheckMappingConditions(toTable, node) {
+			log.Println("Mapping conditions not satisfied! Putting into bag!")
+			return self.HandleUnmappedNode(node)
+		}
+	}
+
+	if tx, err := self.DBConn.Begin(); err != nil {
 		log.Println("Can't create UpdateRowDesc transaction!")
 		return errors.New("0")
 	} else {
 		// var errs []error
 		var updated []string
 
-		for _, toTable := range toTables {
-			if self.CheckMappingConditions(toTable, node) {
-				continue
-			}
-			for col, val := range node.Data {
-				if strings.Contains(col, "pk.") && val != nil {
-					pk := strconv.FormatInt(val.(int64), 10)
-					if val != nil && !helper.Contains(updated, pk) {
-						if err := db.MUpdate(tx, pk, "1", self.dstAppConfig.AppID); err == nil {
-							updated = append(updated, pk)
-							if err := display.GenDisplayFlag(self.logTxn.DBconn, self.dstAppConfig.AppName, toTable.Table, pk, false, self.logTxn.Txn_id); err != nil {
-								log.Fatal("## DISPLAY ERROR!", err)
+		for col, val := range node.Data {
+			if strings.Contains(col, "pk.") && val != nil {
+				pk := strconv.FormatInt(val.(int64), 10)
+				pktokens := strings.Split(col, ".")
+				ltable := pktokens[1]
+				if val != nil && !helper.Contains(updated, pk) {
+					switch self.mtype {
+					case DELETION:
+						{
+							if err := db.MUpdate(tx, pk, "1", self.DstAppConfig.AppID); err == nil {
+								updated = append(updated, pk)
+								if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, ltable, pk, false, self.logTxn.Txn_id); err != nil {
+									log.Fatal("## DISPLAY ERROR!", err)
+								}
+							} else {
+								tx.Rollback()
+								fmt.Println("\n@ERROR_MUpdate:", err)
+								log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+								return err
 							}
-						} else {
-							tx.Rollback()
-							fmt.Println("\n@ERROR_MUpdate:", err)
-							log.Fatal("pk:", pk, "appid", self.dstAppConfig.AppID)
-							return err
 						}
-						// if err := db.SetAppID(tx, pk, dstApp.AppID); err == nil {
-						// 	if err := db.SetMFlag(tx, pk, "1"); err == nil {
-						// 		updated = append(updated, pk)
-						// 	} else {
-						// 		tx.Rollback()
-						// 		fmt.Println("\n@ERROR_SET_MFLAG:", err)
-						// 		return err
-						// 	}
-						// } else {
-						// 	tx.Rollback()
-						// 	fmt.Println("\n@ERROR_SET_APPID:", err)
-						// 	return err
-						// }
+					case CONSISTENT:
+						{
+							if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", false); err == nil {
+								updated = append(updated, pk)
+								if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, ltable, pk, false, self.logTxn.Txn_id); err != nil {
+									log.Fatal("## DISPLAY ERROR!", err)
+								}
+							} else {
+								tx.Rollback()
+								fmt.Println("\n@ERROR_NewRowConsistent:", err)
+								// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+								return err
+							}
+						}
+					case INDEPENDENT:
+						{
+							if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", true); err == nil {
+								updated = append(updated, pk)
+								if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, ltable, pk, false, self.logTxn.Txn_id); err != nil {
+									log.Fatal("## DISPLAY ERROR!", err)
+								}
+							} else {
+								tx.Rollback()
+								fmt.Println("\n@ERROR_NewRowIndependent:", err)
+								// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+								return err
+							}
+						}
 					}
 				}
 			}
 		}
 		// tx.Rollback()
-		if undoActionJSON, err := transaction.GenUndoActionJSON(updated, self.srcAppConfig.AppID, self.dstAppConfig.AppID); err == nil {
+		if undoActionJSON, err := transaction.GenUndoActionJSON(updated, self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
 			if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
 				log.Fatal("UpdateRowDesc: unable to LogChange", log_err)
 			}
@@ -286,13 +385,12 @@ func (self *MigrationWorker) HandleWaitingList(appMapping config.Mapping, tagMem
 		log.Println("!! Node [", node.Tag.Name, "] updated an EXISITNG waiting node!")
 		if waitingNode.IsComplete() {
 			log.Println("!! Node [", node.Tag.Name, "] COMPLETED a waiting node!")
-			tempCombinedDataDependencyNode := waitingNode.GenDependencyDataNode()
-			return tempCombinedDataDependencyNode, nil
+			return waitingNode.GenDependencyDataNode(), nil
 		}
 		return nil, errors.New("1")
 	}
-	adjTags := self.srcAppConfig.GetTagsByTables(appMapping.FromTables)
-	if err := self.wList.AddNewToWaitingList(node, adjTags, self.srcAppConfig); err == nil {
+	adjTags := self.SrcAppConfig.GetTagsByTables(appMapping.FromTables)
+	if err := self.wList.AddNewToWaitingList(node, adjTags, self.SrcAppConfig); err == nil {
 		log.Println("!! Node [", node.Tag.Name, "] added to a NEW waiting node!")
 		return nil, errors.New("1")
 	} else {
@@ -308,7 +406,7 @@ func (self *MigrationWorker) HandleUnmappedTags(node *DependencyNode) error {
 	for _, tagMember := range node.Tag.Members {
 		if _, ok := node.Data[fmt.Sprintf("%s.id", tagMember)]; ok {
 			srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", tagMember)])
-			if serr := db.SaveForEvaluation(self.dbConn, "diaspora", self.dstAppConfig.AppName, tagMember, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
+			if serr := db.SaveForEvaluation(self.DBConn, "diaspora", self.DstAppConfig.AppName, tagMember, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
 				log.Fatal(serr)
 			}
 		}
@@ -317,7 +415,10 @@ func (self *MigrationWorker) HandleUnmappedTags(node *DependencyNode) error {
 }
 
 func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
-	if tx, err := self.dbConn.Begin(); err != nil {
+	if !strings.EqualFold(self.mtype, DELETION) {
+		return errors.New("2")
+	}
+	if tx, err := self.DBConn.Begin(); err != nil {
 		log.Println("Can't create UpdateRowDesc transaction!")
 		return errors.New("0")
 	} else {
@@ -373,6 +474,10 @@ func (self *MigrationWorker) MigrateNode(node *DependencyNode, isBag bool) error
 	if isBag {
 		return fmt.Errorf("no mapping found for bag: %s", node.Tag.Name)
 	}
+	if !strings.EqualFold(self.mtype, DELETION) {
+		self.unmappedTags.Add(node.Tag.Name)
+		return fmt.Errorf("no mapping found for node: %s", node.Tag.Name)
+	}
 	return self.HandleUnmappedNode(node)
 }
 
@@ -387,9 +492,9 @@ func (self *MigrationWorker) HandleLeftOverWaitingNodes() {
 
 func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID int) error {
 
-	if strings.EqualFold(node.Tag.Name, "root") && !db.CheckUserInApp(self.uid, self.dstAppConfig.AppID, self.dbConn) {
-		log.Println("++ Adding User from ", self.srcAppConfig.AppName, " to ", self.dstAppConfig.AppName)
-		db.AddUserToApp(self.uid, self.dstAppConfig.AppID, self.dbConn)
+	if strings.EqualFold(node.Tag.Name, "root") && !db.CheckUserInApp(self.uid, self.DstAppConfig.AppID, self.DBConn) {
+		log.Println("++ Adding User from ", self.SrcAppConfig.AppName, " to ", self.DstAppConfig.AppName)
+		db.AddUserToApp(self.uid, self.DstAppConfig.AppID, self.DBConn)
 	}
 
 	for child, err := self.GetAdjNode(node); child != nil; child, err = self.GetAdjNode(node) {
@@ -406,14 +511,14 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 		}
 	}
 
-	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
+	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	if err := self.MigrateNode(node, false); err == nil {
-		log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
+		log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	} else {
 		if strings.EqualFold(err.Error(), "2") {
-			log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
+			log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 		} else {
-			log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.srcAppConfig.AppName, self.dstAppConfig.AppName))
+			log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			if strings.EqualFold(err.Error(), "0") {
 				log.Println(err)
 				return err
@@ -427,9 +532,9 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 }
 
 func (self *MigrationWorker) RegisterMigration(mtype string) bool {
-	db.DeleteExistingMigrationRegistrations(self.uid, self.srcAppConfig.AppID, self.dstAppConfig.AppID, self.dbConn)
-	if !db.CheckMigrationRegistration(self.uid, self.srcAppConfig.AppID, self.dstAppConfig.AppID, self.dbConn) {
-		return db.RegisterMigration(self.uid, self.srcAppConfig.AppID, self.dstAppConfig.AppID, mtype, self.logTxn.Txn_id, self.dbConn)
+	db.DeleteExistingMigrationRegistrations(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn)
+	if !db.CheckMigrationRegistration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn) {
+		return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, self.DBConn)
 	} else {
 		log.Println("Migration Already Registered!")
 		return true
@@ -437,14 +542,14 @@ func (self *MigrationWorker) RegisterMigration(mtype string) bool {
 }
 
 func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {
-	// fmt.Println("Thread init:", fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"]))
+
 	if bagNodes, err := self.GetBagNodes(fmt.Sprint(bag["tag"]), fmt.Sprint(bag["rowids"])); err != nil {
 		log.Fatal(err)
 		return nil
 	} else {
 		for _, bagNode := range bagNodes {
 			if err := self.MigrateNode(bagNode, true); err == nil {
-				if err := db.DeleteBagsByRowIDS(self.dbConn, fmt.Sprint(bag["rowids"])); err != nil {
+				if err := db.DeleteBagsByRowIDS(self.DBConn, fmt.Sprint(bag["rowids"])); err != nil {
 					log.Println(err)
 					return err
 				}
@@ -456,53 +561,41 @@ func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) erro
 		}
 		return nil
 	}
-
-	// if tag, err := self.srcAppConfig.GetTag(fmt.Sprint(bag["tag"])); err == nil {
-	// 	qs := self.srcAppConfig.GetTagQS(tag)
-	// 	fmt.Println(qs.GenSQLWith(fmt.Sprint(bag["rowids"])))
-
-	// 	for _, appMapping := range self.mappings.Mappings {
-	// 		tagMembers := tag.GetTagMembers()
-	// 		if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
-	// 			bagRowIDs := fmt.Sprint(bag["rowids"])
-	// 			if tx, err := self.dbConn.Begin(); err != nil {
-	// 				log.Println("Can't create UpdateRowDesc transaction!")
-	// 				return false
-	// 			} else {
-	// 				defer tx.Rollback()
-	// 				if helper.Sublist(tagMembers, appMapping.FromTables) {
-	// 					if err := db.MUpdate(tx, bagRowIDs, "1", self.dstAppConfig.AppID); err != nil {
-	// 						fmt.Println(err)
-	// 						return false
-	// 					}
-	// 					if err := db.DeleteBagsByRowIDS(tx, bagRowIDs); err != nil {
-	// 						fmt.Println(err)
-	// 						return false
-	// 					}
-	// 					log.Println("Bag Migrated:", tag.Name, bagRowIDs)
-	// 					tx.Commit()
-	// 				} else {
-	// 					log.Println("In the bag waiting list:", tag.Name)
-	// 					//bags waiting list
-	// 					// put in regular waiting list
-	// 				}
-	// 			}
-	// 			break
-	// 		}
-	// 	}
-	// } else {
-	// 	log.Fatal("tag cannot be found!", bag)
-	// }
-
-	// return true
 }
 
-func (self *MigrationWorker) ConsistentMigration(node *DependencyNode, threadID int) error {
+func (self *MigrationWorker) ConsistentMigration(threadID int) error {
 
+	for nodes, err := self.GetOwnedNodes(); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes() {
+		if err != nil {
+			return err
+		}
+		for _, node := range nodes {
+			nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
+			log.Println(fmt.Sprintf("~%d~ | Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
+			if err := self.MigrateNode(node, false); err == nil {
+				log.Println(fmt.Sprintf("x%dx | MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+			} else {
+				log.Println(fmt.Sprintf("x%dx | RCVD ERR  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+				if self.unmappedTags.Exists(node.Tag.Name) {
+					log.Println(fmt.Sprintf("x%dx | BREKLOOP  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+					break
+				}
+				if strings.EqualFold(err.Error(), "2") {
+					log.Println(fmt.Sprintf("x%dx | IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				} else {
+					log.Println(fmt.Sprintf("x%dx | FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					if strings.EqualFold(err.Error(), "0") {
+						log.Println(err)
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
-func (self *MigrationWorker) IndependentMigration(node *DependencyNode, threadID int) error {
+func (self *MigrationWorker) IndependentMigration(threadID int) error {
 
-	return nil
+	return self.ConsistentMigration(threadID)
 }

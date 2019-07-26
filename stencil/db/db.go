@@ -39,7 +39,7 @@ import (
 // }
 
 func GetDBConn(app string) *sql.DB {
-	log.Println("Creating new db conn for:", app)
+	// log.Println("Creating new db conn for:", app)
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable", DB_ADDR, DB_PORT, DB_USER, DB_PASSWORD, app)
 	// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
@@ -89,6 +89,12 @@ func UpdateTx(tx *sql.Tx, query string, args ...interface{}) error {
 func NewBag(tx *sql.Tx, rowid, user_id, tagName string, migration_id int) error {
 	query := "INSERT INTO data_bags (rowid, user_id, tag, migration_id) VALUES ($1, $2, $3, $4)"
 	_, err := tx.Exec(query, rowid, user_id, tagName, migration_id)
+	return err
+}
+
+func NewRow(tx *sql.Tx, rowid, app_id, mflag string, copy_on_write bool) error {
+	query := "INSERT INTO row_desc (rowid, app_id, copy_on_write, mflag) VALUES ($1, $2, $3, $4)"
+	_, err := tx.Exec(query, rowid, app_id, copy_on_write, mflag)
 	return err
 }
 
@@ -160,6 +166,24 @@ func AddUserToApp(uid, app_id string, dbConn *sql.DB) bool {
 	query := "INSERT INTO user_table (user_id, app_id) VALUES ($1, $2)"
 	dbConn.Exec(query, uid, app_id)
 	return true
+}
+
+func AddOwnedData(uid, row_id string, dbConn *sql.DB) bool {
+	query := "INSERT INTO owned_data (user_id, row_id) VALUES ($1, $2)"
+	if _, err := dbConn.Exec(query, uid, row_id); err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return true
+		}
+		log.Fatal("Error in db", err)
+	}
+	return true
+}
+
+func TruncateOwnedData(dbConn *sql.DB) {
+	query := "TRUNCATE TABLE owned_data"
+	if _, err := dbConn.Exec(query); err != nil {
+		log.Fatal("Error in db", err)
+	}
 }
 
 func DeleteExistingMigrationRegistrations(uid, src_app, dst_app string, dbConn *sql.DB) bool {
