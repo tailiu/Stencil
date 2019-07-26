@@ -3203,8 +3203,8 @@ COPY public.status_stats (id, status_id, replies_count, reblogs_count, favourite
 -- Data for Name: statuses; Type: TABLE DATA; Schema: public; Owner: mastodon
 --
 
-COPY public.statuses (id, uri, text, created_at, updated_at, in_reply_to_id, reblog_of_id, url, sensitive, visibility, spoiler_text, reply, language, conversation_id, local, account_id, application_id, in_reply_to_account_id) FROM stdin;
-\.
+-- COPY public.statuses (id, uri, text, created_at, updated_at, in_reply_to_id, reblog_of_id, url, sensitive, visibility, spoiler_text, reply, language, conversation_id, local, account_id, application_id, in_reply_to_account_id) FROM stdin;
+-- \.
 
 
 --
@@ -4013,14 +4013,14 @@ ALTER TABLE ONLY public.status_stats
 ALTER TABLE ONLY public.statuses
     ADD CONSTRAINT statuses_pkey PRIMARY KEY (id);
 
--
+--
 -- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: mastodon
 --
 
-ALTER TABLE ONLY public.statuses
+ALTER TABLE ONLY public.comments
     ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
 
--
+--
 -- Name: messages messages_pkey; Type: CONSTRAINT; Schema: public; Owner: mastodon
 --
 
