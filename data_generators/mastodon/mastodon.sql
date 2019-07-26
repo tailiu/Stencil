@@ -4013,6 +4013,20 @@ ALTER TABLE ONLY public.status_stats
 ALTER TABLE ONLY public.statuses
     ADD CONSTRAINT statuses_pkey PRIMARY KEY (id);
 
+-
+-- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: mastodon
+--
+
+ALTER TABLE ONLY public.statuses
+    ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
+
+-
+-- Name: messages messages_pkey; Type: CONSTRAINT; Schema: public; Owner: mastodon
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
+
 
 --
 -- Name: stream_entries stream_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: mastodon
@@ -4613,7 +4627,7 @@ CREATE UNIQUE INDEX index_status_stats_on_status_id ON public.status_stats USING
 -- Name: index_statuses_20180106; Type: INDEX; Schema: public; Owner: mastodon
 --
 
-CREATE INDEX index_statuses_20180106 ON public.statuses USING btree (account_id, id DESC, visibility, updated_at);
+CREATE INDEX index_statuses_20180106 ON public.statuses USING btree (account_id, id DESC, updated_at);
 
 
 --
@@ -4622,12 +4636,15 @@ CREATE INDEX index_statuses_20180106 ON public.statuses USING btree (account_id,
 
 CREATE INDEX index_statuses_on_in_reply_to_account_id ON public.statuses USING btree (in_reply_to_account_id);
 
+CREATE INDEX index_comments_on_in_reply_to_account_id ON public.comments USING btree (in_reply_to_account_id);
+
+CREATE INDEX index_messages_on_in_reply_to_account_id ON public.messages USING btree (in_reply_to_account_id);
 
 --
 -- Name: index_statuses_on_in_reply_to_id; Type: INDEX; Schema: public; Owner: mastodon
 --
 
-CREATE INDEX index_statuses_on_in_reply_to_id ON public.statuses USING btree (in_reply_to_id);
+CREATE INDEX index_statuses_on_in_reply_to_id ON public.comments USING btree (in_reply_to_id);
 
 
 --
