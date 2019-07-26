@@ -3,7 +3,6 @@ package dependency_handler
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"stencil/config"
 	"stencil/db"
@@ -12,10 +11,10 @@ import (
 	"strings"
 )
 
-func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, depDataValue int) (map[string]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", depDataTable, depDataKey, depDataValue)
+func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, depDataTable, depDataKey string, depDataValue int) (map[string]string, error) {
+	data := display.GetDataFromPhysicalSchema(stencilDBConn, appConfig.QR, depDataTable + ".*", 
+		depDataTable, depDataTable + "." + depDataKey, "=", strconv.Itoa(depDataValue), "1")
 
-	data := db.GetAllColsOfRows(dbConn, query)
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
 	} else {
@@ -23,11 +22,12 @@ func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, 
 	}
 }
 
-func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string) (map[string]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
-	// fmt.Println(query)
-	data := db.GetAllColsOfRows(dbConn, query)
-	// fmt.Println(data)
+func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.DB, val int, dep string) (map[string]string, error) {
+	table := strings.Split(dep, ".")[0]
+	key := strings.Split(dep, ".")[1]
+	data := display.GetDataFromPhysicalSchema(stencilDBConn, appConfig.QR, table + ".*", 
+		table, table + "." + key, "=", strconv.Itoa(val), "1")
+
 	if len(data) == 0 {
 		return nil, errors.New("Error: Cannot Find One Remaining Data in the Node")
 	} else {
@@ -35,7 +35,7 @@ func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string)
 	}
 }
 
-func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint display.HintStruct, app string) ([]display.HintStruct, error) {
+func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, dependencies []map[string]string, members map[string]string, hint display.HintStruct) ([]display.HintStruct, error) {
 	var result []display.HintStruct
 
 	procDependencies := make(map[string][]string)
@@ -56,9 +56,8 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 	var data map[string]string
 	var err error
 	for k, v := range hint.KeyVal {
-		data, err = getOneRowBasedOnHint(dbConn, app, hint.Table, k, v)
+		data, err = getOneRowBasedOnHint(appConfig, stencilDBConn, hint.Table, k, v)
 		if err != nil {
-			// log.Println(err)
 			return nil, err
 		}
 	}
@@ -85,7 +84,7 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 					log.Fatal("Error in Getting Data in Node: Converting '%s' to Integer", val)
 				}
 				for _, dep := range deps {
-					data, err = getOneRowBasedOnDependency(dbConn, app, intVal, dep)
+					data, err = getOneRowBasedOnDependency(appConfig, stencilDBConn, intVal, dep)
 					// fmt.Println(data)
 
 					if err != nil {
@@ -103,7 +102,7 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 						Data:  data,
 					})
 
-					pk, err1 := db.GetPrimaryKeyOfTable(dbConn, table1)
+					pk, err1 := db.GetPrimaryKeyOfTable(appConfig.DBConn, table1)
 					if err1 != nil {
 						log.Fatal(err1)
 					}
@@ -146,7 +145,7 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 	}
 }
 
-func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, error) {
+func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct, stencilDBConn *sql.DB) ([]display.HintStruct, error) {
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members {
 			if hint.Table == member {
@@ -155,7 +154,7 @@ func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct) ([]disp
 				} else {
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					return getRemainingDataInNode(appConfig.DBConn, tag.InnerDependencies, tag.Members, hint, appConfig.AppName)
+					return getRemainingDataInNode(appConfig, stencilDBConn, tag.InnerDependencies, tag.Members, hint)
 				}
 			}
 		}
@@ -205,7 +204,7 @@ func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []dis
 	return trimmedData
 }
 
-func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint display.HintStruct) ([]display.HintStruct, error) {
+func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint display.HintStruct, stencilDBConn *sql.DB) ([]display.HintStruct, error) {
 	var data []display.HintStruct
 
 	tagName, err := hint.GetTagName(appConfig)
@@ -216,7 +215,7 @@ func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint displa
 	displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err = getDataInNode(appConfig, hint); err != nil {
+	if data, err = getDataInNode(appConfig, hint, stencilDBConn); err != nil {
 		// The setting "default_display_setting" means only display a node when the node is complete.
 		// Therefore, return nil and error message when node is not complete.
 		if displaySetting == "default_display_setting" {

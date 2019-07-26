@@ -63,62 +63,6 @@
             "display_setting": "display_based_on_inner_dependencies"
         },
         {
-            "name" : "comments",
-            "members" : {
-                "member1":"comments",
-                "member3":"mentions",
-                "member4":"media_attachments",
-                "member5":"stream_entries"
-            },
-            "keys": {
-                "conversation_id":"member1.conversation_id",
-                "id":"member1.id",
-                "reply":"member1.in_reply_to_id",
-                "reblog":"member1.reblog_of_id",
-                "account":"member1.account_id"
-            },
-            "inner_dependencies":[
-                {
-                    "member1.id":"member3.status_id"
-                },
-                {
-                    "member1.id":"member4.status_id"
-                },
-                {
-                    "member1.id":"member5.activity_id"
-                }
-            ],
-            "display_setting": "display_based_on_inner_dependencies"
-        },
-        {
-            "name" : "messages",
-            "members" : {
-                "member1":"messages",
-                "member3":"mentions",
-                "member4":"media_attachments",
-                "member5":"stream_entries"
-            },
-            "keys": {
-                "conversation_id":"member1.conversation_id",
-                "id":"member1.id",
-                "reply":"member1.in_reply_to_id",
-                "reblog":"member1.reblog_of_id",
-                "account":"member1.account_id"
-            },
-            "inner_dependencies":[
-                {
-                    "member1.id":"member3.status_id"
-                },
-                {
-                    "member1.id":"member4.status_id"
-                },
-                {
-                    "member1.id":"member5.activity_id"
-                }
-            ],
-            "display_setting": "display_based_on_inner_dependencies"
-        },
-        {
             "name" : "follows",
             "members" : {
                 "member1": "follows"
@@ -162,6 +106,7 @@
             "depends_on": [
                 {
                     "tag":"statuses",
+                    "as": "S1",
                     "conditions":[
                         {   "tag_attr": "reblog",
                             "depends_on_attr": "id"
@@ -180,37 +125,10 @@
                     ],
                     "display_setting": "parent_node_not_displays_without_check",
                     "_comment":"because Diaspora does not have conversations, so display_setting has to be changed from parent_node_partially_displays to this"
-                }
-            ],
-            "combined_display_setting":"conversations or statuses"
-        },
-        {
-            "tag": "comments",
-            "depends_on": [
-                {
-                    "tag":"conversations",
-                    "conditions":[
-                        {   
-                            "tag_attr": "conversation_id",
-                            "depends_on_attr": "id"
-                        }
-                    ],
-                    "display_setting": "parent_node_not_displays_without_check",
-                    "_comment":"because Diaspora does not have conversations, so display_setting has to be changed from parent_node_partially_displays to this"
                 },
                 {
                     "tag":"statuses",
-                    "conditions":[
-                        {   "tag_attr": "reply",
-                            "depends_on_attr": "id"
-                        }
-                    
-                    ],
-                    "display_existence": "reply",
-                    "display_setting": "parent_node_not_displays_with_check"
-                },
-                {
-                    "tag":"comments",
+                    "as": "S2",
                     "conditions":[
                         {   "tag_attr": "reply",
                             "depends_on_attr": "id"
@@ -221,7 +139,7 @@
                     "display_setting": "parent_node_not_displays_with_check"
                 }
             ],
-            "combined_display_setting":"conversations or statuses or comments"
+            "combined_display_setting":"conversations or S1 or S2"
         },
         {
             "tag": "follows",

@@ -11,6 +11,8 @@ import (
 	"stencil/qr"
 	"strings"
 	"time"
+	"log"
+	"stencil/db"
 )
 
 var SchemaMappingsObj *SchemaMappings
@@ -22,7 +24,19 @@ func Init() {
 func CreateAppConfig(app, app_id string) (AppConfig, error) {
 
 	var appConfig AppConfig
-	dconfig := build.Default.GOPATH + "/src/stencil/config/dependencies/" + app + ".json"
+	var dconfig string
+
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if strings.Contains(dir, "/stencil/") {
+		dconfig = "../config/dependencies/" + app + ".json"
+	} else {
+		dconfig = "./config/dependencies/" + app + ".json"
+	}
+	
 	jsonFile, err := os.Open(dconfig)
 
 	if err != nil {
@@ -36,8 +50,11 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 
 	appConfig.AppName = app
 	appConfig.AppID = app_id
-	// appConfig.DBConn = db.GetDBConn(app)
-	appConfig.QR = qr.NewQR(app, app_id)
+	appConfig.DBConn = db.GetDBConn(app)
+
+	if app_id != "" {
+		appConfig.QR = qr.NewQR(app, app_id)
+	}
 
 	jsonFile.Close()
 
