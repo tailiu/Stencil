@@ -1857,7 +1857,7 @@ ALTER SEQUENCE public.status_stats_id_seq OWNED BY public.status_stats.id;
 
 --
 -- Name: statuses; Type: TABLE; Schema: public; Owner: mastodon
--- Deleted cols: in_reply_to_id, reply, and in_reply_to_account_id
+-- Deleted cols: in_reply_to_id, reply, in_reply_to_account_id and visibility
 --
 
 CREATE TABLE public.statuses (
@@ -1869,7 +1869,6 @@ CREATE TABLE public.statuses (
     reblog_of_id bigint,
     url character varying,
     sensitive boolean DEFAULT false NOT NULL,
-    visibility integer DEFAULT 0 NOT NULL,
     spoiler_text text DEFAULT ''::text NOT NULL,
     language character varying,
     conversation_id bigint,
@@ -1897,7 +1896,7 @@ ALTER TABLE public.statuses_id_seq OWNER TO mastodon;
 
 --
 -- Name: comments; Type: TABLE; Schema: public; Owner: mastodon
--- This is a copied statuses table without reply and reblog_of_id
+-- This is a copied statuses table without reply, reblog_of_id and visibility
 --
 
 CREATE TABLE public.comments (
@@ -1909,7 +1908,6 @@ CREATE TABLE public.comments (
     in_reply_to_id bigint,
     url character varying,
     sensitive boolean DEFAULT false NOT NULL,
-    visibility integer DEFAULT 0 NOT NULL,
     spoiler_text text DEFAULT ''::text NOT NULL,
     language character varying,
     conversation_id bigint,
@@ -1925,7 +1923,7 @@ ALTER TABLE public.comments OWNER TO mastodon;
 
 --
 -- Name: messages; Type: TABLE; Schema: public; Owner: mastodon
--- This is a copied statuses table without reblog_of_id
+-- This is a copied statuses table without reblog_of_id and visibility
 --
 
 CREATE TABLE public.messages (
@@ -1937,7 +1935,6 @@ CREATE TABLE public.messages (
     in_reply_to_id bigint,
     url character varying,
     sensitive boolean DEFAULT false NOT NULL,
-    visibility integer DEFAULT 0 NOT NULL,
     spoiler_text text DEFAULT ''::text NOT NULL,
     reply boolean DEFAULT false NOT NULL,
     language character varying,

@@ -86,10 +86,6 @@
                             "toTables": [
                                 {
                                     "table": "posts",
-                                    "conditions": {
-                                            "statuses.visibility": "0",
-                                            "statuses.reply": "False"
-                                    },
                                     "mapping": {
                                         "id":"statuses.id",
                                         "author_id":"statuses.account_id",
@@ -102,34 +98,37 @@
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
                                     }
-                                },
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["comments"],
+                            "toTables": [
                                 {
                                     "table": "comments",
-                                    "conditions": {
-                                            "statuses.visibility": "0",
-                                            "statuses.reply": "True"
-                                    },
                                     "mapping":{
-                                        "id":"statuses.id",
-                                        "author_id":"statuses.account_id",
-                                        "commentable_id":"statuses.in_reply_to_id",
-                                        "text":"statuses.text",
-                                        "created_at":"statuses.created_at",
-                                        "updated_at":"statuses.updated_at",
+                                        "id":"comments.id",
+                                        "author_id":"comments.account_id",
+                                        "commentable_id":"comments.in_reply_to_id",
+                                        "text":"comments.text",
+                                        "created_at":"comments.created_at",
+                                        "updated_at":"comments.updated_at",
                                         "commentable_type": "$commentable_type",
                                         "guid":"#guid"
             
                                     }
-                                },
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["messages"],
+                            "toTables": [
                                 {
                                     "table": "messages",
-                                    "conditions": {
-                                            "statuses.visibility": "3"
-                                    },
                                     "mapping":{    
-                                        "id":"statuses.id",
-                                        "author_id":"statuses.account_id",
-                                        "conversation_id":"statuses.conversation_id",
+                                        "id":"messages.id",
+                                        "author_id":"messages.account_id",
+                                        "conversation_id":"messages.conversation_id",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
@@ -244,6 +243,10 @@
                             "mapping": "func isNull()"
                         },
                         {
+                            "name": "isNotNull",
+                            "mapping": "func isNotNull()"
+                        },
+                        {
                             "name": "transformMediaType",
                             "mapping": "func return Media Type"
                         },
@@ -293,8 +296,7 @@
                                 {
                                     "table": "tweets",
                                     "conditions": {
-                                            "statuses.visibility": "0",
-                                            "statuses.reblog_of_id": "#isNull"
+                                        "statuses.reblog_of_id": "#isNull"
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
@@ -310,8 +312,7 @@
                                 {
                                     "table": "retweets",
                                     "conditions": {
-                                            "statuses.visibility": "0",
-                                            "statuses.reblog_of_id": "#isNull"
+                                        "statuses.reblog_of_id": "#isNotNull"
                                     },
                                     "mapping":{
                                         "id":"statuses.id",
@@ -320,19 +321,39 @@
                                         "updated_at":"statuses.updated_at",
                                         "tweet_id":"statuses.in_reply_to_id"
                                     }
-                                },
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["comments", "media_attachments"],
+                            "toTables": [
+                                {
+                                    "table": "tweets",
+                                    "mapping": {
+                                        "id":"comments.id",
+                                        "user_id":"comments.account_id",
+                                        "content":"comments.text",
+                                        "created_at":"comments.created_at",
+                                        "updated_at":"statuses.updated_at",
+                                        "reply_to_id": "comments.in_reply_to_id",
+                                        "tweet_media": "media_attachments.remote_url",
+                                        "media_type": "#transformMediaType"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["messages", "media_attachments"],
+                            "toTables": [
                                 {
                                     "table": "messages",
-                                    "conditions": {
-                                            "statuses.visibility": "3"
-                                    },
                                     "mapping":{    
-                                        "id":"statuses.id",
-                                        "user_id":"statuses.account_id",
-                                        "conversation_id":"statuses.conversation_id",
-                                        "created_at":"statuses.created_at",
-                                        "updated_at":"statuses.updated_at",
-                                        "content": "statuses.text",
+                                        "id":"messages.id",
+                                        "user_id":"messages.account_id",
+                                        "conversation_id":"messages.conversation_id",
+                                        "created_at":"messages.created_at",
+                                        "updated_at":"messages.updated_at",
+                                        "content": "messages.text",
                                         "message_media": "media_attachments.remote_url",
                                         "media_type": "#transformMediaType"
                                     }
@@ -465,9 +486,7 @@
                                         "account_id": "posts.author_id",
                                         "text":"posts.text",
                                         "created_at":"posts.created_at",
-                                        "updated_at":"posts.updated_at",
-                                        "visibility": "$visibility0",
-                                        "reply": "$reply1"
+                                        "updated_at":"posts.updated_at"
                                     }
                                 },
                                 { 
@@ -490,7 +509,7 @@
                             "fromTables": ["comments"],
                             "toTables": [
                                 {
-                                    "table": "statuses",
+                                    "table": "comments",
                                     "conditions":{},
                                     "mapping":{
                                         "id":"comments.id",
@@ -498,18 +517,7 @@
                                         "text":"comments.text",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at",
-                                        "visibility": "$visibility0",
-                                        "reply": "$reply2",
                                         "in_reply_to_id":"comments.commentable_id"
-                                    }
-                                },
-                                {
-                                    "table": "status_stats",
-                                    "conditions":{},
-                                    "mapping":{
-                                        "status_id":"comments.id",
-                                        "created_at":"comments.created_at",
-                                        "updated_at":"comments.updated_at"
                                     }
                                 }
                             ]
@@ -525,16 +533,6 @@
                                         "account_id": "messages.author_id",
                                         "conversation_id":"messages.conversation_id",
                                         "text":"messages.text",
-                                        "created_at":"messages.created_at",
-                                        "updated_at":"messages.updated_at",
-                                        "visibility": "$visibility3"
-                                    }
-                                },
-                                {
-                                    "table": "status_stats",
-                                    "conditions":{},
-                                    "mapping":{
-                                        "status_id":"messages.id",
                                         "created_at":"messages.created_at",
                                         "updated_at":"messages.updated_at"
                                     }
@@ -916,10 +914,39 @@
                             ]
                         },
                         {
+                            "fromTables": ["tweets"],
+                            "toTables": [
+                                {
+                                    "table": "comments",
+                                    "conditions": {},
+                                    "mapping": {
+                                        "id":"tweets.id",
+                                        "created_at":"tweets.created_at",
+                                        "updated_at":"tweets.updated_at",
+                                        "text":"tweets.content",
+                                        "in_reply_to_id":"tweets.reply_to_id",
+                                        "account_id":"tweets.user_id"
+                                    }
+                                },
+                                {
+                                    "table": "media_attachments",
+                                    "conditions": {},
+                                    "mapping" : {
+                                        "id": "#guid",
+                                        "remote_url": "tweets.tweet_media",
+                                        "status_id": "tweets.id",
+                                        "created_at": "tweets.created_at",
+                                        "updated_at": "tweets.updated_at",
+                                        "account_id": "tweets.user_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
                             "fromTables": ["messages"],
                             "toTables": [
                                 {
-                                    "table": "statuses",
+                                    "table": "messages",
                                     "conditions": {},
                                     "mapping": {
                                         "id":"messages.id",
