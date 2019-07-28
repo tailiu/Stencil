@@ -94,6 +94,7 @@ func (self *QS) getTableAlias(ltab, ptab string) string {
 func (self *QS) FromSimple(table string) {
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
+	// fmt.Println(table, "=>", phyTab)
 
 	prev := ""
 	for ptab := range phyTab {
@@ -113,10 +114,13 @@ func (self *QS) FromJoin(table, condition string) {
 	// condition: previous_table.column=current_table.column
 
 	condition_tokens := strings.Split(condition, "=")
+
+	lprev := strings.Split(condition_tokens[0], ".")
 	prev_tab, prev_col := self.QR.GetPhyTabCol(condition_tokens[0])
+
 	curr_tab, curr_col := self.QR.GetPhyTabCol(condition_tokens[1])
 	// self.From += fmt.Sprintf("JOIN %s ON %s.%s = %s.%s AND %s.pk = %s.pk ", curr_tab, prev_tab, prev_col, curr_tab, curr_col, prev_tab, curr_tab)
-	self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.%s::text = %s.%s::text ", curr_tab, self.getTableAlias(table, curr_tab), self.getTableAlias(table, prev_tab), prev_col, self.getTableAlias(table, curr_tab), curr_col)
+	self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.%s::text = %s.%s::text ", curr_tab, self.getTableAlias(table, curr_tab), self.getTableAlias(lprev[0], prev_tab), prev_col, self.getTableAlias(table, curr_tab), curr_col)
 	self.seen[curr_tab] = true
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
@@ -260,6 +264,14 @@ func (self *QS) GroupBy(col string) {
 		self.Group = fmt.Sprintf("%s.%s", ptab, pcol)
 	} else {
 		self.Group += fmt.Sprintf(", %s.%s", ptab, pcol)
+	}
+}
+
+func (self *QS) GroupByString(col string) {
+	if strings.EqualFold(self.Group, "") {
+		self.Group = fmt.Sprintf("%s", col)
+	} else {
+		self.Group += fmt.Sprintf(", %s", col)
 	}
 }
 

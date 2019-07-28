@@ -833,45 +833,24 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 
 	var users []*User
 
-	// sql := `SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
-	// 		FROM (
-	// 			SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
-	// 			FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
-	// 		) tab
-	// 		GROUP BY user_id, person_id
-	// 		ORDER BY random()`
+	// sql := `select * from diaspora_users_with_aspects`
 
-	// sql := `
-	// 	SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects from
-	// 	(SELECT supplementary_676.id as user_id, supplementary_654.pk as person_id, supplementary_630.id as aspect_id
-	// 		FROM  supplementary_654
-	// 		JOIN supplementary_676 ON supplementary_676.id = supplementary_654.owner_id
-	// 		JOIN supplementary_630 ON supplementary_630.user_id = supplementary_654.owner_id
-	// 	) tab
-	// 	GROUP BY tab.user_id, tab.person_id
-	// `
+	fq := qr.CreateQS(QR)
+	fq.FromSimple("users")
+	fq.FromJoin("people", "users.id=people.owner_id")
+	fq.FromJoin("aspects", "users.id=aspects.user_id")
+	fq.ColAlias("users.id", "user_id")
+	fq.ColAlias("people.id", "person_id")
+	fq.ColAlias("aspects.id", "aspect_id")
 
-	sql := `select * from diaspora_users_with_aspects`
+	q := qr.CreateQS(QR)
+	q.ColSimple("user_id,person_id")
+	q.ColFunction("string_agg(%s::text, ',')", "aspect_id", "aspects")
+	q.FromQuery(fq)
+	q.GroupByString("user_id,person_id")
+	q.OrderBy("random()")
 
-	// fq := qr.CreateQS(QR)
-	// // fq.ColSimple("users.*")
-	// fq.ColSimple("users.id")
-	// fq.ColAlias("users.id", "user_id")
-	// fq.ColAlias("people.id", "person_id")
-	// fq.ColAlias("aspects.id", "aspect_id")
-	// fq.FromSimple("users")
-	// fq.FromJoin("people", "users.id=people.owner_id")
-	// fq.FromJoin("aspects", "users.id=aspects.user_id")
-
-	// q := qr.CreateQS(QR)
-	// q.ColSimple("user_id,person_id")
-	// q.ColFunction("string_agg(%s::text, ',')", "aspect_id", "aspects")
-	// q.FromQuery(fq)
-	// q.GroupBy("user_id,person_id")
-	// q.OrderBy("random()")
-
-	// sql := q.GenSQL()
-	// fmt.Println(sql)
+	sql := q.GenSQL()
 
 	res := db.DataCall(QR.StencilDB, sql)
 
@@ -886,7 +865,6 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 		}
 		user.Aspects = aspect_ids
 		users = append(users, user)
-		// fmt.Println(user)
 	}
 	return users
 }
