@@ -291,13 +291,13 @@ func GetPostsForUser(QR *qr.QR, dbConn *sql.DB, user_id int) []*Post {
 
 	qPosts := qr.CreateQS(QR)
 	qPosts.FromSimple("posts")
-	qPosts.ColSimple("posts.id")
-	qPosts.ColSimple("posts.guid")
-	qPosts.ColSimple("posts.author_id")
-	qPosts.ColSimple("posts.text")
+	qPosts.ColAlias("posts.id", "id")
+	qPosts.ColAlias("posts.guid", "guid")
+	qPosts.ColAlias("posts.author_id", "author_id")
+	qPosts.ColAlias("posts.text", "text")
 	qPosts.WhereSimpleVal("posts.author_id", "=", fmt.Sprint(user_id))
 	qPosts.OrderBy("random()")
-
+	// log.Fatal(qPosts.GenSQL())
 	for _, row := range db.DataCall(dbConn, qPosts.GenSQL()) {
 		if _, ok := interactedAlready[row["id"]]; !ok {
 			if pid, err := strconv.Atoi(row["id"]); err == nil {
@@ -953,31 +953,11 @@ func GetFriendsOfUser(QR *qr.QR, person_id int) []*User {
 	fq.GroupBy("contacts.id")
 	fq.GroupBy("aspect_memberships.aspect_id")
 
-	log.Fatal(fq.GenSQL())
+	// log.Fatal(fq.GenSQL())
 
 	sql := fq.GenSQL()
 
-	// sql := `
-	// 	SELECT supplementary_676.id as user_id,
-	// 	base_people_1.id as person_id,
-	// 	base_contacts_1.id as contact_id,
-	// 	string_agg(supplementary_630.id::text, ',') as aspects,
-	// 	supplementary_628.aspect_id as contact_aspect
-	// 	FROM  base_contacts_1
-	// 	JOIN supplementary_638 ON base_contacts_1.pk = supplementary_638.pk
-	// 	JOIN supplementary_628 ON base_contacts_1.id::text = supplementary_628.contact_id::text
-	// 	JOIN base_people_1 ON base_contacts_1.user_id::text = base_people_1.id::text
-	// 	JOIN base_users_1 ON base_people_1.pk = base_users_1.pk
-	// 	JOIN supplementary_654 ON base_users_1.pk = supplementary_654.pk
-	// 	JOIN supplementary_676 ON supplementary_654.owner_id::text = supplementary_676.id::text
-	// 	JOIN base_users_2 ON supplementary_676.pk = base_users_2.pk
-	// 	JOIN base_users_1 buser1 ON base_users_2.pk = buser1.pk
-	// 	JOIN supplementary_630 ON supplementary_676.id::text = supplementary_630.user_id::text
-	// 	WHERE  base_contacts_1.user_id = $1  AND supplementary_638.sharing = true
-	// 	GROUP BY supplementary_676.id , base_people_1.id , base_contacts_1.id , supplementary_628.aspect_id
-	// `
-
-	res := db.DataCall(QR.StencilDB, sql, person_id)
+	res := db.DataCall(QR.StencilDB, sql)
 
 	for _, row := range res {
 		user := new(User)

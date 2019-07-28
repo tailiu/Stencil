@@ -258,12 +258,14 @@ func (self *QS) WherePK(PK string) {
 	self.WhereString("AND", fmt.Sprintf("'%s' IN (%s)", PK, strings.Join(pkcols, ",")))
 }
 
-func (self *QS) GroupBy(col string) {
-	ptab, pcol := self.QR.GetPhyTabCol(col)
+func (self *QS) GroupBy(tabcol string) {
+	tokens := strings.Split(tabcol, ".")
+	table := tokens[0]
+	ptab, pcol := self.QR.GetPhyTabCol(tabcol)
 	if strings.EqualFold(self.Group, "") {
-		self.Group = fmt.Sprintf("%s.%s", ptab, pcol)
+		self.Group = fmt.Sprintf("%s.%s", self.getTableAlias(table, ptab), pcol)
 	} else {
-		self.Group += fmt.Sprintf(", %s.%s", ptab, pcol)
+		self.Group += fmt.Sprintf(", %s.%s", self.getTableAlias(table, ptab), pcol)
 	}
 }
 
