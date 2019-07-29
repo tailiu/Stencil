@@ -297,12 +297,12 @@ func (self *MigrationWorker) CheckMappingConditions(toTable config.ToTable, node
 
 func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *DependencyNode) error {
 
-	for _, toTable := range toTables {
-		if self.CheckMappingConditions(toTable, node) {
-			log.Println("Mapping conditions not satisfied! Putting into bag!")
-			return self.HandleUnmappedNode(node)
-		}
-	}
+	// for _, toTable := range toTables {
+	// 	if self.CheckMappingConditions(toTable, node) {
+	// 		log.Println("Mapping conditions not satisfied! Putting into bag!")
+	// 		return self.HandleUnmappedNode(node)
+	// 	}
+	// }
 
 	if tx, err := self.DBConn.Begin(); err != nil {
 		log.Println("Can't create UpdateRowDesc transaction!")
@@ -310,54 +310,57 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 	} else {
 		// var errs []error
 		var updated []string
-
-		for col, val := range node.Data {
-			if strings.Contains(col, "pk.") && val != nil {
-				pk := strconv.FormatInt(val.(int64), 10)
-				pktokens := strings.Split(col, ".")
-				ltable := pktokens[1]
-				if val != nil && !helper.Contains(updated, pk) {
-					switch self.mtype {
-					case DELETION:
-						{
-							if err := db.MUpdate(tx, pk, "1", self.DstAppConfig.AppID); err == nil {
-								updated = append(updated, pk)
-								if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, ltable, pk, false, self.logTxn.Txn_id); err != nil {
-									log.Fatal("## DISPLAY ERROR!", err)
+		for _, toTable := range toTables {
+			if !self.CheckMappingConditions(toTable, node) {
+				for col, val := range node.Data {
+					if strings.Contains(col, "pk.") && val != nil {
+						pk := strconv.FormatInt(val.(int64), 10)
+						// pktokens := strings.Split(col, ".")
+						// ltable := pktokens[1]
+						if val != nil && !helper.Contains(updated, pk) {
+							switch self.mtype {
+							case DELETION:
+								{
+									if err := db.MUpdate(tx, pk, "1", self.DstAppConfig.AppID); err == nil {
+										updated = append(updated, pk)
+										if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, toTable.Table, pk, false, self.logTxn.Txn_id); err != nil {
+											log.Fatal("## DISPLAY ERROR!", err)
+										}
+									} else {
+										tx.Rollback()
+										fmt.Println("\n@ERROR_MUpdate:", err)
+										log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+										return err
+									}
 								}
-							} else {
-								tx.Rollback()
-								fmt.Println("\n@ERROR_MUpdate:", err)
-								log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
-								return err
-							}
-						}
-					case CONSISTENT:
-						{
-							if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", false); err == nil {
-								updated = append(updated, pk)
-								if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, ltable, pk, false, self.logTxn.Txn_id); err != nil {
-									log.Fatal("## DISPLAY ERROR!", err)
+							case CONSISTENT:
+								{
+									if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", false); err == nil {
+										updated = append(updated, pk)
+										if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, toTable.Table, pk, false, self.logTxn.Txn_id); err != nil {
+											log.Fatal("## DISPLAY ERROR!", err)
+										}
+									} else {
+										tx.Rollback()
+										fmt.Println("\n@ERROR_NewRowConsistent:", err)
+										// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+										return err
+									}
 								}
-							} else {
-								tx.Rollback()
-								fmt.Println("\n@ERROR_NewRowConsistent:", err)
-								// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
-								return err
-							}
-						}
-					case INDEPENDENT:
-						{
-							if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", true); err == nil {
-								updated = append(updated, pk)
-								if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, ltable, pk, false, self.logTxn.Txn_id); err != nil {
-									log.Fatal("## DISPLAY ERROR!", err)
+							case INDEPENDENT:
+								{
+									if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", true); err == nil {
+										updated = append(updated, pk)
+										if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, toTable.Table, pk, false, self.logTxn.Txn_id); err != nil {
+											log.Fatal("## DISPLAY ERROR!", err)
+										}
+									} else {
+										tx.Rollback()
+										fmt.Println("\n@ERROR_NewRowIndependent:", err)
+										// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+										return err
+									}
 								}
-							} else {
-								tx.Rollback()
-								fmt.Println("\n@ERROR_NewRowIndependent:", err)
-								// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
-								return err
 							}
 						}
 					}
@@ -531,14 +534,15 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 	return nil
 }
 
-func (self *MigrationWorker) RegisterMigration(mtype string) bool {
-	db.DeleteExistingMigrationRegistrations(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn)
-	if !db.CheckMigrationRegistration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn) {
-		return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, self.DBConn)
-	} else {
-		log.Println("Migration Already Registered!")
-		return true
-	}
+func (self *MigrationWorker) RegisterMigration(mtype string, number_of_threads int) bool {
+	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.DBConn)
+	// db.DeleteExistingMigrationRegistrations(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn)
+	// if !db.CheckMigrationRegistration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn) {
+	// 	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.DBConn)
+	// } else {
+	// 	log.Println("Migration Already Registered!")
+	// 	return true
+	// }
 }
 
 func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {

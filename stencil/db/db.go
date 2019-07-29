@@ -208,9 +208,9 @@ func CheckMigrationRegistration(uid, src_app, dst_app string, dbConn *sql.DB) bo
 	return false
 }
 
-func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID int, dbConn *sql.DB) bool {
-	query := "INSERT INTO migration_registration (migration_id, user_id, src_app, dst_app, migration_type) VALUES ($1, $2, $3, $4, $5)"
-	if _, err := dbConn.Exec(query, migrationID, uid, src_app, dst_app, mtype); err != nil {
+func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID, number_of_threads int, dbConn *sql.DB) bool {
+	query := "INSERT INTO migration_registration (migration_id, user_id, src_app, dst_app, migration_type, number_of_threads) VALUES ($1, $2, $3, $4, $5, $6)"
+	if _, err := dbConn.Exec(query, migrationID, uid, src_app, dst_app, mtype, number_of_threads); err != nil {
 		log.Fatal("Insert Error in RegisterMigration", err)
 		return false
 	}

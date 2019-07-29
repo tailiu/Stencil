@@ -10,6 +10,7 @@ import (
 	"stencil/migrate"
 	"stencil/mthread"
 	"stencil/transaction"
+	"strconv"
 )
 
 func main() {
@@ -17,11 +18,36 @@ func main() {
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		srcApp, srcAppID := "diaspora", "1"
 		dstApp, dstAppID := "mastodon", "2"
-		uid := os.Args[1]
+		threads, err := strconv.Atoi(os.Args[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+		uid := os.Args[2]
 
-		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, migrate.INDEPENDENT)
+		var mtype string
 
-		if mthread.ThreadController(mWorker) {
+		switch os.Args[3] {
+		case "d":
+			{
+				mtype = migrate.DELETION
+			}
+		case "i":
+			{
+				mtype = migrate.INDEPENDENT
+			}
+		case "c":
+			{
+				mtype = migrate.CONSISTENT
+			}
+		}
+
+		if len(mtype) <= 0 {
+			log.Fatal("can't read migration type")
+		}
+
+		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype)
+
+		if mthread.ThreadController(mWorker, threads) {
 			transaction.LogOutcome(logTxn, "COMMIT")
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")

@@ -4,26 +4,24 @@ import (
 	"fmt"
 	"log"
 	"stencil/migrate"
+	"strings"
 	"sync"
 	"time"
 )
 
-func ThreadController(mWorker migrate.MigrationWorker) bool {
+func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
-	threads := 10
 
-	if mWorker.MType() != migrate.DELETION {
-		if !mWorker.RegisterMigration(mWorker.MType()) {
-			log.Fatal("Unable to register migration!")
-		} else {
-			log.Println("Migration registered:", mWorker.MType())
-		}
+	if !mWorker.RegisterMigration(mWorker.MType(), threads) {
+		log.Fatal("Unable to register migration!")
+	} else {
+		log.Println("Migration registered:", mWorker.MType())
 	}
 
 	for threadID := 0; threadID < threads; threadID++ {
-		time.Sleep(time.Millisecond * 300)
+		time.Sleep(time.Millisecond * 500)
 		wg.Add(1)
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
@@ -89,11 +87,13 @@ func ThreadController(mWorker migrate.MigrationWorker) bool {
 
 	finished := true
 
+	var finished_threads []string
 	for threadResponse := range commitChannel {
-		fmt.Println("THREAD FINISHED WORKING", threadResponse)
+		fmt.Println("THREAD FINISHED WORKING", threadResponse, strings.Join(finished_threads, ","))
 		if !threadResponse.Finished {
 			finished = false
 		}
+		finished_threads = append(finished_threads, fmt.Sprint(threadResponse.Thread_id))
 	}
 
 	if mWorker.MType() == migrate.DELETION {
