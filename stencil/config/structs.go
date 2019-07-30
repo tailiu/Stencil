@@ -2,6 +2,7 @@ package config
 
 import (
 	"database/sql"
+	"math/rand"
 	"stencil/qr"
 )
 
@@ -52,6 +53,7 @@ type AppConfig struct {
 	Ownerships   []Ownership  `json:"ownership"`
 	DBConn       *sql.DB
 	QR           *qr.QR
+	Rand         *rand.Rand
 }
 
 type Ownership struct {

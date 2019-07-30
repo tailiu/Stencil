@@ -142,6 +142,12 @@ func BUpdate(dbConn *sql.DB, pk, flag, app_id string) error {
 	return err
 }
 
+func GetUnmigratedUsers() ([]map[string]interface{}, error) {
+	dbConn := GetDBConn("stencil")
+	sql := "SELECT user_id FROM user_table WHERE user_id NOT IN (SELECT DISTINCT user_id FROM migration_registration) ORDER BY user_id ASC"
+	return DataCall(dbConn, sql)
+}
+
 func RemoveUserFromApp(uid, app_id string, dbConn *sql.DB) bool {
 	sql := "DELETE FROM user_table WHERE user_id = $1 AND app_id = $2"
 	if err := Delete(dbConn, sql, uid, app_id); err == nil {

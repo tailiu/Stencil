@@ -27,6 +27,8 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 	if mappings == nil {
 		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
 	}
+	dstAppConfig.QR.Migration = true
+	srcAppConfig.QR.Migration = true
 	mWorker := MigrationWorker{
 		uid:          uid,
 		SrcAppConfig: srcAppConfig,
@@ -160,6 +162,7 @@ func (self *MigrationWorker) FetchRoot() error {
 	if root, err := self.SrcAppConfig.GetTag(tagName); err == nil {
 		qs := self.SrcAppConfig.GetTagQS(root)
 		rootTable, rootCol := self.SrcAppConfig.GetItemsFromKey(root, "root_id")
+		// qs.WhereString("AND", fmt.Sprintf("%s.%s = '%s'", rootTable, rootCol, self.uid))
 		qs.WhereSimpleVal(rootTable+"."+rootCol, "=", self.uid)
 		qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
 		sql := qs.GenSQL()
@@ -171,7 +174,9 @@ func (self *MigrationWorker) FetchRoot() error {
 			self.root = rootNode
 			return nil
 		} else {
-			log.Fatal("Problem getting RootNode data:", err, data)
+			log.Println("Problem getting RootNode data:", data)
+			fmt.Println(sql)
+			log.Fatal(err)
 			return err
 		}
 	} else {
@@ -180,13 +185,15 @@ func (self *MigrationWorker) FetchRoot() error {
 	}
 }
 
-func (self *MigrationWorker) GetAdjNode(node *DependencyNode) (*DependencyNode, error) {
+func (self *MigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*DependencyNode, error) {
 
-	for _, dep := range config.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
+	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
+			log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
 			qs := self.SrcAppConfig.GetTagQS(child)
 			self.ResolveDependencyConditions(node, dep, child, qs)
 			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
+			qs.WhereAppID(qr.NEXISTS, self.DstAppConfig.AppID)
 			qs.OrderBy("random()")
 			sql := qs.GenSQL()
 			if data, err := db.DataCall1(self.DBConn, sql); err == nil {
@@ -233,21 +240,22 @@ func (self *MigrationWorker) GetBagNodes(tagName, bagpks string) ([]*DependencyN
 	}
 }
 
-func (self *MigrationWorker) GetOwnedNodes() ([]*DependencyNode, error) {
+func (self *MigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, error) {
 
 	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
+		log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, own.Tag))
 		if self.unmappedTags.Exists(own.Tag) {
+			log.Println(fmt.Sprintf("x%dx | UNMAPPED  tag  { %s } ", threadID, own.Tag))
 			continue
 		}
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
 			qs := self.SrcAppConfig.GetTagQS(child)
 			self.ResolveOwnershipConditions(own, child, qs)
 			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
-			qs.WhereMFlag(qr.NEXISTS, "0,1,2", self.DstAppConfig.AppID)
+			qs.WhereAppID(qr.NEXISTS, self.DstAppConfig.AppID)
 			qs.OrderBy("random()")
 			qs.LimitResult("5000")
 			sql := qs.GenSQL()
-			// fmt.Println(sql)
 			if result, err := db.DataCall(self.DBConn, sql); err == nil {
 				var nodes []*DependencyNode
 				for _, data := range result {
@@ -270,6 +278,18 @@ func (self *MigrationWorker) GetOwnedNodes() ([]*DependencyNode, error) {
 		}
 	}
 	return nil, nil
+}
+
+func (self *MigrationWorker) PushData(stable, dtable, pk string) error {
+	if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, dtable, pk, false, self.logTxn.Txn_id); err != nil {
+		log.Println("## DISPLAY ERROR!", err)
+		return errors.New("0")
+	}
+	if err := db.SaveForEvaluation(self.DBConn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, stable, dtable, pk, pk, "-", "-", fmt.Sprint(self.logTxn.Txn_id)); err != nil {
+		log.Println("## SaveForEvaluation ERROR!", err)
+		return errors.New("0")
+	}
+	return nil
 }
 
 func (self *MigrationWorker) CheckMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
@@ -309,27 +329,26 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 		return errors.New("0")
 	} else {
 		// var errs []error
+		defer tx.Rollback()
 		var updated []string
 		for _, toTable := range toTables {
 			if !self.CheckMappingConditions(toTable, node) {
 				for col, val := range node.Data {
 					if strings.Contains(col, "pk.") && val != nil {
 						pk := strconv.FormatInt(val.(int64), 10)
-						// pktokens := strings.Split(col, ".")
-						// ltable := pktokens[1]
+						pktokens := strings.Split(col, ".")
+						ltable := pktokens[1]
 						if val != nil && !helper.Contains(updated, pk) {
 							switch self.mtype {
 							case DELETION:
 								{
 									if err := db.MUpdate(tx, pk, "1", self.DstAppConfig.AppID); err == nil {
 										updated = append(updated, pk)
-										if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, toTable.Table, pk, false, self.logTxn.Txn_id); err != nil {
-											log.Fatal("## DISPLAY ERROR!", err)
-										}
+										self.PushData(ltable, toTable.Table, pk)
 									} else {
-										tx.Rollback()
-										fmt.Println("\n@ERROR_MUpdate:", err)
-										log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
+										// tx.Rollback()
+										// fmt.Println("\n@ERROR_MUpdate:", err)
+										// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
 										return err
 									}
 								}
@@ -337,12 +356,10 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 								{
 									if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", false); err == nil {
 										updated = append(updated, pk)
-										if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, toTable.Table, pk, false, self.logTxn.Txn_id); err != nil {
-											log.Fatal("## DISPLAY ERROR!", err)
-										}
+										self.PushData(ltable, toTable.Table, pk)
 									} else {
-										tx.Rollback()
-										fmt.Println("\n@ERROR_NewRowConsistent:", err)
+										// tx.Rollback()
+										// fmt.Println("\n@ERROR_NewRowConsistent:", err)
 										// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
 										return err
 									}
@@ -351,12 +368,10 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 								{
 									if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", true); err == nil {
 										updated = append(updated, pk)
-										if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, toTable.Table, pk, false, self.logTxn.Txn_id); err != nil {
-											log.Fatal("## DISPLAY ERROR!", err)
-										}
+										self.PushData(ltable, toTable.Table, pk)
 									} else {
-										tx.Rollback()
-										fmt.Println("\n@ERROR_NewRowIndependent:", err)
+										// tx.Rollback()
+										// fmt.Println("\n@ERROR_NewRowIndependent:", err)
 										// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
 										return err
 									}
@@ -370,7 +385,8 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 		// tx.Rollback()
 		if undoActionJSON, err := transaction.GenUndoActionJSON(updated, self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
 			if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
-				log.Fatal("UpdateRowDesc: unable to LogChange", log_err)
+				log.Println("UpdateRowDesc: unable to LogChange", log_err)
+				return errors.New("0")
 			}
 		} else {
 			log.Fatal("UpdateRowDesc: unable to GenUndoActionJSON", err)
@@ -500,7 +516,7 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 		db.AddUserToApp(self.uid, self.DstAppConfig.AppID, self.DBConn)
 	}
 
-	for child, err := self.GetAdjNode(node); child != nil; child, err = self.GetAdjNode(node) {
+	for child, err := self.GetAdjNode(node, threadID); child != nil; child, err = self.GetAdjNode(node, threadID) {
 		if err != nil {
 			return err
 		}
@@ -569,7 +585,7 @@ func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) erro
 
 func (self *MigrationWorker) ConsistentMigration(threadID int) error {
 
-	for nodes, err := self.GetOwnedNodes(); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes() {
+	for nodes, err := self.GetOwnedNodes(threadID); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID) {
 		if err != nil {
 			return err
 		}
@@ -581,7 +597,7 @@ func (self *MigrationWorker) ConsistentMigration(threadID int) error {
 			} else {
 				log.Println(fmt.Sprintf("x%dx | RCVD ERR  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 				if self.unmappedTags.Exists(node.Tag.Name) {
-					log.Println(fmt.Sprintf("x%dx | BREKLOOP  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+					log.Println(fmt.Sprintf("x%dx | BREAKLOOP node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 					break
 				}
 				if strings.EqualFold(err.Error(), "2") {

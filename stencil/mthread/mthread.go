@@ -6,7 +6,6 @@ import (
 	"stencil/migrate"
 	"strings"
 	"sync"
-	"time"
 )
 
 func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
@@ -14,14 +13,17 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 
 	commitChannel := make(chan ThreadChannel)
 
-	if !mWorker.RegisterMigration(mWorker.MType(), threads) {
-		log.Fatal("Unable to register migration!")
+	if threads != 0 {
+		if !mWorker.RegisterMigration(mWorker.MType(), threads) {
+			log.Fatal("Unable to register migration!")
+		} else {
+			log.Println("Migration registered:", mWorker.MType())
+		}
 	} else {
-		log.Println("Migration registered:", mWorker.MType())
+		threads = 1
 	}
 
 	for threadID := 0; threadID < threads; threadID++ {
-		time.Sleep(time.Millisecond * 500)
 		wg.Add(1)
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()

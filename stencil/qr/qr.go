@@ -15,12 +15,16 @@ import (
 	escape "github.com/tj/go-pg-escape"
 )
 
-func (self QR) NewRowId() int32 {
+func (self *QR) NewRowId() int32 {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Int31n(2147483647) //9223372036854775807
 }
 
-func (self QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string {
+func (self *QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string {
+
+	// if self.Migration {
+	// 	return self.GetBaseMappingForLogicalTable(ltable)
+	// }
 
 	var phyMap = make(map[string][][]string)
 
@@ -44,7 +48,7 @@ func (self QR) GetPhyMappingForLogicalTable(ltable string) map[string][][]string
 	return phyMap
 }
 
-func (self QR) GetBaseMappingForLogicalTable(ltable string) map[string][][]string {
+func (self *QR) GetBaseMappingForLogicalTable(ltable string) map[string][][]string {
 
 	var phyMap = make(map[string][][]string)
 
@@ -66,15 +70,10 @@ func (self QR) GetBaseMappingForLogicalTable(ltable string) map[string][][]strin
 	return phyMap
 }
 
-func (self QR) GetPhyTabCol(ltabcol string) (string, string) {
+func (self *QR) GetPhyTabCol(ltabcol string) (string, string) {
 
 	tab := strings.Trim(strings.Split(ltabcol, ".")[0], " ")
 	col := strings.Trim(strings.Split(ltabcol, ".")[1], " ")
-
-	return self.GetPhyTabCol_(tab, col)
-}
-
-func (self QR) GetPhyTabCol_(tab, col string) (string, string) {
 
 	phyMap := self.GetPhyMappingForLogicalTable(tab)
 
@@ -85,11 +84,10 @@ func (self QR) GetPhyTabCol_(tab, col string) (string, string) {
 			}
 		}
 	}
-
 	return "", ""
 }
 
-func (self QR) PhyUpdateAppIDByRowID(new_app_id, ltab string, rowIDs []string) []string {
+func (self *QR) PhyUpdateAppIDByRowID(new_app_id, ltab string, rowIDs []string) []string {
 
 	var PQs []string
 
