@@ -21,7 +21,7 @@ func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extra
 	return migrationIDs
 }
 
-func GetDataInLogicalSchemaOfMigration(stencilDBConn *sql.DB, AppDBConn *sql.DB, migrationID string, side string) []map[string]interface{} {
+func getTableKeyInLogicalSchemaOfMigration(stencilDBConn *sql.DB, migrationID string, side string) []map[string]interface{} {
 	query := fmt.Sprintf("select %s_table, %s_id from evaluation where migration_id = '%s'", side, side, migrationID)
 	
 	data, err := db.DataCall(stencilDBConn, query)
@@ -56,21 +56,27 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int) 
 		}
 	}
 	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
-	// log.Println(query)
+	log.Println(query)
 	row, err2 := db.DataCall1(AppDBConn, query)
 	if err2 != nil {
 		log.Fatal(err2)
 	}
+	log.Println(row["cols_size"].(int64))
 	return row["cols_size"].(int64)
 }
 
-func getEntireRowSize(AppDBConn *sql.DB, data1 map[string]interface{}) int64 {
-	table, pKey := transformTableKeyToNormalType(data1)
+func getLogicalRow(AppDBConn *sql.DB, table string, pKey int) map[string]interface{} {
 	query := fmt.Sprintf("select * from %s where id = %d", table, pKey)
 	row, err2 := db.DataCall1(AppDBConn, query)
 	if err2 != nil {
 		log.Fatal(err2)
 	}
+	return row
+}
+
+func getEntireRowSize(AppDBConn *sql.DB, data1 map[string]interface{}) int64 {
+	table, pKey := transformTableKeyToNormalType(data1)
+	row := getLogicalRow(AppDBConn, table, pKey)
 
 	var keys []string
 	for k, v := range row {	
@@ -83,7 +89,7 @@ func getEntireRowSize(AppDBConn *sql.DB, data1 map[string]interface{}) int64 {
 }
 
 func GetTotalDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, migrationID string) int64 {
-	data := GetDataInLogicalSchemaOfMigration(stencilDBConn, AppDBConn, migrationID, "src")
+	data := getTableKeyInLogicalSchemaOfMigration(stencilDBConn, migrationID, "src")
 
 	var totalDataSize int64
 	for _, data1 := range data {
@@ -91,12 +97,4 @@ func GetTotalDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, migrationID stri
 	}
 
 	return totalDataSize
-}
-
-func getEntireUnmappedRowSize() {
-	data := 
-}
-
-func GetLeftoverDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, migrationID string) {
-	getEntireUnmappedRowSize()
 }
