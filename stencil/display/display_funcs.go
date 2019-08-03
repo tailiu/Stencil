@@ -16,7 +16,7 @@ const StencilDBName = "stencil"
 func Initialize(app string) (*sql.DB, *config.AppConfig, map[string]string) {
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
-	app_id := GetAppIDByAppName(stencilDBConn, app)
+	app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
 	appConfig, err := config.CreateAppConfig(app, app_id)
 	if err != nil {
