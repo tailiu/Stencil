@@ -75,10 +75,11 @@ func main() {
 			log.Fatal("Can't begin migration transaction", err)
 		}
 		count++
+		log.Println("User migrated:", uid)
 		if count >= limit {
 			break
 		}
 	}
-	log.Println("Users migrated:", count)
+	log.Println("Total users migrated:", count)
 	// migrate.RollbackMigration(1503622861)
 }

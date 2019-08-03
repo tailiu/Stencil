@@ -383,15 +383,19 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 			}
 		}
 		// tx.Rollback()
-		if undoActionJSON, err := transaction.GenUndoActionJSON(updated, self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
-			if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
-				log.Println("UpdateRowDesc: unable to LogChange", log_err)
-				return errors.New("0")
+		if len(updated) > 0 {
+			if undoActionJSON, err := transaction.GenUndoActionJSON(updated, self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
+				if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
+					log.Println("UpdateRowDesc: unable to LogChange", log_err)
+					return errors.New("0")
+				}
+			} else {
+				log.Fatal("UpdateRowDesc: unable to GenUndoActionJSON", err)
 			}
+			tx.Commit()
 		} else {
-			log.Fatal("UpdateRowDesc: unable to GenUndoActionJSON", err)
+			return self.HandleUnmappedNode(node)
 		}
-		tx.Commit()
 	}
 	return nil
 }
@@ -456,7 +460,7 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 						}
 					} else {
 						tx.Rollback()
-						fmt.Println("\n@ERROR_MUpdate:", err)
+						fmt.Println("@ERROR_MUpdate:", err)
 						log.Fatal("pk:", pk, "appid: unmapped")
 						return err
 					}
@@ -551,7 +555,7 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 }
 
 func (self *MigrationWorker) RegisterMigration(mtype string, number_of_threads int) bool {
-	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.DBConn)
+	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.DBConn, false)
 	// db.DeleteExistingMigrationRegistrations(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn)
 	// if !db.CheckMigrationRegistration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn) {
 	// 	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.DBConn)

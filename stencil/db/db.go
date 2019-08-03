@@ -52,6 +52,20 @@ func GetDBConn(app string) *sql.DB {
 	return dbConn
 }
 
+func GetDBConn2(app string) *sql.DB {
+	// log.Println("Creating new db conn for:", app)
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
+		"password=%s dbname=%s sslmode=disable", DB_ADDR_old, DB_PORT, DB_USER, DB_PASSWORD, app)
+	// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
+	// fmt.Println(psqlInfo)
+	dbConn, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		fmt.Println("error connecting to the db app:", app)
+		log.Fatal(err)
+	}
+	return dbConn
+}
+
 func CloseDBConn(app string) {
 	if _, ok := dbConns[app]; ok {
 		dbConns[app].Close()
@@ -84,6 +98,26 @@ func UpdateTx(tx *sql.Tx, query string, args ...interface{}) error {
 
 	_, err := tx.Exec(query, args...)
 	return err
+}
+
+func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...interface{}) (int, error) {
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id;", table, cols, placeholders)
+	lastInsertId := -1
+	err := tx.QueryRow(query, args...).Scan(&lastInsertId)
+	if err != nil || lastInsertId == -1 {
+		return lastInsertId, err
+	}
+	return lastInsertId, err
+}
+
+func DeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
+	query := fmt.Sprintf("UPDATE %s SET mark_as_delete = $1 WHERE id = $2", table)
+	if _, err := tx.Exec(query, true, id); err != nil {
+		log.Println(query, "true", id)
+		log.Fatal("## DB ERROR: ", err)
+		return err
+	}
+	return nil
 }
 
 func NewBag(tx *sql.Tx, rowid, user_id, tagName string, migration_id int) error {
@@ -214,9 +248,9 @@ func CheckMigrationRegistration(uid, src_app, dst_app string, dbConn *sql.DB) bo
 	return false
 }
 
-func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID, number_of_threads int, dbConn *sql.DB) bool {
-	query := "INSERT INTO migration_registration (migration_id, user_id, src_app, dst_app, migration_type, number_of_threads) VALUES ($1, $2, $3, $4, $5, $6)"
-	if _, err := dbConn.Exec(query, migrationID, uid, src_app, dst_app, mtype, number_of_threads); err != nil {
+func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID, number_of_threads int, dbConn *sql.DB, logical bool) bool {
+	query := "INSERT INTO migration_registration (migration_id, user_id, src_app, dst_app, migration_type, number_of_threads, is_logical) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	if _, err := dbConn.Exec(query, migrationID, uid, src_app, dst_app, mtype, number_of_threads, logical); err != nil {
 		log.Fatal("Insert Error in RegisterMigration", err)
 		return false
 	}
@@ -557,6 +591,18 @@ func TxnExecute(dbConn *sql.DB, queries []string) error {
 func SaveForEvaluation(dbConn *sql.DB, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID string) error {
 	query := "INSERT INTO evaluation (src_app, dst_app, src_table, dst_table, src_id, dst_id, src_cols, dst_cols, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
 	_, err := Insert(dbConn, query, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID)
+	return err
+}
+
+func SaveForLEvaluation(dbConn *sql.DB, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID string) error {
+	query := "INSERT INTO evaluation (src_app, dst_app, src_table, dst_table, src_id, dst_id, src_cols, dst_cols, migration_id, added_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())"
+	_, err := Insert(dbConn, query, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID)
+	return err
+}
+
+func UpdateLEvaluation(dbCOnn *sql.DB, srcTable, srcID string, migrationID int) error {
+	query := "UPDATE evaluation SET deleted_at = now() WHERE migration_id = $1 AND src_table = $2 AND src_ID = $3"
+	_, err := dbCOnn.Exec(query, migrationID, srcTable, srcID)
 	return err
 }
 
