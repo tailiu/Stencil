@@ -255,7 +255,7 @@ func (self *LMigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*D
 
 	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
-			log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
+			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
 			where := self.ResolveDependencyConditions(node, dep, child)
 			ql, wmad := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s AND %s", ql, where, wmad)
@@ -285,9 +285,9 @@ func (self *LMigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*D
 func (self *LMigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, error) {
 
 	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
-		log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, own.Tag))
+		log.Println(fmt.Sprintf("x%2dx |         FETCHING  tag  { %s } ", threadID, own.Tag))
 		if self.unmappedTags.Exists(own.Tag) {
-			log.Println(fmt.Sprintf("x%dx | UNMAPPED  tag  { %s } ", threadID, own.Tag))
+			log.Println(fmt.Sprintf("x%2dx |         UNMAPPED  tag  { %s } ", threadID, own.Tag))
 			continue
 		}
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
@@ -297,7 +297,7 @@ func (self *LMigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, er
 			if restrictions := self.ResolveRestrictions(child); restrictions != "" {
 				sql += restrictions
 			}
-			sql += " ORDER BY random() LIMIT 5000"
+			sql += " ORDER BY random() LIMIT 10000"
 			// log.Fatal(sql)
 			if result, err := db.DataCall(self.SrcDBConn, sql); err == nil {
 				var nodes []*DependencyNode
@@ -459,8 +459,13 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 					log.Fatal(err)
 					return err
 				} else {
-					log.Println("@Already_Exists in:", toTable.Table, node.Data)
-					break
+					// log.Println("@Already_Exists in:", toTable.Table, node.Data)
+					if err := self.MarkRowAsDeleted(node, srctx); err == nil {
+						srctx.Commit()
+						dsttx.Commit()
+					}
+					return errors.New("3")
+					// break
 				}
 			}
 		} else {
@@ -625,12 +630,12 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 
 	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	if err := self.MigrateNode(node, false); err == nil {
-		log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+		log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	} else {
 		if strings.EqualFold(err.Error(), "2") {
-			log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+			log.Println(fmt.Sprintf("x%2dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 		} else {
-			log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+			log.Println(fmt.Sprintf("x%2dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			if strings.EqualFold(err.Error(), "0") {
 				log.Println(err)
 				return err
@@ -653,21 +658,30 @@ func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 		if err != nil {
 			return err
 		}
-		for _, node := range nodes {
+		totalNodes := len(nodes)
+		existingNodesCount := 0 // consecutive 10 already exist? break loop!
+		for nodeNum, node := range nodes {
 			nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
-			log.Println(fmt.Sprintf("~%d~ | Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
+			log.Println(fmt.Sprintf("~%2d~ | %d/%d | Current   Node: { %s } ID: %v", threadID, nodeNum, totalNodes, node.Tag.Name, node.Data[nodeIDAttr]))
 			if err := self.MigrateNode(node, false); err == nil {
-				log.Println(fmt.Sprintf("x%dx | MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				existingNodesCount = 0
+				log.Println(fmt.Sprintf("x%2dx | %d/%d | MIGRATED  node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			} else {
-				log.Println(fmt.Sprintf("x%dx | RCVD ERR  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+				log.Println(fmt.Sprintf("x%2dx | %d/%d | RCVD ERR  node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 				if self.unmappedTags.Exists(node.Tag.Name) {
-					log.Println(fmt.Sprintf("x%dx | BREAKLOOP node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+					log.Println(fmt.Sprintf("x%2dx | %d/%d | BREAKLOOP node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 					break
 				}
 				if strings.EqualFold(err.Error(), "2") {
-					log.Println(fmt.Sprintf("x%dx | IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					log.Println(fmt.Sprintf("x%2dx | %d/%d | IGNORED   node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				} else if strings.EqualFold(err.Error(), "3") {
+					existingNodesCount++
+					log.Println(fmt.Sprintf("x%2dx | %d/%d | EXISTS    node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					if existingNodesCount > 10 {
+						break
+					}
 				} else {
-					log.Println(fmt.Sprintf("x%dx | FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					log.Println(fmt.Sprintf("x%2dx | %d/%d | FAILED    node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 					if strings.EqualFold(err.Error(), "0") {
 						log.Println(err)
 						return err
