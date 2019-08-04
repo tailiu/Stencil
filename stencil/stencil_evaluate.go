@@ -26,17 +26,18 @@ type EvalConfig struct {
 }
 
 func leftoverVsMigrated(evalConfig *EvalConfig) {
-	filterConditions := "and user_id >= 1003 and user_id < 10000"
+	// var data []float64
+	filterConditions := "and migration_id = 734616546"
 	for _, dstMigrationID := range evaluation.GetAllMigrationIDsOfAppWithConds(evalConfig.stencilDBConn, evalConfig.mastodonAppID, filterConditions) {
 		migrationID := strconv.FormatInt(dstMigrationID["migration_id"].(int64), 10)		
 		log.Println(migrationID)
-		// totalDataSize := evaluation.GetTotalDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, migrationID)
-		// log.Println(totalDataSize)
+		migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, evalConfig.diasporaAppID, migrationID)
+		log.Println(migratedDataSize)
 		// leftoverDataSize := evaluation.GetLeftoverDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, evalConfig.diasporaAppID, migrationID)
 		// log.Println(leftoverDataSize)
-		data := []float64{0.423467}
-		evaluation.WriteToLog(leftoverVsMigratedFile, evaluation.ConvertFloat64ToString(data))
-		
+		// data := []float64{0.423467}
+		// evaluation.WriteToLog(leftoverVsMigratedFile, evaluation.ConvertFloat64ToString(data))
+
 		// evaluation.GetPartiallyMappedRowTotalDataSize(evalConfig.stencilDBConn, evalConfig.mastodonAppID, dstMigrationID)
 		// evaluation.GetPartiallyMappedRowDataSize(evalConfig.stencilDBConn, evalConfig.mastodonAppID, dstMigrationID)
 	}

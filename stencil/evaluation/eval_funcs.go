@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	// "strconv"
+	"strconv"
 	// "strings"
 )
 
@@ -49,4 +49,47 @@ func WriteToLog(fileName string, data []string) {
 		}
 	}
 	fmt.Fprintln(f)
+}
+
+func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int) int64 {
+	selectQuery := "select"
+	for i, col := range cols {
+		selectQuery += " pg_column_size(" + col + ") "
+		if i != len(cols) - 1 {
+			selectQuery += " + "
+		}
+		if i == len(cols) - 1{
+			selectQuery += " as cols_size "
+		}
+	}
+	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
+	log.Println(table)
+	log.Println(query)
+	row, err2 := db.DataCall1(AppDBConn, query)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+	log.Println(row["cols_size"].(int64))
+	return row["cols_size"].(int64)
+}
+
+func transformTableKeyToNormalType(tableKey map[string]interface{}) (string, int) {
+	src_table := tableKey["src_table"].(string)
+	src_id_str := tableKey["src_id"].(string)
+	src_id_int, err1 := strconv.Atoi(src_id_str)
+
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	return src_table, src_id_int
+}
+
+func getLogicalRow(AppDBConn *sql.DB, table string, pKey int) map[string]interface{} {
+	query := fmt.Sprintf("select * from %s where id = %d", table, pKey)
+	row, err2 := db.DataCall1(AppDBConn, query)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+	return row
 }
