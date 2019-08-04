@@ -105,8 +105,10 @@ func getEntireUnmappedRowSize(stencilDBConn *sql.DB, migrationID string) {
 	// query := fmt.Sprintf("select * from evaluation where migration_id = '%s' and ;", migrationID, ) 
 }
 
-func GetLeftoverDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, migrationID string) {
+func GetLeftoverDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, migrationID string) int64 {
 	// getEntireUnmappedRowSize(stencilDBConn, migrationID)
 	leftoverDataInRowSize := getLeftoverDataInRowsSize(stencilDBConn, AppDBConn, AppID, migrationID)
-	console.log(leftoverDataInRowSize)
+	// log.Println(leftoverDataInRowSize)
+	
+	return leftoverDataInRowSize
 }

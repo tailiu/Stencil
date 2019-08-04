@@ -14,6 +14,7 @@ const (
 	stencilDB = "stencil"
 	mastodon = "mastodon"
 	diaspora = "diaspora"
+	leftoverVsMigratedFile = "leftoverVsMigrated"
 )
 
 type EvalConfig struct {
@@ -24,15 +25,18 @@ type EvalConfig struct {
 	diasporaAppID string
 }
 
-func anomaliesVsSize(evalConfig *EvalConfig) {
+func leftoverVsMigrated(evalConfig *EvalConfig) {
 	filterConditions := "and user_id >= 1003 and user_id < 10000"
 	for _, dstMigrationID := range evaluation.GetAllMigrationIDsOfAppWithConds(evalConfig.stencilDBConn, evalConfig.mastodonAppID, filterConditions) {
 		migrationID := strconv.FormatInt(dstMigrationID["migration_id"].(int64), 10)		
 		log.Println(migrationID)
 		// totalDataSize := evaluation.GetTotalDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, migrationID)
 		// log.Println(totalDataSize)
-		evaluation.GetLeftoverDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, evalConfig.diasporaAppID, migrationID)
-
+		// leftoverDataSize := evaluation.GetLeftoverDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, evalConfig.diasporaAppID, migrationID)
+		// log.Println(leftoverDataSize)
+		data := []float64{0.423467}
+		evaluation.WriteToLog(leftoverVsMigratedFile, evaluation.ConvertFloat64ToString(data))
+		
 		// evaluation.GetPartiallyMappedRowTotalDataSize(evalConfig.stencilDBConn, evalConfig.mastodonAppID, dstMigrationID)
 		// evaluation.GetPartiallyMappedRowDataSize(evalConfig.stencilDBConn, evalConfig.mastodonAppID, dstMigrationID)
 	}
@@ -54,5 +58,5 @@ func main() {
 	// mastodonConfig, _:= config.CreateAppConfig(mastodon, mastodonAppID)
 	// common_phy_funcs.GetRowFromRowIDandTable(stencilDBConn, &mastodonConfig, "1008062662", "comments")
 
-	anomaliesVsSize(evalConfig)
+	leftoverVsMigrated(evalConfig)
 }

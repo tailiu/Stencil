@@ -4,7 +4,7 @@ def connDB(db):
     connection = psycopg2.connect(
         user = "cow",
         password = "123456",
-        host = "10.230.12.75",
+        host = "10.230.12.86",
         port = "5432",
         database = db)
     print "You are connected to - {} \n".format(db)
