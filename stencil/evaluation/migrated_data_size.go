@@ -8,19 +8,6 @@ import (
 	"strconv"
 )
 
-func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
-	query := fmt.Sprintf("select * from migration_registration where dst_app = '%s' %s;", 
-		appID, extraConditions)
-	// log.Println(query)
-
-	migrationIDs, err := db.DataCall(stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return migrationIDs
-}
-
 func getTableKeyInLogicalSchemaOfMigration(stencilDBConn *sql.DB, migrationID string, side string) []map[string]interface{} {
 	query := fmt.Sprintf("select %s_table, %s_id from evaluation where migration_id = '%s'", side, side, migrationID)
 	
@@ -56,12 +43,12 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int) 
 		}
 	}
 	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
-	log.Println(query)
+	// log.Println(query)
 	row, err2 := db.DataCall1(AppDBConn, query)
 	if err2 != nil {
 		log.Fatal(err2)
 	}
-	log.Println(row["cols_size"].(int64))
+	// log.Println(row["cols_size"].(int64))
 	return row["cols_size"].(int64)
 }
 
