@@ -26,21 +26,25 @@ type EvalConfig struct {
 }
 
 func leftoverVsMigrated(evalConfig *EvalConfig) {
-	// var data []float64
+	var data []float64
+	// Need to be changed once data is ready to use
 	filterConditions := "and migration_id = 734616546"
+	
 	for _, dstMigrationID := range evaluation.GetAllMigrationIDsOfAppWithConds(evalConfig.stencilDBConn, evalConfig.mastodonAppID, filterConditions) {
 		migrationID := strconv.FormatInt(dstMigrationID["migration_id"].(int64), 10)		
 		log.Println(migrationID)
 		migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, evalConfig.diasporaAppID, migrationID)
-		log.Println(migratedDataSize)
-		// leftoverDataSize := evaluation.GetLeftoverDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, evalConfig.diasporaAppID, migrationID)
-		// log.Println(leftoverDataSize)
-		// data := []float64{0.423467}
-		// evaluation.WriteToLog(leftoverVsMigratedFile, evaluation.ConvertFloat64ToString(data))
+		log.Println("Migrated data size: %d", migratedDataSize)
+		leftoverDataSize := evaluation.GetLeftoverDataSize(evalConfig.stencilDBConn, evalConfig.diasporaDBConn, evalConfig.diasporaAppID, migrationID)
+		log.Println("Leftover data size: %d", leftoverDataSize)
+		percentageOfLeftoverData := float64(leftoverDataSize) / (float64(migratedDataSize) + float64(leftoverDataSize))
+		log.Println("Percentage of leftover data size: %f", percentageOfLeftoverData)
+		data = append(data, percentageOfLeftoverData)
 
 		// evaluation.GetPartiallyMappedRowTotalDataSize(evalConfig.stencilDBConn, evalConfig.mastodonAppID, dstMigrationID)
 		// evaluation.GetPartiallyMappedRowDataSize(evalConfig.stencilDBConn, evalConfig.mastodonAppID, dstMigrationID)
 	}
+	evaluation.WriteToLog(leftoverVsMigratedFile, evaluation.ConvertFloat64ToString(data))
 }
 
 func initialize() *EvalConfig {

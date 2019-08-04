@@ -63,13 +63,13 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int) 
 		}
 	}
 	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
-	log.Println(table)
-	log.Println(query)
+	// log.Println(table)
+	// log.Println(query)
 	row, err2 := db.DataCall1(AppDBConn, query)
 	if err2 != nil {
 		log.Fatal(err2)
 	}
-	log.Println(row["cols_size"].(int64))
+	// log.Println(row["cols_size"].(int64))
 	return row["cols_size"].(int64)
 }
 
@@ -92,4 +92,16 @@ func getLogicalRow(AppDBConn *sql.DB, table string, pKey int) map[string]interfa
 		log.Fatal(err2)
 	}
 	return row
+}
+
+func getTableKeyInLogicalSchemaOfMigrationWithConditions(stencilDBConn *sql.DB, migrationID string, side string, conditions string) []map[string]interface{} {
+	query := fmt.Sprintf("select %s_table, %s_id from evaluation where migration_id = '%s' and %s;", 
+		side, side, migrationID, conditions)
+	
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data
 }

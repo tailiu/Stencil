@@ -101,14 +101,34 @@ func getLeftoverDataInRowsSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, 
 	return leftoverDataInRowSize
 }
 
-func getEntireUnmappedRowSize(stencilDBConn *sql.DB, migrationID string) {
-	// query := fmt.Sprintf("select * from evaluation where migration_id = '%s' and ;", migrationID, ) 
+func getEntireUnmappedRowSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, migrationID string) int64 {
+	conditions := "dst_table = 'n/a'"
+	data := getTableKeyInLogicalSchemaOfMigrationWithConditions(stencilDBConn, migrationID, "src", conditions)
+
+	var entireUnmappedRowSize int64
+	for _, data1 := range data {
+		table, pKey := transformTableKeyToNormalType(data1)
+		row := getLogicalRow(AppDBConn, table, pKey)
+
+		var keys []string
+		for k, v := range row {
+			if v == nil {
+				continue
+			}
+			keys = append(keys, k)
+		}
+
+		entireUnmappedRowSize += calculateRowSize(AppDBConn, keys, table, pKey)
+	}
+
+	return entireUnmappedRowSize
 }
 
 func GetLeftoverDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, migrationID string) int64 {
-	// getEntireUnmappedRowSize(stencilDBConn, migrationID)
+	entireUnmappedRowSize := getEntireUnmappedRowSize(stencilDBConn, AppDBConn, migrationID)
+	// log.Println(entireUnmappedRowSize)
 	leftoverDataInRowSize := getLeftoverDataInRowsSize(stencilDBConn, AppDBConn, AppID, migrationID)
 	// log.Println(leftoverDataInRowSize)
 	
-	return leftoverDataInRowSize
+	return entireUnmappedRowSize + leftoverDataInRowSize
 }
