@@ -326,7 +326,7 @@
                             "fromTables": ["comments", "media_attachments"],
                             "toTables": [
                                 {
-                                    "table": "tweets",
+                                    "table": "tweet_replies",
                                     "mapping": {
                                         "id":"comments.id",
                                         "user_id":"comments.account_id",
@@ -660,7 +660,7 @@
                             "fromTables": ["comments"],
                             "toTables": [
                                 {
-                                    "table": "tweets",
+                                    "table": "tweet_replies",
                                     "conditions":{},
                                     "mapping":{
                                         "id":"comments.id",
@@ -877,7 +877,6 @@
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
                                         "text":"tweets.content",
-                                        "in_reply_to_id":"tweets.reply_to_id",
                                         "account_id":"tweets.user_id"
                                     }
                                 },
@@ -912,18 +911,18 @@
                             ]
                         },
                         {
-                            "fromTables": ["tweets"],
+                            "fromTables": ["tweet_replies"],
                             "toTables": [
                                 {
                                     "table": "comments",
                                     "conditions": {},
                                     "mapping": {
-                                        "id":"tweets.id",
-                                        "created_at":"tweets.created_at",
-                                        "updated_at":"tweets.updated_at",
-                                        "text":"tweets.content",
-                                        "in_reply_to_id":"tweets.reply_to_id",
-                                        "account_id":"tweets.user_id"
+                                        "id":"tweet_replies.id",
+                                        "created_at":"tweet_replies.created_at",
+                                        "updated_at":"tweet_replies.updated_at",
+                                        "text":"tweet_replies.content",
+                                        "in_reply_to_id":"tweet_replies.reply_to_id",
+                                        "account_id":"tweet_replies.user_id"
                                     }
                                 },
                                 {
@@ -931,11 +930,11 @@
                                     "conditions": {},
                                     "mapping" : {
                                         "id": "#guid",
-                                        "remote_url": "tweets.tweet_media",
-                                        "status_id": "tweets.id",
-                                        "created_at": "tweets.created_at",
-                                        "updated_at": "tweets.updated_at",
-                                        "account_id": "tweets.user_id"
+                                        "remote_url": "tweet_replies.tweet_media",
+                                        "status_id": "tweet_replies.id",
+                                        "created_at": "tweet_replies.created_at",
+                                        "updated_at": "tweet_replies.updated_at",
+                                        "account_id": "tweet_replies.user_id"
                                     }
                                 }
                             ]
@@ -1042,7 +1041,7 @@
                             ]
                         },
                         {
-                            "fromTables": ["tweets"],
+                            "fromTables": ["tweet_replies"],
                             "toTables": [
                                 {
                                     "table": "comments",
@@ -1050,12 +1049,12 @@
                                         "tweets.reply_to_id" : "NOT NULL"
                                     },
                                     "mapping": {
-                                        "id":"tweets.id",
-                                        "author_id":"tweets.user_id",
-                                        "text":"tweets.content",
-                                        "created_at":"tweets.created_at",
-                                        "updated_at":"tweets.updated_at",
-                                        "commentable_id":"tweets.reply_to_id"
+                                        "id":"tweet_replies.id",
+                                        "author_id":"tweet_replies.user_id",
+                                        "text":"tweet_replies.content",
+                                        "created_at":"tweet_replies.created_at",
+                                        "updated_at":"tweet_replies.updated_at",
+                                        "commentable_id":"tweet_replies.reply_to_id"
                                     }
                                 }
                             ]

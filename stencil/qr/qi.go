@@ -18,7 +18,7 @@ func CreateQI(table string, cols []string, vals []interface{}, qtype string) *QI
 	return qi
 }
 
-func (self QI) valueOfColumn(col string) (interface{}, error) {
+func (self *QI) valueOfColumn(col string) (interface{}, error) {
 
 	for i, c := range self.Columns {
 		if strings.EqualFold(col, c) {
@@ -28,7 +28,7 @@ func (self QI) valueOfColumn(col string) (interface{}, error) {
 	return "", errors.New("No column: " + col)
 }
 
-func (self QI) Print() {
+func (self *QI) Print() {
 
 	fmt.Println(self)
 
@@ -66,7 +66,7 @@ func (self *QI) ResolveInsert(QR *QR, rowID int32) []*QI {
 	return PQIs
 }
 
-func (self QI) GenSQL() (string, []interface{}) {
+func (self *QI) GenSQL() (string, []interface{}) {
 
 	switch self.Type {
 	case QTSelect:
@@ -211,4 +211,33 @@ func getSelectQueryIngs(sql string) *QI {
 		}
 	}
 	return qi
+}
+
+func (self QR) ResolveInsert(qi *QI, rowID int32) []*QI {
+
+	var PQIs []*QI
+	newRowCols := []string{"rowid", "app_id"}
+	newRowVals := []interface{}{rowID, self.AppID}
+	newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
+	PQIs = append(PQIs, newRowQI)
+	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
+
+	for pt, mapping := range phyMap {
+		isValid := false
+		pqiCols := []string{"pk"}
+		pqiVals := []interface{}{rowID}
+		for _, colmap := range mapping {
+			if val, err := qi.valueOfColumn(colmap[1]); err == nil {
+				isValid = true
+				pqiCols = append(pqiCols, colmap[0])
+				pqiVals = append(pqiVals, val)
+			}
+		}
+		if isValid {
+			pqi := CreateQI(pt, pqiCols, pqiVals, QTInsert)
+			PQIs = append(PQIs, pqi)
+		}
+
+	}
+	return PQIs
 }

@@ -21,6 +21,7 @@ type QR struct {
 	AppID        string
 	BaseMappings []map[string]string
 	SuppMappings []map[string]string
+	Migration    bool
 }
 
 type QI struct {
@@ -40,6 +41,7 @@ type QS struct {
 	Group        string
 	Order        string
 	Limit        string
+	With         string
 	TableAliases map[string]map[string]string
 	seen         map[string]bool
 	vals         []interface{}

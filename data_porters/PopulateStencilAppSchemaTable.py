@@ -1,11 +1,56 @@
 import psycopg2
 import json
 
+def getDBConn(app_name):
+    conn     = psycopg2.connect(dbname=app_name, user="cow", password="123456" ,host="10.230.12.86", port="5432")
+    cursor   = conn.cursor()
+    return conn, cursor
+
+def truncateAllTables():
+    conn, cursor = getDBConn("stencil")
+    tables = ["app_tables", "app_schemas", "schema_mappings", "physical_mappings", "physical_schema", "supplementary_tables"]
+    for table in tables:
+        sql = "TRUNCATE TABLE public.%s CONTINUE IDENTITY CASCADE;"%table
+        cursor.execute(sql)
+    conn.commit()
+
+def truncateTable(table):
+    conn, cursor = getDBConn("stencil")
+    sql = "TRUNCATE TABLE public.%s CONTINUE IDENTITY CASCADE;"%table
+    cursor.execute(sql)
+    conn.commit()
+
+def getTablesForApp(app_name):
+    conn, cursor = getDBConn(app_name)
+    tables_sql  = "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
+    cursor.execute(tables_sql)
+    table_list = []
+    for trow in cursor.fetchall():
+        table_list.append(trow[0])
+    return table_list
+
+def getAppID(app_name):
+    conn, cursor = getDBConn("stencil")
+    sql  = "SELECT pk FROM apps WHERE app_name = '%s';"%app_name
+    cursor.execute(sql)
+    row = cursor.fetchone()
+    return row[0]
+
+def insertAppTables(app_name):
+    app_id = getAppID(app_name) 
+    conn, cursor = getDBConn("stencil")
+    sql = "INSERT INTO app_tables (app_id, table_name) VALUES "
+    for table in getTablesForApp(app_name):
+        sql += "('%s', '%s'), " % (app_id, table)
+    sql = sql.strip(", ")
+    print sql
+    cursor.execute(sql)
+    conn.commit()
+
 def populateAppSchema(app_name):
 
-    appConn     = psycopg2.connect(dbname=app_name, user="cow", password="123456" ,host="10.230.12.75", port="5432")
-    stencilConn = psycopg2.connect(dbname="stencil", user="cow", password="123456" , host="10.230.12.75", port="5432")
-    appCursor, stencilCursor = appConn.cursor(), stencilConn.cursor()
+    appConn, appCursor = getDBConn(app_name)
+    stencilConn, stencilCursor = getDBConn("stencil")
 
     table_sql = "SELECT app_tables.pk, app_tables.table_name FROM app_tables JOIN apps ON app_tables.app_id = apps.pk WHERE apps.app_name = '%s'"%app_name
     stencilCursor.execute(table_sql)
@@ -19,14 +64,18 @@ def populateAppSchema(app_name):
         for crow in appCursor.fetchall():
             column_name = crow[0]
             data_type = crow[1]
+            if data_type == "ARRAY":
+                data_type = "text"
             isql = "INSERT INTO app_schemas (table_id, column_name, data_type) VALUES (%d, '%s', '%s')" % (table_id, column_name, data_type)
+            print isql
             stencilCursor.execute(isql)
     stencilConn.commit()
 
 def addSchemaMappings(app_name):
-    with open('./transaction/config/app_settings/mappings.json', 'r') as mappingFile: file_data = mappingFile.read()
-    stencilConn = psycopg2.connect(dbname="stencil", user="cow", password="123456", host="10.230.12.75", port="5432")
-    stencilCursor = stencilConn.cursor()
+    # truncateTable("schema_mappings")
+    app_id = getAppID(app_name) 
+    with open('../stencil/config/app_settings/mappings.json', 'r') as mappingFile: file_data = mappingFile.read()
+    stencilConn, stencilCursor = getDBConn("stencil")
     mappings = json.loads(file_data)
     for appMapping in mappings["allMappings"]:
         if appMapping["fromApp"] == app_name:
@@ -53,12 +102,18 @@ def addSchemaMappings(app_name):
                                 
                                 _sql = sql%(mappedApp,mappedTableName,mappedCol)
                                 stencilCursor.execute(_sql)
-                                mappedAttrID = stencilCursor.fetchone()[0]
+                                try:
+                                    mappedAttrID = stencilCursor.fetchone()[0]
+                                except Exception as e:
+                                    print "ERROR ENCOUNTERED! EXIT!"
+                                    print e
+                                    print _sql
+                                    exit(0)
 
                                 isql = "INSERT INTO schema_mappings (source_attribute, dest_attribute) VALUES (%d, %d)"
+                                print app_name,mapperTable,mapperCol, mapperAttrID, "=>", mappedApp, mappedTableName, mappedCol, "id", mappedAttrID
                                 stencilCursor.execute(isql%(mapperAttrID, mappedAttrID))
 
-                                print app_name,mapperTable,mapperCol, mapperAttrID, "=>", mappedApp, mappedTableName, mappedCol, "id", mappedAttrID
                                 # print isql%(mapperAttrID, mappedAttrID)
                                 # print "------------------------------------------"
                             # except IndexError as e:
@@ -67,6 +122,9 @@ def addSchemaMappings(app_name):
 
 
 if __name__ == "__main__":
+    # truncateAllTables()
+
     for app_name in ["twitter", "diaspora", "mastodon"]:
+        # insertAppTables(app_name)
         # populateAppSchema(app_name)
         addSchemaMappings(app_name)

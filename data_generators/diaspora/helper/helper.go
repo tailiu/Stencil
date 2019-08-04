@@ -2,6 +2,7 @@ package helper
 
 import (
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -11,6 +12,9 @@ func Init() {
 
 func RandomNumber(min, max int) int {
 	Init()
+	if max-min <= 0 {
+		return min
+	}
 	return rand.Intn(max-min) + min
 }
 
@@ -40,4 +44,14 @@ func MakeRange(min, max int) []int {
 		a[i] = min + i
 	}
 	return a
+}
+
+func Contains(list []string, str string) bool {
+	for _, v := range list {
+		// fmt.Println(v, "==", str)
+		if strings.EqualFold(v, str) {
+			return true
+		}
+	}
+	return false
 }

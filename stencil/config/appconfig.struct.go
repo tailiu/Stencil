@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"stencil/helper"
 	"stencil/qr"
@@ -95,7 +96,7 @@ func (self AppConfig) GetSubDependencies(tagName string) []Dependency {
 
 func (self AppConfig) GetShuffledOwnerships() []Ownership {
 
-	return ShuffleOwnerships(self.Ownerships)
+	return self.ShuffleOwnerships(self.Ownerships)
 }
 
 func (self AppConfig) GetOwnership(tagName string) (Ownership, error) {
@@ -288,6 +289,7 @@ func (self *AppConfig) GetDepDisplaySetting(tag string, pTag string) (string, er
 }
 
 func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
+
 	qs := qr.CreateQS(self.QR)
 	if len(tag.InnerDependencies) > 0 {
 		joinMap := tag.CreateInDepMap()
@@ -329,6 +331,47 @@ func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
 
 		}
 		qs.WhereString("AND", restrictions.Where)
+	}
+	return qs
+}
+
+func (self *AppConfig) GetTagQSM(tag Tag) *qr.QS {
+	log.Fatal("Here in GetTagQSM!")
+	qs := qr.CreateQS(self.QR)
+	if len(tag.InnerDependencies) > 0 {
+		joinMap := tag.CreateInDepMap()
+		seenMap := make(map[string]bool)
+		for fromTable, toTablesMap := range joinMap {
+			if _, ok := seenMap[fromTable]; !ok {
+				qs.LSelect(fromTable, "*")
+				qs.LTable(fromTable, fromTable)
+			}
+			for toTable, conditions := range toTablesMap {
+				if conditions != nil {
+					conditions = append(conditions, joinMap[toTable][fromTable]...)
+					if joinMap[toTable][fromTable] != nil {
+						joinMap[toTable][fromTable] = nil
+					}
+					qs.LSelect(toTable, "*")
+					qs.LTable(toTable, toTable)
+					qs.LJoinOn(conditions)
+					seenMap[toTable] = true
+				}
+			}
+			seenMap[fromTable] = true
+		}
+	} else {
+		table := tag.Members["member1"]
+		qs = qr.CreateQS(self.QR)
+		qs.LSelect(table, "*")
+		qs.LTable(table, table)
+	}
+	if len(tag.Restrictions) > 0 {
+		for _, restriction := range tag.Restrictions {
+			if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
+				qs.WhereString("AND", restrictionAttr+"="+restriction["val"])
+			}
+		}
 	}
 	return qs
 }

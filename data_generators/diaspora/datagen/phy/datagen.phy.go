@@ -276,28 +276,28 @@ func GetPostsForUser(QR *qr.QR, dbConn *sql.DB, user_id int) []*Post {
 	interactedAlready := make(map[string]bool)
 
 	qComments := qr.CreateQS(QR)
-	qComments.ColFunction("distinct(%s)", "comments.commentable_id", "post_id")
 	qComments.FromSimple("comments")
+	qComments.ColFunction("distinct(%s)", "comments.commentable_id", "post_id")
 	for _, row := range db.DataCall(dbConn, qComments.GenSQL()) {
 		interactedAlready[row["post_id"]] = true
 	}
 
 	qLikes := qr.CreateQS(QR)
-	qLikes.ColFunction("distinct(%s)", "likes.target_id", "post_id")
 	qLikes.FromSimple("likes")
+	qLikes.ColFunction("distinct(%s)", "likes.target_id", "post_id")
 	for _, row := range db.DataCall(dbConn, qLikes.GenSQL()) {
 		interactedAlready[row["post_id"]] = true
 	}
 
 	qPosts := qr.CreateQS(QR)
-	qPosts.ColSimple("posts.id")
-	qPosts.ColSimple("posts.guid")
-	qPosts.ColSimple("posts.author_id")
-	qPosts.ColSimple("posts.text")
 	qPosts.FromSimple("posts")
+	qPosts.ColAlias("posts.id", "id")
+	qPosts.ColAlias("posts.guid", "guid")
+	qPosts.ColAlias("posts.author_id", "author_id")
+	qPosts.ColAlias("posts.text", "text")
 	qPosts.WhereSimpleVal("posts.author_id", "=", fmt.Sprint(user_id))
 	qPosts.OrderBy("random()")
-
+	// log.Fatal(qPosts.GenSQL())
 	for _, row := range db.DataCall(dbConn, qPosts.GenSQL()) {
 		if _, ok := interactedAlready[row["id"]]; !ok {
 			if pid, err := strconv.Atoi(row["id"]); err == nil {
@@ -431,7 +431,7 @@ func FollowUser(QR *qr.QR, dbConn *sql.DB, person_id_1, person_id_2, aspect_id i
 			qu.SetUpdate_("contacts.updated_at", "current_timestamp")
 			qu.SetWhere("contacts.id", "=", contact_id2)
 			for _, sql := range qu.GenSQL() {
-				// fmt.Println(sql)
+				// log.Fatal(sql)
 				if err := db.RunTxWQnArgs(tx, sql); err != nil {
 
 				}
@@ -510,9 +510,10 @@ func FollowUser(QR *qr.QR, dbConn *sql.DB, person_id_1, person_id_2, aspect_id i
 
 	for _, qi := range QIs {
 		query, args := qi.GenSQL()
+		// fmt.Println(query, args)
 		if err := db.RunTxWQnArgs(tx, query, args...); err != nil {
 			success = false
-			fmt.Println("Some error:", err)
+			log.Println("Some error:", err)
 			break
 		}
 	}
@@ -520,6 +521,7 @@ func FollowUser(QR *qr.QR, dbConn *sql.DB, person_id_1, person_id_2, aspect_id i
 		// fmt.Println("~ success")
 		tx.Commit()
 	}
+	// log.Fatal("person_id_1: ", person_id_1, " | person_id_2: ", person_id_2)
 }
 
 func ContactExists(QR *qr.QR, person_id_1, person_id_2 int) (bool, string) {
@@ -527,8 +529,8 @@ func ContactExists(QR *qr.QR, person_id_1, person_id_2 int) (bool, string) {
 	// sql := "SELECT id FROM contacts WHERE user_id = $1 AND person_id = $2"\
 
 	q := qr.CreateQS(QR)
-	q.ColSimple("contacts.id")
 	q.FromSimple("contacts")
+	q.ColSimple("contacts.id")
 	q.WhereSimpleVal("contacts.user_id", "=", fmt.Sprint(person_id_1))
 	q.WhereOperatorVal("AND", "contacts.person_id", "=", fmt.Sprint(person_id_2))
 	sql := q.GenSQL()
@@ -537,7 +539,7 @@ func ContactExists(QR *qr.QR, person_id_1, person_id_2 int) (bool, string) {
 	res := db.DataCall1(QR.StencilDB, sql)
 	// log.Println("result of contact exists", res)
 	if len(res) > 0 {
-		return true, res[0]["id"]
+		return true, res[0]["contacts.id"]
 	}
 	return false, ""
 }
@@ -774,26 +776,26 @@ func GetAllUsersWithAspectsNew(QR *qr.QR) []*User {
 
 	log.Println("fetching users")
 	qu := qr.CreateQS(QR)
-	qu.ColAlias("users.id", "user_id")
 	qu.FromSimple("users")
+	qu.ColAlias("users.id", "user_id")
 	// qu.LimitResult("10")
 	fmt.Println(qu.GenSQL())
 	res_users := db.DataCall(QR.StencilDB, qu.GenSQL())
 
 	log.Println("fetching people")
 	qp := qr.CreateQS(QR)
+	qp.FromSimple("people")
 	qp.ColAlias("people.owner_id", "user_id")
 	qp.ColAlias("people.id", "person_id")
-	qp.FromSimple("people")
 	// qp.LimitResult("10")
 	fmt.Println(qp.GenSQL())
 	res_people := db.DataCall(QR.StencilDB, qp.GenSQL())
 
 	log.Println("fetching aspects")
 	qa := qr.CreateQS(QR)
+	qa.FromSimple("aspects")
 	qa.ColSimple("aspects.user_id")
 	qa.ColAlias("aspects.id", "aspect_id")
-	qa.FromSimple("aspects")
 	// qa.LimitResult("100")
 	fmt.Println(qa.GenSQL())
 	res_aspects := db.DataCall(QR.StencilDB, qa.GenSQL())
@@ -833,45 +835,24 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 
 	var users []*User
 
-	// sql := `SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
-	// 		FROM (
-	// 			SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
-	// 			FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
-	// 		) tab
-	// 		GROUP BY user_id, person_id
-	// 		ORDER BY random()`
+	// sql := `select * from diaspora_users_with_aspects`
 
-	// sql := `
-	// 	SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects from
-	// 	(SELECT supplementary_676.id as user_id, supplementary_654.pk as person_id, supplementary_630.id as aspect_id
-	// 		FROM  supplementary_654
-	// 		JOIN supplementary_676 ON supplementary_676.id = supplementary_654.owner_id
-	// 		JOIN supplementary_630 ON supplementary_630.user_id = supplementary_654.owner_id
-	// 	) tab
-	// 	GROUP BY tab.user_id, tab.person_id
-	// `
+	fq := qr.CreateQS(QR)
+	fq.FromSimple("users")
+	fq.FromJoin("people", "users.id=people.owner_id")
+	fq.FromJoin("aspects", "users.id=aspects.user_id")
+	fq.ColAlias("users.id", "user_id")
+	fq.ColAlias("people.id", "person_id")
+	fq.ColAlias("aspects.id", "aspect_id")
 
-	sql := `select * from diaspora_users_with_aspects`
+	q := qr.CreateQS(QR)
+	q.ColSimple("user_id,person_id")
+	q.ColFunction("string_agg(%s::text, ',')", "aspect_id", "aspects")
+	q.FromQuery(fq)
+	q.GroupByString("user_id,person_id")
+	q.OrderBy("random()")
 
-	// fq := qr.CreateQS(QR)
-	// // fq.ColSimple("users.*")
-	// fq.ColSimple("users.id")
-	// fq.ColAlias("users.id", "user_id")
-	// fq.ColAlias("people.id", "person_id")
-	// fq.ColAlias("aspects.id", "aspect_id")
-	// fq.FromSimple("users")
-	// fq.FromJoin("people", "users.id=people.owner_id")
-	// fq.FromJoin("aspects", "users.id=aspects.user_id")
-
-	// q := qr.CreateQS(QR)
-	// q.ColSimple("user_id,person_id")
-	// q.ColFunction("string_agg(%s::text, ',')", "aspect_id", "aspects")
-	// q.FromQuery(fq)
-	// q.GroupBy("user_id,person_id")
-	// q.OrderBy("random()")
-
-	// sql := q.GenSQL()
-	// fmt.Println(sql)
+	sql := q.GenSQL()
 
 	res := db.DataCall(QR.StencilDB, sql)
 
@@ -886,7 +867,6 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 		}
 		user.Aspects = aspect_ids
 		users = append(users, user)
-		// fmt.Println(user)
 	}
 	return users
 }
@@ -905,23 +885,6 @@ func GetAllUsersWithAspectsExcept(QR *qr.QR, column, table string) []*User {
 	// 		)
 	// 		GROUP BY user_id, person_id
 	// 		ORDER BY random()`, column, table)
-
-	// sql := "SELECT id as user_id FROM users"
-	// sql := "SELECT id as person_id FROM people"
-	// sql := "SELECT id as aspect_id FROM aspects"
-
-	// qu := qr.CreateQS(QR)
-	// qu.ColAlias("id", "user_id")
-	// qu.FromSimple("users")
-	// res := db.DataCall(QR.StencilDB, sql)
-
-	// qp := qr.CreateQS(QR)
-	// qp.ColAlias("id", "user_id")
-	// qp.FromSimple("people")
-
-	// qa := qr.CreateQS(QR)
-	// qa.ColAlias("id", "user_id")
-	// qa.FromSimple("aspects")
 
 	fq := qr.CreateQS(QR)
 	wq := qr.CreateQS(QR)
@@ -972,47 +935,29 @@ func GetFriendsOfUser(QR *qr.QR, person_id int) []*User {
 	// 		GROUP BY users.id, people.id, contacts.id, am.aspect_id
 	// 	`
 
-	// fq := qr.CreateQS(QR)
-	// fq.ColAlias("users.id", "user_id")
-	// fq.ColAlias("people.id", "person_id")
-	// fq.ColAlias("contacts.id", "contact_id")
-	// fq.ColFunction("string_agg(%s::text, ',')", "aspects.id", "aspects")
-	// fq.ColAlias("aspect_memberships.aspect_id", "contact_aspect")
-	// fq.FromSimple("contacts")
-	// fq.FromJoin("aspect_memberships", "contacts.id=aspect_memberships.contact_id")
-	// fq.FromJoin("people", "contacts.user_id=people.id")
-	// fq.FromJoin("users", "people.owner_id=users.id")
-	// fq.FromJoin("aspects", "users.id=aspects.user_id")
-	// fq.WhereSimpleVal("contacts.user_id", "=", fmt.Sprint(user_id))
-	// fq.WhereOperatorBool("AND", "contacts.sharing", "=", "true")
-	// fq.GroupBy("users.id")
-	// fq.GroupBy("people.id")
-	// fq.GroupBy("contacts.id")
-	// fq.GroupBy("aspect_memberships.aspect_id")
+	fq := qr.CreateQS(QR)
+	fq.FromSimple("contacts")
+	fq.FromJoin("aspect_memberships", "contacts.id=aspect_memberships.contact_id")
+	fq.FromJoin("people", "contacts.user_id=people.id")
+	fq.FromJoin("users", "people.owner_id=users.id")
+	fq.FromJoin("aspects", "users.id=aspects.user_id")
+	fq.ColAlias("users.id", "user_id")
+	fq.ColAlias("people.id", "person_id")
+	fq.ColAlias("contacts.id", "contact_id")
+	fq.ColFunction("string_agg(%s::text, ',')", "aspects.id", "aspects")
+	fq.ColAlias("aspect_memberships.aspect_id", "contact_aspect")
+	fq.WhereSimpleVal("contacts.user_id", "=", fmt.Sprint(person_id))
+	fq.WhereOperatorBool("AND", "contacts.sharing", "=", "true")
+	fq.GroupBy("users.id")
+	fq.GroupBy("people.id")
+	fq.GroupBy("contacts.id")
+	fq.GroupBy("aspect_memberships.aspect_id")
 
 	// log.Fatal(fq.GenSQL())
 
-	sql := `
-		SELECT supplementary_676.id as user_id,
-		base_people_1.id as person_id,
-		base_contacts_1.id as contact_id,
-		string_agg(supplementary_630.id::text, ',') as aspects,
-		supplementary_628.aspect_id as contact_aspect 
-		FROM  base_contacts_1  
-		JOIN supplementary_638 ON base_contacts_1.pk = supplementary_638.pk 
-		JOIN supplementary_628 ON base_contacts_1.id::text = supplementary_628.contact_id::text 
-		JOIN base_people_1 ON base_contacts_1.user_id::text = base_people_1.id::text 
-		JOIN base_users_1 ON base_people_1.pk = base_users_1.pk 
-		JOIN supplementary_654 ON base_users_1.pk = supplementary_654.pk 
-		JOIN supplementary_676 ON supplementary_654.owner_id::text = supplementary_676.id::text 
-		JOIN base_users_2 ON supplementary_676.pk = base_users_2.pk 
-		JOIN base_users_1 buser1 ON base_users_2.pk = buser1.pk 
-		JOIN supplementary_630 ON supplementary_676.id::text = supplementary_630.user_id::text 
-		WHERE  base_contacts_1.user_id = $1  AND supplementary_638.sharing = true  
-		GROUP BY supplementary_676.id , base_people_1.id , base_contacts_1.id , supplementary_628.aspect_id 
-	`
+	sql := fq.GenSQL()
 
-	res := db.DataCall(QR.StencilDB, sql, person_id)
+	res := db.DataCall(QR.StencilDB, sql)
 
 	for _, row := range res {
 		user := new(User)

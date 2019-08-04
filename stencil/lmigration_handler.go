@@ -45,9 +45,9 @@ func main() {
 			log.Fatal("can't read migration type")
 		}
 
-		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype)
+		mWorker := migrate.CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype)
 
-		if mthread.ThreadController(mWorker, threads) {
+		if mthread.LThreadController(mWorker, threads) {
 			transaction.LogOutcome(logTxn, "COMMIT")
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")

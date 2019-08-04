@@ -159,7 +159,7 @@ func ResolveDependencyConditions(node *DependencyNode, appConfig config.AppConfi
 
 func GetAdjNode(node *DependencyNode, appConfig config.AppConfig, uid string, wList *WaitingList, invalidList *InvalidList) (*DependencyNode, error) {
 
-	for _, dep := range config.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag.Name)) {
+	for _, dep := range appConfig.ShuffleDependencies(appConfig.GetSubDependencies(node.Tag.Name)) {
 		if where := ResolveDependencyConditions(node, appConfig, dep); where != "" {
 			orderby := " ORDER BY random() "
 			if child, err := appConfig.GetTag(dep.Tag); err == nil {

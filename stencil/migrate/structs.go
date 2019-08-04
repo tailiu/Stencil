@@ -51,3 +51,18 @@ type MigrationWorker struct {
 	mtype        string
 	// threadID     int
 }
+
+type LMigrationWorker struct {
+	uid          string
+	SrcAppConfig config.AppConfig
+	DstAppConfig config.AppConfig
+	mappings     *config.MappedApp
+	wList        WaitingList
+	unmappedTags UnmappedTags
+	root         *DependencyNode
+	SrcDBConn    *sql.DB
+	DstDBConn    *sql.DB
+	logTxn       *transaction.Log_txn
+	mtype        string
+	// threadID     int
+}

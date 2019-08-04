@@ -88,7 +88,8 @@ func (self *QU) GetAffectedRows() error {
 	}
 
 	sql := fmt.Sprintf("SELECT %s.pk FROM %s WHERE %s", strings.Join(self.affected_tables, ".pk,"), join, where)
-
+	// fmt.Println(self.Where)
+	// log.Fatal(sql)
 	if res, err := db.DataCall(self.QR.StencilDB, sql); err == nil {
 
 		for _, row := range res {

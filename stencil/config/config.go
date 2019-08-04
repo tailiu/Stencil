@@ -6,20 +6,16 @@ import (
 	"fmt"
 	"go/build"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
+	"stencil/db"
 	"stencil/qr"
 	"strings"
 	"time"
-	"log"
-	"stencil/db"
 )
 
 var SchemaMappingsObj *SchemaMappings
-
-func Init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func CreateAppConfig(app, app_id string) (AppConfig, error) {
 
@@ -36,7 +32,7 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 	} else {
 		dconfig = "./config/dependencies/" + app + ".json"
 	}
-	
+
 	jsonFile, err := os.Open(dconfig)
 
 	if err != nil {
@@ -57,7 +53,8 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 	}
 
 	jsonFile.Close()
-
+	rand.Seed(time.Now().UTC().UnixNano())
+	appConfig.Rand = rand.New(rand.NewSource(time.Now().Unix()))
 	return appConfig, nil
 }
 
@@ -98,22 +95,20 @@ func GetSchemaMappingsFor(srcApp, dstApp string) *MappedApp {
 	return nil
 }
 
-func ShuffleDependencies(vals []Dependency) []Dependency {
-	Init()
-	r := rand.New(rand.NewSource(time.Now().Unix()))
+func (self *AppConfig) ShuffleDependencies(vals []Dependency) []Dependency {
+	// r := Init()
 	ret := make([]Dependency, len(vals))
-	perm := r.Perm(len(vals))
+	perm := self.Rand.Perm(len(vals))
 	for i, randIndex := range perm {
 		ret[i] = vals[randIndex]
 	}
 	return ret
 }
 
-func ShuffleOwnerships(vals []Ownership) []Ownership {
-	Init()
-	r := rand.New(rand.NewSource(time.Now().Unix()))
+func (self *AppConfig) ShuffleOwnerships(vals []Ownership) []Ownership {
+	// r := Init()
 	ret := make([]Ownership, len(vals))
-	perm := r.Perm(len(vals))
+	perm := self.Rand.Perm(len(vals))
 	for i, randIndex := range perm {
 		ret[i] = vals[randIndex]
 	}

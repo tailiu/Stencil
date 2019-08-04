@@ -3,8 +3,10 @@ package db
 import (
 	"database/sql"
 	"diaspora/config"
+	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	_ "github.com/lib/pq" // postgres driver
 )
@@ -41,10 +43,14 @@ func RunTxWQnArgsReturningId(tx *sql.Tx, query string, args ...interface{}) (int
 
 func RunTxWQnArgs(tx *sql.Tx, query string, args ...interface{}) error {
 	if _, err := tx.Exec(query, args...); err != nil {
-		log.Println("# Can't execute!", err)
 		tx.Rollback()
-		log.Println(query, args)
-		log.Println("Transaction rolled back!")
+		if !strings.Contains(err.Error(), "row_desc_pk") {
+			log.Println("# Can't execute!", err)
+			log.Println(query, args)
+			log.Println("Transaction rolled back!")
+		} else {
+			return errors.New("# ROW_DESC ROWID EXISTS!")
+		}
 		return err
 	}
 	return nil

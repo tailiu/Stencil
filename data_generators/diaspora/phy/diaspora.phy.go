@@ -64,23 +64,25 @@ func makeUsersFriends(dbConn *sql.DB, users []*phy.User, thread_num int) {
 }
 
 func makeUsersTalk(dbConn *sql.DB, users []*phy.User, thread_num int) {
-	fmt.Println(fmt.Sprintf("Thread # %d, reporting for duty! ", thread_num))
+
 	num_users := len(users)
 	for uidx, user := range users {
+		fmt.Println(fmt.Sprintf("{THREAD: %3d} Fetching friends ", thread_num))
 		friends_of_user := phy.GetFriendsOfUser(QR, user.Person_ID)
 		num_frnds := len(friends_of_user)
+		fmt.Println(fmt.Sprintf("{THREAD: %3d} UID/PID: %d/%d | Friends Fetched: %d ", thread_num, user.User_ID, user.Person_ID, len(friends_of_user)))
 		for fidx, friend := range friends_of_user {
 			if helper.RandomNumber(1, 100)%3 == 0 {
 				conversation_id, err := phy.NewConversation(QR, dbConn, fmt.Sprint(user.Person_ID), fmt.Sprint(friend.Person_ID))
 				if err == nil && conversation_id != -1 {
-					num_of_msgs := helper.RandomNumber(50, 1000)
+					num_of_msgs := helper.RandomNumber(50, 200)
 					for i := 0; i <= num_of_msgs; {
 						fmt.Println(fmt.Sprintf("{THREAD: %3d} [Users %4d/%4d | Frnds %3d/%3d] | Msg # %3d/%3d | Conversation: %d", thread_num, uidx, num_users, fidx, num_frnds, i, num_of_msgs, conversation_id))
 						if helper.RandomNumber(1, 100)%2 == 0 {
 							err := phy.NewMessage(QR, dbConn, fmt.Sprint(friend.Person_ID), fmt.Sprint(conversation_id))
 							if err != nil {
 								log.Println(err)
-								WaitForAWhile()
+								// WaitForAWhile()
 							}
 							i++
 						}
@@ -88,7 +90,7 @@ func makeUsersTalk(dbConn *sql.DB, users []*phy.User, thread_num int) {
 							err := phy.NewMessage(QR, dbConn, fmt.Sprint(user.Person_ID), fmt.Sprint(conversation_id))
 							if err != nil {
 								log.Println(err)
-								WaitForAWhile()
+								// WaitForAWhile()
 							}
 							i++
 						}
@@ -106,10 +108,11 @@ func interactWithPosts(dbConn *sql.DB, users []*phy.User, thread_num int, itype 
 
 	num_users := len(users)
 	for uidx, user := range users {
-		log.Println("Fetching friends")
+		fmt.Println(fmt.Sprintf("{THREAD: %3d} Fetching friends ", thread_num))
 		friends_of_user := phy.GetFriendsOfUser(QR, user.Person_ID)
-		log.Println("Fetching posts")
+		fmt.Println(fmt.Sprintf("{THREAD: %3d} Fetching posts ", thread_num))
 		posts := phy.GetPostsForUser(QR, dbConn, user.Person_ID)
+		fmt.Println(fmt.Sprintf("{THREAD: %3d} UID/PID: %d/%d | Friends Fetched: %d | Posts Fetched: %d", thread_num, user.User_ID, user.Person_ID, len(friends_of_user), len(posts)))
 		if len(posts) <= 0 || len(friends_of_user) <= 0 {
 			continue
 		}
@@ -161,7 +164,7 @@ func runMakeUsersTalk() {
 	users := phy.GetAllUsersWithAspects(QR)
 
 	num_users := len(users)
-	inc := 10
+	inc := 50
 
 	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
 		dbConn := db.GetDBConn(config.STENCILDB)
@@ -187,16 +190,16 @@ func runCreateNewUsers() {
 
 func runMakeUsersFriends() {
 
-	users := phy.GetAllUsersWithAspects(QR)
-	num_users := len(users)
-	inc := 50
-
-	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
-		dbConn := db.GetDBConn(config.STENCILDB)
-		go makeUsersFriends(dbConn, users[i:j], thread_num)
-		// break
+	for count := 1; count <= 1; count++ {
+		users := phy.GetAllUsersWithAspects(QR)
+		num_users := len(users)
+		inc := 50 * count
+		for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
+			dbConn := db.GetDBConn(config.STENCILDB)
+			go makeUsersFriends(dbConn, users[i:j], thread_num)
+			// break
+		}
 	}
-
 	for {
 		fmt.Scanln()
 	}
