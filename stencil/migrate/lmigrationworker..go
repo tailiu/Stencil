@@ -297,7 +297,7 @@ func (self *LMigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, er
 			if restrictions := self.ResolveRestrictions(child); restrictions != "" {
 				sql += restrictions
 			}
-			sql += " ORDER BY random() LIMIT 10000"
+			sql += " ORDER BY random() LIMIT 100"
 			// log.Fatal(sql)
 			if result, err := db.DataCall(self.SrcDBConn, sql); err == nil {
 				var nodes []*DependencyNode
