@@ -21,14 +21,3 @@ func GetDataFromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, cols, from, col
 	return db.GetAllColsOfRows(stencilDBConn, physicalQuery)
 }
 
-func GetAppIDByAppName(stencilDBConn *sql.DB, app string) string {
-	query := fmt.Sprintf("SELECT pk from apps WHERE app_name = '%s'", app)
-	res := db.GetAllColsOfRows(stencilDBConn, query)
-
-	if res[0]["pk"] == "" {
-		log.Fatal("AppID does not exist!")
-	}
-
-	return res[0]["pk"]
-}
-
