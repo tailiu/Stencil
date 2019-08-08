@@ -15,7 +15,7 @@ const logDir = "./evaluation/logs/"
 func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
 	query := fmt.Sprintf("select * from migration_registration where dst_app = '%s' %s;", 
 		appID, extraConditions)
-	// log.Println(query)
+	log.Println(query)
 
 	migrationIDs, err := db.DataCall(stencilDBConn, query)
 	if err != nil {

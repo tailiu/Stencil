@@ -69,6 +69,8 @@ func violateDependencies(evalConfig *EvalConfig, table string, pKey int, deleted
 		// log.Println(row1)
 		row2 := getDeletedAtInEvaluation(evalConfig, migrationID, dependsOnTable, row1["id"].(int64))
 		if row2["deleted_at"] == nil {
+			// This can happen when migration is not complete
+			log.Println("dependsOn_deleted_at is nil!!")
 			continue
 		}
 		dependsOn_deleted_at := row2["deleted_at"].(time.Time)
@@ -81,7 +83,6 @@ func violateDependencies(evalConfig *EvalConfig, table string, pKey int, deleted
 	}
 
 	return violationNum
-	
 }
 
 func GetAnomaliesNums(evalConfig *EvalConfig, migrationID string, side string) {
