@@ -254,7 +254,7 @@ func (self *MigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, err
 			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
 			qs.WhereAppID(qr.NEXISTS, self.DstAppConfig.AppID)
 			qs.OrderBy("random()")
-			qs.LimitResult("10000")
+			qs.LimitResult("100")
 			sql := qs.GenSQL()
 			if result, err := db.DataCall(self.DBConn, sql); err == nil {
 				var nodes []*DependencyNode
