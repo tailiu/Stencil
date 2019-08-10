@@ -81,7 +81,7 @@ def allTimeVsSizeGraph():
 
 def cumulativeGraph(data, xlabel, ylabel):
     # data = sorted(data)
-    plt.hist(data, cumulative=-1, normed=1, bins=100, histtype='step')
+    plt.hist(data, cumulative=1, normed=1, bins=100, histtype='step')
     # plt.xticks([i+0.5 for i in years], years)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)

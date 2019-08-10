@@ -85,6 +85,18 @@ func transformTableKeyToNormalType(tableKey map[string]interface{}) (string, int
 	return src_table, src_id_int
 }
 
+func transformTableKeyToNormalTypeInDstApp(tableKey map[string]interface{}) (string, int) {
+	src_table := tableKey["dst_table"].(string)
+	src_id_str := tableKey["dst_id"].(string)
+	src_id_int, err1 := strconv.Atoi(src_id_str)
+
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	return src_table, src_id_int
+}
+
 func getLogicalRow(AppDBConn *sql.DB, table string, pKey int) map[string]interface{} {
 	query := fmt.Sprintf("select * from %s where id = %d", table, pKey)
 	row, err2 := db.DataCall1(AppDBConn, query)
