@@ -48,21 +48,21 @@ func violateDependencies(evalConfig *EvalConfig, table string, pKey int, added_a
 		return violateStats, depNotMigratedStats
 	}
 
-	log.Println("***********************")
-	log.Println(table)
-	log.Println(pKey)
+	// log.Println("***********************")
+	// log.Println(table)
+	// log.Println(pKey)
 	// log.Println(dependsOnTableKeys)
 
 	row := getLogicalRow(evalConfig.OldMastodonDBConn, table, pKey)
 	for _, dependsOnTableKey := range dependsOnTableKeys {
-		log.Println(dependsOnTableKey)
+		// log.Println(dependsOnTableKey)
 		
 		statsKey := table + "." + dependsOnTableKey
 
 		fromAttr := strings.Split(dependsOnTableKey, ":")[0]
 		// This can happen when it does not depends on
 		if row[fromAttr] == nil {
-			log.Println("fromAttr is nil!!")
+			// log.Println("fromAttr is nil!!")
 			continue
 		}
 		dependsOnTable := strings.Split(strings.Split(dependsOnTableKey, ":")[1], ".")[0]
@@ -75,7 +75,7 @@ func violateDependencies(evalConfig *EvalConfig, table string, pKey int, added_a
 		}
 		// This can happen when data depended on is not migrated
 		if row1["id"] == nil {
-			log.Println("dependsOn is nil!!")
+			// log.Println("dependsOn is nil!!")
 			if _, ok := depNotMigratedStats[statsKey]; ok {
 				depNotMigratedStats[statsKey] += 1
 			} else {
@@ -90,10 +90,10 @@ func violateDependencies(evalConfig *EvalConfig, table string, pKey int, added_a
 		// 	continue
 		// }
 		dependsOn_added_at := row2["added_at"].(time.Time)
-		log.Println(dependsOn_added_at)
-		log.Println(added_at)
+		// log.Println(dependsOn_added_at)
+		// log.Println(added_at)
 		if added_at.Before(dependsOn_added_at) {
-			log.Println("Got one")
+			// log.Println("Got one")
 			if _, ok := violateStats[statsKey]; ok {
 				violateStats[statsKey] += 1
 			} else {
@@ -101,7 +101,7 @@ func violateDependencies(evalConfig *EvalConfig, table string, pKey int, added_a
 			}
 		}
 	}
-	log.Println("***********************")
+	// log.Println("***********************")
 
 	return violateStats, depNotMigratedStats
 }
