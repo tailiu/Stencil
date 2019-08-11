@@ -270,19 +270,20 @@ func FollowUser(dbConn *sql.DB, person_id_1, person_id_2, aspect_id int) {
 		if ok2 {
 			sql = "UPDATE contacts SET receiving = $1, updated_at = $2 WHERE contacts.id = $3"
 			db.RunTxWQnArgs(tx, sql, "t", time.Now(), contact_id2)
-			sql = "INSERT INTO aspect_memberships (aspect_id,contact_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
-			db.RunTxWQnArgs(tx, sql, aspect_id, contact_id2, time.Now(), time.Now())
+
+			// sql = "INSERT INTO aspect_memberships (aspect_id,contact_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
+			// db.RunTxWQnArgs(tx, sql, aspect_id, contact_id2, time.Now(), time.Now())
 		}
 	} else {
 
 		sql := "INSERT INTO contacts (user_id,person_id,created_at,updated_at,receiving) VALUES ($1, $2, $3, $4, $5) RETURNING id"
-		contact_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id_1, person_id_2, time.Now(), time.Now(), "t")
+		db.RunTxWQnArgsReturningId(tx, sql, person_id_1, person_id_2, time.Now(), time.Now(), "t")
 
 		sql = "INSERT INTO contacts (user_id,person_id,created_at,updated_at,sharing) VALUES ($1, $2, $3, $4, $5)"
 		db.RunTxWQnArgs(tx, sql, person_id_2, person_id_1, time.Now(), time.Now(), "t")
 
-		sql = "INSERT INTO aspect_memberships (aspect_id,contact_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
-		db.RunTxWQnArgs(tx, sql, aspect_id, contact_id, time.Now(), time.Now())
+		// sql = "INSERT INTO aspect_memberships (aspect_id,contact_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
+		// db.RunTxWQnArgs(tx, sql, aspect_id, contact_id, time.Now(), time.Now())
 	}
 
 	sql := "INSERT INTO notifications (target_type,target_id,recipient_id,created_at,updated_at,type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
@@ -533,6 +534,31 @@ func GetFriendsOfUser(dbConn *sql.DB, user_id int) []*User {
 	return users
 }
 
+func GetFriendsDistribution(dbConn *sql.DB) map[string]int {
+	query := `
+		select  sum(case when fcount between 0   and 99   then 1 else 0 end) as "1-100",
+				sum(case when fcount between 100 and 199  then 1 else 0 end) as "100-200",
+				sum(case when fcount between 200 and 299  then 1 else 0 end) as "200-300",
+				sum(case when fcount between 300 and 399  then 1 else 0 end) as "300-400",
+				sum(case when fcount between 400 and 499  then 1 else 0 end) as "400-500",
+				sum(case when fcount between 500 and 1000 then 1 else 0 end) as "500-600"
+		from(
+			SELECT user_id, COUNT(*) as fcount FROM contacts GROUP BY user_id
+		) tab
+	`
+	res := db.DataCall1(dbConn, query)
+	if len(res) > 0 {
+		dist := make(map[string]int)
+		for key, val := range res[0] {
+			intval, _ := strconv.Atoi(val)
+			dist[key] = intval
+		}
+		return dist
+	}
+	log.Fatal("Can't get distribution of friends")
+	return nil
+}
+
 func GetRandomUser(dbConn *sql.DB, except_id string) *User {
 
 	if except_id == "" {
@@ -561,6 +587,92 @@ func GetRandomUser(dbConn *sql.DB, except_id string) *User {
 	user.Aspects = aspect_ids
 
 	return user
+}
+
+func GetTotalNumberOfFriendsOfUser(dbConn *sql.DB, user_id int) int {
+	query := "SELECT COUNT(*) as total_friends FROM contacts WHERE user_id = $1"
+	res := db.DataCall1(dbConn, query, user_id)
+	if len(res) > 0 {
+		count, _ := strconv.Atoi(res[0]["total_friends"])
+		return count
+	}
+	log.Fatal("Can't GetTotalNumberOfUsers")
+	return -1
+}
+
+func GetTotalNumberOfUsers(dbConn *sql.DB) int {
+	query := "SELECT COUNT(*) as total_users FROM users"
+	res := db.DataCall1(dbConn, query)
+	if len(res) > 0 {
+		count, _ := strconv.Atoi(res[0]["total_users"])
+		return count
+	}
+	log.Fatal("Can't GetTotalNumberOfUsers")
+	return -1
+}
+
+func GetUserByPersonID(dbConn *sql.DB, person_id string) *User {
+
+	sql := `
+			SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
+			FROM (
+				SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
+				FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+				WHERE people.id = $1
+			) tab
+			GROUP BY user_id, person_id
+	`
+
+	res := db.DataCall(dbConn, sql, person_id)
+
+	for _, row := range res {
+		user := new(User)
+		user.User_ID, _ = strconv.Atoi(row["user_id"])
+		user.Person_ID, _ = strconv.Atoi(row["person_id"])
+		var aspect_ids []int
+		for _, aspect_id := range strings.Split(row["aspects"], ",") {
+			aspect_id, _ := strconv.Atoi(aspect_id)
+			aspect_ids = append(aspect_ids, aspect_id)
+		}
+		user.Aspects = aspect_ids
+		return user
+	}
+
+	return nil
+}
+
+func GetUsersWithFriendCountInRange(dbConn *sql.DB, lower_bound, upper_bound string) []*User {
+	var users []*User
+
+	sql := `
+			SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
+			FROM (
+				SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
+				FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+				WHERE people.id IN (
+					SELECT user_id FROM contacts GROUP BY user_id HAVING count(*) >= $1 AND count(*) < $2
+				)
+			) tab
+			GROUP BY user_id, person_id
+			ORDER BY random()
+	`
+
+	res := db.DataCall(dbConn, sql, lower_bound, upper_bound)
+
+	for _, row := range res {
+		user := new(User)
+		user.User_ID, _ = strconv.Atoi(row["user_id"])
+		user.Person_ID, _ = strconv.Atoi(row["person_id"])
+		var aspect_ids []int
+		for _, aspect_id := range strings.Split(row["aspects"], ",") {
+			aspect_id, _ := strconv.Atoi(aspect_id)
+			aspect_ids = append(aspect_ids, aspect_id)
+		}
+		user.Aspects = aspect_ids
+		users = append(users, user)
+	}
+
+	return users
 }
 
 func BlockUser() {
