@@ -49,7 +49,6 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 
 	row := getLogicalRow(evalConfig.OldMastodonDBConn, table, pKey)
 
-	checkInReplyTo := false
 	checkFavourte := 0
 	for _, dependsOnTableKey := range dependsOnTableKeys {
 		// log.Println(dependsOnTableKey)
@@ -73,23 +72,17 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 		// This can happen when data depended on is not migrated
 		if row1["id"] == nil {
 			// This works when commneting or favouriting on other's data or on user's own data
-			if table == "comments" { 
-				if !checkInReplyTo {
-					checkInReplyTo = true
-				} else {
-					commentStatsKey := "comments.in_reply_to_id:statuses.id:comments.id" 
-					increaseMapValOneByKey(depNotMigratedStats, commentStatsKey)
-					log.Println("dependsOn is nil!!")
-				}
-			} else if table == "favourites" {
-				if checkFavourte != 2 {
+			if table == "favourites" { 
+				if checkFavourte != 1 {
 					checkFavourte += 1
 				} else {
-					favourteStatsKey := "favourites.status_id:statuses.id:comments.id:messages.id"
+					favourteStatsKey := "favourites.status_id:statuses.id:comments.id"
 					increaseMapValOneByKey(depNotMigratedStats, favourteStatsKey)
-					log.Println("dependsOn is nil!!")
 				}
+			} else {
+				increaseMapValOneByKey(depNotMigratedStats, statsKey)
 			}
+			log.Println("dependsOn is nil!!")
 			continue
 		}
 		// log.Println(row1)
@@ -110,7 +103,7 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 	return violateStats, depNotMigratedStats
 }
 
-func GetAnomaliesNumsInDst(evalConfig *EvalConfig, migrationID string, side string) (map[string]int, map[string]int){
+func GetAnomaliesNumsInDst(evalConfig *EvalConfig, migrationID string) (map[string]int, map[string]int){
 	violateStats := make(map[string]int)
 	depNotMigratedStats := make(map[string]int)
 

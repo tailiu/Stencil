@@ -29,15 +29,13 @@ var dependencies = map[string]map[string][]string {
 			"conversation_id:conversations.id"},
 		"comments": []string {
 			"conversation_id:conversations.id",
-			"in_reply_to_id:statuses.id",
-			"in_reply_to_id:comments.id"},
+			"in_reply_to_id:statuses.id"},
 		"messages": []string {
 			"conversation_id:conversations.id",
 			"in_reply_to_id:messages.id"},
 		"favourites": []string {
 			"status_id:statuses.id",
-			"status_id:comments.id",
-			"status_id:messages.id"}}}
+			"status_id:comments.id"}}}
 
 type EvalConfig struct {
 	Dependencies map[string]map[string][]string

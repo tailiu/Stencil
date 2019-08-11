@@ -53,6 +53,16 @@ func ConvertMapToJSONString(data map[string]int) string {
     return string(convertedData)
 }
 
+func ConvertMapInt64ToJSONString(data map[string]int64) string {
+	convertedData, err := json.Marshal(data)   
+    if err != nil {
+        fmt.Println(err.Error())
+        log.Fatal()
+    }
+     
+    return string(convertedData)
+}
+
 func WriteStrToLog(fileName string, data string) {
 	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -63,6 +73,12 @@ func WriteStrToLog(fileName string, data string) {
 	if _, err := fmt.Fprintf(f, data); err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Fprintln(f)
+}
+
+func ConvertInt64ToString(data int64) string {
+	return strconv.FormatInt(data, 10)
 }
 
 func WriteStrArrToLog(fileName string, data []string) {
@@ -155,6 +171,16 @@ func getDependsOnTableKeys(evalConfig *EvalConfig, app, table string) []string {
 }
 
 func IncreaseMapValByMap(m1 map[string]int, m2 map[string]int) {
+	for k, v := range m2 {
+		if _, ok := m1[k]; ok {
+			m1[k] += v
+		} else {
+			m1[k] = v
+		}
+	}
+}
+
+func IncreaseMapValByMapInt64(m1 map[string]int64, m2 map[string]int64) {
 	for k, v := range m2 {
 		if _, ok := m1[k]; ok {
 			m1[k] += v

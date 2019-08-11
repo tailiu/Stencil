@@ -69,7 +69,8 @@ func srcViolateDependencies(evalConfig *EvalConfig, table string, pKey int, dele
 		// log.Println(row1)
 		row2 := getDeletedAtInEvaluation(evalConfig, migrationID, dependsOnTable, row1["id"].(int64))
 		if row2["deleted_at"] == nil {
-			// This can happen when migration is not complete
+			// This can happen when migration is not complete or
+			// the data belongs to others and is not migrated
 			log.Println("dependsOn_deleted_at is nil!!")
 			continue
 		}
@@ -86,7 +87,8 @@ func srcViolateDependencies(evalConfig *EvalConfig, table string, pKey int, dele
 	return violateStats, interruptionDuration
 }
 
-func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string, side string) (map[string]int, []time.Duration) {
+func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string) (map[string]int, []time.Duration, map[string]int64) {
+	danglingDataStats := make(map[string]int64)
 	violateStats := make(map[string]int)
 	var interruptionDuration []time.Duration
 
@@ -101,16 +103,19 @@ func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string, side stri
 			continue
 		} else {
 			checkedRow[key] = true
+			danglingDataStats1 := srcDanglingData(evalConfig, migrationID, table, pKey)
 			violateStats1, interruptionDuration1 := srcViolateDependencies(evalConfig, table, pKey, data1["deleted_at"].(time.Time), migrationID)
 
+			IncreaseMapValByMapInt64(danglingDataStats, danglingDataStats1)
 			IncreaseMapValByMap(violateStats, violateStats1)
 			interruptionDuration = append(interruptionDuration, interruptionDuration1...)
 			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
 			log.Println("Violation Statistics:", violateStats)
 			log.Println("Interruption Duration:", interruptionDuration)
+			log.Println("Dangling Statistics:", danglingDataStats)
 			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 	}
 	
-	return violateStats, interruptionDuration
+	return violateStats, interruptionDuration, danglingDataStats
 }
