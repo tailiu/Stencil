@@ -278,7 +278,27 @@
                         }
                     ],
                     "display_setting": "parent_node_partially_displays",
-                    "_comment":"only statuses other than comments and messages have favorites in the new schema"
+                    "_comment":"favourites in statuses, comments and messages"
+                },
+                {
+                    "tag": "comments",
+                    "conditions": [
+                        {
+                            "tag_attr": "status_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays",
+                },
+                {
+                    "tag": "messages",
+                    "conditions": [
+                        {
+                            "tag_attr": "status_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays",
                 }
             ]
         }

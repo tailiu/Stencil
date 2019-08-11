@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
+	"encoding/json"
 	// "strings"
 )
 
@@ -15,7 +17,7 @@ const logDir = "./evaluation/logs/"
 func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
 	query := fmt.Sprintf("select * from migration_registration where dst_app = '%s' %s;", 
 		appID, extraConditions)
-	// log.Println(query)
+	log.Println(query)
 
 	migrationIDs, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
@@ -33,7 +35,37 @@ func ConvertFloat64ToString(data []float64) []string {
 	return convertedData
 }
 
-func WriteToLog(fileName string, data []string) {
+func ConvertDurationToString(data []time.Duration) []string {
+	var convertedData []string
+	for _, data1 := range data {
+		convertedData = append(convertedData, fmt.Sprintf("%f", data1.Seconds()))
+	}
+	return convertedData
+}
+
+func ConvertMapToJSONString(data map[string]int) string {
+	convertedData, err := json.Marshal(data)   
+    if err != nil {
+        fmt.Println(err.Error())
+        log.Fatal()
+    }
+     
+    return string(convertedData)
+}
+
+func WriteStrToLog(fileName string, data string) {
+	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	if _, err := fmt.Fprintf(f, data); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func WriteStrArrToLog(fileName string, data []string) {
 	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -85,6 +117,18 @@ func transformTableKeyToNormalType(tableKey map[string]interface{}) (string, int
 	return src_table, src_id_int
 }
 
+func transformTableKeyToNormalTypeInDstApp(tableKey map[string]interface{}) (string, int) {
+	src_table := tableKey["dst_table"].(string)
+	src_id_str := tableKey["dst_id"].(string)
+	src_id_int, err1 := strconv.Atoi(src_id_str)
+
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	return src_table, src_id_int
+}
+
 func getLogicalRow(AppDBConn *sql.DB, table string, pKey int) map[string]interface{} {
 	query := fmt.Sprintf("select * from %s where id = %d", table, pKey)
 	row, err2 := db.DataCall1(AppDBConn, query)
@@ -104,4 +148,26 @@ func getTableKeyInLogicalSchemaOfMigrationWithConditions(stencilDBConn *sql.DB, 
 	}
 
 	return data
+}
+
+func getDependsOnTableKeys(evalConfig *EvalConfig, app, table string) []string {
+	return evalConfig.Dependencies[app][table]
+}
+
+func IncreaseMapValByMap(m1 map[string]int, m2 map[string]int) {
+	for k, v := range m2 {
+		if _, ok := m1[k]; ok {
+			m1[k] += v
+		} else {
+			m1[k] = v
+		}
+	}
+}
+
+func increaseMapValOneByKey(m1 map[string]int, key string) {
+	if _, ok := m1[key]; ok {
+		m1[key] += 1
+	} else {
+		m1[key] = 1
+	}
 }
