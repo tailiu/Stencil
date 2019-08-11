@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"encoding/json"
 	// "strings"
 )
 
@@ -42,7 +43,29 @@ func ConvertDurationToString(data []time.Duration) []string {
 	return convertedData
 }
 
-func WriteToLog(fileName string, data []string) {
+func ConvertMapToJSONString(data map[string]int) string {
+	convertedData, err := json.Marshal(data)   
+    if err != nil {
+        fmt.Println(err.Error())
+        log.Fatal()
+    }
+     
+    return string(convertedData)
+}
+
+func WriteStrToLog(fileName string, data string) {
+	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	if _, err := fmt.Fprintf(f, data); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func WriteStrArrToLog(fileName string, data []string) {
 	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
