@@ -35,23 +35,25 @@ func getDeletedAtInEvaluation(evalConfig *EvalConfig, migrationID, dependsOnTabl
 	return data
 }
 
-func srcViolateDependencies(evalConfig *EvalConfig, table string, pKey int, deleted_at time.Time, migrationID string) int {
+func srcViolateDependencies(evalConfig *EvalConfig, table string, pKey int, deleted_at time.Time, migrationID string) (map[string]int, []time.Duration){
 	violateStats := make(map[string]int)
-	
+	var interruptionDuration []time.Duration
+
 	dependsOnTableKeys := getDependsOnTableKeys(evalConfig, "diaspora", table)
 	if len(dependsOnTableKeys) == 0 {
-		return 0
+		return violateStats, interruptionDuration
 	}
 
 	// log.Println(table)
 	// log.Println(dependsOnTableKeys)
 	log.Println(table)
-	log.Println(pKey)
-
-	violationNum := 0
+	// log.Println(pKey)
 
 	row := getLogicalRow(evalConfig.DiasporaDBConn, table, pKey)
 	for _, dependsOnTableKey := range dependsOnTableKeys {
+		statsKey := table + "." + dependsOnTableKey
+		log.Println(statsKey)
+
 		fromAttr := strings.Split(dependsOnTableKey, ":")[0]
 		if row[fromAttr] == nil {
 			continue
@@ -75,16 +77,19 @@ func srcViolateDependencies(evalConfig *EvalConfig, table string, pKey int, dele
 		log.Println(dependsOn_deleted_at)
 		log.Println(deleted_at)
 		if dependsOn_deleted_at.Before(deleted_at) {
+			interruptionDuration = append(interruptionDuration, deleted_at.Sub(dependsOn_deleted_at))
+			increaseMapValOneByKey(violateStats, statsKey)
 			log.Println("Got one")
-			violationNum += 1
 		}
 	}
 
-	return violationNum
+	return violateStats, interruptionDuration
 }
 
-func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string, side string) {
-	// var sourceAnomalies map[string]int
+func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string, side string) (map[string]int, []time.Duration) {
+	violateStats := make(map[string]int)
+	var interruptionDuration []time.Duration
+
 	data := getTableKeyDeletedAt(evalConfig, migrationID)
 	// fmt.Println(data)
 	checkedRow := make(map[string]bool) 
@@ -96,7 +101,16 @@ func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string, side stri
 			continue
 		} else {
 			checkedRow[key] = true
-			srcViolateDependencies(evalConfig, table, pKey, data1["deleted_at"].(time.Time), migrationID)
+			violateStats1, interruptionDuration1 := srcViolateDependencies(evalConfig, table, pKey, data1["deleted_at"].(time.Time), migrationID)
+
+			IncreaseMapValByMap(violateStats, violateStats1)
+			interruptionDuration = append(interruptionDuration, interruptionDuration1...)
+			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
+			log.Println("Violation Statistics:", violateStats)
+			log.Println("Interruption Duration:", interruptionDuration)
+			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 	}
+	
+	return violateStats, interruptionDuration
 }

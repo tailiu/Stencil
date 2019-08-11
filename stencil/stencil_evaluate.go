@@ -4,11 +4,14 @@ import (
 	"stencil/evaluation"
 	"log"
 	"strconv"
+	"time"
 )
 
 const (
 	leftoverVsMigratedFile = "leftoverVsMigrated"
-	anomaliesVsMigrationSizeFile = "anomaliesVsMigrationSize"
+	srcAnomaliesVsMigrationSizeFile = "srcAnomaliesVsMigrationSize"
+	dstAnomaliesVsMigrationSizeFile = "dstAnomaliesVsMigrationSize"
+	interruptionDurationFile = "interruptionDuration"
 )
 
 func leftoverVsMigrated(evalConfig *evaluation.EvalConfig) {
@@ -38,6 +41,8 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 
 	filterConditions := "and user_id = 4503"
 
+	totalSrcVoliateStats := make(map[string]int)
+	var totalSrcInterruptionDuration []time.Duration
 	totalDstViolateStats := make(map[string]int)
 	totalDstDepNotMigratedStats := make(map[string]int)
 	var totalMigratedDataSize int64
@@ -46,7 +51,13 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 		migrationID := strconv.FormatInt(dstMigrationID["migration_id"].(int64), 10)
 		log.Println(migrationID)
 
-		evaluation.GetAnomaliesNumsInSrc(evalConfig, migrationID, "src")
+		srcViolateStats, srcInterruptionDuration := evaluation.GetAnomaliesNumsInSrc(evalConfig, migrationID, "src")
+
+		log.Println("Source Violate Statistics:", srcViolateStats)
+		log.Println("Source Interruption statistics:", srcInterruptionDuration)
+
+		evaluation.IncreaseMapValByMap(totalSrcVoliateStats, srcViolateStats)
+		totalSrcInterruptionDuration = append(totalSrcInterruptionDuration, srcInterruptionDuration...)
 
 		dstViolateStats, dstDepNotMigratedStats := evaluation.GetAnomaliesNumsInDst(evalConfig, migrationID, "dst")
 
@@ -63,7 +74,11 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 
 	log.Println("Destination Total Violate Statistics:", totalDstViolateStats)
 	log.Println("Destination Total Data depended on not migrated statistics:", totalDstDepNotMigratedStats)
+	log.Println("Source Total Violate Statistics:", totalSrcVoliateStats)
+	log.Println("Source Total Interruption statistics:", totalSrcInterruptionDuration)
 	log.Println("Total Migrated data size(Bytes):", totalMigratedDataSize)
+
+	evaluation.WriteToLog(interruptionDurationFile, evaluation.ConvertDurationToString(totalSrcInterruptionDuration))
 
 }
 

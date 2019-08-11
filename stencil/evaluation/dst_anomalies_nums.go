@@ -35,14 +35,6 @@ func getAddedAtInEvaluation(evalConfig *EvalConfig, migrationID, dependsOnTable 
 	return data
 }
 
-func increaseMapValOneByKey(m1 map[string]int, key string) {
-	if _, ok := m1[key]; ok {
-		m1[key] += 1
-	} else {
-		m1[key] = 1
-	}
-}
-
 func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, added_at time.Time, migrationID string) (map[string]int, map[string]int) {
 	violateStats := make(map[string]int)
 	depNotMigratedStats := make(map[string]int)
@@ -52,7 +44,6 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 		return violateStats, depNotMigratedStats
 	}
 
-	log.Println("***********************")
 	log.Println(table)
 	// log.Println(pKey)
 
@@ -115,7 +106,6 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 			log.Println("Got one")
 		}
 	}
-	log.Println("***********************")
 
 	return violateStats, depNotMigratedStats
 }

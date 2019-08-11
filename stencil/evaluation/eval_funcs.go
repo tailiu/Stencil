@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 	// "strings"
 )
 
@@ -29,6 +30,14 @@ func ConvertFloat64ToString(data []float64) []string {
 	var convertedData []string
 	for _, data1 := range data {
 		convertedData = append(convertedData, fmt.Sprintf("%f", data1))
+	}
+	return convertedData
+}
+
+func ConvertDurationToString(data []time.Duration) []string {
+	var convertedData []string
+	for _, data1 := range data {
+		convertedData = append(convertedData, fmt.Sprintf("%f", data1.Seconds()))
 	}
 	return convertedData
 }
@@ -129,5 +138,13 @@ func IncreaseMapValByMap(m1 map[string]int, m2 map[string]int) {
 		} else {
 			m1[k] = v
 		}
+	}
+}
+
+func increaseMapValOneByKey(m1 map[string]int, key string) {
+	if _, ok := m1[key]; ok {
+		m1[key] += 1
+	} else {
+		m1[key] = 1
 	}
 }
