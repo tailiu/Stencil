@@ -49,6 +49,16 @@ type EvalConfig struct {
 	DiasporaAppID string
 }
 
+// type DstViolateStats struct {
+//     Messages.conversation_id:conversations.id  int `json:"messages.conversation_id:conversations.id"`
+// }
+
+// type DstDepNotMigratedStats struct {
+//     Number int    `json:"number"`
+//     Title  string `json:"title"`
+// }
+
+
 func InitializeEvalConfig() *EvalConfig {
 	evalConfig := new(EvalConfig)
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)

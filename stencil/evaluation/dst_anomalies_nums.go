@@ -35,11 +35,15 @@ func getAddedAtInEvaluation(evalConfig *EvalConfig, migrationID, dependsOnTable 
 	return data
 }
 
-func getDependsOnTableKeys(evalConfig *EvalConfig, app, table string) []string {
-	return evalConfig.Dependencies[app][table]
+func increaseMapValOneByKey(m1 map[string]int, key string) {
+	if _, ok := m1[key]; ok {
+		m1[key] += 1
+	} else {
+		m1[key] = 1
+	}
 }
 
-func violateDependencies(evalConfig *EvalConfig, table string, pKey int, added_at time.Time, migrationID string) (map[string]int, map[string]int) {
+func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, added_at time.Time, migrationID string) (map[string]int, map[string]int) {
 	violateStats := make(map[string]int)
 	depNotMigratedStats := make(map[string]int)
 
@@ -48,21 +52,23 @@ func violateDependencies(evalConfig *EvalConfig, table string, pKey int, added_a
 		return violateStats, depNotMigratedStats
 	}
 
-	// log.Println("***********************")
-	// log.Println(table)
+	log.Println("***********************")
+	log.Println(table)
 	// log.Println(pKey)
-	// log.Println(dependsOnTableKeys)
 
 	row := getLogicalRow(evalConfig.OldMastodonDBConn, table, pKey)
+
+	checkInReplyTo := false
+	checkFavourte := 0
 	for _, dependsOnTableKey := range dependsOnTableKeys {
 		// log.Println(dependsOnTableKey)
-		
 		statsKey := table + "." + dependsOnTableKey
+		log.Println(statsKey)
 
 		fromAttr := strings.Split(dependsOnTableKey, ":")[0]
 		// This can happen when it does not depends on
 		if row[fromAttr] == nil {
-			// log.Println("fromAttr is nil!!")
+			log.Println("fromAttr is nil!!")
 			continue
 		}
 		dependsOnTable := strings.Split(strings.Split(dependsOnTableKey, ":")[1], ".")[0]
@@ -75,33 +81,41 @@ func violateDependencies(evalConfig *EvalConfig, table string, pKey int, added_a
 		}
 		// This can happen when data depended on is not migrated
 		if row1["id"] == nil {
-			// log.Println("dependsOn is nil!!")
-			if _, ok := depNotMigratedStats[statsKey]; ok {
-				depNotMigratedStats[statsKey] += 1
-			} else {
-				depNotMigratedStats[statsKey] = 1
+			// This works when commneting or favouriting on other's data or on user's own data
+			if table == "comments" { 
+				if !checkInReplyTo {
+					checkInReplyTo = true
+				} else {
+					commentStatsKey := "comments.in_reply_to_id:statuses.id:comments.id" 
+					increaseMapValOneByKey(depNotMigratedStats, commentStatsKey)
+					log.Println("dependsOn is nil!!")
+				}
+			} else if table == "favourites" {
+				if checkFavourte != 2 {
+					checkFavourte += 1
+				} else {
+					favourteStatsKey := "favourites.status_id:statuses.id:comments.id:messages.id"
+					increaseMapValOneByKey(depNotMigratedStats, favourteStatsKey)
+					log.Println("dependsOn is nil!!")
+				}
 			}
 			continue
 		}
 		// log.Println(row1)
 		row2 := getAddedAtInEvaluation(evalConfig, migrationID, dependsOnTable, row1["id"].(int64))
-		// if row2["added_at"] == nil {
-		// 	log.Println("dependsOn_added_at is nil!!")
-		// 	continue
-		// }
+		// This can happen when migration is not complete
+		if row2["added_at"] == nil {
+			continue
+		}
 		dependsOn_added_at := row2["added_at"].(time.Time)
-		// log.Println(dependsOn_added_at)
-		// log.Println(added_at)
+		log.Println(dependsOn_added_at)
+		log.Println(added_at)
 		if added_at.Before(dependsOn_added_at) {
-			// log.Println("Got one")
-			if _, ok := violateStats[statsKey]; ok {
-				violateStats[statsKey] += 1
-			} else {
-				violateStats[statsKey] = 1
-			}
+			increaseMapValOneByKey(violateStats, statsKey)
+			log.Println("Got one")
 		}
 	}
-	// log.Println("***********************")
+	log.Println("***********************")
 
 	return violateStats, depNotMigratedStats
 }
@@ -122,23 +136,14 @@ func GetAnomaliesNumsInDst(evalConfig *EvalConfig, migrationID string, side stri
 			continue
 		} else {
 			checkedRow[key] = true
-			violateStats1, depNotMigratedStats1 := violateDependencies(evalConfig, table, pKey, data1["added_at"].(time.Time), migrationID)
+			violateStats1, depNotMigratedStats1 := dstViolateDependencies(evalConfig, table, pKey, data1["added_at"].(time.Time), migrationID)
+			IncreaseMapValByMap(violateStats, violateStats1)
+			IncreaseMapValByMap(depNotMigratedStats, depNotMigratedStats1)
 			
-			for k, v := range violateStats1 {
-				if _, ok := violateStats[k]; ok {
-					violateStats[k] += v
-				} else {
-					violateStats[k] = v
-				}
-			}
-
-			for k, v := range depNotMigratedStats1 {
-				if _, ok := depNotMigratedStats[k]; ok {
-					depNotMigratedStats[k] += v
-				} else {
-					depNotMigratedStats[k] = v
-				}
-			}
+			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
+			log.Println("Violation Statistics:", violateStats)
+			log.Println("Data depended on not migrated statistics:", depNotMigratedStats)
+			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 	}
 

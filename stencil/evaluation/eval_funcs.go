@@ -117,3 +117,17 @@ func getTableKeyInLogicalSchemaOfMigrationWithConditions(stencilDBConn *sql.DB, 
 
 	return data
 }
+
+func getDependsOnTableKeys(evalConfig *EvalConfig, app, table string) []string {
+	return evalConfig.Dependencies[app][table]
+}
+
+func IncreaseMapValByMap(m1 map[string]int, m2 map[string]int) {
+	for k, v := range m2 {
+		if _, ok := m1[k]; ok {
+			m1[k] += v
+		} else {
+			m1[k] = v
+		}
+	}
+}
