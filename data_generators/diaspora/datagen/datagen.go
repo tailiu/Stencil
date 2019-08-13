@@ -443,12 +443,9 @@ func GetAllUsersWithAspects(dbConn *sql.DB) []*User {
 
 	var users []*User
 
-	sql := `SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
-			FROM (
-				SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
-				FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
-			) tab
-			GROUP BY user_id, person_id
+	sql := `SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects
+			FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+			GROUP BY users.id, people.id
 			ORDER BY random()`
 
 	res := db.DataCall(dbConn, sql)
@@ -614,13 +611,11 @@ func GetTotalNumberOfUsers(dbConn *sql.DB) int {
 func GetUserByPersonID(dbConn *sql.DB, person_id string) *User {
 
 	sql := `
-			SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
-			FROM (
-				SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
-				FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
-				WHERE people.id = $1
-			) tab
-			GROUP BY user_id, person_id
+		SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects
+		FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+		WHERE people.id = $1
+		GROUP BY users.id, people.id
+		ORDER BY random()
 	`
 
 	res := db.DataCall(dbConn, sql, person_id)
@@ -645,19 +640,44 @@ func GetUsersWithFriendCountInRange(dbConn *sql.DB, lower_bound, upper_bound str
 	var users []*User
 
 	sql := `
-			SELECT user_id, person_id, string_agg(aspect_id::text, ',') as aspects
-			FROM (
-				SELECT users.id as user_id, people.id as person_id, aspects.id as aspect_id
-				FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
-				WHERE people.id IN (
-					SELECT user_id FROM contacts GROUP BY user_id HAVING count(*) >= $1 AND count(*) < $2
-				)
-			) tab
-			GROUP BY user_id, person_id
-			ORDER BY random()
+		SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects
+		FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+		WHERE people.id IN (
+			SELECT user_id FROM contacts GROUP BY user_id HAVING count(*) >= $1 AND count(*) < $2
+		)
+		GROUP BY users.id, people.id
+		ORDER BY random()
 	`
 
 	res := db.DataCall(dbConn, sql, lower_bound, upper_bound)
+
+	for _, row := range res {
+		user := new(User)
+		user.User_ID, _ = strconv.Atoi(row["user_id"])
+		user.Person_ID, _ = strconv.Atoi(row["person_id"])
+		var aspect_ids []int
+		for _, aspect_id := range strings.Split(row["aspects"], ",") {
+			aspect_id, _ := strconv.Atoi(aspect_id)
+			aspect_ids = append(aspect_ids, aspect_id)
+		}
+		user.Aspects = aspect_ids
+		users = append(users, user)
+	}
+
+	return users
+}
+
+func GetUsersOrderedByFriendCount(dbConn *sql.DB) []*User {
+	var users []*User
+
+	sql := `
+		SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects, (SELECT count(*) FROM contacts WHERE contacts.user_id = people.id) as fcount
+		FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+		GROUP BY users.id, people.id
+		order by fcount desc, users.id asc
+	`
+
+	res := db.DataCall(dbConn, sql)
 
 	for _, row := range res {
 		user := new(User)

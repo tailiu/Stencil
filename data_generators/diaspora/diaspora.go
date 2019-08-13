@@ -8,6 +8,7 @@ import (
 	"diaspora/helper"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"strconv"
@@ -18,7 +19,7 @@ import (
 
 type Range struct {
 	lower_bound, upper_bound int
-	pshare                   float32
+	pshare                   float64
 }
 
 func WaitForAWhile() {
@@ -32,13 +33,54 @@ func createNewUsers(dbConn *sql.DB, num, thread int) {
 	}
 }
 
-func createNewPostsForUsers(dbConn *sql.DB, users []*datagen.User, thread_num int) {
+func createNewPostsForUsers(dbConn *sql.DB, users []*datagen.User, userPostCounts map[int]int, start, end, totalPosts, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	for uidx, user := range users {
-		num_of_posts := helper.RandomNumber(0, 500)
-		for i := 0; i <= num_of_posts; i++ {
-			log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uidx, len(users), i, num_of_posts))
-			datagen.NewPost(dbConn, user.User_ID, user.Person_ID, user.Aspects)
+	for uid := start - 1; uid < end; uid++ {
+		for n := 0; n < userPostCounts[uid]; n++ {
+			log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uid, end, n, userPostCounts[uid]))
+			datagen.NewPost(dbConn, users[uid].User_ID, users[uid].Person_ID, users[uid].Aspects)
+		}
+	}
+}
+
+func createNewCommentsForUsers(dbConn *sql.DB, users []*datagen.User, userPostCounts map[int]int, start, end, totalPosts, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for uid := start - 1; uid < end; uid++ {
+		for n := 0; n < userPostCounts[uid]; n++ {
+			log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uid, end, n, userPostCounts[uid]))
+		}
+	}
+}
+
+func createNewLikesForUsers(dbConn *sql.DB, users []*datagen.User, userPostCounts map[int]int, start, end, totalPosts, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for uid := start - 1; uid < end; uid++ {
+		for n := 0; n < userPostCounts[uid]; n++ {
+			log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uid, end, n, userPostCounts[uid]))
+		}
+	}
+}
+
+func createNewResharesForUsers(dbConn *sql.DB, users []*datagen.User, userPostCounts map[int]int, start, end, totalPosts, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for uid := start - 1; uid < end; uid++ {
+		for n := 0; n < userPostCounts[uid]; n++ {
+			log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uid, end, n, userPostCounts[uid]))
+		}
+	}
+}
+
+func createNewReblogForUsers(dbConn *sql.DB, users []*datagen.User, userPostCounts map[int]int, start, end, totalPosts, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for uid := start - 1; uid < end; uid++ {
+		for n := 0; n < userPostCounts[uid]; n++ {
+			log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uid, end, n, userPostCounts[uid]))
+			// datagen.NewPost(dbConn, users[uid].User_ID, users[uid].Person_ID, users[uid].Aspects)
 		}
 	}
 }
@@ -156,9 +198,38 @@ func getFriendsBuckets(totalUsers int) map[string]int {
 	buckets := make(map[string]int)
 	for _, fRange := range getFriendRanges() {
 		key := fmt.Sprintf("%d-%d", fRange.lower_bound, fRange.upper_bound)
-		buckets[key] = int(fRange.pshare * float32(totalUsers))
+		buckets[key] = int(fRange.pshare * float64(totalUsers))
 	}
 	return buckets
+}
+
+func assignPostsToUsers(totalPosts int) map[int]int {
+	users := make(map[int]int)
+	for _, r := range getTweetRanges() {
+		t, numOfPosts := 0, int(math.Ceil(float64(totalPosts)*r.pshare))
+		for {
+			for i := r.lower_bound; i <= r.upper_bound && t < numOfPosts; i++ {
+				if _, ok := users[i]; !ok {
+					users[i] = 0
+				}
+				users[i]++
+				t++
+			}
+			if t >= numOfPosts {
+				break
+			}
+		}
+	}
+	return users
+}
+
+func getTweetRanges() []Range {
+	var ranges []Range
+	ranges = append(ranges, Range{1, 10, 0.2})
+	ranges = append(ranges, Range{11, 50, 0.28})
+	ranges = append(ranges, Range{51, 150, 0.37})
+	ranges = append(ranges, Range{151, 1000, 0.15})
+	return ranges
 }
 
 func getFriendRanges() []Range {
@@ -426,11 +497,11 @@ func runGenerateFriendships() {
 
 	var wg sync.WaitGroup
 
+	numThreads := 100
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetAllUsersWithAspects(dbConn)
 	numUsers := datagen.GetTotalNumberOfUsers(dbConn)
 	friendlist := assignFriendsToUsers(numUsers)
-	numThreads := 100
 	verifyFriendsDistribution(friendlist)
 	log.Fatal(datagen.GetFriendsDistribution(dbConn))
 	log.Fatal()
@@ -449,19 +520,40 @@ func runGenerateFriendships() {
 	fmt.Println(datagen.GetFriendsDistribution(dbConn))
 }
 
-func runCreateNewPosts() {
-	dbConn := db.GetDBConn(config.APP_NAME)
-	users := datagen.GetAllUsersWithAspects(dbConn)
-	num_users := len(users)
-	inc := 500
-	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
-		thread_num := j / inc
-		go createNewPostsForUsers(dbConn, users[i:j], thread_num)
-	}
+func runCreateNewPosts(ptype string, totalPosts int) {
 
-	for {
-		fmt.Scanln()
+	var wg sync.WaitGroup
+
+	numThreads := 1
+	userPostCounts := assignPostsToUsers(totalPosts)
+	// log.Fatal(userPostCounts)
+	dbConn := db.GetDBConn(config.APP_NAME)
+	users := datagen.GetUsersOrderedByFriendCount(dbConn)
+	numUsers := len(users)
+	inc := int(numUsers / numThreads)
+	for t, i, j := 1, 0, inc; t <= numThreads; t, i, j = t+1, j+1, j+inc {
+		wg.Add(1)
+		switch ptype {
+		case "posts":
+			{
+				go createNewPostsForUsers(dbConn, users, userPostCounts, i, j, totalPosts, t, &wg)
+			}
+		case "likes":
+			{
+				go createNewLikesForUsers(dbConn, users, userPostCounts, i, j, totalPosts, t, &wg)
+			}
+		case "comments":
+			{
+				go createNewCommentsForUsers(dbConn, users, userPostCounts, i, j, totalPosts, t, &wg)
+			}
+		case "reshares":
+			{
+				go createNewResharesForUsers(dbConn, users, userPostCounts, i, j, totalPosts, t, &wg)
+			}
+		}
+
 	}
+	wg.Wait()
 }
 
 func main() {
@@ -473,16 +565,16 @@ func main() {
 	switch arg {
 	case "posts":
 		fmt.Println("Creating New Posts!")
-		runCreateNewPosts()
+		runCreateNewPosts("posts", 8030)
 	case "comments":
 		fmt.Println("Interacting With Posts!")
-		runinteractWithPosts()
+		runCreateNewPosts("comments", 13970)
 	case "likes":
 		fmt.Println("Interacting With Posts!")
-		runinteractWithPosts()
+		runCreateNewPosts("likes", 85680)
 	case "reshares":
 		fmt.Println("Interacting With Posts!")
-		runinteractWithPosts()
+		runCreateNewPosts("reshares", 0)
 	case "messages":
 		fmt.Println("Creating New Messages!")
 		runMakeUsersTalk()
