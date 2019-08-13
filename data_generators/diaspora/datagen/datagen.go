@@ -158,6 +158,7 @@ func NewComment(dbConn *sql.DB, post_id, person_id, post_owner_id int) (int, err
 						sql = "INSERT INTO notification_actors (notification_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
 						if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
 							tx.Commit()
+							// tx.Rollback()
 							// log.Println("New comment created with id", comment_id)
 							return comment_id, err
 						}
@@ -178,16 +179,56 @@ func GetPostsForUser(dbConn *sql.DB, user_id int) []*Post {
 
 	var posts []*Post
 
+	// sql := `SELECT id, guid, author_id, text
+	// 		FROM POSTS
+	// 		WHERE author_id = $1 AND id NOT IN (
+	// 			SELECT distinct(target_id) FROM likes
+	// 			UNION
+	// 			SELECT distinct(commentable_id) FROM comments
+	// 		)
+	// 		order by random()`
+
 	sql := `SELECT id, guid, author_id, text 
-			FROM POSTS 
-			WHERE author_id = $1 AND id NOT IN (
-				SELECT distinct(target_id) FROM likes
-				UNION
-				SELECT distinct(commentable_id) FROM comments
-			)
-			order by random()`
+			FROM posts 
+			WHERE author_id = $1
+			ORDER by random()`
 
 	for _, row := range db.DataCall(dbConn, sql, user_id) {
+		if pid, err := strconv.Atoi(row["id"]); err == nil {
+			if uid, err := strconv.Atoi(row["author_id"]); err == nil {
+				post := new(Post)
+				post.Author = uid
+				post.ID = pid
+				post.GUID = row["guid"]
+				post.Text = row["text"]
+				posts = append(posts, post)
+			}
+		}
+	}
+
+	return posts
+}
+
+func GetPostsForUserLimit(dbConn *sql.DB, user_id, limit int) []*Post {
+
+	var posts []*Post
+
+	// sql := `SELECT id, guid, author_id, text
+	// 		FROM POSTS
+	// 		WHERE author_id = $1 AND id NOT IN (
+	// 			SELECT distinct(target_id) FROM likes
+	// 			UNION
+	// 			SELECT distinct(commentable_id) FROM comments
+	// 		)
+	// 		order by random()`
+
+	sql := `SELECT id, guid, author_id, text 
+			FROM posts 
+			WHERE author_id = $1
+			ORDER by random()
+			LIMIT $2`
+
+	for _, row := range db.DataCall(dbConn, sql, user_id, limit) {
 		if pid, err := strconv.Atoi(row["id"]); err == nil {
 			if uid, err := strconv.Atoi(row["author_id"]); err == nil {
 				post := new(Post)
@@ -228,13 +269,8 @@ func NewLike(dbConn *sql.DB, post_id, person_id, post_owner_id int) (int, error)
 			if notif_id, err := db.RunTxWQnArgsReturningId(tx, sql, target_type, post_id, post_owner_id, time.Now(), time.Now(), notif_type); err == nil {
 				sql = "INSERT INTO notification_actors (notification_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4)"
 				if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
-					sql = "INSERT INTO participations (guid,target_id,target_type,author_id,created_at,updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
-					if err := db.RunTxWQnArgs(tx, sql, guid, post_id, target_type, person_id, time.Now(), time.Now()); err == nil {
-						tx.Commit()
-						// log.Println("New like created with id", like_id)
-						return like_id, err
-					}
-					return -1, err
+					tx.Commit()
+					return like_id, err
 				}
 				return -1, err
 			}
@@ -317,7 +353,7 @@ func AspectMembershipExists(dbConn *sql.DB, contact_id, aspect_id int) bool {
 	return false
 }
 
-func NewReshare(dbConn *sql.DB, post Post, person_id int) (int, error) {
+func NewReshare(dbConn *sql.DB, post *Post, person_id int) (int, error) {
 
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -335,24 +371,18 @@ func NewReshare(dbConn *sql.DB, post Post, person_id int) (int, error) {
 	if reshare_id, err := db.RunTxWQnArgsReturningId(tx, sql, person_id, "t", uuid.New(), "Reshare", post.Text, time.Now(), time.Now(), post.GUID, time.Now()); err == nil {
 		sql = "UPDATE posts SET reshares_count = reshares_count+1 WHERE posts.type IN ('StatusMessage') AND posts.id = $1 "
 		if err := db.RunTxWQnArgs(tx, sql, post.ID); err == nil {
-			sql = "INSERT INTO participations (guid, target_id, target_type, author_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
-			if err := db.RunTxWQnArgs(tx, sql, uuid.New(), reshare_id, target_type, post.Author, time.Now(), time.Now()); err == nil {
-				sql = "INSERT INTO participations (guid, target_id, target_type, author_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
-				if err := db.RunTxWQnArgs(tx, sql, uuid.New(), post.ID, target_type, person_id, time.Now(), time.Now()); err == nil {
-					sql = "INSERT INTO notifications (target_type, target_id, recipient_id, created_at, updated_at, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-					if notif_id, err := db.RunTxWQnArgsReturningId(tx, sql, target_type, post.ID, post.Author, time.Now(), time.Now(), notif_type); err == nil {
-						sql := "INSERT INTO notification_actors (notification_id, person_id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
-						if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
-							tx.Commit()
-							return reshare_id, err
-						}
-						return -1, err
-					}
-					return -1, err
+			sql = "INSERT INTO notifications (target_type, target_id, recipient_id, created_at, updated_at, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+			if notif_id, err := db.RunTxWQnArgsReturningId(tx, sql, target_type, post.ID, post.Author, time.Now(), time.Now(), notif_type); err == nil {
+				sql := "INSERT INTO notification_actors (notification_id, person_id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
+				if err := db.RunTxWQnArgs(tx, sql, notif_id, person_id, time.Now(), time.Now()); err == nil {
+					tx.Commit()
+					// tx.Rollback()
+					return reshare_id, err
 				}
 				return -1, err
 			}
 			return -1, err
+
 		}
 		return -1, err
 	}
@@ -498,21 +528,20 @@ func GetAllUsersWithAspectsExcept(dbConn *sql.DB, column, table string) []*User 
 	return users
 }
 
-func GetFriendsOfUser(dbConn *sql.DB, user_id int) []*User {
+func GetFriendsOfUser(dbConn *sql.DB, person_id int) []*User {
 
 	var users []*User
 
-	sql := `SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects, contacts.id as contact_id, am.aspect_id as contact_aspect
-			FROM contacts 
-			JOIN aspect_memberships am on contacts.id = am.contact_id
-			JOIN people on people.id = contacts.user_id
-			JOIN users on users.id = people.owner_id
-			JOIN aspects on aspects.user_id = users.id
-			WHERE contacts.user_id = $1 AND contacts.sharing = true
-			GROUP BY users.id, people.id, contacts.id, am.aspect_id
-		`
+	sql := `SELECT users.id as user_id, people.id as person_id, string_agg(aspects.id::text, ',') as aspects
+			FROM users JOIN people ON users.id = people.owner_id JOIN aspects ON aspects.user_id = users.id
+			WHERE people.id IN (
+				SELECT contacts.person_id FROM contacts WHERE contacts.user_id = $1
+			)
+			GROUP BY users.id, people.id
+			ORDER BY random()
+	`
 
-	res := db.DataCall(dbConn, sql, user_id)
+	res := db.DataCall(dbConn, sql, person_id)
 
 	for _, row := range res {
 		user := new(User)
