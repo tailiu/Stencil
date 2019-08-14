@@ -55,3 +55,12 @@ func Contains(list []string, str string) bool {
 	}
 	return false
 }
+
+func FindIndexInList(list []int, val int) int {
+	for idx, listVal := range list {
+		if listVal == val {
+			return idx
+		}
+	}
+	return -1
+}

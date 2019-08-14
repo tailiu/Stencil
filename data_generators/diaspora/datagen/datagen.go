@@ -29,6 +29,15 @@ type Post struct {
 	Text   string
 }
 
+func FindIndexInUserListByPersonID(users []*User, Person_ID int) int {
+	for idx, user := range users {
+		if user.Person_ID == Person_ID {
+			return idx
+		}
+	}
+	return -1
+}
+
 func NewUser(dbConn *sql.DB) (int, int, []int) {
 
 	// log.Println("Creating new user!")
@@ -412,17 +421,15 @@ func NewConversation(dbConn *sql.DB, person_id_1, person_id_2 int) (int, error) 
 
 	if err == nil && conversation_id != -1 {
 
-		log.Println("New conversation created with id", conversation_id)
+		// log.Println("New conversation created with id", conversation_id)
 
 		sql = "INSERT INTO conversation_visibilities (conversation_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)"
 		err = db.RunTxWQnArgs(tx, sql, conversation_id, person_id_1, time.Now(), time.Now(), conversation_id, person_id_2, time.Now(), time.Now())
 
-		// sql = "INSERT INTO conversation_visibilities (conversation_id,person_id,created_at,updated_at) VALUES ($1, $2, $3, $4) RETURNING id"
-		// db.RunTxWQnArgs(tx, sql, conversation_id, person_id_2, time.Now(), time.Now())
-
 		if err == nil && conversation_id != -1 {
 			tx.Commit()
-			NewMessage(dbConn, person_id_1, conversation_id)
+			// NewMessage(dbConn, person_id_1, conversation_id)
+			// tx.Rollback()
 			return conversation_id, err
 		}
 	}
@@ -447,6 +454,7 @@ func NewMessage(dbConn *sql.DB, person_id, conversation_id int) (int, error) {
 
 	if err == nil {
 		tx.Commit()
+		// tx.Rollback()
 	}
 
 	return msgid, err

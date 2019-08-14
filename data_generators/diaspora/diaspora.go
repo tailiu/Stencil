@@ -163,6 +163,53 @@ func createNewResharesForUsers(dbConn *sql.DB, users []*datagen.User, userReshar
 	}
 }
 
+func createNewMessagesForUsers(dbConn *sql.DB, users []*datagen.User, userMessageCounts map[int]int, start, end, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	const dunbarsNumber int = 150
+
+	for uidx := start; uidx < end; uidx++ {
+
+		totalMessages := userMessageCounts[uidx]
+
+		if totalMessages <= 0 {
+			continue
+		}
+
+		friends := datagen.GetFriendsOfUser(dbConn, users[uidx].Person_ID)
+		if len(friends) > dunbarsNumber {
+			friends = friends[:dunbarsNumber]
+		}
+
+		messagesPerFriend := int(math.Ceil(float64(totalMessages) / float64(len(friends))))
+
+		for fidx, friend := range friends {
+			conv_id, _ := datagen.NewConversation(dbConn, users[uidx].Person_ID, friend.Person_ID)
+			for mID := 0; mID < messagesPerFriend; mID++ {
+				// user sends message
+				if _, err := datagen.NewMessage(dbConn, users[uidx].Person_ID, conv_id); err == nil {
+					totalMessages--
+					userMessageCounts[uidx]--
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Messages %3d/%3d", thread_num, uidx, end, fidx, len(friends), totalMessages, userMessageCounts[uidx]))
+				} else {
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Messages %3d/%3d | ERROR: %s", thread_num, uidx, end, fidx, len(friends), totalMessages, userMessageCounts[uidx], err))
+				}
+				// friend sends message
+				if fIDXInList := datagen.FindIndexInUserListByPersonID(users, friend.Person_ID); userMessageCounts[fIDXInList] > 0 {
+					if _, err := datagen.NewMessage(dbConn, friend.Person_ID, conv_id); err == nil {
+						userMessageCounts[fIDXInList]--
+						log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Messages %3d/%3d | FRIEND REPLY", thread_num, uidx, end, fidx, len(friends), totalMessages, userMessageCounts[uidx]))
+					} else {
+
+					}
+				}
+			}
+			if totalMessages <= 0 {
+				break
+			}
+		}
+	}
+}
+
 func checkFriendsDistribution(friendcount map[int]int) {
 
 	o, i, j, k, l, m, n := 0, 0, 0, 0, 0, 0, 0
@@ -604,7 +651,7 @@ func runCreateNewPosts(ptype string, totalPosts int) {
 
 	numThreads := 1
 	userPostCounts := assignPostsToUsers(totalPosts)
-	log.Fatal(userPostCounts)
+	// log.Fatal(userPostCounts)
 	dbConn := db.GetDBConn(config.APP_NAME)
 	users := datagen.GetUsersOrderedByFriendCount(dbConn)
 	users = users[:len(userPostCounts)]
@@ -631,7 +678,7 @@ func runCreateNewPosts(ptype string, totalPosts int) {
 			}
 		case "messages":
 			{
-				// go createNewMessagesForUsers(dbConn, users, userPostCounts, i, j, t, &wg)
+				go createNewMessagesForUsers(dbConn, users, userPostCounts, i, j, t, &wg)
 			}
 		}
 	}
