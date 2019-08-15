@@ -519,8 +519,9 @@ func FollowUser(QR *qr.QR, dbConn *sql.DB, person_id_1, person_id_2, aspect_id i
 	}
 	if success {
 		// fmt.Println("~ success")
-		tx.Commit()
+		// tx.Commit()
 	}
+	tx.Rollback()
 	// log.Fatal("person_id_1: ", person_id_1, " | person_id_2: ", person_id_2)
 }
 
@@ -533,6 +534,7 @@ func ContactExists(QR *qr.QR, person_id_1, person_id_2 int) (bool, string) {
 	q.ColSimple("contacts.id")
 	q.WhereSimpleVal("contacts.user_id", "=", fmt.Sprint(person_id_1))
 	q.WhereOperatorVal("AND", "contacts.person_id", "=", fmt.Sprint(person_id_2))
+	q.WhereAppID("EXISTS",QR.AppID)
 	sql := q.GenSQL()
 	// fmt.Println(sql)
 	// log.Println("checking", sql, person_id_1, person_id_2)
@@ -831,7 +833,7 @@ func GetAllUsersWithAspectsNew(QR *qr.QR) []*User {
 	return users
 }
 
-func GetAllUsersWithAspects(QR *qr.QR) []*User {
+func GetAllUsersWithAspects(QR *qr.QR, dbConn *sql.DB) []*User {
 
 	var users []*User
 
@@ -844,6 +846,7 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 	fq.ColAlias("users.id", "user_id")
 	fq.ColAlias("people.id", "person_id")
 	fq.ColAlias("aspects.id", "aspect_id")
+	fq.WhereAppID("EXISTS", QR.AppID)
 
 	q := qr.CreateQS(QR)
 	q.ColSimple("user_id,person_id")
@@ -853,8 +856,8 @@ func GetAllUsersWithAspects(QR *qr.QR) []*User {
 	q.OrderBy("random()")
 
 	sql := q.GenSQL()
-
-	res := db.DataCall(QR.StencilDB, sql)
+	// log.Fatal(sql)
+	res := db.DataCall(dbConn, sql)
 
 	for _, row := range res {
 		user := new(User)
@@ -1004,4 +1007,57 @@ func GetRandomUser(QR *qr.QR, except_id string) *User {
 	user.Aspects = aspect_ids
 
 	return user
+}
+
+
+func GetTotalNumberOfUsers(QR *qr.QR, dbConn *sql.DB) int {
+	
+	q := qr.CreateQS(QR)
+	q.FromSimple("users")
+	q.ColAlias("COUNT(*)", "total_users")
+	q.WhereAppID("EXISTS", QR.AppID)
+	query := q.GenSQL()
+
+	res := db.DataCall1(dbConn, query)
+	if len(res) > 0 {
+		count, _ := strconv.Atoi(res[0]["total_users"])
+		return count
+	}
+	log.Fatal("Can't GetTotalNumberOfUsers")
+	return -1
+}
+
+func GetFriendsDistribution(QR *qr.QR, dbConn *sql.DB) map[string]int {
+	
+	q := qr.CreateQS(QR)
+	q.FromSimple("contacts")
+	q.ColSimple("contacts.user_id")
+	q.ColAlias("COUNT(*)", "fcount")
+	q.GroupBy("contacts.user_id")
+	q.WhereAppID("EXISTS", QR.AppID)
+
+	query := `
+		select  sum(case when fcount between 0   and 99   then 1 else 0 end) as "1-100",
+				sum(case when fcount between 100 and 199  then 1 else 0 end) as "100-200",
+				sum(case when fcount between 200 and 299  then 1 else 0 end) as "200-300",
+				sum(case when fcount between 300 and 399  then 1 else 0 end) as "300-400",
+				sum(case when fcount between 400 and 499  then 1 else 0 end) as "400-500",
+				sum(case when fcount between 500 and 1000 then 1 else 0 end) as "500-600"
+		from(
+			%s
+		) tab`
+
+	query = fmt.Sprintf(query, q.GenSQL())
+
+	res := db.DataCall1(dbConn, query)
+	if len(res) > 0 {
+		dist := make(map[string]int)
+		for key, val := range res[0] {
+			intval, _ := strconv.Atoi(val)
+			dist[key] = intval
+		}
+		return dist
+	}
+	log.Fatal("Can't get distribution of friends")
+	return nil
 }

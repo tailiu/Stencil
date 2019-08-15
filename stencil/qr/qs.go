@@ -108,7 +108,8 @@ func (self *QS) FromSimple(table string) {
 	// fmt.Println(table, "=>", phyTab)
 
 	prev := ""
-	for ptab := range phyTab {
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+	for _,ptab := range phyTabKeys {
 		if _, ok := self.seen[ptab]; !ok {
 			if prev == "" {
 				self.From += fmt.Sprintf(" %s %s ", ptab, self.getTableAlias(table, ptab))
@@ -131,7 +132,10 @@ func (self *QS) LTable(table, alias string) {
 	seen := make(map[string]bool)
 	prev, from := "", ""
 
-	for ptab, mappedcols := range phyTab {
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+
+	for _, ptab := range phyTabKeys {
+		mappedcols := phyTab[ptab]
 		ptabAlias := self.getTableAlias(table, ptab)
 		for _, pair := range mappedcols {
 			pColName := fmt.Sprintf("%s.%s as \"%s\"", ptabAlias, pair[0], pair[1])
@@ -192,7 +196,9 @@ func (self *QS) FromJoin(table, condition string) {
 
 	prev := curr_tab
 
-	for ptab := range phyTab {
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+
+	for _, ptab := range phyTabKeys {
 		// if _, ok := self.seen[ptab]; !ok {
 		if !strings.EqualFold(curr_tab, ptab) {
 			self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
@@ -224,8 +230,8 @@ func (self *QS) FromJoinList(table string, conditions []string) {
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
 
 	prev := curr_tab
-
-	for ptab := range phyTab {
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+	for _, ptab := range phyTabKeys {
 		// if _, ok := self.seen[ptab]; !ok {
 		if !strings.EqualFold(curr_tab, ptab) {
 			self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))

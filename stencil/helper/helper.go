@@ -7,6 +7,7 @@ package helper
 import (
 	"fmt"
 	"log"
+	"sort"
 	"math/rand"
 	"strings"
 	"time"
@@ -86,4 +87,13 @@ func Sublist(first, second []string) bool {
 	}
 	// fmt.Println("IS SUBSET!!!!")
 	return true
+}
+
+func GetKeysOfPhyTabMap(m map[string][][]string) []string{
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

@@ -64,3 +64,11 @@ func FindIndexInList(list []int, val int) int {
 	}
 	return -1
 }
+
+func GetKeysOfMap(m map[string]interface{}) []string{
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
