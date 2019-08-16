@@ -36,6 +36,7 @@ type QI struct {
 type QS struct {
 	QR           *QR
 	Columns      []string
+	ColumnsWSize []string
 	From         string
 	Where        string
 	Group        string

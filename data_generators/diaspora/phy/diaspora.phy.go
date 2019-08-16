@@ -234,6 +234,21 @@ func runCreateNewUsers() {
 	wg.Wait()
 }
 
+func runGetUsers() {
+	// dbConn := db.GetDBConn(config.STENCILDB)
+
+	fq := qr.CreateQS(QR)
+	fq.FromSimple("users")
+	fq.FromJoin("people", "users.id=people.owner_id")
+	fq.FromJoin("aspects", "users.id=aspects.user_id")
+	fq.ColAlias("users.id", "user_id")
+	fq.ColAlias("people.id", "person_id")
+	fq.ColAlias("aspects.id", "aspect_id")
+	
+	fmt.Print(fq.GenSQLSize())
+
+}
+
 func runMakeUsersFriends() {
 
 	dbConn := db.GetDBConn(config.STENCILDB)
@@ -308,5 +323,7 @@ func main() {
 		// limit := os.Args[5]
 		fmt.Println("Add New Friends For:", person_id)
 		// AddFriendsForUser(person_id, lower_bound, upper_bound, limit)
+	case "getusers":
+		runGetUsers()
 	}
 }
