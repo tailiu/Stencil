@@ -239,14 +239,9 @@ func runGetUsers() {
 
 	fq := qr.CreateQS(QR)
 	fq.FromSimple("users")
-	fq.FromJoin("people", "users.id=people.owner_id")
-	fq.FromJoin("aspects", "users.id=aspects.user_id")
-	fq.ColAlias("users.id", "user_id")
-	fq.ColAlias("people.id", "person_id")
-	fq.ColAlias("aspects.id", "aspect_id")
-	
-	fmt.Print(fq.GenSQLSize())
-
+	fq.ColSimple("users.*")
+	fq.WherePK("178811048")
+	fmt.Println(fq.GenSQLSize())
 }
 
 func runMakeUsersFriends() {
