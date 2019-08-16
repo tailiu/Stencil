@@ -50,27 +50,34 @@
        {
           "name":"aspect",
           "members":{
-             "member1":"aspects",
-             "member2":"aspect_visibilities",
-             "member3":"aspect_memberships"
+             "member1":"aspects"
           },
           "keys":{
              "id":"member1.id",
-             "aspect_visibilities":"member2.id",
-             "aspect_memberships":"member3.id",
-             "shareable_id":"member2.shareable_id",
-             "shareable_type":"member2.shareable_type",
              "user_id":"member1.user_id"
-          },
-          "inner_dependencies":[
-             {
-                "member1.id":"member2.aspect_id"
-             },
-             {
-                "member1.id":"member3.aspect_id"
-             }
-          ]
+          }
        },
+       {
+         "name":"aspect_visibilities",
+         "members":{
+            "member1":"aspect_visibilities"
+         },
+         "keys":{
+            "id":"member1.id",
+            "shareable_id":"member1.shareable_id",
+            "shareable_type":"member1.shareable_type",
+            "aspect_id":"member1.aspect_id"
+         }
+      },
+      {
+         "name":"aspect_memberships",
+         "members":{
+            "member1":"aspect_memberships"
+         },
+         "keys":{
+            "id":"member1.id"
+         }
+      },
        {
           "name":"contact",
           "members":{
@@ -205,7 +212,7 @@
           "tag":"post",
           "depends_on":[
              {
-                "tag":"aspect",
+                "tag":"aspect_visibilities",
                 "conditions":[
                    {
                       "tag_attr":"id",
@@ -215,6 +222,20 @@
              }
           ]
        },
+       {
+         "tag":"aspect_visibilities",
+         "depends_on":[
+            {
+               "tag":"aspect",
+               "conditions":[
+                  {
+                     "tag_attr":"aspect_id",
+                     "depends_on_attr":"id"
+                  }
+               ]
+            }
+         ]
+      },
        {
           "tag":"aspect",
           "depends_on":[
