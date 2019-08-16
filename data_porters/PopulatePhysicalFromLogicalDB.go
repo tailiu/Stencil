@@ -2,12 +2,34 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"stencil/db"
 	"stencil/qr"
 	"log"
 	"database/sql"
+	"math/rand"
+	"time"
 	// escape "github.com/tj/go-pg-escape"
 )
+
+func FilterTablesFromList(tables []string, tablesToRemove[] string) []string{
+	var filteredTables []string
+
+	for _, table := range tables {
+		remove := false
+		for _, tableToRemove := range tablesToRemove {
+			if strings.EqualFold(table, tableToRemove){
+				remove = true
+				break
+			}
+		}
+		if !remove{
+			filteredTables = append(filteredTables, table)
+		}
+	}
+
+	return filteredTables
+}
 
 func runTx(dbConn *sql.DB, QIs []*qr.QI) bool{
 	tx, err := dbConn.Begin()
@@ -19,7 +41,7 @@ func runTx(dbConn *sql.DB, QIs []*qr.QI) bool{
 	
 	for _, qi := range QIs {
 		query, args := qi.GenSQL()
-		fmt.Println(query)
+		// fmt.Println(query)
 		if _, err := tx.Exec(query, args...); err != nil {
 			success = false
 			fmt.Println("Some error:", err)
@@ -40,14 +62,18 @@ func runTx(dbConn *sql.DB, QIs []*qr.QI) bool{
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	appName, appID := "diaspora", "1"
 	stencilDB := db.GetDBConn("stencil")
 	appDB := db.GetDBConn(appName)
 	QR := qr.NewQR(appName, appID)
 	tables := db.GetTablesOfDB(appDB, appName)
-
+	tables = FilterTablesFromList(tables, []string{"aspects","share_visibilities","chat_contacts","chat_fragments","blocks","chat_offline_messages","invitation_codes","locations","mentions","notifications","notification_actors","o_embed_caches","open_graph_caches","participations","comments","pods","people","contacts","conversations","conversation_visibilities","likes","poll_answers","messages","aspect_memberships","photos","poll_participations","polls","posts","profiles"})
+	// log.Fatal(tables)
 	for _, table := range tables {
-		q := fmt.Sprintf("SELECT * FROM %s", table)
+		log.Println("Populating ",table)
+		q := fmt.Sprintf("SELECT * FROM \"%s\"", table)
 		if ldata, err := db.DataCall(appDB, q); err != nil{
 			fmt.Println(q)
 			log.Fatal("Some problem with logical data query:", err)
@@ -59,7 +85,8 @@ func main() {
 					cols, vals = append(cols, col), append(vals, val)
 				}
 				qi := qr.CreateQI(table, cols, vals, qr.QTInsert)
-				qis := QR.ResolveInsert(qi, QR.NewRowId())
+				rowid := db.GetNewRowID(stencilDB)
+				qis := QR.ResolveInsert(qi, rowid)
 				runTx(stencilDB, qis)
 			}
 		}
