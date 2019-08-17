@@ -99,6 +99,22 @@ func (self AppConfig) GetShuffledOwnerships() []Ownership {
 	return self.ShuffleOwnerships(self.Ownerships)
 }
 
+func (self AppConfig) GetOrderedOwnerships() []Ownership {
+
+	var orderedOwnerships []Ownership
+	orderOfOwnerships := []string{"post", "like", "comment", "conversation", "message"}
+
+	for _, ownershipName := range orderOfOwnerships {
+		for _, ownership := range self.Ownerships{
+			if strings.EqualFold(ownershipName, ownership.Tag){
+				orderedOwnerships = append(orderedOwnerships, ownership)
+			}
+		}
+	}
+	// log.Fatal(orderedOwnerships)
+	return orderedOwnerships
+}
+
 func (self AppConfig) GetOwnership(tagName string) (Ownership, error) {
 
 	for _, own := range self.Ownerships {

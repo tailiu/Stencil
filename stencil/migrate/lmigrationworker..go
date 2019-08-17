@@ -284,7 +284,7 @@ func (self *LMigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*D
 
 func (self *LMigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, error) {
 
-	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
+	for _, own := range self.SrcAppConfig.GetOrderedOwnerships() {
 		log.Println(fmt.Sprintf("x%2dx |         FETCHING  tag  { %s } ", threadID, own.Tag))
 		if self.unmappedTags.Exists(own.Tag) {
 			log.Println(fmt.Sprintf("x%2dx |         UNMAPPED  tag  { %s } ", threadID, own.Tag))
