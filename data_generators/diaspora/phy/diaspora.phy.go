@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"diaspora/config"
+	"diaspora/dist"
 	"diaspora/datagen/phy"
 	"diaspora/helper"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"stencil/qr"
 	"strings"
 	"time"
+	"sync"
 )
 
 var QR = qr.NewQR(config.APP_NAME, config.APP_ID)
@@ -21,10 +23,12 @@ func WaitForAWhile() {
 	time.Sleep(10 * time.Minute)
 }
 
-func createNewUsers(dbConn *sql.DB, num, thread int) {
+func createNewUsers(dbConn *sql.DB, num, thread int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	for i := 0; i < num; i++ {
-		uid, _, _ := phy.NewUser(QR, dbConn)
-		fmt.Println(fmt.Sprintf("Thread: %3d, User: %4d/%4d | uid : %d", thread, i, num, uid))
+		fmt.Println(fmt.Sprintf("Thread: %3d, User: %4d/%4d", thread, i, num))
+		phy.NewUser(QR, dbConn)
 	}
 }
 
@@ -39,8 +43,47 @@ func createNewPostsForUsers(dbConn *sql.DB, users []*phy.User, thread_num int) {
 	}
 }
 
-func createNewMentionsForUsers(users []*phy.User) {
+func runGenerateFriendships() {
 
+	var wg sync.WaitGroup
+
+	numThreads := 1
+	dbConn := db.GetDBConn(config.STENCILDB)
+	users := phy.GetAllUsersWithAspects(QR, dbConn)
+	numUsers := len(users)
+	friendlist := dist.AssignFriendsToUsers(numUsers)
+	dist.VerifyFriendsDistribution(friendlist)
+	// log.Fatal(phy.GetFriendsDistribution(QR, dbConn))
+	time.Sleep(time.Duration(10) * time.Second)
+	inc := int(numUsers / numThreads)
+	// log.Fatal("here")
+	for t, i, j := 1, 0, inc; t <= numThreads; t, i, j = t+1, j+1, j+inc {
+		wg.Add(1)
+		go createFriends(dbConn, users, friendlist, t, i, j, &wg)
+	}
+
+	wg.Wait()
+	time.Sleep(time.Duration(2) * time.Second)
+	dist.VerifyFriendsDistribution(friendlist)
+	fmt.Println(phy.GetFriendsDistribution(QR, dbConn))
+}
+
+func createFriends(dbConn *sql.DB, users []*phy.User, friendlist map[int][]int, thread_num, start, end int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	uidx := 0
+	// for uid, friends := range friendlist {
+	for i := start; i < end; i++ {
+		user1 := users[i]
+		for fid, friend := range friendlist[i] {
+			user2 := users[friend]
+			aspect_idx := helper.RandomNumber(0, len(user1.Aspects)-1)
+			phy.FollowUser(QR, dbConn, user1.Person_ID, user2.Person_ID, user1.Aspects[aspect_idx])
+			phy.FollowUser(QR, dbConn, user2.Person_ID, user1.Person_ID, user2.Aspects[aspect_idx])
+			log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d", thread_num, uidx, end-start, fid, len(friendlist[i])))
+		}
+		uidx++
+	}
 }
 
 func makeUsersFriends(dbConn *sql.DB, users []*phy.User, thread_num int) {
@@ -144,11 +187,12 @@ func interactWithPosts(dbConn *sql.DB, users []*phy.User, thread_num int, itype 
 }
 
 func runinteractWithPosts(itype string) {
-	users := phy.GetAllUsersWithAspects(QR)
+	dbConn := db.GetDBConn(config.STENCILDB)
+	users := phy.GetAllUsersWithAspects(QR, dbConn)
 	num_users := len(users)
 	inc := 50
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
-		dbConn := db.GetDBConn(config.STENCILDB)
+		
 		thread_num := j / inc
 		go interactWithPosts(dbConn, users[i:j], thread_num, itype)
 		// break
@@ -161,13 +205,14 @@ func runinteractWithPosts(itype string) {
 
 func runMakeUsersTalk() {
 
-	users := phy.GetAllUsersWithAspects(QR)
+	dbConn := db.GetDBConn(config.STENCILDB)
+	users := phy.GetAllUsersWithAspects(QR, dbConn)
 
 	num_users := len(users)
 	inc := 50
 
 	for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
-		dbConn := db.GetDBConn(config.STENCILDB)
+		
 		go makeUsersTalk(dbConn, users[i:j], thread_num)
 		// break
 	}
@@ -178,24 +223,36 @@ func runMakeUsersTalk() {
 }
 
 func runCreateNewUsers() {
+	var wg sync.WaitGroup
 
-	for i := 0; i < 100; i++ {
-		dbConn := db.GetDBConn(config.STENCILDB)
-		go createNewUsers(dbConn, 10, i)
+	dbConn := db.GetDBConn(config.STENCILDB)
+	thread_num := 1
+	for i := 0; i < thread_num; i++ {
+		wg.Add(1)
+		go createNewUsers(dbConn, 1000, i, &wg)
 	}
-	for {
-		fmt.Scanln()
-	}
+	wg.Wait()
+}
+
+func runGetUsers() {
+	// dbConn := db.GetDBConn(config.STENCILDB)
+
+	fq := qr.CreateQS(QR)
+	fq.FromSimple("users")
+	fq.ColSimple("users.*")
+	fq.WherePK("178811048")
+	fmt.Println(fq.GenSQLSize())
 }
 
 func runMakeUsersFriends() {
 
+	dbConn := db.GetDBConn(config.STENCILDB)
 	for count := 1; count <= 1; count++ {
-		users := phy.GetAllUsersWithAspects(QR)
+		users := phy.GetAllUsersWithAspects(QR, dbConn)
 		num_users := len(users)
 		inc := 50 * count
 		for thread_num, i, j := 0, 0, inc; i < num_users && j < num_users; i, j, thread_num = j+1, j+inc, thread_num+1 {
-			dbConn := db.GetDBConn(config.STENCILDB)
+			
 			go makeUsersFriends(dbConn, users[i:j], thread_num)
 			// break
 		}
@@ -206,13 +263,14 @@ func runMakeUsersFriends() {
 }
 
 func runCreateNewPosts() {
+	dbConn := db.GetDBConn(config.STENCILDB)
 
-	users := phy.GetAllUsersWithAspects(QR)
+	users := phy.GetAllUsersWithAspects(QR, dbConn)
 	num_users := len(users)
 	inc := 10
 	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
 		thread_num := j / inc
-		dbConn := db.GetDBConn(config.STENCILDB)
+		
 		go createNewPostsForUsers(dbConn, users[i:j], thread_num)
 		// break
 	}
@@ -223,31 +281,44 @@ func runCreateNewPosts() {
 
 func main() {
 
-	// createNewUsers(1, 0)
+	helper.Init()
 
 	arg := os.Args[1]
 
 	switch arg {
 	case "posts":
-		// fmt.Println("Creating New Posts!")
-		runCreateNewPosts()
+		fmt.Println("Creating New Posts!")
+		// runCreateNewPosts("posts", 8030)
 	case "comments":
-		// fmt.Println("Interacting With Posts!")
-		runinteractWithPosts("comments")
+		fmt.Println("Interacting With Posts!")
+		// runCreateNewPosts("comments", 13970)
 	case "likes":
-		// fmt.Println("Interacting With Posts!")
-		runinteractWithPosts("likes")
+		fmt.Println("Interacting With Posts!")
+		// runCreateNewPosts("likes", 85680)
 	case "reshares":
-		// fmt.Println("Interacting With Posts!")
-		runinteractWithPosts("reshares")
+		fmt.Println("Interacting With Posts!")
+		// runCreateNewPosts("reshares", 1550)
 	case "messages":
-		// fmt.Println("Creating New Messages!")
-		runMakeUsersTalk()
-	case "friends":
-		// fmt.Println("Making People Friends!")
-		runMakeUsersFriends()
+		fmt.Println("Creating New Messages!")
+		// runCreateNewPosts("messages", 4015)
+		// runMakeUsersTalk()
+	case "makefriends":
+		fmt.Println("Making People Friends!")
+		// runMakeUsersFriends()
+	case "genfriends":
+		fmt.Println("Generating Friendships!")
+		runGenerateFriendships()
 	case "newusers":
-		// fmt.Println("Creating New Users!")
+		fmt.Println("Creating New Users!")
 		runCreateNewUsers()
+	case "addfriendforpersoninrange":
+		person_id := os.Args[2]
+		// lower_bound := os.Args[3]
+		// upper_bound := os.Args[4]
+		// limit := os.Args[5]
+		fmt.Println("Add New Friends For:", person_id)
+		// AddFriendsForUser(person_id, lower_bound, upper_bound, limit)
+	case "getusers":
+		runGetUsers()
 	}
 }

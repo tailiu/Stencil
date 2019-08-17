@@ -4,8 +4,8 @@ import (
 	"stencil/db"
 	"database/sql"
 	"stencil/qr"
-	"log"
-	"fmt"
+	// "log"
+	// "fmt"
 )
 
 func GetDataFromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, cols, from, col, op, val, limit string) []map[string]string {	

@@ -3,6 +3,7 @@ package qr
 import (
 	"errors"
 	"fmt"
+	"log"
 	"stencil/db"
 	"strings"
 )
@@ -103,6 +104,7 @@ func (self *QR) getBaseMappings() error {
 		}
 		return nil
 	} else {
+		log.Fatal("UNABLE TO FETCH BASE_MAPPINGS:",err)
 		return err
 	}
 }
@@ -136,6 +138,7 @@ func (self *QR) getSupplementaryMappings() error {
 		}
 		return nil
 	} else {
+		log.Fatal("UNABLE TO FETCH SUPP_MAPPINGS:",err)
 		return err
 	}
 }

@@ -213,13 +213,10 @@ func getSelectQueryIngs(sql string) *QI {
 	return qi
 }
 
-func (self QR) ResolveInsert(qi *QI, rowID int32) []*QI {
+func (self *QR) ResolveInsert(qi *QI, rowID int32) []*QI {
 
 	var PQIs []*QI
-	newRowCols := []string{"rowid", "app_id"}
-	newRowVals := []interface{}{rowID, self.AppID}
-	newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
-	PQIs = append(PQIs, newRowQI)
+	
 	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
 
 	for pt, mapping := range phyMap {
@@ -238,6 +235,12 @@ func (self QR) ResolveInsert(qi *QI, rowID int32) []*QI {
 			PQIs = append(PQIs, pqi)
 		}
 
+	}
+	if len(PQIs) > 0{
+		newRowCols := []string{"rowid", "app_id"}
+		newRowVals := []interface{}{rowID, self.AppID}
+		newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
+		PQIs = append(PQIs, newRowQI)
 	}
 	return PQIs
 }

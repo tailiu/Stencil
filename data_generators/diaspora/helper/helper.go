@@ -11,7 +11,7 @@ func Init() {
 }
 
 func RandomNumber(min, max int) int {
-	Init()
+	// Init()
 	if max-min <= 0 {
 		return min
 	}
@@ -19,7 +19,7 @@ func RandomNumber(min, max int) int {
 }
 
 func RandomString(n int) string {
-	Init()
+	// Init()
 	var letters = []rune("_9876543210zyxwvutsrqponmlkjihgfedcba0123456789_ZYXWVUTSRQPONMLKJIHGFEDCBA0123456789_abcdefghijklmnopqrstuvwxyz_9876543210ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
 	b := make([]rune, n)
 	for i := range b {
@@ -29,7 +29,7 @@ func RandomString(n int) string {
 }
 
 func RandomText(n int) string {
-	Init()
+	// Init()
 	var letters = []rune(" 9876543210 zyxwvutsrqponmlkjihgfedcba 0123456789 ZYXWVUTSRQPONMLKJIHGFEDCBA 0123456789 abcdefghijklmnopqrstuvwxyz 9876543210ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
 	b := make([]rune, n)
 	for i := range b {
@@ -54,4 +54,21 @@ func Contains(list []string, str string) bool {
 		}
 	}
 	return false
+}
+
+func FindIndexInList(list []int, val int) int {
+	for idx, listVal := range list {
+		if listVal == val {
+			return idx
+		}
+	}
+	return -1
+}
+
+func GetKeysOfMap(m map[string]interface{}) []string{
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }

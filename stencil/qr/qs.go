@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"stencil/helper"
 	"strings"
+	
 )
 
 func CreateQS(QR *QR) *QS {
@@ -28,12 +29,16 @@ func (self *QS) ColSimple(colNames string) { // users.id, users.*, user_id, pers
 					for _, pair := range mappedcols {
 						pColName := fmt.Sprintf("%s.%s as \"%s.%s\"", self.getTableAlias(table, ptab), pair[0], table, pair[1])
 						self.Columns = append(self.Columns, pColName)
+						pSizeColName := fmt.Sprintf("pg_column_size(%s.%s) as \"%s.%s\"", self.getTableAlias(table, ptab), pair[0], table, pair[1])
+						self.ColumnsWSize = append(self.ColumnsWSize, pSizeColName)
 					}
 				}
 			} else {
 				ptab, pcol := self.QR.GetPhyTabCol(col)
 				pColName := fmt.Sprintf("%s.%s as \"%s.%s\"", self.getTableAlias(table, ptab), pcol, table, column)
 				self.Columns = append(self.Columns, pColName)
+				pSizeColName := fmt.Sprintf("pg_column_size(%s.%s) as \"%s.%s\"", self.getTableAlias(table, ptab), pcol, table, column)
+				self.ColumnsWSize = append(self.ColumnsWSize, pSizeColName)
 			}
 		}
 	}
@@ -47,8 +52,10 @@ func (self *QS) ColAlias(col, alias string) { //"users.id", "user_id"
 	} else {
 		table := col[:i]
 		ptab, pcol := self.QR.GetPhyTabCol(col)
-		pColName := fmt.Sprintf("%s.%s as %s", self.getTableAlias(table, ptab), pcol, alias)
+		pColName := fmt.Sprintf("%s.%s as \"%s\"", self.getTableAlias(table, ptab), pcol, alias)
 		self.Columns = append(self.Columns, pColName)
+		pSizeColName := fmt.Sprintf("pg_column_size(%s.%s) as \"%s\"", self.getTableAlias(table, ptab), pcol, alias)
+		self.ColumnsWSize = append(self.ColumnsWSize, pSizeColName)
 	}
 }
 
@@ -108,7 +115,8 @@ func (self *QS) FromSimple(table string) {
 	// fmt.Println(table, "=>", phyTab)
 
 	prev := ""
-	for ptab := range phyTab {
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+	for _,ptab := range phyTabKeys {
 		if _, ok := self.seen[ptab]; !ok {
 			if prev == "" {
 				self.From += fmt.Sprintf(" %s %s ", ptab, self.getTableAlias(table, ptab))
@@ -131,7 +139,10 @@ func (self *QS) LTable(table, alias string) {
 	seen := make(map[string]bool)
 	prev, from := "", ""
 
-	for ptab, mappedcols := range phyTab {
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+
+	for _, ptab := range phyTabKeys {
+		mappedcols := phyTab[ptab]
 		ptabAlias := self.getTableAlias(table, ptab)
 		for _, pair := range mappedcols {
 			pColName := fmt.Sprintf("%s.%s as \"%s\"", ptabAlias, pair[0], pair[1])
@@ -192,7 +203,9 @@ func (self *QS) FromJoin(table, condition string) {
 
 	prev := curr_tab
 
-	for ptab := range phyTab {
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+
+	for _, ptab := range phyTabKeys {
 		// if _, ok := self.seen[ptab]; !ok {
 		if !strings.EqualFold(curr_tab, ptab) {
 			self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
@@ -224,8 +237,8 @@ func (self *QS) FromJoinList(table string, conditions []string) {
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
 
 	prev := curr_tab
-
-	for ptab := range phyTab {
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+	for _, ptab := range phyTabKeys {
 		// if _, ok := self.seen[ptab]; !ok {
 		if !strings.EqualFold(curr_tab, ptab) {
 			self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
@@ -363,6 +376,29 @@ func (self *QS) LimitResult(limit string) {
 
 func (self *QS) GenSQL() string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
+	if len(self.Where) > 0 {
+		sql += fmt.Sprintf("WHERE %s ", self.Where)
+	}
+	if len(self.Group) > 0 {
+		sql += fmt.Sprintf("GROUP BY %s ", self.Group)
+	}
+	if len(self.Order) > 0 {
+		sql += fmt.Sprintf("ORDER BY %s ", self.Order)
+	}
+	if len(self.Limit) > 0 {
+		sql += fmt.Sprintf("LIMIT %s ", self.Limit)
+	}
+	// fmt.Println("WHERE", self.Where)
+	// fmt.Println("GROUPBY", self.Group)
+	// fmt.Println("ORDERBY", self.Order)
+	// fmt.Println(sql)
+	return sql
+}
+
+func (self *QS) GenSQLSize() string {
+	
+	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.ColumnsWSize, ","), self.From)
+	
 	if len(self.Where) > 0 {
 		sql += fmt.Sprintf("WHERE %s ", self.Where)
 	}

@@ -11,7 +11,7 @@ import (
 	"log"
 	"reflect"
 	"strings"
-
+	"math/rand"
 	_ "github.com/lib/pq" // postgres driver
 )
 
@@ -497,6 +497,19 @@ func GetPK(app, table string) []string {
 	}
 	rows.Close()
 	return result
+}
+
+func GetNewRowID(dbConn *sql.DB) int32 {
+	
+	var rowid int32
+	for{
+		rowid = rand.Int31n(2147483647)
+		q := "SELECT rowid FROM row_desc WHERE rowid = $1"
+		if v, err := DataCall1(dbConn, q, rowid); err == nil && v == nil {
+			break
+		}
+	}
+	return rowid
 }
 
 func GetAllColsOfRows(dbConn *sql.DB, query string) []map[string]string {

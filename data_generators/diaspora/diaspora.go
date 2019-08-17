@@ -5,11 +5,15 @@ import (
 	"diaspora/config"
 	"diaspora/datagen"
 	"diaspora/db"
+	"diaspora/dist"
 	"diaspora/helper"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"os"
+	"strconv"
+	"sync"
 	"time"
 )
 
@@ -24,19 +28,236 @@ func createNewUsers(dbConn *sql.DB, num, thread int) {
 	}
 }
 
-func createNewPostsForUsers(dbConn *sql.DB, users []*datagen.User, thread_num int) {
+func createNewPostsForUsers(dbConn *sql.DB, users []*datagen.User, userPostCounts map[int]int, start, end, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	for uidx, user := range users {
-		num_of_posts := helper.RandomNumber(0, 500)
-		for i := 0; i <= num_of_posts; i++ {
-			log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uidx, len(users), i, num_of_posts))
-			datagen.NewPost(dbConn, user.User_ID, user.Person_ID, user.Aspects)
+	for uid := start - 1; uid < end; uid++ {
+		for n := 0; n < userPostCounts[uid]; n++ {
+			log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Posts %3d/%3d", thread_num, uid, end, n, userPostCounts[uid]))
+			// datagen.NewPost(dbConn, users[uid].User_ID, users[uid].Person_ID, users[uid].Aspects)
 		}
 	}
 }
 
-func createNewMentionsForUsers(dbConn *sql.DB, users []*datagen.User) {
+func createNewCommentsForUsers(dbConn *sql.DB, users []*datagen.User, userCommentCounts map[int]int, start, end, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// log.Fatal(start, end)
+	for uidx := start; uidx < end; uidx++ {
 
+		totalComments := userCommentCounts[uidx]
+
+		if totalComments > 10 {
+			selfComments := int(0.1 * float32(totalComments))
+			uposts := datagen.GetPostsForUserLimit(dbConn, users[uidx].Person_ID, selfComments)
+			for _, upost := range uposts {
+				if _, err := datagen.NewComment(dbConn, upost.ID, users[uidx].Person_ID, upost.Author); err == nil {
+					totalComments--
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Comments %3d/%3d", thread_num, uidx, end, totalComments, userCommentCounts[uidx]))
+				} else {
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Comments %3d/%3d | ERROR: %s", thread_num, uidx, end, totalComments, userCommentCounts[uidx], err))
+				}
+			}
+		}
+
+		friends := datagen.GetFriendsOfUser(dbConn, users[uidx].Person_ID)
+		commentsPerFriend := int(math.Ceil(float64(totalComments) / float64(len(friends))))
+
+		for {
+			for fidx, friend := range friends {
+				fposts := datagen.GetPostsForUserLimit(dbConn, friend.Person_ID, commentsPerFriend)
+				for pidx := 0; pidx < len(fposts) && totalComments > 0; pidx++ {
+					fpost := fposts[pidx]
+					if _, err := datagen.NewComment(dbConn, fpost.ID, users[uidx].Person_ID, fpost.Author); err == nil {
+						totalComments--
+						log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Comments %3d/%3d", thread_num, uidx, end, fidx, len(friends), totalComments, userCommentCounts[uidx]))
+					} else {
+						log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Comments %3d/%3d", thread_num, uidx, end, fidx, len(friends), totalComments, userCommentCounts[uidx]))
+					}
+				}
+			}
+			if totalComments <= 0 {
+				break
+			}
+		}
+	}
+}
+
+func createNewLikesForUsers(dbConn *sql.DB, users []*datagen.User, userLikeCounts map[int]int, start, end, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// log.Fatal(start, end)
+	for uidx := start; uidx < end; uidx++ {
+		personID := users[uidx].Person_ID
+		totalLikes := userLikeCounts[uidx]
+
+		if totalLikes > 10 {
+			selfLikes := int(0.1 * float32(totalLikes))
+			uposts := datagen.GetPostsForUserLimit(dbConn, personID, selfLikes)
+			for _, upost := range uposts {
+				if _, err := datagen.NewLike(dbConn, upost.ID, personID, upost.Author); err == nil {
+					totalLikes--
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Likes %3d/%3d", thread_num, uidx, end, totalLikes, userLikeCounts[uidx]))
+				} else {
+					log.Fatal(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Likes %3d/%3d | u%d-f%d | ERROR: %s", thread_num, uidx, end, totalLikes, userLikeCounts[uidx], personID, upost.Author, err))
+				}
+			}
+		}
+
+		friends := datagen.GetFriendsOfUser(dbConn, personID)
+		likesPerFriend := int(math.Ceil(float64(totalLikes) / float64(len(friends))))
+
+		for fidx, friend := range friends {
+			fposts := datagen.GetPostsForUserLimit(dbConn, friend.Person_ID, likesPerFriend)
+			for pidx := 0; pidx < len(fposts) && totalLikes > 0; pidx++ {
+				fpost := fposts[pidx]
+				if _, err := datagen.NewLike(dbConn, fpost.ID, personID, fpost.Author); err == nil {
+					totalLikes--
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Likes %3d/%3d | u%d-f%d", thread_num, uidx, end, fidx, len(friends), totalLikes, userLikeCounts[uidx], personID, friend.Person_ID))
+				} else {
+					log.Fatal(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Likes %3d/%3d | u%d-f%d | Error: %s", thread_num, uidx, end, fidx, len(friends), totalLikes, userLikeCounts[uidx], personID, friend.Person_ID, err))
+				}
+			}
+		}
+	}
+}
+
+func createNewResharesForUsers(dbConn *sql.DB, users []*datagen.User, userResharesCounts map[int]int, start, end, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// log.Fatal(start, end)
+	for uidx := start; uidx < end; uidx++ {
+		personID := users[uidx].Person_ID
+		totalReshares := userResharesCounts[uidx]
+
+		if totalReshares > 10 {
+			selfLikes := int(0.1 * float32(totalReshares))
+			uposts := datagen.GetPostsForUserLimit(dbConn, personID, selfLikes)
+			for _, upost := range uposts {
+				if _, err := datagen.NewReshare(dbConn, upost, personID); err == nil {
+					totalReshares--
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Reshares %3d/%3d", thread_num, uidx, end, totalReshares, userResharesCounts[uidx]))
+				} else {
+					log.Fatal(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Reshares %3d/%3d | u%d-f%d | ERROR: %s", thread_num, uidx, end, totalReshares, userResharesCounts[uidx], personID, upost.Author, err))
+				}
+			}
+		}
+
+		friends := datagen.GetFriendsOfUser(dbConn, personID)
+		likesPerFriend := int(math.Ceil(float64(totalReshares) / float64(len(friends))))
+
+		for fidx, friend := range friends {
+			fposts := datagen.GetPostsForUserLimit(dbConn, friend.Person_ID, likesPerFriend)
+			for pidx := 0; pidx < len(fposts) && totalReshares > 0; pidx++ {
+				fpost := fposts[pidx]
+				if _, err := datagen.NewReshare(dbConn, fpost, personID); err == nil {
+					totalReshares--
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Reshares %3d/%3d | u%d-f%d", thread_num, uidx, end, fidx, len(friends), totalReshares, userResharesCounts[uidx], personID, friend.Person_ID))
+				} else {
+					log.Fatal(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Reshares %3d/%3d | u%d-f%d | Error: %s", thread_num, uidx, end, fidx, len(friends), totalReshares, userResharesCounts[uidx], personID, friend.Person_ID, err))
+				}
+			}
+		}
+	}
+}
+
+func createNewMessagesForUsers(dbConn *sql.DB, users []*datagen.User, userMessageCounts map[int]int, start, end, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	const dunbarsNumber int = 150
+
+	for uidx := start; uidx < end; uidx++ {
+
+		totalMessages := userMessageCounts[uidx]
+
+		if totalMessages <= 0 {
+			continue
+		}
+
+		friends := datagen.GetFriendsOfUser(dbConn, users[uidx].Person_ID)
+		if len(friends) > dunbarsNumber {
+			friends = friends[:dunbarsNumber]
+		}
+
+		messagesPerFriend := int(math.Ceil(float64(totalMessages) / float64(len(friends))))
+
+		for fidx, friend := range friends {
+			conv_id, _ := datagen.NewConversation(dbConn, users[uidx].Person_ID, friend.Person_ID)
+			for mID := 0; mID < messagesPerFriend; mID++ {
+				// user sends message
+				if _, err := datagen.NewMessage(dbConn, users[uidx].Person_ID, conv_id); err == nil {
+					totalMessages--
+					userMessageCounts[uidx]--
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Messages %3d/%3d", thread_num, uidx, end, fidx, len(friends), totalMessages, userMessageCounts[uidx]))
+				} else {
+					log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Messages %3d/%3d | ERROR: %s", thread_num, uidx, end, fidx, len(friends), totalMessages, userMessageCounts[uidx], err))
+				}
+				// friend sends message
+				if fIDXInList := datagen.FindIndexInUserListByPersonID(users, friend.Person_ID); userMessageCounts[fIDXInList] > 0 {
+					if _, err := datagen.NewMessage(dbConn, friend.Person_ID, conv_id); err == nil {
+						userMessageCounts[fIDXInList]--
+						log.Print(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Messages %3d/%3d | FRIEND REPLY", thread_num, uidx, end, fidx, len(friends), totalMessages, userMessageCounts[uidx]))
+					} else {
+
+					}
+				}
+			}
+			if totalMessages <= 0 {
+				break
+			}
+		}
+	}
+}
+
+func createFriends(dbConn *sql.DB, users []*datagen.User, friendlist map[int][]int, thread_num, start, end int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	uidx := 0
+	// for uid, friends := range friendlist {
+	for i := start; i < end; i++ {
+		user1 := users[i]
+		for fid, friend := range friendlist[i] {
+			user2 := users[friend]
+			aspect_idx := helper.RandomNumber(0, len(user1.Aspects)-1)
+			datagen.FollowUser(dbConn, user1.Person_ID, user2.Person_ID, user1.Aspects[aspect_idx])
+			datagen.FollowUser(dbConn, user2.Person_ID, user1.Person_ID, user2.Aspects[aspect_idx])
+			log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d", thread_num, uidx, end-start, fid, len(friendlist[i])))
+		}
+		uidx++
+	}
+}
+
+func generateFriendships(dbConn *sql.DB, users []*datagen.User, allUsers []*datagen.User, thread_num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	totalUsers, countAllUsers := len(users), len(allUsers)
+	bucketsRequired := dist.GetFriendsBuckets(countAllUsers)
+	for uidx, user := range users {
+		bucketsGenerated := datagen.GetFriendsDistribution(dbConn)
+		if lower_bound, upper_bound := dist.GetBoundsForBuckets(bucketsGenerated, bucketsRequired); lower_bound > 0 && upper_bound > 0 {
+			if existing_friends := datagen.GetTotalNumberOfFriendsOfUser(dbConn, user.Person_ID); existing_friends < lower_bound {
+				number_of_friends := helper.RandomNumber(lower_bound, upper_bound)
+				indices := rand.Perm(countAllUsers)
+				loop_count := number_of_friends
+				for count := 0; count < loop_count; count++ {
+					if existing_friends = datagen.GetTotalNumberOfFriendsOfUser(dbConn, user.Person_ID); existing_friends < number_of_friends {
+						log.Println(fmt.Sprintf("Thread # %3d | Users: %3d/%3d | Friends %3d/%3d | Bounds %3d-%3d", thread_num, uidx, totalUsers, existing_friends, number_of_friends, lower_bound, upper_bound))
+						user2 := allUsers[indices[count]]
+						if user.Person_ID != user2.Person_ID {
+							aspect_idx := helper.RandomNumber(0, len(user.Aspects)-1)
+							datagen.FollowUser(dbConn, user.Person_ID, user2.Person_ID, user.Aspects[aspect_idx])
+							datagen.FollowUser(dbConn, user2.Person_ID, user.Person_ID, user.Aspects[aspect_idx])
+						} else {
+							loop_count++
+						}
+					} else {
+						break
+					}
+				}
+			}
+		} else {
+			log.Println("Negative bounds returned. Buckets completed?")
+			fmt.Println(bucketsRequired)
+			log.Fatal(bucketsGenerated)
+			break
+		}
+	}
 }
 
 func makeUsersFriends(dbConn *sql.DB, users []*datagen.User, thread_num int) {
@@ -105,7 +326,7 @@ func interactWithPosts(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 
 	num_users := len(users)
 	for uidx, user := range users {
-		friends_of_user := datagen.GetFriendsOfUser(dbConn, user.User_ID)
+		friends_of_user := datagen.GetFriendsOfUser(dbConn, user.Person_ID)
 		posts := datagen.GetPostsForUser(dbConn, user.Person_ID)
 		if len(posts) <= 0 || len(friends_of_user) <= 0 {
 			continue
@@ -119,7 +340,7 @@ func interactWithPosts(dbConn *sql.DB, users []*datagen.User, thread_num int) {
 					datagen.NewLike(dbConn, post.ID, friend.Person_ID, user.Person_ID)
 				}
 				if helper.RandomNumber(1, 100)%10 == 0 { // 10%, Friend Reshares The Post
-					datagen.NewReshare(dbConn, *post, friend.Person_ID)
+					datagen.NewReshare(dbConn, post, friend.Person_ID)
 				}
 				if helper.RandomNumber(1, 100)%5 == 0 { // 20%, Comments On The Post
 					loopcount := helper.RandomNumber(1, 10)
@@ -197,46 +418,129 @@ func runMakeUsersFriends() {
 	}
 }
 
-func runCreateNewPosts() {
+func AddFriendsForUser(person_id, lower_bound, upper_bound, limit string) {
+
+	lim, _ := strconv.Atoi(limit)
 	dbConn := db.GetDBConn(config.APP_NAME)
-	users := datagen.GetAllUsersWithAspects(dbConn)
-	num_users := len(users)
-	inc := 500
-	for i, j := 0, inc; i < num_users && j < num_users; i, j = j+1, j+inc {
-		thread_num := j / inc
-		go createNewPostsForUsers(dbConn, users[i:j], thread_num)
+	user := datagen.GetUserByPersonID(dbConn, person_id)
+	usersInRange := datagen.GetUsersWithFriendCountInRange(dbConn, lower_bound, upper_bound)
+	for i, friend := range usersInRange {
+		aspect_idx := helper.RandomNumber(0, len(user.Aspects)-1)
+		datagen.FollowUser(dbConn, user.Person_ID, friend.Person_ID, user.Aspects[aspect_idx])
+		datagen.FollowUser(dbConn, friend.Person_ID, user.Person_ID, friend.Aspects[aspect_idx])
+		log.Println(fmt.Sprintf("Friends %3d/%3d", i, len(usersInRange)))
+		if i == lim {
+			break
+		}
 	}
 
-	for {
-		fmt.Scanln()
+}
+
+func runGenerateFriendships() {
+
+	var wg sync.WaitGroup
+
+	numThreads := 100
+	dbConn := db.GetDBConn(config.APP_NAME)
+	users := datagen.GetAllUsersWithAspects(dbConn)
+	numUsers := datagen.GetTotalNumberOfUsers(dbConn)
+	friendlist := dist.AssignFriendsToUsers(numUsers)
+	dist.VerifyFriendsDistribution(friendlist)
+	log.Fatal(datagen.GetFriendsDistribution(dbConn))
+	log.Fatal()
+	time.Sleep(time.Duration(10) * time.Second)
+	inc := int(numUsers / numThreads)
+	for t, i, j := 1, 0, inc; t <= numThreads; t, i, j = t+1, j+1, j+inc {
+		wg.Add(1)
+		go createFriends(dbConn, users, friendlist, t, i, j, &wg)
+
+		// i, j = j+1, j+thread_num
 	}
+
+	wg.Wait()
+	time.Sleep(time.Duration(2) * time.Second)
+	dist.VerifyFriendsDistribution(friendlist)
+	fmt.Println(datagen.GetFriendsDistribution(dbConn))
+}
+
+func runCreateNewPosts(ptype string, totalPosts int) {
+
+	var wg sync.WaitGroup
+
+	numThreads := 1
+	userPostCounts := dist.AssignPostsToUsers(totalPosts)
+	// log.Fatal(userPostCounts)
+	dbConn := db.GetDBConn(config.APP_NAME)
+	users := datagen.GetUsersOrderedByFriendCount(dbConn)
+	users = users[:len(userPostCounts)]
+	numUsers := len(users)
+	inc := int(numUsers / numThreads)
+	for t, i, j := 1, 0, inc; t <= numThreads; t, i, j = t+1, j+1, j+inc {
+		wg.Add(1)
+		switch ptype {
+		case "posts":
+			{
+				go createNewPostsForUsers(dbConn, users, userPostCounts, i, j, t, &wg)
+			}
+		case "likes":
+			{
+				go createNewLikesForUsers(dbConn, users, userPostCounts, i, j, t, &wg)
+			}
+		case "comments":
+			{
+				go createNewCommentsForUsers(dbConn, users, userPostCounts, i, j, t, &wg)
+			}
+		case "reshares":
+			{
+				go createNewResharesForUsers(dbConn, users, userPostCounts, i, j, t, &wg)
+			}
+		case "messages":
+			{
+				go createNewMessagesForUsers(dbConn, users, userPostCounts, i, j, t, &wg)
+			}
+		}
+	}
+	wg.Wait()
 }
 
 func main() {
+
+	helper.Init()
 
 	arg := os.Args[1]
 
 	switch arg {
 	case "posts":
 		fmt.Println("Creating New Posts!")
-		runCreateNewPosts()
+		runCreateNewPosts("posts", 8030)
 	case "comments":
 		fmt.Println("Interacting With Posts!")
-		runinteractWithPosts()
+		runCreateNewPosts("comments", 13970)
 	case "likes":
 		fmt.Println("Interacting With Posts!")
-		runinteractWithPosts()
+		runCreateNewPosts("likes", 85680)
 	case "reshares":
 		fmt.Println("Interacting With Posts!")
-		runinteractWithPosts()
+		runCreateNewPosts("reshares", 1550)
 	case "messages":
 		fmt.Println("Creating New Messages!")
-		runMakeUsersTalk()
-	case "friends":
+		runCreateNewPosts("messages", 4015)
+		// runMakeUsersTalk()
+	case "makefriends":
 		fmt.Println("Making People Friends!")
-		runMakeUsersFriends()
+		// runMakeUsersFriends()
+	case "genfriends":
+		fmt.Println("Generating Friendships!")
+		runGenerateFriendships()
 	case "newusers":
 		fmt.Println("Creating New Users!")
 		runCreateNewUsers()
+	case "addfriendforpersoninrange":
+		person_id := os.Args[2]
+		lower_bound := os.Args[3]
+		upper_bound := os.Args[4]
+		limit := os.Args[5]
+		fmt.Println("Add New Friends For:", person_id)
+		AddFriendsForUser(person_id, lower_bound, upper_bound, limit)
 	}
 }
