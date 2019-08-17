@@ -27,6 +27,19 @@ func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extra
 	return migrationIDs
 }
 
+func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
+	query := fmt.Sprintf("select migration_id, is_logical from migration_registration where dst_app = '%s' %s;", 
+		appID, extraConditions)
+	log.Println(query)
+
+	migrationIDs, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return migrationIDs
+}
+
 func ConvertFloat64ToString(data []float64) []string {
 	var convertedData []string
 	for _, data1 := range data {
@@ -147,6 +160,7 @@ func transformTableKeyToNormalTypeInDstApp(tableKey map[string]interface{}) (str
 
 func getLogicalRow(AppDBConn *sql.DB, table string, pKey int) map[string]interface{} {
 	query := fmt.Sprintf("select * from %s where id = %d", table, pKey)
+	// log.Println(query)
 	row, err2 := db.DataCall1(AppDBConn, query)
 	if err2 != nil {
 		log.Fatal(err2)

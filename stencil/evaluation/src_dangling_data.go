@@ -52,6 +52,8 @@ func getDanglingMessagesNum(evalConfig *EvalConfig, danglingDataStats map[string
 func srcDanglingData(evalConfig *EvalConfig, migrationID string, table string, pKey int) map[string]int64 {
 	danglingDataStats := make(map[string]int64)
 
+	log.Println("Danling data to check:", table, pKey)
+
 	if table == "comments" {
 		getDanglingLikesNum(evalConfig, danglingDataStats, pKey)
 	} else if table == "posts" {

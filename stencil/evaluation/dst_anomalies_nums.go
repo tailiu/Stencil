@@ -36,6 +36,9 @@ func getAddedAtInEvaluation(evalConfig *EvalConfig, migrationID, dependsOnTable 
 }
 
 func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, added_at time.Time, migrationID string) (map[string]int, map[string]int) {
+	log.Println(table)
+	log.Println(pKey)
+
 	violateStats := make(map[string]int)
 	depNotMigratedStats := make(map[string]int)
 
@@ -44,10 +47,8 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 		return violateStats, depNotMigratedStats
 	}
 
-	log.Println(table)
-	// log.Println(pKey)
-
-	row := getLogicalRow(evalConfig.OldMastodonDBConn, table, pKey)
+	row := getLogicalRow(evalConfig.MastodonDBConn, table, pKey)
+	log.Println(row)
 
 	checkFavourte := 0
 	for _, dependsOnTableKey := range dependsOnTableKeys {
@@ -65,7 +66,7 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 		dependsOnKey := strings.Split(strings.Split(dependsOnTableKey, ":")[1], ".")[1]
 		query := fmt.Sprintf("select * from %s where %s = %d", dependsOnTable, dependsOnKey, row[fromAttr].(int64))
 		// log.Println(query)
-		row1, err := db.DataCall1(evalConfig.OldMastodonDBConn, query)
+		row1, err := db.DataCall1(evalConfig.MastodonDBConn, query)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -124,8 +125,8 @@ func GetAnomaliesNumsInDst(evalConfig *EvalConfig, migrationID string) (map[stri
 			IncreaseMapValByMap(depNotMigratedStats, depNotMigratedStats1)
 			
 			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
-			log.Println("Violation Statistics:", violateStats)
-			log.Println("Data depended on not migrated statistics:", depNotMigratedStats)
+			log.Println("Destination Violation Statistics:", violateStats)
+			log.Println("Destination data depended on not migrated statistics:", depNotMigratedStats)
 			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 	}

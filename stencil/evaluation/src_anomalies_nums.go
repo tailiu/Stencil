@@ -110,9 +110,9 @@ func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string) (map[stri
 			IncreaseMapValByMap(violateStats, violateStats1)
 			interruptionDuration = append(interruptionDuration, interruptionDuration1...)
 			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
-			log.Println("Violation Statistics:", violateStats)
-			log.Println("Interruption Duration:", interruptionDuration)
-			log.Println("Dangling Statistics:", danglingDataStats)
+			log.Println("Source Violation Statistics:", violateStats)
+			log.Println("Source Interruption Duration:", interruptionDuration)
+			log.Println("Source Dangling Statistics:", danglingDataStats)
 			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 	}

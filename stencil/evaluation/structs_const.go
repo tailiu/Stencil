@@ -9,7 +9,10 @@ const (
 	stencilDB = "stencil"
 	mastodon = "mastodon"
 	diaspora = "diaspora"
-	old_mastodon = "old_mastodon"
+
+	INDEPENDENT = "0"
+	CONSISTENT = "1"
+	DELETION = "3"
 )
 
 // Messages will be handled in special ways
@@ -41,28 +44,16 @@ type EvalConfig struct {
 	Dependencies map[string]map[string][]string
 	StencilDBConn *sql.DB
 	MastodonDBConn *sql.DB
-	OldMastodonDBConn *sql.DB
 	DiasporaDBConn *sql.DB
 	MastodonAppID string
 	DiasporaAppID string
 }
 
-// type DstViolateStats struct {
-//     Messages.conversation_id:conversations.id  int `json:"messages.conversation_id:conversations.id"`
-// }
-
-// type DstDepNotMigratedStats struct {
-//     Number int    `json:"number"`
-//     Title  string `json:"title"`
-// }
-
-
 func InitializeEvalConfig() *EvalConfig {
 	evalConfig := new(EvalConfig)
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
-	evalConfig.MastodonDBConn = db.GetDBConn(mastodon)
+	evalConfig.MastodonDBConn = db.GetDBConn2(mastodon)
 	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
-	evalConfig.OldMastodonDBConn = db.GetDBConn(old_mastodon)
 	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, mastodon)
 	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)
 	evalConfig.Dependencies = dependencies
