@@ -118,14 +118,19 @@ func (t Thread) AggressiveMigration(userid int, srcApp, dstApp string, node *Dep
 			addUserToApplication(userid, dstApp)
 		}
 		// randomlyGetAdjacentNode(node) not only gets a migrating user's data but also some data shared by other users
-		for child := randomlyGetAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
+		for child := randomlyGetUnvisitedAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
 			AggressiveMigration(userid, srcApp, dstApp, child)
 		}
 		acquirePredicateLock(*node)
 		for child := randomlyGetAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
 			AggressiveMigration(userid, srcApp, dstApp, child)
 		}
-		migrateNode(*node) // Log before migrating
+		// Log before migrating, and migrate nodes belonging to the migrating user and shared to the user
+		if node.owner == user_id || node.ShareToUser(user_id) {
+			migrateNode(*node) 
+		} else {
+			markAsVisited(*node)
+		}
 		releasePredicateLock(*node)
 	catch NodeNotFound:
 		t.releaseAllLocks()

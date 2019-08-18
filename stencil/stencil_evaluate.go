@@ -40,9 +40,10 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 	// filterConditions := "and user_id in (4386, 3300, 3344, 3503, 3482, 3924, 4134, 4322, 5001, 5323, 5370, 5458, 5574, 5602, 6012, 6431, 6853, 7168, 7251, 7488, 7557, 8239, 8263, 8506, 8563, 8664, 8894, 9017, 9051, 9739, 9716, 9831, 9857, 10082, 10286, 10781, 10795, 10979, 11141, 11318, 11321, 11351, 11348, 11455, 11487, 12536, 12724, 12726, 12823, 12789, 12963, 13158, 13879, 14031, 14226, 14351, 14777, 15265, 15401, 15495, 15505, 15517, 15579, 16043, 16127, 16900, 16994, 17209, 17279, 17639, 17680, 17732, 17691, 17809, 18208, 18569, 19079, 19372, 19563, 19613, 19656, 19746, 20265, 20269, 20254, 20448, 21119, 21537, 22535)"
 
 	// 1 migration
-	// filterConditions := "and start_time between '2019-08-16 12:20:00' and '2019-08-16 12:21:00' and is_logical = 'true' "
+	// filterConditions := "and start_time between '2019-08-17 17:17:00' and '2019-08-17 17:18:00' and is_logical = 'true' "
+	filterConditions := "and user_id = 1008 and is_logical = 't'"
 	// 10 simulataneous logical migrations
-	filterConditions := "and start_time between '2019-08-16 13:30:00' and '2019-08-16 13:31:00' and is_logical = 'true' "
+	// filterConditions := "and start_time between '2019-08-16 13:30:00' and '2019-08-16 13:31:00' and is_logical = 'true' "
 
 	totalSrcDanglingDataStats := make(map[string]int64)
 	totalSrcVoliateStats := make(map[string]int)
@@ -85,12 +86,14 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 		totalMigratedDataSize += migratedDataSize
 	}
 
+	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 	log.Println("Destination Total Violate Statistics:", totalDstViolateStats)
 	log.Println("Destination Total Data depended on not migrated statistics:", totalDstDepNotMigratedStats)
 	log.Println("Source Total Violate Statistics:", totalSrcVoliateStats)
 	log.Println("Source Total Interruption statistics:", totalSrcInterruptionDuration)
 	log.Println("Source Total Dangling Data statistics:", totalSrcDanglingDataStats)
 	log.Println("Total Migrated data size(Bytes):", totalMigratedDataSize)
+	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
 	// evaluation.WriteStrArrToLog(interruptionDurationFile, evaluation.ConvertDurationToString(totalSrcInterruptionDuration))
 
