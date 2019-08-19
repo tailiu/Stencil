@@ -39,7 +39,8 @@ func CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logT
 		SrcDBConn:    db.GetDBConn(srcApp),
 		DstDBConn:    db.GetDBConn2(dstApp),
 		logTxn:       logTxn,
-		mtype:        mtype}
+		mtype:        mtype,
+		visitedNodes: make(map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
 		log.Fatal(err)
 	}
@@ -264,13 +265,13 @@ func (self *LMigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*D
 			}
 			sql += " ORDER BY random()"
 			// log.Fatal(sql)
-			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {
-				if len(data) > 0 {
+			if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
+				for _, datum := range data {
 					newNode := new(DependencyNode)
 					newNode.Tag = child
 					newNode.SQL = sql
-					newNode.Data = data
-					if !self.wList.IsAlreadyWaiting(*newNode) {
+					newNode.Data = datum
+					if !self.wList.IsAlreadyWaiting(*newNode) && !self.IsVisited(newNode){
 						return newNode, nil
 					}
 				}
@@ -367,6 +368,46 @@ func (self *LMigrationWorker) CheckMappingConditions(toTable config.ToTable, nod
 		}
 	}
 	return breakCondition
+}
+
+func (self *LMigrationWorker) IsNodeOwnedByRoot(node *DependencyNode) bool {
+
+	if ownership := self.SrcAppConfig.GetOwnership(node.Tag.Name, self.root.Tag.Name); ownership != nil {
+		for _, condition := range ownership.Conditions{	
+			tagAttr, err := node.Tag.ResolveTagAttr(condition.TagAttr)
+			if err != nil {
+				log.Fatal("Resolving TagAttr in IsNodeOwnedByRoot", err, node.Tag.Name, condition.TagAttr)
+				break
+			}
+			depOnAttr, err := self.root.Tag.ResolveTagAttr(condition.DependsOnAttr)
+			if err != nil {
+				log.Fatal("Resolving depOnAttr in IsNodeOwnedByRoot",err, node.Tag.Name, condition.DependsOnAttr)
+				break
+			}
+			if nodeVal, err := node.GetValueForKey(tagAttr); err == nil {
+				if rootVal, err := self.root.GetValueForKey(depOnAttr); err == nil {
+					if !strings.EqualFold(nodeVal, rootVal) {
+						return false
+					} 
+					// else {
+					// 	fmt.Println(nodeVal, "==", rootVal)
+					// }
+				}else{
+					fmt.Println("Ownership Condition Key in Root Data:", depOnAttr, "doesn't exist!")
+					fmt.Println("root data:", self.root.Data)
+					log.Fatal("stop here and check ownership conditions wrt root")	
+				}
+			} else {
+				fmt.Println("Ownership Condition Key", tagAttr, "doesn't exist!")
+				fmt.Println("node data:", node.Data)
+				fmt.Println("node sql:", node.SQL)
+				log.Fatal("stop here and check ownership conditions")
+			}
+		}
+	}else{
+		// log.Fatal("Ownership not found in IsNodeOwnedByRoot:", node.Tag.Name)
+	}
+	return true
 }
 
 func (self *LMigrationWorker) GetMappedData(toTable config.ToTable, node *DependencyNode) (string, string, []interface{}, string, string, *transaction.UndoAction) {
@@ -607,6 +648,35 @@ func (self *LMigrationWorker) HandleLeftOverWaitingNodes() {
 	}
 }
 
+func (self *LMigrationWorker) IsVisited(node *DependencyNode) bool{
+	for _, tagMember := range node.Tag.Members {
+		idCol := fmt.Sprintf("%s.id", tagMember)
+		if _, ok := node.Data[idCol]; ok {
+			srcID := fmt.Sprint(node.Data[idCol])
+			if _, ok := self.visitedNodes[srcID]; ok {
+				return true
+			}
+		} else {
+			log.Println("In: IsVisited | node.Data =>", node.Data)
+			log.Fatal(idCol, "NOT PRESENT IN NODE DATA")
+		}
+	}
+	return false
+}
+
+func (self *LMigrationWorker) MarkAsVisited(node *DependencyNode) {
+	for _, tagMember := range node.Tag.Members {
+		idCol := fmt.Sprintf("%s.id", tagMember)
+		if _, ok := node.Data[idCol]; ok {
+			srcID := fmt.Sprint(node.Data[idCol])
+			self.visitedNodes[srcID] = true
+		} else {
+			log.Println("In: MarkAsVisited | node.Data =>", node.Data)
+			log.Fatal(idCol, "NOT PRESENT IN NODE DATA")
+		}
+	}
+}
+
 func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID int) error {
 
 	// if strings.EqualFold(node.Tag.Name, "root") && !db.CheckUserInApp(self.uid, self.DstAppConfig.AppID, self.DstDBConn) {
@@ -629,19 +699,25 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 	}
 
 	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-	if err := self.MigrateNode(node, false); err == nil {
-		log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-	} else {
-		if strings.EqualFold(err.Error(), "2") {
-			log.Println(fmt.Sprintf("x%2dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+	
+	if self.IsNodeOwnedByRoot(node){
+		if err := self.MigrateNode(node, false); err == nil {
+			log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 		} else {
-			log.Println(fmt.Sprintf("x%2dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-			if strings.EqualFold(err.Error(), "0") {
-				log.Println(err)
-				return err
+			if strings.EqualFold(err.Error(), "2") {
+				log.Println(fmt.Sprintf("x%2dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+			} else {
+				log.Println(fmt.Sprintf("x%2dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				if strings.EqualFold(err.Error(), "0") {
+					log.Println(err)
+					return err
+				}
 			}
 		}
+	}else{
+		log.Println(fmt.Sprintf("x%2dx UN-OWNED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	}
+	self.MarkAsVisited(node)
 
 	fmt.Println("------------------------------------------------------------------------")
 
@@ -689,6 +765,11 @@ func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 				}
 			}
 		}
+	}
+	if err := self.MigrateNode(self.root, false); err == nil {
+		log.Println(fmt.Sprintf("x%2dx | MIGRATED  node { %s } From [%s] to [%s]", threadID, self.root.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+	}else{
+		log.Println(fmt.Sprintf("x%2dx | MIGRATED? node { %s } From [%s] to [%s]", threadID, self.root.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	}
 	return nil
 }
