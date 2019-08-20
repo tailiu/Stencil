@@ -17,8 +17,9 @@ const (
 func leftoverVsMigrated(evalConfig *evaluation.EvalConfig) {
 	var data []float64
 	// Need to be changed once data is ready to use
-	filterConditions := "and user_id in (3300, 3344, 3503, 3482, 3924, 4134, 4322, 4386, 4503, 5001, 5323, 5370, 5458, 5574, 5602, 6012, 6431, 6853, 7168, 7251, 7488, 7557, 8239, 8263, 8506, 8563, 8664, 8894, 9017, 9051, 9739, 9716, 9831, 9857, 10082, 10286, 10781, 10795, 10979, 11141, 11318, 11321, 11351, 11348, 11455, 11487, 12536, 12724, 12726, 12823, 12789, 12963, 13158, 13879, 14031, 14226, 14351, 14777, 15265, 15401, 15495, 15505, 15517, 15579, 16043, 16127, 16900, 16994, 17209, 17279, 17639, 17680, 17732, 17691, 17809, 18208, 18569, 19079, 19372, 19563, 19613, 19656, 19746, 20265, 20269, 20254, 20448, 21119, 21537, 22535)"
-	
+	// filterConditions := "and user_id in (3300, 3344, 3503, 3482, 3924, 4134, 4322, 4386, 4503, 5001, 5323, 5370, 5458, 5574, 5602, 6012, 6431, 6853, 7168, 7251, 7488, 7557, 8239, 8263, 8506, 8563, 8664, 8894, 9017, 9051, 9739, 9716, 9831, 9857, 10082, 10286, 10781, 10795, 10979, 11141, 11318, 11321, 11351, 11348, 11455, 11487, 12536, 12724, 12726, 12823, 12789, 12963, 13158, 13879, 14031, 14226, 14351, 14777, 15265, 15401, 15495, 15505, 15517, 15579, 16043, 16127, 16900, 16994, 17209, 17279, 17639, 17680, 17732, 17691, 17809, 18208, 18569, 19079, 19372, 19563, 19613, 19656, 19746, 20265, 20269, 20254, 20448, 21119, 21537, 22535)"
+	filterConditions := " LIMIT 100 "
+
 	for _, dstMigrationID := range evaluation.GetAllMigrationIDsOfAppWithConds(evalConfig.StencilDBConn, evalConfig.MastodonAppID, filterConditions) {
 		migrationID := strconv.FormatInt(dstMigrationID["migration_id"].(int64), 10)		
 		log.Println(migrationID)
@@ -41,16 +42,25 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 
 	// 1 migration
 	// filterConditions := "and start_time between '2019-08-17 17:17:00' and '2019-08-17 17:18:00' and is_logical = 'true' "
-	filterConditions := "and user_id = 1008 and is_logical = 't'"
-	// 10 simulataneous logical migrations
-	// filterConditions := "and start_time between '2019-08-16 13:30:00' and '2019-08-16 13:31:00' and is_logical = 'true' "
+	// filterConditions := "and user_id = 1008 and is_logical = 't'"
+	// 10 simultaneous logical migrations
+	// filterConditions := "and start_time between '2019-08-18 09:42:00' and '2019-08-18 09:43:00' and is_logical = 'true' "
+	// 20 simultaneous logical migrations
+	// filterConditions := "and start_time between '2019-08-18 16:44:00' and '2019-08-18 16:46:00' and is_logical = 'true' "
+	// filterConditions := "and user_id in (1815, 1818, 1006, 1075, 1731, 1032, 1020, 1103, 1041, 1044, 1060, 1819, 1028, 1705, 1107)"
+	// 30 simultaneous logical migrations
+	// 40 simultaneous logical migrations
+	// 50 simultaneous logical migrations
+	// filterConditions := "and registration_id > 464 and is_logical = 'true' "
+	// 100
+	filterConditions := "and registration_id > 514 and is_logical = 'true' "
 
 	totalSrcDanglingDataStats := make(map[string]int64)
 	totalSrcVoliateStats := make(map[string]int)
 	var totalSrcInterruptionDuration []time.Duration
 	totalDstViolateStats := make(map[string]int)
 	totalDstDepNotMigratedStats := make(map[string]int)
-	var totalMigratedDataSize int64
+	// var totalMigratedDataSize int64
 
 	for _, dstMigrationID := range evaluation.GetAllMigrationIDsOfAppWithConds(evalConfig.StencilDBConn, evalConfig.MastodonAppID, filterConditions) {
 		migrationID := strconv.FormatInt(dstMigrationID["migration_id"].(int64), 10)
@@ -71,19 +81,19 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 		evaluation.WriteStrToLog(srcAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(srcViolateStats))
 		evaluation.WriteStrToLog(srcAnomaliesVsMigrationSizeFile, evaluation.ConvertMapInt64ToJSONString(srcDanglingDataStats))
 
-		migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
+		// migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
 
 		log.Println("Destination Violate Statistics:", dstViolateStats)
 		log.Println("Destination Data depended on not migrated statistics:", dstDepNotMigratedStats)
-		log.Println("Migrated data size(Bytes):", migratedDataSize)
+		// log.Println("Migrated data size(Bytes):", migratedDataSize)
 
 		evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(dstViolateStats))
 		evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(dstDepNotMigratedStats))
-		evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertInt64ToString(migratedDataSize))
+		// evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertInt64ToString(migratedDataSize))
 
 		evaluation.IncreaseMapValByMap(totalDstViolateStats, dstViolateStats)
 		evaluation.IncreaseMapValByMap(totalDstDepNotMigratedStats, dstDepNotMigratedStats)
-		totalMigratedDataSize += migratedDataSize
+		// totalMigratedDataSize += migratedDataSize
 	}
 
 	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
@@ -92,7 +102,7 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 	log.Println("Source Total Violate Statistics:", totalSrcVoliateStats)
 	log.Println("Source Total Interruption statistics:", totalSrcInterruptionDuration)
 	log.Println("Source Total Dangling Data statistics:", totalSrcDanglingDataStats)
-	log.Println("Total Migrated data size(Bytes):", totalMigratedDataSize)
+	// log.Println("Total Migrated data size(Bytes):", totalMigratedDataSize)
 	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
 	// evaluation.WriteStrArrToLog(interruptionDurationFile, evaluation.ConvertDurationToString(totalSrcInterruptionDuration))
