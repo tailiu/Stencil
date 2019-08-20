@@ -18,7 +18,7 @@ func (self *AppConfig) CloseDBConn() {
 	self.DBConn.Close()
 }
 
-func (self AppConfig) GetTag(tagName string) (Tag, error) {
+func (self *AppConfig) GetTag(tagName string) (Tag, error) {
 
 	for _, tag := range self.Tags {
 		if strings.EqualFold(tag.Name, tagName) {
@@ -28,7 +28,7 @@ func (self AppConfig) GetTag(tagName string) (Tag, error) {
 	return *new(Tag), nil
 }
 
-func (self AppConfig) GetTagMembers(tagName string) ([]string, error) {
+func (self *AppConfig) GetTagMembers(tagName string) ([]string, error) {
 
 	var tagMembers []string
 
@@ -42,7 +42,7 @@ func (self AppConfig) GetTagMembers(tagName string) ([]string, error) {
 	return tagMembers, nil
 }
 
-func (self Tag) GetTagMembers() []string {
+func (self *Tag) GetTagMembers() []string {
 
 	var tagMembers []string
 
@@ -53,7 +53,7 @@ func (self Tag) GetTagMembers() []string {
 	return tagMembers
 }
 
-func (self AppConfig) GetDependency(tagName string) (Dependency, error) {
+func (self *AppConfig) GetDependency(tagName string) (Dependency, error) {
 
 	for _, dep := range self.Dependencies {
 		if strings.EqualFold(dep.Tag, tagName) {
@@ -63,7 +63,7 @@ func (self AppConfig) GetDependency(tagName string) (Dependency, error) {
 	return *new(Dependency), nil
 }
 
-func (self AppConfig) CheckDependency(tagName, dependsOnTag string) (DependsOn, error) {
+func (self *AppConfig) CheckDependency(tagName, dependsOnTag string) (DependsOn, error) {
 
 	// if deps, err := self.GetDependency(tagName); err == nil {
 	for _, dep := range self.Dependencies {
@@ -79,7 +79,7 @@ func (self AppConfig) CheckDependency(tagName, dependsOnTag string) (DependsOn, 
 	return *new(DependsOn), nil
 }
 
-func (self AppConfig) GetSubDependencies(tagName string) []Dependency {
+func (self *AppConfig) GetSubDependencies(tagName string) []Dependency {
 
 	var deps []Dependency
 
@@ -94,12 +94,12 @@ func (self AppConfig) GetSubDependencies(tagName string) []Dependency {
 	return deps
 }
 
-func (self AppConfig) GetShuffledOwnerships() []Ownership {
+func (self *AppConfig) GetShuffledOwnerships() []Ownership {
 
 	return self.ShuffleOwnerships(self.Ownerships)
 }
 
-func (self AppConfig) GetOrderedOwnerships() []Ownership {
+func (self *AppConfig) GetOrderedOwnerships() []Ownership {
 
 	var orderedOwnerships []Ownership
 	orderOfOwnerships := []string{"post", "like", "comment", "conversation", "message"}
@@ -115,20 +115,29 @@ func (self AppConfig) GetOrderedOwnerships() []Ownership {
 	return orderedOwnerships
 }
 
-func (self AppConfig) GetOwnership(tagName string) (Ownership, error) {
+func (self *AppConfig) GetOwnership(tagName, owner string) *Ownership {
 
 	for _, own := range self.Ownerships {
-		if strings.EqualFold(own.Tag, tagName) {
-			return own, nil
+		if strings.EqualFold(own.Tag, tagName) && strings.EqualFold(own.OwnedBy, owner){
+			return &own
 		}
 	}
-	return *new(Ownership), nil
+	return nil
 }
 
-func (self AppConfig) GetItemsFromKey(tag Tag, key string) (string, string) {
+func (self *AppConfig) GetItemsFromKey(tag Tag, key string) (string, string) {
 	KeyItems := strings.Split(tag.Keys[key], ".")
 	Table, Col := tag.Members[KeyItems[0]], KeyItems[1]
 	return Table, Col
+}
+
+func (self *AppConfig) CheckOwnership(tag string) bool{
+	for _, ownership := range self.Ownerships{
+		if strings.EqualFold(ownership.Tag, tag){
+			return true
+		}
+	}
+	return false
 }
 
 func (tag Tag) ResolveTagAttr(attr string) (string, error) {
@@ -174,7 +183,7 @@ func (self Tag) CreateInDepMap() map[string]map[string][]string {
 	return joinMap
 }
 
-func (self AppConfig) GetTagsByTables(tables []string) []Tag {
+func (self *AppConfig) GetTagsByTables(tables []string) []Tag {
 	var tags []Tag
 	// no member can appear in more than one tag
 	for _, tag := range self.Tags {
@@ -185,7 +194,7 @@ func (self AppConfig) GetTagsByTables(tables []string) []Tag {
 	return tags
 }
 
-func (self AppConfig) GetTagsByTablesExcept(tables []string, tagName string) []Tag {
+func (self *AppConfig) GetTagsByTablesExcept(tables []string, tagName string) []Tag {
 	var tags []Tag
 	// no member can appear in more than one tag
 	for _, tag := range self.Tags {
@@ -198,7 +207,7 @@ func (self AppConfig) GetTagsByTablesExcept(tables []string, tagName string) []T
 	return tags
 }
 
-func (self AppConfig) GetDependsOnTables(tagName string, memberID string) []string {
+func (self *AppConfig) GetDependsOnTables(tagName string, memberID string) []string {
 	var dependsOnTables []string
 	for _, tag := range self.Tags {
 		if tag.Name == tagName {
@@ -235,7 +244,7 @@ func Contains(list []Tag, tagName string) bool {
 	return false
 }
 
-func (self AppConfig) GetTagDisplaySetting(tagName string) (string, error) {
+func (self *AppConfig) GetTagDisplaySetting(tagName string) (string, error) {
 
 	for _, tag := range self.Tags {
 		if tag.Name == tagName {
@@ -250,7 +259,7 @@ func (self AppConfig) GetTagDisplaySetting(tagName string) (string, error) {
 	return "", errors.New("Error: No Tag Found For the Provided TagName")
 }
 
-func (self AppConfig) GetTableByMemberID(tagName string, checkedMemberID string) (string, error) {
+func (self *AppConfig) GetTableByMemberID(tagName string, checkedMemberID string) (string, error) {
 
 	for _, tag := range self.Tags {
 		if tag.Name == tagName {

@@ -49,6 +49,7 @@ type MigrationWorker struct {
 	DBConn       *sql.DB
 	logTxn       *transaction.Log_txn
 	mtype        string
+	visitedNodes map[string]bool
 	// threadID     int
 }
 
@@ -64,5 +65,6 @@ type LMigrationWorker struct {
 	DstDBConn    *sql.DB
 	logTxn       *transaction.Log_txn
 	mtype        string
+	visitedNodes map[string]bool
 	// threadID     int
 }
