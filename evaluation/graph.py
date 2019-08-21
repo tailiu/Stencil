@@ -81,12 +81,27 @@ def allTimeVsSizeGraph():
 
 def cumulativeGraph(data, xlabel, ylabel):
     # data = sorted(data)
-    plt.hist(data, cumulative=1, normed=1, bins=100, histtype='step')
+    # plt.hist(data, cumulative=1, normed=1, bins=100, histtype='step')
     # plt.xticks([i+0.5 for i in years], years)
 
-    plt.grid(True)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    # plt.grid(True)
+    # plt.xlabel(xlabel)
+    # plt.ylabel(ylabel)
+    # plt.show()
+
+    h, edges = np.histogram(data, density=True, bins=100, )
+    h = np.cumsum(h)/np.cumsum(h).max()
+
+    X = edges.repeat(2)[:-1]
+    y = np.zeros_like(X)
+    y[1:] = h.repeat(2)
+
+    fig, ax=plt.subplots()
+    ax.plot(X,y, lw=2)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.grid(True)
+    # ax.legend(loc='upper left')
     plt.show()
 
 def barGraph(x, y, xlabel, ylabel, step):
@@ -96,3 +111,4 @@ def barGraph(x, y, xlabel, ylabel, step):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.show()
+    
