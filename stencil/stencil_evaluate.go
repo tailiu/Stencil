@@ -4,13 +4,13 @@ import (
 	"stencil/evaluation"
 	"log"
 	"strconv"
-	"time"
+	// "time"
 )
 
 const (
 	leftoverVsMigratedFile = "leftoverVsMigrated"
-	srcAnomaliesVsMigrationSizeFile = "srcAnomaliesVsMigrationSize"
-	dstAnomaliesVsMigrationSizeFile = "dstAnomaliesVsMigrationSize"
+	// srcAnomaliesVsMigrationSizeFile = "srcAnomaliesVsMigrationSize"
+	// dstAnomaliesVsMigrationSizeFile = "dstAnomaliesVsMigrationSize"
 	interruptionDurationFile = "interruptionDuration"
 )
 
@@ -53,59 +53,65 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 	// 50 simultaneous logical migrations
 	// filterConditions := "and registration_id > 464 and is_logical = 'true' "
 	// 100
-	filterConditions := "and registration_id > 514 and is_logical = 'true' "
+	// filterConditions := "and registration_id > 514 and is_logical = 'true' "
+	
+	filterConditions := ""
 
-	totalSrcDanglingDataStats := make(map[string]int64)
-	totalSrcVoliateStats := make(map[string]int)
-	var totalSrcInterruptionDuration []time.Duration
-	totalDstViolateStats := make(map[string]int)
-	totalDstDepNotMigratedStats := make(map[string]int)
+	// totalSrcDanglingDataStats := make(map[string]int64)
+	// totalSrcVoliateStats := make(map[string]int)
+	// var totalSrcInterruptionDuration []time.Duration
+	// totalDstViolateStats := make(map[string]int)
+	// totalDstDepNotMigratedStats := make(map[string]int)
 	// var totalMigratedDataSize int64
 
 	for _, dstMigrationID := range evaluation.GetAllMigrationIDsOfAppWithConds(evalConfig.StencilDBConn, evalConfig.MastodonAppID, filterConditions) {
 		migrationID := strconv.FormatInt(dstMigrationID["migration_id"].(int64), 10)
-		log.Println(migrationID)
-
-		dstViolateStats, dstDepNotMigratedStats := evaluation.GetAnomaliesNumsInDst(evalConfig, migrationID)
-		srcViolateStats, srcInterruptionDuration, srcDanglingDataStats := evaluation.GetAnomaliesNumsInSrc(evalConfig, migrationID)
 		
-		log.Println("Source Violate Statistics:", srcViolateStats)
-		log.Println("Source Interruption statistics:", srcInterruptionDuration)
-		log.Println("Source Dangling Statistics:", srcDanglingDataStats)
+		evaluation.AnomaliesDanglingData(migrationID, evalConfig)
+		
+		// migrationID := strconv.FormatInt(dstMigrationID["migration_id"].(int64), 10)
+		// log.Println(migrationID)
 
-		evaluation.IncreaseMapValByMapInt64(totalSrcDanglingDataStats, srcDanglingDataStats)
-		evaluation.IncreaseMapValByMap(totalSrcVoliateStats, srcViolateStats)
-		totalSrcInterruptionDuration = append(totalSrcInterruptionDuration, srcInterruptionDuration...)
+		// dstViolateStats, dstDepNotMigratedStats := evaluation.GetAnomaliesNumsInDst(evalConfig, migrationID)
+		// srcViolateStats, srcInterruptionDuration, srcDanglingDataStats := evaluation.GetAnomaliesNumsInSrc(evalConfig, migrationID)
+		
+		// log.Println("Source Violate Statistics:", srcViolateStats)
+		// log.Println("Source Interruption statistics:", srcInterruptionDuration)
+		// log.Println("Source Dangling Statistics:", srcDanglingDataStats)
 
-		evaluation.WriteStrArrToLog(interruptionDurationFile, evaluation.ConvertDurationToString(srcInterruptionDuration))
-		evaluation.WriteStrToLog(srcAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(srcViolateStats))
-		evaluation.WriteStrToLog(srcAnomaliesVsMigrationSizeFile, evaluation.ConvertMapInt64ToJSONString(srcDanglingDataStats))
+		// evaluation.IncreaseMapValByMapInt64(totalSrcDanglingDataStats, srcDanglingDataStats)
+		// evaluation.IncreaseMapValByMap(totalSrcVoliateStats, srcViolateStats)
+		// totalSrcInterruptionDuration = append(totalSrcInterruptionDuration, srcInterruptionDuration...)
 
-		// migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
+		// evaluation.WriteStrArrToLog(interruptionDurationFile, evaluation.ConvertDurationToString(srcInterruptionDuration))
+		// evaluation.WriteStrToLog(srcAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(srcViolateStats))
+		// evaluation.WriteStrToLog(srcAnomaliesVsMigrationSizeFile, evaluation.ConvertMapInt64ToJSONString(srcDanglingDataStats))
 
-		log.Println("Destination Violate Statistics:", dstViolateStats)
-		log.Println("Destination Data depended on not migrated statistics:", dstDepNotMigratedStats)
-		// log.Println("Migrated data size(Bytes):", migratedDataSize)
+		// // migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
 
-		evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(dstViolateStats))
-		evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(dstDepNotMigratedStats))
-		// evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertInt64ToString(migratedDataSize))
+		// log.Println("Destination Violate Statistics:", dstViolateStats)
+		// log.Println("Destination Data depended on not migrated statistics:", dstDepNotMigratedStats)
+		// // log.Println("Migrated data size(Bytes):", migratedDataSize)
 
-		evaluation.IncreaseMapValByMap(totalDstViolateStats, dstViolateStats)
-		evaluation.IncreaseMapValByMap(totalDstDepNotMigratedStats, dstDepNotMigratedStats)
-		// totalMigratedDataSize += migratedDataSize
+		// evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(dstViolateStats))
+		// evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertMapToJSONString(dstDepNotMigratedStats))
+		// // evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertInt64ToString(migratedDataSize))
+
+		// evaluation.IncreaseMapValByMap(totalDstViolateStats, dstViolateStats)
+		// evaluation.IncreaseMapValByMap(totalDstDepNotMigratedStats, dstDepNotMigratedStats)
+		// // totalMigratedDataSize += migratedDataSize
 	}
 
-	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-	log.Println("Destination Total Violate Statistics:", totalDstViolateStats)
-	log.Println("Destination Total Data depended on not migrated statistics:", totalDstDepNotMigratedStats)
-	log.Println("Source Total Violate Statistics:", totalSrcVoliateStats)
-	log.Println("Source Total Interruption statistics:", totalSrcInterruptionDuration)
-	log.Println("Source Total Dangling Data statistics:", totalSrcDanglingDataStats)
-	// log.Println("Total Migrated data size(Bytes):", totalMigratedDataSize)
-	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+	// log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+	// log.Println("Destination Total Violate Statistics:", totalDstViolateStats)
+	// log.Println("Destination Total Data depended on not migrated statistics:", totalDstDepNotMigratedStats)
+	// log.Println("Source Total Violate Statistics:", totalSrcVoliateStats)
+	// log.Println("Source Total Interruption statistics:", totalSrcInterruptionDuration)
+	// log.Println("Source Total Dangling Data statistics:", totalSrcDanglingDataStats)
+	// // log.Println("Total Migrated data size(Bytes):", totalMigratedDataSize)
+	// log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
-	// evaluation.WriteStrArrToLog(interruptionDurationFile, evaluation.ConvertDurationToString(totalSrcInterruptionDuration))
+	// // evaluation.WriteStrArrToLog(interruptionDurationFile, evaluation.ConvertDurationToString(totalSrcInterruptionDuration))
 
 }
 
