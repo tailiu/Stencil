@@ -347,6 +347,32 @@ func (self *QS) WherePK(PK string) {
 	self.WhereString("AND", fmt.Sprintf("'%s' IN (%s)", PK, strings.Join(pkcols, ",")))
 }
 
+func (self *QS) WhereNotPK(PK string) {
+	var pkcols []string
+	for _, pTables := range self.TableAliases {
+		for _, alias := range pTables {
+			pkcols = append(pkcols, alias+".pk")
+		}
+	}
+	self.WhereString("AND", fmt.Sprintf("'%s' NOT IN (%s)", PK, strings.Join(pkcols, ",")))
+}
+
+func (self *QS) WhereNotPKList(PKList []string) bool {
+	if len(PKList) <= 0{
+		return false
+	}
+	var pkcols []string
+	for _, pTables := range self.TableAliases {
+		for _, alias := range pTables {
+			pkcols = append(pkcols, alias+".pk")
+		}
+	}
+	pksql := fmt.Sprintf("SELECT unnest(array[%s])", strings.Join(PKList, ","))
+	pkcolsql := fmt.Sprintf("SELECT unnest(array[%s])", strings.Join(pkcols, ","))
+	self.WhereString("AND NOT EXISTS ", fmt.Sprintf("((%s) INTERSECT (%s))", pksql, pkcolsql))
+	return true
+}
+
 func (self *QS) GroupBy(tabcol string) {
 	tokens := strings.Split(tabcol, ".")
 	table := tokens[0]
