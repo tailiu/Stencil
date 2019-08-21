@@ -175,9 +175,9 @@ func (self *MigrationWorker) FetchRoot() error {
 			self.root = rootNode
 			return nil
 		} else {
-			log.Println("Problem getting RootNode data:", data)
-			fmt.Println(sql)
-			log.Fatal(err)
+			if err == nil {
+				err = errors.New("no data returned for root node, doesn't exist?")
+			}
 			return err
 		}
 	} else {
@@ -242,7 +242,7 @@ func (self *MigrationWorker) GetBagNodes(tagName, bagpks string) ([]*DependencyN
 	}
 }
 
-func (self *MigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, error) {
+func (self *MigrationWorker) GetOwnedNodes(threadID, limit int) ([]*DependencyNode, error) {
 
 	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
 		log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, own.Tag))
@@ -256,7 +256,7 @@ func (self *MigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, err
 			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
 			qs.WhereAppID(qr.NEXISTS, self.DstAppConfig.AppID)
 			qs.OrderBy("random()")
-			qs.LimitResult("100")
+			qs.LimitResult(fmt.Sprint(limit))
 			sql := qs.GenSQL()
 			if result, err := db.DataCall(self.DBConn, sql); err == nil {
 				var nodes []*DependencyNode
@@ -631,6 +631,22 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 	return nil
 }
 
+func (self *MigrationWorker) SecondPhase(threadID int) error {
+
+	nodelimit := 1
+	for nodes, err := self.GetOwnedNodes(threadID, nodelimit); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID, nodelimit) {
+		if err != nil {
+			return err
+		}
+		for _, node := range nodes {
+			if err := self.DeletionMigration(node, threadID); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (self *MigrationWorker) RegisterMigration(mtype string, number_of_threads int) bool {
 	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.DBConn, false)
 	// db.DeleteExistingMigrationRegistrations(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, self.DBConn)
@@ -665,8 +681,9 @@ func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) erro
 }
 
 func (self *MigrationWorker) ConsistentMigration(threadID int) error {
-
-	for nodes, err := self.GetOwnedNodes(threadID); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID) {
+	
+	nodelimit := 100
+	for nodes, err := self.GetOwnedNodes(threadID, nodelimit); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID, nodelimit) {
 		if err != nil {
 			return err
 		}

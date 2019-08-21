@@ -241,9 +241,9 @@ func (self *LMigrationWorker) FetchRoot() error {
 			self.root = rootNode
 			return nil
 		} else {
-			log.Println("Problem getting RootNode data:", data)
-			fmt.Println(sql)
-			log.Fatal(err)
+			if err == nil {
+				err = errors.New("no data returned for root node, doesn't exist?")
+			}
 			return err
 		}
 	} else {
@@ -283,7 +283,7 @@ func (self *LMigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*D
 	return nil, nil
 }
 
-func (self *LMigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, error) {
+func (self *LMigrationWorker) GetOwnedNodes(threadID, nodelimit int) ([]*DependencyNode, error) {
 
 	for _, own := range self.SrcAppConfig.GetOrderedOwnerships() {
 		log.Println(fmt.Sprintf("x%2dx |         FETCHING  tag  { %s } ", threadID, own.Tag))
@@ -298,7 +298,7 @@ func (self *LMigrationWorker) GetOwnedNodes(threadID int) ([]*DependencyNode, er
 			if restrictions := self.ResolveRestrictions(child); restrictions != "" {
 				sql += restrictions
 			}
-			sql += " ORDER BY random() LIMIT 100"
+			sql += " ORDER BY random() LIMIT " + fmt.Sprint(nodelimit)
 			// log.Fatal(sql)
 			if result, err := db.DataCall(self.SrcDBConn, sql); err == nil {
 				var nodes []*DependencyNode
@@ -724,13 +724,30 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 	return nil
 }
 
+func (self *LMigrationWorker) SecondPhase(threadID int) error {
+
+	nodelimit := 1
+	for nodes, err := self.GetOwnedNodes(threadID, nodelimit); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID, nodelimit) {
+		if err != nil {
+			return err
+		}
+		for _, node := range nodes {
+			if err := self.DeletionMigration(node, threadID); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (self *LMigrationWorker) RegisterMigration(mtype string, number_of_threads int) bool {
 	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.logTxn.DBconn, true)
 }
 
 func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 
-	for nodes, err := self.GetOwnedNodes(threadID); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID) {
+	nodelimit := 100
+	for nodes, err := self.GetOwnedNodes(threadID, nodelimit); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID, nodelimit) {
 		if err != nil {
 			return err
 		}
