@@ -37,6 +37,13 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 						}
 						break
 					}
+					for {
+						if err := mWorker.SecondPhase(thread_id); err != nil {
+							mWorker.RenewDBConn()
+							continue
+						}
+						break
+					}
 				}
 			case migrate.CONSISTENT:
 				{
@@ -128,6 +135,13 @@ func LThreadController(mWorker migrate.LMigrationWorker, threads int) bool {
 				{
 					for {
 						if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
+							mWorker.RenewDBConn()
+							continue
+						}
+						break
+					}
+					for {
+						if err := mWorker.SecondPhase(thread_id); err != nil {
 							mWorker.RenewDBConn()
 							continue
 						}
