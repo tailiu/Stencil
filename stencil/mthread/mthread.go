@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"stencil/migrate"
+	"stencil/evaluation"
 	"strings"
 	"sync"
 )
@@ -67,6 +68,8 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 				}
 
 			}
+			evalConfig := evaluation.InitializeEvalConfig()
+			evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}
@@ -170,6 +173,8 @@ func LThreadController(mWorker migrate.LMigrationWorker, threads int) bool {
 				}
 
 			}
+			evalConfig := evaluation.InitializeEvalConfig()
+			evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}

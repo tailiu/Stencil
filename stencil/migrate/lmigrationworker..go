@@ -75,6 +75,10 @@ func (self *LMigrationWorker) UserID() string {
 	return self.uid
 }
 
+func (self *LMigrationWorker) MigrationID() int {
+	return self.logTxn.Txn_id
+}
+
 func (self *LMigrationWorker) ResolveDependencyConditions(node *DependencyNode, dep config.Dependency, tag config.Tag) string {
 
 	where := ""
