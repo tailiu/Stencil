@@ -467,6 +467,7 @@
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at",
                                         "visibility": "$visibility0",
+                                        "conversation_id": "posts.id",
                                         "reply": "$reply1"
                                     }
                                 },
@@ -500,6 +501,7 @@
                                         "updated_at":"comments.updated_at",
                                         "visibility": "$visibility0",
                                         "reply": "$reply2",
+                                        "conversation_id": "comments.commentable_id",
                                         "in_reply_to_id":"comments.commentable_id"
                                     }
                                 },
