@@ -1857,7 +1857,6 @@ ALTER SEQUENCE public.status_stats_id_seq OWNED BY public.status_stats.id;
 
 --
 -- Name: statuses; Type: TABLE; Schema: public; Owner: mastodon
--- Deleted cols: in_reply_to_id, reply, in_reply_to_account_id and visibility
 --
 
 CREATE TABLE public.statuses (
@@ -1866,15 +1865,19 @@ CREATE TABLE public.statuses (
     text text DEFAULT ''::text NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
+    in_reply_to_id bigint,
     reblog_of_id bigint,
     url character varying,
     sensitive boolean DEFAULT false NOT NULL,
+    visibility integer DEFAULT 0 NOT NULL,
     spoiler_text text DEFAULT ''::text NOT NULL,
+    reply boolean DEFAULT false NOT NULL,
     language character varying,
     conversation_id bigint,
     local boolean,
     account_id bigint NOT NULL,
-    application_id bigint
+    application_id bigint,
+    in_reply_to_account_id bigint
 );
 
 
@@ -1893,60 +1896,6 @@ CREATE SEQUENCE public.statuses_id_seq
 
 
 ALTER TABLE public.statuses_id_seq OWNER TO mastodon;
-
---
--- Name: comments; Type: TABLE; Schema: public; Owner: mastodon
--- This is a copied statuses table without reply, reblog_of_id and visibility
---
-
-CREATE TABLE public.comments (
-    id bigint DEFAULT public.timestamp_id('statuses'::text) NOT NULL,
-    uri character varying,
-    text text DEFAULT ''::text NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    in_reply_to_id bigint,
-    url character varying,
-    sensitive boolean DEFAULT false NOT NULL,
-    spoiler_text text DEFAULT ''::text NOT NULL,
-    language character varying,
-    conversation_id bigint,
-    local boolean,
-    account_id bigint NOT NULL,
-    application_id bigint,
-    in_reply_to_account_id bigint
-);
-
-
-ALTER TABLE public.comments OWNER TO mastodon;
-
-
---
--- Name: messages; Type: TABLE; Schema: public; Owner: mastodon
--- This is a copied statuses table without reblog_of_id and visibility
---
-
-CREATE TABLE public.messages (
-    id bigint DEFAULT public.timestamp_id('statuses'::text) NOT NULL,
-    uri character varying,
-    text text DEFAULT ''::text NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    in_reply_to_id bigint,
-    url character varying,
-    sensitive boolean DEFAULT false NOT NULL,
-    spoiler_text text DEFAULT ''::text NOT NULL,
-    reply boolean DEFAULT false NOT NULL,
-    language character varying,
-    conversation_id bigint,
-    local boolean,
-    account_id bigint NOT NULL,
-    application_id bigint,
-    in_reply_to_account_id bigint
-);
-
-
-ALTER TABLE public.statuses OWNER TO mastodon;
 
 --
 -- Name: statuses_tags; Type: TABLE; Schema: public; Owner: mastodon
@@ -3203,8 +3152,8 @@ COPY public.status_stats (id, status_id, replies_count, reblogs_count, favourite
 -- Data for Name: statuses; Type: TABLE DATA; Schema: public; Owner: mastodon
 --
 
--- COPY public.statuses (id, uri, text, created_at, updated_at, in_reply_to_id, reblog_of_id, url, sensitive, visibility, spoiler_text, reply, language, conversation_id, local, account_id, application_id, in_reply_to_account_id) FROM stdin;
--- \.
+COPY public.statuses (id, uri, text, created_at, updated_at, in_reply_to_id, reblog_of_id, url, sensitive, visibility, spoiler_text, reply, language, conversation_id, local, account_id, application_id, in_reply_to_account_id) FROM stdin;
+\.
 
 
 --
@@ -4013,20 +3962,6 @@ ALTER TABLE ONLY public.status_stats
 ALTER TABLE ONLY public.statuses
     ADD CONSTRAINT statuses_pkey PRIMARY KEY (id);
 
---
--- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: mastodon
---
-
-ALTER TABLE ONLY public.comments
-    ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
-
---
--- Name: messages messages_pkey; Type: CONSTRAINT; Schema: public; Owner: mastodon
---
-
-ALTER TABLE ONLY public.messages
-    ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
-
 
 --
 -- Name: stream_entries stream_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: mastodon
@@ -4627,7 +4562,7 @@ CREATE UNIQUE INDEX index_status_stats_on_status_id ON public.status_stats USING
 -- Name: index_statuses_20180106; Type: INDEX; Schema: public; Owner: mastodon
 --
 
-CREATE INDEX index_statuses_20180106 ON public.statuses USING btree (account_id, id DESC, updated_at);
+CREATE INDEX index_statuses_20180106 ON public.statuses USING btree (account_id, id DESC, visibility, updated_at);
 
 
 --
@@ -4636,15 +4571,12 @@ CREATE INDEX index_statuses_20180106 ON public.statuses USING btree (account_id,
 
 CREATE INDEX index_statuses_on_in_reply_to_account_id ON public.statuses USING btree (in_reply_to_account_id);
 
-CREATE INDEX index_comments_on_in_reply_to_account_id ON public.comments USING btree (in_reply_to_account_id);
-
-CREATE INDEX index_messages_on_in_reply_to_account_id ON public.messages USING btree (in_reply_to_account_id);
 
 --
 -- Name: index_statuses_on_in_reply_to_id; Type: INDEX; Schema: public; Owner: mastodon
 --
 
-CREATE INDEX index_statuses_on_in_reply_to_id ON public.comments USING btree (in_reply_to_id);
+CREATE INDEX index_statuses_on_in_reply_to_id ON public.statuses USING btree (in_reply_to_id);
 
 
 --
