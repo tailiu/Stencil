@@ -484,6 +484,15 @@
                                         "favourites_count": "posts.likes_count",
                                         "reblogs_count": "posts.reshares_count"
                                     }
+                                },
+                                {
+                                    "table": "conversations",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id":"posts.id",
+                                        "created_at":"posts.created_at",
+                                        "updated_at":"posts.updated_at"
+                                    }
                                 }
                             ]
                         },
