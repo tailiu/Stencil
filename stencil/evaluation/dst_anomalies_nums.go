@@ -50,7 +50,7 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 	row := getLogicalRow(evalConfig.MastodonDBConn, table, pKey)
 	log.Println(row)
 
-	checkFavourte := 0
+	// checkFavourte := 0
 	for _, dependsOnTableKey := range dependsOnTableKeys {
 		// log.Println(dependsOnTableKey)
 		statsKey := table + "." + dependsOnTableKey
@@ -72,17 +72,7 @@ func dstViolateDependencies(evalConfig *EvalConfig, table string, pKey int, adde
 		}
 		// This can happen when data depended on is not migrated
 		if row1["id"] == nil {
-			// This works when commneting or favouriting on other's data or on user's own data
-			if table == "favourites" { 
-				if checkFavourte != 1 {
-					checkFavourte += 1
-				} else {
-					favourteStatsKey := "favourites.status_id:statuses.id:comments.id"
-					increaseMapValOneByKey(depNotMigratedStats, favourteStatsKey)
-				}
-			} else {
-				increaseMapValOneByKey(depNotMigratedStats, statsKey)
-			}
+			increaseMapValOneByKey(depNotMigratedStats, statsKey)
 			log.Println("dependsOn is nil!!")
 			continue
 		}

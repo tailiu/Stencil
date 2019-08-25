@@ -17,7 +17,7 @@ func getCounts(dbConn *sql.DB, query string) int64 {
 }
 
 func getDanglingLikesNum(evalConfig *EvalConfig, danglingDataStats map[string]int64, pKey int) {
-	key := "likes:comments:posts"
+	key := "likes:posts"
 	query := fmt.Sprintf("SELECT count(*) from likes where target_id = %d and mark_as_delete = false",
 	pKey)
 	data := getCounts(evalConfig.DiasporaDBConn, query)
@@ -52,7 +52,7 @@ func getDanglingMessagesNum(evalConfig *EvalConfig, danglingDataStats map[string
 func srcDanglingData(evalConfig *EvalConfig, migrationID string, table string, pKey int) map[string]int64 {
 	danglingDataStats := make(map[string]int64)
 
-	log.Println("Danling data to check:", table, pKey)
+	log.Println("Dangling data to check:", table, pKey)
 
 	if table == "comments" {
 		getDanglingLikesNum(evalConfig, danglingDataStats, pKey)
