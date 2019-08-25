@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
+func ThreadController(mWorker migrate.MigrationWorker, threads int, evalConfig *evaluation.EvalConfig) bool {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
@@ -68,8 +68,6 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 				}
 
 			}
-			evalConfig := evaluation.InitializeEvalConfig()
-			evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}
@@ -111,10 +109,13 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 	if mWorker.MType() == migrate.DELETION {
 		mWorker.HandleLeftOverWaitingNodes()
 	}
+
+	evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
+	
 	return finished
 }
 
-func LThreadController(mWorker migrate.LMigrationWorker, threads int) bool {
+func LThreadController(mWorker migrate.LMigrationWorker, threads int, evalConfig *evaluation.EvalConfig) bool {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
@@ -173,8 +174,6 @@ func LThreadController(mWorker migrate.LMigrationWorker, threads int) bool {
 				}
 
 			}
-			evalConfig := evaluation.InitializeEvalConfig()
-			evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}
@@ -198,5 +197,8 @@ func LThreadController(mWorker migrate.LMigrationWorker, threads int) bool {
 	if mWorker.MType() == migrate.DELETION {
 		mWorker.HandleLeftOverWaitingNodes()
 	}
+
+	evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
+	
 	return finished
 }
