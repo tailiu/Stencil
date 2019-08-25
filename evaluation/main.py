@@ -2,11 +2,12 @@ import graph as g
 import proc_data as pd
 import numpy as np
 
-logDir = "../stencil/evaluation/_logs/"
+logDir = "../stencil/evaluation/logs/"
 leftoverVsMigratedFile = "leftoverVsMigrated"
 interruptionTimeFile = "interruptionDuration"
 dstAnomalies = "dstAnomaliesVsMigrationSize"
 srcAnomalies = "srcAnomaliesVsMigrationSize"
+cumNum = 1000
 
 def readFile1(filePath):
     data = []
@@ -33,10 +34,9 @@ def readFile3(filePath):
         for _, line in enumerate(f1):
             if line == "\n":
                 continue
-            e = pd.convertToJSON(line.rstrip())
+            obj = pd.convertToJSON(line.rstrip())
             # print type(e)
-            if "likes:comments:posts" in e:
-                print e["likes:comments:posts"]
+            data.append(obj)
     return data
 
 def leftoverCDF():
@@ -47,16 +47,99 @@ def interruptionTimeCDF():
     data = readFile2(logDir + interruptionTimeFile)
     g.cumulativeGraph(data, "Service interruption time (s)", "Cumulative probability")
 
-def getCumSum():
-    arr = [1, 5, 6, 9]
-    y = np.cumsum(arr)
-    y = np.arange(10, 1011)
-    x = np.arange(1, 1001)
-    print y
-    print x
-    readFile3(logDir + srcAnomalies)
-    g.line(x, y, "Number of migrated users", "hahah", "good day")
+def returnNumOrZero(data, key):
+    if key in data:
+        return data[key]
+    else:
+        return 0
+
+def getDanglingDataInSrc(data):
+    danglingLikes = []
+    danglingComments = []
+    danglingMessages = []
+    for i, data1 in enumerate(data):
+        if i % 2 == 1:
+            danglingLikes.append(returnNumOrZero(data1, "likes:posts"))
+            danglingComments.append(returnNumOrZero(data1, "comments:posts"))
+            danglingMessages.append(returnNumOrZero(data1, "messages:conversations"))
+    return danglingLikes, danglingComments, danglingMessages
+
+def getDanglingDataInDst(data):
+    danglingStatuses = []
+    danglingFav = []
+    for i, data1 in enumerate(data):
+        if i % 2 == 1:
+            danglingStatuses.append(returnNumOrZero(data1, "statuses.conversation_id:conversations.id"))
+            danglingFav.append(returnNumOrZero(data1, "favourites.status_id:statuses.id"))
+    return danglingStatuses, danglingFav
+
+def danglingDataCumSum():
+    srcData = readFile3(logDir + srcAnomalies)
+    dstData = readFile3(logDir + dstAnomalies)
+
+    danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrc(srcData)
+    danglingLikesCS = np.cumsum(danglingLikes)
+    danglingCommentsCS = np.cumsum(danglingComments)
+    danglingMessagesCS = np.cumsum(danglingMessages)
+
+    danglingStatuses, danglingFav = getDanglingDataInDst(dstData)
+    danglingStatusesCS = np.cumsum(danglingStatuses)
+    danglingFavCS = np.cumsum(danglingFav)
+
+    x = np.arange(1, cumNum + 1)
+
+    g.mulLinesDanglingData(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingStatusesCS, danglingFavCS)
+
+def getServiceInterruptionData(data):
+    likesAfterPosts = []
+    commentsAfterPosts = []
+    messagesAfterConversations = []
+
+    for i, data1 in enumerate(data):
+        if i % 2 == 0:
+            likesAfterPosts.append(returnNumOrZero(data1, "likes.target_id:posts.id"))
+            commentsAfterPosts.append(returnNumOrZero(data1, "comments.commentable_id:posts.id"))
+            messagesAfterConversations.append(returnNumOrZero(data1, "messages.conversation_id:conversations.id"))
+    return likesAfterPosts, commentsAfterPosts, messagesAfterConversations
+
+def serviceInterruptionCumSum():
+    data = readFile3(logDir + srcAnomalies)
+    
+    likesAfterPosts, commentsAfterPosts, messagesAfterConversations = getServiceInterruptionData(data)
+    likesAfterPostsCS = np.cumsum(likesAfterPosts)
+    commentsAfterPostsCS = np.cumsum(commentsAfterPosts)
+    messagesAfterConversationsCS = np.cumsum(messagesAfterConversations)
+
+    x = np.arange(1, cumNum + 1)
+
+    g.mulLinesServiceInterruption(x, likesAfterPostsCS, commentsAfterPostsCS, messagesAfterConversationsCS)
+
+def getAnomaliesData(data):
+    favBeforeStatuses = []
+    statusesBeforeParentStatuses = []
+    statusesBeforeConversations = []
+
+    for i, data1 in enumerate(data):
+        if i % 2 == 0:
+            favBeforeStatuses.append(returnNumOrZero(data1, "favourites.status_id:statuses.id"))
+            statusesBeforeParentStatuses.append(returnNumOrZero(data1, "statuses.in_reply_to_id:statuses.id"))
+            statusesBeforeConversations.append(returnNumOrZero(data1, "statuses.conversation_id:conversations.id"))
+    return favBeforeStatuses, statusesBeforeParentStatuses, statusesBeforeConversations
+
+def anomaliesCumSum():
+    data = readFile3(logDir + dstAnomalies)
+    
+    favBeforeStatuses, statusesBeforeParentStatuses, statusesBeforeConversations = getAnomaliesData(data)
+    favBeforeStatusesCS = np.cumsum(favBeforeStatuses)
+    statusesBeforeParentStatusesCS = np.cumsum(statusesBeforeParentStatuses)
+    statusesBeforeConversationsCS = np.cumsum(statusesBeforeConversations)
+
+    x = np.arange(1, cumNum + 1)
+
+    g.mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, statusesBeforeConversationsCS)
 
 # leftoverCDF()
 # interruptionTimeCDF()
-getCumSum()
+danglingDataCumSum()
+# serviceInterruptionCumSum()
+# anomaliesCumSum()

@@ -111,4 +111,41 @@ def barGraph(x, y, xlabel, ylabel, step):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.show()
-    
+
+def mulLinesDanglingData(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingStatusesCS, danglingFavCS):
+    fig, ax = plt.subplots()
+    ax.plot(x, danglingLikesCS, 'c--', label='Dangling likes without posts in Diaspora')
+    ax.plot(x, danglingCommentsCS, 'g-', label='Dangling comments without posts in Diaspora')
+    ax.plot(x, danglingMessagesCS, 'r-.', label='Dangling messages without comments in Diaspora')
+    ax.plot(x, danglingStatusesCS, 'b', label='Dangling statuses without conversations in Mastodon')
+    ax.plot(x, danglingFavCS, 'm--', label='Dangling favourites without statuses in Mastodon')
+
+    ax.grid(True)
+
+    legend = ax.legend(loc=2, fontsize='x-small')
+
+    plt.show()
+
+def mulLinesServiceInterruption(x, likesAfterPostsCS, commentsAfterPostsCS, messagesAfterConversationsCS):
+    fig, ax = plt.subplots()
+    ax.plot(x, likesAfterPostsCS, 'c--', label='Likes migrated after posts')
+    ax.plot(x, commentsAfterPostsCS, 'g-', label='Comments migrated after posts')
+    ax.plot(x, messagesAfterConversationsCS, 'r-.', label='Messages migrated after conversations')
+
+    ax.grid(True)
+
+    legend = ax.legend(loc=2, fontsize='small')
+
+    plt.show()
+
+def mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, statusesBeforeConversationsCS):
+    ig, ax = plt.subplots()
+    ax.plot(x, favBeforeStatusesCS, 'c--', label='Favourites arrived before statuses')
+    ax.plot(x, statusesBeforeParentStatusesCS, 'g-', label='Statuses arrived before the parent statuses')
+    ax.plot(x, statusesBeforeConversationsCS, 'r-.', label='Statuses arrived before conversations')
+
+    ax.grid(True)
+
+    legend = ax.legend(loc=2, fontsize='small')
+
+    plt.show()
