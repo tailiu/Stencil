@@ -12,6 +12,7 @@ import (
 	"stencil/transaction"
 	"stencil/evaluation"
 	"strconv"
+	"fmt"
 )
 
 func main() {
@@ -48,11 +49,12 @@ func main() {
 
 		mWorker := migrate.CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype)
 
-		if mthread.LThreadController(mWorker, threads, evalConfig) {
+		if mthread.LThreadController(mWorker, threads) {
 			transaction.LogOutcome(logTxn, "COMMIT")
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 		}
+		evaluation.AnomaliesDanglingData(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)
 	}

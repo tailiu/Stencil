@@ -1,18 +1,13 @@
-/*
- * Migration Handler
- */
-
 package main
 
 import (
 	"log"
-	"fmt"
-	"time"
 	"stencil/migrate"
 	"stencil/mthread"
 	"stencil/transaction"
 	"stencil/evaluation"
 	"stencil/db"
+	"stencil/config"
 )
 
 const (
@@ -22,19 +17,27 @@ const (
 )
 
 func main() {
-	uids := db.GetUserListFromAppDB(srcApp, "users", "id")
+	srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dstAppConfig, err := config.CreateAppConfig(dstApp, dstAppID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	evalConfig := evaluation.InitializeEvalConfig()
+	uids := db.GetUserListFromAppDB(srcApp, "users", "id")
 	for _, uid := range uids {
 		if logTxn, err := transaction.BeginTransaction(); err == nil {
-			mWorker := migrate.CreateLMigrationWorker(fmt.Sprint(uid), srcApp, srcAppID, dstApp, dstAppID, logTxn, migrate.CONSISTENT)
+			mWorker := migrate.CreateLMigrationWorkerWithAppsConfig(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, migrate.CONSISTENT, srcAppConfig, dstAppConfig)
 			if mthread.LThreadController(mWorker, threads, evalConfig) {
 				transaction.LogOutcome(logTxn, "COMMIT")
 			} else {
 				transaction.LogOutcome(logTxn, "ABORT")
 			}
+			evaluation.AnomaliesDanglingData(fmt.Sprint(logTxn.Txn_id), evalConfig)
 		} else {
 			log.Fatal("Can't begin migration transaction", err)
 		}
-		time.Sleep(2 * time.Second)
 	}
 }

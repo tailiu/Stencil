@@ -14,6 +14,31 @@ import (
 	"strings"
 )
 
+func CreateLMigrationWorkerWithAppsConfig(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, srcAppConfig, dstAppConfig config.AppConfig) LMigrationWorker {
+	mappings := config.GetSchemaMappingsFor(srcApp, dstApp)
+	if mappings == nil {
+		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
+	}
+	dstAppConfig.QR.Migration = true
+	srcAppConfig.QR.Migration = true
+	mWorker := LMigrationWorker{
+		uid:          uid,
+		SrcAppConfig: srcAppConfig,
+		DstAppConfig: dstAppConfig,
+		mappings:     mappings,
+		wList:        WaitingList{},
+		unmappedTags: CreateUnmappedTags(),
+		SrcDBConn:    db.GetDBConn(srcApp),
+		DstDBConn:    db.GetDBConn2(dstApp),
+		logTxn:       logTxn,
+		mtype:        mtype,
+		visitedNodes: make(map[string]bool)}
+	if err := mWorker.FetchRoot(); err != nil {
+		log.Fatal(err)
+	}
+	return mWorker
+}
+
 func CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string) LMigrationWorker {
 	srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID)
 	if err != nil {

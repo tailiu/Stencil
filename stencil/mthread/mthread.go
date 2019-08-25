@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"log"
 	"stencil/migrate"
-	"stencil/evaluation"
 	"strings"
 	"sync"
 )
 
-func ThreadController(mWorker migrate.MigrationWorker, threads int, evalConfig *evaluation.EvalConfig) bool {
+func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
@@ -71,7 +70,7 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int, evalConfig *
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}
-	
+
 	if mWorker.MType() == migrate.DELETION {
 		if bags, err := mWorker.GetUserBags(); err == nil && len(bags) > 0 {
 			for ibag, bag := range bags {
@@ -110,13 +109,11 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int, evalConfig *
 	if mWorker.MType() == migrate.DELETION {
 		mWorker.HandleLeftOverWaitingNodes()
 	}
-
-	// evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
 	
 	return finished
 }
 
-func LThreadController(mWorker migrate.LMigrationWorker, threads int, evalConfig *evaluation.EvalConfig) bool {
+func LThreadController(mWorker migrate.LMigrationWorker, threads int) bool {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
@@ -198,8 +195,6 @@ func LThreadController(mWorker migrate.LMigrationWorker, threads int, evalConfig
 	if mWorker.MType() == migrate.DELETION {
 		mWorker.HandleLeftOverWaitingNodes()
 	}
-
-	evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
 	
 	return finished
 }
