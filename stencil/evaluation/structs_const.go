@@ -3,6 +3,7 @@ package evaluation
 import (
 	"database/sql"
 	"stencil/db"
+	"time"
 )
 
 const (
@@ -65,6 +66,9 @@ type EvalConfig struct {
 	DiasporaDBConn *sql.DB
 	MastodonAppID string
 	DiasporaAppID string
+	SrcAnomaliesVsMigrationSizeFile string
+	DstAnomaliesVsMigrationSizeFile string
+	InterruptionDurationFile string
 }
 
 func InitializeEvalConfig() *EvalConfig {
@@ -75,6 +79,14 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, mastodon)
 	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)
 	evalConfig.Dependencies = dependencies
+
+	t := time.Now()
+	evalConfig.SrcAnomaliesVsMigrationSizeFile, 
+	evalConfig.DstAnomaliesVsMigrationSizeFile, 
+	evalConfig.InterruptionDurationFile = 
+		"srcAnomaliesVsMigrationSize_" + t.String(), 
+		"dstAnomaliesVsMigrationSize_" + t.String(),
+		"interruptionDuration_" + t.String()
 
 	return evalConfig
 }

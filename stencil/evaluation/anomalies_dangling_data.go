@@ -4,12 +4,6 @@ import (
 	"log"
 )
 
-const (
-	srcAnomaliesVsMigrationSizeFile = "srcAnomaliesVsMigrationSize"
-	dstAnomaliesVsMigrationSizeFile = "dstAnomaliesVsMigrationSize"
-	interruptionDurationFile = "interruptionDuration"
-)
-
 func AnomaliesDanglingData(migrationID string, evalConfig *EvalConfig) {
 	log.Println(migrationID)
 
@@ -20,9 +14,9 @@ func AnomaliesDanglingData(migrationID string, evalConfig *EvalConfig) {
 	log.Println("Source Interruption statistics:", srcInterruptionDuration)
 	log.Println("Source Dangling Statistics:", srcDanglingDataStats)
 
-	WriteStrArrToLog(interruptionDurationFile, ConvertDurationToString(srcInterruptionDuration))
-	WriteStrToLog(srcAnomaliesVsMigrationSizeFile, ConvertMapToJSONString(srcViolateStats))
-	WriteStrToLog(srcAnomaliesVsMigrationSizeFile, ConvertMapInt64ToJSONString(srcDanglingDataStats))
+	WriteStrArrToLog(evalConfig.InterruptionDurationFile, ConvertDurationToString(srcInterruptionDuration))
+	WriteStrToLog(evalConfig.SrcAnomaliesVsMigrationSizeFile, ConvertMapToJSONString(srcViolateStats))
+	WriteStrToLog(evalConfig.SrcAnomaliesVsMigrationSizeFile, ConvertMapInt64ToJSONString(srcDanglingDataStats))
 
 	// migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
 
@@ -30,8 +24,8 @@ func AnomaliesDanglingData(migrationID string, evalConfig *EvalConfig) {
 	log.Println("Destination Data depended on not migrated statistics:", dstDepNotMigratedStats)
 	// log.Println("Migrated data size(Bytes):", migratedDataSize)
 
-	WriteStrToLog(dstAnomaliesVsMigrationSizeFile, ConvertMapToJSONString(dstViolateStats))
-	WriteStrToLog(dstAnomaliesVsMigrationSizeFile, ConvertMapToJSONString(dstDepNotMigratedStats))
+	WriteStrToLog(evalConfig.DstAnomaliesVsMigrationSizeFile, ConvertMapToJSONString(dstViolateStats))
+	WriteStrToLog(evalConfig.DstAnomaliesVsMigrationSizeFile, ConvertMapToJSONString(dstDepNotMigratedStats))
 	// evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertInt64ToString(migratedDataSize))
 	// totalMigratedDataSize += migratedDataSize
 }

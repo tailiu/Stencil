@@ -60,7 +60,14 @@ func srcViolateDependencies(evalConfig *EvalConfig, table string, pKey int, dele
 		}
 		dependsOnTable := strings.Split(strings.Split(dependsOnTableKey, ":")[1], ".")[0]
 		dependsOnKey := strings.Split(strings.Split(dependsOnTableKey, ":")[1], ".")[1]
-		query := fmt.Sprintf("select * from %s where %s = %d", dependsOnTable, dependsOnKey, row[fromAttr].(int64))
+		
+		var query string
+		// Diaspora reshare is very special
+		if fromAttr == "root_guid" {
+			query = fmt.Sprintf("select * from %s where %s = '%s'", dependsOnTable, dependsOnKey, row[fromAttr].(string))
+		} else {
+			query = fmt.Sprintf("select * from %s where %s = %d", dependsOnTable, dependsOnKey, row[fromAttr].(int64))
+		}
 		// log.Println(query)
 		row1, err := db.DataCall1(evalConfig.DiasporaDBConn, query)
 		if err != nil {
@@ -103,6 +110,7 @@ func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string) (map[stri
 			continue
 		} else {
 			checkedRow[key] = true
+
 			danglingDataStats1 := srcDanglingData(evalConfig, migrationID, table, pKey)
 			violateStats1, interruptionDuration1 := srcViolateDependencies(evalConfig, table, pKey, data1["deleted_at"].(time.Time), migrationID)
 
