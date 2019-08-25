@@ -625,3 +625,19 @@ func LogError(dbConn *sql.DB, dbquery, args, migration_id, dst_app, qerr string)
 	_, err := Insert(dbConn, query, dbquery, args, migration_id, dst_app, qerr)
 	return err
 }
+
+func GetUserListFromAppDB(appName, userTable, userCol string) []string {
+	dbConn := GetDBConn(appName)
+	query := fmt.Sprintf("SELECT %s FROM %s ORDER BY random()", userCol, userTable)
+	if res, err := DataCall(dbConn, query); err == nil{
+		var users []string
+		for _, row := range res {
+			users = append(users, fmt.Sprint(row[userCol]))
+		}
+		return users
+	}else {
+		fmt.Println(query, userTable, userCol, appName)
+		log.Fatal(err)
+	}
+	return nil
+}

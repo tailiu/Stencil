@@ -97,3 +97,13 @@ func GetKeysOfPhyTabMap(m map[string][][]string) []string{
 	sort.Strings(keys)
 	return keys
 }
+
+func Shuffle(vals []int) []int {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]int, len(vals))
+	perm := r.Perm(len(vals))
+	for i, randIndex := range perm {
+	  ret[i] = vals[randIndex]
+	}
+	return ret
+  }

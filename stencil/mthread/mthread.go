@@ -71,6 +71,7 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int, evalConfig *
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}
+	
 	if mWorker.MType() == migrate.DELETION {
 		if bags, err := mWorker.GetUserBags(); err == nil && len(bags) > 0 {
 			for ibag, bag := range bags {
@@ -110,7 +111,7 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int, evalConfig *
 		mWorker.HandleLeftOverWaitingNodes()
 	}
 
-	evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
+	// evaluation.AnomaliesDanglingData(fmt.Sprint(mWorker.MigrationID()), evalConfig)
 	
 	return finished
 }
