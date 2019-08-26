@@ -74,10 +74,11 @@ func srcViolateDependencies(evalConfig *EvalConfig, table string, pKey int, dele
 			log.Fatal(err)
 		}
 		// log.Println(row1)
+		// This gets the data from the current user
 		row2 := getDeletedAtInEvaluation(evalConfig, migrationID, dependsOnTable, row1["id"].(int64))
 		if row2["deleted_at"] == nil {
-			// This can happen when migration is not complete or
-			// the data belongs to others and is not migrated
+			// This can happen when the data the checked data depends on 
+			// does not belong to the current checked user
 			log.Println("dependsOn_deleted_at is nil!!")
 			continue
 		}
@@ -94,10 +95,25 @@ func srcViolateDependencies(evalConfig *EvalConfig, table string, pKey int, dele
 	return violateStats, interruptionDuration
 }
 
+func getTotalUnmigratedLikes(evalConfig *EvalConfig) int64 {
+	query := fmt.Sprintf("select count(*) from likes where mark_as_delete = 'false'")
+	
+	data, err := db.DataCall1(evalConfig.DiasporaDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data["count"].(int64)
+}
+
 func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string) (map[string]int, []time.Duration, map[string]int64) {
 	danglingDataStats := make(map[string]int64)
 	violateStats := make(map[string]int)
 	var interruptionDuration []time.Duration
+
+	// ********** This is added for testing **********
+	unmigratedLikesNumBefore := getTotalUnmigratedLikes(evalConfig)
+	// ********** This is added for testing **********
 
 	data := getTableKeyDeletedAt(evalConfig, migrationID)
 	// fmt.Println(data)
@@ -124,6 +140,18 @@ func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string) (map[stri
 			log.Println("+++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 	}
+
+	// ********** This is added for testing **********
+	var LikesBeforePost int64
+	unmigratedLikesNumAfter := getTotalUnmigratedLikes(evalConfig)
+	if val, ok := violateStats["likes.target_id:posts.id"]; ok {
+		LikesBeforePost = unmigratedLikesNumBefore - unmigratedLikesNumAfter - int64(val)
+	} else {
+		LikesBeforePost = unmigratedLikesNumBefore - unmigratedLikesNumAfter
+	}
+	violateStats["totalLikes"] = int(unmigratedLikesNumAfter)
+	violateStats["LikesBeforePosts"] = int(LikesBeforePost)
+	// ********** This is added for testing **********
 	
 	return violateStats, interruptionDuration, danglingDataStats
 }
