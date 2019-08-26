@@ -415,7 +415,7 @@
                     ],
                     "mappings": [
                         {
-                            "fromTables": ["users","people","profiles"],
+                            "fromTables": ["users","people"],
                             "toTables": [
                                 {
                                     "table": "accounts",
@@ -427,9 +427,7 @@
                                         "updated_at":"users.updated_at",
                                         "id":"people.id",
                                         "public_key":"people.serialized_public_key",
-                                        "display_name":"people.diaspora_handle",
-                                        "note":"profiles.bio",
-                                        "avatar_remote_url":"profiles.image_url"
+                                        "display_name":"people.diaspora_handle"
                                     }
                                 },
                                 {
@@ -629,7 +627,7 @@
                     ],
                     "mappings": [
                         {
-                            "fromTables": ["users","people","profiles"],
+                            "fromTables": ["users","people"],
                             "toTables": [
                                 {
                                     "table": "users",
@@ -639,9 +637,7 @@
                                         "created_at":"users.created_at",
                                         "updated_at":"users.updated_at",
                                         "id":"people.id",
-                                        "handle":"people.diaspora_handle",
-                                        "bio":"profiles.bio",
-                                        "avatar":"profiles.image_url"
+                                        "handle":"people.diaspora_handle"
                                     }
                                 },
                                 {
