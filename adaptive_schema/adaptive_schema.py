@@ -63,6 +63,7 @@ def genTransitivelyMappedAttrs(schema_mappings):
     common_attrs = {}
 
     for row in schema_mappings:
+        if row["dest_attribute"] in common_attrs.keys(): continue
         if row["source_attribute"] in common_attrs.keys():
             # print "Add New", row
             common_attrs[row["source_attribute"]].append(row["dest_attribute"])

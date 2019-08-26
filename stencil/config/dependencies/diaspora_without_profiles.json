@@ -4,8 +4,7 @@
           "name":"root",
           "members":{
              "member1":"users",
-             "member2":"people",
-             "member3":"profiles"
+             "member2":"people"
           },
           "keys":{
              "id":"member1.id",
@@ -15,10 +14,19 @@
           },
           "inner_dependencies":[
              {
-                "member1.id":"member2.owner_id",
-                "member2.id":"member3.person_id"
+                "member1.id":"member2.owner_id"
              }
           ]
+       },
+       {
+          "name":"profile",
+          "members":{
+             "member1":"profiles"
+          },
+          "keys":{
+             "id":"member1.id",
+             "person_id":"member1.person_id"
+          }
        },
        {
           "name":"post",
@@ -152,6 +160,20 @@
        }
     ],
     "dependencies":[
+       {
+          "tag":"profile",
+          "depends_on":[
+             {
+                "tag":"root",
+                "conditions":[
+                   {
+                      "tag_attr":"person_id",
+                      "depends_on_attr":"person_id"
+                   }
+                ]
+             }
+          ]
+       },
        {
           "tag":"post",
           "depends_on":[
@@ -425,6 +447,16 @@
              {
                 "tag_attr":"user_id",
                 "depends_on_attr":"user_id"
+             }
+          ]
+       },
+       {
+          "tag":"profile",
+          "owned_by":"root",
+          "conditions":[
+             {
+                "tag_attr":"person_id",
+                "depends_on_attr":"person_id"
              }
           ]
        }
