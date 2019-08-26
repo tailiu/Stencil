@@ -5,3 +5,5 @@ evaluation/*.pyc
 evaluation/timeVsSize
 evaluation/allLeftData
 evaluation/dataLeftInBrokenRows
+stencil/evaluation/logs
+stencil/evaluation/_*

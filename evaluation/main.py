@@ -57,12 +57,15 @@ def getDanglingDataInSrc(data):
     danglingLikes = []
     danglingComments = []
     danglingMessages = []
+    totalLikes = []
     for i, data1 in enumerate(data):
         if i % 2 == 1:
             danglingLikes.append(returnNumOrZero(data1, "likes:posts"))
             danglingComments.append(returnNumOrZero(data1, "comments:posts"))
             danglingMessages.append(returnNumOrZero(data1, "messages:conversations"))
-    return danglingLikes, danglingComments, danglingMessages
+        if i % 2 == 0:
+            totalLikes.append(data1["totalLikes"])
+    return danglingLikes, danglingComments, danglingMessages, totalLikes
 
 def getDanglingDataInDst(data):
     danglingStatuses = []
@@ -77,7 +80,9 @@ def danglingDataCumSum():
     srcData = readFile3(logDir + srcAnomalies)
     dstData = readFile3(logDir + dstAnomalies)
 
-    danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrc(srcData)
+    danglingLikes, danglingComments, danglingMessages, totalLikes = getDanglingDataInSrc(srcData)
+    total = [sum(x) for x in zip(danglingLikes, danglingComments, danglingMessages)]
+    danglingTotalCS = np.cumsum(total)
     danglingLikesCS = np.cumsum(danglingLikes)
     danglingCommentsCS = np.cumsum(danglingComments)
     danglingMessagesCS = np.cumsum(danglingMessages)
@@ -88,13 +93,12 @@ def danglingDataCumSum():
 
     x = np.arange(1, cumNum + 1)
 
-    g.mulLinesDanglingData(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingStatusesCS, danglingFavCS)
+    g.mulLinesDanglingData(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS, totalLikes)
 
 def getServiceInterruptionData(data):
     likesAfterPosts = []
     commentsAfterPosts = []
     messagesAfterConversations = []
-
     for i, data1 in enumerate(data):
         if i % 2 == 0:
             likesAfterPosts.append(returnNumOrZero(data1, "likes.target_id:posts.id"))
@@ -141,5 +145,5 @@ def anomaliesCumSum():
 # leftoverCDF()
 # interruptionTimeCDF()
 danglingDataCumSum()
-# serviceInterruptionCumSum()
-# anomaliesCumSum()
+serviceInterruptionCumSum()
+anomaliesCumSum()
