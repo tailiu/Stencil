@@ -3,7 +3,7 @@ package evaluation
 import (
 	"database/sql"
 	"stencil/db"
-	"time"
+	// "time"
 )
 
 const (
@@ -80,13 +80,13 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)
 	evalConfig.Dependencies = dependencies
 
-	t := time.Now()
+	// t := time.Now()
 	evalConfig.SrcAnomaliesVsMigrationSizeFile, 
 	evalConfig.DstAnomaliesVsMigrationSizeFile, 
 	evalConfig.InterruptionDurationFile = 
-		"srcAnomaliesVsMigrationSize_" + t.String(), 
-		"dstAnomaliesVsMigrationSize_" + t.String(),
-		"interruptionDuration_" + t.String()
+		"srcAnomaliesVsMigrationSize",// + t.String(), 
+		"dstAnomaliesVsMigrationSize",// + t.String(),
+		"interruptionDuration"// + t.String()
 
 	return evalConfig
 }

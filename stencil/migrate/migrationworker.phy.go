@@ -73,6 +73,10 @@ func (self *MigrationWorker) UserID() string {
 	return self.uid
 }
 
+func (self *MigrationWorker) MigrationID() int {
+	return self.logTxn.Txn_id
+}
+
 func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, dep config.Dependency, tag config.Tag, qs *qr.QS) {
 
 	where := qr.CreateQS(self.SrcAppConfig.QR)

@@ -10,11 +10,13 @@ import (
 	"stencil/migrate"
 	"stencil/mthread"
 	"stencil/transaction"
+	"stencil/evaluation"
 	"strconv"
+	"fmt"
 )
 
 func main() {
-
+	evalConfig := evaluation.InitializeEvalConfig()
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		srcApp, srcAppID := "diaspora", "1"
 		dstApp, dstAppID := "mastodon", "2"
@@ -52,6 +54,7 @@ func main() {
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 		}
+		evaluation.AnomaliesDanglingData(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)
 	}

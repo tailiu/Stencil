@@ -42,6 +42,7 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 	}
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
+	jsonFile.Close()
 	json.Unmarshal(byteValue, &appConfig)
 
 	appConfig.AppName = app
@@ -52,7 +53,6 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 		appConfig.QR = qr.NewQR(app, app_id)
 	}
 
-	jsonFile.Close()
 	rand.Seed(time.Now().UTC().UnixNano())
 	appConfig.Rand = rand.New(rand.NewSource(time.Now().Unix()))
 	return appConfig, nil

@@ -70,6 +70,7 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}
+
 	if mWorker.MType() == migrate.DELETION {
 		if bags, err := mWorker.GetUserBags(); err == nil && len(bags) > 0 {
 			for ibag, bag := range bags {
@@ -108,6 +109,7 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 	if mWorker.MType() == migrate.DELETION {
 		mWorker.HandleLeftOverWaitingNodes()
 	}
+	
 	return finished
 }
 
@@ -193,5 +195,6 @@ func LThreadController(mWorker migrate.LMigrationWorker, threads int) bool {
 	if mWorker.MType() == migrate.DELETION {
 		mWorker.HandleLeftOverWaitingNodes()
 	}
+	
 	return finished
 }
