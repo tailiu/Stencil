@@ -14,7 +14,7 @@ def truncate(dbname, blade):
     tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
     cur.execute(tableq)
     for row in cur.fetchall():
-        q = 'TRUNCATE "%s" CASCADE;'%row[0]
+        q = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%row[0]
         print q
         cur.execute(q)
     conn.commit()
@@ -31,7 +31,7 @@ def reverseMarkAsDelete(dbname, blade):
 
 def truncateTableFromStencil(table):
     conn, cur = getDB("stencil", blade=False)
-    q = 'TRUNCATE "%s" CASCADE;'%table
+    q = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
     print q
     cur.execute(q)
     conn.commit()
@@ -49,7 +49,6 @@ def resetRowDesc():
     print q
     cur.execute(q)
     conn.commit()
-
 
 if __name__ == "__main__":
     truncate("mastodon", blade=True)

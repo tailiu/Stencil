@@ -18,7 +18,21 @@ def getDBConn(db, cursor_dict=False):
         cursor = conn.cursor()
     return conn, cursor
 
-db, cur = getDBConn("stencil", True)
+def deletePhysicalTables():
+    
+    tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+    cur.execute(tableq)
+    for row in cur.fetchall():
+        table = row["tablename"]
+        if table != "supplementary_tables" and ("supplementary_" in table or "base_" in table):
+            q = 'DROP TABLE "%s" CASCADE;'%table
+            cur.execute(q)
+
+def truncatePhysicalTables():
+    tables = ["supplementary_tables", "physical_schema", "physical_mappings"]
+    for table in tables:
+        sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
+        cur.execute(sql)
 
 def getAppNameById(app_id):
     sql = "SELECT app_name FROM apps WHERE pk = " + str(app_id)
@@ -63,22 +77,66 @@ def genTransitivelyMappedAttrs(schema_mappings):
     common_attrs = {}
 
     for row in schema_mappings:
-        if row["dest_attribute"] in common_attrs.keys(): continue
-        if row["source_attribute"] in common_attrs.keys():
-            # print "Add New", row
-            common_attrs[row["source_attribute"]].append(row["dest_attribute"])
+        srcAttr, dstAttr = row["source_attribute"], row["dest_attribute"]
+        alreadyMapped = False
+        for attr, mapped_attrs in common_attrs.items():
+            if srcAttr in mapped_attrs:
+                alreadyMapped = True
+                break
+            if dstAttr in mapped_attrs:
+                common_attrs[attr].append(srcAttr)
+                alreadyMapped = True
+                break
+        if alreadyMapped: continue
+        # if row["dest_attribute"] in common_attrs.keys(): continue
+
+        if srcAttr in common_attrs.keys():
+            common_attrs[srcAttr].append(dstAttr)
         else:
-            for attr, mapped_attrs in common_attrs.items():
-                if row["source_attribute"] in mapped_attrs:
-                    if row["dest_attribute"] not in mapped_attrs:
-                        # print "Append to", attr, row["source_attribute"], row["dest_attribute"]
-                        common_attrs[attr].append(row["dest_attribute"])
-                    break
-            else:
-                # print "Add New Second", row
-                common_attrs[row["source_attribute"]] = [row["dest_attribute"]]
+            common_attrs[srcAttr] = [dstAttr]
+        if dstAttr in common_attrs.keys():
+            common_attrs[srcAttr] += common_attrs[dstAttr]
+            common_attrs.pop(dstAttr)
+                
+
+        # for attr, mapped_attrs in common_attrs.items():
+        #     if srcAttr in mapped_attrs or dstAttr in mapped_attrs:
+        #         common_attrs[attr].append(dstAttr)
+        #         common_attrs[attr].append(srcAttr)
+        #         common_attrs[attr] = list(set(common_attrs[attr]))
+        #         break
+        # else:
+        #     common_attrs[srcAttr] = [dstAttr]
         
+        # if srcAttr in common_attrs.keys():
+        #     common_attrs[srcAttr].append(dstAttr)
+        # else:
+        #     for attr, mapped_attrs in common_attrs.items():
+        #         if srcAttr in mapped_attrs and dstAttr not in mapped_attrs:
+        #             common_attrs[attr].append(dstAttr)
+        #             break
+        #     else:
+        #         common_attrs[srcAttr] = [dstAttr]
     return common_attrs
+
+def getAppSchemaAttr(attr):
+    sql = '''
+        SELECT app_id, table_name, column_name, app_schemas.pk as column_id, app_name 
+        FROM app_schemas JOIN app_tables ON app_tables.pk = app_schemas.table_id JOIN apps ON app_tables.app_id = apps.pk
+        WHERE app_schemas.pk = '%s'
+    '''
+    cur.execute(sql % attr)
+    res = cur.fetchone()
+    attr = "%s.%s.%s" % (res["app_name"], res["table_name"], res["column_name"])
+    return attr
+
+def printTransAttrs(trans_attrs):
+    for attr, mapped_attrs in trans_attrs.items():
+        # print attr, "=>", mapped_attrs
+        print getAppSchemaAttr(attr), "=>",
+        for mapped_attr in mapped_attrs:
+            print getAppSchemaAttr(mapped_attr),
+        print ""
 
 def filterSchemaRow(app_schemas, attr):
     return filter(lambda x: x.get('column_id') == attr, app_schemas)[0]
@@ -236,7 +294,7 @@ def createSupplementaryTables():
         print app_id, table_id, column_names
 
         insql = "INSERT INTO SUPPLEMENTARY_TABLES (table_id) VALUES(%d) RETURNING pk" % (table_id)
-        print insql
+        # print insql
         cur.execute(insql)
         
         supp_table_id = cur.fetchone()['pk']
@@ -247,13 +305,19 @@ def createSupplementaryTables():
         cols.append("supp_mark_delete BOOL")
         
         tsql = "CREATE TABLE %s ( %s )" % ("supplementary_%s"%supp_table_id, ', '.join(cols))
-        print tsql
+        # print tsql
         cur.execute(tsql)
 
 
 if __name__ == "__main__":
     
-    t = 0.5
+    t = 0.6
+
+    db, cur = getDBConn("stencil", True)
+
+    print "Reset Physical DB"
+    truncatePhysicalTables()
+    deletePhysicalTables()
 
     print "Get App Schemas"
     app_schemas = getAppSchemas()
@@ -263,6 +327,10 @@ if __name__ == "__main__":
 
     print "Transitively Mapped Attrs"
     trans_attrs = genTransitivelyMappedAttrs(schema_mappings)
+
+    # print(trans_attrs)
+
+    # exit(0)
 
     print "Attribute Node Vectors"
     node_vectors = genAttributeNodeVectors(app_schemas, trans_attrs)
@@ -275,4 +343,6 @@ if __name__ == "__main__":
             bt_name = "base_%s_%s" % (table, idx)
             print bt_name
             createBaseTable(bt_name, base_attrs, app_schemas, trans_attrs)
+
+    print "createSupplementaryTables"    
     createSupplementaryTables()
