@@ -55,7 +55,7 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 	// 100
 	// filterConditions := "and registration_id > 514 and is_logical = 'true' "
 	
-	filterConditions := ""
+	filterConditions := "and migration_id = 356255340 "
 
 	// totalSrcDanglingDataStats := make(map[string]int64)
 	// totalSrcVoliateStats := make(map[string]int)

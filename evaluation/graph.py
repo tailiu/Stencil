@@ -112,7 +112,19 @@ def barGraph(x, y, xlabel, ylabel, step):
     plt.ylabel(ylabel)
     plt.show()
 
-def mulLinesDanglingData(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS, totalLikes):
+def mulLinesDanglingData(x, danglingLikes, danglingComments, danglingMessages):
+    fig, ax = plt.subplots()
+    ax.plot(x, danglingLikes, 'c--', label='Dangling likes without posts in Diaspora')
+    ax.plot(x, danglingComments, 'g--', label='Dangling comments without posts in Diaspora')
+    ax.plot(x, danglingMessages, 'r--', label='Dangling messages without comments in Diaspora')
+    
+    ax.grid(True)
+
+    legend = ax.legend(loc=2, fontsize='x-small')
+
+    plt.show()
+
+def mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS, totalLikes):
     fig, ax = plt.subplots()
     ax.plot(x, danglingLikesCS, 'c--', label='Dangling likes without posts in Diaspora')
     ax.plot(x, danglingCommentsCS, 'g--', label='Dangling comments without posts in Diaspora')

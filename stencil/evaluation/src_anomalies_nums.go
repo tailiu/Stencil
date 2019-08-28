@@ -112,7 +112,7 @@ func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string) (map[stri
 	var interruptionDuration []time.Duration
 
 	// ********** This is added for testing **********
-	unmigratedLikesNumBefore := getTotalUnmigratedLikes(evalConfig)
+	// unmigratedLikesNumBefore := getTotalUnmigratedLikes(evalConfig)
 	// ********** This is added for testing **********
 
 	data := getTableKeyDeletedAt(evalConfig, migrationID)
@@ -142,15 +142,15 @@ func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string) (map[stri
 	}
 
 	// ********** This is added for testing **********
-	var LikesBeforePost int64
-	unmigratedLikesNumAfter := getTotalUnmigratedLikes(evalConfig)
-	if val, ok := violateStats["likes.target_id:posts.id"]; ok {
-		LikesBeforePost = unmigratedLikesNumBefore - unmigratedLikesNumAfter - int64(val)
-	} else {
-		LikesBeforePost = unmigratedLikesNumBefore - unmigratedLikesNumAfter
-	}
-	violateStats["totalLikes"] = int(unmigratedLikesNumAfter)
-	violateStats["LikesBeforePosts"] = int(LikesBeforePost)
+	// var LikesBeforePost int64
+	// unmigratedLikesNumAfter := getTotalUnmigratedLikes(evalConfig)
+	// if val, ok := violateStats["likes.target_id:posts.id"]; ok {
+	// 	LikesBeforePost = unmigratedLikesNumBefore - unmigratedLikesNumAfter - int64(val)
+	// } else {
+	// 	LikesBeforePost = unmigratedLikesNumBefore - unmigratedLikesNumAfter
+	// }
+	// violateStats["totalLikes"] = int(unmigratedLikesNumAfter)
+	// violateStats["LikesBeforePosts"] = int(LikesBeforePost)
 	// ********** This is added for testing **********
 	
 	return violateStats, interruptionDuration, danglingDataStats

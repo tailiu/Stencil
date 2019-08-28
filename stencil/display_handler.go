@@ -85,6 +85,7 @@ func DisplayThread(app string, migrationID int) {
 	log.Println("Time used: ", endTime.Sub(startTime))
 }
 
+// Three-way display check
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (string, error) {
 
 	log.Println("Check Data ", oneMigratedData)
@@ -268,6 +269,7 @@ func main() {
 
 	dstApp := "mastodon"
 	DisplayThread(dstApp, 1242116270)
+
 
 	// dbConn := db.GetDBConn(dstApp)
 	// query := "SELECT * FROM statuses WHERE id = 13451190 LIMIT 1;"

@@ -76,6 +76,14 @@ def getDanglingDataInDst(data):
             danglingFav.append(returnNumOrZero(data1, "favourites.status_id:statuses.id"))
     return danglingStatuses, danglingFav
 
+def danglingData():
+    srcData = readFile3(logDir + srcAnomalies)
+    danglingLikes, danglingComments, danglingMessages, totalLikes = getDanglingDataInSrc(srcData)
+
+    x = np.arange(1, cumNum + 1)
+
+    g.mulLinesDanglingData(x, danglingLikes, danglingComments, danglingMessages)
+
 def danglingDataCumSum():
     srcData = readFile3(logDir + srcAnomalies)
     dstData = readFile3(logDir + dstAnomalies)
@@ -93,7 +101,7 @@ def danglingDataCumSum():
 
     x = np.arange(1, cumNum + 1)
 
-    g.mulLinesDanglingData(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS, totalLikes)
+    g.mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS, totalLikes)
 
 def getServiceInterruptionData(data):
     likesAfterPosts = []
@@ -145,5 +153,6 @@ def anomaliesCumSum():
 # leftoverCDF()
 # interruptionTimeCDF()
 danglingDataCumSum()
+danglingData()
 serviceInterruptionCumSum()
 anomaliesCumSum()
