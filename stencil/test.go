@@ -5,6 +5,7 @@ import (
 	"os"
 	"stencil/config"
 	"stencil/qr"
+	"stencil/db"
 	"strings"
 )
 
@@ -13,7 +14,7 @@ func main() {
 	table := os.Args[2]
 	rowid := os.Args[3] //"653250685"
 	with := os.Args[4]
-
+	stencilDB := db.GetDBConn(db.STENCIL_DB)
 	var appconfig config.AppConfig
 	if strings.EqualFold(app, "diaspora") {
 		appconfig, _ = config.CreateAppConfig("diaspora", "1")
@@ -25,11 +26,17 @@ func main() {
 	qs.FromSimple(table)
 	qs.ColSimple(table + ".*")
 
+	sql := ""
+
 	if strings.EqualFold(with, "simple") {
-		fmt.Println(qs.GenSQL())
+		sql = qs.GenSQL()
+		
 	} else if strings.EqualFold(with, "with") {
-		fmt.Println(qs.GenSQLWith(rowid))
+		sql = qs.GenSQLWith(rowid)
 	}
+	fmt.Println(sql)
+	fmt.Println("========================================================================================================================================================================")
+	fmt.Println(db.DataCall(stencilDB, sql))
 
 	// return qs.GenSQL()
 

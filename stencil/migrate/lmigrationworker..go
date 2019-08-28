@@ -774,7 +774,7 @@ func (self *LMigrationWorker) RegisterMigration(mtype string, number_of_threads 
 }
 
 func (self *LMigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
-	return db.FinishMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.logTxn.DBconn, true)
+	return db.FinishMigration(self.logTxn.DBconn, self.logTxn.Txn_id)
 }
 
 func (self *LMigrationWorker) ConsistentMigration(threadID int) error {

@@ -257,9 +257,10 @@ func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID, number_
 	return true
 }
 
-func FinishMigration(uid, src_app, dst_app, mtype string, migrationID, number_of_threads int, dbConn *sql.DB, logical bool) bool {
-	query := "UPDATE migration_registration SET end_time = current_timestamp WHERE migration_id = $1 AND user_id = $2 AND src_app = $3 AND dst_app = $4 AND migration_type = $5 AND number_of_threads = $6 AND is_logical = $7) VALUES ($1, $2, $3, $4, $5, $6, $7)"
-	if _, err := dbConn.Exec(query, migrationID, uid, src_app, dst_app, mtype, number_of_threads, logical); err != nil {
+func FinishMigration(dbConn *sql.DB, migrationID int) bool {
+	query := "UPDATE migration_registration SET end_time = now() WHERE migration_id = $1;"
+	if _, err := dbConn.Exec(query, migrationID); err != nil {
+		fmt.Println(query, migrationID)
 		log.Fatal("Insert Error in FinishMigration", err)
 		return false
 	}

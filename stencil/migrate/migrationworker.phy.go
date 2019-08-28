@@ -664,7 +664,7 @@ func (self *MigrationWorker) RegisterMigration(mtype string, number_of_threads i
 }
 
 func (self *MigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
-	return db.FinishMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.logTxn.DBconn, true)
+	return db.FinishMigration(self.logTxn.DBconn, self.logTxn.Txn_id)
 }
 
 func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {
