@@ -36,13 +36,14 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 		mappings:     mappings,
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
-		DBConn:       db.GetDBConn("stencil"),
+		DBConn:       db.GetDBConn(db.STENCIL_DB),
 		logTxn:       logTxn,
 		mtype:        mtype,
 		visitedNodes: make(map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
 		log.Fatal(err)
 	}
+	// log.Fatal(mWorker.root.Data)
 	return mWorker
 }
 
@@ -54,7 +55,7 @@ func (self *MigrationWorker) RenewDBConn() {
 	if self.DBConn != nil {
 		self.DBConn.Close()
 	}
-	self.DBConn = db.GetDBConn("stencil")
+	self.DBConn = db.GetDBConn(db.STENCIL_DB)
 }
 
 func (self *MigrationWorker) Finish() {
@@ -616,7 +617,7 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 			log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 		} else {
 			if strings.EqualFold(err.Error(), "2") {
-				log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				log.Println(fmt.Sprintf("x%dx BAGGED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			} else {
 				log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 				if strings.EqualFold(err.Error(), "0") {
@@ -660,6 +661,10 @@ func (self *MigrationWorker) RegisterMigration(mtype string, number_of_threads i
 	// 	log.Println("Migration Already Registered!")
 	// 	return true
 	// }
+}
+
+func (self *MigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
+	return db.FinishMigration(self.logTxn.DBconn, self.logTxn.Txn_id)
 }
 
 func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {

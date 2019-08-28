@@ -18,7 +18,37 @@ def getDBConn(db, cursor_dict=False):
         cursor = conn.cursor()
     return conn, cursor
 
-db, cur = getDBConn("stencil", True)
+def getPhysicalTables():
+    tables = []
+    tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+    cur.execute(tableq)
+    for row in cur.fetchall():
+        table = row["tablename"]
+        if table != "supplementary_tables" and ("supplementary_" in table or "base_" in table):
+            tables.append(table)
+    return tables
+
+def createIndices():
+    for table in getPhysicalTables():
+        colsql = "select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'"%table
+        cur.execute(colsql)
+        for row in cur.fetchall():
+            column_name = row["column_name"]
+            if column_name != "app_id" and (column_name == "pk" or column_name == "id" or "_id" in column_name):
+                idxsql = "CREATE INDEX %s_%s_idx ON public.%s (%s); "%(table, column_name, table, column_name)
+                # print idxsql
+                cur.execute(idxsql)
+
+def deletePhysicalTables():
+    for table in getPhysicalTables():
+        q = 'DROP TABLE "%s" CASCADE;'%table
+        cur.execute(q)
+
+def truncatePhysicalTables():
+    tables = ["supplementary_tables", "physical_schema", "physical_mappings"]
+    for table in tables:
+        sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
+        cur.execute(sql)
 
 def getAppNameById(app_id):
     sql = "SELECT app_name FROM apps WHERE pk = " + str(app_id)
@@ -63,22 +93,67 @@ def genTransitivelyMappedAttrs(schema_mappings):
     common_attrs = {}
 
     for row in schema_mappings:
-        if row["dest_attribute"] in common_attrs.keys(): continue
-        if row["source_attribute"] in common_attrs.keys():
-            # print "Add New", row
-            common_attrs[row["source_attribute"]].append(row["dest_attribute"])
+        srcAttr, dstAttr = row["source_attribute"], row["dest_attribute"]
+        alreadyMapped = False
+        for attr, mapped_attrs in common_attrs.items():
+            if srcAttr in mapped_attrs:
+                alreadyMapped = True
+                break
+            if dstAttr in mapped_attrs:
+                common_attrs[attr].append(srcAttr)
+                alreadyMapped = True
+                break
+        if alreadyMapped: continue
+        # if row["dest_attribute"] in common_attrs.keys(): continue
+
+        if srcAttr in common_attrs.keys():
+            common_attrs[srcAttr].append(dstAttr)
         else:
-            for attr, mapped_attrs in common_attrs.items():
-                if row["source_attribute"] in mapped_attrs:
-                    if row["dest_attribute"] not in mapped_attrs:
-                        # print "Append to", attr, row["source_attribute"], row["dest_attribute"]
-                        common_attrs[attr].append(row["dest_attribute"])
-                    break
-            else:
-                # print "Add New Second", row
-                common_attrs[row["source_attribute"]] = [row["dest_attribute"]]
+            common_attrs[srcAttr] = [dstAttr]
+        if dstAttr in common_attrs.keys():
+            common_attrs[srcAttr] += common_attrs[dstAttr]
+            common_attrs.pop(dstAttr)
+                
+
+        # for attr, mapped_attrs in common_attrs.items():
+        #     if srcAttr in mapped_attrs or dstAttr in mapped_attrs:
+        #         common_attrs[attr].append(dstAttr)
+        #         common_attrs[attr].append(srcAttr)
+        #         common_attrs[attr] = list(set(common_attrs[attr]))
+        #         break
+        # else:
+        #     common_attrs[srcAttr] = [dstAttr]
         
+        # if srcAttr in common_attrs.keys():
+        #     common_attrs[srcAttr].append(dstAttr)
+        # else:
+        #     for attr, mapped_attrs in common_attrs.items():
+        #         if srcAttr in mapped_attrs and dstAttr not in mapped_attrs:
+        #             common_attrs[attr].append(dstAttr)
+        #             break
+        #     else:
+        #         common_attrs[srcAttr] = [dstAttr]
     return common_attrs
+
+def getAppSchemaAttr(attr):
+    sql = '''
+        SELECT app_id, table_name, column_name, app_schemas.pk as column_id, app_name 
+        FROM app_schemas JOIN app_tables ON app_tables.pk = app_schemas.table_id JOIN apps ON app_tables.app_id = apps.pk
+        WHERE app_schemas.pk = '%s'
+    '''
+    cur.execute(sql % attr)
+    res = cur.fetchone()
+    attr = "%s.%s.%s" % (res["app_name"], res["table_name"], res["column_name"])
+    return attr
+
+def printTransAttrs(trans_attrs):
+    for attr, mapped_attrs in trans_attrs.items():
+        # print attr, "=>", mapped_attrs
+        print getAppSchemaAttr(attr), "=>",
+        for mapped_attr in mapped_attrs:
+            print getAppSchemaAttr(mapped_attr),
+        print ""
+    exit(0)
 
 def filterSchemaRow(app_schemas, attr):
     return filter(lambda x: x.get('column_id') == attr, app_schemas)[0]
@@ -185,7 +260,7 @@ def createTable(name, attrs):
     attrs.append("base_mark_delete BOOL")
     tsql = "CREATE TABLE %s ( %s )" % (name, ', '.join(attrs))
     
-    print tsql, isql
+    # print tsql, isql
 
     # cur.execute(tsql)
     # cur.execute(isql)
@@ -198,22 +273,22 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
 
     for attr_id, attr_name in attrs.items():
         isql =  "INSERT INTO PHYSICAL_SCHEMA (table_name, column_name) VALUES ('%s', '%s') RETURNING pk" % (name, attr_name)
-        print isql
+        # print isql
         cur.execute(isql)
         phy_attr_id = cur.fetchone()['pk']
         mapped_attrs = [attr_id] + trans_attrs[attr_id]
         pmsql = "INSERT INTO PHYSICAL_MAPPINGS (logical_attribute, physical_attribute) VALUES " + ", ".join(["('%s', '%s')" % (attr_id,phy_attr_id) for attr_id in set(mapped_attrs)])
-        print pmsql
+        # print pmsql
         cur.execute(pmsql)
 
     attrs_with_type = [attr + " varchar" for attr in attrs.values()]
-    attrs_with_type.insert(0,"app_id varchar")
+    # attrs_with_type.insert(0,"app_id varchar")
     # attrs_with_type.insert(0,"base_pk SERIAL PRIMARY KEY")
     attrs_with_type.insert(0,"pk SERIAL PRIMARY KEY")
     attrs_with_type.append("base_created_at TIMESTAMP DEFAULT now()")
     attrs_with_type.append("base_mark_delete BOOL")
     tsql = "CREATE TABLE %s ( %s )" % (name, ', '.join(attrs_with_type))
-    print tsql
+    # print tsql
     cur.execute(tsql)
 
 def createSupplementaryTables():
@@ -233,27 +308,32 @@ def createSupplementaryTables():
         table_id    = row["table_id"]
         column_names= row["column_names"]
         column_ids  = row["column_ids"]
-        print app_id, table_id, column_names
+        # print app_id, table_id, column_names
 
         insql = "INSERT INTO SUPPLEMENTARY_TABLES (table_id) VALUES(%d) RETURNING pk" % (table_id)
-        print insql
+        # print insql
         cur.execute(insql)
         
         supp_table_id = cur.fetchone()['pk']
         
-        cols = [attr  for attr in column_names.split(',') if len(attr)]
+        cols = [attr  for attr in column_names.split(',') if len(attr) and attr != "app_id"]
         cols.insert(0,"pk SERIAL PRIMARY KEY")
         cols.append("supp_created_at TIMESTAMP DEFAULT now()")
         cols.append("supp_mark_delete BOOL")
         
         tsql = "CREATE TABLE %s ( %s )" % ("supplementary_%s"%supp_table_id, ', '.join(cols))
-        print tsql
+        # print tsql
         cur.execute(tsql)
-
 
 if __name__ == "__main__":
     
     t = 0.5
+
+    db, cur = getDBConn("stencil", True)
+
+    print "Reset Physical DB"
+    truncatePhysicalTables()
+    deletePhysicalTables()
 
     print "Get App Schemas"
     app_schemas = getAppSchemas()
@@ -264,15 +344,22 @@ if __name__ == "__main__":
     print "Transitively Mapped Attrs"
     trans_attrs = genTransitivelyMappedAttrs(schema_mappings)
 
+    # print printTransAttrs(trans_attrs)
+
     print "Attribute Node Vectors"
     node_vectors = genAttributeNodeVectors(app_schemas, trans_attrs)
 
-    print "getBaseTables"
+    print "createBaseTables"
     for table, vector in node_vectors.items():
         filtered_vector = vector.loc[vector.sum(axis=1)/vector.shape[1] >= t]            
         base_tables = genBaseTables(filtered_vector)
         for idx, base_attrs in base_tables.items():
             bt_name = "base_%s_%s" % (table, idx)
-            print bt_name
+            # print bt_name
             createBaseTable(bt_name, base_attrs, app_schemas, trans_attrs)
+
+    print "createSupplementaryTables"    
     createSupplementaryTables()
+
+    print "createIndices"    
+    createIndices()

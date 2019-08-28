@@ -10,7 +10,7 @@ import (
 )
 
 func GetUsersForApp(app_id string) []string {
-	dbConn := db.GetDBConn("stencil")
+	dbConn := db.GetDBConn(db.STENCIL_DB)
 	var users []string
 	query := "SELECT user_id FROM user_table WHERE app_id = $1 AND user_id NOT IN (SELECT user_id FROM user_table WHERE app_id != $2)" //+ "AND user_id NOT IN (SELECT user_id FROM owned_data)"
 	if result, err := db.DataCall(dbConn, query, app_id, app_id); err == nil {

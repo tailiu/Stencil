@@ -177,7 +177,7 @@ func BUpdate(dbConn *sql.DB, pk, flag, app_id string) error {
 }
 
 func GetUnmigratedUsers() ([]map[string]interface{}, error) {
-	dbConn := GetDBConn("stencil")
+	dbConn := GetDBConn(STENCIL_DB)
 	sql := "SELECT user_id FROM user_table WHERE user_id NOT IN (SELECT DISTINCT user_id FROM migration_registration) ORDER BY user_id ASC"
 	return DataCall(dbConn, sql)
 }
@@ -252,6 +252,16 @@ func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID, number_
 	query := "INSERT INTO migration_registration (migration_id, user_id, src_app, dst_app, migration_type, number_of_threads, is_logical) VALUES ($1, $2, $3, $4, $5, $6, $7)"
 	if _, err := dbConn.Exec(query, migrationID, uid, src_app, dst_app, mtype, number_of_threads, logical); err != nil {
 		log.Fatal("Insert Error in RegisterMigration", err)
+		return false
+	}
+	return true
+}
+
+func FinishMigration(dbConn *sql.DB, migrationID int) bool {
+	query := "UPDATE migration_registration SET end_time = now() WHERE migration_id = $1;"
+	if _, err := dbConn.Exec(query, migrationID); err != nil {
+		fmt.Println(query, migrationID)
+		log.Fatal("Insert Error in FinishMigration", err)
 		return false
 	}
 	return true
@@ -449,15 +459,6 @@ func _DataCall1(app, sql string, args ...interface{}) (map[string]string, error)
 	rows.Close()
 	return data, errors.New("no result found for sql: " + sql)
 }
-
-// func GetAppId(app_name string) (string, error) {
-// 	sql := "SELECT row_id from apps WHERE app_name = $1"
-
-// 	if result, err := DataCall1("stencil", sql, app_name); err == nil {
-// 		return result["row_id"], nil
-// 	}
-// 	return "-1", errors.New("App Not Found: " + app_name)
-// }
 
 func GetPK(app, table string) []string {
 

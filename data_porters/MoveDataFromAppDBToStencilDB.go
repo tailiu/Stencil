@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-	stencildb := "stencil"
+	stencildb := db.STENCIL_DB
 	stencilDB := db.GetDBConn(stencildb)
 
 	appName, appID := "diaspora", "1"

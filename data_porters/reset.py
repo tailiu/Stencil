@@ -1,4 +1,4 @@
-import psycopg2, datetime, time
+import psycopg2, datetime, time, sys
 
 def getDB(dbname, blade=False):
     if blade:
@@ -9,12 +9,25 @@ def getDB(dbname, blade=False):
     cursor = conn.cursor()
     return conn, cursor
 
+def truncatePhysicalTables():
+    conn, cur = getDB("stencil", blade=False)
+    tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+    cur.execute(tableq)
+    for row in cur.fetchall():
+        table = row[0]
+        if table != "supplementary_tables" and ("supplementary_" in table or "base_" in table):
+            q = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
+            print q
+            cur.execute(q)
+            conn.commit()
+    truncateTableFromStencil("row_desc")
+    
 def truncate(dbname, blade):
     conn, cur = getDB(dbname, blade)
     tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
     cur.execute(tableq)
     for row in cur.fetchall():
-        q = 'TRUNCATE "%s" CASCADE;'%row[0]
+        q = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%row[0]
         print q
         cur.execute(q)
     conn.commit()
@@ -31,7 +44,7 @@ def reverseMarkAsDelete(dbname, blade):
 
 def truncateTableFromStencil(table):
     conn, cur = getDB("stencil", blade=False)
-    q = 'TRUNCATE "%s" CASCADE;'%table
+    q = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
     print q
     cur.execute(q)
     conn.commit()
@@ -50,13 +63,21 @@ def resetRowDesc():
     cur.execute(q)
     conn.commit()
 
-
 if __name__ == "__main__":
-    truncate("mastodon", blade=True)
-    reverseMarkAsDelete("diaspora", blade=False)
-    truncateTableFromStencil("migration_registration")
-    truncateTableFromStencil("evaluation")
-    truncateTableFromStencil("display_flags")
-    truncateTableFromStencil("user_table")
-    truncateTableFromStencil("data_bags")
-    resetRowDesc()
+    if len(sys.argv) <= 1:
+        print "provide an argument (phy, log, row, all), exiting."
+    else:
+        arg = sys.argv[1]
+        if arg in ["phy", "all"]:
+            truncatePhysicalTables()
+        if arg in ["log", "row", "all"]:
+            truncateTableFromStencil("migration_registration")
+            truncateTableFromStencil("evaluation")
+            truncateTableFromStencil("user_table")
+            truncateTableFromStencil("display_flags")
+            if arg in ["log", "all"]:
+                truncate("mastodon", blade=True)
+                reverseMarkAsDelete("diaspora", blade=False)
+            if arg in ["row", "all"]:
+                truncateTableFromStencil("data_bags")
+                resetRowDesc()

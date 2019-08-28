@@ -6,19 +6,43 @@ def getDBConn(app_name):
     cursor   = conn.cursor()
     return conn, cursor
 
-def truncateAllTables():
-    conn, cursor = getDBConn("stencil")
-    tables = ["app_tables", "app_schemas", "schema_mappings", "physical_mappings", "physical_schema", "supplementary_tables"]
+stencilConn, stencilCursor = getDBConn("stencil")
+
+def deletePhysicalTables():
+    
+    tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+    stencilCursor.execute(tableq)
+    for row in stencilCursor.fetchall():
+        table = row[0]
+        if table != "supplementary_tables" and ("supplementary_" in table or "base_" in table):
+            q = 'DROP TABLE "%s" CASCADE;'%table
+            print q
+            stencilCursor.execute(q)
+            stencilConn.commit()
+
+def truncatePhysicalTables():
+    tables = ["supplementary_tables", "physical_schema", "physical_mappings"]
     for table in tables:
-        sql = "TRUNCATE TABLE public.%s CONTINUE IDENTITY CASCADE;"%table
-        cursor.execute(sql)
-    conn.commit()
+        sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
+        print sql
+        stencilCursor.execute(sql)
+        stencilConn.commit()
+
+def truncateAllTables():
+    
+    tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+    stencilCursor.execute(tableq)
+    for row in stencilCursor.fetchall():
+        sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%row[0]
+        print sql
+        stencilCursor.execute(sql)
+        stencilConn.commit()
 
 def truncateTable(table):
-    conn, cursor = getDBConn("stencil")
-    sql = "TRUNCATE TABLE public.%s CONTINUE IDENTITY CASCADE;"%table
-    cursor.execute(sql)
-    conn.commit()
+
+    sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
+    stencilCursor.execute(sql)
+    stencilConn.commit()
 
 def getTablesForApp(app_name):
     conn, cursor = getDBConn(app_name)
@@ -29,28 +53,34 @@ def getTablesForApp(app_name):
         table_list.append(trow[0])
     return table_list
 
+def populateApps(apps):
+    for i in range(0, len(apps)):
+        pk, app = i+1, apps[i]
+        sql = "INSERT INTO apps (app_name, pk) VALUES ('%s', '%d')" % (app, pk)
+        print sql
+        stencilCursor.execute(sql)
+    stencilConn.commit()
+    
 def getAppID(app_name):
-    conn, cursor = getDBConn("stencil")
+    
     sql  = "SELECT pk FROM apps WHERE app_name = '%s';"%app_name
-    cursor.execute(sql)
-    row = cursor.fetchone()
+    stencilCursor.execute(sql)
+    row = stencilCursor.fetchone()
     return row[0]
 
 def insertAppTables(app_name):
     app_id = getAppID(app_name) 
-    conn, cursor = getDBConn("stencil")
     sql = "INSERT INTO app_tables (app_id, table_name) VALUES "
     for table in getTablesForApp(app_name):
         sql += "('%s', '%s'), " % (app_id, table)
     sql = sql.strip(", ")
     print sql
-    cursor.execute(sql)
-    conn.commit()
+    stencilCursor.execute(sql)
+    stencilConn.commit()
 
 def populateAppSchema(app_name):
 
     appConn, appCursor = getDBConn(app_name)
-    stencilConn, stencilCursor = getDBConn("stencil")
 
     table_sql = "SELECT app_tables.pk, app_tables.table_name FROM app_tables JOIN apps ON app_tables.app_id = apps.pk WHERE apps.app_name = '%s'"%app_name
     stencilCursor.execute(table_sql)
@@ -72,10 +102,9 @@ def populateAppSchema(app_name):
     stencilConn.commit()
 
 def addSchemaMappings(app_name):
-    # truncateTable("schema_mappings")
+
     app_id = getAppID(app_name) 
     with open('../stencil/config/app_settings/mappings.json', 'r') as mappingFile: file_data = mappingFile.read()
-    stencilConn, stencilCursor = getDBConn("stencil")
     mappings = json.loads(file_data)
     for appMapping in mappings["allMappings"]:
         if appMapping["fromApp"] == app_name:
@@ -112,19 +141,16 @@ def addSchemaMappings(app_name):
 
                                 isql = "INSERT INTO schema_mappings (source_attribute, dest_attribute) VALUES (%d, %d)"
                                 print app_name,mapperTable,mapperCol, mapperAttrID, "=>", mappedApp, mappedTableName, mappedCol, "id", mappedAttrID
-                                stencilCursor.execute(isql%(mapperAttrID, mappedAttrID))
-
-                                # print isql%(mapperAttrID, mappedAttrID)
-                                # print "------------------------------------------"
-                            # except IndexError as e:
-                                
+                                stencilCursor.execute(isql%(mapperAttrID, mappedAttrID))                                
     stencilConn.commit()
 
-
 if __name__ == "__main__":
-    # truncateAllTables()
-
-    for app_name in ["twitter", "diaspora", "mastodon"]:
-        # insertAppTables(app_name)
-        # populateAppSchema(app_name)
+    apps = ["diaspora", "mastodon","twitter"]
+    deletePhysicalTables()
+    truncateAllTables()
+    populateApps(apps)
+    for app_name in apps:
+        insertAppTables(app_name)
+        populateAppSchema(app_name)
+    for app_name in apps:
         addSchemaMappings(app_name)

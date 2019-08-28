@@ -7,15 +7,26 @@ def getDBConn(db):
 
 conn, cur = getDBConn("stencil")
 
-for i in range(771,860):
-    colsql = "select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = 'supplementary_%d'"%i
-    cur.execute(colsql)
-    idxsql = ""
+def getPhysicalTables():
+    tables = []
+    tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+    cur.execute(tableq)
     for row in cur.fetchall():
-        column_name = row[0]
-        if column_name == "id" or "_id" in column_name:
-            idxsql += "CREATE INDEX supplementary_%d_%s_idx ON public.supplementary_%d (%s); "%(i, column_name,i, column_name)
-    if idxsql != "":
-        print(idxsql)
-        cur.execute(idxsql)
-        conn.commit()
+        table = row[0]
+        if table != "supplementary_tables" and ("supplementary_" in table or "base_" in table):
+            tables.append(table)
+    return tables
+
+if __name__ == "__main__":
+    for table in getPhysicalTables():
+        colsql = "select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'"%table
+        cur.execute(colsql)
+        idxsql = ""
+        for row in cur.fetchall():
+            column_name = row[0]
+            if column_name != "app_id" and (column_name == "id" or "_id" in column_name):
+                idxsql += "CREATE INDEX %s_%s_idx ON public.%s (%s); "%(table, column_name, table, column_name)
+        if idxsql != "":
+            print(idxsql)
+            cur.execute(idxsql)
+            conn.commit()
