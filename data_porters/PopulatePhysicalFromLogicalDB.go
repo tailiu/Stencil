@@ -96,9 +96,9 @@ func main() {
 	stencilDB := db.GetDBConn(db.STENCIL_DB)
 	appDB := db.GetDBConn(appName)
 	QR := qr.NewQR(appName, appID)
-	// tables := db.GetTablesOfDB(appDB, appName)
+	tables := db.GetTablesOfDB(appDB, appName)
 	// tables = FilterTablesFromList(tables, []string{"messages"})
-	tables := []string{"messages"}
+	// tables := []string{"messages"}
 	// log.Fatal(tables)
 	for _, table := range tables {
 		wg.Add(1)

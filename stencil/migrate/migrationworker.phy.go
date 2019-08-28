@@ -43,6 +43,7 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 	if err := mWorker.FetchRoot(); err != nil {
 		log.Fatal(err)
 	}
+	// log.Fatal(mWorker.root.Data)
 	return mWorker
 }
 
@@ -616,7 +617,7 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 			log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 		} else {
 			if strings.EqualFold(err.Error(), "2") {
-				log.Println(fmt.Sprintf("x%dx IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				log.Println(fmt.Sprintf("x%dx BAGGED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			} else {
 				log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 				if strings.EqualFold(err.Error(), "0") {
@@ -660,6 +661,10 @@ func (self *MigrationWorker) RegisterMigration(mtype string, number_of_threads i
 	// 	log.Println("Migration Already Registered!")
 	// 	return true
 	// }
+}
+
+func (self *MigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
+	return db.FinishMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.logTxn.DBconn, true)
 }
 
 func (self *MigrationWorker) MigrateProcessBags(bag map[string]interface{}) error {

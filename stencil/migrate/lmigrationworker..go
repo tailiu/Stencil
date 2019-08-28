@@ -773,6 +773,10 @@ func (self *LMigrationWorker) RegisterMigration(mtype string, number_of_threads 
 	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.logTxn.DBconn, true)
 }
 
+func (self *LMigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
+	return db.FinishMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.logTxn.DBconn, true)
+}
+
 func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 
 	nodelimit := 100

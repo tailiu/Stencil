@@ -229,6 +229,35 @@
                                     }
                                 }
                             ]
+                        },
+                        {
+                            "fromTables": ["notifications"],
+                            "toTables": [
+                                {
+                                    "table": "notifications",
+                                    "conditions": {
+                                    },
+                                    "mapping":{ 
+                                        "id":"notifications.id",
+                                        "target_type":"notifications.activity_type",
+                                        "recipient_id":"notifications.account_id",
+                                        "target_id":"notifications.activity_id",
+                                        "created_at":"notifications.created_at",
+                                        "updated_at":"notifications.updated_at"
+                                    }
+                                },
+                                {
+                                    "table": "notification_actors",
+                                    "conditions":{
+                                    },
+                                    "mapping": {
+                                        "notification_id":"notifications.id",
+                                        "person_id":"notifications.from_account_id",
+                                        "created_at":"notifications.created_at",
+                                        "updated_at":"notifications.updated_at"
+                                    }
+                                }
+                            ]
                         }
                     ]
                 },
@@ -381,6 +410,25 @@
                                         "from_user_id":"follows.account_id",
                                         "to_user_id":"follows.target_account_id",
                                         "action_type": "#returnFollow"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["notifications"],
+                            "toTables": [
+                                {
+                                    "table": "notifications",
+                                    "conditions": {
+                                    },
+                                    "mapping":{ 
+                                        "id":"notifications.id",
+                                        "notification_type":"notifications.activity_type",
+                                        "user_id":"notifications.account_id",
+                                        "tweet":"notifications.activity_id",
+                                        "from_user":"notifications.from_account_id",
+                                        "created_at":"notifications.created_at",
+                                        "updated_at":"notifications.updated_at"
                                     }
                                 }
                             ]
@@ -610,6 +658,25 @@
                                         "id":"mentions.id",
                                         "account_id":"mentions.person_id",
                                         "status_id":"mentions.mentions_container_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["notifications", "notification_actors"],
+                            "toTables": [
+                                {
+                                    "table": "notifications",
+                                    "conditions": {
+                                    },
+                                    "mapping":{ 
+                                        "id":"notifications.id",
+                                        "activity_type":"notifications.target_type",
+                                        "account_id":"notifications.recipient_id",
+                                        "from_account_id":"notification_actors.person_id",
+                                        "activity_id":"notifications.target_id",
+                                        "created_at":"notifications.created_at",
+                                        "updated_at":"notifications.updated_at"
                                     }
                                 }
                             ]
@@ -956,6 +1023,25 @@
                                     }
                                 }
                             ]
+                        },
+                        {
+                            "fromTables": ["notifications"],
+                            "toTables": [
+                                {
+                                    "table": "notifications",
+                                    "conditions": {
+                                    },
+                                    "mapping":{ 
+                                        "id":"notifications.id",
+                                        "activity_type":"notifications.notification_type",
+                                        "account_id":"notifications.user_id",
+                                        "activity_id":"notifications.tweet",
+                                        "from_account_id":"notifications.from_user",
+                                        "created_at":"notifications.created_at",
+                                        "updated_at":"notifications.updated_at"
+                                    }
+                                }
+                            ]
                         }
                     ]
                 },
@@ -1149,6 +1235,7 @@
                                     "conditions":{
                                     },
                                     "mapping": {
+                                        "notification_id":"notifications.id",
                                         "person_id":"notifications.from_user",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"

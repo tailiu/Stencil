@@ -36,7 +36,7 @@ def createIndices():
             column_name = row["column_name"]
             if column_name != "app_id" and (column_name == "pk" or column_name == "id" or "_id" in column_name):
                 idxsql = "CREATE INDEX %s_%s_idx ON public.%s (%s); "%(table, column_name, table, column_name)
-                print idxsql
+                # print idxsql
                 cur.execute(idxsql)
 
 def deletePhysicalTables():
@@ -260,7 +260,7 @@ def createTable(name, attrs):
     attrs.append("base_mark_delete BOOL")
     tsql = "CREATE TABLE %s ( %s )" % (name, ', '.join(attrs))
     
-    print tsql, isql
+    # print tsql, isql
 
     # cur.execute(tsql)
     # cur.execute(isql)
@@ -273,12 +273,12 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
 
     for attr_id, attr_name in attrs.items():
         isql =  "INSERT INTO PHYSICAL_SCHEMA (table_name, column_name) VALUES ('%s', '%s') RETURNING pk" % (name, attr_name)
-        print isql
+        # print isql
         cur.execute(isql)
         phy_attr_id = cur.fetchone()['pk']
         mapped_attrs = [attr_id] + trans_attrs[attr_id]
         pmsql = "INSERT INTO PHYSICAL_MAPPINGS (logical_attribute, physical_attribute) VALUES " + ", ".join(["('%s', '%s')" % (attr_id,phy_attr_id) for attr_id in set(mapped_attrs)])
-        print pmsql
+        # print pmsql
         cur.execute(pmsql)
 
     attrs_with_type = [attr + " varchar" for attr in attrs.values()]
@@ -288,7 +288,7 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
     attrs_with_type.append("base_created_at TIMESTAMP DEFAULT now()")
     attrs_with_type.append("base_mark_delete BOOL")
     tsql = "CREATE TABLE %s ( %s )" % (name, ', '.join(attrs_with_type))
-    print tsql
+    # print tsql
     cur.execute(tsql)
 
 def createSupplementaryTables():
@@ -308,7 +308,7 @@ def createSupplementaryTables():
         table_id    = row["table_id"]
         column_names= row["column_names"]
         column_ids  = row["column_ids"]
-        print app_id, table_id, column_names
+        # print app_id, table_id, column_names
 
         insql = "INSERT INTO SUPPLEMENTARY_TABLES (table_id) VALUES(%d) RETURNING pk" % (table_id)
         # print insql
@@ -349,13 +349,13 @@ if __name__ == "__main__":
     print "Attribute Node Vectors"
     node_vectors = genAttributeNodeVectors(app_schemas, trans_attrs)
 
-    print "getBaseTables"
+    print "createBaseTables"
     for table, vector in node_vectors.items():
         filtered_vector = vector.loc[vector.sum(axis=1)/vector.shape[1] >= t]            
         base_tables = genBaseTables(filtered_vector)
         for idx, base_attrs in base_tables.items():
             bt_name = "base_%s_%s" % (table, idx)
-            print bt_name
+            # print bt_name
             createBaseTable(bt_name, base_attrs, app_schemas, trans_attrs)
 
     print "createSupplementaryTables"    

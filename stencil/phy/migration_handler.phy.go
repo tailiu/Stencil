@@ -10,12 +10,10 @@ import (
 	"stencil/migrate"
 	"stencil/mthread"
 	"stencil/transaction"
-	"stencil/evaluation"
 	"strconv"
 )
 
 func main() {
-	evalConfig := evaluation.InitializeEvalConfig()
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		srcApp, srcAppID := "diaspora", "1"
 		dstApp, dstAppID := "mastodon", "2"
@@ -48,7 +46,7 @@ func main() {
 
 		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype)
 
-		if mthread.ThreadController(mWorker, threads, evalConfig) {
+		if mthread.ThreadController(mWorker, threads) {
 			transaction.LogOutcome(logTxn, "COMMIT")
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")

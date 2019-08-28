@@ -64,14 +64,20 @@ def resetRowDesc():
     conn.commit()
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        truncatePhysicalTables()
+    if len(sys.argv) <= 1:
+        print "provide an argument (phy, log, row, all), exiting."
     else:
-        truncate("mastodon", blade=True)
-        reverseMarkAsDelete("diaspora", blade=False)
-        truncateTableFromStencil("migration_registration")
-        truncateTableFromStencil("evaluation")
-        truncateTableFromStencil("display_flags")
-        truncateTableFromStencil("user_table")
-        truncateTableFromStencil("data_bags")
-        resetRowDesc()
+        arg = sys.argv[1]
+        if arg in ["phy", "all"]:
+            truncatePhysicalTables()
+        if arg in ["log", "row", "all"]:
+            truncateTableFromStencil("migration_registration")
+            truncateTableFromStencil("evaluation")
+            truncateTableFromStencil("user_table")
+            truncateTableFromStencil("display_flags")
+            if arg in ["log", "all"]:
+                truncate("mastodon", blade=True)
+                reverseMarkAsDelete("diaspora", blade=False)
+            if arg in ["row", "all"]:
+                truncateTableFromStencil("data_bags")
+                resetRowDesc()

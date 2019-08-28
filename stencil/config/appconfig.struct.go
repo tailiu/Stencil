@@ -357,7 +357,7 @@ func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
 		}
 		qs.WhereString("AND", restrictions.Where)
 	}
-	log.Fatal(qs)
+	// log.Fatal(qs.GenSQL())
 	return qs
 }
 

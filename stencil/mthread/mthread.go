@@ -109,7 +109,8 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 	if mWorker.MType() == migrate.DELETION {
 		mWorker.HandleLeftOverWaitingNodes()
 	}
-	
+
+	mWorker.FinishMigration(mWorker.MType(), threads)
 	return finished
 }
 
@@ -196,5 +197,6 @@ func LThreadController(mWorker migrate.LMigrationWorker, threads int) bool {
 		mWorker.HandleLeftOverWaitingNodes()
 	}
 	
+	mWorker.FinishMigration(mWorker.MType(), threads)
 	return finished
 }
