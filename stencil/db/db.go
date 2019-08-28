@@ -177,7 +177,7 @@ func BUpdate(dbConn *sql.DB, pk, flag, app_id string) error {
 }
 
 func GetUnmigratedUsers() ([]map[string]interface{}, error) {
-	dbConn := GetDBConn("stencil")
+	dbConn := GetDBConn(STENCIL_DB)
 	sql := "SELECT user_id FROM user_table WHERE user_id NOT IN (SELECT DISTINCT user_id FROM migration_registration) ORDER BY user_id ASC"
 	return DataCall(dbConn, sql)
 }
@@ -449,15 +449,6 @@ func _DataCall1(app, sql string, args ...interface{}) (map[string]string, error)
 	rows.Close()
 	return data, errors.New("no result found for sql: " + sql)
 }
-
-// func GetAppId(app_name string) (string, error) {
-// 	sql := "SELECT row_id from apps WHERE app_name = $1"
-
-// 	if result, err := DataCall1("stencil", sql, app_name); err == nil {
-// 		return result["row_id"], nil
-// 	}
-// 	return "-1", errors.New("App Not Found: " + app_name)
-// }
 
 func GetPK(app, table string) []string {
 

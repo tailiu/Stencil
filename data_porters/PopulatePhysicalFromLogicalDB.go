@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"math/rand"
 	"time"
+	"sync"
 	// escape "github.com/tj/go-pg-escape"
 )
 
@@ -45,6 +46,8 @@ func runTx(dbConn *sql.DB, QIs []*qr.QI) bool{
 		if _, err := tx.Exec(query, args...); err != nil {
 			success = false
 			fmt.Println("Some error:", err)
+			fmt.Println(query, args)
+			fmt.Println(qi)
 			break
 		}
 	}
@@ -61,34 +64,45 @@ func runTx(dbConn *sql.DB, QIs []*qr.QI) bool{
 	return success
 }
 
+func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, wg *sync.WaitGroup) {
+	
+	log.Println("Populating ",table)
+	q := fmt.Sprintf("SELECT * FROM \"%s\"", table)
+	if ldata, err := db.DataCall(appDB, q); err != nil{
+		fmt.Println(q)
+		log.Fatal("Some problem with logical data query:", err)
+	}else{
+		for _, ldatum := range ldata {
+			var cols []string
+			var vals []interface{}
+			for col, val := range ldatum {
+				cols, vals = append(cols, col), append(vals, val)
+			}
+			qi := qr.CreateQI(table, cols, vals, qr.QTInsert)
+			rowid := db.GetNewRowID(stencilDB)
+			qis := QR.ResolveInsert(qi, rowid)
+			runTx(stencilDB, qis)
+		}
+	}
+	log.Println("Done:", table)
+	wg.Done()
+}
+
 func main() {
+	var wg sync.WaitGroup
 	rand.Seed(time.Now().UnixNano())
 
 	appName, appID := "diaspora", "1"
-	stencilDB := db.GetDBConn("stencil")
+	stencilDB := db.GetDBConn(db.STENCIL_DB)
 	appDB := db.GetDBConn(appName)
 	QR := qr.NewQR(appName, appID)
-	tables := db.GetTablesOfDB(appDB, appName)
-	// tables = FilterTablesFromList(tables, []string{"aspects","share_visibilities","chat_contacts","chat_fragments","blocks","chat_offline_messages","invitation_codes","locations","mentions","notifications","notification_actors","o_embed_caches","open_graph_caches","participations","comments","pods","people","contacts","conversations","conversation_visibilities","likes","poll_answers","messages","aspect_memberships","photos","poll_participations","polls","posts","profiles"})
+	// tables := db.GetTablesOfDB(appDB, appName)
+	// tables = FilterTablesFromList(tables, []string{"messages"})
+	tables := []string{"messages"}
 	// log.Fatal(tables)
 	for _, table := range tables {
-		log.Println("Populating ",table)
-		q := fmt.Sprintf("SELECT * FROM \"%s\"", table)
-		if ldata, err := db.DataCall(appDB, q); err != nil{
-			fmt.Println(q)
-			log.Fatal("Some problem with logical data query:", err)
-		}else{
-			for _, ldatum := range ldata {
-				var cols []string
-				var vals []interface{}
-				for col, val := range ldatum {
-					cols, vals = append(cols, col), append(vals, val)
-				}
-				qi := qr.CreateQI(table, cols, vals, qr.QTInsert)
-				rowid := db.GetNewRowID(stencilDB)
-				qis := QR.ResolveInsert(qi, rowid)
-				runTx(stencilDB, qis)
-			}
-		}
+		wg.Add(1)
+		go transfer(QR, appDB, stencilDB, table, &wg)
 	}
+	wg.Wait()
 }

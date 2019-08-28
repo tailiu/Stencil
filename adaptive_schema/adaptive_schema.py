@@ -18,15 +18,31 @@ def getDBConn(db, cursor_dict=False):
         cursor = conn.cursor()
     return conn, cursor
 
-def deletePhysicalTables():
-    
+def getPhysicalTables():
+    tables = []
     tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
     cur.execute(tableq)
     for row in cur.fetchall():
         table = row["tablename"]
         if table != "supplementary_tables" and ("supplementary_" in table or "base_" in table):
-            q = 'DROP TABLE "%s" CASCADE;'%table
-            cur.execute(q)
+            tables.append(table)
+    return tables
+
+def createIndices():
+    for table in getPhysicalTables():
+        colsql = "select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'"%table
+        cur.execute(colsql)
+        for row in cur.fetchall():
+            column_name = row["column_name"]
+            if column_name != "app_id" and (column_name == "pk" or column_name == "id" or "_id" in column_name):
+                idxsql = "CREATE INDEX %s_%s_idx ON public.%s (%s); "%(table, column_name, table, column_name)
+                print idxsql
+                cur.execute(idxsql)
+
+def deletePhysicalTables():
+    for table in getPhysicalTables():
+        q = 'DROP TABLE "%s" CASCADE;'%table
+        cur.execute(q)
 
 def truncatePhysicalTables():
     tables = ["supplementary_tables", "physical_schema", "physical_mappings"]
@@ -137,6 +153,7 @@ def printTransAttrs(trans_attrs):
         for mapped_attr in mapped_attrs:
             print getAppSchemaAttr(mapped_attr),
         print ""
+    exit(0)
 
 def filterSchemaRow(app_schemas, attr):
     return filter(lambda x: x.get('column_id') == attr, app_schemas)[0]
@@ -265,7 +282,7 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
         cur.execute(pmsql)
 
     attrs_with_type = [attr + " varchar" for attr in attrs.values()]
-    attrs_with_type.insert(0,"app_id varchar")
+    # attrs_with_type.insert(0,"app_id varchar")
     # attrs_with_type.insert(0,"base_pk SERIAL PRIMARY KEY")
     attrs_with_type.insert(0,"pk SERIAL PRIMARY KEY")
     attrs_with_type.append("base_created_at TIMESTAMP DEFAULT now()")
@@ -299,7 +316,7 @@ def createSupplementaryTables():
         
         supp_table_id = cur.fetchone()['pk']
         
-        cols = [attr  for attr in column_names.split(',') if len(attr)]
+        cols = [attr  for attr in column_names.split(',') if len(attr) and attr != "app_id"]
         cols.insert(0,"pk SERIAL PRIMARY KEY")
         cols.append("supp_created_at TIMESTAMP DEFAULT now()")
         cols.append("supp_mark_delete BOOL")
@@ -308,10 +325,9 @@ def createSupplementaryTables():
         # print tsql
         cur.execute(tsql)
 
-
 if __name__ == "__main__":
     
-    t = 0.6
+    t = 0.5
 
     db, cur = getDBConn("stencil", True)
 
@@ -328,9 +344,7 @@ if __name__ == "__main__":
     print "Transitively Mapped Attrs"
     trans_attrs = genTransitivelyMappedAttrs(schema_mappings)
 
-    # print(trans_attrs)
-
-    # exit(0)
+    # print printTransAttrs(trans_attrs)
 
     print "Attribute Node Vectors"
     node_vectors = genAttributeNodeVectors(app_schemas, trans_attrs)
@@ -346,3 +360,6 @@ if __name__ == "__main__":
 
     print "createSupplementaryTables"    
     createSupplementaryTables()
+
+    print "createIndices"    
+    createIndices()

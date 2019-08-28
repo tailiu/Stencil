@@ -36,7 +36,7 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 		mappings:     mappings,
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
-		DBConn:       db.GetDBConn("stencil"),
+		DBConn:       db.GetDBConn(db.STENCIL_DB),
 		logTxn:       logTxn,
 		mtype:        mtype,
 		visitedNodes: make(map[string]bool)}
@@ -54,7 +54,7 @@ func (self *MigrationWorker) RenewDBConn() {
 	if self.DBConn != nil {
 		self.DBConn.Close()
 	}
-	self.DBConn = db.GetDBConn("stencil")
+	self.DBConn = db.GetDBConn(db.STENCIL_DB)
 }
 
 func (self *MigrationWorker) Finish() {

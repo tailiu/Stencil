@@ -12,7 +12,7 @@ func NewQR(app_name, app_id string) *QR {
 	qr := new(QR)
 	qr.AppName = app_name
 	qr.AppID = app_id
-	qr.StencilDB = db.GetDBConn("stencil")
+	qr.StencilDB = db.GetDBConn(db.STENCIL_DB)
 	// fmt.Println("Fetching Base Mappings...")
 	qr.getBaseMappings()
 	// fmt.Println("Fetching Supplementary Mappings...")
@@ -24,7 +24,7 @@ func NewQR(app_name, app_id string) *QR {
 func NewQRWithAppName(app_name string) *QR {
 	qr := new(QR)
 	qr.AppName = app_name
-	qr.StencilDB = db.GetDBConn("stencil")
+	qr.StencilDB = db.GetDBConn(db.STENCIL_DB)
 	fmt.Println("Getting App ID...")
 	qr.setAppID()
 	fmt.Println("Fetching Base Mappings...")
@@ -38,7 +38,7 @@ func NewQRWithAppName(app_name string) *QR {
 func NewQRWithAppID(app_id string) *QR {
 	qr := new(QR)
 	qr.AppID = app_id
-	qr.StencilDB = db.GetDBConn("stencil")
+	qr.StencilDB = db.GetDBConn(db.STENCIL_DB)
 	fmt.Println("Getting App Name...")
 	qr.setAppName()
 	fmt.Println("Fetching Base Mappings...")
