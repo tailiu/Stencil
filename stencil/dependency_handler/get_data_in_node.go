@@ -3,35 +3,38 @@ package dependency_handler
 import (
 	"database/sql"
 	"errors"
-	"log"
+	// "log"
 	"stencil/config"
-	"stencil/db"
 	"stencil/display"
-	"strconv"
+	// "strconv"
 	"strings"
 )
 
-func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, depDataTable, depDataKey string, depDataValue int) (map[string]string, error) {
-	data := display.GetDataFromPhysicalSchema(stencilDBConn, appConfig.QR, depDataTable + ".*", 
-		depDataTable, depDataTable + "." + depDataKey, "=", strconv.Itoa(depDataValue), "1")
+func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hint display.HintStruct) (map[string]interface{}, error) {
+	// data := display.GetDataFromPhysicalSchema(stencilDBConn, appConfig.QR, depDataTable + ".*", 
+	// 	depDataTable, depDataTable + "." + depDataKey, "=", strconv.Itoa(depDataValue), "1")
+	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, hint.Table + ".*", hint.Table, hint.RowID)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
 	} else {
-		return data[0], nil
+		return data, nil
 	}
 }
 
-func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.DB, val int, dep string) (map[string]string, error) {
+func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.DB, val string, dep string) (map[string]interface{}, error) {
 	table := strings.Split(dep, ".")[0]
 	key := strings.Split(dep, ".")[1]
-	data := display.GetDataFromPhysicalSchema(stencilDBConn, appConfig.QR, table + ".*", 
-		table, table + "." + key, "=", strconv.Itoa(val), "1")
+	// log.Println(table)
+	// log.Println(key)
+	// log.Println(val)
+	data := display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, table + ".*", 
+		table, table + "." + key, "=", val)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: Cannot Find One Remaining Data in the Node")
 	} else {
-		return data[0], nil
+		return data, nil
 	}
 }
 
@@ -51,71 +54,57 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 			procDependencies[newVal] = append(procDependencies[newVal], newKey)
 		}
 	}
-	// fmt.Println(procDependencies)
+	// log.Println(procDependencies)
 
-	var data map[string]string
-	var err error
-	for k, v := range hint.KeyVal {
-		data, err = getOneRowBasedOnHint(appConfig, stencilDBConn, hint.Table, k, v)
-		if err != nil {
-			return nil, err
-		}
+	data, err := getOneRowBasedOnHint(appConfig, stencilDBConn, hint)
+	if err != nil {
+		return nil, err
 	}
+	hint.Data = data
+	
+	// log.Println("**************")
+	// log.Println(data)
+	// log.Println("**************")
 
 	result = append(result, hint)
 
 	queue := []DataInDependencyNode{DataInDependencyNode{
 		Table: hint.Table,
-		Data:  data,
+		Data:  hint.Data,
 	}}
 	for len(queue) != 0 && len(procDependencies) != 0 {
-		// fmt.Println(queue)
-		// fmt.Println(procDependencies)
+		// log.Println(queue)
+		// log.Println("&&&&&&&&&&&&&&&")
+		// log.Println(procDependencies)
+		// log.Println("&&&&&&&&&&&&&&&")
 
 		dataInDependencyNode := queue[0]
 		queue = queue[1:]
 
 		table := dataInDependencyNode.Table
 		for col, val := range dataInDependencyNode.Data {
-			if deps, ok := procDependencies[table+"."+col]; ok {
+			if deps, ok := procDependencies[col]; ok {
 				// We assume that this is an integer value otherwise we have to define it in dependency config
-				intVal, err := strconv.Atoi(val)
-				if err != nil {
-					log.Fatal("Error in Getting Data in Node: Converting '%s' to Integer", val)
-				}
 				for _, dep := range deps {
-					data, err = getOneRowBasedOnDependency(appConfig, stencilDBConn, intVal, dep)
-					// fmt.Println(data)
-
-					if err != nil {
-						// fmt.Println(err)
+					data1, err1 := getOneRowBasedOnDependency(appConfig, stencilDBConn, val.(string), dep)
+					if err1 != nil {
+						// log.Println(err1)
 						// fmt.Println(result)
 						continue
 					}
-					// fmt.Println(dep)
 
 					table1 := strings.Split(dep, ".")[0]
 					key1 := strings.Split(dep, ".")[1]
-					// fmt.Println(queue)
 					queue = append(queue, DataInDependencyNode{
 						Table: table1,
-						Data:  data,
+						Data:  data1,
 					})
 
-					pk, err1 := db.GetPrimaryKeyOfTable(appConfig.DBConn, table1)
-					if err1 != nil {
-						log.Fatal(err1)
-					}
-					intPK, err2 := strconv.Atoi(data[pk])
-					if err2 != nil {
-						log.Fatal(err2)
-					}
-					keyVal := map[string]int{
-						pk: intPK,
-					}
+					rowID := display.GetRowIDFromData(data1)
 					result = append(result, display.HintStruct{
-						Table:  table1,
-						KeyVal: keyVal,
+						Table: table1,
+						RowID: rowID,
+						Data: data1,
 					})
 
 					deps1 := procDependencies[table1+"."+key1]
@@ -131,7 +120,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 						procDependencies[table1+"."+key1] = deps1
 					}
 				}
-				delete(procDependencies, table+"."+col)
+				delete(procDependencies, col)
 			}
 		}
 	}
@@ -216,6 +205,9 @@ func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint displa
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
 	if data, err = getDataInNode(appConfig, hint, stencilDBConn); err != nil {
+		// log.Println(("**************"))
+		// log.Println(data)
+		// log.Println(("**************"))
 		// The setting "default_display_setting" means only display a node when the node is complete.
 		// Therefore, return nil and error message when node is not complete.
 		if displaySetting == "default_display_setting" {

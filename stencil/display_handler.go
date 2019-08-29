@@ -59,25 +59,25 @@ func DisplayThread(app string, migrationID int) {
 	startTime := time.Now()
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appConfig, pks := display.Initialize(app)
+	stencilDBConn, appConfig, _ := display.Initialize(app)
 
 	log.Println("--------- First Phase --------")
 	secondRound := false
-	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks, appConfig); 
+	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, appConfig); 
 		!display.CheckMigrationComplete(stencilDBConn, migrationID); 
-		migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks, appConfig) {
+		migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, appConfig) {
 
 		for _, oneMigratedData := range migratedData {
-			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, app, pks, secondRound)
+			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, secondRound)
 		}
 		time.Sleep(checkInterval)
 	}
 
 	log.Println("--------- Second Phase ---------")
 	secondRound = true
-	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks, appConfig)
+	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, appConfig)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
+		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, secondRound)
 	}
 
 	log.Println("--------- End of Display Check ---------")
@@ -86,40 +86,37 @@ func DisplayThread(app string, migrationID int) {
 }
 
 // Three-way display check
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, app string, pks map[string]string, secondRound bool) (string, error) {
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, secondRound bool) (string, error) {
 
 	log.Println("Check Data ", oneMigratedData)
 	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(appConfig, oneMigratedData, stencilDBConn)
+	log.Println("-----------")
+	log.Println(dataInNode)
+	log.Println("-----------")
 	if dataInNode == nil {
 		log.Println(err1)
 		return "No Data In a Node Can be Displayed", err1
 	} else {
 
-		// var displayedData, notDisplayedData []display.HintStruct
-		// for _, oneDataInNode := range dataInNode {
-		// 	var val int
-		// 	for _, v := range oneDataInNode.KeyVal {
-		// 		val = v
-		// 	}
-		// 	displayed, err0 := display.GetDisplayFlag(stencilDBConn, app, oneDataInNode.Table, val)
-		// 	if err0 != nil {
-		// 		log.Fatal(err0)
-		// 	}
-		// 	if !displayed {
-		// 		notDisplayedData = append(notDisplayedData, oneDataInNode)
-		// 	} else {
-		// 		displayedData = append(displayedData, oneDataInNode)
-		// 	}
-		// }
-		// // Note: This will be changed when considering ongoing application services
-		// // and the existence of other display threads !!
-		// if len(displayedData) != 0 {
-		// 	err6 := display.Display(stencilDBConn, app, notDisplayedData, pks)
-		// 	if err6 != nil {
-		// 		log.Fatal(err6)
-		// 	}
-		// 	return returnResultBasedOnNodeCompleteness(err1)
-		// }
+		var displayedData, notDisplayedData []display.HintStruct
+		for _, dataInNode1 := range dataInNode {
+			displayed := display.CheckDisplay(stencilDBConn, appConfig.AppID, dataInNode1)
+			if displayed == 1 {
+				notDisplayedData = append(notDisplayedData, dataInNode1)
+			} else {
+				displayedData = append(displayedData, dataInNode1)
+			}
+		}
+		// Note: This will be changed when considering ongoing application services
+		// and the existence of other display threads !!
+		if len(displayedData) != 0 {
+			err6 := display.Display(stencilDBConn, appConfig.AppID, notDisplayedData)
+			if err6 != nil {
+				log.Fatal(err6)
+			}
+			return returnResultBasedOnNodeCompleteness(err1)
+		}
+
 
 		pTags, err2 := oneMigratedData.GetParentTags(appConfig)
 		if err2 != nil {
@@ -128,7 +125,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 			if pTags == nil {
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
 				// Need to change this display.Display function
-				err3 := display.Display(stencilDBConn, app, dataInNode, pks)
+				err3 := display.Display(stencilDBConn, appConfig.AppID, dataInNode)
 				if err3 != nil {
 					log.Fatal(err3)
 				}
@@ -136,6 +133,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 			} else {
 				pTagConditions := make(map[string]bool)
 				for _, pTag := range pTags {
+					log.Println(pTag)
 					dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(stencilDBConn, appConfig, dataInNode, pTag)
 					log.Println(dataInParentNode, err4)
 					displaySetting, err5 := dependency_handler.GetDisplaySettingInDependencies(appConfig, oneMigratedData, pTag)
@@ -151,10 +149,10 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 						}
 					} else {
 						// For now, there is no case where there is more than one piece of data in a parent node
-						if len(dataInParentNode) != 1 {
-							log.Fatal("Find more than one piece of data in a parent node!!")
-						}
-						result, err7 := checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode[0], app, pks, secondRound)
+						// if len(dataInParentNode) != 1 {
+						// 	log.Fatal("Find more than one piece of data in a parent node!!")
+						// }
+						result, err7 := checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode, secondRound)
 						if err7 != nil {
 							log.Println(err7)
 						}
@@ -175,7 +173,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 				// this check display condition func will return true
 				// as long as one pTagCondition is true
 				if checkResult := checkDisplayConditions(appConfig, pTagConditions, oneMigratedData); checkResult {
-					err8 := display.Display(stencilDBConn, app, dataInNode, pks)
+					err8 := display.Display(stencilDBConn, appConfig.AppID, dataInNode)
 					if err8 != nil {
 						log.Fatal(err8)
 					}
@@ -268,7 +266,7 @@ func main() {
 	// log.Println(db.GetAllColsOfRows(dbConn, physicalQuery))
 
 	dstApp := "mastodon"
-	DisplayThread(dstApp, 1242116270)
+	DisplayThread(dstApp, 994283242)
 
 
 	// dbConn := db.GetDBConn(dstApp)

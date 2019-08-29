@@ -7,8 +7,7 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"strconv"
-	"time"
-	"stencil/qr"
+	// "time"
 )
 
 const StencilDBName = "stencil"
@@ -24,62 +23,43 @@ func Initialize(app string) (*sql.DB, *config.AppConfig, map[string]string) {
 	}
 
 	pks := make(map[string]string)
-	tables := db.GetTablesOfDB(appConfig.DBConn, app)
-	for _, table := range tables {
-		pk, err := db.GetPrimaryKeyOfTable(appConfig.DBConn, table)
-		if err != nil {
-			fmt.Println(err)
-		}
-		pks[table] = pk
-	}
+	// tables := db.GetTablesOfDB(appConfig.DBConn, app)
+	// for _, table := range tables {
+	// 	pk, err := db.GetPrimaryKeyOfTable(appConfig.DBConn, table)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	pks[table] = pk
+	// }
 
 	return stencilDBConn, &appConfig, pks
 }
 
-func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, pks map[string]string, appConfig *config.AppConfig) []HintStruct {
+func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, appConfig *config.AppConfig) []HintStruct {
 	var displayHints []HintStruct
+
 	query := fmt.Sprintf(
 		"SELECT d.table_name, d.id FROM row_desc AS r JOIN display_flags AS d on r.rowid = d.id where app = '%s' and migration_id = %d and mflag = 1;",
 		app, migrationID)
 	// query := fmt.Sprintf("SELECT * FROM display_flags WHERE app = '%s' and migration_id = %d and display_flag = false", app, migrationID)
 	data := db.GetAllColsOfRows(stencilDBConn, query)
-	fmt.Println(data)
+	// log.Println(data)
 
 	// If we don't use physical schema, both table_name and id are necessary to identify a piece of migratd data.
 	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
 	// We use table_name to optimize performance
-	for _, oneData := range data {
+	for _, data1 := range data {
+		table := data1["table_name"]
+
 		hint := HintStruct{}
-		table := oneData["table_name"]
-
-		//********
-		log.Println("**************")
-		log.Println(oneData["id"])
-		qs := qr.CreateQS(appConfig.QR)
-		qs.FromSimple(table)
-		qs.ColSimple(table + ".*")
-		queryRow := qs.GenSQLWith(oneData["id"])
-		row, err := db.DataCall1(stencilDBConn, queryRow)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println(row)
-		log.Println("**************")
-		//********
-
-		intVal, err1 := strconv.Atoi(oneData["id"])
-		if err1 != nil {
-			log.Fatal(err1)
-		}
-		keyVal := map[string]int{
-			pks[table]: intVal,
-		}
-		// hint.Data = row
 		hint.Table = table
-		hint.KeyVal = keyVal
+		// log.Println(GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, table + ".*", table, data1["id"]))
+		hint.RowID = data1["id"]
+
 		displayHints = append(displayHints, hint)
+		// log.Println(hint)
 	}
-	// fmt.Println(displayHints)
+	// log.Println(displayHints)
 	return displayHints
 }
 
@@ -93,18 +73,44 @@ func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 	}
 }
 
-func Display(stencilDBConn *sql.DB, app string, dataHints []HintStruct, pks map[string]string) error {
-	var queries []string
+func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
+	rowID, err := strconv.Atoi(data.RowID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	appID1, err1 := strconv.Atoi(appID)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
 
+	query := fmt.Sprintf("SELECT mflag FROM row_desc WHERE rowid = %d and app_id=%d", rowID, appID1)
+	data1, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	return data1["mflag"].(int64)
+}
+
+func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct) error {
+	var queries []string
+	
+	appID1, err1 := strconv.Atoi(appID)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
 	for _, dataHint := range dataHints {
-		table := dataHint.Table
-		t := time.Now().Format(time.RFC3339)
-		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = true, updated_at = '%s' WHERE app = '%s' and table_name = '%s' and id = %d;",
-			t, app, table, dataHint.KeyVal[pks[table]])
+		rowID, err := strconv.Atoi(dataHint.RowID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		
+		query := fmt.Sprintf("UPDATE row_desc SET mflag = 0 WHERE rowid = %d and app_id=%d", rowID, appID1)
 		log.Println("**************************************")
 		log.Println(query)
 		log.Println("**************************************")
 		queries = append(queries, query)
+
 	}
 
 	return db.TxnExecute(stencilDBConn, queries)
