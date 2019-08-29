@@ -3,7 +3,7 @@ package dependency_handler
 import (
 	"database/sql"
 	"errors"
-	// "log"
+	"log"
 	"stencil/config"
 	"stencil/display"
 	// "strconv"
@@ -11,9 +11,7 @@ import (
 )
 
 func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hint display.HintStruct) (map[string]interface{}, error) {
-	// data := display.GetDataFromPhysicalSchema(stencilDBConn, appConfig.QR, depDataTable + ".*", 
-	// 	depDataTable, depDataTable + "." + depDataKey, "=", strconv.Itoa(depDataValue), "1")
-	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, hint.Table + ".*", hint.Table, hint.RowID)
+	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.Table + ".*", hint.Table, hint.RowID)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
@@ -28,7 +26,7 @@ func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.
 	// log.Println(table)
 	// log.Println(key)
 	// log.Println(val)
-	data := display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, table + ".*", 
+	data := display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, table + ".*", 
 		table, table + "." + key, "=", val)
 
 	if len(data) == 0 {
@@ -56,16 +54,6 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 	}
 	// log.Println(procDependencies)
 
-	data, err := getOneRowBasedOnHint(appConfig, stencilDBConn, hint)
-	if err != nil {
-		return nil, err
-	}
-	hint.Data = data
-	
-	// log.Println("**************")
-	// log.Println(data)
-	// log.Println("**************")
-
 	result = append(result, hint)
 
 	queue := []DataInDependencyNode{DataInDependencyNode{
@@ -74,9 +62,6 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 	}}
 	for len(queue) != 0 && len(procDependencies) != 0 {
 		// log.Println(queue)
-		// log.Println("&&&&&&&&&&&&&&&")
-		// log.Println(procDependencies)
-		// log.Println("&&&&&&&&&&&&&&&")
 
 		dataInDependencyNode := queue[0]
 		queue = queue[1:]
@@ -86,6 +71,9 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 			if deps, ok := procDependencies[col]; ok {
 				// We assume that this is an integer value otherwise we have to define it in dependency config
 				for _, dep := range deps {
+					log.Println(dep)
+					log.Println(col)
+					log.Println(dataInDependencyNode.Data)
 					data1, err1 := getOneRowBasedOnDependency(appConfig, stencilDBConn, val.(string), dep)
 					if err1 != nil {
 						// log.Println(err1)
@@ -135,6 +123,15 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 }
 
 func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct, stencilDBConn *sql.DB) ([]display.HintStruct, error) {
+	// Get and cache hint.Data if it is not there
+	if len(hint.Data) == 0 {
+		data, err := getOneRowBasedOnHint(appConfig, stencilDBConn, hint)
+		if err != nil {
+			return nil, err
+		}
+		hint.Data = data
+	}
+
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members {
 			if hint.Table == member {

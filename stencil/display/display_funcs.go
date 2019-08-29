@@ -7,7 +7,7 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"strconv"
-	// "time"
+	"time"
 )
 
 const StencilDBName = "stencil"
@@ -83,12 +83,13 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 		log.Fatal(err1)
 	}
 
-	query := fmt.Sprintf("SELECT mflag FROM row_desc WHERE rowid = %d and app_id=%d", rowID, appID1)
+	query := fmt.Sprintf("SELECT mflag FROM row_desc WHERE rowid = %d and app_id = %d", rowID, appID1)
+	log.Println(query)
 	data1, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+	log.Println(data1)
 	return data1["mflag"].(int64)
 }
 
@@ -104,8 +105,8 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct) error 
 		if err != nil {
 			log.Fatal(err)
 		}
-		
-		query := fmt.Sprintf("UPDATE row_desc SET mflag = 0 WHERE rowid = %d and app_id=%d", rowID, appID1)
+		t := time.Now().Format(time.RFC3339)
+		query := fmt.Sprintf("UPDATE row_desc SET mflag = 0 and updated_at = '%s' WHERE rowid = %d and app_id = %d", t, rowID, appID1)
 		log.Println("**************************************")
 		log.Println(query)
 		log.Println("**************************************")

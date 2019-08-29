@@ -2,7 +2,7 @@ package dependency_handler
 
 import (
 	"errors"
-	"log"
+	// "log"
 	"stencil/config"
 	"stencil/display"
 	"database/sql"
@@ -11,10 +11,10 @@ import (
 )
 
 func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hints []display.HintStruct, conditions []string) (display.HintStruct, error) {	
-	log.Println(".....Second check......")
-	log.Println(display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, "statuses.*", "statuses", "statuses.id", "=", "734487949"))
-	log.Println(display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, "statuses.*", "statuses", "statuses.conversation_id", "=", "526351993"))
-	log.Println("...........")
+	// log.Println(".....Second check......")
+	// log.Println(display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, "statuses.*", "statuses", "734487949"))
+	// log.Println(display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, "statuses.*", "statuses", "statuses.conversation_id", "=", "1563"))
+	// log.Println("...........")
 	
 	var data map[string]interface{}
 	hintID := -1
@@ -25,7 +25,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hi
 		a1 := strings.Split(tableAttr1, ".")[1]
 		t2 := strings.Split(tableAttr2, ".")[0]
 		a2 := strings.Split(tableAttr2, ".")[1]
-		log.Println(t1, a1, t2, a2)
+		// log.Println(t1, a1, t2, a2)
 		if i == 0 {
 			for j, hint := range hints {
 				if hint.Table == t1 {
@@ -36,26 +36,31 @@ func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hi
 				// In this case, since data may be incomplete, we cannot get the data in the parent node
 				return display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 			} else {
-				data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, t2 + ".*", t2, t2 + "." + a2, "=", hints[hintID].Data[t1 + "." + a1].(string))
-				log.Println(".....first check......")
-				log.Println(data)
-				log.Println(display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, "statuses.*", "statuses", "statuses.id", "=", "734487949"))
-				log.Println(display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, "statuses.*", "statuses", "statuses.conversation_id", "=", "1563"))
-				log.Println("...........")
+				// This can happen when the data this data depends on is not migrated,
+				// e.g., a post does not have correpsonding conversation in Diaspora, so when it is migrated to Mastodon,
+				// and becomes a status, it does not have conversation_id which is actually necessary for each
+				// status in Mastodon.
+				if hints[hintID].Data[t1 + "." + a1] == nil {
+					return display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
+				}
+				data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, t2 + ".*", t2, t2 + "." + a2, "=", hints[hintID].Data[t1 + "." + a1].(string))
+				// log.Println(".....first check......")
+				// log.Println(data)
+				// log.Println("...........")
 				if len(data) == 0 {
 					return display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 				}
 			}
 		} else {
-			data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, t2 + ".*", t2, t2 + "." + a2, "=", data[t1 + "." + a1].(string))
+			data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, t2 + ".*", t2, t2 + "." + a2, "=", data[t1 + "." + a1].(string))
 			if len(data) == 0 {
 				return display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 			}
 		}
 	}
-	log.Println("...........")
-	log.Println(data)
-	log.Println("...........")
+	// log.Println("...........")
+	// log.Println(data)
+	// log.Println("...........")
 
 	return display.TransformDataToHint(data), nil
 }
@@ -87,7 +92,6 @@ func dataFromParentNodeExists(stencilDBConn *sql.DB, appConfig *config.AppConfig
 	if displayExistenceSetting == "" {
 		return true, nil
 	} else {
-		// fmt.Println(displayExistenceSetting)
 		tag, _ := hints[0].GetTagName(appConfig)
 		tableCol := replaceKey(appConfig, tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
@@ -122,7 +126,7 @@ func GetdataFromParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, h
 	var proConditions []string
 	var from, to string
 
-	log.Println(conditions)
+	// log.Println(conditions)
 
 	if len(conditions) == 1 {
 		condition := conditions[0]
@@ -141,9 +145,6 @@ func GetdataFromParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, h
 			proConditions = append(proConditions, from+":"+to)
 		}
 	}
-
-	// fmt.Println(proConditions)
-	// fmt.Println(hints)
 
 	return getHintsInParentNode(stencilDBConn, appConfig, hints, proConditions)
 }

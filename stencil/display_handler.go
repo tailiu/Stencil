@@ -8,8 +8,6 @@ import (
 	"stencil/config"
 	"stencil/dependency_handler"
 	"stencil/display"
-	// "stencil/db"
-	// "stencil/qr"
 )
 
 const checkInterval = 200 * time.Millisecond
@@ -93,7 +91,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 	log.Println("-----------")
 	log.Println(dataInNode)
 	log.Println("-----------")
-	if dataInNode == nil {
+	if len(dataInNode) == 0 {
 		log.Println(err1)
 		return "No Data In a Node Can be Displayed", err1
 	} else {
@@ -116,7 +114,6 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 			}
 			return returnResultBasedOnNodeCompleteness(err1)
 		}
-
 
 		pTags, err2 := oneMigratedData.GetParentTags(appConfig)
 		if err2 != nil {
@@ -187,205 +184,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 	panic("Should never happen here!")
 }
 
-// func CheckDisplay(oneUndisplayedMigratedData dataStruct, finalRound bool) bool {
-// 	dataInNode, err := GetDataInNodeBasedOnDisplaySetting(oneUndisplayedMigratedData)
-// 	if dataInNode == nil {
-// 		return false
-// 	} else {
-// 		for _, oneDataInNode := range dataInNode {
-
-// 		}
-// 	}
-// 	if AlreadyDisplayed(node) {
-// 		return true
-// 	}
-// 	if t.Root == node.GetParent() {
-// 		Display(node)
-// 		return true
-// 	} else {
-// 		if CheckDisplay(node.GetParent(), finalRound) {
-// 			Display(node)
-// 			return true
-// 		}
-// 	}
-// 	if finalRound && node.DisplayFlag {
-// 		Display(node)
-// 		return true
-// 	}
-// 	return  false
-// }
-
-// func DisplayController(migrationID int) {
-// 	for undisplayedMigratedData := GetUndisplayedMigratedData(migrationID);
-// 		!CheckMigrationComplete(migrationID);
-// 		undisplayedMigratedData = GetUndisplayedMigratedData(migrationID){
-// 			for _, oneUndisplayedMigratedData := range undisplayedMigratedData {
-// 				CheckDisplay(oneUndisplayedMigratedData, false)
-// 			}
-// 	}
-// 	// Only Executed After The Migration Is Complete
-// 	// Remaning Migration Nodes:
-// 	// -> The Migrated Nodes In The Destination Application That Still Have Their Migration Flags Raised
-// 	for _, oneUndisplayedMigratedData := range GetUndisplayedMigratedData(migrationID){
-// 		CheckDisplay(oneUndisplayedMigratedData, true)
-// 	}
-// }
-
 func main() {
-	// dbConn := db.GetDBConn("stencil")
-	// appConfig, _ := config.CreateAppConfig("mastodon", "2")
-	// qs := qr.CreateQS(appConfig.QR)
-	// qs.ColSimple("users.*")
-	// qs.FromSimple("users")
-	// qs.LimitResult("2")
-	// qs.WhereSimpleVal("users.account_id", "=", "1000")
-	// physicalQuery := qs.GenSQL()
-	// log.Println(physicalQuery)
-	// log.Println(db.GetAllColsOfRows(dbConn, physicalQuery))
-
-	// dbConn := db.GetDBConn("stencil")
-	// appConfig, _ := config.CreateAppConfig("mastodon", "2")
-	// qs := qr.CreateQS(appConfig.QR)
-	// qs.ColSimple("users.*")
-	// qs.FromSimple("users")
-	// qs.FromJoin("accounts", "users.account_id=accounts.id")
-	// qs.WhereSimpleVal("accounts.id", "=", "1000")
-	// physicalQuery := qs.GenSQL()
-	// log.Println(physicalQuery)
-	// log.Println(db.GetAllColsOfRows(dbConn, physicalQuery))
-
-	// dbConn := db.GetDBConn("stencil")
-	// appConfig, _ := config.CreateAppConfig("mastodon", "2")
-	// qs := qr.CreateQS(appConfig.QR)
-	// qs.FromSimple("statuses")
-	// qs.FromJoin("statuses", "users.account_id=accounts.id")
-	// qs.ColSimple("users.*")
-	// qs.WhereSimpleVal("accounts.id", "=", "1000")
-	// physicalQuery := qs.GenSQL()
-	// log.Println(physicalQuery)
-	// log.Println(db.GetAllColsOfRows(dbConn, physicalQuery))
-
 	dstApp := "mastodon"
 	DisplayThread(dstApp, 994283242)
-
-
-	// dbConn := db.GetDBConn(dstApp)
-	// query := "SELECT * FROM statuses WHERE id = 13451190 LIMIT 1;"
-
-	// data := db.GetAllColsOfRows(dbConn, query)
-	// log.Println(data)
-
-	// if len(data) == 0 {
-	// 	return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
-	// } else {
-	// 	return data[0], nil
-	// }	
-
-	// // var dataInNode []display.HintStruct
-	// stencilDBConn, _, _, pks := display.Initialize(dstApp)
-	
-
-	// // display.Display(stencilDBConn, dstApp, dataInNode, pks)
-
-	// dbConn := db.GetDBConn(dstApp)
-	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-	// 	fmt.Println(err)
-	// } else {
-
-	// 	// keyVal := map[string]int {
-	// 	// 	"id": 14435263,
-	// 	// }
-	// 	// hint := display.HintStruct {
-	// 	// 	Table: "favourites",
-	// 	// 	KeyVal: keyVal,
-	// 	// }
-
-	// 	// keyVal := map[string]int {
-	// 	// 	"id": 4630,
-	// 	// }
-	// 	// hint := display.HintStruct {
-	// 	// 	Table: "accounts",
-	// 	// 	KeyVal: keyVal,
-	// 	// }
-
-	// 	keyVal := map[string]int {
-	// 		"id": 28300,
-	// 	}
-	// 	hint := display.HintStruct {
-	// 		Table: "status_stats",
-	// 		KeyVal: keyVal,
-	// 	}
-	// 	fmt.Println(dependency_handler.GetDisplaySettingInDependencies(&appConfig, hint, "S1"))
-	// 	// dependency_handler.CheckNodeComplete(dbConn, appConfig.Tags, hint, dstApp)
-	// 	data, err := dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, hint)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		fmt.Println(data)
-	// 	} else {
-	// 		fmt.Println(data)
-	// 	}
-	// }
-
-	// dstApp := "mastodon"
-	// if appConfig, err := config.CreateAppConfig(dstApp); err != nil {
-	// 	fmt.Println(err)
-	// } else {
-	// 	// fmt.Println(appConfig)
-	// 	// fmt.Println(appConfig.Tags)
-	// 	keyVal := map[string]int {
-	// 		"id": 32999907,
-	// 	}
-	// 	hint2 := display.HintStruct {
-	// 		Table: "statuses",
-	// 		KeyVal: keyVal,
-	// 	}
-	// 	keyVal1 := map[string]int {
-	// 		"id": 60204,
-	// 	}
-	// 	hint1 := display.HintStruct {
-	// 		Table: "status_stats",
-	// 		KeyVal: keyVal1,
-	// 	}
-	// 	// hint := display.HintStruct {
-	// 	// 	Table: "conversations",
-	// 	// 	Key: "id",
-	// 	// 	Value: "211",
-	// 	// 	ValueType: "int",
-	// 	// }
-	// 	var hints []display.HintStruct
-	// 	hints = append(hints, hint2, hint1)
-	// 	// fmt.Println(hint.GetParentTags(&appConfig))
-	// 	data, err := dependency_handler.GetdataFromParentNode(&appConfig, hints, "S2")
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	} else {
-	// 		fmt.Println(data)
-	// 	}
-	// }
-
-	// atomicity.CreateTxnLogTable()
-
-	// dbConn := db.GetDBConn(StencilDBName)
-	// data := getMigratedData("mastodon", 1134814368, dbConn)
-	// fmt.Println(data)
-
-	// var displayHints []display.HintStruct
-	// json.Unmarshal([]byte(data[2].data.String), &displayHints)
-
-	// fmt.Println(displayHints)
-	// fmt.Println(displayHints[0].Table)
-
-	// fmt.Println(checkMigrationComplete(1134814368, dbConn))
-
-	// display.CreateDisplayFlagsTable(dbConn)
-
-	// t1 := time.Now()
-	// time.Sleep(200 * time.Millisecond)
-	// t2 := time.Now()
-
-	// fmt.Println(t1)
-	// fmt.Println(t2)
-
-	// diff := t2.Sub(t1)
-	// fmt.Println("time used ", diff)
 }
