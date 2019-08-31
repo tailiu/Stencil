@@ -115,18 +115,106 @@ func (self *QS) FromSimple(table string) {
 	// fmt.Println(table, "=>", phyTab)
 
 	prev := ""
+	var prevOnCol []string
 	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
 	for _,ptab := range phyTabKeys {
 		if _, ok := self.seen[ptab]; !ok {
+			pTabAlias := self.getTableAlias(table, ptab)
 			if prev == "" {
-				self.From += fmt.Sprintf(" %s %s ", ptab, self.getTableAlias(table, ptab))
+				self.From += fmt.Sprintf(" %s %s ", ptab, pTabAlias)
 			} else {
-				self.From += fmt.Sprintf(" LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
+				prevAlias := self.getTableAlias(table, prev)
+				if len(prevOnCol) <= 0{			
+					self.From += fmt.Sprintf(" FULL JOIN %s %s ON %s.pk = %s.pk ", ptab, pTabAlias, prevAlias, pTabAlias)
+				}else{
+					self.From += fmt.Sprintf(" FULL JOIN %s %s ON COALESCE(%s.pk,%s) = %s.pk ", ptab, pTabAlias, prevAlias, strings.Join(prevOnCol, ","), pTabAlias)
+				}
+				prevOnCol = append(prevOnCol, prevAlias+".pk")
 			}
 			prev = ptab
 			self.seen[ptab] = true
 		}
 	}
+}
+
+func (self *QS) FromJoin(table, condition string) {
+	// condition: previous_table.column=current_table.column
+
+	condition_tokens := strings.Split(condition, "=")
+
+	lprev := strings.Split(condition_tokens[0], ".")
+	prev_tab, prev_col := self.QR.GetPhyTabCol(condition_tokens[0])
+
+	curr_tab, curr_col := self.QR.GetPhyTabCol(condition_tokens[1])
+	// self.From += fmt.Sprintf("JOIN %s ON %s.%s = %s.%s AND %s.pk = %s.pk ", curr_tab, prev_tab, prev_col, curr_tab, curr_col, prev_tab, curr_tab)
+	self.From += fmt.Sprintf("FULL JOIN %s %s ON %s.%s::varchar = %s.%s::varchar ", curr_tab, self.getTableAlias(table, curr_tab), self.getTableAlias(lprev[0], prev_tab), prev_col, self.getTableAlias(table, curr_tab), curr_col)
+	self.seen[curr_tab] = true
+
+	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
+
+	prev := curr_tab
+	
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+	var prevOnCol []string
+	for _, ptab := range phyTabKeys {
+		// if _, ok := self.seen[ptab]; !ok {
+		if !strings.EqualFold(curr_tab, ptab) {
+			pTabAlias := self.getTableAlias(table, ptab)
+			prevAlias := self.getTableAlias(table, prev)
+			if len(prevOnCol) <= 0{			
+				self.From += fmt.Sprintf(" FULL JOIN %s %s ON %s.pk = %s.pk ", ptab, pTabAlias, prevAlias, pTabAlias)
+			}else{
+				self.From += fmt.Sprintf(" FULL JOIN %s %s ON COALESCE(%s.pk,%s) = %s.pk ", ptab, pTabAlias, prevAlias, strings.Join(prevOnCol, ","), pTabAlias)
+			}
+			prev = ptab
+			prevOnCol = append(prevOnCol, prevAlias+".pk")
+		}
+	}
+}
+
+func (self *QS) FromJoinList(table string, conditions []string) {
+
+	// condition: previous_table.column=current_table.column
+
+	var pconditions []string
+	var curr_tab, curr_col string
+
+	for _, condition := range conditions {
+		condition_tokens := strings.Split(condition, "=")
+		condition_lhs_tokens := strings.Split(condition_tokens[0], ".")
+		condition_rhs_tokens := strings.Split(condition_tokens[1], ".")
+		lhs_table, rhs_table := condition_lhs_tokens[0], condition_rhs_tokens[0]
+		prev_tab, prev_col := self.QR.GetPhyTabCol(condition_tokens[0])
+		curr_tab, curr_col = self.QR.GetPhyTabCol(condition_tokens[1])
+		pconditions = append(pconditions, fmt.Sprintf(" %s.%s::varchar = %s.%s::varchar ", self.getTableAlias(lhs_table, prev_tab), prev_col, self.getTableAlias(rhs_table, curr_tab), curr_col))
+	}
+
+	self.From += fmt.Sprintf("FULL JOIN %s %s ON %s ", curr_tab, self.getTableAlias(table, curr_tab), strings.Join(pconditions, "AND"))
+	self.seen[curr_tab] = true
+
+	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
+
+	prev := curr_tab
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+	var prevOnCol []string
+	for _, ptab := range phyTabKeys {
+		// if _, ok := self.seen[ptab]; !ok {
+		if !strings.EqualFold(curr_tab, ptab) {
+			pTabAlias := self.getTableAlias(table, ptab)
+			prevAlias := self.getTableAlias(table, prev)
+			if len(prevOnCol) <= 0{			
+				self.From += fmt.Sprintf(" FULL JOIN %s %s ON %s.pk = %s.pk ", ptab, pTabAlias, prevAlias, pTabAlias)
+			}else{
+				self.From += fmt.Sprintf(" FULL JOIN %s %s ON COALESCE(%s.pk,%s) = %s.pk ", ptab, pTabAlias, prevAlias, strings.Join(prevOnCol, ","), pTabAlias)
+			}
+			prev = ptab
+			prevOnCol = append(prevOnCol, prevAlias+".pk")
+		}
+	}
+}
+
+func (self *QS) FromQuery(qs *QS) {
+	self.From = fmt.Sprintf("(%s) tab ", qs.GenSQL())
 }
 
 func (self *QS) LTable(table, alias string) {
@@ -184,71 +272,6 @@ func (self *QS) LJoinOn(conditions []string) {
 	}
 
 	self.From += fmt.Sprintf(" ON %s ", strings.Join(lconditions, "AND"))
-}
-
-func (self *QS) FromJoin(table, condition string) {
-	// condition: previous_table.column=current_table.column
-
-	condition_tokens := strings.Split(condition, "=")
-
-	lprev := strings.Split(condition_tokens[0], ".")
-	prev_tab, prev_col := self.QR.GetPhyTabCol(condition_tokens[0])
-
-	curr_tab, curr_col := self.QR.GetPhyTabCol(condition_tokens[1])
-	// self.From += fmt.Sprintf("JOIN %s ON %s.%s = %s.%s AND %s.pk = %s.pk ", curr_tab, prev_tab, prev_col, curr_tab, curr_col, prev_tab, curr_tab)
-	self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.%s::varchar = %s.%s::varchar ", curr_tab, self.getTableAlias(table, curr_tab), self.getTableAlias(lprev[0], prev_tab), prev_col, self.getTableAlias(table, curr_tab), curr_col)
-	self.seen[curr_tab] = true
-
-	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
-
-	prev := curr_tab
-
-	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
-
-	for _, ptab := range phyTabKeys {
-		// if _, ok := self.seen[ptab]; !ok {
-		if !strings.EqualFold(curr_tab, ptab) {
-			self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
-			prev = ptab
-		}
-	}
-}
-
-func (self *QS) FromJoinList(table string, conditions []string) {
-
-	// condition: previous_table.column=current_table.column
-
-	var pconditions []string
-	var curr_tab, curr_col string
-
-	for _, condition := range conditions {
-		condition_tokens := strings.Split(condition, "=")
-		condition_lhs_tokens := strings.Split(condition_tokens[0], ".")
-		condition_rhs_tokens := strings.Split(condition_tokens[1], ".")
-		lhs_table, rhs_table := condition_lhs_tokens[0], condition_rhs_tokens[0]
-		prev_tab, prev_col := self.QR.GetPhyTabCol(condition_tokens[0])
-		curr_tab, curr_col = self.QR.GetPhyTabCol(condition_tokens[1])
-		pconditions = append(pconditions, fmt.Sprintf(" %s.%s::varchar = %s.%s::varchar ", self.getTableAlias(lhs_table, prev_tab), prev_col, self.getTableAlias(rhs_table, curr_tab), curr_col))
-	}
-
-	self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s ", curr_tab, self.getTableAlias(table, curr_tab), strings.Join(pconditions, "AND"))
-	self.seen[curr_tab] = true
-
-	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
-
-	prev := curr_tab
-	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
-	for _, ptab := range phyTabKeys {
-		// if _, ok := self.seen[ptab]; !ok {
-		if !strings.EqualFold(curr_tab, ptab) {
-			self.From += fmt.Sprintf("LEFT JOIN %s %s ON %s.pk = %s.pk ", ptab, self.getTableAlias(table, ptab), self.getTableAlias(table, prev), self.getTableAlias(table, ptab))
-			prev = ptab
-		}
-	}
-}
-
-func (self *QS) FromQuery(qs *QS) {
-	self.From = fmt.Sprintf("(%s) tab ", qs.GenSQL())
 }
 
 func (self *QS) WhereSimple(col1, op, col2 string) {
@@ -455,7 +478,8 @@ func (self *QS) GenSQLWith(pks string) string {
 	}
 	if len(aliasSelects) > 0 {
 		with := "with " + strings.Join(aliasSelects, ",")
-		return with + strings.Replace(query, "LEFT JOIN", "FULL JOIN", -1)
+		return with + query
+		// return with + strings.Replace(query, "LEFT JOIN", "FULL JOIN", -1)
 	}
 	return ""
 }
@@ -492,7 +516,8 @@ func (self *QS) GenSQLWithOwnedData(uid string) string {
 	}
 	if len(aliasSelects) > 0 {
 		with := "with " + strings.Join(aliasSelects, ",")
-		return with + strings.Replace(query, "LEFT JOIN", "FULL JOIN", -1)
+		return with + query
+		// return with + strings.Replace(query, "LEFT JOIN", "FULL JOIN", -1)
 	}
 	return ""
 }
