@@ -8,11 +8,19 @@ import (
 	"stencil/db"
 	"strconv"
 	"time"
+	"errors"
+	"math/rand"
+	"math"
 )
 
 const StencilDBName = "stencil"
 
-func Initialize(app string) (*sql.DB, *config.AppConfig, map[string]string) {
+func RandomNonnegativeInt() int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(math.MaxInt32)
+}
+
+func Initialize(app string) (*sql.DB, *config.AppConfig, map[string]string, int) {
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
@@ -32,7 +40,9 @@ func Initialize(app string) (*sql.DB, *config.AppConfig, map[string]string) {
 	// 	pks[table] = pk
 	// }
 
-	return stencilDBConn, &appConfig, pks
+	threadID := RandomNonnegativeInt()
+
+	return stencilDBConn, &appConfig, pks, threadID
 }
 
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, appConfig *config.AppConfig) []HintStruct {
@@ -93,19 +103,27 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 	return data1["mflag"].(int64)
 }
 
-func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct) error {
+func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deletionHoldEnable bool, dhStack [][]int, threadID int) (error, [][]int) {
 	var queries []string
 	
 	appID1, err1 := strconv.Atoi(appID)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+
 	for _, dataHint := range dataHints {
 		rowID, err := strconv.Atoi(dataHint.RowID)
 		if err != nil {
 			log.Fatal(err)
 		}
 		t := time.Now().Format(time.RFC3339)
+		
+		// This is an optimization to prevent possible path conflict
+		if CheckDisplay(stencilDBConn, appID, dataHint) == 0 {
+			log.Println("There is a path conflict!!")
+			return errors.New("Path conflict"), dhStack
+		}
+		
 		query := fmt.Sprintf("UPDATE row_desc SET mflag = 0, updated_at = '%s' WHERE rowid = %d and app_id = %d", t, rowID, appID1)
 		log.Println("**************************************")
 		log.Println(query)
@@ -113,6 +131,11 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct) error 
 		queries = append(queries, query)
 
 	}
+	if deletionHoldEnable {
+		var dhQueries []string
+		dhQueries, dhStack = AddToDeletionHoldStack(dhStack, dataHints, threadID)
+		queries = append(queries, dhQueries...)
+	}
 
-	return db.TxnExecute(stencilDBConn, queries)
+	return db.TxnExecute(stencilDBConn, queries), dhStack
 }
