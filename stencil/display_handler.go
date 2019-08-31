@@ -75,6 +75,9 @@ func DisplayThread(app string, migrationID int) {
 	secondRound = true
 	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, appConfig)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
+		// if oneSecondRoundMigratedData.RowID == "747867327" || oneSecondRoundMigratedData.RowID == "19647760" {
+		// 	continue
+		// }
 		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, secondRound)
 	}
 

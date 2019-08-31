@@ -10,16 +10,6 @@ import (
 	"strings"
 )
 
-func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hint display.HintStruct) (map[string]interface{}, error) {
-	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.Table + ".*", hint.Table, hint.RowID)
-
-	if len(data) == 0 {
-		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
-	} else {
-		return data, nil
-	}
-}
-
 func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.DB, val string, dep string) (map[string]interface{}, error) {
 	table := strings.Split(dep, ".")[0]
 	key := strings.Split(dep, ".")[1]
@@ -119,6 +109,16 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 		return result, nil
 	} else {
 		return result, errors.New("Error: node is not complete")
+	}
+}
+
+func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hint display.HintStruct) (map[string]interface{}, error) {
+	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.Table + ".*", hint.Table, hint.RowID)
+
+	if len(data) == 0 {
+		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
+	} else {
+		return data, nil
 	}
 }
 

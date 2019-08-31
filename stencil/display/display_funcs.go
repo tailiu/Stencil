@@ -106,7 +106,7 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct) error 
 			log.Fatal(err)
 		}
 		t := time.Now().Format(time.RFC3339)
-		query := fmt.Sprintf("UPDATE row_desc SET mflag = 0 and updated_at = '%s' WHERE rowid = %d and app_id = %d", t, rowID, appID1)
+		query := fmt.Sprintf("UPDATE row_desc SET mflag = 0, updated_at = '%s' WHERE rowid = %d and app_id = %d", t, rowID, appID1)
 		log.Println("**************************************")
 		log.Println(query)
 		log.Println("**************************************")

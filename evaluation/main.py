@@ -84,6 +84,21 @@ def danglingData():
 
     g.mulLinesDanglingData(x, danglingLikes, danglingComments, danglingMessages)
 
+def danglingDataPoints():
+    srcData = readFile3(logDir + srcAnomalies)
+    danglingLikes, danglingComments, danglingMessages, totalLikes = getDanglingDataInSrc(srcData)
+
+    x = np.arange(1, cumNum + 1)
+
+    data = [danglingLikes, danglingComments, danglingMessages]
+    label = [
+        'Dangling likes without posts in Diaspora',
+        'Dangling comments without posts in Diaspora',
+        'Dangling messages without comments in Diaspora'
+    ]
+    for i in range(len(data)):
+        g.mulPointsDanglingData(x, data[i], label[i])
+
 def danglingDataCumSum():
     srcData = readFile3(logDir + srcAnomalies)
     dstData = readFile3(logDir + dstAnomalies)
@@ -152,7 +167,8 @@ def anomaliesCumSum():
 
 # leftoverCDF()
 # interruptionTimeCDF()
-danglingDataCumSum()
-danglingData()
-serviceInterruptionCumSum()
-anomaliesCumSum()
+# danglingDataCumSum()
+# danglingData()
+# serviceInterruptionCumSum()
+# anomaliesCumSum()
+danglingDataPoints()

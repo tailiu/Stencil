@@ -124,6 +124,15 @@ def mulLinesDanglingData(x, danglingLikes, danglingComments, danglingMessages):
 
     plt.show()
 
+def mulPointsDanglingData(x, data, labelName):
+    fig, ax = plt.subplots()
+    ax.plot(x, data, 'r.', label=labelName)
+    ax.grid(True)
+
+    legend = ax.legend(loc=1, fontsize='x-small', numpoints=1)
+    
+    plt.show()
+
 def mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS, totalLikes):
     fig, ax = plt.subplots()
     ax.plot(x, danglingLikesCS, 'c--', label='Dangling likes without posts in Diaspora')
