@@ -15,8 +15,8 @@ import (
 
 func main() {
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
-		srcApp, srcAppID := "diaspora", "1"
-		dstApp, dstAppID := "mastodon", "2"
+		srcApp, srcAppID := os.Args[4], os.Args[5]
+		dstApp, dstAppID := os.Args[6], os.Args[7]
 		threads, err := strconv.Atoi(os.Args[1])
 		if err != nil {
 			log.Fatal(err)

@@ -178,6 +178,7 @@ func (self *MigrationWorker) FetchRoot() error {
 			rootNode.SQL = sql
 			rootNode.Data = data
 			self.root = rootNode
+			// log.Fatal(self.root.Data)
 			return nil
 		} else {
 			if err == nil {
@@ -226,6 +227,7 @@ func (self *MigrationWorker) GetBagNodes(tagName, bagpks string) ([]*DependencyN
 	if tag, err := self.SrcAppConfig.GetTag(tagName); err == nil {
 		qs := self.SrcAppConfig.GetTagQS(tag)
 		sql := qs.GenSQLWith(bagpks)
+		log.Fatal(sql)
 		if data, err := db.DataCall(self.DBConn, sql); err == nil && len(data) > 0 {
 			var bagNodes []*DependencyNode
 			for _, datum := range data {
@@ -362,65 +364,54 @@ func (self *MigrationWorker) IsNodeOwnedByRoot(node *DependencyNode) bool {
 	return true
 }
 
-func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *DependencyNode) error {
-
-	// for _, toTable := range toTables {
-	// 	if self.CheckMappingConditions(toTable, node) {
-	// 		log.Println("Mapping conditions not satisfied! Putting into bag!")
-	// 		return self.HandleUnmappedNode(node)
-	// 	}
-	// }
+func (self *MigrationWorker) UpdateRowDesc(mapping config.Mapping, node *DependencyNode) error {
 
 	if tx, err := self.DBConn.Begin(); err != nil {
 		log.Println("Can't create UpdateRowDesc transaction!")
 		return errors.New("0")
 	} else {
-		// var errs []error
 		defer tx.Rollback()
-		var updated []string
-		for _, toTable := range toTables {
+		var updated, bagpks []string
+		for _, toTable := range mapping.ToTables {
 			if !self.CheckMappingConditions(toTable, node) {
 				for col, val := range node.Data {
 					if strings.Contains(col, "pk.") && val != nil {
 						pk := strconv.FormatInt(val.(int64), 10)
 						pktokens := strings.Split(col, ".")
 						ltable := pktokens[1]
-						if val != nil && !helper.Contains(updated, pk) {
-							switch self.mtype {
-							case DELETION:
-								{
-									if err := db.MUpdate(tx, pk, "1", self.DstAppConfig.AppID); err == nil {
-										updated = append(updated, pk)
-										self.PushData(ltable, toTable.Table, pk)
-									} else {
-										// tx.Rollback()
-										// fmt.Println("\n@ERROR_MUpdate:", err)
-										// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
-										return err
+						if !helper.Contains(mapping.FromTables, ltable){
+							if !helper.Contains(bagpks, pk){
+								bagpks = append(bagpks, pk)
+							}
+						}else{
+							if val != nil && !helper.Contains(updated, pk) {
+								switch self.mtype {
+								case DELETION:
+									{
+										if err := db.MUpdate(tx, pk, "1", self.DstAppConfig.AppID); err == nil {
+											updated = append(updated, pk)
+											self.PushData(ltable, toTable.Table, pk)
+										} else {
+											return err
+										}
 									}
-								}
-							case CONSISTENT:
-								{
-									if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", false); err == nil {
-										updated = append(updated, pk)
-										self.PushData(ltable, toTable.Table, pk)
-									} else {
-										// tx.Rollback()
-										// fmt.Println("\n@ERROR_NewRowConsistent:", err)
-										// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
-										return err
+								case CONSISTENT:
+									{
+										if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", false); err == nil {
+											updated = append(updated, pk)
+											self.PushData(ltable, toTable.Table, pk)
+										} else {
+											return err
+										}
 									}
-								}
-							case INDEPENDENT:
-								{
-									if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", true); err == nil {
-										updated = append(updated, pk)
-										self.PushData(ltable, toTable.Table, pk)
-									} else {
-										// tx.Rollback()
-										// fmt.Println("\n@ERROR_NewRowIndependent:", err)
-										// log.Fatal("pk:", pk, "appid", self.DstAppConfig.AppID)
-										return err
+								case INDEPENDENT:
+									{
+										if err := db.NewRow(tx, pk, self.DstAppConfig.AppID, "1", true); err == nil {
+											updated = append(updated, pk)
+											self.PushData(ltable, toTable.Table, pk)
+										} else {
+											return err
+										}
 									}
 								}
 							}
@@ -429,15 +420,27 @@ func (self *MigrationWorker) UpdateRowDesc(toTables []config.ToTable, node *Depe
 				}
 			}
 		}
-		// tx.Rollback()
 		if len(updated) > 0 {
-			if undoActionJSON, err := transaction.GenUndoActionJSON(updated, self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
+			if undoActionJSON, err := transaction.GenUndoActionJSON(append(updated, bagpks...), self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
 				if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
 					log.Println("UpdateRowDesc: unable to LogChange", log_err)
 					return errors.New("0")
 				}
 			} else {
 				log.Fatal("UpdateRowDesc: unable to GenUndoActionJSON", err)
+			}
+			for _, bagpk := range bagpks {
+				if err := db.SetMFlag(tx, bagpk, "1"); err == nil {
+					if err := db.NewBag(tx, bagpk, self.uid, node.Tag.Name, self.logTxn.Txn_id); err != nil{
+						tx.Rollback()
+						log.Fatal("UpdateRowDesc :: NewBag :", err)
+						return err
+					}
+				}else{
+					tx.Rollback()
+					log.Fatal("UpdateRowDesc :: SetMFlag :", err)
+					return err
+				}
 			}
 			tx.Commit()
 		} else {
@@ -489,7 +492,7 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 		return errors.New("2")
 	}
 	if tx, err := self.DBConn.Begin(); err != nil {
-		log.Println("Can't create UpdateRowDesc transaction!")
+		log.Println("Can't create HandleUnmappedNode transaction!")
 		return errors.New("0")
 	} else {
 		var updated []string
@@ -528,14 +531,14 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 
 func (self *MigrationWorker) MigrateNode(node *DependencyNode, isBag bool) error {
 
-	for _, appMapping := range self.mappings.Mappings {
+	for _, mapping := range self.mappings.Mappings {
 		tagMembers := node.Tag.GetTagMembers()
-		if mappedTables := helper.IntersectString(tagMembers, appMapping.FromTables); len(mappedTables) > 0 {
-			if helper.Sublist(tagMembers, appMapping.FromTables) {
-				return self.UpdateRowDesc(appMapping.ToTables, node)
+		if mappedTables := helper.IntersectString(tagMembers, mapping.FromTables); len(mappedTables) > 0 {
+			if helper.Sublist(tagMembers, mapping.FromTables) {
+				return self.UpdateRowDesc(mapping, node)
 			}
-			if wNode, err := self.HandleWaitingList(appMapping, tagMembers, node); wNode != nil && err == nil {
-				return self.UpdateRowDesc(appMapping.ToTables, wNode)
+			if wNode, err := self.HandleWaitingList(mapping, tagMembers, node); wNode != nil && err == nil {
+				return self.UpdateRowDesc(mapping, wNode)
 			} else {
 				return err
 			}
