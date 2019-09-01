@@ -224,6 +224,49 @@ func CheckDisplay(node *DependencyNode, finalRound bool) bool {
 		return false
 }
 
+// func CheckDisplay(oneUndisplayedMigratedData dataStruct, finalRound bool) bool {
+// 	dataInNode, err := GetDataInNodeBasedOnDisplaySetting(oneUndisplayedMigratedData)
+// 	if dataInNode == nil {
+// 		return false
+// 	} else {
+// 		for _, oneDataInNode := range dataInNode {
+
+// 		}
+// 	}
+// 	if AlreadyDisplayed(node) {
+// 		return true
+// 	}
+// 	if t.Root == node.GetParent() {
+// 		Display(node)
+// 		return true
+// 	} else {
+// 		if CheckDisplay(node.GetParent(), finalRound) {
+// 			Display(node)
+// 			return true
+// 		}
+// 	}
+// 	if finalRound && node.DisplayFlag {
+// 		Display(node)
+// 		return true
+// 	}
+// 	return  false
+// }
+
+// func DisplayController(migrationID int) {
+// 	for undisplayedMigratedData := GetUndisplayedMigratedData(migrationID);
+// 		!CheckMigrationComplete(migrationID);
+// 		undisplayedMigratedData = GetUndisplayedMigratedData(migrationID){
+// 			for _, oneUndisplayedMigratedData := range undisplayedMigratedData {
+// 				CheckDisplay(oneUndisplayedMigratedData, false)
+// 			}
+// 	}
+// 	// Only Executed After The Migration Is Complete
+// 	// Remaning Migration Nodes:
+// 	// -> The Migrated Nodes In The Destination Application That Still Have Their Migration Flags Raised
+// 	for _, oneUndisplayedMigratedData := range GetUndisplayedMigratedData(migrationID){
+// 		CheckDisplay(oneUndisplayedMigratedData, true)
+// 	}
+// }
 
 func mappingExists(srcApp, dstApp string) bool {
 	return true

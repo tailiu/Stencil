@@ -73,8 +73,6 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 		for _, oneMigratedData := range migratedData {
 			_, dhStack, _ = checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, secondRound, deletionHoldEnable, dhStack, threadID)
 			if deletionHoldEnable {
-				log.Println("I am going to remove deletion hold!!!")
-				log.Println(dhStack)
 				display.RemoveDeletionHold(stencilDBConn, dhStack, threadID)
 			}
 		}
@@ -93,8 +91,6 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 		var dhStack [][]int
 		_, dhStack, _ = checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, secondRound, deletionHoldEnable, dhStack, threadID)
 		if deletionHoldEnable {
-			log.Println("I am going to remove deletion hold!!!")
-			log.Println(dhStack)
 			display.RemoveDeletionHold(stencilDBConn, dhStack, threadID)
 		}
 	}
@@ -187,6 +183,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 						case "Data In a Node Can be completely Displayed":
 							pTagConditions[pTag] = true
 						}
+						// If there is path confilct, just return until to the original layer and remove the already added deletion hold
 						if err7.Error() == "Path conflict" {
 							return "", dhStack, err7
 						}

@@ -63,16 +63,15 @@ func AddToDeletionHoldStack(dhStack [][]int, dataHints []HintStruct, threadID in
 			rowID, threadID, true, t, t)
 		log.Println("**************************************")
 		log.Println(query)
-		log.Println(hintRowIDs)
 		log.Println("**************************************")
 		queries = append(queries, query)
 	}
 
 	dhStack = append(dhStack, hintRowIDs)
 
-	log.Println("&&&&&&&&&&&")
-	log.Println(dhStack)
-	log.Println("&&&&&&&&&&&")
-	
+	// log.Println("&&&&&&&&&&&")
+	// log.Println(dhStack)
+	// log.Println("&&&&&&&&&&&")
+
 	return queries, dhStack
 }
