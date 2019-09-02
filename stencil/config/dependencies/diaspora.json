@@ -15,8 +15,8 @@
           },
           "inner_dependencies":[
              {
-                "member1.id":"member2.owner_id",
-                "member2.id":"member3.person_id"
+               "member2.id":"member3.person_id",
+               "member2.owner_id":"member1.id"                
              }
           ]
        },

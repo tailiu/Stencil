@@ -176,6 +176,34 @@ func BUpdate(dbConn *sql.DB, pk, flag, app_id string) error {
 	return err
 }
 
+func PKReplaceRowDesc(tx *sql.Tx, newRowID, oldRowIDs string) error {
+
+	q := fmt.Sprintf("UPDATE row_desc SET rowid = $1 WHERE rowid IN (%s)", oldRowIDs)
+	_, err := tx.Exec(q, newRowID)
+	return err
+}
+
+func PKReplace(tx *sql.Tx, newPK, oldPK, table string) error {
+
+	q := fmt.Sprintf("UPDATE %s SET pk = $1 WHERE pk IN (%s)", table, oldPK)
+	_, err := tx.Exec(q, newPK)
+	return err
+}
+
+func DeleteFromRowDescByRowID(tx *sql.Tx, rowid string) error {
+
+	q := "DELETE FROM row_desc WHERE rowid = $1"
+	_, err := tx.Exec(q, rowid)
+	return err
+}
+
+func DeleteFromRowDescByRowIDAndAppID(tx *sql.Tx, rowids, appid string) error {
+
+	q := fmt.Sprintf("DELETE FROM row_desc WHERE rowid in (%s) and app_id = $1", rowids)
+	_, err := tx.Exec(q, appid)
+	return err
+}
+
 func GetUnmigratedUsers() ([]map[string]interface{}, error) {
 	dbConn := GetDBConn(STENCIL_DB)
 	sql := "SELECT user_id FROM user_table WHERE user_id NOT IN (SELECT DISTINCT user_id FROM migration_registration) ORDER BY user_id ASC"

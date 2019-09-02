@@ -10,6 +10,7 @@ import (
 func CreateQS(QR *QR) *QS {
 	qs := new(QS)
 	qs.seen = make(map[string]bool)
+	qs.PK = false
 	qs.TableAliases = make(map[string]map[string]string)
 	qs.QR = QR
 	return qs
@@ -78,6 +79,7 @@ func (self *QS) ColNull(col string) {
 }
 
 func (self *QS) ColPK(table string) {
+	self.PK = true
 	for ptab, _ := range self.QR.GetPhyMappingForLogicalTable(table) {
 		alias := self.getTableAlias(table, ptab)
 		pColName := fmt.Sprintf("%s.pk as \"pk.%s.%s\"", alias, table, alias)
@@ -424,6 +426,16 @@ func (self *QS) LimitResult(limit string) {
 }
 
 func (self *QS) GenSQL() string {
+	if self.PK {
+		var aliases []string
+		for _, vals := range self.TableAliases{
+			for _, alias := range vals {
+				aliases = append(aliases, alias+".pk")
+			}
+		}
+		pk := fmt.Sprintf("array_to_string(uniq(sort(array_remove(array[%s], null))),',') as rowids", strings.Join(aliases, ","))
+		self.Columns = append(self.Columns, pk)
+	}
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
 	if len(self.Where) > 0 {
 		sql += fmt.Sprintf("WHERE %s ", self.Where)
