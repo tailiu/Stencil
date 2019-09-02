@@ -74,6 +74,15 @@
             "keys": {
                 "status_id": "member1.status_id"
             }
+        },
+        {
+            "name": "notifications",
+            "members" : {
+                "member1": "notifications"
+            },
+            "keys": {
+                "account_id": "member1.account_id"
+            }
         }
     ],
 	"dependencies": [
@@ -129,6 +138,21 @@
                     "conditions": [
                         {
                             "tag_attr": "status_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
+                }
+            ]
+        },
+        {
+            "tag": "notifications",
+            "depends_on" : [
+                {
+                    "tag": "root",
+                    "conditions": [
+                        {
+                            "tag_attr": "account_id",
                             "depends_on_attr": "id"
                         }
                     ],

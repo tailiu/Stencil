@@ -64,6 +64,10 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 					log.Println(dep)
 					log.Println(col)
 					log.Println(dataInDependencyNode.Data)
+					if val == nil {
+						log.Println("Fail to get one data because the value of the relevant column is nil")
+						continue
+					}
 					data1, err1 := getOneRowBasedOnDependency(appConfig, stencilDBConn, val.(string), dep)
 					if err1 != nil {
 						// log.Println(err1)
