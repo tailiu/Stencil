@@ -46,6 +46,7 @@ type QS struct {
 	TableAliases map[string]map[string]string
 	seen         map[string]bool
 	vals         []interface{}
+	PK 			 bool
 }
 
 type QU struct {

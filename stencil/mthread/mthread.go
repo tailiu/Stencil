@@ -23,8 +23,6 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 		threads = 1
 	}
 
-
-	if mWorker.MType() == "237" {
 	for threadID := 0; threadID < threads; threadID++ {
 		wg.Add(1)
 		go func(thread_id int, commitChannel chan ThreadChannel) {
@@ -71,7 +69,6 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 			}
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
-	}
 	}
 
 	if mWorker.MType() == migrate.DELETION {
