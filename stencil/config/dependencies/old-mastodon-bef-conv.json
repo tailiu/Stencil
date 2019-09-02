@@ -22,14 +22,22 @@
             "display_setting": "display_based_on_inner_dependencies"
         },
         {
+            "name" : "conversations",
+            "members" : {
+                "member1":"conversations"
+            },
+            "keys": {
+                "id": "member1.id"
+            }
+        },
+        {
             "name" : "statuses",
             "members" : {
                 "member1":"statuses",
                 "member2":"status_stats",
                 "member3":"mentions",
                 "member4":"media_attachments",
-                "member5":"stream_entries",
-                "member6":"conversations"
+                "member5":"stream_entries"
             },
             "keys": {
                 "conversation_id":"member1.conversation_id",
@@ -50,9 +58,6 @@
                 },
                 {
                     "member1.id":"member5.activity_id"
-                },
-                {
-                    "member1.conversation_id":"member6.id"
                 }
             ],
             "display_setting": "display_based_on_inner_dependencies"
@@ -78,6 +83,25 @@
     ],
 	"dependencies": [
         {
+            "tag": "conversations",
+            "depends_on": [
+                {
+                    "tag":"root",
+                    "conditions":[
+                        {   
+                            "tag_attr": "id",
+                            "depends_on_attr": "statuses.conversation_id"
+                        },
+                        {
+                            "tag_attr": "statuses.account",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
+                }
+            ]
+        },
+        {
             "tag": "statuses",
             "depends_on": [
                 {
@@ -92,6 +116,17 @@
                     "display_setting": "parent_node_not_displays_with_check"
                 },
                 {
+                    "tag":"conversations",
+                    "conditions":[
+                        {   
+                            "tag_attr": "conversation_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_not_displays_without_check",
+                    "_comment":"because Diaspora does not have conversations, so display_setting has to be changed from parent_node_partially_displays to this"
+                },
+                {
                     "tag":"statuses",
                     "as": "S2",
                     "conditions":[
@@ -104,7 +139,7 @@
                     "display_setting": "parent_node_not_displays_with_check"
                 }
             ],
-            "combined_display_setting":"S1 or S2"
+            "combined_display_setting":"conversations or S1 or S2"
         },
         {
             "tag": "follows",

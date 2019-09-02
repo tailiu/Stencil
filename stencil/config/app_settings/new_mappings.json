@@ -156,7 +156,8 @@
                                         "birthday":"jcow_accounts.birthday",
                                         "bio":"jcow_accounts.about_me",
                                         "location":"jcow_accounts.location",
-                                        "gender":"jcow_accounts.gender"
+                                        "gender":"jcow_accounts.gender",
+                                        "__comment":"some problems with id here"
                                     }
                                 }
                             ]
@@ -534,7 +535,31 @@
                             "fromTables": ["user", "user_username", "profile"],
                             "toTables": [
                                 {
-                                    "table": ""
+                                    "table": "users",
+                                    "mapping": {
+                                        "id": "user.id",
+                                        "email":"user.email",
+                                        "password":"user.password",
+                                        "username":"user_username.username",
+                                        "":""
+                                    }
+                                },
+                                {
+                                    "table": "people",
+                                    "mapping": {
+                                        "owner_id": "user.id"
+                                    }
+                                },
+                                {
+                                    "table": "profiles",
+                                    "mapping": {
+                                        "full_name":"profile.fullname",
+                                        "image_url":"jcow_accounts.avatar",
+                                        "birthday":"jcow_accounts.birthday",
+                                        "bio":"jcow_accounts.about_me",
+                                        "location":"jcow_accounts.location",
+                                        "gender":"jcow_accounts.gender"
+                                    }
                                 }
                             ]
                         }
@@ -548,7 +573,6 @@
                             "toTables": [
                                 {
                                     "table": "jcow_accounts",
-                                    "conditions":{},
                                     "mapping" : {
                                         "id":"user.id",
                                         "email":"user.email",

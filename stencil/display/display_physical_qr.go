@@ -17,7 +17,6 @@ func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, f
 	qs.WhereSimpleVal(col, op, val)
 	qs.WhereAppID(qr.EXISTS, appID)
 	physicalQuery := qs.GenSQL()
-	physicalQuery = strings.Replace(physicalQuery, "LEFT JOIN", "FULL JOIN", -1)
 	// log.Println(physicalQuery)
 
 	result, err := db.DataCall1(stencilDBConn, physicalQuery)
