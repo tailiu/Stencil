@@ -83,11 +83,6 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 	secondRound = true
 	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, appConfig)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-		if oneSecondRoundMigratedData.RowID == "747867327" || 
-		oneSecondRoundMigratedData.RowID == "19647760" || 
-		oneSecondRoundMigratedData.RowID == "1325207274" {
-			continue
-		}
 		var dhStack [][]int
 		_, dhStack, _ = checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, secondRound, deletionHoldEnable, dhStack, threadID)
 		if deletionHoldEnable {
@@ -173,6 +168,10 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 						result, dhStack, err7 = checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode, secondRound, deletionHoldEnable, dhStack, threadID)
 						if err7 != nil {
 							log.Println(err7)
+							// If there is path confilct, just return until to the original layer and remove the already added deletion hold
+							if err7.Error() == "Path conflict" {
+								return "", dhStack, err7
+							}
 						}
 						log.Println(result, err7)
 						switch result {
@@ -182,10 +181,6 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 							pTagConditions[pTag] = returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
 						case "Data In a Node Can be completely Displayed":
 							pTagConditions[pTag] = true
-						}
-						// If there is path confilct, just return until to the original layer and remove the already added deletion hold
-						if err7.Error() == "Path conflict" {
-							return "", dhStack, err7
 						}
 					}
 				}
@@ -211,7 +206,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 }
 
 func main() {
-	threadNum := 1
+	threadNum := 5
 	dstApp := "mastodon"
 	migrationID := 994283242
 	deletionHoldEnable := true

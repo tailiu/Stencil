@@ -7,10 +7,103 @@
                     "name": "jcow",
                     "mappings": [
                         {
-                            "fromTables": [],
+                            "fromTables": ["account", "users", "profile"],
                             "toTables": [
                                 {
-
+                                    "table": "jcow_accounts",
+                                    "mapping" : {
+                                        "username":"users.username",
+                                        "id":"account.account_id",
+                                        "email":"account.account_email",
+                                        "password":"account.account_password",
+                                        "created":"account.account_created",
+                                        "lastlogin":"account.account_lastlog",
+                                        "fullname":"profile.fullname",
+                                        "gender":"profile.gender",
+                                        "about_me":"profile.about"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["notify"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_notes",
+                                    "mapping": {
+                                        "id": "notify.id",
+                                        "created": "notify.created",
+                                        "message": "notify.msg",
+                                        "from_uid": "notify.aid",
+                                        "uid": "notify.uid",
+                                        "hasread": "notify.seen",
+                                        "": "notify.hash",
+                                        "": "notify.xname",
+                                        "": "notify.url",
+                                        "": "notify.photo",
+                                        "": "notify.link",
+                                        "": "notify.",
+                                        "": "notify."
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["mail"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_messages",
+                                    "mapping" : {
+                                        "id": "mail.id",
+                                        "message": "mail.body",
+                                        "from_id": "mail.from_xchan",
+                                        "to_id": "mail.to_xchan",
+                                        "created": "mail.created",
+                                        "hasread": "mail.mail_seen" 
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["item"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_streams",
+                                    "conditions": {
+                                        "item.parent": "NULL"
+                                    },
+                                    "mapping": {
+                                        "id": "item.id",
+                                        "message": "item.body",
+                                        "uid": "item.uid",
+                                        "created": "item.created"
+                                    }
+                                },
+                                {
+                                    "table": "jcow_comments",
+                                    "conditions": {
+                                        "item.parent": ""
+                                    },
+                                    "mapping" : {
+                                        "id": "item.id",
+                                        "jcow_comments.stream_id": "item.parent",
+                                        "jcow_comments.uid": "item.uid",
+                                        "jcow_comments.message": "item.body",
+                                        "jcow_comments.created": "item.created"
+                                    }            
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["likes"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_liked",
+                                    "mapping": {
+                                        "id": "likes.id",
+                                        "uid": "likes.liker",
+                                        "stream_id": "likes.iid"
+                                    }
                                 }
                             ]
                         }
@@ -34,13 +127,244 @@
             "fromApp": "jcow",
             "toApps": [
                 {
+                    "name": "diaspora",
+                    "mappings": [
+                        {
+                            "fromTables": ["jcow_accounts"],
+                            "toTables": [
+                                {
+                                    "table": "users",
+                                    "mapping": {
+                                        "id": "jcow_accounts.id",
+                                        "email":"jcow_accounts.email",
+                                        "last_seen":"jcow_accounts.lastact",
+                                        "password":"jcow_accounts.password",
+                                        "username":"jcow_accounts.username"
+                                    }
+                                },
+                                {
+                                    "table": "people",
+                                    "mapping": {
+                                        "owner_id": "jcow_accounts.id"
+                                    }
+                                },
+                                {
+                                    "table": "profiles",
+                                    "mapping": {
+                                        "full_name":"jcow_accounts.fullname",
+                                        "image_url":"jcow_accounts.avatar",
+                                        "birthday":"jcow_accounts.birthday",
+                                        "bio":"jcow_accounts.about_me",
+                                        "location":"jcow_accounts.location",
+                                        "gender":"jcow_accounts.gender"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_followers"],
+                            "toTables": [
+                                {
+                                    "table": "contacts",
+                                    "conditions":{},
+                                    "mapping": { 
+                                        "user_id":"jcow_followers.uid",
+                                        "person_id":"jcow_followers.fid",
+                                        "sharing":"$T",
+                                        "receiving":"$F"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_streams"],
+                            "toTables": [
+                                {
+                                    "table": "posts",
+                                    "mapping": {
+                                        "id":"jcow_streams.id",
+                                        "author_id":"jcow_streams.uid",
+                                        "text":"jcow_streams.message",
+                                        "created_at":"jcow_streams.created",
+                                        "likes_count": "jcow_streams.likes"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_liked"],
+                            "toTables": [
+                                {
+                                    "table": "likes",
+                                    "mapping":{
+                                        "id":"jcow_liked.id",
+                                        "target_id":"jcow_liked.stream_id",
+                                        "author_id":"jcow_liked.uid"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_comments"],
+                            "toTables": [
+                                {
+                                    "table": "comments",
+                                    "mapping" : {
+                                        "id":"jcow_comments.id",
+                                        "commentable_id":"jcow_comments.stream_id",
+                                        "author_id":"jcow_comments.uid",
+                                        "text":"jcow_comments.message",
+                                        "created_at":"jcow_comments.created"
+                                    }                                
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_messages"],
+                            "toTables": [
+                                {
+                                    "table": "messages",
+                                    "conditions":{},
+                                    "mappings" : {
+                                        "id":"jcow_messages.id",
+                                        "text":"jcow_messages.message",
+                                        "author_id":"jcow_messages.from_id",
+                                        "":"jcow_messages.to_id",
+                                        "created_at":"jcow_messages.created",
+                                        "__comments": "some problems"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_notes"],
+                            "toTables": [
+                                {
+                                    "table": "notifications",
+                                    "mapping" : {
+                                        "id":"jcow_notes.id",
+                                        "recipient_id":"jcow_notes.uid",
+                                        "created_at":"jcow_notes.created",
+                                        "unread":"jcow_notes.hasread"
+                                    }                 
+                                },
+                                {
+                                    "table": "notification_actors",
+                                    "mapping": {
+                                        "notification_id":"jcow_notes.id",
+                                        "person_id":"jcow_notes.from_uid",
+                                        "created_at":"jcow_notes.created"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     "name": "hubzilla",
                     "mappings": [
                         {
                             "fromTables": ["jcow_accounts"],
                             "toTables": [
                                 {
-                                    "table": ""
+                                    "table": "account",
+                                    "mapping": {
+                                        "account_id": "jcow_accounts.id",
+                                        "account_email": "jcow_accounts.email",
+                                        "account_password": "jcow_accounts.password",
+                                        "account_created": "jcow_accounts.created",
+                                        "account_lastlog": "jcow_accounts.lastlogin"
+                                    }
+                                },
+                                {
+                                    "table": "users",
+                                    "mapping": {
+                                        "id": "jcow_accounts.id",
+                                        "username":"jcow_accounts.username"
+                                    }
+                                },
+                                {
+                                    "table": "profile",
+                                    "mappings": {
+                                        "uid": "jcow_accounts.id",
+                                        "fullname":"jcow_accounts.fullname",
+                                        "gender":"jcow_accounts.gender",
+                                        "about":"jcow_accounts.about_me"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_liked"],
+                            "toTables": [
+                                {
+                                    "table": "likes",
+                                    "mapping": {
+                                        "id": "jcow_liked.id",
+                                        "liker": "jcow_liked.uid",
+                                        "iid": "jcow_liked.stream_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_streams"],
+                            "toTables": [
+                                {
+                                    "table": "item",
+                                    "mapping": {
+                                        "id": "jcow_streams.id",
+                                        "body": "jcow_streams.message",
+                                        "uid": "jcow_streams.uid",
+                                        "created": "jcow_streams.created"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_comments"],
+                            "toTables": [
+                                {
+                                    "table": "item",
+                                    "mapping": {
+                                        "id": "jcow_comments.id",
+                                        "body": "jcow_comments.message",
+                                        "uid": "jcow_comments.uid",
+                                        "created": "jcow_comments.created",
+                                        "parent": "jcow_comments.target_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_messages"],
+                            "toTables": [
+                                {
+                                    "table": "mail",
+                                    "mapping" : {
+                                        "id": "jcow_messages.id",
+                                        "body": "jcow_messages.message",
+                                        "from_xchan": "jcow_messages.from_id",
+                                        "to_xchan": "jcow_messages.to_id",
+                                        "created": "jcow_messages.created",
+                                        "mail_seen": "jcow_messages.hasread" 
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["jcow_notes"],
+                            "toTables": [
+                                {
+                                    "table": "notify",
+                                    "mapping": {
+                                        "id": "jcow_notes.id",
+                                        "created": "jcow_notes.created",
+                                        "msg": "jcow_notes.message",
+                                        "aid": "jcow_notes.from_uid",
+                                        "uid": "jcow_notes.uid",
+                                        "seen": "jcow_notes.hasread"
+                                    }
                                 }
                             ]
                         }
@@ -96,12 +420,14 @@
                         },
                         {
 
-                            "fromTables": ["jcow_friends"],
+                            "fromTables": ["jcow_followers"],
                             "toTables": [
                                 {
-                                    "":"jcow_accounts.uid",
-                                    "":"jcow_accounts.fid",
-                                    "":"jcow_accounts.created"
+                                    "table": "subscription",
+                                    "mapping": {
+                                        "subscriber":"jcow_followers.uid",
+                                        "subscribed":"jcow_followers.fid"
+                                    }
                                 }
                             ]
                         },
@@ -121,13 +447,13 @@
                             ]
                         },
                         {
-                            "fromTables": ["liked"],
+                            "fromTables": ["jcow_liked"],
                             "toTables": [
                                 {
                                     "table": "fave",
                                     "mapping": {
-                                        "user_id":"liked.uid",
-                                        "notice_id":"liked.stream_id"
+                                        "user_id":"jcow_liked.uid",
+                                        "notice_id":"jcow_liked.stream_id"
                                     }
                                 }
                             ]
@@ -138,7 +464,7 @@
                                 {
                                     "table": "notice",
                                     "conditions":{},
-                                    "mappings" : {
+                                    "mapping" : {
                                         "id":"jcow_comments.id",
                                         "reply_to":"jcow_comments.stream_id",
                                         "profile_id":"jcow_comments.uid",
@@ -163,17 +489,21 @@
                                     }
                                 }
                             ]
-                        }
-                    ]
-                },
-                {
-                    "name": "diaspora",
-                    "mappings": [
+                        },
                         {
-                            "fromTables": ["jcow_accounts"],
+                            "fromTables": ["jcow_notes"],
                             "toTables": [
                                 {
-                                    
+                                    "table": "notice",
+                                    "conditions":{},
+                                    "mapping" : {
+                                        "":"jcow_notes.id",
+                                        "":"jcow_notes.uid",
+                                        "":"jcow_notes.created",
+                                        "":"jcow_notes.message",
+                                        "":"jcow_notes.from_uid",
+                                        "":"jcow_notes.hasread"
+                                    }                                    
                                 }
                             ]
                         }
@@ -201,7 +531,7 @@
                     "name": "diaspora",
                     "mappings": [
                         {
-                            "fromTables": ["jcow_accounts"],
+                            "fromTables": ["user", "user_username", "profile"],
                             "toTables": [
                                 {
                                     "table": ""
@@ -219,13 +549,26 @@
                                 {
                                     "table": "jcow_accounts",
                                     "conditions":{},
-                                    "mappings" : {
+                                    "mapping" : {
                                         "id":"user.id",
                                         "email":"user.email",
                                         "password":"user.password",
                                         "username":"user_username.username",
                                         "fullname":"profile.fullname",
                                         "locale": "profile.location"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+
+                            "fromTables": ["subscription"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_followers",
+                                    "mapping": {
+                                        "uid": "subscription.subscriber",
+                                        "fid": "subscription.subscribed"
                                     }
                                 }
                             ]
@@ -245,7 +588,7 @@
                                 {
                                     "table": "jcow_comments",
                                     "conditions":{},
-                                    "mappings" : {
+                                    "mapping" : {
                                         "id": "notice.id",
                                         "jcow_comments.stream_id": "notice.reply_to",
                                         "jcow_comments.uid": "notice.profile_id",
@@ -259,7 +602,7 @@
                             "fromTables": ["fave"],
                             "toTables": [
                                 {
-                                    "table": "liked",
+                                    "table": "jcow_liked",
                                     "mapping": {
                                         "uid": "fave.user_id",
                                         "stream_id": "fave.notice_id"
@@ -273,7 +616,7 @@
                                 {
                                     "table": "jcow_messages",
                                     "conditions":{},
-                                    "mappings" : {
+                                    "mapping" : {
                                         "id": "message.id",
                                         "message": "message.content",
                                         "from_id": "message.from_profile",
@@ -282,6 +625,140 @@
                                     }
                                 }
                             ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "fromApp": "diaspora",
+            "toApps": [
+                {
+                    "name": "jcow",
+                    "mappings": [
+                        {
+                            "fromTables": ["users", "profile"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_accounts",
+                                    "mapping": {
+                                        "id": "users.id",
+                                        "email":"users.email",
+                                        "lastact":"users.last_seen",
+                                        "password":"users.password",
+                                        "username":"users.username",
+                                        "full_name":"profiles.fullname",
+                                        "avatar":"profiles.image_url",
+                                        "birthday":"profiles.birthday",
+                                        "about_me":"profiles.bio",
+                                        "location":"profiles.location",
+                                        "gender":"profiles.gender"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["contacts"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_followers",
+                                    "conditions":{},
+                                    "mapping": { 
+                                        "uid":"contacts.user_id",
+                                        "fid":"contacts.person_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["posts"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_streams",
+                                    "mapping": {
+                                        "id":"posts.id",
+                                        "uid":"posts.author_id",
+                                        "message":"posts.text",
+                                        "created":"posts.created_at",
+                                        "likes": "posts.likes_count"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["likes"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_liked",
+                                    "mapping":{
+                                        "id":"likes.id",
+                                        "stream_id":"likes.target_id",
+                                        "uid":"likes.author_id"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["comments"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_comments",
+                                    "mapping" : {
+                                        "id":"comments.id",
+                                        "stream_id":"comments.commentable_id",
+                                        "uid":"comments.author_id",
+                                        "message":"comments.text",
+                                        "created":"comments.created_at"
+                                    }                                
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["messages"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_messages",
+                                    "mappings" : {
+                                        "id":"messages.id",
+                                        "message":"messages.text",
+                                        "from_id":"messages.author_id",
+                                        "to_id":"",
+                                        "created":"messages.created_at",
+                                        "__comment": "some problems"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["notifications", "notification_actors"],
+                            "toTables": [
+                                {
+                                    "table": "jcow_notes",
+                                    "mapping": {
+                                        "id":"notifications.id",
+                                        "uid":"notifications.recipient_id",
+                                        "created":"notifications.created_at",
+                                        "hasread":"notifications.unread",
+                                        "from_uid":"notification_actors.person_id"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "hubzilla",
+                    "mappings": [
+                        {
+                            
+                        }
+                    ]
+                },
+                {
+                    "name": "gnusocial",
+                    "mappings": [
+                        {
+                            
                         }
                     ]
                 }
