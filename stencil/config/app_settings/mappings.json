@@ -1027,6 +1027,9 @@
                             "toTables": [
                                 {
                                     "table": "subscription",
+                                    "conditions": {
+                                        "contacts.receiving": "true"
+                                    },
                                     "mapping": {
                                         "subscriber": "contacts.user_id",
                                         "subscribed": "contacts.person_id",
@@ -1497,6 +1500,139 @@
                             ]
                         }
                     ]
+                },
+                {
+                    "name": "gnusocial",
+                    "mappings": [
+                        {
+                            "fromTables": ["users", "credentials"],
+                            "toTables": [
+                                {
+                                    "table": "user",
+                                    "mapping": {
+                                        "id": "users.id",
+                                        "email":"credentials.email",
+                                        "password":"credentials.password",
+                                        "created_at":"users.created",
+                                        "updated_at":"users.modified"
+                                        
+                                    }
+                                },
+                                {
+                                    "table": "user_username",
+                                    "mapping": {
+                                        "user_id":"users.id",
+                                        "username":"users.name",
+                                        "created_at":"users.created",
+                                        "updated_at":"users.modified"
+                                    }
+                                },
+                                {
+                                    "table": "profile",
+                                    "mapping": {
+                                        "bio":"users.bio",
+                                        "created_at":"users.created",
+                                        "updated_at":"users.modified"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["user_actions"],
+                            "toTables": [
+                                {
+                                    "table": "subscription",
+                                    "mapping": {
+                                        "subscriber": "user_actions.from_user_id",
+                                        "subscribed": "user_actions.to_user_id",
+                                        "created":"user_actions.created_at",
+                                        "modified":"user_actions.updated_at"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["tweets"],
+                            "toTables": [
+                                {
+                                    "table": "notice",
+                                    "mapping": {
+                                        "id": "tweets.id",
+                                        "content": "tweets.content",
+                                        "profile_id": "tweets.user_id",
+                                        "created": "tweets.created_at",
+                                        "modified":"tweets.updated_at",
+                                        "reply_to":"tweets.reply_to_id",
+                                        "object_type":"tweets.media_type"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["tweets"],
+                            "toTables": [
+                                {
+                                    "table": "notice",
+                                    "mapping" : {
+                                        "id": "tweets.id",
+                                        "repeat_of": "tweets.tweet_id",
+                                        "profile_id": "tweets.user_id",
+                                        "created": "tweets.created_at",
+                                        "modified":"tweets.updated_at"
+                                    }            
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["likes"],
+                            "toTables": [
+                                {
+                                    "table": "fave",
+                                    "mapping": {
+                                        "user_id": "likes.user_id",
+                                        "notice_id": "likes.tweet_id",
+                                        "created": "likes.created_at",
+                                        "modified": "likes.updated_at"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["messages", "conversations", "conversation_participants"],
+                            "toTables": [
+                                {
+                                    "table": "message",
+                                    "mapping" : {
+                                        "id": "messages.id",
+                                        "content": "messages.content",
+                                        "user_id": "messages.from_profile",
+                                        "created_at": "messages.created",
+                                        "updated_at": "messages.modified"
+                                    }
+                                },
+                                {
+                                    "table": "conversation",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id": "conversations.id",
+                                        "created_at":"conversations.created",
+                                        "updated_at":"conversations.modified"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": [],
+                            "toTables": [
+                                {
+                                    "table": "",
+                                    "mapping": {
+                                        
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
@@ -1632,7 +1768,134 @@
                     "name": "twitter",
                     "mappings": [
                         {
-
+                            "fromTables": ["user", "user_username", "profile"],
+                            "toTables": [
+                                {
+                                    "table": "users",
+                                    "mapping": {
+                                        "id": "user.id",
+                                        "name":"user_username.username",
+                                        "created_at":"user.created",
+                                        "updated_at":"user.modified",
+                                        "bio":"profile.bio"
+                                    }
+                                },
+                                {
+                                    "table": "credentials",
+                                    "mapping": {
+                                        "email":"user.email",
+                                        "password":"user.password",
+                                        "user_id":"user.id",
+                                        "created_at":"user.created",
+                                        "updated_at":"user.modified"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["subscription"],
+                            "toTables": [
+                                {
+                                    "table": "user_actions",
+                                    "mapping": {
+                                        "from_user_id": "subscription.subscriber",
+                                        "to_user_id": "subscription.subscribed",
+                                        "created_at":"subscription.created",
+                                        "updated_at":"subscription.modified",
+                                        "action_type": "$follow_action"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["notice"],
+                            "toTables": [
+                                {
+                                    "table": "tweets",
+                                    "conditions":{
+                                        "notice.repeat_of": "NULL"
+                                    },
+                                    "mapping": {
+                                        "id": "notice.id",
+                                        "content": "notice.content",
+                                        "user_id": "notice.profile_id",
+                                        "created_at": "notice.created",
+                                        "updated_at":"notice.modified",
+                                        "reply_to_id":"notice.reply_to",
+                                        "media_type":"notice.object_type"
+                                    }
+                                },
+                                {
+                                    "table": "retweets",
+                                    "conditions":{
+                                        "notice.repeat_of": "NOTNULL"
+                                    },
+                                    "mapping" : {
+                                        "id": "notice.id",
+                                        "tweet_id": "notice.repeat_of",
+                                        "user_id": "notice.profile_id",
+                                        "created_at": "notice.created",
+                                        "updated_at":"notice.modified"
+                                    }            
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["fave"],
+                            "toTables": [
+                                {
+                                    "table": "likes",
+                                    "mapping": {
+                                        "user_id": "fave.user_id",
+                                        "tweet_id": "fave.notice_id",
+                                        "created_at": "fave.created",
+                                        "updated_at": "fave.modified"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["message", "conversation"],
+                            "toTables": [
+                                {
+                                    "table": "messages",
+                                    "mapping" : {
+                                        "id": "message.id",
+                                        "content": "message.content",
+                                        "user_id": "message.from_profile",
+                                        "created_at": "message.created",
+                                        "updated_at": "message.modified"
+                                    }
+                                },
+                                {
+                                    "table": "conversations",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id": "conversation.id",
+                                        "created_at":"conversation.created",
+                                        "updated_at":"conversation.modified"
+                                    }
+                                },
+                                {
+                                    "table": "conversation_participants",
+                                    "mapping" : {
+                                        "conversation_id": "conversation.id",
+                                        "created_at": "conversation.created",
+                                        "updated_at": "conversation.modified"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": [],
+                            "toTables": [
+                                {
+                                    "table": "",
+                                    "mapping": {
+                                        
+                                    }
+                                }
+                            ]
                         }
                     ]
                 },
@@ -1650,25 +1913,7 @@
                                         "username":"user_username.username",
                                         "language":"user.language",
                                         "created_at":"user.created",
-                                        "updated_at":"user.modified",
-                                        "":"user.nickname",
-                                        "":"user.timezone",
-                                        "":"user.emailpost",
-                                        "":"user_username.user_id",
-                                        "":"user_username.created",
-                                        "":"user_username.modified",
-                                        "":"profile.id",
-                                        "":"profile.nickname",
-                                        "":"profile.fullname",
-                                        "":"profile.profileurl",
-                                        "":"profile.homepage",
-                                        "":"profile.bio",
-                                        "":"profile.location",
-                                        "":"profile.lon",
-                                        "":"profile.location_id",
-                                        "":"profile.location_ns",
-                                        "":"profile.created",
-                                        "":"profile.modified"
+                                        "updated_at":"user.modified"
                                     }
                                 },
                                 {
@@ -1718,17 +1963,7 @@
                                         "message": "notice.content",
                                         "author_id": "notice.profile_id",
                                         "created_at": "notice.created",
-                                        "updated_at":"notice.modified",
-                                        "":"notice.url",
-                                        "":"notice.rendered",
-                                        "":"notice.reply_to",
-                                        "":"notice.is_local",
-                                        "":"notice.source",
-                                        "":"notice.conversation",
-                                        "":"notice.repeat_of",
-                                        "":"notice.object_type",
-                                        "":"notice.verb",
-                                        "":"notice.scope"
+                                        "updated_at":"notice.modified"
                                     }
                                 },
                                 {
@@ -1770,17 +2005,7 @@
                                         "text": "message.content",
                                         "author_id": "message.from_profile",
                                         "created_at": "message.created",
-                                        "updated_at": "message.modified",
-                                        "":"message.to_profile",
-                                        "":"message.url",
-                                        "":"message.rendered",
-                                        "":"message.source",
-                                        "":"message.",
-                                        "":"message.",
-                                        "":"message.",
-                                        "":"message.",
-                                        "":"message.",
-                                        "":"message."
+                                        "updated_at": "message.modified"
                                     }
                                 },
                                 {
@@ -1789,15 +2014,13 @@
                                     "mapping": {
                                         "id": "conversation.id",
                                         "created_at":"conversation.created",
-                                        "updated_at":"conversation.modified",
-                                        "":"conversation.uri"
+                                        "updated_at":"conversation.modified"
                                     }
                                 },
                                 {
                                     "table": "conversation_visibilities",
                                     "mapping" : {
                                         "conversation_id": "conversation.id",
-                                        "person_id": "message.to_profile",
                                         "created_at": "conversation.created",
                                         "updated_at": "conversation.modified"
                                     }
