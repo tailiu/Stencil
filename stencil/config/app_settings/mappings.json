@@ -1178,7 +1178,16 @@
                                         "created_at":"retweets.created_at",
                                         "updated_at":"retweets.updated_at",
                                         "account_id":"retweets.user_id",
-                                        "reblog_of_id":"retweets.tweet_id"
+                                        "reblog_of_id":"retweets.tweet_id",
+                                        "conversation_id":"#ASSIGN(retweets.id)"
+                                    }
+                                },
+                                {
+                                    "table": "conversations",
+                                    "mapping": {
+                                        "id": "retweets.id",
+                                        "created_at":"retweets.created_at",
+                                        "updated_at":"retweets.updated_at"
                                     }
                                 }
                             ]
