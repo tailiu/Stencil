@@ -8,7 +8,6 @@
                 "member3":"account_stats"
             },
             "keys":{
-                "root_id":"member1.id",
                 "id":"member1.id"
             },
             "inner_dependencies" : [
@@ -72,7 +71,8 @@
                 "member1": "favourites"
             },
             "keys": {
-                "status_id": "member1.status_id"
+                "status_id": "member1.status_id",
+                "account_id":"account_id"
             }
         },
         {
@@ -157,6 +157,48 @@
                         }
                     ],
                     "display_setting": "parent_node_partially_displays"
+                }
+            ]
+        }
+    ],
+    "ownership": [
+        {
+            "tag":"statuses",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"follows",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"notifications",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"favourites",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account_id",
+                    "depends_on_attr":"id"
                 }
             ]
         }
