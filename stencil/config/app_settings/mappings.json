@@ -5,16 +5,7 @@
             "toApps": [
                 {
                     "name": "diaspora",
-                    "methods": [
-                        {
-                            "name": "guid",
-                            "mapping": "func uuid.New()"
-                        },
-                        {
-                            "name": "status_type",
-                            "mapping": "statuses.reblog_to_id : if statuses.reblog_to_id == nil: {return Status Message} else {return Reshare}"
-                        }
-                    ],
+                    "methods": [],
                     "inputs": [
                         {
                             "name": "commentable_type",
@@ -31,6 +22,18 @@
                         {
                             "name": "mentions_type2",
                             "value": "Comment"
+                        },
+                        {
+                            "name": "reshare",
+                            "value": "Reshare"
+                        },
+                        {
+                            "name": "F",
+                            "value": "False"
+                        },
+                        {
+                            "name": "T",
+                            "value": "True"
                         }
                     ],
                     "mappings": [
@@ -88,7 +91,8 @@
                                     "table": "posts",
                                     "conditions": {
                                             "statuses.visibility": "0",
-                                            "statuses.reply": "False"
+                                            "statuses.reply": "False",
+                                            "statuses.reblog_to_id": "#NOTNULL"
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
@@ -96,8 +100,28 @@
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "type": "#status_type",
-                                        "guid":"#guid",
+                                        "type": "$reshare",
+                                        "guid":"#GUID",
+                                        "comments_count": "status_stats.replies_count",
+                                        "likes_count": "status_stats.favourites_count",
+                                        "reshares_count": "status_stats.reblogs_count"
+                                    }
+                                },
+                                {
+                                    "table": "posts",
+                                    "conditions": {
+                                            "statuses.visibility": "0",
+                                            "statuses.reply": "False",
+                                            "statuses.reblog_to_id": "#NULL"
+                                    },
+                                    "mapping": {
+                                        "id":"statuses.id",
+                                        "author_id":"statuses.account_id",
+                                        "text":"statuses.text",
+                                        "created_at":"statuses.created_at",
+                                        "updated_at":"statuses.updated_at",
+                                        "type": "$mentions_type1",
+                                        "guid":"#GUID",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -117,8 +141,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "commentable_type": "$commentable_type",
-                                        "guid":"#guid"
-            
+                                        "guid":"#GUID"
                                     }
                                 },
                                 {
@@ -133,7 +156,7 @@
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "guid":"#guid"
+                                        "guid":"#GUID"
                                     }
                                 }
                             ]
@@ -148,7 +171,7 @@
                                         "id":"conversations.id",
                                         "created_at":"conversations.created_at",
                                         "updated_at":"conversations.updated_at",
-                                        "guid":"#guid"
+                                        "guid":"#GUID"
                                     }
                                 }
                             ]
@@ -306,7 +329,6 @@
                                     "table": "credentials",
                                     "conditions":{},
                                     "mapping": {
-                                        "id": "$guid",
                                         "email":"users.email",
                                         "user_id":"accounts.id",
                                         "password":"users.encrypted_password",
@@ -484,6 +506,7 @@
                                     "table": "users",
                                     "conditions":{},
                                     "mapping": {
+                                        "id":"#ASSIGN(people.id)",
                                         "email":"users.email",
                                         "encrypted_password":"users.encrypted_password",
                                         "reset_password_token":"users.reset_password_token",
@@ -512,6 +535,7 @@
                                     },
                                     "mapping": {
                                         "id":"posts.id",
+                                        "conversation_id":"#ASSIGN(posts.id)",
                                         "account_id": "posts.author_id",
                                         "text":"posts.text",
                                         "created_at":"posts.created_at",
@@ -553,6 +577,7 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"comments.id",
+                                        "conversation_id":"#ASSIGN(comments.commentable_id)",
                                         "account_id": "comments.author_id",
                                         "text":"comments.text",
                                         "created_at":"comments.created_at",
@@ -892,7 +917,7 @@
                                     "table": "users",
                                     "conditions":{},
                                     "mapping": {
-                                        "id": "#guid",
+                                        "id": "#GUID",
                                         "email":"credentials.email",
                                         "account_id":"users.id",
                                         "encrypted_password":"credentials.password",
@@ -969,7 +994,7 @@
                                     "table": "media_attachments",
                                     "conditions": {},
                                     "mapping" : {
-                                        "id": "#guid",
+                                        "id": "#GUID",
                                         "remote_url": "tweets.tweet_media",
                                         "status_id": "tweets.id",
                                         "created_at": "tweets.created_at",
@@ -1014,7 +1039,7 @@
                                     "table": "media_attachments",
                                     "conditions": {},
                                     "mapping" : {
-                                        "id": "#guid",
+                                        "id": "#GUID",
                                         "remote_url": "messages.message_media",
                                         "status_id": "messages.id",
                                         "created_at": "messages.created_at",
@@ -1102,7 +1127,7 @@
                                 {
                                     "table": "posts",
                                     "conditions":{
-                                        "tweets.reply_to_id" : "NULL"
+                                        "tweets.reply_to_id" : "#NULL"
                                     },
                                     "mapping": {
                                         "id":"tweets.id",
@@ -1121,7 +1146,7 @@
                                 {
                                     "table": "comments",
                                     "conditions":{
-                                        "tweets.reply_to_id" : "NOT NULL"
+                                        "tweets.reply_to_id" : "#NOTNULL"
                                     },
                                     "mapping": {
                                         "id":"tweets.id",

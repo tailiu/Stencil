@@ -9,14 +9,13 @@ import (
 	"log"
 	"math/rand"
 	"strings"
-	"time"
+	
 
 	_ "github.com/lib/pq" // postgres driver
 	escape "github.com/tj/go-pg-escape"
 )
 
 func (self *QR) NewRowId() int32 {
-	rand.Seed(time.Now().UnixNano())
 	return rand.Int31n(2147483647) //9223372036854775807
 }
 
