@@ -145,19 +145,20 @@
                                 {
                                     "table": "people",
                                     "mapping": {
+                                        "id": "jcow_accounts.id",
                                         "owner_id": "jcow_accounts.id"
                                     }
                                 },
                                 {
                                     "table": "profiles",
                                     "mapping": {
+                                        "person_id":"jcow_accounts.id",
                                         "full_name":"jcow_accounts.fullname",
                                         "image_url":"jcow_accounts.avatar",
                                         "birthday":"jcow_accounts.birthday",
                                         "bio":"jcow_accounts.about_me",
                                         "location":"jcow_accounts.location",
-                                        "gender":"jcow_accounts.gender",
-                                        "__comment":"some problems with id here"
+                                        "gender":"jcow_accounts.gender"
                                     }
                                 }
                             ]
@@ -547,12 +548,14 @@
                                 {
                                     "table": "people",
                                     "mapping": {
+                                        "id":"user.id",
                                         "owner_id": "user.id"
                                     }
                                 },
                                 {
                                     "table": "profiles",
                                     "mapping": {
+                                        "person_id":"user.id",
                                         "full_name":"profile.fullname",
                                         "image_url":"jcow_accounts.avatar",
                                         "birthday":"jcow_accounts.birthday",
@@ -661,12 +664,12 @@
                     "name": "jcow",
                     "mappings": [
                         {
-                            "fromTables": ["users", "profile"],
+                            "fromTables": ["users", "people", "profile"],
                             "toTables": [
                                 {
                                     "table": "jcow_accounts",
                                     "mapping": {
-                                        "id": "users.id",
+                                        "id": "people.id",
                                         "email":"users.email",
                                         "lastact":"users.last_seen",
                                         "password":"users.password",
