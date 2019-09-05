@@ -1810,6 +1810,10 @@
                         {
                             "name":"T",
                             "value":"true"
+                        },
+                        {
+                            "name": "StatusMessage",
+                            "value": "StatusMessage"
                         }
                     ],
                     "mappings": [
@@ -1879,7 +1883,8 @@
                                         "message": "notice.content",
                                         "author_id": "notice.profile_id",
                                         "created_at": "notice.created",
-                                        "updated_at":"notice.modified"
+                                        "updated_at":"notice.modified",
+                                        "type":"$StatusMessage"
                                     }
                                 },
                                 {

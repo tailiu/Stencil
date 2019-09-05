@@ -81,7 +81,8 @@
                 "member1": "notifications"
             },
             "keys": {
-                "account_id": "member1.account_id"
+                "account_id": "member1.account_id",
+                "from_account_id": "member1.from_account_id"
             }
         }
     ],
@@ -187,7 +188,7 @@
             "owned_by":"root",
             "conditions": [
                 {
-                    "tag_attr":"account_id",
+                    "tag_attr":"from_account_id",
                     "depends_on_attr":"id"
                 }
             ]
