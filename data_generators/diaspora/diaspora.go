@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"os/exec"
+	"strings"
 )
 
 func WaitForAWhile() {
@@ -501,11 +503,33 @@ func runCreateNewPosts(ptype string, totalPosts int) {
 		}
 	}
 	wg.Wait()
+} 
+
+func getParetoResultFromPython(alpha, total int) []float64 { // alpha = 2, 3?
+	var dist []float64
+	cmd := exec.Command("python", "../pareto.py", fmt.Sprint(alpha), fmt.Sprint(total))
+    if out, err := cmd.CombinedOutput(); err != nil {
+		log.Fatal(err); 
+	}else{
+		nums := strings.Split(string(out), ",")
+		for _, num := range nums {
+			num = strings.Replace(num, "\n", "", -1)
+			if value, err := strconv.ParseFloat(num, 32); err == nil {
+				dist = append(dist, value)
+			}else{
+				log.Fatal("Crashed while converting pareto val to float32:", err)
+			}
+		}
+	}
+	return dist
 }
 
 func main() {
 
 	helper.Init()
+
+	getParetoResultFromPython(3, 8030)
+	log.Fatal()
 
 	arg := os.Args[1]
 
