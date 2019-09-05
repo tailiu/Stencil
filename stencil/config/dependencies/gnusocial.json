@@ -1,30 +1,139 @@
 {
     "tags":[
         {
-            "name" : "root",
-            "members" : {
-                "member1":""
+            "name": "root",
+            "members": {
+                "member1": "profile",
+                "member2": "user"
             },
-            "keys":{
-                
+            "keys": {
+                "id": "member1.id"
             },
             "inner_dependencies" : [
                 {
-                    
+                    "member1.id": "member2.id"
                 }
             ]
+        },
+        {
+            "name": "notice",
+            "members": {
+                "member1": "notice",
+                "member2": "conversation"
+            },
+            "keys": {
+                "id": "member1.id",
+                "profile_id": "member1.profile_id",
+                "reply_to": "member1.reply_to",
+                "repeat_of": "member1.repeat_of"
+            },
+            "inner_dependencies" : [
+                {
+                    "member2.id": "member1.conversation"
+                }
+            ]
+        },
+        {
+            "name": "fave",
+            "members": {
+                "member1": "fave"
+            },
+            "keys": {
+                "notice_id": "member1.notice_id",
+                "profile_id": "member1.user_id"
+            }
+        },
+        {
+            "name": "message",
+            "members": {
+                "member1": "message"
+            },
+            "keys": {
+                "from_profile": "member1.from_profile",
+                "to_profile": "member1.to_profile"
+            }
+        },
+        {
+            "name": "subscription",
+            "members": {
+                "member1": "subscription"
+            },
+            "keys": {
+                "subscriber": "member1.subscriber",
+                "subscribed": "member1.subscribed"
+            }
         }
     ],
     "dependencies":[
         {
-            "tag": "profile",
+            "tag": "notice",
             "depends_on": [
                 {
                     "tag":"root",
                     "conditions": [
                         {   
-                            "tag_attr": "person_id",
-                            "depends_on_attr": "person_id"
+                            "tag_attr": "profile_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                },
+                {
+                    "tag":"notice",
+                    "conditions": [
+                        {   
+                            "tag_attr": "reply_to",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                },
+                {
+                    "tag":"notice",
+                    "conditions": [
+                        {   
+                            "tag_attr": "repeat_of",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "fave",
+            "depends_on": [
+                {
+                    "tag": "notice",
+                    "conditions": [
+                        {
+                            "tag_attr": "notice_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "message",
+            "depends_on": [
+                {
+                    "tag": "root",
+                    "conditions": [
+                        {
+                            "tag_attr": "from_profile",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "subscription",
+            "depends_on": [
+                {
+                    "tag": "root",
+                    "conditions": [
+                        {
+                            "tag_attr": "subscriber",
+                            "depends_on_attr": "id"
                         }
                     ]
                 }
@@ -32,6 +141,45 @@
         }
     ],
     "ownership":[
-
+        {
+            "tag":"notice",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"profile_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"fave",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"profile_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"message",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"from_profile",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"subscription",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"subscriber",
+                    "depends_on_attr":"id"
+                }
+            ]
+        }
     ]
 }
