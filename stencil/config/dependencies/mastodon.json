@@ -112,9 +112,19 @@
                     ],
                     "display_existence": "reply",
                     "display_setting": "parent_node_not_displays_with_check"
+                },
+                {
+                    "tag":"root",
+                    "conditions": [
+                        {   
+                            "tag_attr": "account",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ],
-            "combined_display_setting":"S1 or S2"
+            "combined_display_setting":"S1 and S2 and root"
         },
         {
             "tag": "follows",

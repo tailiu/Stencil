@@ -45,6 +45,8 @@ func returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting strin
 	}
 }
 
+// For now, it is hard-coded that if there is one parent node condition satisfied, 
+// then display the current node
 func checkDisplayConditions(appConfig *config.AppConfig, pTagConditions map[string]bool, oneMigratedData display.HintStruct) bool {
 	for _, result := range pTagConditions {
 		if result {
