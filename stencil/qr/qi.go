@@ -81,7 +81,7 @@ func (self *QI) GenSQL() (string, []interface{}) {
 			cols = append(cols, col)
 			vals = append(vals, fmt.Sprintf("$%d", i+1))
 		}
-		q := fmt.Sprintf("INSERT INTO \"%s\" (%s) VALUES (%s)", self.TableName, strings.Join(cols, ","), strings.Join(vals, ","))
+		q := fmt.Sprintf("INSERT INTO \"%s\" (%s) VALUES (%s) ON CONFLICT DO NOTHING;", self.TableName, strings.Join(cols, ","), strings.Join(vals, ","))
 		return q, self.Values
 	}
 	fmt.Println("!!! Unable to identify query type.", self.Type)
@@ -215,6 +215,18 @@ func getSelectQueryIngs(sql string) *QI {
 
 func (self *QR) ResolveInsert(qi *QI, rowID int32) []*QI {
 
+	PQIs := self.ResolveInsertWithoutRowDesc(qi, rowID)
+	if len(PQIs) > 0 {
+		newRowCols := []string{"rowid", "app_id"}
+		newRowVals := []interface{}{rowID, self.AppID}
+		newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
+		PQIs = append(PQIs, newRowQI)
+	}
+	return PQIs
+}
+
+func (self *QR) ResolveInsertWithoutRowDesc(qi *QI, rowID int32) []*QI {
+
 	var PQIs []*QI
 	
 	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
@@ -236,11 +248,6 @@ func (self *QR) ResolveInsert(qi *QI, rowID int32) []*QI {
 		}
 
 	}
-	if len(PQIs) > 0{
-		newRowCols := []string{"rowid", "app_id"}
-		newRowVals := []interface{}{rowID, self.AppID}
-		newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
-		PQIs = append(PQIs, newRowQI)
-	}
 	return PQIs
 }
+

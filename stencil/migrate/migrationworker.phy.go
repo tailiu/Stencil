@@ -10,7 +10,8 @@ import (
 	"stencil/helper"
 	"stencil/qr"
 	"stencil/transaction"
-	// "strconv"
+	"strconv"
+	"github.com/google/uuid"
 	"strings"
 	"database/sql"
 )
@@ -302,27 +303,133 @@ func (self *MigrationWorker) PushData(stable, dtable, pk string) error {
 	return nil
 }
 
-func (self *MigrationWorker) CheckMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
-	breakCondition := false
+func (self *MigrationWorker) VerifyMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
+
 	if len(toTable.Conditions) > 0 {
 		for conditionKey, conditionVal := range toTable.Conditions {
-			if nodeVal, err := node.GetValueForKey(conditionKey); err == nil {
-				if !strings.EqualFold(nodeVal, conditionVal) {
-					breakCondition = true
-					log.Println(nodeVal, "!=", conditionVal)
+			if nodeVal, ok := node.Data[conditionKey]; ok {
+				if conditionVal[:1] == "#" {
+					fmt.Println("VerifyMappingConditions: conditionVal[:1] == #")
+					fmt.Println(conditionKey, conditionVal, nodeVal)
+					fmt.Scanln()
+					switch conditionVal {
+						case "#NULL": {
+							if nodeVal != nil {
+								log.Println(nodeVal, "!=", conditionVal)
+								fmt.Println(conditionKey, conditionVal, nodeVal)
+								log.Fatal("@VerifyMappingConditions: return false, from case #NULL:")
+								return false
+							}
+						}
+						case "#NOTNULL": {
+							if nodeVal == nil {
+								log.Println(nodeVal, "!=", conditionVal)
+								fmt.Println(conditionKey, conditionVal, nodeVal)
+								log.Fatal("@VerifyMappingConditions: return false, from case #NOTNULL:")
+								return false
+							}		
+						}
+						default: {
+							fmt.Println(toTable.Table, conditionKey, conditionVal)
+							log.Fatal("@VerifyMappingConditions: Case not found:" + conditionVal)
+						}
+					}
+				} else if conditionVal[:1] == "$" {
+					fmt.Println("VerifyMappingConditions: conditionVal[:1] == $")
+					fmt.Println(conditionKey, conditionVal, nodeVal)
+					fmt.Scanln()
+					if inputVal, err := self.mappings.GetInput(conditionVal); err == nil {
+						if !strings.EqualFold(fmt.Sprint(nodeVal), inputVal) {
+							log.Println(nodeVal, "!=", inputVal)
+							fmt.Println(conditionKey, conditionVal, inputVal, nodeVal)
+							log.Fatal("@VerifyMappingConditions: return false, from conditionVal[:1] == $")
+							return false
+						}
+					}else {
+						fmt.Println("node data:", node.Data)
+						fmt.Println(conditionKey, conditionVal)
+						log.Fatal("@VerifyMappingConditions: input doesn't exist?")
+					}
 				} else {
-					// fmt.Println(*nodeVal, "==", conditionVal)
+					if !strings.EqualFold(fmt.Sprint(nodeVal), conditionVal) {
+						log.Println(nodeVal, "!=", conditionVal)
+						return false
+					}
 				}
 			} else {
-				breakCondition = true
-				log.Println("Condition Key", conditionKey, "doesn't exist!")
 				fmt.Println("node data:", node.Data)
-				fmt.Println("node sql:", node.SQL)
-				log.Fatal("stop here and check")
+				log.Fatal("@VerifyMappingConditions: failed node.Data["+conditionKey+"]")
+				return false
 			}
 		}
 	}
-	return breakCondition
+	return true
+}
+
+func (self *MigrationWorker) CreateMissingData(toTable config.ToTable, node *DependencyNode) map[string]string {
+	
+	newRows := make(map[string]string)
+	for toCol, mappedTabCol := range toTable.Mapping {
+		if mappedTabCol[:1] == "$" {
+			if inputVal, err := self.mappings.GetInput(mappedTabCol); err == nil {
+				newRows[toCol] = inputVal
+			} else {
+				fmt.Println(toTable.Table, toCol, mappedTabCol)
+				log.Fatal("@CreateMissingData: input doesn't exist?")
+			}
+		} else if mappedTabCol[:1] == "#" {
+			if strings.Contains(mappedTabCol, "#ASSIGN"){
+				assignedTabCol := strings.Trim(mappedTabCol, "#ASSIGN()")
+				if nodeVal, ok := node.Data[assignedTabCol]; ok {
+					newRows[toCol] = fmt.Sprint(nodeVal)
+				}
+			}else{
+				switch mappedTabCol {
+					case "#GUID": {
+						newRows[toCol] = fmt.Sprint(uuid.New())
+					}
+					case "#RANDINT": {
+						newRows[toCol] = fmt.Sprint(self.SrcAppConfig.QR.NewRowId())
+					}
+					default: {
+						fmt.Println(toTable.Table, toCol, mappedTabCol)
+						log.Fatal("@CreateMissingData: Case not found:" + mappedTabCol)
+					}
+				}
+			}
+		}
+	}
+	return newRows
+}
+
+func (self *MigrationWorker) InsertMissingData(tx *sql.Tx, table, rowid string, data map[string]string) error {
+	var cols []string
+	var vals []interface{}
+	if pk, err := strconv.Atoi(rowid); err == nil {
+		for col, val := range data {
+			cols, vals = append(cols, col), append(vals, val)
+		}
+		qi := qr.CreateQI(table, cols, vals, qr.QTInsert)
+		qis := self.DstAppConfig.QR.ResolveInsertWithoutRowDesc(qi, int32(pk))
+		for _, qi := range qis {
+			query, args := qi.GenSQL()
+			fmt.Println(query, args)
+			if _, err := tx.Exec(query, args...); err != nil {
+				fmt.Println("Some error:", err)
+				fmt.Println(query, args)
+				fmt.Println(qi)
+				log.Fatal(err)
+				return err
+			}
+		}
+		fmt.Println("InsertMissingData")
+		fmt.Scanln()
+		return nil
+	}else{
+		fmt.Println("PK", rowid)
+		log.Fatal(err)
+		return err
+	}
 }
 
 func (self *MigrationWorker) IsNodeOwnedByRoot(node *DependencyNode) bool {
@@ -407,7 +514,13 @@ func (self *MigrationWorker) UpdatePhyRowIDsOfSourceTables(tx *sql.Tx, mapping c
 func (self *MigrationWorker) HandleMappedPartOfNode(tx *sql.Tx, mapping config.Mapping, node *DependencyNode) ([]string, []string, error) {
 	var updatedPKs, bagPKs []string
 	for _, toTable := range mapping.ToTables {
-		if !self.CheckMappingConditions(toTable, node) {
+		if self.VerifyMappingConditions(toTable, node) {
+			if newRow := self.CreateMissingData(toTable, node); len(newRow) > 0 {
+				fmt.Println("CreateMissingData:", toTable.Table)
+				fmt.Println(newRow)
+				fmt.Scanln()
+				self.InsertMissingData(tx, toTable.Table, fmt.Sprint(node.Data["rowids"]), newRow)
+			}
 			for col, val := range node.Data {
 				if strings.Contains(col, "pk.") && val != nil {
 					pk := fmt.Sprint(val) //strconv.FormatInt(val.(int64), 10)
@@ -486,19 +599,26 @@ func (self *MigrationWorker) MigrateNode(mapping config.Mapping, node *Dependenc
 		}
 		if updatedPKs, bagPKs, err := self.HandleMappedPartOfNode(tx, mapping, node); err == nil {
 			if len(updatedPKs) > 0 {
-				if err := self.HandleUnmappedPartOfNode(tx, mapping, node, bagPKs); err == nil {
-					if undoActionJSON, err := transaction.GenUndoActionJSON(append(updatedPKs, bagPKs...), self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
-						if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
-							log.Println("MigrateNode: unable to LogChange", log_err)
-							return errors.New("0")
-						}
-					} else {
-						log.Fatal("MigrateNode: unable to GenUndoActionJSON", err)
-					}
-					tx.Commit()
-				}else{
+				if err := self.HandleUnmappedPartOfNode(tx, mapping, node, bagPKs); err != nil {
 					return err
 				}
+				// if len(newData) > 0 {
+				// 	if err := self.InsertMissingData(newData); err != nil {
+				// 		fmt.Println(newData)
+				// 		log.Println("MigrateNode: unable to InsertMissingData", err)
+				// 		log.Fatal()
+				// 		return err
+				// 	}
+				// }
+				if undoActionJSON, err := transaction.GenUndoActionJSON(append(updatedPKs, bagPKs...), self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
+					if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
+						log.Println("MigrateNode: unable to LogChange", log_err)
+						return errors.New("0")
+					}
+				} else {
+					log.Fatal("MigrateNode: unable to GenUndoActionJSON", err)
+				}
+				tx.Commit()
 			} else {
 				return self.HandleUnmappedNode(node)
 			}
@@ -590,7 +710,7 @@ func (self *MigrationWorker) HandleMigration(node *DependencyNode, isBag bool) e
 	for _, mapping := range self.mappings.Mappings {
 		tagMembers := node.Tag.GetTagMembers()
 		if mappedTables := helper.IntersectString(tagMembers, mapping.FromTables); len(mappedTables) > 0 {
-			if helper.Sublist(tagMembers, mapping.FromTables) {
+			if helper.Sublist(tagMembers, mapping.FromTables) { // other mappings HANDLE!
 				return self.MigrateNode(mapping, node)
 			}
 			if wNode, err := self.HandleWaitingList(mapping, tagMembers, node); wNode != nil && err == nil {

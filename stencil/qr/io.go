@@ -6,6 +6,8 @@ import (
 	"log"
 	"stencil/db"
 	"strings"
+	"math/rand"
+	"time"
 )
 
 func NewQR(app_name, app_id string) *QR {
@@ -18,6 +20,7 @@ func NewQR(app_name, app_id string) *QR {
 	// fmt.Println("Fetching Supplementary Mappings...")
 	qr.getSupplementaryMappings()
 	// fmt.Println("QR Created")
+	rand.Seed(time.Now().UnixNano())
 	return qr
 }
 
@@ -32,6 +35,7 @@ func NewQRWithAppName(app_name string) *QR {
 	fmt.Println("Fetching Supplementary Mappings...")
 	qr.getSupplementaryMappings()
 	fmt.Println("QR Created")
+	rand.Seed(time.Now().UnixNano())
 	return qr
 }
 
@@ -46,6 +50,7 @@ func NewQRWithAppID(app_id string) *QR {
 	fmt.Println("Fetching Supplementary Mappings...")
 	qr.getSupplementaryMappings()
 	fmt.Println("QR Created")
+	rand.Seed(time.Now().UnixNano())
 	return qr
 }
 
