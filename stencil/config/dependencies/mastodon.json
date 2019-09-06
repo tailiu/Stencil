@@ -51,7 +51,7 @@
                     "member1.id":"member5.activity_id"
                 },
                 {
-                    "member6.id":"member1.conversation_id"
+                    "member1.conversation_id":"member6.id"
                 }
             ],
             "display_setting": "display_based_on_inner_dependencies"

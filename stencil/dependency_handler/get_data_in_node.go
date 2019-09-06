@@ -61,9 +61,9 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 			if deps, ok := procDependencies[col]; ok {
 				// We assume that this is an integer value otherwise we have to define it in dependency config
 				for _, dep := range deps {
-					log.Println(dep)
-					log.Println(col)
-					log.Println(dataInDependencyNode.Data)
+					// log.Println(dep)
+					// log.Println(col)
+					// log.Println(dataInDependencyNode.Data)
 					if val == nil {
 						log.Println("Fail to get one data because the value of the relevant column is nil")
 						continue

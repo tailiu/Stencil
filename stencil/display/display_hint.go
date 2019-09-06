@@ -122,3 +122,22 @@ func (hint HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig, p
 
 	return "", errors.New("Find display existence error!")
 }
+
+func (hint HintStruct) GetCombinedDisplaySettings(appConfig *config.AppConfig) (string, error) {
+	tag, err := hint.GetTagName(appConfig)
+	if err != nil {
+		return "", err
+	}
+
+	for _, dependency := range appConfig.Dependencies {
+		if dependency.Tag == tag {
+			if dependency.CombinedDisplaySetting == "" {
+				return "", errors.New("No combined display settings found!")
+			} else {
+				return dependency.CombinedDisplaySetting, nil
+			}
+		}
+	}
+
+	return "", errors.New("No combined display settings found!")
+}
