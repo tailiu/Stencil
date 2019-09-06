@@ -69,9 +69,9 @@ func CreateAppConfigDisplay(app, app_id string) (AppConfig, error) {
 	}
 
 	if strings.Contains(dir, "/stencil/") {
-		dconfig = "../config/dependencies/" + app + ".json"
+		dconfig = "../config/dependencies/" + app + "_display.json"
 	} else {
-		dconfig = "./config/dependencies/" + app + ".json"
+		dconfig = "./config/dependencies/" + app + "_display.json"
 	}
 
 	jsonFile, err := os.Open(dconfig)

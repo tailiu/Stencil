@@ -25,7 +25,7 @@ func Initialize(app string) (*sql.DB, *config.AppConfig, map[string]string, int)
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
-	appConfig, err := config.CreateAppConfig(app, app_id)
+	appConfig, err := config.CreateAppConfigDisplay(app, app_id)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -29,11 +29,10 @@
             },
             "inner_dependencies" : [
                 {
-                    "member2.id": "member1.conversation"
+                    "member1.conversation": "member2.id"
                 }
             ],
-            "display_setting": "display_based_on_inner_dependencies",
-            "_comment": "Note that notice depends on conversation here"
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name": "fave",
