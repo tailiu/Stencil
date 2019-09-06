@@ -58,6 +58,47 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 	return appConfig, nil
 }
 
+func CreateAppConfigDisplay(app, app_id string) (AppConfig, error) {
+
+	var appConfig AppConfig
+	var dconfig string
+
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if strings.Contains(dir, "/stencil/") {
+		dconfig = "../config/dependencies/" + app + ".json"
+	} else {
+		dconfig = "./config/dependencies/" + app + ".json"
+	}
+
+	jsonFile, err := os.Open(dconfig)
+
+	if err != nil {
+		fmt.Println("Some problem with the file: ")
+		fmt.Println(err)
+		return appConfig, errors.New("can't open file")
+	}
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	jsonFile.Close()
+	json.Unmarshal(byteValue, &appConfig)
+
+	appConfig.AppName = app
+	appConfig.AppID = app_id
+	appConfig.DBConn = db.GetDBConn(app)
+
+	if app_id != "" {
+		appConfig.QR = qr.NewQR(app, app_id)
+	}
+
+	rand.Seed(time.Now().UTC().UnixNano())
+	appConfig.Rand = rand.New(rand.NewSource(time.Now().Unix()))
+	return appConfig, nil
+}
+
 func LoadSchemaMappings() (*SchemaMappings, error) {
 	if SchemaMappingsObj == nil {
 

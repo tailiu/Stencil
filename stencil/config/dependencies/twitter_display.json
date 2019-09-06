@@ -30,7 +30,8 @@
                 {
                     "member1.id": "member2.tweet_id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name": "messages",
@@ -57,7 +58,8 @@
                 {
                     "member1.id": "member2.conversation_id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name": "notifications",
@@ -95,20 +97,6 @@
             "tag": "tweets",
             "depends_on": [
                 {
-                    "tag":"tweets",
-                    "conditions": [
-                        {   
-                            "tag_attr": "reply_to",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "tweets",
-            "depends_on": [
-                {
                     "tag":"root",
                     "conditions": [
                         {   
@@ -116,8 +104,20 @@
                             "depends_on_attr": "id"
                         }
                     ]
+                },
+                {
+                    "tag":"tweets",
+                    "conditions": [
+                        {   
+                            "tag_attr": "reply_to",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_existence": "reply_to",
+                    "display_setting": "parent_node_not_displays_with_check"
                 }
-            ]
+            ],
+            "combined_display_setting":"root and tweets"
         },
         {
             "tag": "likes",
@@ -138,20 +138,6 @@
             "tag": "notifications",
             "depends_on" : [
                 {
-                    "tag": "tweets",
-                    "conditions": [
-                        {
-                            "tag_attr": "tweet",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "notifications",
-            "depends_on" : [
-                {
                     "tag": "root",
                     "conditions": [
                         {
@@ -159,8 +145,19 @@
                             "depends_on_attr": "id"
                         }
                     ]
+                },
+                {
+                    "tag": "tweets",
+                    "conditions": [
+                        {
+                            "tag_attr": "tweet",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
-            ]
+            ],
+            "combined_display_setting":"root and tweets"
         },
         {
             "tag": "actions",

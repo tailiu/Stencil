@@ -17,7 +17,8 @@
                 {
                     "member1.id":"member3.account_id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name" : "statuses",
@@ -52,7 +53,8 @@
                 {
                     "member1.conversation_id":"member6.id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name" : "follows",
@@ -90,42 +92,40 @@
             "tag": "statuses",
             "depends_on": [
                 {
+                    "tag":"statuses",
+                    "as": "S1",
+                    "conditions":[
+                        {   "tag_attr": "reblog",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_existence": "reblog",
+                    "display_setting": "parent_node_not_displays_with_check"
+                },
+                {
+                    "tag":"statuses",
+                    "as": "S2",
+                    "conditions":[
+                        {   "tag_attr": "reply",
+                            "depends_on_attr": "id"
+                        }
+                    
+                    ],
+                    "display_existence": "reply",
+                    "display_setting": "parent_node_not_displays_with_check"
+                },
+                {
                     "tag":"root",
                     "conditions": [
                         {   
                             "tag_attr": "account",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
-            ]
-        },
-        {
-            "tag": "statuses",
-            "depends_on": [
-                {
-                    "tag":"statuses",
-                    "conditions":[
-                        {   "tag_attr": "reblog",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "statuses",
-            "depends_on": [
-                {
-                    "tag":"statuses",
-                    "conditions":[
-                        {   "tag_attr": "reply",
-                            "depends_on_attr": "id"
-                        }
-                    
-                    ]
-                }
-            ]
+            ],
+            "combined_display_setting":"S1 and S2 and root"
         },
         {
             "tag": "follows",
@@ -137,7 +137,8 @@
                             "tag_attr": "account_id",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         },
@@ -151,7 +152,8 @@
                             "tag_attr": "status_id",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         },
@@ -165,7 +167,8 @@
                             "tag_attr": "account_id",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         }

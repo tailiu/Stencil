@@ -58,9 +58,9 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, secondRound bool, deletionHoldEnable bool, dhStack [][]int, threadID int) (string, [][]int, error) {
 
 	log.Println("Check Data ", oneMigratedData)
-	if oneMigratedData.Table == "follows" || oneMigratedData.Table == "notifications" || oneMigratedData.Table == "favourites" {
-		return "", nil, nil
-	}
+	// if oneMigratedData.Table == "follows" || oneMigratedData.Table == "notifications" || oneMigratedData.Table == "favourites" {
+	// 	return "", nil, nil
+	// }
 	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(appConfig, oneMigratedData, stencilDBConn)
 	log.Println("-----------")
 	log.Println(dataInNode)
@@ -148,9 +148,6 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 				}
 				// log.Println(pTagConditions)
 
-				// For now, without checking the combined_display_setting,
-				// this check display condition func will return true
-				// as long as one pTagCondition is true
 				if checkResult := display.CheckCombinedDisplayConditions(appConfig, pTagConditions, oneMigratedData); checkResult {
 					var err8 error
 					err8, dhStack = display.Display(stencilDBConn, appConfig.AppID, dataInNode, deletionHoldEnable, dhStack, threadID)
@@ -172,7 +169,6 @@ func main() {
 	dstApp := "mastodon"
 	migrationID := 1675105532
 	deletionHoldEnable := true
-	// DisplayThread(dstApp, 65690345, deletionHoldEnable)
 
 	for i := 0; i < threadNum; i++ {
 		go DisplayThread(dstApp, migrationID, deletionHoldEnable)
