@@ -141,3 +141,18 @@ func (hint HintStruct) GetCombinedDisplaySettings(appConfig *config.AppConfig) (
 
 	return "", errors.New("No combined display settings found!")
 }
+
+func (hint HintStruct) GetRestrictionsInTag(appConfig *config.AppConfig) ([]map[string]string, error) {
+	tagName, err := hint.GetTagName(appConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, tag := range appConfig.Tags {
+		if tag.Name == tagName {
+			return tag.Restrictions, nil
+		}
+	}
+
+	return nil, errors.New("No matched tag found!")
+}
