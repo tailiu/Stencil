@@ -20,6 +20,9 @@ type User struct {
 	Aspects       []int
 	ContactID     int
 	ContactAspect int
+	PopularityScore float64
+	CommentScore float64
+	LikeScore float64
 }
 
 type Post struct {

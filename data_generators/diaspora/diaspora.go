@@ -505,7 +505,25 @@ func runCreateNewPosts(ptype string, totalPosts int) {
 	wg.Wait()
 } 
 
-func getParetoResultFromPython(alpha, total int) []float64 { // alpha = 2, 3?
+func ParetoNewPosts(alpha, total int){
+	dbConn := db.GetDBConn(config.APP_NAME)
+	users := datagen.GetAllUsersWithAspects(dbConn)
+	{
+		totalUsers := len(users)
+		popDist := getParetoResultFromPython(2.0, totalUsers)
+		commDist := getParetoResultFromPython(2.1, totalUsers)
+		likeDist := getParetoResultFromPython(2.2, totalUsers)
+		for i := 0; i < totalUsers; i++ {
+			users[i].PopularityScore = popDist[i]
+			users[i].CommentScore = commDist[i]
+			users[i].LikeScore = likeDist[i]
+		}
+	}
+	
+	// fmt.Println(dist)
+}
+
+func getParetoResultFromPython(alpha float32, total int) []float64 { // alpha = 2, 3?
 	var dist []float64
 	cmd := exec.Command("python", "../pareto.py", fmt.Sprint(alpha), fmt.Sprint(total))
     if out, err := cmd.CombinedOutput(); err != nil {
@@ -528,15 +546,12 @@ func main() {
 
 	helper.Init()
 
-	getParetoResultFromPython(3, 8030)
-	log.Fatal()
-
 	arg := os.Args[1]
 
 	switch arg {
 	case "posts":
 		fmt.Println("Creating New Posts!")
-		runCreateNewPosts("posts", 8030)
+		ParetoNewPosts(2, 8030)
 	case "comments":
 		fmt.Println("Interacting With Posts!")
 		runCreateNewPosts("comments", 13970)
