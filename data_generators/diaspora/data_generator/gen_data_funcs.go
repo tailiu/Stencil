@@ -70,18 +70,23 @@ func transformFloat64ToInt(data []float64) []int {
 	return data1
 }
 
-func AssignPostsToUsersByPopScores(genConfig *GenConfig, userNum, postNum int) []int {
+func AssignDataToUsersByPopScores(genConfig *GenConfig, userNum, dataNum int) []int {
 	var results []float64
 
 	totalScore := getSumOfFloatSlice(genConfig.PopularityScores)
 	for i := 0; i < userNum; i++ {
-		results = append(results, math.Floor(genConfig.PopularityScores[i] / totalScore * float64(postNum)))
+		results = append(results, math.Floor(genConfig.PopularityScores[i] / totalScore * float64(dataNum)))
 	}
 
 	assignRemaingDataTimes := 200
 	for i := 0; i < assignRemaingDataTimes; i++ {
-		assignRemaingData(genConfig.PopularityScores, totalScore, postNum, results)
+		assignRemaingData(genConfig.PopularityScores, totalScore, dataNum, results)
 	}
 
 	return transformFloat64ToInt(results)
+}
+
+func RandomNonnegativeIntWithUpperBound(upperBound int) int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(upperBound)
 }
