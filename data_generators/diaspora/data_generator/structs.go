@@ -4,6 +4,9 @@ import (
 	"database/sql"
 )
 
+const ALPHA = 2.0
+const XM = 0.2
+
 type User struct {
 	User_ID       		int
 	Person_ID     		int
@@ -21,6 +24,3 @@ type GenConfig struct {
 	CommentScores		[]float64
 	LikeScores			[]float64
 }
-
-const ALPHA = 2.0
-const XM = 0.2

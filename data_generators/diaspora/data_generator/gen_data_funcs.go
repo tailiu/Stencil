@@ -45,3 +45,43 @@ func Initialize(app string, userNum int) *GenConfig {
 
 	return genConfig
 }
+
+func getSumOfFloatSlice(s []float64) float64 {
+	var sum float64
+	for _, num := range s {
+		sum += num
+	}
+	return sum
+}
+
+func assignRemaingData(scores []float64, totalScore float64, totalDataNum int, tempResults []float64) []float64 {
+	remainingDataNum := float64(totalDataNum) - getSumOfFloatSlice(tempResults)
+	for i := 0; i < len(tempResults); i++ {
+		tempResults[i] += math.Floor(scores[i] / totalScore * remainingDataNum)
+	}
+	return tempResults
+}
+
+func transformFloat64ToInt(data []float64) []int {
+	var data1 []int
+	for _, val := range data {
+		data1 = append(data1, int(val))
+	}
+	return data1
+}
+
+func AssignPostsToUsersByPopScores(genConfig *GenConfig, userNum, postNum int) []int {
+	var results []float64
+
+	totalScore := getSumOfFloatSlice(genConfig.PopularityScores)
+	for i := 0; i < userNum; i++ {
+		results = append(results, math.Floor(genConfig.PopularityScores[i] / totalScore * float64(postNum)))
+	}
+
+	assignRemaingDataTimes := 200
+	for i := 0; i < assignRemaingDataTimes; i++ {
+		assignRemaingData(genConfig.PopularityScores, totalScore, postNum, results)
+	}
+
+	return transformFloat64ToInt(results)
+}
