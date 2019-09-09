@@ -107,3 +107,15 @@ func AssignScoresToPosts(posts []int) map[int]float64 {
 	}
 	return postScores
 }
+
+func GetSeqsByPersonIDs(users []User, personIDs []int) []int {
+	var seq []int
+	for _, personID := range personIDs {
+		for i, user := range users {
+			if personID == user.Person_ID {
+				seq = append(seq, i)
+			}
+		}
+	}
+	return seq
+}
