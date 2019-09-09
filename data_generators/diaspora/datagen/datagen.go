@@ -609,18 +609,28 @@ func GetFollowedNum(dbConn *sql.DB, person_id int) int {
 func GetFollowedUsers(dbConn *sql.DB, person_id int) []int {
 	var users []int
 	query1 := fmt.Sprintf("select person_id from contacts where user_id = %d and sharing = true", person_id)
-	res1 := db.DataCall1(dbConn, query1)
+	res1 := db.DataCall(dbConn, query1)
 	for _, row := range res1 {
 		pID, _ := strconv.Atoi(row["person_id"])
 		users = append(users, pID)
 	}
 	return users
 }
+func GetFollowedDistribution(dbConn *sql.DB) []int {
+	var followedCounts []int
+	query := "select count(*) as fcounts from contacts where sharing = true group by user_id order by fcounts;"
+	res := db.DataCall(dbConn, query)
+	for _, row := range res {
+		fcounts, _ := strconv.Atoi(row["fcounts"])
+		followedCounts = append(followedCounts, fcounts)
+	}
+	return followedCounts
+}
 
 // Check whether person_id1 is followed by person_id2
 func CheckFollowed(dbConn *sql.DB, person_id1, person_id2 int) bool {
 	query1 := fmt.Sprintf("select id from contacts where user_id = %d and person_id = %d and sharing = true", person_id1, person_id2)
-	res1 := db.DataCall1(dbConn, query1)
+	res1 := db.DataCall(dbConn, query1)
 	if len(res1) > 0 {
 		return true
 	} else {

@@ -37,10 +37,10 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 		alreadyFollowedByPersons := datagen.GetFollowedUsers(genConfig.DBConn, personID1)
 		toBeFollowed := followedAssignment[seq1] - len(alreadyFollowedByPersons)
 		toBeFollowedByPersons = append(toBeFollowedByPersons, data_generator.GetSeqsByPersonIDs(users, alreadyFollowedByPersons)...)
-		log.Println("Check user:", seq1)
-		log.Println("Total users to follow this user:", followedAssignment[seq1])
-		log.Println("already followed by", alreadyFollowedByPersons)
-		log.Println("To be followed by:", toBeFollowed)
+		// log.Println("Check user:", seq1)
+		// log.Println("Total users to follow this user:", followedAssignment[seq1])
+		// log.Println("already followed by", alreadyFollowedByPersons)
+		// log.Println("To be followed by:", toBeFollowed)
 		if toBeFollowed > followedAssignment[seq1] {
 			log.Fatal("cannot happend1!!!!")
 		}
@@ -78,6 +78,9 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 			}
 		}
 
+		// Note that this RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
+		// this user can follow this percentage of users following the current user
+		// because maybe most of those users have already fully followed by other users
 		toFollowNum := int(float64(followedAssignment[seq1]) * RECIPROCAL_FOLLOW_PERCENTAGE)
 		// log.Println("Total Num", followedAssignment[seq1])
 		// log.Println("to Follow Num", toFollowNum)
@@ -91,7 +94,7 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 				currentlyFollowNum += 1
 				continue
 			} else {
-				if datagen.GetFollowedNum(genConfig.DBConn, personID3) == followedAssignment[seq3] {
+				if datagen.GetFollowedNum(genConfig.DBConn, personID3) >= followedAssignment[seq3] {
 					continue
 				} else {
 					aspect_idx := helper.RandomNumber(0, len(users[seq3].Aspects) - 1)
@@ -101,9 +104,9 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 			}
 		}
 		if currentlyFollowNum < toFollowNum {
-			log.Println("Fail to follow enough followers!!")
+			// log.Println("Fail to follow enough followers!!")
 		}
-
+		
 	}
 }
 
@@ -134,4 +137,5 @@ func main() {
 	genFollows(genConfig, users)
 	// postScores := genPosts(genConfig, users)
 	// genComments(genConfig, postScores)
+	// log.Println(datagen.GetFollowedDistribution(genConfig.DBConn))
 }
