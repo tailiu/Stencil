@@ -9,7 +9,7 @@ import (
 
 const APP = "diaspora" 
 const USERNUM = 1000
-const FRIENDSHIPNUM = 30375
+const FOLLOWNUM = 30375
 const POSTNUM = 8030
 const COMMENTNUM = 13970
 
@@ -23,35 +23,35 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 	return users
 }
 
-func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User) {
-	friendshipAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, FRIENDSHIPNUM)
+func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User) {
+	followedAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, FOLLOWNUM)
 	
-	log.Println(friendshipAssignment)
-	log.Println(data_generator.GetSumOfIntSlice(friendshipAssignment))
+	log.Println(followedAssignment)
+	log.Println(data_generator.GetSumOfIntSlice(followedAssignment))
 
-	alreadyMakeEnoughFriends := make(map[int]bool)
+	// alreadyFollowedEnough := make(map[int]bool)
 	
 	for seq1, user1 := range users {
-		ableToMakeFriends := true
+		ableToBeFollowed := true
 		personID1 := user1.Person_ID
-		friendsTomake := friendshipAssignment[seq1]
-		if _, ok := alreadyMakeEnoughFriends[seq1]; ok {
-			continue
-		}
-		if fNum := datagen.GetFriendsNum(genConfig.DBConn, personID1); fNum == friendsTomake {
-			alreadyMakeEnoughFriends[seq1] = true
-			continue
-		} else {
-			friendsTomake = friendsTomake - fNum
-		}
-		for n := 0; n < friendsTomake; n++ {
+		toBeFollowed := followedAssignment[seq1]
+		// if _, ok := alreadyFollowedEnough[seq1]; ok {
+		// 	continue
+		// }
+		// if fNum := datagen.GetFollowedNum(genConfig.DBConn, personID1); fNum == toBeFollowed {
+		// 	alreadyFollowedEnough[seq1] = true
+		// 	continue
+		// } else {
+		// 	toBeFollowed = toBeFollowed - fNum
+		// }
+		for n := 0; n < toBeFollowed; n++ {
 			haveTried := make(map[int]bool)
 			for {
 				if len(haveTried) == USERNUM - 1 {
-					log.Println("Cannot find more users to make friends!!")
-					log.Println("Total friends to make:", friendshipAssignment[seq1])
-					log.Println("Have made friends:", n + friendshipAssignment[seq1] - friendsTomake)
-					ableToMakeFriends = false
+					log.Println("Cannot find more users to follow this user!!")
+					log.Println("Total users to follow this user:", followedAssignment[seq1])
+					log.Println("Have been followed by:", n + followedAssignment[seq1] - toBeFollowed)
+					ableToBeFollowed = false
 					break
 				}
 				seq2 := data_generator.RandomNonnegativeIntWithUpperBound(USERNUM)
@@ -61,27 +61,25 @@ func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User
 				if _, ok := haveTried[seq2]; ok {
 					continue
 				}
-				if _, ok := alreadyMakeEnoughFriends[seq2]; ok {
-					haveTried[seq2] = true
-					continue
-				}
+				// if _, ok := alreadyFollowedEnough[seq2]; ok {
+				// 	haveTried[seq2] = true
+				// 	continue
+				// }
 				personID2 := users[seq2].Person_ID
-				if datagen.GetFriendsNum(genConfig.DBConn, personID2) == friendshipAssignment[seq2] {
-					alreadyMakeEnoughFriends[seq2] = true
-					haveTried[seq2] = true
-					continue
-				}
-				exists, _ := datagen.ContactExists(genConfig.DBConn, personID1, personID2)
-				if exists {
+				// if datagen.GetFollowedNum(genConfig.DBConn, personID2) == followedAssignment[seq2] {
+				// 	alreadyFollowedEnough[seq2] = true
+				// 	haveTried[seq2] = true
+				// 	continue
+				// }
+				if datagen.CheckFollowed(genConfig.DBConn, personID1, personID2) {
 					haveTried[seq2] = true
 				} else {
 					aspect_idx := helper.RandomNumber(0, len(user1.Aspects) - 1)
-					datagen.FollowUser(genConfig.DBConn, personID1, personID2, user1.Aspects[aspect_idx])
-					datagen.FollowUser(genConfig.DBConn, personID2, personID1, users[seq2].Aspects[aspect_idx])
+					datagen.FollowUser(genConfig.DBConn, personID2, personID1, user1.Aspects[aspect_idx])
 					break
 				}
 			}
-			if !ableToMakeFriends {
+			if !ableToBeFollowed {
 				break
 			}
 		}
@@ -111,7 +109,8 @@ func main() {
 	// log.Println(genConfig.LikeScores)
 	// log.Println(genConfig.CommentScores)
 	users := genUsers(genConfig)
-	genFriends(genConfig, users)
+	// var users []data_generator.User
+	genFollows(genConfig, users)
 	// postScores := genPosts(genConfig, users)
 	// genComments(genConfig, postScores)
 }

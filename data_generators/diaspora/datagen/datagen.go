@@ -307,6 +307,7 @@ func NewLike(dbConn *sql.DB, post_id, person_id, post_owner_id int) (int, error)
 	return -1, errors.New("No Like Created")
 }
 
+// person_id_1 follows person_id_2
 func FollowUser(dbConn *sql.DB, person_id_1, person_id_2, aspect_id int) {
 
 	// log.Println("Creating new follow!")
@@ -593,6 +594,35 @@ func GetFriendsNum(dbConn *sql.DB, person_id int) int {
 		log.Fatal(err)
 	}
 	return num
+}
+
+func GetFollowedNum(dbConn *sql.DB, person_id int) int {
+	query1 := fmt.Sprintf("select count(*) from contacts where user_id = %d and sharing = true", person_id)
+	query2 := fmt.Sprintf("select count(*) from contacts where person_id = %d and receiving = true", person_id)
+	res1 := db.DataCall1(dbConn, query1)
+	res2 := db.DataCall1(dbConn, query2)
+	num1, err1 := strconv.Atoi(res1[0]["count"])
+	num2, err2 := strconv.Atoi(res2[0]["count"])
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+	return num1 + num2
+}
+
+// Check whether person_id1 is followed by person_id2
+func CheckFollowed(dbConn *sql.DB, person_id1, person_id2 int) bool {
+	query1 := fmt.Sprintf("select id from contacts where user_id = %d and person_id = %d and sharing = true", person_id1, person_id2)
+	query2 := fmt.Sprintf("select id from contacts where user_id = %d and person_id = %d and receiving = true", person_id2, person_id1)
+	res1 := db.DataCall1(dbConn, query1)
+	res2 := db.DataCall1(dbConn, query2)
+	if len(res1) > 0 || len(res2) > 0 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func GetFriendsDistribution(dbConn *sql.DB) map[string]int {
