@@ -40,6 +40,9 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 		log.Println("Check user:", seq1)
 		log.Println("Total users to follow this user:", followedAssignment[seq1])
 		log.Println("Have been followed by:", toBeFollowed)
+		if toBeFollowed > followedAssignment[seq1] {
+			log.Fatal("cannot happend1!!!!")
+		}
 		for n := 0; n < toBeFollowed; n++ {
 			haveTried := make(map[int]bool)
 			for {
@@ -48,6 +51,7 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 					log.Println("Total users to follow this user:", followedAssignment[seq1])
 					log.Println("Have been followed by:", n + followedAssignment[seq1] - toBeFollowed)
 					ableToBeFollowed = false
+					log.Fatal("cannot happend2!!!!")
 					break
 				}
 				seq2 := data_generator.RandomNonnegativeIntWithUpperBound(USER_NUM)
