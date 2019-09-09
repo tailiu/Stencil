@@ -61,9 +61,9 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 			if deps, ok := procDependencies[col]; ok {
 				// We assume that this is an integer value otherwise we have to define it in dependency config
 				for _, dep := range deps {
-					log.Println(dep)
-					log.Println(col)
-					log.Println(dataInDependencyNode.Data)
+					// log.Println(dep)
+					// log.Println(col)
+					// log.Println(dataInDependencyNode.Data)
 					if val == nil {
 						log.Println("Fail to get one data because the value of the relevant column is nil")
 						continue
@@ -117,7 +117,12 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 }
 
 func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hint display.HintStruct) (map[string]interface{}, error) {
-	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.Table + ".*", hint.Table, hint.RowID)
+	restrictions, err := hint.GetRestrictionsInTag(appConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.Table + ".*", hint.Table, hint.RowID, restrictions)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")

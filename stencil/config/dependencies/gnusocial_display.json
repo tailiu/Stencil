@@ -29,9 +29,10 @@
             },
             "inner_dependencies" : [
                 {
-                    "member2.id": "member1.conversation"
+                    "member1.conversation": "member2.id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name": "fave",
@@ -69,34 +70,6 @@
             "tag": "notice",
             "depends_on": [
                 {
-                    "tag":"notice",
-                    "conditions": [
-                        {   
-                            "tag_attr": "reply_to",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag":"notice",
-            "depends_on": [
-                {
-                    "tag":"notice",
-                    "conditions": [
-                        {   
-                            "tag_attr": "repeat_of",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag":"notice",
-            "depends_on": [
-                {
                     "tag":"root",
                     "conditions": [
                         {   
@@ -104,8 +77,33 @@
                             "depends_on_attr": "id"
                         }
                     ]
+                },
+                {
+                    "tag":"notice",
+                    "as": "N1",
+                    "conditions": [
+                        {   
+                            "tag_attr": "reply_to",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_existence": "reply_to",
+                    "display_setting": "parent_node_partially_displays"
+                },
+                {
+                    "tag":"notice",
+                    "as": "N2",
+                    "conditions": [
+                        {   
+                            "tag_attr": "repeat_of",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_existence": "repeat_of",
+                    "display_setting": "parent_node_partially_displays"
                 }
-            ]
+            ],
+            "combined_display_setting":"root and N1 and N2"
         },
         {
             "tag": "fave",
@@ -117,7 +115,9 @@
                             "tag_attr": "notice_id",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays",
+                    "_comment":"the notice node could be incomplete due to the lack of its conv"
                 }
             ]
         },

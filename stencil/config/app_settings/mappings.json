@@ -390,7 +390,8 @@
                                         "tweet_id":"favourites.status_id",
                                         "created_at":"favourites.created_at",
                                         "updated_at":"favourites.updated_at",
-                                        "user_id":"favourites.account_id"                                    }
+                                        "user_id":"favourites.account_id"                                    
+                                    }
                                 }
                             ]
                         },
@@ -791,6 +792,10 @@
                         {
                             "name": "follow_action",
                             "value": "follow"
+                        },
+                        {
+                            "name": "creator",
+                            "value": "creator"
                         }
                     ],
                     "mappings": [
@@ -896,7 +901,8 @@
                                         "user_id":"conversation_visibilities.person_id",
                                         "conversation_id":"conversation_visibilities.conversation_id",
                                         "created_at":"conversation_visibilities.created_at",
-                                        "updated_at":"conversation_visibilities.updated_at"
+                                        "updated_at":"conversation_visibilities.updated_at",
+                                        "role": "$creator"
                                     }
                                 }
                             ]
@@ -1138,31 +1144,7 @@
                                         "updated_at":"tweets.updated_at",
                                         "text":"tweets.content",
                                         "in_reply_to_id":"tweets.reply_to_id",
-                                        "account_id":"tweets.user_id",
-                                        "conversation_id":"#ASSIGN(tweets.id)"
-                                    }
-                                },
-                                {
-                                    "table": "media_attachments",
-                                    "conditions": {},
-                                    "mapping" : {
-                                        "id": "#RANDINT",
-                                        "remote_url": "tweets.tweet_media",
-                                        "status_id": "tweets.id",
-                                        "created_at": "tweets.created_at",
-                                        "updated_at": "tweets.updated_at",
-                                        "account_id": "tweets.user_id"
-                                    }
-                                },
-                                {
-                                    "table": "conversations",
-                                    "conditions": {
-                                        "tweets.reply_to_id": "$NULL"
-                                    },
-                                    "mapping": {
-                                        "id": "tweets.id",
-                                        "created_at":"tweets.created_at",
-                                        "updated_at":"tweets.updated_at"
+                                        "account_id":"tweets.user_id"
                                     }
                                 }
                             ]
@@ -1178,16 +1160,7 @@
                                         "created_at":"retweets.created_at",
                                         "updated_at":"retweets.updated_at",
                                         "account_id":"retweets.user_id",
-                                        "reblog_of_id":"retweets.tweet_id",
-                                        "conversation_id":"#ASSIGN(retweets.id)"
-                                    }
-                                },
-                                {
-                                    "table": "conversations",
-                                    "mapping": {
-                                        "id": "retweets.id",
-                                        "created_at":"retweets.created_at",
-                                        "updated_at":"retweets.updated_at"
+                                        "reblog_of_id":"retweets.tweet_id"
                                     }
                                 }
                             ]

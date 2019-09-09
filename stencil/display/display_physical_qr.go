@@ -27,12 +27,15 @@ func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, f
 	return result
 }
 
-func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from, rowid string) map[string]interface{} {	
+func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from, rowid string, restrictions []map[string]string) map[string]interface{} {	
 	qs := qr.CreateQS(QR)
 	qs.FromSimple(from)
 	qs.ColSimple(cols)
 	qs.ColPK(from)
 	qs.WhereAppID(qr.EXISTS, appID)
+	// qs.WhereSimpleVal(statuses.id, =, #numl)
+	// qs.WhereOperatorVal(“AND”, “profiles.bio”, “=”, “student”)
+	// qs.WhereOperatorVal(“OR”, “profiles.bio”, “=”, “student”)
 	physicalQuery := qs.GenSQLWith(rowid)
 	// log.Println(physicalQuery)
 
