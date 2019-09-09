@@ -37,6 +37,9 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 		alreadyFollowedByPersons := datagen.GetFollowedUsers(genConfig.DBConn, personID1)
 		toBeFollowedByPersons = append(toBeFollowedByPersons, data_generator.GetSeqsByPersonIDs(users, alreadyFollowedByPersons)...)
 		toBeFollowed := followedAssignment[seq1] - len(alreadyFollowedByPersons)
+		log.Println("Check user:", seq1)
+		log.Println("Total users to follow this user:", followedAssignment[seq1])
+		log.Println("Have been followed by:", toBeFollowed)
 		for n := 0; n < toBeFollowed; n++ {
 			haveTried := make(map[int]bool)
 			for {
@@ -71,8 +74,8 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 		}
 
 		toFollowNum := int(float64(followedAssignment[seq1]) * RECIPROCAL_FOLLOW_PERCENTAGE)
-		log.Println("Total Num", followedAssignment[seq1])
-		log.Println("to Follow Num", toFollowNum)
+		// log.Println("Total Num", followedAssignment[seq1])
+		// log.Println("to Follow Num", toFollowNum)
 		currentlyFollowNum := 0
 		for _, seq3 := range toBeFollowedByPersons {
 			personID3 := users[seq3].Person_ID
@@ -80,6 +83,7 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 				break
 			}
 			if datagen.CheckFollowed(genConfig.DBConn, personID3, personID1) {
+				currentlyFollowNum += 1
 				continue
 			} else {
 				if datagen.GetFollowedNum(genConfig.DBConn, personID3) == followedAssignment[seq3] {
