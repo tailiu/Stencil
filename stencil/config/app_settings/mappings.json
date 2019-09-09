@@ -976,8 +976,8 @@
                                         "nickname": "users.username",
                                         "email":"users.email",
                                         "language":"users.language",
-                                        "created_at":"people.created",
-                                        "updated_at":"people.modified"
+                                        "created":"people.created_at",
+                                        "modified":"people.updated_at"
                                     } 
                                 },
                                 {
@@ -985,7 +985,7 @@
                                     "mapping": {
                                         "id":"people.id",
                                         "nickname": "users.username",
-                                        "full_name":"profiles.fullname",
+                                        "fullname":"profiles.full_name",
                                         "bio":"profiles.bio",
                                         "location":"profiles.location",
                                         "created":"profiles.created_at",
@@ -1021,7 +1021,7 @@
                                     },
                                     "mapping": {
                                         "id": "posts.id",
-                                        "content": "posts.message",
+                                        "content": "posts.text",
                                         "profile_id": "posts.author_id",
                                         "created": "posts.created_at",
                                         "modified":"posts.updated_at"
@@ -1853,7 +1853,7 @@
                                     },
                                     "mapping": {
                                         "id": "notice.id",
-                                        "message": "notice.content",
+                                        "text": "notice.content",
                                         "author_id": "notice.profile_id",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
