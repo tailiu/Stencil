@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"stencil/helper"
 	"strings"
-	"log"
+	
 )
 
-func CreateQS(QR *QR) *QS {
-	qs := new(QS)
+func CreateQSold(QR *QR) *QSold {
+	qs := new(QSold)
 	qs.seen = make(map[string]bool)
 	qs.PK = false
 	qs.TableAliases = make(map[string]map[string]string)
@@ -16,13 +16,7 @@ func CreateQS(QR *QR) *QS {
 	return qs
 }
 
-func (self *QS) SelectColumns(columns string){
-	for _, col := range strings.Split(columns, ","){
-		self.Columns = append(self.Columns, col)
-	}
-}
-
-func (self *QS) ColSimple(colNames string) { // users.id, users.*, user_id, person_id
+func (self *QSold) ColSimple(colNames string) { // users.id, users.*, user_id, person_id
 
 	cols := strings.Split(colNames, ",")
 
@@ -51,7 +45,7 @@ func (self *QS) ColSimple(colNames string) { // users.id, users.*, user_id, pers
 	}
 }
 
-func (self *QS) ColAlias(col, alias string) { //"users.id", "user_id"
+func (self *QSold) ColAlias(col, alias string) { //"users.id", "user_id"
 
 	if i := strings.Index(col, "."); i < 0 {
 		pColName := fmt.Sprintf("%s as %s", col, alias)
@@ -66,7 +60,7 @@ func (self *QS) ColAlias(col, alias string) { //"users.id", "user_id"
 	}
 }
 
-func (self *QS) ColFunction(funcStmt, col, alias string) {
+func (self *QSold) ColFunction(funcStmt, col, alias string) {
 	if i := strings.Index(col, "."); i < 0 {
 		pColName := fmt.Sprintf(funcStmt+" as %s", col, alias)
 		self.Columns = append(self.Columns, pColName)
@@ -79,12 +73,12 @@ func (self *QS) ColFunction(funcStmt, col, alias string) {
 	}
 }
 
-func (self *QS) ColNull(col string) {
+func (self *QSold) ColNull(col string) {
 	pColName := fmt.Sprintf("NULL as %s", col)
 	self.Columns = append(self.Columns, pColName)
 }
 
-func (self *QS) ColPK(table string) {
+func (self *QSold) ColPK(table string) {
 	self.PK = true
 	for ptab, _ := range self.QR.GetPhyMappingForLogicalTable(table) {
 		alias := self.getTableAlias(table, ptab)
@@ -96,7 +90,7 @@ func (self *QS) ColPK(table string) {
 	}
 }
 
-func (self *QS) LSelect(table, columns string) {
+func (self *QSold) LSelect(table, columns string) {
 	if columns == "*" {
 		self.Columns = append(self.Columns, table+".*")
 	} else {
@@ -107,7 +101,7 @@ func (self *QS) LSelect(table, columns string) {
 	}
 }
 
-func (self *QS) getTableAlias(ltab, ptab string) string {
+func (self *QSold) getTableAlias(ltab, ptab string) string {
 	if _, ok := self.TableAliases[ltab]; !ok {
 		self.TableAliases[ltab] = make(map[string]string)
 	}
@@ -117,7 +111,7 @@ func (self *QS) getTableAlias(ltab, ptab string) string {
 	return self.TableAliases[ltab][ptab]
 }
 
-func (self *QS) FromSimple(table string) {
+func (self *QSold) FromSimple(table string) {
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(table)
 	// fmt.Println(table, "=>", phyTab)
@@ -145,73 +139,7 @@ func (self *QS) FromSimple(table string) {
 	}
 }
 
-func (self *QS) GenCombinedTableQuery(args map[string]string) string {
-
-	if _, ok := args["alias"]; !ok {
-		args["alias"] = args["table"]
-	}
-	if _, ok := args["mflag"]; !ok {
-		args["mflag"] = "0"
-	}
-
-	var cols, prevOnCol []string
-
-	prev, from := "", ""	
-	fromMT := fmt.Sprintf("(SELECT array_agg(org_rowid) AS rowids FROM migration_table WHERE dst_table = '%s' and dst_app = %s AND mflag = %s GROUP BY dst_rowid) mt ", args["table"], self.QR.AppID, args["mflag"])
-	phyTab := self.QR.GetPhyMappingForLogicalTable(args["table"])
-	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
-
-	for _, ptab := range phyTabKeys {
-		for _, pair := range phyTab[ptab] {
-			pColName := fmt.Sprintf("%s.%s as \"%s.%s\"", self.getTableAlias(args["table"], ptab), pair[0], args["alias"], pair[1])
-			cols = append(cols, pColName)
-		}
-		// if _, ok := self.seen[ptab]; !ok {
-			pTabAlias := self.getTableAlias(args["table"], ptab)
-			fromMT += fmt.Sprintf(" LEFT JOIN %s %s ON %s.pk = ANY(mt.rowids) ", ptab, pTabAlias, pTabAlias)
-			if prev == "" {
-				from += fmt.Sprintf(" %s %s ", ptab, pTabAlias)
-			} else {
-				prevAlias := self.getTableAlias(args["table"], prev)
-				if len(prevOnCol) <= 0{			
-					from += fmt.Sprintf(" FULL JOIN %s %s ON %s.pk = %s.pk ", ptab, pTabAlias, prevAlias, pTabAlias)
-				}else{
-					from += fmt.Sprintf(" FULL JOIN %s %s ON COALESCE(%s.pk,%s) = %s.pk ", ptab, pTabAlias, prevAlias, strings.Join(prevOnCol, ","), pTabAlias)
-				}
-				prevOnCol = append(prevOnCol, prevAlias+".pk")
-			}
-			prev = ptab
-			// self.seen[ptab] = true
-		// }
-	}
-	cols = append(cols, fmt.Sprintf("array_to_string(uniq(sort(array_remove(array[%s]::int4[], null))),',') as \"%s.rowids\"", strings.Join(prevOnCol, ","), args["alias"]))
-	if len(from) > 0 {
-		mTableQuery := fmt.Sprintf("SELECT %s FROM %s", strings.Join(cols, ","), fromMT)
-		conditions := fmt.Sprintf("WHERE EXISTS (SELECT 1 FROM row_desc WHERE app_id = %s AND \"table\" = '%s' AND rowid IN (%s))", self.QR.AppID, args["table"], strings.Join(prevOnCol, ","))
-		tableQuery := fmt.Sprintf("SELECT %s FROM %s %s", strings.Join(cols, ","), from, conditions)
-		return fmt.Sprintf("(%s UNION %s) %s ", tableQuery, mTableQuery, args["alias"])
-		// self.From = fmt.Sprintf("(SELECT %s FROM %s) %s ", strings.Join(cols, ","), from, table)
-		// self.From = fmt.Sprintf("(SELECT %s FROM %s) %s ", strings.Join(cols, ","), fromMT, table)
-		// return fmt.Sprintf("(SELECT %s FROM %s WHERE EXISTS (SELECT 1 FROM row_desc WHERE app_id = %s AND \"table\" = '%s' AND rowid IN (%s))  UNION SELECT %s FROM %s) %s ", strings.Join(cols, ","), from, self.QR.AppID, args["table"], strings.Join(prevOnCol, ","), strings.Join(cols, ","), fromMT, args["alias"])
-		
-	} else {
-		log.Fatal("error adding table "+ args["table"])
-	}
-	return ""
-}
-
-func (self *QS) FromTable(args map[string]string) {
-	self.From = self.GenCombinedTableQuery(args)
-}
-
-func (self *QS) JoinTable(args map[string]string) {
-	tableQ := self.GenCombinedTableQuery(args)
-	tokens1 := strings.Split(args["condition1"], ".")
-	tokens2 := strings.Split(args["condition2"], ".")
-	self.From += fmt.Sprintf(" JOIN %s ON %s.\"%s\" = %s.\"%s\" ", tableQ, tokens1[0], args["condition1"], tokens2[0], args["condition2"])
-}
-
-func (self *QS) FromJoin(table, condition string) {
+func (self *QSold) FromJoin(table, condition string) {
 	// condition: previous_table.column=current_table.column
 
 	condition_tokens := strings.Split(condition, "=")
@@ -246,7 +174,7 @@ func (self *QS) FromJoin(table, condition string) {
 	}
 }
 
-func (self *QS) FromJoinList(table string, conditions []string) {
+func (self *QSold) FromJoinList(table string, conditions []string) {
 
 	// condition: previous_table.column=current_table.column
 
@@ -287,11 +215,11 @@ func (self *QS) FromJoinList(table string, conditions []string) {
 	}
 }
 
-func (self *QS) FromQuery(qs *QS) {
+func (self *QSold) FromQuery(qs *QS) {
 	self.From = fmt.Sprintf("(%s) tab ", qs.GenSQL())
 }
 
-func (self *QS) LTable(table, alias string) {
+func (self *QSold) LTable(table, alias string) {
 
 	var columns []string
 
@@ -337,7 +265,7 @@ func (self *QS) LTable(table, alias string) {
 	// log.Fatal(self.With)
 }
 
-func (self *QS) LJoinOn(conditions []string) {
+func (self *QSold) LJoinOn(conditions []string) {
 	var lconditions []string
 
 	for _, condition := range conditions {
@@ -348,29 +276,7 @@ func (self *QS) LJoinOn(conditions []string) {
 	self.From += fmt.Sprintf(" ON %s ", strings.Join(lconditions, "AND"))
 }
 
-func (self *QS) AddWhereWithValue(col, op, val string) {
-	tokens := strings.Split(col, ".")
-	self.Where = fmt.Sprintf("%s.\"%s\" %s '%s'", tokens[0], col, op, val)
-}
-
-func (self *QS) AddWhereWithColumn(col1, op, col2 string) {
-	tokens1 := strings.Split(col1, ".")
-	tokens2 := strings.Split(col1, ".")
-	self.Where = fmt.Sprintf("%s.\"%s\" %s %s.\"%s\"", tokens1[0], col1, op, tokens2[0], col2)
-}
-
-func (self *QS) AdditionalWhereWithValue(coop, col, op, val string) {
-	tokens := strings.Split(col, ".")
-	self.Where += fmt.Sprintf(" %s %s.\"%s\" %s '%s'", coop, tokens[0], col, op, val)
-}
-
-func (self *QS) AdditionalWhereWithColumn(coop, col1, op, col2 string) {
-	tokens1 := strings.Split(col1, ".")
-	tokens2 := strings.Split(col1, ".")
-	self.Where += fmt.Sprintf(" %s %s.\"%s\" %s %s.\"%s\"", coop, tokens1[0], col1, op, tokens2[0], col2)
-}
-
-func (self *QS) WhereSimple(col1, op, col2 string) {
+func (self *QSold) WhereSimple(col1, op, col2 string) {
 	ptab1, pcol1 := self.QR.GetPhyTabCol(col1)
 	ptab2, pcol2 := self.QR.GetPhyTabCol(col2)
 	table1 := strings.Split(col1, ".")[0]
@@ -378,13 +284,13 @@ func (self *QS) WhereSimple(col1, op, col2 string) {
 	self.Where = fmt.Sprintf(" %s.%s %s %s.%s ", self.getTableAlias(table1, ptab1), pcol1, op, self.getTableAlias(table2, ptab2), pcol2)
 }
 
-func (self *QS) WhereSimpleVal(col, op, val string) {
+func (self *QSold) WhereSimpleVal(col, op, val string) {
 	ptab, pcol := self.QR.GetPhyTabCol(col)
 	table := strings.Split(col, ".")[0]
 	self.Where = fmt.Sprintf(" %s.%s %s '%s' ", self.getTableAlias(table, ptab), pcol, op, val)
 }
 
-func (self *QS) WhereSimpleInterface(col, op string, val interface{}) {
+func (self *QSold) WhereSimpleInterface(col, op string, val interface{}) {
 	ptab, pcol := self.QR.GetPhyTabCol(col)
 	self.vals = append(self.vals, val)
 	table := strings.Split(col, ".")[0]
@@ -392,17 +298,17 @@ func (self *QS) WhereSimpleInterface(col, op string, val interface{}) {
 	self.Where = fmt.Sprintf("%s.%s::varchar %s '%s' ", self.getTableAlias(table, ptab), pcol, op, fmt.Sprint(val))
 }
 
-func (self *QS) WhereOperator(operator, col1, op, col2 string) { // AND, OR
+func (self *QSold) WhereOperator(operator, col1, op, col2 string) { // AND, OR
 
 }
 
-func (self *QS) WhereOperatorVal(operator, col, op, val string) { // AND, OR
+func (self *QSold) WhereOperatorVal(operator, col, op, val string) { // AND, OR
 	ptab, pcol := self.QR.GetPhyTabCol(col)
 	table := strings.Split(col, ".")[0]
 	self.Where += fmt.Sprintf(" %s %s.%s %s '%s' ", operator, self.getTableAlias(table, ptab), pcol, op, val)
 }
 
-func (self *QS) WhereOperatorInterface(operator, col, op string, val interface{}) { // AND, OR
+func (self *QSold) WhereOperatorInterface(operator, col, op string, val interface{}) { // AND, OR
 	ptab, pcol := self.QR.GetPhyTabCol(col)
 	table := strings.Split(col, ".")[0]
 	self.vals = append(self.vals, val)
@@ -415,17 +321,17 @@ func (self *QS) WhereOperatorInterface(operator, col, op string, val interface{}
 	}
 }
 
-func (self *QS) WhereOperatorBool(operator, col, op, val string) { // AND, OR
+func (self *QSold) WhereOperatorBool(operator, col, op, val string) { // AND, OR
 	ptab, pcol := self.QR.GetPhyTabCol(col)
 	table := strings.Split(col, ".")[0]
 	self.Where += fmt.Sprintf(" %s %s.%s %s %s ", operator, self.getTableAlias(table, ptab), pcol, op, val)
 }
 
-func (self *QS) WhereQuery(condition string, qs *QS) { // IN, NOT IN
+func (self *QSold) WhereQuery(condition string, qs *QSold) { // IN, NOT IN
 
 }
 
-func (self *QS) WhereString(operator, condition string) { // AND, OR, NOT
+func (self *QSold) WhereString(operator, condition string) { // AND, OR, NOT
 
 	if len(self.Where) > 0 {
 		self.Where += fmt.Sprintf(" %s (%s)", operator, condition)
@@ -434,7 +340,7 @@ func (self *QS) WhereString(operator, condition string) { // AND, OR, NOT
 	}
 }
 
-func (self *QS) WhereMFlag(condition, flag, app_id string) { // EXISTS/NOT EXISTS, 0,1,2
+func (self *QSold) WhereMFlag(condition, flag, app_id string) { // EXISTS/NOT EXISTS, 0,1,2
 	var pkcols []string
 	for _, pTables := range self.TableAliases {
 		for _, alias := range pTables {
@@ -445,7 +351,7 @@ func (self *QS) WhereMFlag(condition, flag, app_id string) { // EXISTS/NOT EXIST
 	self.WhereString("AND", q)
 }
 
-func (self *QS) WhereAppID(condition, app_id string) { // EXISTS/NOT EXISTS, 0,1,2
+func (self *QSold) WhereAppID(condition, app_id string) { // EXISTS/NOT EXISTS, 0,1,2
 	var pkcols []string
 	for _, pTables := range self.TableAliases {
 		for _, alias := range pTables {
@@ -456,7 +362,7 @@ func (self *QS) WhereAppID(condition, app_id string) { // EXISTS/NOT EXISTS, 0,1
 	self.WhereString("AND", q)
 }
 
-func (self *QS) WherePK(PK string) {
+func (self *QSold) WherePK(PK string) {
 	var pkcols []string
 	for _, pTables := range self.TableAliases {
 		for _, alias := range pTables {
@@ -466,7 +372,7 @@ func (self *QS) WherePK(PK string) {
 	self.WhereString("AND", fmt.Sprintf("'%s' IN (%s)", PK, strings.Join(pkcols, ",")))
 }
 
-func (self *QS) WhereNotPK(PK string) {
+func (self *QSold) WhereNotPK(PK string) {
 	var pkcols []string
 	for _, pTables := range self.TableAliases {
 		for _, alias := range pTables {
@@ -476,7 +382,7 @@ func (self *QS) WhereNotPK(PK string) {
 	self.WhereString("AND", fmt.Sprintf("'%s' NOT IN (%s)", PK, strings.Join(pkcols, ",")))
 }
 
-func (self *QS) WhereNotPKList(PKList []string) bool {
+func (self *QSold) WhereNotPKList(PKList []string) bool {
 	if len(PKList) <= 0{
 		return false
 	}
@@ -492,7 +398,7 @@ func (self *QS) WhereNotPKList(PKList []string) bool {
 	return true
 }
 
-func (self *QS) GroupBy(tabcol string) {
+func (self *QSold) GroupBy(tabcol string) {
 	tokens := strings.Split(tabcol, ".")
 	table := tokens[0]
 	ptab, pcol := self.QR.GetPhyTabCol(tabcol)
@@ -503,7 +409,7 @@ func (self *QS) GroupBy(tabcol string) {
 	}
 }
 
-func (self *QS) GroupByString(col string) {
+func (self *QSold) GroupByString(col string) {
 	if strings.EqualFold(self.Group, "") {
 		self.Group = fmt.Sprintf("%s", col)
 	} else {
@@ -511,15 +417,15 @@ func (self *QS) GroupByString(col string) {
 	}
 }
 
-func (self *QS) OrderBy(cols string) {
+func (self *QSold) OrderBy(cols string) {
 	self.Order = cols
 }
 
-func (self *QS) LimitResult(limit string) {
+func (self *QSold) LimitResult(limit string) {
 	self.Limit = limit
 }
 
-func (self *QS) GenSQL() string {
+func (self *QSold) GenSQL() string {
 	if self.PK {
 		var aliases []string
 		for _, vals := range self.TableAliases{
@@ -550,7 +456,7 @@ func (self *QS) GenSQL() string {
 	return sql
 }
 
-func (self *QS) GenSQLSize() string {
+func (self *QSold) GenSQLSize() string {
 	
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.ColumnsWSize, ","), self.From)
 	
@@ -573,7 +479,7 @@ func (self *QS) GenSQLSize() string {
 	return sql
 }
 
-func (self *QS) GenSQLWith(pks string) string {
+func (self *QSold) GenSQLWith(pks string) string {
 	query := self.GenSQL()
 	var aliasSelects []string
 	for _, pTables := range self.TableAliases {
@@ -590,7 +496,7 @@ func (self *QS) GenSQLWith(pks string) string {
 	return ""
 }
 
-func (self *QS) GenSQLM() string {
+func (self *QSold) GenSQLM() string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
 	if len(self.Where) > 0 {
 		sql += fmt.Sprintf("WHERE %s ", self.Where)
@@ -611,7 +517,7 @@ func (self *QS) GenSQLM() string {
 	return fmt.Sprintf("with %s %s", self.With, sql)
 }
 
-func (self *QS) GenSQLWithOwnedData(uid string) string {
+func (self *QSold) GenSQLWithOwnedData(uid string) string {
 	query := self.GenSQL()
 	var aliasSelects []string
 	for _, pTables := range self.TableAliases {
@@ -628,7 +534,7 @@ func (self *QS) GenSQLWithOwnedData(uid string) string {
 	return ""
 }
 
-func (self *QS) GenSepSQLs() string {
+func (self *QSold) GenSepSQLs() string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
 	if len(self.Where) > 0 {
 		sql += fmt.Sprintf("WHERE %s ", self.Where)

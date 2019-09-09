@@ -211,8 +211,8 @@ def bendTheKnee(values):
         sd = [values[i+1] + values[i-1] - 2 * values[i] for i in range(1, len(values)-1)]
         return sd.index([max(sd)])
     except ValueError as e:
-        print "Got:", e, "| Returning: 0"
-        return 0
+        print "Got:", e, "| Returning: 1"
+        return 1
 
 def getNumberOfK(node_vector):
 
@@ -236,11 +236,11 @@ def getNumberOfK(node_vector):
 
     realValues = [abs(v.real) for v in vals]
 
-    return bendTheKnee(realValues)+1 # starts from 0, need to add 1
+    return bendTheKnee(realValues) # starts from 0, need to add 1
 
 def genBaseTables(filtered_vector):
     
-    optimal_clusters = getNumberOfK(filtered_vector)
+    optimal_clusters = getNumberOfK(filtered_vector) or 1
     kmeans = KMeans(n_clusters=optimal_clusters, random_state=0).fit(filtered_vector)
     base_tables = {}
     for i, k in enumerate(kmeans.labels_):
@@ -284,9 +284,9 @@ def createBaseTable(name, attrs, app_schemas, trans_attrs):
     attrs_with_type = [attr + " varchar" for attr in attrs.values()]
     # attrs_with_type.insert(0,"app_id varchar")
     # attrs_with_type.insert(0,"base_pk SERIAL PRIMARY KEY")
-    attrs_with_type.insert(0,"pk SERIAL PRIMARY KEY")
-    attrs_with_type.append("base_created_at TIMESTAMP DEFAULT now()")
-    attrs_with_type.append("base_mark_delete BOOL")
+    attrs_with_type.insert(0,"pk int8 PRIMARY KEY")
+    # attrs_with_type.append("base_created_at TIMESTAMP DEFAULT now()")
+    # attrs_with_type.append("base_mark_delete BOOL")
     tsql = "CREATE TABLE %s ( %s )" % (name, ', '.join(attrs_with_type))
     # print tsql
     cur.execute(tsql)
@@ -317,9 +317,9 @@ def createSupplementaryTables():
         supp_table_id = cur.fetchone()['pk']
         
         cols = [attr  for attr in column_names.split(',') if len(attr) and attr != "app_id"]
-        cols.insert(0,"pk SERIAL PRIMARY KEY")
-        cols.append("supp_created_at TIMESTAMP DEFAULT now()")
-        cols.append("supp_mark_delete BOOL")
+        cols.insert(0,"pk int8 PRIMARY KEY")
+        # cols.append("supp_created_at TIMESTAMP DEFAULT now()")
+        # cols.append("supp_mark_delete BOOL")
         
         tsql = "CREATE TABLE %s ( %s )" % ("supplementary_%s"%supp_table_id, ', '.join(cols))
         # print tsql

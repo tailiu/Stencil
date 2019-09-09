@@ -94,7 +94,7 @@ def populateAppSchema(app_name):
         for crow in appCursor.fetchall():
             column_name = crow[0]
             data_type = crow[1]
-            if data_type == "ARRAY":
+            if data_type in ["ARRAY", "USER-DEFINED"]:
                 data_type = "text"
             isql = "INSERT INTO app_schemas (table_id, column_name, data_type) VALUES (%d, '%s', '%s')" % (table_id, column_name, data_type)
             print isql
@@ -127,14 +127,20 @@ def addSchemaMappings(app_name):
                                 
                                 _sql = sql%(app_name,mapperTable,mapperCol)
                                 stencilCursor.execute(_sql)
-                                mapperAttrID = stencilCursor.fetchone()[0]
+                                try:
+                                    mapperAttrID = stencilCursor.fetchone()[0]
+                                except Exception as e:
+                                    print "ERROR ENCOUNTERED! EXIT at 1!"
+                                    print e
+                                    print _sql
+                                    exit(0)
                                 
                                 _sql = sql%(mappedApp,mappedTableName,mappedCol)
                                 stencilCursor.execute(_sql)
                                 try:
                                     mappedAttrID = stencilCursor.fetchone()[0]
                                 except Exception as e:
-                                    print "ERROR ENCOUNTERED! EXIT!"
+                                    print "ERROR ENCOUNTERED! EXIT at 2!"
                                     print e
                                     print _sql
                                     exit(0)
@@ -145,7 +151,7 @@ def addSchemaMappings(app_name):
     stencilConn.commit()
 
 if __name__ == "__main__":
-    apps = ["diaspora", "mastodon","twitter"]
+    apps = ["diaspora", "mastodon","twitter", "gnusocial"]
     deletePhysicalTables()
     truncateAllTables()
     populateApps(apps)

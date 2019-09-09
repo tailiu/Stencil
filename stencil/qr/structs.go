@@ -33,6 +33,22 @@ type QI struct {
 	Type             string
 }
 
+type QSold struct {
+	QR           *QR
+	Columns      []string
+	ColumnsWSize []string
+	From         string
+	Where        string
+	Group        string
+	Order        string
+	Limit        string
+	With         string
+	TableAliases map[string]map[string]string
+	seen         map[string]bool
+	vals         []interface{}
+	PK 			 bool
+}
+
 type QS struct {
 	QR           *QR
 	Columns      []string
