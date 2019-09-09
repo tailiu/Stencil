@@ -39,9 +39,9 @@ func shuffleSlices(s []float64) []float64 {
 func Initialize(app string, userNum int) *GenConfig {
 	genConfig := new(GenConfig)
 	genConfig.DBConn = db.GetDBConn(app)
-	genConfig.PopularityScores = ParetoScores(ALPHA, XM, userNum)
-	genConfig.CommentScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
-	genConfig.LikeScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
+	genConfig.UserPopularityScores = ParetoScores(ALPHA, XM, userNum)
+	genConfig.UserCommentScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
+	genConfig.UserLikeScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
 
 	return genConfig
 }
@@ -70,17 +70,17 @@ func transformFloat64ToInt(data []float64) []int {
 	return data1
 }
 
-func AssignDataToUsersByPopScores(genConfig *GenConfig, userNum, dataNum int) []int {
+func AssignDataToUsersByUserPopScores(genConfig *GenConfig, userNum, dataNum int) []int {
 	var results []float64
 
-	totalScore := getSumOfFloatSlice(genConfig.PopularityScores)
+	totalScore := getSumOfFloatSlice(genConfig.UserPopularityScores)
 	for i := 0; i < userNum; i++ {
-		results = append(results, math.Floor(genConfig.PopularityScores[i] / totalScore * float64(dataNum)))
+		results = append(results, math.Floor(genConfig.UserPopularityScores[i] / totalScore * float64(dataNum)))
 	}
 
 	assignRemaingDataTimes := 200
 	for i := 0; i < assignRemaingDataTimes; i++ {
-		assignRemaingData(genConfig.PopularityScores, totalScore, dataNum, results)
+		assignRemaingData(genConfig.UserPopularityScores, totalScore, dataNum, results)
 	}
 
 	return transformFloat64ToInt(results)
@@ -90,3 +90,12 @@ func RandomNonnegativeIntWithUpperBound(upperBound int) int {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(upperBound)
 }
+
+func GetSumOfIntSlice(s []int) int {
+	var sum int
+	for _, num := range s {
+		sum += num
+	}
+	return sum
+}
+

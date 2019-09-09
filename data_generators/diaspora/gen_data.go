@@ -22,29 +22,26 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 	return users
 }
 
-func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) {
-	postAssignment := data_generator.AssignDataToUsersByPopScores(genConfig, USERNUM, POSTNUM)
-
-	for seq, user := range users {
-		for n := 0; n < postAssignment[seq]; n++ {
-			datagen.NewPost(genConfig.DBConn, user.User_ID, user.Person_ID, user.Aspects)
-		}
-	}
-}
-
 func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User) {
-	friendshipAssignment := data_generator.AssignDataToUsersByPopScores(genConfig, USERNUM, FRIENDSHIPNUM)
+	friendshipAssignment := data_generator.AssignDataToUsersByUserPopScores(genConfig, USERNUM, FRIENDSHIPNUM)
 	
 	log.Println(friendshipAssignment)
+
+	alreadyMakeEnoughFriends := make(map[int]bool)
 	
 	for seq1, user1 := range users {
 		ableToMakeFriends := true
 		personID1 := user1.Person_ID
+		if _, ok := alreadyMakeEnoughFriends[seq1]; ok {
+			continue
+		}
 		for n := 0; n < friendshipAssignment[seq1]; n++ {
-			var haveTried = make(map[int]bool)
+			haveTried := make(map[int]bool)
 			for {
 				if len(haveTried) == USERNUM - 1 {
 					log.Println("Cannot find more users to make friends!!")
+					log.Println("Have already made friends:", n)
+					log.Println("Total friends to make:", friendshipAssignment[seq1])
 					ableToMakeFriends = false
 					break
 				}
@@ -52,19 +49,26 @@ func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User
 				if seq2 == seq1 {
 					continue
 				}
-
+				if _, ok := haveTried[seq2]; ok {
+					continue
+				}
+				if _, ok := alreadyMakeEnoughFriends[seq2]; ok {
+					continue
+				}
 				personID2 := users[seq2].Person_ID
-				exists, _ := datagen.ContactExists(genConfig.DBConn, personID1, personID2); 
-				if exists || len(datagen.GetFriendsOfUser(genConfig.DBConn, personID2)) == friendshipAssignment[seq2] {
-					if _, ok := haveTried[seq2]; ok {
-						continue
-					} else {
-						haveTried[seq2] = true
-					}
+				if datagen.GetFriendsNum(genConfig.DBConn, personID2) == friendshipAssignment[seq2] {
+					alreadyMakeEnoughFriends[seq2] = true
+					haveTried[seq2] = true
+					continue
+				}
+				exists, _ := datagen.ContactExists(genConfig.DBConn, personID1, personID2)
+				if exists {
+					haveTried[seq2] = true
 				} else {
 					aspect_idx := helper.RandomNumber(0, len(user1.Aspects) - 1)
 					datagen.FollowUser(genConfig.DBConn, personID1, personID2, user1.Aspects[aspect_idx])
 					datagen.FollowUser(genConfig.DBConn, personID2, personID1, users[seq2].Aspects[aspect_idx])
+					break
 				}
 			}
 			if !ableToMakeFriends {
@@ -74,8 +78,21 @@ func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User
 	}
 }
 
-func genComments() {
+func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) {
+	postAssignment := data_generator.AssignDataToUsersByUserPopScores(genConfig, USERNUM, POSTNUM)
 
+	for seq, user := range users {
+		for n := 0; n < postAssignment[seq]; n++ {
+			datagen.NewPost(genConfig.DBConn, user.User_ID, user.Person_ID, user.Aspects)
+		}
+	}
+
+	// genConfig.PostPopularityScores = data_generator.shuffleSlices(
+	// 	data_generator.ParetoScores(data_generator.ALPHA, data_generator.XM, data_generator.GetSumOfIntSlice(postAssignment)))
+}
+
+func genComments(genConfig *data_generator.GenConfig) {
+	
 }
 
 func main() {
@@ -84,5 +101,6 @@ func main() {
 	// log.Println(genConfig.CommentScores)
 	users := genUsers(genConfig)
 	genFriends(genConfig, users)
-	// genPosts(genConfig, users)
+	genPosts(genConfig, users)
+	genComments(genConfig)
 }

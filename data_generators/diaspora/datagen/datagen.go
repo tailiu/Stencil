@@ -571,6 +571,16 @@ func GetFriendsOfUser(dbConn *sql.DB, person_id int) []*User {
 	return users
 }
 
+func GetFriendsNum(dbConn *sql.DB, person_id int) int {
+	query := fmt.Sprintf("select count(*) from contacts where user_id = %d", person_id)
+	res := db.DataCall1(dbConn, query)
+	num, err := strconv.Atoi(res[0]["count"])
+	if err != nil {
+		log.Fatal(err)
+	}
+	return num
+}
+
 func GetFriendsDistribution(dbConn *sql.DB) map[string]int {
 	query := `
 		select  sum(case when fcount between 0   and 99   then 1 else 0 end) as "1-100",

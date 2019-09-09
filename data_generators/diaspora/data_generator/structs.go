@@ -19,8 +19,9 @@ type User struct {
 }
 
 type GenConfig struct {
-	DBConn				*sql.DB
-	PopularityScores	[]float64
-	CommentScores		[]float64
-	LikeScores			[]float64
+	DBConn					*sql.DB
+	UserPopularityScores	[]float64
+	UserCommentScores		[]float64
+	UserLikeScores			[]float64
+	PostPopularityScores	[]float64
 }
