@@ -26,22 +26,30 @@ func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User
 	friendshipAssignment := data_generator.AssignDataToUsersByUserPopScores(genConfig, USERNUM, FRIENDSHIPNUM)
 	
 	log.Println(friendshipAssignment)
+	log.Println(data_generator.GetSumOfIntSlice(friendshipAssignment))
 
 	alreadyMakeEnoughFriends := make(map[int]bool)
 	
 	for seq1, user1 := range users {
 		ableToMakeFriends := true
 		personID1 := user1.Person_ID
+		friendsTomake := friendshipAssignment[seq1]
 		if _, ok := alreadyMakeEnoughFriends[seq1]; ok {
 			continue
 		}
-		for n := 0; n < friendshipAssignment[seq1]; n++ {
+		if fNum := datagen.GetFriendsNum(genConfig.DBConn, personID1); fNum == friendsTomake {
+			alreadyMakeEnoughFriends[seq1] = true
+			continue
+		} else {
+			friendsTomake = friendsTomake - fNum
+		}
+		for n := 0; n < friendsTomake; n++ {
 			haveTried := make(map[int]bool)
 			for {
 				if len(haveTried) == USERNUM - 1 {
 					log.Println("Cannot find more users to make friends!!")
-					log.Println("Have already made friends:", n)
 					log.Println("Total friends to make:", friendshipAssignment[seq1])
+					log.Println("Have made friends:", n)
 					ableToMakeFriends = false
 					break
 				}
