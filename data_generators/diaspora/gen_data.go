@@ -35,11 +35,12 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 		ableToBeFollowed := true
 		personID1 := user1.Person_ID
 		alreadyFollowedByPersons := datagen.GetFollowedUsers(genConfig.DBConn, personID1)
-		toBeFollowedByPersons = append(toBeFollowedByPersons, data_generator.GetSeqsByPersonIDs(users, alreadyFollowedByPersons)...)
 		toBeFollowed := followedAssignment[seq1] - len(alreadyFollowedByPersons)
+		toBeFollowedByPersons = append(toBeFollowedByPersons, data_generator.GetSeqsByPersonIDs(users, alreadyFollowedByPersons)...)
 		log.Println("Check user:", seq1)
 		log.Println("Total users to follow this user:", followedAssignment[seq1])
-		log.Println("Have been followed by:", toBeFollowed)
+		log.Println("already followed by", alreadyFollowedByPersons)
+		log.Println("To be followed by:", toBeFollowed)
 		if toBeFollowed > followedAssignment[seq1] {
 			log.Fatal("cannot happend1!!!!")
 		}
