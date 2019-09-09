@@ -9,8 +9,9 @@ import (
 
 const APP = "diaspora" 
 const USERNUM = 1000
-const POSTNUM = 8030
 const FRIENDSHIPNUM = 30375
+const POSTNUM = 8030
+const COMMENTNUM = 13970
 
 func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 	var users []data_generator.User
@@ -23,7 +24,7 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 }
 
 func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User) {
-	friendshipAssignment := data_generator.AssignDataToUsersByUserPopScores(genConfig, USERNUM, FRIENDSHIPNUM)
+	friendshipAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, FRIENDSHIPNUM)
 	
 	log.Println(friendshipAssignment)
 	log.Println(data_generator.GetSumOfIntSlice(friendshipAssignment))
@@ -49,7 +50,7 @@ func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User
 				if len(haveTried) == USERNUM - 1 {
 					log.Println("Cannot find more users to make friends!!")
 					log.Println("Total friends to make:", friendshipAssignment[seq1])
-					log.Println("Have made friends:", n)
+					log.Println("Have made friends:", n + friendshipAssignment[seq1] - friendsTomake)
 					ableToMakeFriends = false
 					break
 				}
@@ -61,6 +62,7 @@ func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User
 					continue
 				}
 				if _, ok := alreadyMakeEnoughFriends[seq2]; ok {
+					haveTried[seq2] = true
 					continue
 				}
 				personID2 := users[seq2].Person_ID
@@ -86,8 +88,8 @@ func genFriends(genConfig *data_generator.GenConfig, users []data_generator.User
 	}
 }
 
-func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) {
-	postAssignment := data_generator.AssignDataToUsersByUserPopScores(genConfig, USERNUM, POSTNUM)
+func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
+	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POSTNUM)
 
 	for seq, user := range users {
 		for n := 0; n < postAssignment[seq]; n++ {
@@ -95,12 +97,13 @@ func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) 
 		}
 	}
 
-	// genConfig.PostPopularityScores = data_generator.shuffleSlices(
-	// 	data_generator.ParetoScores(data_generator.ALPHA, data_generator.XM, data_generator.GetSumOfIntSlice(postAssignment)))
+	return data_generator.AssignScoresToPosts(datagen.GetAllPostIDs(genConfig.DBConn))
 }
 
-func genComments(genConfig *data_generator.GenConfig) {
-	
+func genComments(genConfig *data_generator.GenConfig, postScores map[int]float64) {
+	commentAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserCommentScores, COMMENTNUM)
+	log.Println(commentAssignment)
+
 }
 
 func main() {
@@ -109,6 +112,6 @@ func main() {
 	// log.Println(genConfig.CommentScores)
 	users := genUsers(genConfig)
 	genFriends(genConfig, users)
-	genPosts(genConfig, users)
-	genComments(genConfig)
+	// postScores := genPosts(genConfig, users)
+	// genComments(genConfig, postScores)
 }

@@ -256,6 +256,20 @@ func GetPostsForUserLimit(dbConn *sql.DB, user_id, limit int) []*Post {
 	return posts
 }
 
+func GetAllPostIDs(dbConn *sql.DB) []int {
+	sql := fmt.Sprintf("select id from posts;")
+
+	var posts []int
+	for _, row := range db.DataCall(dbConn, sql) {
+		if pid, err := strconv.Atoi(row["id"]); err == nil {
+			posts = append(posts, pid)
+		} else {
+			log.Fatal(err)
+		}
+	}
+	return posts
+}
+
 func NewLike(dbConn *sql.DB, post_id, person_id, post_owner_id int) (int, error) {
 
 	// log.Println("Creating new like!")

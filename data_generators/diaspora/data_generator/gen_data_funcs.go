@@ -70,17 +70,17 @@ func transformFloat64ToInt(data []float64) []int {
 	return data1
 }
 
-func AssignDataToUsersByUserPopScores(genConfig *GenConfig, userNum, dataNum int) []int {
+func AssignDataToUsersByUserScores(scores []float64, dataNum int) []int {
 	var results []float64
 
-	totalScore := getSumOfFloatSlice(genConfig.UserPopularityScores)
-	for i := 0; i < userNum; i++ {
-		results = append(results, math.Floor(genConfig.UserPopularityScores[i] / totalScore * float64(dataNum)))
+	totalScore := getSumOfFloatSlice(scores)
+	for i := 0; i < len(scores); i++ {
+		results = append(results, math.Floor(scores[i] / totalScore * float64(dataNum)))
 	}
 
 	assignRemaingDataTimes := 200
 	for i := 0; i < assignRemaingDataTimes; i++ {
-		assignRemaingData(genConfig.UserPopularityScores, totalScore, dataNum, results)
+		assignRemaingData(scores, totalScore, dataNum, results)
 	}
 
 	return transformFloat64ToInt(results)
@@ -99,3 +99,11 @@ func GetSumOfIntSlice(s []int) int {
 	return sum
 }
 
+func AssignScoresToPosts(posts []int) map[int]float64 {
+	postPopularityScores := shuffleSlices(ParetoScores(ALPHA, XM, len(posts)))
+	postScores := make(map[int]float64)
+	for i, postID:= range posts {
+		postScores[postID] = postPopularityScores[i]
+	}
+	return postScores
+}
