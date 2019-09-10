@@ -121,7 +121,7 @@ func DeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
 }
 
 func NewBag(tx *sql.Tx, pk, rowid, user_id, table, app string, migration_id int) error {
-	query := "INSERT INTO data_bags (pk, rowid, user_id, table, app, migration_id) VALUES ($1, $2, $3, $4, $5, $6)"
+	query := "INSERT INTO data_bags (pk, rowid, user_id, \"table\", app, migration_id) VALUES ($1, $2, $3, $4, $5, $6)"
 	_, err := tx.Exec(query, pk, rowid, user_id, table, app, migration_id)
 	return err
 }
@@ -139,8 +139,13 @@ func NewRow(tx *sql.Tx, rowid, app_id, mflag string, copy_on_write bool) error {
 }
 
 func GetUserBags(dbConn *sql.DB, user_id, app_id string) ([]map[string]interface{}, error) {
-	query := "SELECT string_agg(data_bags.rowid::varchar, ',') as rowids, data_bags.tag as tag FROM data_bags JOIN row_desc ON data_bags.rowid = row_desc.rowid WHERE data_bags.user_id = $1 AND row_desc.mflag = 1 AND row_desc.app_id = $2 group by data_bags.tag"
+	query := "SELECT string_agg(rowid::varchar, ',') as rowids, \"table\" FROM data_bags WHERE user_id = $1 AND app = $2 GROUP BY pk, \"table\""
 	return DataCall(dbConn, query, user_id, app_id)
+}
+
+func GetUserBagsByTables(dbConn *sql.DB, user_id, app_id, table string) ([]map[string]interface{}, error) {
+	query := "SELECT string_agg(rowid::varchar, ',') as rowids FROM data_bags WHERE user_id = $1 AND app = $2 AND \"table\" = $3 GROUP BY pk ORDER BY random()"
+	return DataCall(dbConn, query, user_id, app_id, table)
 }
 
 func DeleteBag(dbConn *sql.DB, bag_id string) error {
@@ -200,6 +205,13 @@ func DeleteFromRowDescByRowID(tx *sql.Tx, rowid string) error {
 
 	q := "DELETE FROM row_desc WHERE rowid = $1"
 	_, err := tx.Exec(q, rowid)
+	return err
+}
+
+func MarkRowAsDeleted(tx *sql.Tx, rowid string) error {
+
+	q := "UPDATE row_desc SET mark_as_delete = $1 WHERE rowid = $2"
+	_, err := tx.Exec(q, true, rowid)
 	return err
 }
 
@@ -381,7 +393,7 @@ func DataCall(db *sql.DB, SQL string, args ...interface{}) ([]map[string]interfa
 	// db := GetDBConn(app)
 	// log.Println(SQL, args)
 	if rows, err := db.Query(SQL, args...); err != nil {
-		log.Println(SQL, args)
+		log.Println("ERROR:", SQL, args, err)
 		return nil, err
 	} else {
 		defer rows.Close()

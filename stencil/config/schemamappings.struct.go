@@ -35,6 +35,7 @@ func (self *MappedApp) GetMethod(conditionVal string) (string, error) {
 func (self *ToTable) FromTables() []string {
 	var fromTables []string
 	for _, mappedTo := range self.Mapping {
+		if strings.Contains(mappedTo, "$") || strings.Contains(mappedTo, "#") {continue}
 		table := strings.Split(mappedTo, ".")[0]
 		if !helper.Contains(fromTables, table){
 			fromTables = append(fromTables, table)

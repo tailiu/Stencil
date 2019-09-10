@@ -49,7 +49,7 @@ type MigrationWorker struct {
 	DBConn       *sql.DB
 	logTxn       *transaction.Log_txn
 	mtype        string
-	visitedNodes map[string]bool
+	visitedNodes map[string]map[string]bool
 	// threadID     int
 }
 
