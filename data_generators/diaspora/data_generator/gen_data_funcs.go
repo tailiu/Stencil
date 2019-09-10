@@ -119,3 +119,7 @@ func GetSeqsByPersonIDs(users []User, personIDs []int) []int {
 	}
 	return seq
 }
+
+func RandomNumWithProbGenerator(scores float64[], nums int) {
+	
+}

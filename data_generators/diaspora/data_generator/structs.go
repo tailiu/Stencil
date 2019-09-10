@@ -25,3 +25,8 @@ type GenConfig struct {
 	UserLikeScores			[]float64
 	PostPopularityScores	[]float64
 }
+
+type Post struct {
+	Author					int
+	Score					float64
+}
