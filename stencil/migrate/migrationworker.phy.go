@@ -101,7 +101,7 @@ func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, d
 						break
 					}
 					if _, ok := node.Data[depOnAttr]; ok {
-						conditionStr.WhereOperatorInterface("AND", tagAttr, "=", node.Data[depOnAttr])
+						conditionStr.AdditionalWhereWithValue("AND", tagAttr, "=", fmt.Sprint(node.Data[depOnAttr]))
 					} else {
 						fmt.Println(depOnTag)
 						log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
@@ -111,7 +111,7 @@ func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, d
 						restrictions.TableAliases = qs.TableAliases
 						for _, restriction := range condition.Restrictions {
 							if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
-								restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
+								restrictions.AdditionalWhereWithValue("OR", restrictionAttr, "=", restriction["val"])
 							}
 
 						}
@@ -119,17 +119,17 @@ func (self *MigrationWorker) ResolveDependencyConditions(node *DependencyNode, d
 							log.Fatal(condition.Restrictions)
 						}
 						// log.Fatal("restrictions.Where", restrictions.Where)
-						conditionStr.WhereString("AND", restrictions.Where)
+						conditionStr.AddWhereAsString("AND", restrictions.Where)
 					}
 					// log.Fatal("conditionStr.Where", conditionStr.Where)
-					where.WhereString("AND", conditionStr.Where)
+					where.AddWhereAsString("AND", conditionStr.Where)
 				}
 			}
 		}
 	}
 	// log.Fatal("where.Where", where.Where)
 	if where.Where != "" {
-		qs.WhereString("AND", where.Where)
+		qs.AddWhereAsString("AND", where.Where)
 	}
 }
 
@@ -153,15 +153,15 @@ func (self *MigrationWorker) ResolveOwnershipConditions(own config.Ownership, ta
 			break
 		}
 		if _, ok := self.root.Data[depOnAttr]; ok {
-			conditionStr.WhereOperatorInterface("AND", tagAttr, "=", self.root.Data[depOnAttr])
+			conditionStr.AdditionalWhereWithValue("AND", tagAttr, "=", fmt.Sprint(self.root.Data[depOnAttr]))
 		} else {
 			fmt.Println("data3", self.root.Data)
 			log.Fatal("ResolveOwnershipConditions:", depOnAttr, " doesn't exist in ", tag.Name)
 		}
-		where.WhereString("AND", conditionStr.Where)
+		where.AddWhereAsString("AND", conditionStr.Where)
 	}
 	if where.Where != "" {
-		qs.WhereString("AND", where.Where)
+		qs.AddWhereAsString("AND", where.Where)
 	}
 }
 
@@ -170,9 +170,9 @@ func (self *MigrationWorker) FetchRoot() error {
 	if root, err := self.SrcAppConfig.GetTag(tagName); err == nil {
 		qs := self.SrcAppConfig.GetTagQS(root)
 		rootTable, rootCol := self.SrcAppConfig.GetItemsFromKey(root, "root_id")
-		qs.WhereSimpleVal(rootTable+"."+rootCol, "=", self.uid)
-		qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
+		qs.AddWhereWithValue(rootTable+"."+rootCol, "=", self.uid)
 		sql := qs.GenSQL()
+		// log.Fatal(sql)
 		if data, err := db.DataCall1(self.DBConn, sql); err == nil && len(data) > 0 {
 			rootNode := new(DependencyNode)
 			rootNode.Tag = root
@@ -201,11 +201,10 @@ func (self *MigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*De
 			log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
 			qs := self.SrcAppConfig.GetTagQS(child)
 			self.ResolveDependencyConditions(node, dep, child, qs)
-			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
-			qs.WhereAppID(qr.NEXISTS, self.DstAppConfig.AppID)
-			qs.OrderBy("random()")
-			qs.WhereNotPKList(self.VisitedPKs())
+			qs.OrderByFunction("random()")
+			qs.ExcludeRowIDs(strings.Join(self.VisitedPKs(), ","))
 			sql := qs.GenSQL()
+			// log.Fatal(sql)
 			if data, err := db.DataCall1(self.DBConn, sql); err == nil {
 				if len(data) > 0 {
 					newNode := new(DependencyNode)
@@ -228,8 +227,9 @@ func (self *MigrationWorker) GetBagNodes(tagName, bagpks string) ([]*DependencyN
 
 	if tag, err := self.SrcAppConfig.GetTag(tagName); err == nil {
 		qs := self.SrcAppConfig.GetTagQS(tag)
-		sql := qs.GenSQLWith(bagpks)
-		// log.Fatal(sql)
+		qs.RowIDs(bagpks)
+		sql := qs.GenSQL()
+		log.Fatal(sql)
 		if data, err := db.DataCall(self.DBConn, sql); err == nil && len(data) > 0 {
 			var bagNodes []*DependencyNode
 			for _, datum := range data {
@@ -262,9 +262,7 @@ func (self *MigrationWorker) GetOwnedNodes(threadID, limit int) ([]*DependencyNo
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
 			qs := self.SrcAppConfig.GetTagQS(child)
 			self.ResolveOwnershipConditions(own, child, qs)
-			qs.WhereMFlag(qr.EXISTS, "0", self.SrcAppConfig.AppID)
-			qs.WhereAppID(qr.NEXISTS, self.DstAppConfig.AppID)
-			qs.OrderBy("random()")
+			qs.OrderByFunction("random()")
 			qs.LimitResult(fmt.Sprint(limit))
 			sql := qs.GenSQL()
 			if result, err := db.DataCall(self.DBConn, sql); err == nil {
@@ -592,11 +590,11 @@ func (self *MigrationWorker) MigrateNode(mapping config.Mapping, node *Dependenc
 		return errors.New("0")
 	} else {
 		defer tx.Rollback()
-		if len(mapping.FromTables) > 1 {
-			if err := self.UpdatePhyRowIDsOfSourceTables(tx, mapping, node); err != nil {
-				return err
-			}
-		}
+		// if len(mapping.FromTables) > 1 {
+		// 	if err := self.UpdatePhyRowIDsOfSourceTables(tx, mapping, node); err != nil {
+		// 		return err
+		// 	}
+		// }
 		if updatedPKs, bagPKs, err := self.HandleMappedPartOfNode(tx, mapping, node); err == nil {
 			if len(updatedPKs) > 0 {
 				if err := self.HandleUnmappedPartOfNode(tx, mapping, node, bagPKs); err != nil {
