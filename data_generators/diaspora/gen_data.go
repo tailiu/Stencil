@@ -13,6 +13,7 @@ const USER_NUM = 1000
 const FOLLOW_NUM = 30375
 const POST_NUM = 8030
 const COMMENT_NUM = 13970
+const LIKE_NUM = 85680
 const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
 
 func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
@@ -25,6 +26,11 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 	return users
 }
 
+// We use the user popularity score to generate how many followers a user has.
+// For some of those followers, the user also follows back.
+// Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
+// this user can follow this percentage of followers,
+// because maybe most of those users have already fully followed by other users.
 func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User) {
 	followedAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, FOLLOW_NUM)
 	
@@ -79,9 +85,6 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 			}
 		}
 
-		// Note that this RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
-		// this user can follow this percentage of users following the current user
-		// because maybe most of those users have already fully followed by other users
 		toFollowNum := int(float64(followedAssignment[seq1]) * RECIPROCAL_FOLLOW_PERCENTAGE)
 		// log.Println("Total Num", followedAssignment[seq1])
 		// log.Println("to Follow Num", toFollowNum)
@@ -126,6 +129,17 @@ func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) 
 	return data_generator.AssignScoresToPosts(datagen.GetAllPostIDs(genConfig.DBConn))
 }
 
+func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, map[int]float64){
+	var users []data_generator.User
+	users1 := datagen.GetAllUsersWithAspectsOrderByID(genConfig.DBConn)
+	for _, user1 := range users1 {
+		var user data_generator.User
+		user.User_ID, user.Person_ID, user.Aspects = user1.User_ID, user1.Person_ID, user1.Aspects
+		users = append(users, user)
+	}
+	return users, data_generator.AssignScoresToPosts(datagen.GetAllPostIDs(genConfig.DBConn))
+}
+
 // We randomly assign comments to posts proportionally to the popularity of posts of friends, 
 // including posts by the commenter.
 func genComments(genConfig *data_generator.GenConfig, users []data_generator.User, postScores map[int]float64) {
@@ -157,25 +171,56 @@ func genComments(genConfig *data_generator.GenConfig, users []data_generator.Use
 			}
 		}
 		
-		commentNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, commentNum)
+		likeNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, commentNum)
 		for seq2, post := range posts {
-			for i := 0; i < commentNumsOfPosts[seq2]; i++ {
+			for i := 0; i < likeNumsOfPosts[seq2]; i++ {
 				datagen.NewComment(genConfig.DBConn, post.ID, personID, post.Author)
 			}
 		}
 	}
-
 }
 
-func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, map[int]float64){
-	var users []data_generator.User
-	users1 := datagen.GetAllUsersWithAspectsOrderByID(genConfig.DBConn)
-	for _, user1 := range users1 {
-		var user data_generator.User
-		user.User_ID, user.Person_ID, user.Aspects = user1.User_ID, user1.Person_ID, user1.Aspects
-		users = append(users, user)
+// We randomly assign likes to posts proportionally to the popularity of posts of friends, 
+// including posts by the liker.
+// The difference between generating comments and likes is that
+// a user make several comments on the same post, but can only like once on that post.
+func genLikes(genConfig *data_generator.GenConfig, users []data_generator.User, postScores map[int]float64) {
+	likeAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserLikeScores, LIKE_NUM)
+	log.Println("Likes assignments to users:", likeAssignment)
+	log.Println("Total likes:", data_generator.GetSumOfIntSlice(likeAssignment))
+
+	for seq1, user1 := range users {
+		// log.Println("Check user:", seq1)
+		var posts []*data_generator.Post
+		var scores []float64
+		likeNum := likeAssignment[seq1]
+		// log.Println("Like number:", likeNum)
+		personID := user1.Person_ID
+		totalUsers := datagen.GetFollowingUsers(genConfig.DBConn, personID)
+		// log.Println(user1)
+		// log.Println(totalUsers)
+		totalUsers = append(totalUsers, personID)
+
+		for _, user2 := range totalUsers {
+			posts1 := datagen.GetPostsForUser(genConfig.DBConn, user2)
+			for _, post1 := range posts1 {
+				post := new(data_generator.Post)
+				post.ID = post1.ID
+				post.Author = post1.Author
+				post.Score = postScores[post1.ID]
+				posts = append(posts, post)
+				scores = append(scores, post.Score)
+			}
+		}
+		
+		likeNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, likeNum)
+		log.Println(likeNumsOfPosts)
+		for seq2, post := range posts {
+			for i := 0; i < likeNumsOfPosts[seq2]; i++ {
+				// datagen.NewComment(genConfig.DBConn, post.ID, personID, post.Author)
+			}
+		}
 	}
-	return users, data_generator.AssignScoresToPosts(datagen.GetAllPostIDs(genConfig.DBConn))
 }
 
 func main() {
@@ -186,6 +231,7 @@ func main() {
 	// log.Println("users", users)
 	// log.Println("postScores", postScores)
 	users, postScores := prepareTest(genConfig)
-	genComments(genConfig, users, postScores)
+	// genComments(genConfig, users, postScores)
+	genLikes(genConfig, users, postScores)
 	// log.Println(datagen.GetFollowedDistribution(genConfig.DBConn))
 }
