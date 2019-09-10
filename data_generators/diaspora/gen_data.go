@@ -214,10 +214,10 @@ func genLikes(genConfig *data_generator.GenConfig, users []data_generator.User, 
 		}
 		
 		likeNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, likeNum)
-		log.Println(likeNumsOfPosts)
+		// log.Println(likeNumsOfPosts)
 		for seq2, post := range posts {
-			for i := 0; i < likeNumsOfPosts[seq2]; i++ {
-				// datagen.NewComment(genConfig.DBConn, post.ID, personID, post.Author)
+			if _, ok := likeNumsOfPosts[seq2]; ok {
+				datagen.NewLike(genConfig.DBConn, post.ID, personID, post.Author)
 			}
 		}
 	}
