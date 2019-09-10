@@ -18,7 +18,7 @@ type GenConfig struct {
 	UserPopularityScores	[]float64
 	UserCommentScores		[]float64
 	UserLikeScores			[]float64
-	PostPopularityScores	[]float64
+	UserMessageScores		[]float64
 }
 
 type Post struct {
