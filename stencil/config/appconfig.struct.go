@@ -3,12 +3,10 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log"
-
 	"stencil/helper"
 	"stencil/qr"
 	"strings"
-
+	// "log"
 	"github.com/drgrib/maps"
 )
 
@@ -321,19 +319,23 @@ func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
 		seenMap := make(map[string]bool)
 		for fromTable, toTablesMap := range joinMap {
 			if _, ok := seenMap[fromTable]; !ok {
-				qs.FromSimple(fromTable)
-				qs.ColSimple(fromTable + ".*")
-				qs.ColPK(fromTable)
+				qs.FromTable(map[string]string{"table":fromTable})
+				qs.SelectColumns(fromTable + ".*")
 			}
 			for toTable, conditions := range toTablesMap {
 				if conditions != nil {
+					joinArgs := make(map[string]string)
+					joinArgs["table"] = toTable
 					conditions = append(conditions, joinMap[toTable][fromTable]...)
 					if joinMap[toTable][fromTable] != nil {
 						joinMap[toTable][fromTable] = nil
 					}
-					qs.FromJoinList(toTable, conditions)
-					qs.ColSimple(toTable + ".*")
-					qs.ColPK(toTable)
+					for i, condition := range conditions {
+						joinArgs[fmt.Sprintf("condition%d", i)] = condition
+					}
+					qs.JoinTable(joinArgs)
+					// log.Fatal(joinArgs)
+					qs.SelectColumns(toTable + ".*")
 					seenMap[toTable] = true
 				}
 			}
@@ -342,62 +344,21 @@ func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
 	} else {
 		table := tag.Members["member1"]
 		qs = qr.CreateQS(self.QR)
-		qs.FromSimple(table)
-		qs.ColPK(table)
-		qs.ColSimple(table + ".*")
+		qs.FromTable(map[string]string{"table":table})
+		qs.SelectColumns(table + ".*")
 	}
 	if len(tag.Restrictions) > 0 {
-		restrictions := qr.CreateQS(self.QR)
-		restrictions.TableAliases = qs.TableAliases
-		for _, restriction := range tag.Restrictions {
+		for i, restriction := range tag.Restrictions {
 			if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
-				restrictions.WhereOperatorInterface("OR", restrictionAttr, "=", restriction["val"])
+				if i <= 0 {
+					qs.AddWhereWithValue(restrictionAttr, "=", restriction["val"])
+				}else{
+					qs.AdditionalWhereWithValue("OR", restrictionAttr, "=", restriction["val"])
+				}
 			}
 
 		}
-		qs.WhereString("AND", restrictions.Where)
 	}
 	// log.Fatal(qs.GenSQL())
-	return qs
-}
-
-func (self *AppConfig) GetTagQSM(tag Tag) *qr.QS {
-	log.Fatal("Here in GetTagQSM!")
-	qs := qr.CreateQS(self.QR)
-	if len(tag.InnerDependencies) > 0 {
-		joinMap := tag.CreateInDepMap()
-		seenMap := make(map[string]bool)
-		for fromTable, toTablesMap := range joinMap {
-			if _, ok := seenMap[fromTable]; !ok {
-				qs.LSelect(fromTable, "*")
-				qs.LTable(fromTable, fromTable)
-			}
-			for toTable, conditions := range toTablesMap {
-				if conditions != nil {
-					conditions = append(conditions, joinMap[toTable][fromTable]...)
-					if joinMap[toTable][fromTable] != nil {
-						joinMap[toTable][fromTable] = nil
-					}
-					qs.LSelect(toTable, "*")
-					qs.LTable(toTable, toTable)
-					qs.LJoinOn(conditions)
-					seenMap[toTable] = true
-				}
-			}
-			seenMap[fromTable] = true
-		}
-	} else {
-		table := tag.Members["member1"]
-		qs = qr.CreateQS(self.QR)
-		qs.LSelect(table, "*")
-		qs.LTable(table, table)
-	}
-	if len(tag.Restrictions) > 0 {
-		for _, restriction := range tag.Restrictions {
-			if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
-				qs.WhereString("AND", restrictionAttr+"="+restriction["val"])
-			}
-		}
-	}
 	return qs
 }

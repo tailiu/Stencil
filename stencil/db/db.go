@@ -120,7 +120,13 @@ func DeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
 	return nil
 }
 
-func NewBag(tx *sql.Tx, rowid, user_id, tagName string, migration_id int) error {
+func NewBag(tx *sql.Tx, pk, rowid, user_id, table, app string, migration_id int) error {
+	query := "INSERT INTO data_bags (pk, rowid, user_id, table, app, migration_id) VALUES ($1, $2, $3, $4, $5, $6)"
+	_, err := tx.Exec(query, pk, rowid, user_id, table, app, migration_id)
+	return err
+}
+
+func NewBagOld(tx *sql.Tx, rowid, user_id, tagName string, migration_id int) error {
 	query := "INSERT INTO data_bags (rowid, user_id, tag, migration_id) VALUES ($1, $2, $3, $4)"
 	_, err := tx.Exec(query, rowid, user_id, tagName, migration_id)
 	return err
@@ -201,6 +207,12 @@ func DeleteFromRowDescByRowIDAndAppID(tx *sql.Tx, rowids, appid string) error {
 
 	q := fmt.Sprintf("DELETE FROM row_desc WHERE rowid in (%s) and app_id = $1", rowids)
 	_, err := tx.Exec(q, appid)
+	return err
+}
+
+func InsertIntoMigrationTable(tx *sql.Tx, dstApp, dstRow, orgRow, COW, dstTable, mflag, migration_id string) error {
+	q := "INSERT INTO migration_table (dst_app, dst_rowid, org_rowid, copy_on_write, dst_table, mflag, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	_, err := tx.Exec(q, dstApp, dstRow, orgRow, COW, dstTable, mflag, migration_id)
 	return err
 }
 
