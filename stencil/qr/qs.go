@@ -56,28 +56,31 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 			self.ColumnsWSize = append(self.ColumnsWSize, pSizeColName)
 		}
 		// if _, ok := self.seen[ptab]; !ok {
-			pTabAlias := self.getTableAlias(args["alias"], ptab)
-			fromMT += fmt.Sprintf(" LEFT JOIN %s %s ON %s.pk = ANY(mt.rowids) ", ptab, pTabAlias, pTabAlias)
-			if prev == "" {
-				from += fmt.Sprintf(" %s %s ", ptab, pTabAlias)
-			} else {
-				prevAlias := self.getTableAlias(args["alias"], prev)
-				if len(prevOnCol) <= 0{			
-					from += fmt.Sprintf(" FULL JOIN %s %s ON %s.pk = %s.pk ", ptab, pTabAlias, prevAlias, pTabAlias)
-				}else{
-					from += fmt.Sprintf(" FULL JOIN %s %s ON COALESCE(%s.pk,%s) = %s.pk ", ptab, pTabAlias, prevAlias, strings.Join(prevOnCol, ","), pTabAlias)
-				}
-				prevOnCol = append(prevOnCol, prevAlias+".pk")
+		pTabAlias := self.getTableAlias(args["alias"], ptab)
+		fromMT += fmt.Sprintf(" LEFT JOIN %s %s ON %s.pk = ANY(mt.rowids) ", ptab, pTabAlias, pTabAlias)
+		if prev == "" {
+			from += fmt.Sprintf(" %s %s ", ptab, pTabAlias)
+		} else {
+			prevAlias := self.getTableAlias(args["alias"], prev)
+			if len(prevOnCol) <= 0{			
+				from += fmt.Sprintf(" FULL JOIN %s %s ON %s.pk = %s.pk ", ptab, pTabAlias, prevAlias, pTabAlias)
+			}else{
+				from += fmt.Sprintf(" FULL JOIN %s %s ON COALESCE(%s.pk,%s) = %s.pk ", ptab, pTabAlias, prevAlias, strings.Join(prevOnCol, ","), pTabAlias)
 			}
-			prev = ptab
+			prevOnCol = append(prevOnCol, prevAlias+".pk")
+		}
+		prev = ptab
 			// self.seen[ptab] = true
 		// }
+	}
+	if len(prevOnCol) <= 0 {
+		prevOnCol = append(prevOnCol, self.getTableAlias(args["alias"], prev)+".pk")
 	}
 	cols = append(cols, fmt.Sprintf("uniq(sort(array_remove(array[%s]::int4[], null))) as \"%s.rowids\"", strings.Join(prevOnCol, ","), args["alias"]))
 	cols = append(cols, fmt.Sprintf("array_to_string(uniq(sort(array_remove(array[%s]::int4[], null))),',') as \"%s.rowids_str\"", strings.Join(prevOnCol, ","), args["alias"]))
 	if len(from) > 0 {
 		mTableQuery := fmt.Sprintf("SELECT %s FROM %s", strings.Join(cols, ","), fromMT)
-		conditions := fmt.Sprintf("WHERE EXISTS (SELECT 1 FROM row_desc WHERE app_id = %s AND \"table\" = '%s' AND rowid IN (%s))", self.QR.AppID, args["table"], strings.Join(prevOnCol, ","))
+		conditions := fmt.Sprintf("WHERE EXISTS (SELECT 1 FROM row_desc WHERE mark_as_delete = false and app_id = %s AND \"table\" = '%s' AND rowid IN (%s))", self.QR.AppID, args["table"], strings.Join(prevOnCol, ","))
 		tableQuery := fmt.Sprintf("SELECT %s FROM %s %s", strings.Join(cols, ","), from, conditions)
 		return fmt.Sprintf("(%s UNION %s) %s ", tableQuery, mTableQuery, args["alias"])
 		// self.From = fmt.Sprintf("(SELECT %s FROM %s) %s ", strings.Join(cols, ","), from, table)

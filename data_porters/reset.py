@@ -21,6 +21,7 @@ def truncatePhysicalTables():
             cur.execute(q)
             conn.commit()
     truncateTableFromStencil("row_desc")
+    truncateTableFromStencil("migration_table")
     
 def truncate(dbname, blade):
     conn, cur = getDB(dbname, blade)
@@ -52,13 +53,14 @@ def truncateTableFromStencil(table):
 def resetRowDesc():
     conn, cur = getDB("stencil", blade=False)
     
-    q = "select rowid from row_desc group by rowid having count(*) > 1;"
-    cur.execute(q)
-    for row in cur.fetchall():
-        q = "delete from row_desc where app_id != 1 and rowid = %s" %row[0]
-        print q
-        cur.execute(q)
-    q = "update row_desc set app_id = 1, mflag = 0;"
+    # q = "select rowid from row_desc group by rowid having count(*) > 1;"
+    # cur.execute(q)
+    # for row in cur.fetchall():
+    #     q = "delete from row_desc where app_id != 1 and rowid = %s" %row[0]
+    #     print q
+    #     cur.execute(q)
+    # q = "update row_desc set app_id = 1, mflag = 0;"
+    q = "update row_desc set mark_as_delete = false;"
     print q
     cur.execute(q)
     conn.commit()
@@ -79,5 +81,6 @@ if __name__ == "__main__":
                 truncate("mastodon", blade=True)
                 reverseMarkAsDelete("diaspora", blade=False)
             if arg in ["row", "all"]:
+                truncateTableFromStencil("migration_table")
                 truncateTableFromStencil("data_bags")
                 resetRowDesc()
