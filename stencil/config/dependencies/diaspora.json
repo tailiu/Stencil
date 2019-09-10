@@ -271,20 +271,6 @@
           ]
        },
        {
-          "tag":"notification",
-          "depends_on":[
-             {
-                "tag":"root",
-                "conditions":[
-                   {
-                      "tag_attr":"recipient_id",
-                      "depends_on_attr":"person_id"
-                   }
-                ]
-             }
-          ]
-       },
-       {
           "tag":"like",
           "depends_on":[
              {

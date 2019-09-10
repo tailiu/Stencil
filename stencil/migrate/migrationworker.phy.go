@@ -185,7 +185,7 @@ func (self *MigrationWorker) FetchRoot() error {
 			if err == nil {
 				err = errors.New("no data returned for root node, doesn't exist?")
 			}			
-			log.Fatal(sql)
+			// log.Fatal(sql)
 			return err
 		}
 	} else {
@@ -586,6 +586,11 @@ func (self *MigrationWorker) HandleUnmappedMembersOfNode(tx *sql.Tx, mapping con
 						log.Fatal("HandleUnmappedMembersOfNode :: NewBag :", err)
 						return err
 					}
+					if err := db.MarkRowAsDeleted(tx, src_rowid); err != nil {
+						fmt.Println(src_rowids, src_rowid, self.SrcAppConfig.AppID)
+						log.Fatal("HandleUnmappedMembersOfNode: MarkRowAsDeleted ", err)
+						return err
+					}
 				}
 			}
 		}
@@ -684,6 +689,11 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 				if err := db.NewBag(tx, dst_rowid, src_rowid, self.uid, nodeMember, self.SrcAppConfig.AppID, self.logTxn.Txn_id); err != nil {
 					fmt.Println("Args: ", dst_rowid, src_rowid, self.uid, nodeMember, self.SrcAppConfig.AppID, self.logTxn.Txn_id)
 					log.Fatal("HandleUnmappedMembersOfNode :: NewBag :", err)
+					return err
+				}
+				if err := db.MarkRowAsDeleted(tx, src_rowid); err != nil {
+					fmt.Println(src_rowids, src_rowid, self.SrcAppConfig.AppID)
+					log.Fatal("HandleUnmappedNode: MarkRowAsDeleted ", err)
 					return err
 				}
 				updated = append(updated, src_rowid)
