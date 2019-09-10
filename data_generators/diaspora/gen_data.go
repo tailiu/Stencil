@@ -5,6 +5,7 @@ import (
 	"diaspora/data_generator"
 	"diaspora/helper"
 	"log"
+	// "sort"
 )
 
 const APP = "diaspora" 
@@ -103,13 +104,14 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 				}
 			}
 		}
-		if currentlyFollowNum < toFollowNum {
+		// if currentlyFollowNum < toFollowNum {
 			// log.Println("Fail to follow enough followers!!")
-		}
+		// }
 
 	}
 }
 
+// We randomly assign posts to the users proportionally to the popularity of users. 
 func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
 	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
 	log.Println("Posts assignments to users:", postAssignment)
@@ -124,42 +126,66 @@ func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) 
 	return data_generator.AssignScoresToPosts(datagen.GetAllPostIDs(genConfig.DBConn))
 }
 
-func genComments(genConfig *data_generator.GenConfig, postScores map[int]float64) {
+// We randomly assign comments to posts proportionally to the popularity of posts of friends, 
+// including posts by the commenter.
+func genComments(genConfig *data_generator.GenConfig, users []data_generator.User, postScores map[int]float64) {
 	commentAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserCommentScores, COMMENT_NUM)
 	log.Println("Comments assignments to users:", commentAssignment)
 	log.Println("Total comments:", data_generator.GetSumOfIntSlice(commentAssignment))
 
 	for seq1, user1 := range users {
-		var posts []data_generator.Post
+		// log.Println("Check user:", seq1)
+		var posts []*data_generator.Post
 		var scores []float64
 		commentNum := commentAssignment[seq1]
-		followingUsers := datagen.GetFollowingUsers(genConfig.DBConn, user1.Person_ID)
+		// log.Println("Comment number:", commentNum)
+		personID := user1.Person_ID
+		totalUsers := datagen.GetFollowingUsers(genConfig.DBConn, personID)
+		// log.Println(user1)
+		// log.Println(totalUsers)
+		totalUsers = append(totalUsers, personID)
 
-		for _, followingUser := range followingUsers {
-			posts1 := datagen.GetPostsForUser(genConfig.DBConn, followingUser)
+		for _, user2 := range totalUsers {
+			posts1 := datagen.GetPostsForUser(genConfig.DBConn, user2)
 			for _, post1 := range posts1 {
 				post := new(data_generator.Post)
+				post.ID = post1.ID
 				post.Author = post1.Author
 				post.Score = postScores[post1.ID]
 				posts = append(posts, post)
 				scores = append(scores, post.Score)
 			}
 		}
-
-		datagen.RandomNumWithProbGenerator(scores, commentNum)
+		
+		commentNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, commentNum)
+		for seq2, post := range posts {
+			for i := 0; i < commentNumsOfPosts[seq2]; i++ {
+				datagen.NewComment(genConfig.DBConn, post.ID, personID, post.Author)
+			}
+		}
 	}
 
 }
 
+func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, map[int]float64){
+	var users []data_generator.User
+	users1 := datagen.GetAllUsersWithAspectsOrderByID(genConfig.DBConn)
+	for _, user1 := range users1 {
+		var user data_generator.User
+		user.User_ID, user.Person_ID, user.Aspects = user1.User_ID, user1.Person_ID, user1.Aspects
+		users = append(users, user)
+	}
+	return users, data_generator.AssignScoresToPosts(datagen.GetAllPostIDs(genConfig.DBConn))
+}
+
 func main() {
 	genConfig := data_generator.Initialize(APP, USER_NUM)
-	// log.Println(genConfig.LikeScores)
-	// log.Println(genConfig.CommentScores)
-	users := genUsers(genConfig)
-	// var users []data_generator.User
-	postScores := genPosts(genConfig, users)
-	log.Println(postScores)
+	// users := genUsers(genConfig)
+	// postScores := genPosts(genConfig, users)
 	// genFollows(genConfig, users)
-	// genComments(genConfig, postScores)
+	// log.Println("users", users)
+	// log.Println("postScores", postScores)
+	users, postScores := prepareTest(genConfig)
+	genComments(genConfig, users, postScores)
 	// log.Println(datagen.GetFollowedDistribution(genConfig.DBConn))
 }
