@@ -224,6 +224,10 @@ func genLikes(genConfig *data_generator.GenConfig, users []data_generator.User, 
 	}
 }
 
+// Pareto distributed message scores determine the number of messages each user should have.
+// Friendships have closeness indexes. We randomly assign messages to users (or conversations) proportionally 
+// to the closeness indexes.
+// Two users talk with each other sharing the same conversation.
 func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []data_generator.User) {
 	messageAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserMessageScores, MESSAGE_NUM)
 	log.Println("Messages assignments to users:", messageAssignment)
@@ -231,6 +235,7 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 	conversationNum := 0
 
 	for seq1, user1 := range users {
+		// oneUserConversationNum := 0
 		personID := user1.Person_ID
 		messageNum := messageAssignment[seq1]
 		friends := datagen.GetRealFriendsOfUser(genConfig.DBConn, personID)
@@ -251,22 +256,24 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 			} else {
 				new_conv, _ := datagen.NewConversation(genConfig.DBConn, personID, friends[seq2])
 				conversationNum += 1
+				// oneUserConversationNum += 1
 				for i := 0; i < messageNum; i++ {
 					datagen.NewMessage(genConfig.DBConn, personID, new_conv)
 				}
 			}
 		}
+		// log.Println(oneUserConversationNum)
 	}
 	log.Println("Total conversations:", conversationNum)
 }
 
 func main() {
 	genConfig := data_generator.Initialize(APP, USER_NUM)
-	users, _ := prepareTest(genConfig)
-	// users := genUsers(genConfig)
-	// postScores := genPosts(genConfig, users)
-	// genFollows(genConfig, users)
-	// genComments(genConfig, users, postScores)
-	// genLikes(genConfig, users, postScores)
+	// users, postScores := prepareTest(genConfig)
+	users := genUsers(genConfig)
+	postScores := genPosts(genConfig, users)
+	genFollows(genConfig, users)
+	genComments(genConfig, users, postScores)
+	genLikes(genConfig, users, postScores)
 	genConversationsAndMessages(genConfig, users)
 }
