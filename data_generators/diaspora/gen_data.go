@@ -188,7 +188,8 @@ func genComments(genConfig *data_generator.GenConfig, users []data_generator.Use
 func genLikes(genConfig *data_generator.GenConfig, users []data_generator.User, postScores map[int]float64) {
 	likeAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserLikeScores, LIKE_NUM)
 	log.Println("Likes assignments to users:", likeAssignment)
-	log.Println("Total likes:", data_generator.GetSumOfIntSlice(likeAssignment))
+	log.Println("Total likes based on assignments:", data_generator.GetSumOfIntSlice(likeAssignment))
+	totalLikeNum := 0
 
 	for seq1, user1 := range users {
 		// log.Println("Check user:", seq1)
@@ -219,13 +220,15 @@ func genLikes(genConfig *data_generator.GenConfig, users []data_generator.User, 
 		for seq2, post := range posts {
 			if _, ok := likeNumsOfPosts[seq2]; ok {
 				datagen.NewLike(genConfig.DBConn, post.ID, personID, post.Author)
+				totalLikeNum += 1
 			}
 		}
 	}
+	log.Println("In reality, the num of total likes is:", totalLikeNum)
 }
 
-// Pareto distributed message scores determine the number of messages each user should have.
-// Friendships have closeness indexes. We randomly assign messages to users (or conversations) proportionally 
+// Pareto-distributed message scores determine the number of messages each user should have.
+// Friendships have pareto-distributed closeness indexes. We randomly assign messages to users (or conversations) proportionally 
 // to the closeness indexes.
 // Two users talk with each other sharing the same conversation.
 func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []data_generator.User) {
