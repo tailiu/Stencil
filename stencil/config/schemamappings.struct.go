@@ -5,6 +5,7 @@ import (
 	"strings"
 	"fmt"
 	"math/rand"
+	"stencil/helper"
 )
 
 func (self *MappedApp) GetInput(conditionVal string) (string, error) {
@@ -29,4 +30,15 @@ func (self *MappedApp) GetMethod(conditionVal string) (string, error) {
 		}
 	}
 	return "", errors.New("Can't find Method with name: " + conditionVal)
+}
+
+func (self *ToTable) FromTables() []string {
+	var fromTables []string
+	for _, mappedTo := range self.Mapping {
+		table := strings.Split(mappedTo, ".")[0]
+		if !helper.Contains(fromTables, table){
+			fromTables = append(fromTables, table)
+		}
+	}
+	return fromTables
 }

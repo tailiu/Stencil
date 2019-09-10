@@ -159,7 +159,7 @@ func (self *QS) ExcludeRowIDs(rowids string) {
 		if len(self.Where) > 0 {
 			self.Where += " AND "
 		}
-		self.Where += fmt.Sprintf("NOT array[%s]::int4 @> %s.\"%s.rowids\"", rowids, table, table)	
+		self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> %s.\"%s.rowids\"", rowids, table, table)	
 	}
 }
 
