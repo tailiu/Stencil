@@ -79,10 +79,10 @@ func AssignDataToUsersByUserScores(scores []float64, dataNum int) []int {
 		results = append(results, math.Floor(scores[i] / totalScore * float64(dataNum)))
 	}
 
-	assignRemaingDataTimes := 200
-	for i := 0; i < assignRemaingDataTimes; i++ {
-		assignRemaingData(scores, totalScore, dataNum, results)
-	}
+	// assignRemaingDataTimes := 200
+	// for i := 0; i < assignRemaingDataTimes; i++ {
+	// 	assignRemaingData(scores, totalScore, dataNum, results)
+	// }
 
 	return transformFloat64ToInt(results)
 }

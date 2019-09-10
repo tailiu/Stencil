@@ -9,12 +9,12 @@ import (
 
 const APP = "diaspora" 
 const USER_NUM = 1000
-const FOLLOW_NUM = 30375
-const POST_NUM = 8030
-const COMMENT_NUM = 13970
-const LIKE_NUM = 85680
+const FOLLOW_NUM = 30575
+const POST_NUM = 8230
+const COMMENT_NUM = 14170
+const LIKE_NUM = 85880
 const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-const MESSAGE_NUM = 4015
+const MESSAGE_NUM = 4215
 
 func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 	var users []data_generator.User
