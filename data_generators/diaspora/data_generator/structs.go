@@ -11,11 +11,6 @@ type User struct {
 	User_ID       		int
 	Person_ID     		int
 	Aspects       		[]int
-	ContactID     		int
-	ContactAspect 		int
-	PopularityScore 	float64
-	CommentScore 		float64
-	LikeScore 			float64
 }
 
 type GenConfig struct {
@@ -27,6 +22,7 @@ type GenConfig struct {
 }
 
 type Post struct {
+	ID 						int
 	Author					int
 	Score					float64
 }

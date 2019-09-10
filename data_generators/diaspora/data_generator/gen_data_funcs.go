@@ -91,6 +91,11 @@ func RandomNonnegativeIntWithUpperBound(upperBound int) int {
 	return rand.Intn(upperBound)
 }
 
+func RandomNonnegativeFloat64WithUpperBound(upperBound float64) float64 {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Float64() * upperBound
+}
+
 func GetSumOfIntSlice(s []int) int {
 	var sum int
 	for _, num := range s {
@@ -120,6 +125,56 @@ func GetSeqsByPersonIDs(users []User, personIDs []int) []int {
 	return seq
 }
 
-func RandomNumWithProbGenerator(scores float64[], nums int) {
+func RandomNumWithProbGenerator(scores []float64, sum int) map[int]int { 
+	var cumScores []float64
 	
+	for i := 0; i < len(scores); i++ {
+		var cumSum float64
+		for j := 0; j <= i; j++ {
+			cumSum += scores[j]
+		}
+		cumScores = append(cumScores, cumSum)
+	}
+	// log.Println(scores)
+	// log.Println(len(scores))
+	// log.Println("**********************************")
+	// log.Println(cumScores)
+
+	results := make(map[int]int)
+	upperBound := cumScores[len(cumScores) - 1]
+	for k := 0; k < sum; k++ {
+		rNum := RandomNonnegativeFloat64WithUpperBound(upperBound)
+		// log.Println(rNum)
+		for i := 0; i < len(cumScores); i++ {
+			if i == 0 {
+				if rNum < cumScores[i] {
+					if _, ok := results[i]; ok {
+						results[i] += 1
+					} else {
+						results[i] = 1
+					}
+				}
+			} else {
+				if rNum >= cumScores[i-1] && rNum < cumScores[i] {
+					if _, ok := results[i]; ok {
+						results[i] += 1
+					} else {
+						results[i] = 1
+					}
+				}
+			}
+		}
+	}
+
+	// log.Println(results)
+	return results
+}
+
+func TransformCommentsAssignmentToScores(assignment map[int]int, scores []float64) map[float64]int {
+	result := make(map[float64]int)
+	for k, v := range assignment {
+		k1 := scores[k]
+		result[k1] = v
+	}
+	return result
 }
