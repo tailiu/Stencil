@@ -40,6 +40,9 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 	if _, ok := args["mflag"]; !ok {
 		args["mflag"] = "0"
 	}
+	if _, ok := args["mark_as_delete"]; !ok {
+		args["mark_as_delete"] = "false"
+	}
 
 	var cols, prevOnCol []string
 
@@ -80,7 +83,7 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 	cols = append(cols, fmt.Sprintf("array_to_string(uniq(sort(array_remove(array[%s]::int4[], null))),',') as \"%s.rowids_str\"", strings.Join(prevOnCol, ","), args["alias"]))
 	if len(from) > 0 {
 		mTableQuery := fmt.Sprintf("SELECT %s FROM %s", strings.Join(cols, ","), fromMT)
-		conditions := fmt.Sprintf("WHERE EXISTS (SELECT 1 FROM row_desc WHERE mark_as_delete = false and app_id = %s AND \"table\" = '%s' AND rowid IN (%s))", self.QR.AppID, args["table"], strings.Join(prevOnCol, ","))
+		conditions := fmt.Sprintf("WHERE EXISTS (SELECT 1 FROM row_desc WHERE mark_as_delete = %s and app_id = %s AND \"table\" = '%s' AND rowid IN (%s))", args["mark_as_delete"], self.QR.AppID, args["table"], strings.Join(prevOnCol, ","))
 		tableQuery := fmt.Sprintf("SELECT %s FROM %s %s", strings.Join(cols, ","), from, conditions)
 		return fmt.Sprintf("(%s UNION %s) %s ", tableQuery, mTableQuery, args["alias"])
 		// self.From = fmt.Sprintf("(SELECT %s FROM %s) %s ", strings.Join(cols, ","), from, table)
