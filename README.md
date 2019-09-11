@@ -1,2 +1,2 @@
 # Stencil
-A distributed storage system allowing users to migrate between applications
+A distributed architecture allows users to migrate between applications

@@ -5,16 +5,16 @@ import (
 	"diaspora/data_generator"
 	"diaspora/helper"
 	"log"
-	// "sort"
 )
 
 const APP = "diaspora" 
 const USER_NUM = 1000
-const FOLLOW_NUM = 30375
-const POST_NUM = 8030
-const COMMENT_NUM = 13970
-const LIKE_NUM = 85680
+const FOLLOW_NUM = 30575
+const POST_NUM = 8230
+const COMMENT_NUM = 14170
+const LIKE_NUM = 85880
 const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
+const MESSAGE_NUM = 4215
 
 func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 	var users []data_generator.User
@@ -126,9 +126,10 @@ func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) 
 		}
 	}
 
-	return data_generator.AssignScoresToPosts(datagen.GetAllPostIDs(genConfig.DBConn))
+	return data_generator.AssignParetoDistributionScoresToData(datagen.GetAllPostIDs(genConfig.DBConn))
 }
 
+// Only for test
 func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, map[int]float64){
 	var users []data_generator.User
 	users1 := datagen.GetAllUsersWithAspectsOrderByID(genConfig.DBConn)
@@ -137,7 +138,7 @@ func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, ma
 		user.User_ID, user.Person_ID, user.Aspects = user1.User_ID, user1.Person_ID, user1.Aspects
 		users = append(users, user)
 	}
-	return users, data_generator.AssignScoresToPosts(datagen.GetAllPostIDs(genConfig.DBConn))
+	return users, data_generator.AssignParetoDistributionScoresToData(datagen.GetAllPostIDs(genConfig.DBConn))
 }
 
 // We randomly assign comments to posts proportionally to the popularity of posts of friends, 
@@ -187,7 +188,8 @@ func genComments(genConfig *data_generator.GenConfig, users []data_generator.Use
 func genLikes(genConfig *data_generator.GenConfig, users []data_generator.User, postScores map[int]float64) {
 	likeAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserLikeScores, LIKE_NUM)
 	log.Println("Likes assignments to users:", likeAssignment)
-	log.Println("Total likes:", data_generator.GetSumOfIntSlice(likeAssignment))
+	log.Println("Total likes based on assignments:", data_generator.GetSumOfIntSlice(likeAssignment))
+	totalLikeNum := 0
 
 	for seq1, user1 := range users {
 		// log.Println("Check user:", seq1)
@@ -214,24 +216,67 @@ func genLikes(genConfig *data_generator.GenConfig, users []data_generator.User, 
 		}
 		
 		likeNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, likeNum)
-		log.Println(likeNumsOfPosts)
+		// log.Println(likeNumsOfPosts)
 		for seq2, post := range posts {
-			for i := 0; i < likeNumsOfPosts[seq2]; i++ {
-				// datagen.NewComment(genConfig.DBConn, post.ID, personID, post.Author)
+			if _, ok := likeNumsOfPosts[seq2]; ok {
+				datagen.NewLike(genConfig.DBConn, post.ID, personID, post.Author)
+				totalLikeNum += 1
 			}
 		}
 	}
+	log.Println("In reality, the num of total likes is:", totalLikeNum)
+}
+
+// Pareto-distributed message scores determine the number of messages each user should have.
+// Friendships have pareto-distributed closeness indexes. We randomly assign messages to users (or conversations) proportionally 
+// to the closeness indexes.
+// Two users talk with each other sharing the same conversation.
+func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []data_generator.User) {
+	messageAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserMessageScores, MESSAGE_NUM)
+	log.Println("Messages assignments to users:", messageAssignment)
+	log.Println("Total messages:", data_generator.GetSumOfIntSlice(messageAssignment))
+	conversationNum := 0
+
+	for seq1, user1 := range users {
+		// oneUserConversationNum := 0
+		personID := user1.Person_ID
+		messageNum := messageAssignment[seq1]
+		friends := datagen.GetRealFriendsOfUser(genConfig.DBConn, personID)
+		friendCI := data_generator.AssignParetoDistributionScoresToDataReturnSlice(len(friends))
+		// log.Println(friends)
+		// log.Println(friendCI)
+		// log.Println(messageNum)
+		
+		messageNumsOfConversations := data_generator.RandomNumWithProbGenerator(friendCI, messageNum)
+		// log.Println(messageNumsOfConversations)
+
+		for seq2, messageNum := range messageNumsOfConversations {
+			exists, conv_id := datagen.CheckConversationBetweenTwoUsers(genConfig.DBConn, personID, friends[seq2])
+			if exists {
+				for i := 0; i < messageNum; i++ {
+					datagen.NewMessage(genConfig.DBConn, personID, conv_id)
+				}
+			} else {
+				new_conv, _ := datagen.NewConversation(genConfig.DBConn, personID, friends[seq2])
+				conversationNum += 1
+				// oneUserConversationNum += 1
+				for i := 0; i < messageNum; i++ {
+					datagen.NewMessage(genConfig.DBConn, personID, new_conv)
+				}
+			}
+		}
+		// log.Println(oneUserConversationNum)
+	}
+	log.Println("Total conversations:", conversationNum)
 }
 
 func main() {
 	genConfig := data_generator.Initialize(APP, USER_NUM)
-	// users := genUsers(genConfig)
-	// postScores := genPosts(genConfig, users)
-	// genFollows(genConfig, users)
-	// log.Println("users", users)
-	// log.Println("postScores", postScores)
-	users, postScores := prepareTest(genConfig)
-	// genComments(genConfig, users, postScores)
+	// users, postScores := prepareTest(genConfig)
+	users := genUsers(genConfig)
+	postScores := genPosts(genConfig, users)
+	genFollows(genConfig, users)
+	genComments(genConfig, users, postScores)
 	genLikes(genConfig, users, postScores)
-	// log.Println(datagen.GetFollowedDistribution(genConfig.DBConn))
+	genConversationsAndMessages(genConfig, users)
 }

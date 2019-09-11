@@ -42,6 +42,7 @@ func Initialize(app string, userNum int) *GenConfig {
 	genConfig.UserPopularityScores = ParetoScores(ALPHA, XM, userNum)
 	genConfig.UserCommentScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
 	genConfig.UserLikeScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
+	genConfig.UserMessageScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
 
 	return genConfig
 }
@@ -78,10 +79,10 @@ func AssignDataToUsersByUserScores(scores []float64, dataNum int) []int {
 		results = append(results, math.Floor(scores[i] / totalScore * float64(dataNum)))
 	}
 
-	assignRemaingDataTimes := 200
-	for i := 0; i < assignRemaingDataTimes; i++ {
-		assignRemaingData(scores, totalScore, dataNum, results)
-	}
+	// assignRemaingDataTimes := 200
+	// for i := 0; i < assignRemaingDataTimes; i++ {
+	// 	assignRemaingData(scores, totalScore, dataNum, results)
+	// }
 
 	return transformFloat64ToInt(results)
 }
@@ -104,13 +105,17 @@ func GetSumOfIntSlice(s []int) int {
 	return sum
 }
 
-func AssignScoresToPosts(posts []int) map[int]float64 {
-	postPopularityScores := shuffleSlices(ParetoScores(ALPHA, XM, len(posts)))
-	postScores := make(map[int]float64)
-	for i, postID:= range posts {
-		postScores[postID] = postPopularityScores[i]
+func AssignParetoDistributionScoresToData(data []int) map[int]float64 {
+	scores := shuffleSlices(ParetoScores(ALPHA, XM, len(data)))
+	dataScores := make(map[int]float64)
+	for i, data1:= range data {
+		dataScores[data1] = scores[i]
 	}
-	return postScores
+	return dataScores
+}
+
+func AssignParetoDistributionScoresToDataReturnSlice(dataLen int) []float64 {
+	return shuffleSlices(ParetoScores(ALPHA, XM, dataLen))
 }
 
 func GetSeqsByPersonIDs(users []User, personIDs []int) []int {

@@ -478,6 +478,25 @@ func NewMessage(dbConn *sql.DB, person_id, conversation_id int) (int, error) {
 	return msgid, err
 }
 
+func CheckConversationBetweenTwoUsers(dbConn *sql.DB, person_id1, person_id2 int) (bool, int) {
+	sql1 := fmt.Sprintf("select id from conversations where author_id = %d", person_id2)
+
+	res1 := db.DataCall(dbConn, sql1)
+	for _, row1 := range res1 {
+		conversation_id, _ := strconv.Atoi(row1["id"])
+		sql2 := fmt.Sprintf("select person_id from conversation_visibilities where conversation_id = %d", conversation_id)
+		res2 := db.DataCall(dbConn, sql2)
+		for _, row2 := range res2 {
+			person_id3, _ := strconv.Atoi(row2["person_id"])
+			if person_id3 == person_id1 {
+				return true, conversation_id
+			}
+		}
+	}
+
+	return false, -1
+}
+
 func UpdateConversation(dbConn *sql.DB, conversation_id int) {
 
 	tx, err := dbConn.Begin()
@@ -611,6 +630,19 @@ func GetFriendsOfUser(dbConn *sql.DB, person_id int) []*User {
 	}
 
 	return users
+}
+
+// Get the users following and followed by this person_id 
+func GetRealFriendsOfUser(dbConn *sql.DB, person_id int) []int {
+	var friends []int
+	query := fmt.Sprintf("select person_id from contacts where user_id = %d and sharing = true and receiving = true",
+		 person_id)
+	res := db.DataCall(dbConn, query)
+	for _, row := range res {
+		pID, _ := strconv.Atoi(row["person_id"])
+		friends = append(friends, pID)
+	}
+	return friends
 }
 
 func GetFriendsNum(dbConn *sql.DB, person_id int) int {
