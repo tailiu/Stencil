@@ -6,7 +6,7 @@ import (
 	"stencil/helper"
 	"stencil/qr"
 	"strings"
-	// "log"
+	"log"
 	"github.com/drgrib/maps"
 )
 
@@ -348,16 +348,16 @@ func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
 		qs.SelectColumns(table + ".*")
 	}
 	if len(tag.Restrictions) > 0 {
-		for i, restriction := range tag.Restrictions {
+		restrictions := qr.CreateQS(self.QR)
+		for _, restriction := range tag.Restrictions {
 			if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
-				if i <= 0 {
-					qs.AddWhereWithValue(restrictionAttr, "=", restriction["val"])
-				}else{
-					qs.AdditionalWhereWithValue("OR", restrictionAttr, "=", restriction["val"])
-				}
+				restrictions.AdditionalWhereWithValue("OR", restrictionAttr, "=", restriction["val"])
 			}
-
 		}
+		if restrictions.Where == "" {
+			log.Fatal(tag.Restrictions)
+		}
+		qs.AddWhereAsString("AND", restrictions.Where)
 	}
 	// log.Fatal(qs.GenSQL())
 	return qs

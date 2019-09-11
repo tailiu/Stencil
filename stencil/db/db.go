@@ -121,7 +121,7 @@ func DeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
 }
 
 func NewBag(tx *sql.Tx, pk, rowid, user_id, table, app string, migration_id int) error {
-	query := "INSERT INTO data_bags (pk, rowid, user_id, \"table\", app, migration_id) VALUES ($1, $2, $3, $4, $5, $6)"
+	query := "INSERT INTO data_bags (pk, rowid, user_id, \"table\", app, migration_id) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING"
 	_, err := tx.Exec(query, pk, rowid, user_id, table, app, migration_id)
 	return err
 }
