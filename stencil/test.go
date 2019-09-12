@@ -41,8 +41,9 @@ func test4(){
 	qs := qr.CreateQS(appconfig.QR)
 	qs.SelectColumns("people.*")
 	qs.FromTable(map[string]string{"table":"people"})
-	qs.RowIDs("75744792")
-	// qs.AddWhereWithValue("people.id", "=", "1815")
+	// qs.JoinTable(map[string]string{"table":"users", "condition1":"people.owner_id=users.id"})
+	qs.RowIDs("870909929")
+	// qs.AddWhereWithValue("people.id", "=", "23742")
 	// qs.RowID("27299317,75744792,2041730142", []string{"accounts"})
 	sql := qs.GenSQL()
 	fmt.Println(sql)
@@ -60,7 +61,7 @@ func test4(){
 
 func main() {
 
-	test3()
+	test4()
 	return
 
 	app := os.Args[1]

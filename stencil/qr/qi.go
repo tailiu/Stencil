@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
+	"stencil/db"
 	"github.com/xwb1989/sqlparser"
+	"log"
 )
 
 func CreateQI(table string, cols []string, vals []interface{}, qtype string) *QI {
@@ -37,21 +38,67 @@ func (self *QI) Print() {
 	// }
 }
 
-func (self *QI) ResolveInsert(QR *QR, rowID int32) []*QI {
+// func (self *QI) ResolveInsert(QR *QR, rowID int32) []*QI {
+
+// 	var PQIs []*QI
+// 	newRowCols := []string{"rowid", "app_id", "table"}
+// 	newRowVals := []interface{}{rowID, QR.AppID, self.TableName}
+// 	newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
+// 	PQIs = append(PQIs, newRowQI)
+// 	phyMap := QR.GetPhyMappingForLogicalTable(self.TableName)
+
+// 	for pt, mapping := range phyMap {
+// 		isValid := false
+// 		pqiCols := []string{"pk"}
+// 		pqiVals := []interface{}{rowID}
+// 		for _, colmap := range mapping {
+// 			if val, err := self.valueOfColumn(colmap[1]); err == nil {
+// 				isValid = true
+// 				pqiCols = append(pqiCols, colmap[0])
+// 				pqiVals = append(pqiVals, val)
+// 			}
+// 		}
+// 		if isValid {
+// 			pqi := CreateQI(pt, pqiCols, pqiVals, QTInsert)
+// 			PQIs = append(PQIs, pqi)
+// 		}
+
+// 	}
+// 	return PQIs
+// }
+
+
+
+func (self *QR) ResolveInsert(qi *QI, rowID int32) []*QI {
+
+	PQIs := self.ResolveInsertWithoutRowDesc(qi, rowID)
+	if len(PQIs) > 0 {
+		if tableID, err := db.TableID(self.StencilDB, qi.TableName, self.AppID); err == nil {
+			newRowCols := []string{"group_id", "row_id", "app_id", "table_id"}
+			newRowVals := []interface{}{rowID, rowID, self.AppID, tableID}
+			newRowQI := CreateQI("migration_table", newRowCols, newRowVals, QTInsert)
+			PQIs = append(PQIs, newRowQI)
+		}else{
+			fmt.Println("Cant get tableID for ", qi.TableName)
+			log.Fatal(err)
+		}
+		
+	}
+	return PQIs
+}
+
+func (self *QR) ResolveInsertWithoutRowDesc(qi *QI, rowID int32) []*QI {
 
 	var PQIs []*QI
-	newRowCols := []string{"rowid", "app_id", "table"}
-	newRowVals := []interface{}{rowID, QR.AppID, self.TableName}
-	newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
-	PQIs = append(PQIs, newRowQI)
-	phyMap := QR.GetPhyMappingForLogicalTable(self.TableName)
+	
+	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
 
 	for pt, mapping := range phyMap {
 		isValid := false
 		pqiCols := []string{"pk"}
 		pqiVals := []interface{}{rowID}
 		for _, colmap := range mapping {
-			if val, err := self.valueOfColumn(colmap[1]); err == nil {
+			if val, err := qi.valueOfColumn(colmap[1]); err == nil {
 				isValid = true
 				pqiCols = append(pqiCols, colmap[0])
 				pqiVals = append(pqiVals, val)
@@ -65,6 +112,8 @@ func (self *QI) ResolveInsert(QR *QR, rowID int32) []*QI {
 	}
 	return PQIs
 }
+
+
 
 func (self *QI) GenSQL() (string, []interface{}) {
 
@@ -212,42 +261,3 @@ func getSelectQueryIngs(sql string) *QI {
 	}
 	return qi
 }
-
-func (self *QR) ResolveInsert(qi *QI, rowID int32) []*QI {
-
-	PQIs := self.ResolveInsertWithoutRowDesc(qi, rowID)
-	if len(PQIs) > 0 {
-		newRowCols := []string{"rowid", "app_id", "table"}
-		newRowVals := []interface{}{rowID, self.AppID, qi.TableName}
-		newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
-		PQIs = append(PQIs, newRowQI)
-	}
-	return PQIs
-}
-
-func (self *QR) ResolveInsertWithoutRowDesc(qi *QI, rowID int32) []*QI {
-
-	var PQIs []*QI
-	
-	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
-
-	for pt, mapping := range phyMap {
-		isValid := false
-		pqiCols := []string{"pk"}
-		pqiVals := []interface{}{rowID}
-		for _, colmap := range mapping {
-			if val, err := qi.valueOfColumn(colmap[1]); err == nil {
-				isValid = true
-				pqiCols = append(pqiCols, colmap[0])
-				pqiVals = append(pqiVals, val)
-			}
-		}
-		if isValid {
-			pqi := CreateQI(pt, pqiCols, pqiVals, QTInsert)
-			PQIs = append(PQIs, pqi)
-		}
-
-	}
-	return PQIs
-}
-

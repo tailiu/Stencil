@@ -143,6 +143,11 @@ func GetUserBags(dbConn *sql.DB, user_id, app_id string) ([]map[string]interface
 	return DataCall(dbConn, query, user_id, app_id)
 }
 
+func GetBagAppAndTablesForUser(dbConn *sql.DB, user_id string) ([]map[string]interface{}, error) {
+	query := "SELECT string_agg(\"table\"::varchar, ',') as tables, app FROM data_bags WHERE user_id = $1 AND app = $2 GROUP BY app"
+	return DataCall(dbConn, query, user_id)
+}
+
 func GetUserBagsByTables(dbConn *sql.DB, user_id, app_id, table string) ([]map[string]interface{}, error) {
 	query := "SELECT string_agg(rowid::varchar, ',') as rowids FROM data_bags WHERE user_id = $1 AND app = $2 AND \"table\" = $3 GROUP BY pk ORDER BY random()"
 	return DataCall(dbConn, query, user_id, app_id, table)
@@ -232,6 +237,19 @@ func GetUnmigratedUsers() ([]map[string]interface{}, error) {
 	dbConn := GetDBConn(STENCIL_DB)
 	sql := "SELECT user_id FROM user_table WHERE user_id NOT IN (SELECT DISTINCT user_id FROM migration_registration) ORDER BY user_id ASC"
 	return DataCall(dbConn, sql)
+}
+
+func TableID(dbConn *sql.DB, table, app string) (string, error) {
+	sql := fmt.Sprintf("SELECT pk FROM app_tables WHERE app_id = '%s' and table_name = '%s'", app, table)
+	if res, err := DataCall1(dbConn, sql); err == nil {
+		if pk, ok := res["pk"]; ok {
+			return fmt.Sprint(pk), nil
+		}else{
+			return "", errors.New("Something bad with the returned result!")
+		}
+	}else{
+		return "", err
+	}
 }
 
 func RemoveUserFromApp(uid, app_id string, dbConn *sql.DB) bool {
@@ -436,6 +454,7 @@ func DataCall1(db *sql.DB, SQL string, args ...interface{}) (map[string]interfac
 	if rows, err := db.Query(SQL+" LIMIT 1", args...); err != nil {
 		log.Println(SQL, args)
 		log.Println("## DB ERROR: ", err)
+		log.Fatal("check datacall1 in stencil.db")
 		return nil, err
 	} else {
 		defer rows.Close()
@@ -557,7 +576,7 @@ func GetNewRowID(dbConn *sql.DB) int32 {
 	var rowid int32
 	for{
 		rowid = rand.Int31n(2147483647)
-		q := "SELECT rowid FROM row_desc WHERE rowid = $1"
+		q := "SELECT row_id FROM migration_table WHERE row_id = $1"
 		if v, err := DataCall1(dbConn, q, rowid); err == nil && v == nil {
 			break
 		}

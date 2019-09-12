@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"stencil/helper"
 	"strings"
+	"stencil/db"
 	"log"
 )
 
@@ -33,6 +34,58 @@ func (self *QS) getTableAlias(ltab, ptab string) string {
 }
 
 func (self *QS) GenCombinedTableQuery(args map[string]string) string {
+
+	tableID, err := db.TableID(self.QR.StencilDB, args["table"], self.QR.AppID)
+	if err != nil {
+		fmt.Println("Can't get Table ID for table ", args["table"])
+		log.Fatal(err)
+	}
+
+	if _, ok := args["alias"]; !ok {
+		args["alias"] = args["table"]
+	}
+	if _, ok := args["mflag"]; !ok {
+		args["mflag"] = "0"
+	}
+	if _, ok := args["mark_as_delete"]; !ok {
+		args["mark_as_delete"] = "false"
+	}
+	if _, ok := args["bag"]; !ok {
+		args["bag"] = "false"
+	}
+
+	var cols, pkCols []string
+
+	from := fmt.Sprintf("(SELECT array_agg(row_id) AS rowids FROM migration_table WHERE table_id = '%s' and app_id = %s AND mflag = %s AND mark_as_delete = %s AND bag = %s GROUP BY group_id) MT ", tableID, self.QR.AppID, args["mflag"], args["mark_as_delete"], args["bag"])
+	phyTab := self.QR.GetPhyMappingForLogicalTable(args["table"])
+	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
+
+	for _, ptab := range phyTabKeys {
+		for _, pair := range phyTab[ptab] {
+			pColName := fmt.Sprintf("%s.%s as \"%s.%s\"", self.getTableAlias(args["alias"], ptab), pair[0], args["alias"], pair[1])
+			cols = append(cols, pColName)
+			pSizeColName := fmt.Sprintf("pg_column_size(%s.\"%s.%s\") as \"%s.%s\"", args["alias"], args["alias"], pair[0], args["alias"], pair[1])
+			self.ColumnsWSize = append(self.ColumnsWSize, pSizeColName)
+		}
+		pTabAlias := self.getTableAlias(args["alias"], ptab)
+		from += fmt.Sprintf(" LEFT JOIN %s %s ON %s.pk = ANY(mt.rowids) ", ptab, pTabAlias, pTabAlias)
+		pkCols = append(pkCols, pTabAlias + ".pk")
+	}
+
+	cols = append(cols, fmt.Sprintf("uniq(sort(array_remove(array[%s]::int4[], null))) as \"%s.rowids\"", strings.Join(pkCols, ","), args["alias"]))
+	cols = append(cols, fmt.Sprintf("array_to_string(uniq(sort(array_remove(array[%s]::int4[], null))),',') as \"%s.rowids_str\"", strings.Join(pkCols, ","), args["alias"]))
+	tableQuery := fmt.Sprintf(" (SELECT %s FROM %s) %s ", strings.Join(cols, ","), from, args["alias"])
+	
+	if len(tableQuery) > 0 {
+		return tableQuery	
+	}
+
+	log.Fatal("error resolving query for table: " + args["table"])
+	
+	return ""
+}
+
+func (self *QS) GenCombinedTableQuery2(args map[string]string) string {
 
 	if _, ok := args["alias"]; !ok {
 		args["alias"] = args["table"]
