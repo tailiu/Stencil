@@ -40,7 +40,7 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 		fmt.Println("Can't get Table ID for table ", args["table"])
 		log.Fatal(err)
 	}
-
+	
 	if _, ok := args["alias"]; !ok {
 		args["alias"] = args["table"]
 	}
@@ -56,7 +56,11 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 
 	var cols, pkCols []string
 
-	from := fmt.Sprintf("(SELECT array_agg(row_id) AS rowids FROM migration_table WHERE table_id = '%s' and app_id = %s AND mflag = %s AND mark_as_delete = %s AND bag = %s GROUP BY group_id) MT ", tableID, self.QR.AppID, args["mflag"], args["mark_as_delete"], args["bag"])
+	from := fmt.Sprintf("(SELECT array_agg(row_id) AS rowids FROM migration_table WHERE table_id = %s and app_id = %s AND mflag = %s AND mark_as_delete = %s AND bag = %s GROUP BY group_id) MT ", tableID, self.QR.AppID, args["mflag"], args["mark_as_delete"], args["bag"])
+	if user_id, ok := args["user_id"]; ok {
+		from = fmt.Sprintf("(SELECT array_agg(row_id) AS rowids FROM migration_table WHERE table_id = %s and app_id = %s AND mflag = %s AND mark_as_delete = %s AND bag = %s AND user_id = '%s' GROUP BY group_id) MT ", tableID, self.QR.AppID, args["mflag"], args["mark_as_delete"], args["bag"], user_id)
+	}
+
 	phyTab := self.QR.GetPhyMappingForLogicalTable(args["table"])
 	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
 
@@ -81,7 +85,7 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 	}
 
 	log.Fatal("error resolving query for table: " + args["table"])
-	
+
 	return ""
 }
 
@@ -155,7 +159,13 @@ func (self *QS) FromTable(args map[string]string) {
 
 func (self *QS) JoinTable(args map[string]string) {
 	tableQuery := self.GenCombinedTableQuery(args)
+
+	if _, ok := args["join"]; !ok {
+		args["join"] = "JOIN"
+	}
+
 	var tableConditions []string
+
 	for key, val := range args {
 		if strings.Contains(key, "condition") {
 			conditions := strings.Split(val, "=")
@@ -164,7 +174,7 @@ func (self *QS) JoinTable(args map[string]string) {
 			tableConditions = append(tableConditions, fmt.Sprintf("%s.\"%s\"::varchar = %s.\"%s\"::varchar ", table1, conditions[0], table2, conditions[1]))
 		}
 	}
-	self.From += fmt.Sprintf(" JOIN %s ON %s ", tableQuery, strings.Join(tableConditions, " AND "))
+	self.From += fmt.Sprintf(" %s %s ON %s ", args["join"], tableQuery, strings.Join(tableConditions, " AND "))
 }
 
 func (self *QS) AddWhereWithValue(col, op, val string) {

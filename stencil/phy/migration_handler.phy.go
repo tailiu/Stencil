@@ -15,6 +15,10 @@ import (
 
 func main() {
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
+		MaD := "0"
+		if len(os.Args) > 8{
+			MaD = os.Args[8]
+		}
 		srcApp, srcAppID := os.Args[4], os.Args[5]
 		dstApp, dstAppID := os.Args[6], os.Args[7]
 		threads, err := strconv.Atoi(os.Args[1])
@@ -44,7 +48,7 @@ func main() {
 			log.Fatal("can't read migration type")
 		}
 
-		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype)
+		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, MaD)
 
 		if mthread.ThreadController(mWorker, threads) {
 			transaction.LogOutcome(logTxn, "COMMIT")

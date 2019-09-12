@@ -30,27 +30,28 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 			switch mWorker.MType() {
 			case migrate.DELETION:
 				{
+					// for {
+					// 	if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
+					// 		mWorker.RenewDBConn()
+					// 		continue
+					// 	}
+					// 	break
+					// }
+					// for {
+					// 	if err := mWorker.SecondPhase(thread_id); err != nil {
+					// 		mWorker.RenewDBConn()
+					// 		continue
+					// 	}
+					// 	break
+					// }
 					for {
-						if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
+						if err := mWorker.MigrateProcessBags(thread_id); err != nil {
 							mWorker.RenewDBConn()
 							continue
 						}
 						break
 					}
-					for {
-						if err := mWorker.SecondPhase(thread_id); err != nil {
-							mWorker.RenewDBConn()
-							continue
-						}
-						break
-					}
-					for {
-						if err := mWorker.MigrateProcessBags(); err != nil {
-							mWorker.RenewDBConn()
-							continue
-						}
-						break
-					}
+					log.Fatal("!!!!! end of bags !!!!!")
 				}
 			case migrate.CONSISTENT:
 				{

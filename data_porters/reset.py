@@ -62,7 +62,7 @@ def resetRowDesc():
     q = "delete from migration_table where app_id != 1"
     print q
     cur.execute(q)
-    q = "update migration_table set mark_as_deleted = 0, mflag = 0, bag = 0;"
+    q = "update migration_table set mark_as_delete = false, mflag = 0, bag = false, migration_id = NULL, user_id = NULL, copy_on_write = false;"
     print q
     cur.execute(q)
     conn.commit()
@@ -83,5 +83,5 @@ if __name__ == "__main__":
                 truncate("mastodon", blade=True)
                 reverseMarkAsDelete("diaspora", blade=False)
             if arg in ["row", "all"]:
-                truncateTableFromStencil("data_bags")
+                # truncateTableFromStencil("data_bags")
                 resetRowDesc()

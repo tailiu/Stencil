@@ -50,6 +50,7 @@ type MigrationWorker struct {
 	logTxn       *transaction.Log_txn
 	mtype        string
 	visitedNodes map[string]map[string]bool
+	arg 		 string
 	// threadID     int
 }
 
