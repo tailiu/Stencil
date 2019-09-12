@@ -277,9 +277,9 @@ func (self *MigrationWorker) _GetBagNodes(tagName, bagpks string) ([]*Dependency
 func (self *MigrationWorker) GetBagNodes(threadID, limit int) ([]*DependencyNode, error) {
 
 	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
-		log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, own.Tag))
+		log.Println(fmt.Sprintf("x%dx | FETCHING  bag  { %s } ", threadID, own.Tag))
 		if self.unmappedTags.Exists(own.Tag) {
-			log.Println(fmt.Sprintf("x%dx | UNMAPPED  tag  { %s } ", threadID, own.Tag))
+			log.Println(fmt.Sprintf("x%dx | UNMAPPED  bag  { %s } ", threadID, own.Tag))
 			continue
 		}
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
@@ -574,7 +574,7 @@ func (self *MigrationWorker) UpdatePhyRowIDsOfSourceTables(tx *sql.Tx, mapping c
 	return nil
 }
 
-func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping config.Mapping, node *DependencyNode) ([]string, error) {
+func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping config.Mapping, node *DependencyNode, isBag bool) ([]string, error) {
 
 	var updatedPKs []string
 	for _, toTable := range mapping.ToTables {
@@ -603,26 +603,33 @@ func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping confi
 						fmt.Println("HandleMappedMembersOfNode: Unable to resolve ToTableID for table: ", toTable.Table)
 						log.Fatal(err)
 					}
+
 					cow := "false"
-					if self.mtype == INDEPENDENT {
-						cow = "true"
-					}
-					if self.mtype == DELETION {
-						if err := db.MarkRowAsDeleted(tx, src_rowid, FromTableID); err != nil {
-							fmt.Println(src_rowids, src_rowid, self.SrcAppConfig.AppID)
-							log.Fatal("HandleMappedMembersOfNode: MarkRowAsDeleted ", err)
+					
+					if isBag {
+						if err := db.PopBag(tx, src_rowid, FromTableID); err != nil {
 							return nil, err
+						}	
+					} else {
+						if self.mtype == INDEPENDENT {
+							cow = "true"
+						}
+						if self.mtype == DELETION {
+							if err := db.MarkRowAsDeleted(tx, src_rowid, FromTableID); err != nil {
+								fmt.Println(src_rowids, src_rowid, self.SrcAppConfig.AppID)
+								log.Fatal("HandleMappedMembersOfNode: MarkRowAsDeleted ", err)
+								return nil, err
+							}
 						}
 					}
-					
 					if err := db.InsertIntoMigrationTable(tx, self.DstAppConfig.AppID, dst_rowid, src_rowid, cow, ToTableID, "1", fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 						return nil, err
 					}
-					
 					if err := db.SaveForEvaluation(self.DBConn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, toTable.Table, src_rowid, dst_rowid, "-", "-", fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 						log.Println("## SaveForEvaluation ERROR!", err)
 						return nil, errors.New("0")
 					}
+
 					updatedPKs = append(updatedPKs, src_rowid)
 				}
 			}
@@ -669,18 +676,20 @@ func (self *MigrationWorker) MigrateNode(mapping config.Mapping, node *Dependenc
 		return errors.New("0")
 	} else {
 		defer tx.Rollback()
-		if updatedPKs, err := self.HandleMappedMembersOfNode(tx, mapping, node); err == nil {
+		if updatedPKs, err := self.HandleMappedMembersOfNode(tx, mapping, node, isBag); err == nil {
 			if len(updatedPKs) > 0 {
-				if err := self.HandleUnmappedMembersOfNode(tx, mapping, node); err != nil {
-					return err
-				}
-				if undoActionJSON, err := transaction.GenUndoActionJSON(updatedPKs, self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
-					if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
-						log.Println("MigrateNode: unable to LogChange", log_err)
-						return errors.New("0")
+				if !isBag {
+					if err := self.HandleUnmappedMembersOfNode(tx, mapping, node); err != nil {
+						return err
 					}
-				} else {
-					log.Fatal("MigrateNode: unable to GenUndoActionJSON", err)
+					if undoActionJSON, err := transaction.GenUndoActionJSON(updatedPKs, self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
+						if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
+							log.Println("MigrateNode: unable to LogChange", log_err)
+							return errors.New("0")
+						}
+					} else {
+						log.Fatal("MigrateNode: unable to GenUndoActionJSON", err)
+					}
 				}
 				// log.Fatal("killed at commit!")
 				tx.Commit()
@@ -923,19 +932,19 @@ func (mWorker *MigrationWorker) MigrateProcessBags(threadID int) error {
 					for bagNodes, err := bagWorker.GetBagNodes(threadID, limit);  err != nil || bagNodes != nil;  bagNodes, err = bagWorker.GetBagNodes(threadID, limit) {
 						for _, node := range bagNodes {
 							nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
-							log.Println(fmt.Sprintf("~%d~ | Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
+							log.Println(fmt.Sprintf("~%d~ | Current   Bag  { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
 							if err := bagWorker.HandleMigration(node, true); err == nil {
-								log.Println(fmt.Sprintf("x%dx | MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+								log.Println(fmt.Sprintf("x%dx | MIGRATED  bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
 							} else {
-								log.Println(fmt.Sprintf("x%dx | RCVD ERR  node { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
+								log.Println(fmt.Sprintf("x%dx | RCVD ERR  bag  { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
 								if bagWorker.unmappedTags.Exists(node.Tag.Name) {
-									log.Println(fmt.Sprintf("x%dx | BREAKLOOP node { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
+									log.Println(fmt.Sprintf("x%dx | BREAKLOOP bag  { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
 									break
 								}
 								if strings.EqualFold(err.Error(), "2") {
-									log.Println(fmt.Sprintf("x%dx | IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+									log.Println(fmt.Sprintf("x%dx | IGNORED   bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
 								} else {
-									log.Println(fmt.Sprintf("x%dx | FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+									log.Println(fmt.Sprintf("x%dx | FAILED    bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
 									if strings.EqualFold(err.Error(), "0") {
 										log.Println(err)
 										return err
