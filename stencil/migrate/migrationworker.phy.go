@@ -50,7 +50,7 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 	return mWorker
 }
 
-func CreateBagWorker(uid, srcApp, srcAppID string, DstAppConfig config.AppConfig, mappings *config.MappedApp, logTxn *transaction.Log_txn) MigrationWorker {
+func CreateBagWorker(uid, srcApp, srcAppID string, DstAppConfig config.AppConfig, logTxn *transaction.Log_txn) MigrationWorker {
 	srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID)
 	if err != nil {
 		log.Fatal(err)
@@ -58,6 +58,13 @@ func CreateBagWorker(uid, srcApp, srcAppID string, DstAppConfig config.AppConfig
 	dstAppConfig := DstAppConfig
 	dstAppConfig.QR.Migration = true
 	srcAppConfig.QR.Migration = true
+	var mappings *config.MappedApp
+	if srcAppID != dstAppConfig.AppID {
+		mappings = config.GetSchemaMappingsFor(srcApp, DstAppConfig.AppName)
+		if mappings == nil {
+			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, DstAppConfig.AppName))
+		}
+	}
 	bagWorker := MigrationWorker{
 		uid:          uid,
 		SrcAppConfig: srcAppConfig,
@@ -547,6 +554,39 @@ func (self *MigrationWorker) UpdatePhyRowIDsOfSourceTables(tx *sql.Tx, mapping c
 	return nil
 }
 
+func (self *MigrationWorker) RevertBags(node *DependencyNode) error {
+	
+	if tx, err := self.DBConn.Begin(); err != nil {
+		log.Println("Can't create RevertBags transaction!")
+		return errors.New("0")
+	} else {
+		defer tx.Rollback()
+		for _, table := range node.Tag.GetTagMembers() {
+			node_rowids := node.Data[table+".rowids_str"]
+			if node_rowids == nil {
+				fmt.Println(node.Data)
+				fmt.Println(table+".rowids_str")
+				log.Fatal("RevertBags: herereee")
+				continue
+			}
+			src_rowids := strings.Split(fmt.Sprint(node_rowids), ",")
+			for _, src_rowid := range src_rowids {
+				tableID, err := db.TableID(self.DBConn, table, self.SrcAppConfig.AppID);
+				if err != nil {
+					fmt.Println("RevertBags: Unable to resolve tableID for table: ", table)
+					log.Fatal(err)
+				}
+				if err := db.RevertBag(tx, src_rowid, tableID, fmt.Sprint(self.logTxn.Txn_id)); err != nil {
+					log.Fatal("RevertBags: RevertBag | ", err)
+					return err
+				}
+			}
+		}
+		tx.Commit()
+		return nil
+	}
+}
+
 func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping config.Mapping, node *DependencyNode) ([]string, error) {
 
 	var updatedPKs []string
@@ -658,10 +698,8 @@ func (self *MigrationWorker) MigrateNode(mapping config.Mapping, node *Dependenc
 		defer tx.Rollback()
 		if updatedPKs, err := self.HandleMappedMembersOfNode(tx, mapping, node); err == nil {
 			if len(updatedPKs) > 0 {
-				if self.mtype != BAGS {
-					if err := self.HandleUnmappedMembersOfNode(tx, mapping, node); err != nil {
-						return err
-					}
+				if err := self.HandleUnmappedMembersOfNode(tx, mapping, node); err != nil {
+					return err
 				}
 				if undoActionJSON, err := transaction.GenUndoActionJSON(updatedPKs, self.SrcAppConfig.AppID, self.DstAppConfig.AppID); err == nil {
 					if log_err := transaction.LogChange(undoActionJSON, self.logTxn); log_err != nil {
@@ -901,32 +939,42 @@ func (self *MigrationWorker) FinishMigration(mtype string, number_of_threads int
 }
 
 func (mWorker *MigrationWorker) MigrateProcessBags(threadID int) error {
-	fmt.Println("!!!!! in bags !!!!!")
+	log.Println(fmt.Sprintf("~%d~ | Begin : MigrateProcessBags", threadID))
+	defer log.Println(fmt.Sprintf("~%d~ | Finish: MigrateProcessBags", threadID))
 	limit := 100
 	if res, err := db.GetAppsThatHaveBagsForUser(mWorker.DBConn, mWorker.uid); err == nil {
 		for _, row := range res {
 			if app_id, ok := row["app_id"]; ok {
 				if !strings.EqualFold(fmt.Sprint(app_id), mWorker.SrcAppConfig.AppID) {
-					bagWorker := CreateBagWorker(mWorker.uid, fmt.Sprint(row["app_name"]), fmt.Sprint(app_id), mWorker.DstAppConfig, mWorker.mappings, mWorker.logTxn)
+					bagWorker := CreateBagWorker(mWorker.uid, fmt.Sprint(row["app_name"]), fmt.Sprint(app_id), mWorker.DstAppConfig, mWorker.logTxn)
 					for bagNodes, err := bagWorker.GetBagNodes(threadID, limit);  err != nil || bagNodes != nil;  bagNodes, err = bagWorker.GetBagNodes(threadID, limit) {
 						for _, node := range bagNodes {
 							nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 							log.Println(fmt.Sprintf("~%d~ | Current   Bag  { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
-							if err := bagWorker.HandleMigration(node); err == nil {
-								log.Println(fmt.Sprintf("x%dx | MIGRATED  bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
-							} else {
-								log.Println(fmt.Sprintf("x%dx | RCVD ERR  bag  { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
-								if bagWorker.unmappedTags.Exists(node.Tag.Name) {
-									log.Println(fmt.Sprintf("x%dx | BREAKLOOP bag  { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
-									break
-								}
-								if strings.EqualFold(err.Error(), "2") {
-									log.Println(fmt.Sprintf("x%dx | IGNORED   bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+							if bagWorker.SrcAppConfig.AppID == bagWorker.DstAppConfig.AppID {
+								if err := bagWorker.RevertBags(node); err == nil {
+									log.Println(fmt.Sprintf("x%dx | REVERTED  bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
 								} else {
-									log.Println(fmt.Sprintf("x%dx | FAILED    bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
-									if strings.EqualFold(err.Error(), "0") {
-										log.Println(err)
-										return err
+									log.Println(fmt.Sprintf("x%dx | RCVD ERR  bag  { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
+									log.Fatal("crashed while reverting bag")
+								}
+							} else {
+								if err := bagWorker.HandleMigration(node); err == nil {
+									log.Println(fmt.Sprintf("x%dx | MIGRATED  bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+								} else {
+									log.Println(fmt.Sprintf("x%dx | RCVD ERR  bag  { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
+									if bagWorker.unmappedTags.Exists(node.Tag.Name) {
+										log.Println(fmt.Sprintf("x%dx | BREAKLOOP bag  { %s } From [%s] to [%s] |", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName), err)
+										break
+									}
+									if strings.EqualFold(err.Error(), "2") {
+										log.Println(fmt.Sprintf("x%dx | IGNORED   bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+									} else {
+										log.Println(fmt.Sprintf("x%dx | FAILED    bag { %s } From [%s] to [%s]", threadID, node.Tag.Name, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+										if strings.EqualFold(err.Error(), "0") {
+											log.Println(err)
+											return err
+										}
 									}
 								}
 							}
@@ -937,11 +985,11 @@ func (mWorker *MigrationWorker) MigrateProcessBags(threadID int) error {
 			} else {
 				fmt.Println(res)
 				fmt.Println(row)
-				log.Fatal("MigrateProcessBags: row doesn't have app_id?!")		
+				log.Fatal("@MigrateProcessBags: row doesn't have app_id?!")		
 			}
 		}
 	} else {
-		fmt.Println("MigrateProcessBags: GetAppsThatHaveBagsForUser error!")
+		fmt.Println("@MigrateProcessBags: GetAppsThatHaveBagsForUser error!")
 		log.Fatal(err)
 	}
 	return nil

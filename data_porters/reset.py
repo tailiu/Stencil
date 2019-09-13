@@ -36,6 +36,7 @@ def reverseMarkAsDelete(dbname, blade):
     conn, cur = getDB(dbname, blade)
     tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
     cur.execute(tableq)
+    
     for row in cur.fetchall():
         q = 'UPDATE "%s" SET mark_as_delete = false ;'%row[0]
         print q

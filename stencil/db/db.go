@@ -233,6 +233,13 @@ func PopBag(tx *sql.Tx, rowid, table_id string) error {
 	return err
 }
 
+func RevertBag(tx *sql.Tx, rowid, table_id, migration_id string) error {
+
+	q := "UPDATE migration_table SET bag = $1, mark_as_delete = $2, mflag = $3, migration_id = $4 WHERE row_id = $5 AND table_id = $6"
+	_, err := tx.Exec(q, false, false, 1, migration_id, rowid, table_id)
+	return err
+}
+
 func MarkRowAsBag(tx *sql.Tx, rowid, table_id, migration_id, user_id string) error {
 
 	q := "UPDATE migration_table SET bag = true, mark_as_delete = true, migration_id = $1, user_id = $4 WHERE row_id = $2 AND table_id = $3"
