@@ -133,6 +133,7 @@ func NewBagOld(tx *sql.Tx, rowid, user_id, tagName string, migration_id int) err
 }
 
 func NewRow(tx *sql.Tx, rowid, app_id, mflag string, copy_on_write bool) error {
+	log.Fatal("Arrived at db.NewRow. Check why!")
 	query := "INSERT INTO row_desc (rowid, app_id, copy_on_write, mflag) VALUES ($1, $2, $3, $4)"
 	_, err := tx.Exec(query, rowid, app_id, copy_on_write, mflag)
 	return err
@@ -143,8 +144,18 @@ func GetUserBags(dbConn *sql.DB, user_id, app_id string) ([]map[string]interface
 	return DataCall(dbConn, query, user_id, app_id)
 }
 
+func GetBagAppAndTablesForUser(dbConn *sql.DB, user_id string) ([]map[string]interface{}, error) {
+	query := "SELECT string_agg(\"table\"::varchar, ',') as tables, app FROM data_bags WHERE user_id = $1 AND app = $2 GROUP BY app"
+	return DataCall(dbConn, query, user_id)
+}
+
+func GetAppsThatHaveBagsForUser(dbConn *sql.DB, user_id string) ([]map[string]interface{}, error) {
+	query := "SELECT DISTINCT(app_id), app_name FROM migration_table join apps ON apps.pk = app_id WHERE user_id = $1 AND bag = true"
+	return DataCall(dbConn, query, user_id)
+}
+
 func GetUserBagsByTables(dbConn *sql.DB, user_id, app_id, table string) ([]map[string]interface{}, error) {
-	query := "SELECT string_agg(rowid::varchar, ',') as rowids FROM data_bags WHERE user_id = $1 AND app = $2 AND \"table\" = $3 GROUP BY pk ORDER BY random()"
+	query := "SELECT string_agg(rowid::varchar, ',') as rowids FROM migration_table WHERE bag = true AND user_id = $1 AND app = $2 AND \"table_id\" = $3 GROUP BY group_id ORDER BY random()"
 	return DataCall(dbConn, query, user_id, app_id, table)
 }
 
@@ -160,35 +171,35 @@ func DeleteBagsByRowIDS(dbConn *sql.DB, rowids string) error {
 }
 
 func SetAppID(tx *sql.Tx, pk, app_id string) error {
-
+	log.Fatal("Arrived at db.SetAppID. Check why!")
 	q := "UPDATE row_desc SET app_id = $1 WHERE rowid = $2"
 	_, err := tx.Exec(q, app_id, pk)
 	return err
 }
 
 func SetMFlag(tx *sql.Tx, pk, flag string) error {
-
+	log.Fatal("Arrived at db.SetMFlag. Check why!")
 	q := "UPDATE row_desc SET mflag = $1 WHERE rowid IN ($2)"
 	_, err := tx.Exec(q, flag, pk)
 	return err
 }
 
 func MUpdate(tx *sql.Tx, pk, flag, app_id string) error {
-
+	log.Fatal("Arrived at db.MUpdate. Check why!")
 	q := "UPDATE row_desc SET mflag = $1, app_id = $2 WHERE rowid IN ($3)"
 	_, err := tx.Exec(q, flag, app_id, pk)
 	return err
 }
 
 func BUpdate(dbConn *sql.DB, pk, flag, app_id string) error {
-
+	log.Fatal("Arrived at db.BUpdate. Check why!")
 	q := "UPDATE row_desc SET mflag = $1, app_id = $2 WHERE rowid IN ($3)"
 	_, err := dbConn.Exec(q, flag, app_id, pk)
 	return err
 }
 
 func PKReplaceRowDesc(tx *sql.Tx, newRowID, oldRowIDs string) error {
-
+	log.Fatal("Arrived at db.PKReplaceRowDesc. Check why!")
 	q := fmt.Sprintf("UPDATE row_desc SET rowid = $1 WHERE rowid IN (%s)", oldRowIDs)
 	_, err := tx.Exec(q, newRowID)
 	return err
@@ -202,28 +213,49 @@ func PKReplace(tx *sql.Tx, newPK, oldPK, table string) error {
 }
 
 func DeleteFromRowDescByRowID(tx *sql.Tx, rowid string) error {
-
+	log.Fatal("Arrived at db.DeleteFromRowDescByRowID. Check why!")
 	q := "DELETE FROM row_desc WHERE rowid = $1"
 	_, err := tx.Exec(q, rowid)
 	return err
 }
 
-func MarkRowAsDeleted(tx *sql.Tx, rowid string) error {
+func MarkRowAsDeleted(tx *sql.Tx, rowid, table_id string) error {
 
-	q := "UPDATE row_desc SET mark_as_delete = $1 WHERE rowid = $2"
-	_, err := tx.Exec(q, true, rowid)
+	q := "UPDATE migration_table SET mark_as_delete = $1 WHERE row_id = $2 AND table_id = $3"
+	_, err := tx.Exec(q, true, rowid, table_id)
+	return err
+}
+
+func PopBag(tx *sql.Tx, rowid, table_id string) error {
+
+	q := "UPDATE migration_table SET bag = $1 WHERE row_id = $2 AND table_id = $3"
+	_, err := tx.Exec(q, false, rowid, table_id)
+	return err
+}
+
+func RevertBag(tx *sql.Tx, rowid, table_id, migration_id string) error {
+
+	q := "UPDATE migration_table SET bag = $1, mark_as_delete = $2, mflag = $3, migration_id = $4 WHERE row_id = $5 AND table_id = $6"
+	_, err := tx.Exec(q, false, false, 1, migration_id, rowid, table_id)
+	return err
+}
+
+func MarkRowAsBag(tx *sql.Tx, rowid, table_id, migration_id, user_id string) error {
+
+	q := "UPDATE migration_table SET bag = true, mark_as_delete = true, migration_id = $1, user_id = $4 WHERE row_id = $2 AND table_id = $3"
+	_, err := tx.Exec(q, migration_id, rowid, table_id, user_id)
 	return err
 }
 
 func DeleteFromRowDescByRowIDAndAppID(tx *sql.Tx, rowids, appid string) error {
-
+	log.Fatal("Arrived at db.DeleteFromRowDescByRowIDAndAppID. Check why!")
 	q := fmt.Sprintf("DELETE FROM row_desc WHERE rowid in (%s) and app_id = $1", rowids)
 	_, err := tx.Exec(q, appid)
 	return err
 }
 
 func InsertIntoMigrationTable(tx *sql.Tx, dstApp, dstRow, orgRow, COW, dstTable, mflag, migration_id string) error {
-	q := "INSERT INTO migration_table (dst_app, dst_rowid, org_rowid, copy_on_write, dst_table, mflag, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	q := "INSERT INTO migration_table (app_id, group_id, row_id, copy_on_write, table_id, mflag, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7)"
 	_, err := tx.Exec(q, dstApp, dstRow, orgRow, COW, dstTable, mflag, migration_id)
 	return err
 }
@@ -232,6 +264,19 @@ func GetUnmigratedUsers() ([]map[string]interface{}, error) {
 	dbConn := GetDBConn(STENCIL_DB)
 	sql := "SELECT user_id FROM user_table WHERE user_id NOT IN (SELECT DISTINCT user_id FROM migration_registration) ORDER BY user_id ASC"
 	return DataCall(dbConn, sql)
+}
+
+func TableID(dbConn *sql.DB, table, app string) (string, error) {
+	sql := fmt.Sprintf("SELECT pk FROM app_tables WHERE app_id = '%s' and table_name = '%s'", app, table)
+	if res, err := DataCall1(dbConn, sql); err == nil {
+		if pk, ok := res["pk"]; ok {
+			return fmt.Sprint(pk), nil
+		}else{
+			return "", errors.New("Something bad with the returned result!")
+		}
+	}else{
+		return "", err
+	}
 }
 
 func RemoveUserFromApp(uid, app_id string, dbConn *sql.DB) bool {
@@ -436,6 +481,7 @@ func DataCall1(db *sql.DB, SQL string, args ...interface{}) (map[string]interfac
 	if rows, err := db.Query(SQL+" LIMIT 1", args...); err != nil {
 		log.Println(SQL, args)
 		log.Println("## DB ERROR: ", err)
+		log.Fatal("check datacall1 in stencil.db")
 		return nil, err
 	} else {
 		defer rows.Close()
@@ -557,7 +603,7 @@ func GetNewRowID(dbConn *sql.DB) int32 {
 	var rowid int32
 	for{
 		rowid = rand.Int31n(2147483647)
-		q := "SELECT rowid FROM row_desc WHERE rowid = $1"
+		q := "SELECT row_id FROM migration_table WHERE row_id = $1"
 		if v, err := DataCall1(dbConn, q, rowid); err == nil && v == nil {
 			break
 		}

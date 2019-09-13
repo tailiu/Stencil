@@ -311,21 +311,23 @@ func (self *AppConfig) GetDepDisplaySetting(tag string, pTag string) (string, er
 	return "", errors.New("No dependency display setting is found!")
 }
 
-func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
-
+func (self *AppConfig) GetTagQS(tag Tag, params map[string]string) *qr.QS {
+	
 	qs := qr.CreateQS(self.QR)
 	if len(tag.InnerDependencies) > 0 {
 		joinMap := tag.CreateInDepMap()
 		seenMap := make(map[string]bool)
 		for fromTable, toTablesMap := range joinMap {
 			if _, ok := seenMap[fromTable]; !ok {
-				qs.FromTable(map[string]string{"table":fromTable})
+				args := map[string]string{"table":fromTable}
+				helper.ConcatMaps(args, params)
+				qs.FromTable(args)
 				qs.SelectColumns(fromTable + ".*")
 			}
 			for toTable, conditions := range toTablesMap {
 				if conditions != nil {
-					joinArgs := make(map[string]string)
-					joinArgs["table"] = toTable
+					joinArgs := map[string]string{"table": toTable, "join": "FULL JOIN"}
+					helper.ConcatMaps(joinArgs, params)
 					conditions = append(conditions, joinMap[toTable][fromTable]...)
 					if joinMap[toTable][fromTable] != nil {
 						joinMap[toTable][fromTable] = nil
@@ -334,7 +336,7 @@ func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
 						joinArgs[fmt.Sprintf("condition%d", i)] = condition
 					}
 					qs.JoinTable(joinArgs)
-					// log.Fatal(joinArgs)
+					
 					qs.SelectColumns(toTable + ".*")
 					seenMap[toTable] = true
 				}
@@ -344,7 +346,9 @@ func (self *AppConfig) GetTagQS(tag Tag) *qr.QS {
 	} else {
 		table := tag.Members["member1"]
 		qs = qr.CreateQS(self.QR)
-		qs.FromTable(map[string]string{"table":table})
+		args := map[string]string{"table":table}
+		helper.ConcatMaps(args, params)
+		qs.FromTable(args)
 		qs.SelectColumns(table + ".*")
 	}
 	if len(tag.Restrictions) > 0 {

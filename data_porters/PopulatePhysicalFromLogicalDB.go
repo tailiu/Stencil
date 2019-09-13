@@ -94,7 +94,7 @@ func main() {
 
 	appName, appID := "diaspora", "1"
 	stencilDB := db.GetDBConn(db.STENCIL_DB)
-	appDB := db.GetDBConn("diaspora2")
+	appDB := db.GetDBConn(appName)
 	QR := qr.NewQR(appName, appID)
 	tables := db.GetTablesOfDB(appDB, appName)
 	// tables = FilterTablesFromList(tables, []string{"messages"})

@@ -45,12 +45,13 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 						break
 					}
 					for {
-						if err := mWorker.MigrateProcessBags(); err != nil {
+						if err := mWorker.MigrateProcessBags(thread_id); err != nil {
 							mWorker.RenewDBConn()
 							continue
 						}
 						break
 					}
+					// log.Fatal("!!!!! end of bags !!!!!")
 				}
 			case migrate.CONSISTENT:
 				{

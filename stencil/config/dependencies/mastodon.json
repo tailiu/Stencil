@@ -8,6 +8,7 @@
                 "member3":"account_stats"
             },
             "keys":{
+                "root_id":"member1.id",
                 "id":"member1.id"
             },
             "inner_dependencies" : [

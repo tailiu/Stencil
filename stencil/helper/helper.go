@@ -107,3 +107,10 @@ func Shuffle(vals []int) []int {
 	}
 	return ret
   }
+
+func ConcatMaps(a map[string]string, b map[string]string) {
+	if b == nil || a == nil {return}
+    for k,v := range b {
+        a[k] = v
+    }
+}

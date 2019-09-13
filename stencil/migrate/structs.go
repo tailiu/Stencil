@@ -11,6 +11,7 @@ const (
 	INDEPENDENT = "0"
 	CONSISTENT  = "1"
 	DELETION    = "3"
+	BAGS	    = "4"
 )
 
 type DependencyNode struct {
@@ -50,6 +51,7 @@ type MigrationWorker struct {
 	logTxn       *transaction.Log_txn
 	mtype        string
 	visitedNodes map[string]map[string]bool
+	arg 		 string
 	// threadID     int
 }
 
