@@ -124,9 +124,15 @@ func (self *AppConfig) GetOwnership(tagName, owner string) *Ownership {
 }
 
 func (self *AppConfig) GetItemsFromKey(tag Tag, key string) (string, string) {
-	KeyItems := strings.Split(tag.Keys[key], ".")
-	Table, Col := tag.Members[KeyItems[0]], KeyItems[1]
-	return Table, Col
+	if val, ok := tag.Keys[key]; ok {
+		KeyItems := strings.Split(val, ".")
+		Table, Col := tag.Members[KeyItems[0]], KeyItems[1]
+		return Table, Col
+	} else {
+		fmt.Println(tag.Keys)
+		log.Fatal(fmt.Sprintf("@AppConfig.GetItemsFromKey: Key [%s] not found in Tag [%s] in [%s]", key, tag.Name, self.AppName))
+		return "", ""
+	}
 }
 
 func (self *AppConfig) CheckOwnership(tag string) bool{
