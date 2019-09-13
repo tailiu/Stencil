@@ -147,7 +147,7 @@ func (tag Tag) ResolveTagAttr(attr string) (string, error) {
 			Col := keyItems[1]
 			return fmt.Sprintf("%s.%s", Table, Col), nil
 		} else {
-			return "", errors.New("Tag Not Resolved, Member Not Found")
+			return "", errors.New("Tag Not Resolved, Member Not Found: " + attr)
 		}
 	}
 	return "", errors.New("Tag Not Resolved, Attr Not Found in Tag Keys")

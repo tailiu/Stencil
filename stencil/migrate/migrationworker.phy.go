@@ -173,20 +173,26 @@ func (self *MigrationWorker) ResolveOwnershipConditions(own config.Ownership, ta
 		tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
 		if err != nil {
 			fmt.Println("data1", self.root.Data)
-			log.Fatal(err, tag.Name, condition.TagAttr)
+			fmt.Println("Conditions: ", own.Conditions)
+			fmt.Println(fmt.Sprintf("ResolveOwnershipConditions: [%s] doesn't contain [%s]", tag.Name, condition.TagAttr))
+			log.Fatal(err)
 			break
 		}
 		depOnAttr, err := self.root.Tag.ResolveTagAttr(condition.DependsOnAttr)
 		if err != nil {
 			fmt.Println("data2", self.root.Data)
-			log.Fatal(err, tag.Name, condition.DependsOnAttr)
+			fmt.Println("Conditions: ", own.Conditions)
+			fmt.Println(fmt.Sprintf("ResolveOwnershipConditions: [%s] doesn't contain [%s]", tag.Name, condition.DependsOnAttr))
+			log.Fatal(err)
 			break
 		}
 		if _, ok := self.root.Data[depOnAttr]; ok {
 			conditionStr.AdditionalWhereWithValue("AND", tagAttr, "=", fmt.Sprint(self.root.Data[depOnAttr]))
 		} else {
 			fmt.Println("data3", self.root.Data)
-			log.Fatal("ResolveOwnershipConditions:", depOnAttr, " doesn't exist in ", tag.Name)
+			fmt.Println("Conditions: ", own.Conditions)
+			fmt.Println(fmt.Sprintf("ResolveOwnershipConditions: [%s] doesn't contain [%s]", tag.Name, depOnAttr))
+			log.Fatal()
 		}
 		where.AddWhereAsString("AND", conditionStr.Where)
 	}
@@ -269,6 +275,7 @@ func (self *MigrationWorker) GetBagNodes(threadID, limit int) ([]*DependencyNode
 			qs.LimitResult(fmt.Sprint(limit))
 			sql := qs.GenSQL()
 			// fmt.Println(sql)
+			// log.Fatal()
 			if result, err := db.DataCall(self.DBConn, sql); err == nil {
 				var nodes []*DependencyNode
 				for _, data := range result {
@@ -469,7 +476,7 @@ func (self *MigrationWorker) InsertMissingData(tx *sql.Tx, table, rowid string, 
 		// fmt.Scanln()
 		return nil
 	}else{
-		fmt.Println("PK", rowid)
+		fmt.Println("@InsertMissingData | PK: ", rowid)
 		log.Fatal(err)
 		return err
 	}
@@ -564,9 +571,6 @@ func (self *MigrationWorker) RevertBags(node *DependencyNode) error {
 		for _, table := range node.Tag.GetTagMembers() {
 			node_rowids := node.Data[table+".rowids_str"]
 			if node_rowids == nil {
-				fmt.Println(node.Data)
-				fmt.Println(table+".rowids_str")
-				log.Fatal("RevertBags: herereee")
 				continue
 			}
 			src_rowids := strings.Split(fmt.Sprint(node_rowids), ",")
@@ -653,8 +657,7 @@ func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping confi
 					updatedPKs = append(updatedPKs, src_rowid)
 				}
 			}
-			if newRow := self.CreateMissingData(toTable, node); len(newRow) > 0 {
-				dst_rowid := fmt.Sprint(node.Data["rowids"])
+			if newRow := self.CreateMissingData(toTable, node); len(dst_rowid) > 0 && len(newRow) > 0 {
 				self.InsertMissingData(tx, toTable.Table, dst_rowid, newRow)
 			}
 		}
