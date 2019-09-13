@@ -24,9 +24,9 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 
 	log.Println("--------- First Phase --------")
 	secondRound := false
-	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, appConfig); 
+	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig); 
 		!display.CheckMigrationComplete(stencilDBConn, migrationID); 
-		migratedData = display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, appConfig) {
+		migratedData = display.GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig) {
 		
 		var dhStack [][]int
 		for _, oneMigratedData := range migratedData {
@@ -40,7 +40,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 
 	log.Println("--------- Second Phase ---------")
 	secondRound = true
-	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, appConfig)
+	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 		var dhStack [][]int
 		_, dhStack, _ = checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, secondRound, deletionHoldEnable, dhStack, threadID)
@@ -168,7 +168,7 @@ func main() {
 	threadNum := 5
 	dstApp := "mastodon"
 	migrationID := 1675105532
-	deletionHoldEnable := true
+	deletionHoldEnable := false
 
 	for i := 0; i < threadNum; i++ {
 		go DisplayThread(dstApp, migrationID, deletionHoldEnable)
