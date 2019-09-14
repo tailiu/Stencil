@@ -12,7 +12,7 @@ import (
 
 // The Key should be the primay key of the Table
 type HintStruct struct {
-	TableID	string
+	TableID		string
 	TableName 	string
 	RowIDs		[]int
 	Data		map[string]interface{}

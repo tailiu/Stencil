@@ -40,6 +40,9 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 	var displayHints []HintStruct
 
 	appID, _ := strconv.Atoi(appConfig.AppID)
+	// This is important that table id should also be used to get results in the new design
+	// For example, in the one-to-multiple mapping, rows have the same group id but different table ids
+	// Those rows could be displayed differently
 	query := fmt.Sprintf(
 		"SELECT table_id, array_agg(row_id) as row_ids FROM migration_table where mflag = 1 and app_id = %d and migration_id = %d group by group_id, table_id;",
 		appID, migrationID)
@@ -88,7 +91,8 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 		log.Fatal(err1)
 	}
 	// Here for one group, we only need to check one to see whether the group is displayed or not
-	query := fmt.Sprintf("SELECT mflag FROM migration_table WHERE row_id = %d and app_id = %d", data.RowIDs[0], appID1)
+	// It should be noted that table_id should also be considered
+	query := fmt.Sprintf("SELECT mflag FROM migration_table WHERE row_id = %d and app_id = %d and table_id = %d", data.RowIDs[0], appID1, data.TableID)
 	// log.Println(query)
 	data1, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
@@ -115,8 +119,9 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deleti
 				log.Println("Found that there is a path conflict!! When displaying data")
 				return errors.New("Path conflict"), dhStack
 			}
-			
-			query := fmt.Sprintf("UPDATE migration_table SET mflag = 0, updated_at = '%s' WHERE row_id = %d and app_id = %d", t, rowID, appID1)
+			// It should be noted that table_id should also be considered
+			query := fmt.Sprintf("UPDATE migration_table SET mflag = 0, updated_at = '%s' WHERE row_id = %d and app_id = %d and table_id = %d", 
+					t, rowID, appID1, dataHint.TableID)
 			log.Println("**************************************")
 			log.Println(query)
 			log.Println("**************************************")
@@ -138,7 +143,8 @@ func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
 		log.Fatal(err1)
 	}
 	// Here for one group, we only need to check one to see whether the group is displayed or not
-	query := fmt.Sprintf("SELECT bag FROM migration_table WHERE row_id = %d and app_id = %d", data.RowIDs[0], appID1)
+	// It should be noted that table_id should also be considered
+	query := fmt.Sprintf("SELECT bag FROM migration_table WHERE row_id = %d and app_id = %d and table_id = %d", data.RowIDs[0], appID1, data.TableID)
 	// log.Println(query)
 	data1, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
@@ -165,9 +171,9 @@ func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct)
 				log.Println("Found that there is a path conflict!! When putting data in a databag")
 				return errors.New("Path conflict")
 			}
-			
-			query := fmt.Sprintf("UPDATE migration_table SET bag = true, mark_as_delete = true, mflag = 0, updated_at = '%s' WHERE row_id = %d and app_id = %d",
-								 t, rowID, appID1)
+			// It should be noted that table_id should also be considered
+			query := fmt.Sprintf("UPDATE migration_table SET bag = true, mark_as_delete = true, mflag = 0, updated_at = '%s' WHERE row_id = %d and app_id = %d and table_id = %d",
+								 t, rowID, appID1, dataHint.TableID)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 			log.Println(query)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
