@@ -7,6 +7,7 @@
                 "member2": "credentials"
             },
             "keys":{
+                "root_id": "member1.id",
                 "id": "member1.id"
             },
             "inner_dependencies" : [

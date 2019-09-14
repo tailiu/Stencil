@@ -72,7 +72,7 @@
             },
             "keys": {
                 "status_id": "member1.status_id",
-                "account_id":"account_id"
+                "account_id":"member1.account_id"
             }
         },
         {

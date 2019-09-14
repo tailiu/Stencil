@@ -1294,7 +1294,7 @@
                                 {
                                     "table": "posts",
                                     "conditions":{
-                                        "tweets.reply_to_id" : "$NULL"
+                                        "tweets.reply_to_id" : "#NULL"
                                     },
                                     "mapping": {
                                         "id":"tweets.id",
