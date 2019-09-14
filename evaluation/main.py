@@ -45,7 +45,7 @@ def leftoverCDF():
 
 def interruptionTimeCDF():
     data = readFile2(logDir + interruptionTimeFile)
-    g.cumulativeGraph(data, "Service interruption time (s)", "Cumulative probability")
+    g.cumulativeGraph(data, "Transient dangling data time (s)", "Cumulative probability")
 
 def returnNumOrZero(data, key):
     if key in data:
@@ -57,15 +57,12 @@ def getDanglingDataInSrc(data):
     danglingLikes = []
     danglingComments = []
     danglingMessages = []
-    totalLikes = []
     for i, data1 in enumerate(data):
         if i % 2 == 1:
             danglingLikes.append(returnNumOrZero(data1, "likes:posts"))
             danglingComments.append(returnNumOrZero(data1, "comments:posts"))
             danglingMessages.append(returnNumOrZero(data1, "messages:conversations"))
-        if i % 2 == 0:
-            totalLikes.append(data1["totalLikes"])
-    return danglingLikes, danglingComments, danglingMessages, totalLikes
+    return danglingLikes, danglingComments, danglingMessages
 
 def getDanglingDataInDst(data):
     danglingStatuses = []
@@ -78,7 +75,7 @@ def getDanglingDataInDst(data):
 
 def danglingData():
     srcData = readFile3(logDir + srcAnomalies)
-    danglingLikes, danglingComments, danglingMessages, totalLikes = getDanglingDataInSrc(srcData)
+    danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrc(srcData)
 
     x = np.arange(1, cumNum + 1)
 
@@ -86,7 +83,7 @@ def danglingData():
 
 def danglingDataPoints():
     srcData = readFile3(logDir + srcAnomalies)
-    danglingLikes, danglingComments, danglingMessages, totalLikes = getDanglingDataInSrc(srcData)
+    danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrc(srcData)
 
     x = np.arange(1, cumNum + 1)
 
@@ -103,7 +100,7 @@ def danglingDataCumSum():
     srcData = readFile3(logDir + srcAnomalies)
     dstData = readFile3(logDir + dstAnomalies)
 
-    danglingLikes, danglingComments, danglingMessages, totalLikes = getDanglingDataInSrc(srcData)
+    danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrc(srcData)
     total = [sum(x) for x in zip(danglingLikes, danglingComments, danglingMessages)]
     danglingTotalCS = np.cumsum(total)
     danglingLikesCS = np.cumsum(danglingLikes)
@@ -116,7 +113,7 @@ def danglingDataCumSum():
 
     x = np.arange(1, cumNum + 1)
 
-    g.mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS, totalLikes)
+    g.mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS)
 
 def getServiceInterruptionData(data):
     likesAfterPosts = []
@@ -165,10 +162,11 @@ def anomaliesCumSum():
 
     g.mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, statusesBeforeConversationsCS)
 
+
 # leftoverCDF()
-# interruptionTimeCDF()
-# danglingDataCumSum()
 # danglingData()
-# serviceInterruptionCumSum()
-# anomaliesCumSum()
+interruptionTimeCDF()
+danglingDataCumSum()
+serviceInterruptionCumSum()
+anomaliesCumSum()
 danglingDataPoints()

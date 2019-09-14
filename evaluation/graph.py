@@ -133,13 +133,12 @@ def mulPointsDanglingData(x, data, labelName):
     
     plt.show()
 
-def mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS, totalLikes):
+def mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS):
     fig, ax = plt.subplots()
     ax.plot(x, danglingLikesCS, 'c--', label='Dangling likes without posts in Diaspora')
     ax.plot(x, danglingCommentsCS, 'g--', label='Dangling comments without posts in Diaspora')
-    ax.plot(x, danglingMessagesCS, 'r--', label='Dangling messages without comments in Diaspora')
+    ax.plot(x, danglingMessagesCS, 'r--', label='Dangling messages without conversations in Diaspora')
     ax.plot(x, danglingTotalCS, 'k--', label='Dangling likes, comments and messages in Diaspora')
-    # ax.plot(x, totalLikes, 'y--', label='Total likes in Diaspora')
     ax.plot(x, danglingStatusesCS, 'b', label='Dangling statuses without conversations in Mastodon')
     ax.plot(x, danglingFavCS, 'm', label='Dangling favourites without statuses in Mastodon')
 
