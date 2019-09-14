@@ -54,13 +54,8 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 	log.Println("Time used: ", endTime.Sub(startTime))
 }
 
-// Three-way display check
+// Two-way display check
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, secondRound bool, deletionHoldEnable bool, dhStack [][]int, threadID int) (string, [][]int, error) {
-
-	// log.Println("Check Data ", oneMigratedData)
-	// if oneMigratedData.Table == "follows" || oneMigratedData.Table == "notifications" || oneMigratedData.Table == "favourites" {
-	// 	return "", nil, nil
-	// }
 	if oneMigratedData.TableName == "" {
 		oneMigratedData.TableName = display.GetTableNameByTableID(stencilDBConn, oneMigratedData.TableID)
 	}
@@ -70,7 +65,17 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 	log.Println("-----------")
 	if len(dataInNode) == 0 {
 		log.Println(err1)
-		return "No Data In a Node Can be Displayed", dhStack, err1
+		if secondRound {
+			err10 := display.PutIntoDataBag(stencilDBConn, appConfig.AppID, []display.HintStruct{oneMigratedData})
+			// Found path conflicts
+			if err10 != nil {
+				return "No Data In a Node Can be Displayed", dhStack, err10
+			} else {
+				return "No Data In a Node Can be Displayed", dhStack, err1
+			}
+		} else {
+			return "No Data In a Node Can be Displayed", dhStack, err1
+		}
 	} else {
 
 		var displayedData, notDisplayedData []display.HintStruct
@@ -102,6 +107,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 				// Need to change this display.Display function
 				var err3 error
 				err3, dhStack = display.Display(stencilDBConn, appConfig.AppID, dataInNode, deletionHoldEnable, dhStack, threadID)
+				// Found path conflicts
 				if err3 != nil {
 					return "", dhStack, err3
 				}
@@ -154,12 +160,23 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 				if checkResult := display.CheckCombinedDisplayConditions(appConfig, pTagConditions, oneMigratedData); checkResult {
 					var err8 error
 					err8, dhStack = display.Display(stencilDBConn, appConfig.AppID, dataInNode, deletionHoldEnable, dhStack, threadID)
+					// Found path conflicts
 					if err8 != nil {
 						return "", dhStack, err8
 					}
 					return display.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 				} else {
-					return "No Data In a Node Can be Displayed", dhStack, errors.New("Display Setting does not allow the data in the node to be displayed")
+					if secondRound {
+						err9 := display.PutIntoDataBag(stencilDBConn, appConfig.AppID, dataInNode)
+						// Found path conflicts
+						if err9 != nil {
+							return "No Data In a Node Can be Displayed", dhStack, err9
+						} else {
+							return "No Data In a Node Can be Displayed", dhStack, errors.New("Display Setting does not allow the data in the node to be displayed")
+						}
+					} else {
+						return "No Data In a Node Can be Displayed", dhStack, errors.New("Display Setting does not allow the data in the node to be displayed")
+					}
 				}
 			}
 		}

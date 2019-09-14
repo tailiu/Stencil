@@ -112,7 +112,7 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deleti
 
 			// This is an optimization to prevent possible path conflict
 			if CheckDisplay(stencilDBConn, appID, dataHint) == 0 {
-				log.Println("There is a path conflict!!")
+				log.Println("Found that there is a path conflict!! When displaying data")
 				return errors.New("Path conflict"), dhStack
 			}
 			
@@ -130,6 +130,52 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deleti
 	}
 
 	return db.TxnExecute(stencilDBConn, queries), dhStack
+}
+
+func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
+	appID1, err1 := strconv.Atoi(appID)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+	// Here for one group, we only need to check one to see whether the group is displayed or not
+	query := fmt.Sprintf("SELECT bag FROM migration_table WHERE row_id = %d and app_id = %d", data.RowIDs[0], appID1)
+	// log.Println(query)
+	data1, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// log.Println(data1)
+	return data1["bag"].(bool)
+}
+
+func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct) error {
+	var queries []string
+	
+	appID1, err1 := strconv.Atoi(appID)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	for _, dataHint := range dataHints {
+		t := time.Now().Format(time.RFC3339)
+		for _, rowID := range dataHint.RowIDs {
+
+			// Similar to displaying data, this is an optimization to prevent possible path conflict
+			if alreadyInBag(stencilDBConn, appID, dataHint) {
+				log.Println("Found that there is a path conflict!! When putting data in a databag")
+				return errors.New("Path conflict")
+			}
+			
+			query := fmt.Sprintf("UPDATE migration_table SET bag = true, mark_as_delete = true, mflag = 0, updated_at = '%s' WHERE row_id = %d and app_id = %d",
+								 t, rowID, appID1)
+			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+			log.Println(query)
+			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+			queries = append(queries, query)
+		}
+	}
+
+	return db.TxnExecute(stencilDBConn, queries)
 }
 
 func GetTableNameByTableID(stencilDBConn *sql.DB, tableID string) string {

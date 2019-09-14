@@ -10,14 +10,6 @@ import (
 )
 
 func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from, col, op, val string) map[string]interface{}  {	
-	// qs := qr.CreateQSold(QR)
-	// qs.FromSimple(from)
-	// qs.ColSimple(cols)
-	// qs.ColPK(from)
-	// qs.WhereSimpleVal(col, op, val)
-	// qs.WhereAppID(qr.EXISTS, appID)
-	// physicalQuery := qs.GenSQL()
-
 	qs := qr.CreateQS(QR)
 	qs.SelectColumns(cols)
 	qs.FromTable(map[string]string{"table":from, "mflag": "1"})
@@ -34,17 +26,6 @@ func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, f
 }
 
 func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from string, rowIDs []int, restrictions []map[string]string) map[string]interface{} {	
-	// qs := qr.CreateQSold(QR)
-	// qs.FromSimple(from)
-	// qs.ColSimple(cols)
-	// qs.ColPK(from)
-	// qs.WhereAppID(qr.EXISTS, appID)
-	// // qs.WhereSimpleVal(statuses.id, =, #numl)
-	// // qs.WhereOperatorVal(“AND”, “profiles.bio”, “=”, “student”)
-	// // qs.WhereOperatorVal(“OR”, “profiles.bio”, “=”, “student”)
-	// physicalQuery := qs.GenSQLWith(rowid)
-	// // log.Println(physicalQuery)
-
 	qs := qr.CreateQS(QR)
 	qs.FromTable(map[string]string{"table": from, "mflag": "1"})
 	qs.SelectColumns(cols)
