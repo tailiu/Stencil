@@ -17,7 +17,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 	startTime := time.Now()
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appConfig, _, threadID := display.Initialize(app)
+	stencilDBConn, appConfig, threadID := display.Initialize(app)
 
 	// display.CreateDeletionHoldTable(stencilDBConn)
 	log.Println("Thread ID:", threadID)
@@ -57,10 +57,13 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 // Three-way display check
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, secondRound bool, deletionHoldEnable bool, dhStack [][]int, threadID int) (string, [][]int, error) {
 
-	log.Println("Check Data ", oneMigratedData)
+	// log.Println("Check Data ", oneMigratedData)
 	// if oneMigratedData.Table == "follows" || oneMigratedData.Table == "notifications" || oneMigratedData.Table == "favourites" {
 	// 	return "", nil, nil
 	// }
+	if oneMigratedData.TableName == "" {
+		oneMigratedData.TableName = display.GetTableNameByTableID(stencilDBConn, oneMigratedData.TableID)
+	}
 	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(appConfig, oneMigratedData, stencilDBConn)
 	log.Println("-----------")
 	log.Println(dataInNode)
@@ -165,9 +168,9 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 }
 
 func main() {
-	threadNum := 5
+	threadNum := 1
 	dstApp := "mastodon"
-	migrationID := 1675105532
+	migrationID := 2014441389
 	deletionHoldEnable := false
 
 	for i := 0; i < threadNum; i++ {

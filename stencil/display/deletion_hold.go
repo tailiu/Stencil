@@ -6,7 +6,6 @@ import (
 	"time"
 	"fmt"
 	"stencil/db"
-	"strconv"
 )
 
 func CreateDeletionHoldTable(dbConn *sql.DB) {
@@ -54,17 +53,15 @@ func AddToDeletionHoldStack(dhStack [][]int, dataHints []HintStruct, threadID in
 	t := time.Now().Format(time.RFC3339)
 
 	for _, dataHint := range dataHints {
-		rowID, err := strconv.Atoi(dataHint.RowID)
-		if err != nil {
-			log.Fatal(err)
+		for _, rowID := range dataHint.RowIDs {
+			hintRowIDs = append(hintRowIDs, rowID)
+			query := fmt.Sprintf("INSERT INTO deletion_hold (row_id, thread_id, hold, created_at, updated_at) VALUES (%d, %d, %t, '%s', '%s');",
+				rowID, threadID, true, t, t)
+			log.Println("**************************************")
+			log.Println(query)
+			log.Println("**************************************")
+			queries = append(queries, query)
 		}
-		hintRowIDs = append(hintRowIDs, rowID)
-		query := fmt.Sprintf("INSERT INTO deletion_hold (row_id, thread_id, hold, created_at, updated_at) VALUES (%d, %d, %t, '%s', '%s');",
-			rowID, threadID, true, t, t)
-		log.Println("**************************************")
-		log.Println(query)
-		log.Println("**************************************")
-		queries = append(queries, query)
 	}
 
 	dhStack = append(dhStack, hintRowIDs)

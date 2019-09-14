@@ -7,23 +7,25 @@ import (
 	// "stencil/db"
 	// "strconv"
 	"strings"
+
 )
 
 // The Key should be the primay key of the Table
 type HintStruct struct {
-	Table 	string
-	RowID	string
-	Data	map[string]interface{}
+	TableID	string
+	TableName 	string
+	RowIDs		[]int
+	Data		map[string]interface{}
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
 func TransformDataToHint(data map[string]interface{}) HintStruct {
 	hint := HintStruct{}
 	hint.Data = data
-	hint.RowID = GetRowIDFromData(data)
+	hint.RowIDs = GetRowIDsFromData(data)
 	for key := range data {
-		if !strings.Contains(key, "pk.") {
-			hint.Table = strings.Split(key, ".")[0]
+		if !strings.Contains(key, ".rowids_str") {
+			hint.TableName = strings.Split(key, ".")[0]
 			break
 		}
 	}
@@ -33,7 +35,7 @@ func TransformDataToHint(data map[string]interface{}) HintStruct {
 func (hint HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) {
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members {
-			if hint.Table == member {
+			if hint.TableName == member {
 				return tag.Name, nil
 			}
 		}
@@ -45,7 +47,7 @@ func (hint HintStruct) GetMemberID(appConfig *config.AppConfig, tagName string) 
 	for _, tag := range appConfig.Tags {
 		if tag.Name == tagName {
 			for memberID, memberTable := range tag.Members {
-				if memberTable == hint.Table {
+				if memberTable == hint.TableName {
 					return memberID, nil
 				}
 			}

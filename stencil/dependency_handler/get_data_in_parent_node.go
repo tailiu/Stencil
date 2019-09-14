@@ -28,7 +28,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hi
 		// log.Println(t1, a1, t2, a2)
 		if i == 0 {
 			for j, hint := range hints {
-				if hint.Table == t1 {
+				if hint.TableName == t1 {
 					hintID = j
 				}
 			}
@@ -96,7 +96,7 @@ func dataFromParentNodeExists(stencilDBConn *sql.DB, appConfig *config.AppConfig
 		tableCol := replaceKey(appConfig, tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 		for _, hint := range hints {
-			if hint.Table == table {
+			if hint.TableName == table {
 				if hint.Data[tableCol] == nil {
 					return false, errors.New("This Data Does not Depend on Any Data in the Parent Node")
 				} else {

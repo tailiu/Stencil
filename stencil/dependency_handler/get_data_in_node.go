@@ -47,7 +47,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 	result = append(result, hint)
 
 	queue := []DataInDependencyNode{DataInDependencyNode{
-		Table: hint.Table,
+		Table: hint.TableName,
 		Data:  hint.Data,
 	}}
 	for len(queue) != 0 && len(procDependencies) != 0 {
@@ -82,10 +82,10 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 						Data:  data1,
 					})
 
-					rowID := display.GetRowIDFromData(data1)
+					rowID := display.GetRowIDsFromData(data1)
 					result = append(result, display.HintStruct{
-						Table: table1,
-						RowID: rowID,
+						TableName: table1,
+						RowIDs: rowID,
 						Data: data1,
 					})
 
@@ -122,7 +122,7 @@ func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hi
 		log.Fatal(err)
 	}
 
-	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.Table + ".*", hint.Table, hint.RowID, restrictions)
+	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.TableName + ".*", hint.TableName, hint.RowIDs, restrictions)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
@@ -143,7 +143,7 @@ func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct, stencil
 
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members {
-			if hint.Table == member {
+			if hint.TableName == member {
 				if len(tag.Members) == 1 {
 					return []display.HintStruct{hint}, nil
 				} else {
@@ -170,7 +170,7 @@ func checkDependsOnExists(appConfig *config.AppConfig, allData []display.HintStr
 		for _, dependsOnTable := range dependsOnTables {
 			exists := false
 			for _, oneData := range allData {
-				if oneData.Table == dependsOnTable {
+				if oneData.TableName == dependsOnTable {
 					if !checkDependsOnExists(appConfig, allData, tagName, oneData) {
 						return false
 					} else {
@@ -201,11 +201,13 @@ func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []dis
 
 func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint display.HintStruct, stencilDBConn *sql.DB) ([]display.HintStruct, error) {
 	var data []display.HintStruct
-
+	
 	tagName, err := hint.GetTagName(appConfig)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Println("Check Data ", hint)
 
 	displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
 	// Whether a node is complete or not, get all the data in a node.

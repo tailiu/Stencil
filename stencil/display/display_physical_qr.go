@@ -10,12 +10,18 @@ import (
 )
 
 func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from, col, op, val string) map[string]interface{}  {	
-	qs := qr.CreateQSold(QR)
-	qs.FromSimple(from)
-	qs.ColSimple(cols)
-	qs.ColPK(from)
-	qs.WhereSimpleVal(col, op, val)
-	qs.WhereAppID(qr.EXISTS, appID)
+	// qs := qr.CreateQSold(QR)
+	// qs.FromSimple(from)
+	// qs.ColSimple(cols)
+	// qs.ColPK(from)
+	// qs.WhereSimpleVal(col, op, val)
+	// qs.WhereAppID(qr.EXISTS, appID)
+	// physicalQuery := qs.GenSQL()
+
+	qs := qr.CreateQS(QR)
+	qs.SelectColumns(cols)
+	qs.FromTable(map[string]string{"table":from, "mflag": "1"})
+	qs.AddWhereWithValue(col, op, val)
 	physicalQuery := qs.GenSQL()
 	// log.Println(physicalQuery)
 
@@ -27,17 +33,35 @@ func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, f
 	return result
 }
 
-func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from, rowid string, restrictions []map[string]string) map[string]interface{} {	
-	qs := qr.CreateQSold(QR)
-	qs.FromSimple(from)
-	qs.ColSimple(cols)
-	qs.ColPK(from)
-	qs.WhereAppID(qr.EXISTS, appID)
-	// qs.WhereSimpleVal(statuses.id, =, #numl)
-	// qs.WhereOperatorVal(“AND”, “profiles.bio”, “=”, “student”)
-	// qs.WhereOperatorVal(“OR”, “profiles.bio”, “=”, “student”)
-	physicalQuery := qs.GenSQLWith(rowid)
-	// log.Println(physicalQuery)
+func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from string, rowIDs []int, restrictions []map[string]string) map[string]interface{} {	
+	// qs := qr.CreateQSold(QR)
+	// qs.FromSimple(from)
+	// qs.ColSimple(cols)
+	// qs.ColPK(from)
+	// qs.WhereAppID(qr.EXISTS, appID)
+	// // qs.WhereSimpleVal(statuses.id, =, #numl)
+	// // qs.WhereOperatorVal(“AND”, “profiles.bio”, “=”, “student”)
+	// // qs.WhereOperatorVal(“OR”, “profiles.bio”, “=”, “student”)
+	// physicalQuery := qs.GenSQLWith(rowid)
+	// // log.Println(physicalQuery)
+
+	qs := qr.CreateQS(QR)
+	qs.FromTable(map[string]string{"table": from, "mflag": "1"})
+	qs.SelectColumns(cols)
+	// qs.AdditionalWhereWithValue("",statuses.id, =, #numl)
+	// qs.AdditionalWhereWithValue("AND", "profiles.bio", "=", "student")
+	// qs.AdditionalWhereWithValue("OR", "profiles.bio", "=", "student")
+	var strRowIDs string 
+	for i, rowID := range rowIDs {
+		if i == 0 {
+			strRowIDs += strconv.Itoa(rowID)
+		} else {
+			strRowIDs += "," + strconv.Itoa(rowID)
+		}
+		
+	}
+	qs.RowIDs(strRowIDs)
+	physicalQuery := qs.GenSQL()
 
 	result, err := db.DataCall1(stencilDBConn, physicalQuery)
 	if err != nil {
@@ -47,12 +71,22 @@ func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, QR *qr.QR, appID, 
 	return result
 }
 
-func GetRowIDFromData(data map[string]interface{}) string {
+func GetRowIDsFromData(data map[string]interface{}) []int  {
+	var rowIDs []int 
+
 	for key, val := range data {
-		if strings.Contains(key, "pk.") && val != nil {
-			return strconv.FormatInt(data[key].(int64), 10)
+		if strings.Contains(key, ".rowids_str") && val != nil {
+			s := strings.Split(val.(string), ",")
+			for _, s1 := range s {
+				rowID, err := strconv.Atoi(s1)
+				if err != nil {
+					log.Fatal(err)
+				}
+				rowIDs = append(rowIDs, rowID)
+				return rowIDs
+			}
 		}
 	}
-
-	return ""
+	
+	return rowIDs
 }
