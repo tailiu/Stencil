@@ -22,7 +22,7 @@ func TransformDataToHint(data map[string]interface{}) HintStruct {
 	hint.Data = data
 	hint.RowIDs = GetRowIDsFromData(data)
 	for key := range data {
-		if !strings.Contains(key, ".rowids_str") {
+		if strings.Contains(key, ".rowids_str") {
 			hint.TableName = strings.Split(key, ".")[0]
 			break
 		}

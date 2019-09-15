@@ -52,17 +52,18 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 	}}
 	for len(queue) != 0 && len(procDependencies) != 0 {
 		// log.Println(queue)
+		// log.Println(procDependencies)
 
 		dataInDependencyNode := queue[0]
 		queue = queue[1:]
 
-		table := dataInDependencyNode.Table
-		for col, val := range dataInDependencyNode.Data {
-			if deps, ok := procDependencies[col]; ok {
+		// table := dataInDependencyNode.Table
+		for tableCol, val := range dataInDependencyNode.Data {
+			if deps, ok := procDependencies[tableCol]; ok {
 				// We assume that this is an integer value otherwise we have to define it in dependency config
 				for _, dep := range deps {
 					// log.Println(dep)
-					// log.Println(col)
+					// log.Println(tableCol)
 					// log.Println(dataInDependencyNode.Data)
 					if val == nil {
 						log.Println("Fail to get one data because the value of the relevant column is nil")
@@ -92,25 +93,30 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 					})
 
 					deps1 := procDependencies[table1+"."+key1]
+					// log.Println("before delete: ", deps1)
+					// log.Println("to delete: ", tableCol)
 					for i, val2 := range deps1 {
-						if val2 == table+"."+col {
+						if val2 == tableCol {
 							deps1 = append(deps1[:i], deps1[i+1:]...)
 							break
 						}
 					}
+					// log.Println("after delete: ", deps1)
 					if len(deps1) == 0 {
 						delete(procDependencies, table1+"."+key1)
 					} else {
 						procDependencies[table1+"."+key1] = deps1
 					}
 				}
-				delete(procDependencies, col)
+				delete(procDependencies, tableCol)
 			}
 		}
 	}
 
-	// fmt.Println(procDependencies)
-	// fmt.Println(result)
+	// log.Println(procDependencies)
+	log.Println("|||||||||||||||")
+	log.Println(result)
+	log.Println("|||||||||||||||")
 	if len(procDependencies) == 0 {
 		return result, nil
 	} else {

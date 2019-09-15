@@ -187,7 +187,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 func main() {
 	threadNum := 1
 	dstApp := "mastodon"
-	migrationID := 1894765918
+	migrationID := 1590693271
 
 	deletionHoldEnable := false
 

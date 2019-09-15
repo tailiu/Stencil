@@ -93,10 +93,10 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 	// Here for one group, we only need to check one row_id to see whether the group is displayed or not
 	// It should be noted that table_id / group_id should also be considered
 	query := fmt.Sprintf("SELECT mflag FROM migration_table WHERE row_id = %d and app_id = %d and table_id = %s", data.RowIDs[0], appID1, data.TableID)
-	log.Println("==========")
-	log.Println(query)
-	log.Println(data)
-	log.Println("==========")
+	// log.Println("==========")
+	// log.Println(query)
+	// log.Println(data)
+	// log.Println("==========")
 	data1, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)

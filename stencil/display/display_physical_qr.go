@@ -12,8 +12,8 @@ import (
 func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from, col, op, val string) map[string]interface{}  {	
 	qs := qr.CreateQS(QR)
 	qs.SelectColumns(cols)
-	// Note that we should not specify "mflag": "1" here
-	qs.FromTable(map[string]string{"table":from})
+	// Note that we don't care about mflag here
+	qs.FromTable(map[string]string{"table":from, "mflag": "0,1"})
 	qs.AddWhereWithValue(col, op, val)
 	physicalQuery := qs.GenSQL()
 	// log.Println(physicalQuery)
@@ -28,7 +28,8 @@ func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, f
 
 func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from string, rowIDs []int, restrictions []map[string]string) map[string]interface{} {	
 	qs := qr.CreateQS(QR)
-	qs.FromTable(map[string]string{"table": from, "mflag": "1"})
+	// Note that we don't care about mflag here
+	qs.FromTable(map[string]string{"table": from, "mflag": "0,1"})
 	qs.SelectColumns(cols)
 	// qs.AdditionalWhereWithValue("",statuses.id, =, #numl)
 	// qs.AdditionalWhereWithValue("AND", "profiles.bio", "=", "student")

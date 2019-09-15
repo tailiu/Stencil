@@ -44,9 +44,9 @@ func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hi
 					return display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 				}
 				data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, t2 + ".*", t2, t2 + "." + a2, "=", hints[hintID].Data[t1 + "." + a1].(string))
-				log.Println(".....first check......")
-				log.Println(data)
-				log.Println("...........")
+				// log.Println(".....first check......")
+				// log.Println(data)
+				// log.Println("...........")
 				if len(data) == 0 {
 					return display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 				}
