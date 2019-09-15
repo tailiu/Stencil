@@ -7,10 +7,8 @@ import (
 	// "stencil/db"
 	// "strconv"
 	"strings"
-
 )
 
-// The Key should be the primay key of the Table
 type HintStruct struct {
 	TableID		string
 	TableName 	string

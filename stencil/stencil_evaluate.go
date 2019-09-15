@@ -116,13 +116,19 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 }
 
 func migrationRate(evalConfig *evaluation.EvalConfig) {
-	filterConditions := "and user_id = 1002"
+	filterConditions := "and user_id = 24730"
 	
 	for _, migrationIDType := range evaluation.GetAllMigrationIDsAndTypesOfAppWithConds(evalConfig.StencilDBConn, evalConfig.MastodonAppID, filterConditions) {
-		log.Println(migrationIDType)
-
-		// migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
-		// evaluation.GetMigrationTime(evalConfig, rawMigrationID)
+		var migrationID int64
+		for k, v := range migrationIDType {
+			if k == "migration_id" {
+				migrationID = v.(int64)
+			}
+		}
+		time := evaluation.GetMigrationTime(evalConfig.StencilDBConn, migrationID)
+		log.Println(time)
+		migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, strconv.FormatInt(migrationID, 10))
+		log.Println(migratedDataSize)
 	}
 }
 
@@ -132,7 +138,7 @@ func main() {
 	
 	evalConfig := evaluation.InitializeEvalConfig()
 	// leftoverVsMigrated(evalConfig)
-	anomaliesVsMigrationSize(evalConfig)
-	// migrationRate(evalConfig)
+	// anomaliesVsMigrationSize(evalConfig)
+	migrationRate(evalConfig)
 
 }

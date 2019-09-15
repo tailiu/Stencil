@@ -118,3 +118,21 @@ func LogOutcome(log_txn *Log_txn, outcome string) error {
 func CloseDBConn(log_txn *Log_txn) {
 	db.CloseDBConn(db.STENCIL_DB)
 }
+
+func (self *Log_txn) GetCreatedAt(action_type string) []time.Time {
+	var result []time.Time
+
+	op := fmt.Sprintf("SELECT created_at FROM txn_logs WHERE action_id = %d and action_type = '%s';",
+		self.Txn_id, action_type)
+	// fmt.Println(op)
+	data, err := db.DataCall(self.DBconn, op)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+		result = append(result, data1["created_at"].(time.Time))
+	} 
+	// fmt.Println(result)
+	return result
+}

@@ -2,30 +2,32 @@ package evaluation
 
 import (
 	"time"
-	"log"
-	"fmt"
 	"database/sql"
-	"stencil/db"
+	"stencil/transaction"
 )
 
-func getStartTime(stencilDBConn *sql.DB, migrationID int64) time.Time {
-	query := fmt.Sprintf("select start_time from migration_registration where migration_id = %d;", 
-		migrationID)
-
-	startTime, err := db.DataCall1(stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
+func getMigrationStartTime(stencilDBConn *sql.DB, migrationID int) time.Time {
+	log_txn := new(transaction.Log_txn)
+	log_txn.DBconn = stencilDBConn
+	log_txn.Txn_id = migrationID
+	if startTime := log_txn.GetCreatedAt("BEGIN_TRANSACTION"); len(startTime) == 1 {
+		return startTime[0]
+	} else {
+		panic("Should never happen here!")
 	}
-
-	return startTime["start_time"].(time.Time)
 }
 
-func getEndTime(stencilDBConn *sql.DB, migrationID string) {
-
-
+func getMigrationEndTime(stencilDBConn *sql.DB, migrationID int) time.Time {
+	log_txn := new(transaction.Log_txn)
+	log_txn.DBconn = stencilDBConn
+	log_txn.Txn_id = migrationID
+	if endTime := log_txn.GetCreatedAt("COMMIT"); len(endTime) == 1 {
+		return endTime[0]
+	} else {
+		panic("Should never happen here!")
+	}
 }
 
-func GetMigrationTime(evalConfig *EvalConfig, migrationID int64) {
-	startTime := getStartTime(evalConfig.StencilDBConn, migrationID)
-	log.Println(startTime)
+func GetMigrationTime(stencilDBConn *sql.DB, migrationID int64) time.Duration {
+	return getMigrationEndTime(stencilDBConn, int(migrationID)).Sub(getMigrationStartTime(stencilDBConn, int(migrationID)))
 }

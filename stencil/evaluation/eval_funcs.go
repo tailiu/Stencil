@@ -30,14 +30,14 @@ func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extra
 func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
 	query := fmt.Sprintf("select migration_id, is_logical from migration_registration where dst_app = '%s' %s;", 
 		appID, extraConditions)
-	log.Println(query)
+	// log.Println(query)
 
-	migrationIDs, err := db.DataCall(stencilDBConn, query)
+	result, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return migrationIDs
+	return result
 }
 
 func ConvertFloat64ToString(data []float64) []string {

@@ -56,13 +56,13 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 
 // Two-way display check
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, secondRound bool, deletionHoldEnable bool, dhStack [][]int, threadID int) (string, [][]int, error) {
-	if oneMigratedData.TableName == "" {
-		oneMigratedData.TableName = display.GetTableNameByTableID(stencilDBConn, oneMigratedData.TableID)
-	}
+	display.CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
 	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(appConfig, oneMigratedData, stencilDBConn)
 	log.Println("-----------")
 	log.Println(dataInNode)
 	log.Println("-----------")
+	// Either this data is not in the destination application,
+	// or the data is not able to be displayed because of missing some other data it is intra-dependent on
 	if len(dataInNode) == 0 {
 		log.Println(err1)
 		if secondRound {
@@ -187,7 +187,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 func main() {
 	threadNum := 1
 	dstApp := "mastodon"
-	migrationID := 1501533774
+	migrationID := 2009899973
 
 	deletionHoldEnable := false
 

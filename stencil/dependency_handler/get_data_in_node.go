@@ -83,8 +83,10 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 					})
 
 					rowID := display.GetRowIDsFromData(data1)
+					tableID := display.GetTableIDByTableName(stencilDBConn, table1, appConfig.AppID)
 					result = append(result, display.HintStruct{
 						TableName: table1,
+						TableID: tableID,
 						RowIDs: rowID,
 						Data: data1,
 					})
