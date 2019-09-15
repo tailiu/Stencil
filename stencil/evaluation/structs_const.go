@@ -69,6 +69,7 @@ type EvalConfig struct {
 	SrcAnomaliesVsMigrationSizeFile string
 	DstAnomaliesVsMigrationSizeFile string
 	InterruptionDurationFile string
+	MigrationRateFile string
 }
 
 func InitializeEvalConfig() *EvalConfig {
@@ -83,10 +84,12 @@ func InitializeEvalConfig() *EvalConfig {
 	// t := time.Now()
 	evalConfig.SrcAnomaliesVsMigrationSizeFile, 
 	evalConfig.DstAnomaliesVsMigrationSizeFile, 
-	evalConfig.InterruptionDurationFile = 
-		"srcAnomaliesVsMigrationSize",// + t.String(), 
-		"dstAnomaliesVsMigrationSize",// + t.String(),
-		"interruptionDuration"// + t.String()
+	evalConfig.InterruptionDurationFile,
+	evalConfig.MigrationRateFile = 
+		"srcAnomaliesVsMigrationSize",
+		"dstAnomaliesVsMigrationSize",
+		"interruptionDuration",
+		"migrationRate"
 
 	return evalConfig
 }

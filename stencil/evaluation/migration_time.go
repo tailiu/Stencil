@@ -28,6 +28,6 @@ func getMigrationEndTime(stencilDBConn *sql.DB, migrationID int) time.Time {
 	}
 }
 
-func GetMigrationTime(stencilDBConn *sql.DB, migrationID int64) time.Duration {
-	return getMigrationEndTime(stencilDBConn, int(migrationID)).Sub(getMigrationStartTime(stencilDBConn, int(migrationID)))
+func GetMigrationTime(stencilDBConn *sql.DB, migrationID int) time.Duration {
+	return getMigrationEndTime(stencilDBConn, migrationID).Sub(getMigrationStartTime(stencilDBConn, migrationID))
 }

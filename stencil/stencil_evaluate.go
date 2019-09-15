@@ -12,6 +12,7 @@ const (
 	// srcAnomaliesVsMigrationSizeFile = "srcAnomaliesVsMigrationSize"
 	// dstAnomaliesVsMigrationSizeFile = "dstAnomaliesVsMigrationSize"
 	interruptionDurationFile = "interruptionDuration"
+	migrationRateFile = "migrationRate"
 )
 
 func leftoverVsMigrated(evalConfig *evaluation.EvalConfig) {
@@ -116,20 +117,26 @@ func anomaliesVsMigrationSize(evalConfig *evaluation.EvalConfig) {
 }
 
 func migrationRate(evalConfig *evaluation.EvalConfig) {
-	filterConditions := "and user_id = 24730"
+	// filterConditions := "and migration_id = 1203415167"
 	
-	for _, migrationIDType := range evaluation.GetAllMigrationIDsAndTypesOfAppWithConds(evalConfig.StencilDBConn, evalConfig.MastodonAppID, filterConditions) {
-		var migrationID int64
-		for k, v := range migrationIDType {
-			if k == "migration_id" {
-				migrationID = v.(int64)
-			}
-		}
-		time := evaluation.GetMigrationTime(evalConfig.StencilDBConn, migrationID)
-		log.Println(time)
-		migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, strconv.FormatInt(migrationID, 10))
-		log.Println(migratedDataSize)
-	}
+	// for _, migrationIDType := range evaluation.GetAllMigrationIDsAndTypesOfAppWithConds(evalConfig.StencilDBConn, evalConfig.MastodonAppID, filterConditions) {
+	// 	var migrationID int64
+	// 	for k, v := range migrationIDType {
+	// 		if k == "migration_id" {
+	// 			migrationID = v.(int64)
+	// 		}
+	// 	}
+		
+	// 	time := evaluation.GetMigrationTime(evalConfig.StencilDBConn, migrationID)
+	// 	log.Println("Migration time: ", time)
+	// 	migratedDataSize := evaluation.GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, strconv.FormatInt(migrationID, 10))
+	// 	log.Println("Migrated data size: (KB)", migratedDataSize)
+
+	// 	migrationRate := make(map[string]string)
+	// 	migrationRate["time"] = evaluation.ConvertSingleDurationToString(time)
+	// 	migrationRate["size"] = strconv.FormatInt(migratedDataSize, 10)
+	// 	evaluation.WriteStrToLog(migrationRateFile, evaluation.ConvertMapStringToJSONString(migrationRate))
+	// }
 }
 
 func main() {
@@ -139,6 +146,6 @@ func main() {
 	evalConfig := evaluation.InitializeEvalConfig()
 	// leftoverVsMigrated(evalConfig)
 	// anomaliesVsMigrationSize(evalConfig)
-	migrationRate(evalConfig)
+	evaluation.MigrationRate("1203415167", evalConfig)
 
 }

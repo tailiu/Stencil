@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 	"encoding/json"
-	// "strings"
+	"strings"
 )
 
 const logDir = "./evaluation/logs/"
@@ -56,7 +56,21 @@ func ConvertDurationToString(data []time.Duration) []string {
 	return convertedData
 }
 
+func ConvertSingleDurationToString(data time.Duration) string {
+	return fmt.Sprintf("%f", data.Seconds())
+}
+
 func ConvertMapToJSONString(data map[string]int) string {
+	convertedData, err := json.Marshal(data)   
+    if err != nil {
+        fmt.Println(err.Error())
+        log.Fatal()
+    }
+     
+    return string(convertedData)
+}
+
+func ConvertMapStringToJSONString(data map[string]string) string {
 	convertedData, err := json.Marshal(data)   
     if err != nil {
         fmt.Println(err.Error())
@@ -124,8 +138,8 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int) 
 		}
 	}
 	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
-	// log.Println(table)
-	// log.Println(query)
+	log.Println(table)
+	log.Println(query)
 	row, err2 := db.DataCall1(AppDBConn, query)
 	if err2 != nil {
 		log.Fatal(err2)
@@ -210,4 +224,41 @@ func increaseMapValOneByKey(m1 map[string]int, key string) {
 	} else {
 		m1[key] = 1
 	}
+}
+
+func getMigratedColsOfApp(stencilDBConn *sql.DB, appID string, migration_id string) map[string][]string {
+	mCols := make(map[string][]string)
+
+	query := fmt.Sprintf("select src_table, src_cols from evaluation where src_app = '%s' and migration_id = '%s'",
+		appID, migration_id)
+
+	tableCols, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, tableCol := range tableCols {
+		table := tableCol["src_table"].(string)
+		cols := strings.Split(tableCol["src_cols"].(string), ",")
+		if cols1, ok := mCols[table]; ok {
+			var newCols []string
+			for _, col := range cols {
+				unique := true
+				for _, col1 := range cols1 {
+					if col == col1 {
+						unique = false
+						break
+					}
+				}
+				if unique {
+					newCols = append(newCols, col)
+				}
+			}
+			mCols[table] = append(cols1, newCols...)
+		} else {
+			mCols[table] = cols
+		}
+	}
+
+	return mCols
 }

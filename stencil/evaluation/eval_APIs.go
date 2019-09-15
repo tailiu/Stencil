@@ -2,6 +2,7 @@ package evaluation
 
 import (
 	"log"
+	"strconv"
 )
 
 func AnomaliesDanglingData(migrationID string, evalConfig *EvalConfig) {
@@ -28,4 +29,24 @@ func AnomaliesDanglingData(migrationID string, evalConfig *EvalConfig) {
 	WriteStrToLog(evalConfig.DstAnomaliesVsMigrationSizeFile, ConvertMapToJSONString(dstDepNotMigratedStats))
 	// evaluation.WriteStrToLog(dstAnomaliesVsMigrationSizeFile, evaluation.ConvertInt64ToString(migratedDataSize))
 	// totalMigratedDataSize += migratedDataSize
+}
+
+func MigrationRate(migrationID string, evalConfig *EvalConfig) {
+	log.Println(migrationID)
+	
+	migrationID1, err := strconv.Atoi(migrationID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	time := GetMigrationTime(evalConfig.StencilDBConn, migrationID1)
+	log.Println("Migration time: ", time)
+	migratedDataSize := GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
+	log.Println("Migrated data size: (KB)", migratedDataSize)
+
+	migrationRate := make(map[string]string)
+	migrationRate["time"] = ConvertSingleDurationToString(time)
+	migrationRate["size"] = strconv.FormatInt(migratedDataSize, 10)
+	
+	WriteStrToLog(evalConfig.MigrationRateFile, ConvertMapStringToJSONString(migrationRate))
 }
