@@ -56,9 +56,9 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 
 	var cols, pkCols []string
 
-	from := fmt.Sprintf("(SELECT array_agg(row_id) AS rowids FROM migration_table WHERE table_id = %s and app_id = %s AND mflag = %s AND mark_as_delete = %s AND bag = %s GROUP BY group_id) MT ", tableID, self.QR.AppID, args["mflag"], args["mark_as_delete"], args["bag"])
+	from := fmt.Sprintf("(SELECT array_agg(row_id) AS rowids FROM migration_table WHERE table_id = %s and app_id = %s AND mflag IN (%s) AND mark_as_delete = %s AND bag = %s GROUP BY group_id) MT ", tableID, self.QR.AppID, args["mflag"], args["mark_as_delete"], args["bag"])
 	if user_id, ok := args["user_id"]; ok {
-		from = fmt.Sprintf("(SELECT array_agg(row_id) AS rowids FROM migration_table WHERE table_id = %s and app_id = %s AND mflag = %s AND mark_as_delete = %s AND bag = %s AND user_id = '%s' GROUP BY group_id) MT ", tableID, self.QR.AppID, args["mflag"], args["mark_as_delete"], args["bag"], user_id)
+		from = fmt.Sprintf("(SELECT array_agg(row_id) AS rowids FROM migration_table WHERE table_id = %s and app_id = %s AND mflag IN (%s) AND mark_as_delete = %s AND bag = %s AND user_id = '%s' GROUP BY group_id) MT ", tableID, self.QR.AppID, args["mflag"], args["mark_as_delete"], args["bag"], user_id)
 	}
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(args["table"])

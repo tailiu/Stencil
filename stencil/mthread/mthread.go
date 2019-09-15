@@ -51,7 +51,6 @@ func ThreadController(mWorker migrate.MigrationWorker, threads int) bool {
 						}
 						break
 					}
-					// log.Fatal("!!!!! end of bags !!!!!")
 				}
 			case migrate.CONSISTENT:
 				{

@@ -639,7 +639,7 @@ func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping confi
 							}
 						}
 						case BAGS: {
-							if err := db.PopBag(tx, src_rowid, FromTableID); err != nil {
+							if err := db.RemoveBag(tx, src_rowid, FromTableID); err != nil {
 								log.Fatal("HandleMappedMembersOfNode: PopBag | ", err)
 								return nil, err
 							}

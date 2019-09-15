@@ -226,10 +226,10 @@ func MarkRowAsDeleted(tx *sql.Tx, rowid, table_id string) error {
 	return err
 }
 
-func PopBag(tx *sql.Tx, rowid, table_id string) error {
+func RemoveBag(tx *sql.Tx, rowid, table_id string) error {
 
-	q := "UPDATE migration_table SET bag = $1 WHERE row_id = $2 AND table_id = $3"
-	_, err := tx.Exec(q, false, rowid, table_id)
+	q := "UPDATE migration_table SET bag = $1, migration_id = NULL, mark_as_delete = $4 WHERE row_id = $2 AND table_id = $3"
+	_, err := tx.Exec(q, false, rowid, table_id, true)
 	return err
 }
 

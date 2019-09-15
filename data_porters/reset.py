@@ -80,6 +80,7 @@ if __name__ == "__main__":
             truncateTableFromStencil("evaluation")
             truncateTableFromStencil("user_table")
             truncateTableFromStencil("display_flags")
+            truncateTableFromStencil("txn_logs")
             if arg in ["log", "all"]:
                 truncate("mastodon", blade=True)
                 reverseMarkAsDelete("diaspora", blade=False)
