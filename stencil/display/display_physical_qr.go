@@ -12,7 +12,8 @@ import (
 func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, from, col, op, val string) map[string]interface{}  {	
 	qs := qr.CreateQS(QR)
 	qs.SelectColumns(cols)
-	qs.FromTable(map[string]string{"table":from, "mflag": "1"})
+	// Note that we should not specify "mflag": "1" here
+	qs.FromTable(map[string]string{"table":from})
 	qs.AddWhereWithValue(col, op, val)
 	physicalQuery := qs.GenSQL()
 	// log.Println(physicalQuery)
