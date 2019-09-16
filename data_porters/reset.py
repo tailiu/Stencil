@@ -76,11 +76,11 @@ if __name__ == "__main__":
         if arg in ["phy", "all"]:
             truncatePhysicalTables()
         if arg in ["log", "row", "all"]:
-            truncateTableFromStencil("migration_registration")
-            truncateTableFromStencil("evaluation")
-            truncateTableFromStencil("user_table")
-            truncateTableFromStencil("display_flags")
-            truncateTableFromStencil("txn_logs")
+            # truncateTableFromStencil("migration_registration")
+            # truncateTableFromStencil("evaluation")
+            # truncateTableFromStencil("user_table")
+            # truncateTableFromStencil("display_flags")
+            # truncateTableFromStencil("txn_logs")
             if arg in ["log", "all"]:
                 truncate("mastodon", blade=True)
                 reverseMarkAsDelete("diaspora", blade=False)

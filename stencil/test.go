@@ -59,9 +59,30 @@ func test4(){
 	}
 }
 
+func test5() {
+	stencilDB := db.GetDBConn(db.STENCIL_DB)
+	appconfig, _ := config.CreateAppConfig("diaspora", "1")
+	qs := qr.CreateQS(appconfig.QR)
+	qs.SelectColumns("contacts.*")
+	qs.FromTable(map[string]string{"table":"contacts"})
+	qs.RowIDs("134238299")
+	sql := qs.GenSQLSize()
+	fmt.Println(sql)
+	if res, err := db.DataCall(stencilDB, sql); err == nil{
+		for _, r := range res {
+			fmt.Println("========================================================================================================================================================================")
+			fmt.Println(r)
+		}
+		fmt.Println("------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+		fmt.Println("Total Rows:", len(res))
+	}else{ 
+		fmt.Println(err)
+	}
+}
+
 func main() {
 
-	test4()
+	test5()
 	return
 
 	app := os.Args[1]

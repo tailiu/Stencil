@@ -55,6 +55,8 @@ func main() {
 			transaction.LogOutcome(logTxn, "ABORT")
 		}
 		evaluation.AnomaliesDanglingData(fmt.Sprint(logTxn.Txn_id), evalConfig)
+		evaluation.MigrationRate(fmt.Sprint(logTxn.Txn_id), evalConfig)
+		evaluation.SystemLevelDanglingData(evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)
 	}
