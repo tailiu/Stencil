@@ -6,7 +6,7 @@ import (
 )
 
 func AnomaliesDanglingData(migrationID string, evalConfig *EvalConfig) {
-	log.Println(migrationID)
+	// log.Println(migrationID)
 
 	dstViolateStats, dstDepNotMigratedStats := GetAnomaliesNumsInDst(evalConfig, migrationID)
 	srcViolateStats, srcInterruptionDuration, srcDanglingDataStats := GetAnomaliesNumsInSrc(evalConfig, migrationID)
@@ -32,7 +32,7 @@ func AnomaliesDanglingData(migrationID string, evalConfig *EvalConfig) {
 }
 
 func MigrationRate(migrationID string, evalConfig *EvalConfig) {
-	log.Println(migrationID)
+	// log.Println(migrationID)
 	
 	migrationID1, err := strconv.Atoi(migrationID)
 	if err != nil {
@@ -60,4 +60,15 @@ func SystemLevelDanglingData(evalConfig *EvalConfig) {
 
 	WriteStrToLog(evalConfig.SrcDanglingDataInSystemFile, ConvertMapInt64ToJSONString(srcDanglingDataStats))
 	WriteStrToLog(evalConfig.DstDanglingDataInSystemFile, ConvertMapInt64ToJSONString(dstDanglingDataStats))
+}
+
+func GetDataBagOfUser(migrationID, sourceApp, dstApp string, evalConfig *EvalConfig) {
+	srcDataBagSize := getDataBagSize(evalConfig, sourceApp, migrationID)
+	dstDataBagSize := getDataBagSize(evalConfig, dstApp, migrationID)
+	log.Println(srcDataBagSize)
+	log.Println(dstDataBagSize)
+}
+
+func GetDataDownTime(migrationID, evalConfig *EvalConfig) {
+	
 }

@@ -147,5 +147,7 @@ func main() {
 	// leftoverVsMigrated(evalConfig)
 	// anomaliesVsMigrationSize(evalConfig)
 	// evaluation.MigrationRate("1203415167", evalConfig)
-	evaluation.SystemLevelDanglingData(evalConfig)
+	// evaluation.SystemLevelDanglingData(evalConfig)
+	evaluation.GetDataBagOfUser("1590693271", "diaspora", "mastodon", evalConfig)
+	// evaluation.GetDataDownTime("1590693271", evalConfig)
 }

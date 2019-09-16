@@ -74,6 +74,11 @@ type EvalConfig struct {
 	DstDanglingDataInSystemFile string
 }
 
+type DataBagData struct {
+	TableID 	string
+	RowIDs 		[]string
+}
+
 func InitializeEvalConfig() *EvalConfig {
 	evalConfig := new(EvalConfig)
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
