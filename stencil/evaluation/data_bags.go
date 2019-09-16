@@ -67,10 +67,8 @@ func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *confi
 	}
 	qs.RowIDs(strRowIDs)
 	physicalQuery := qs.GenSQLSize()
-	physicalQuery1 := qs.GenSQL()
 
 	log.Println(physicalQuery)
-	log.Println(physicalQuery1)
 
 	result, err := db.DataCall1(evalConfig.StencilDBConn, physicalQuery)
 	if err != nil {

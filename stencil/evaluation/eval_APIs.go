@@ -40,15 +40,38 @@ func MigrationRate(migrationID string, evalConfig *EvalConfig) {
 	}
 
 	time := GetMigrationTime(evalConfig.StencilDBConn, migrationID1)
-	log.Println("Migration time: ", time)
+	log.Println("Migration time: (s)", time)
 	migratedDataSize := GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
-	log.Println("Migrated data size: (KB)", migratedDataSize)
+	log.Println("Migrated data size: (Bytes)", migratedDataSize)
 
 	migrationRate := make(map[string]string)
 	migrationRate["time"] = ConvertSingleDurationToString(time)
 	migrationRate["size"] = strconv.FormatInt(migratedDataSize, 10)
 	
 	WriteStrToLog(evalConfig.MigrationRateFile, ConvertMapStringToJSONString(migrationRate))
+}
+
+func GetSize(migrationID string, evalConfig *EvalConfig) {
+	migratedDataSize := GetMigratedDataSize(evalConfig.StencilDBConn, evalConfig.DiasporaDBConn, evalConfig.DiasporaAppID, migrationID)
+	log.Println("Migrated data size: (Bytes)", migratedDataSize)
+
+	migration := make(map[string]string)
+	migration["size"] = strconv.FormatInt(migratedDataSize, 10)
+
+	WriteStrToLog(evalConfig.MigratedDataSizeFile, ConvertMapStringToJSONString(migration))
+}
+
+func GetTime(migrationID string, evalConfig *EvalConfig) {
+	migrationID1, err := strconv.Atoi(migrationID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	time := GetMigrationTime(evalConfig.StencilDBConn, migrationID1)
+	log.Println("Migration time: (s)", time)
+
+	migration := make(map[string]string)
+	migration["time"] = ConvertSingleDurationToString(time)
+	WriteStrToLog(evalConfig.MigrationTimeFile, ConvertMapStringToJSONString(migration))
 }
 
 func SystemLevelDanglingData(evalConfig *EvalConfig) {
@@ -70,5 +93,5 @@ func GetDataBagOfUser(migrationID, sourceApp, dstApp string, evalConfig *EvalCon
 }
 
 func GetDataDownTime(migrationID, evalConfig *EvalConfig) {
-	
+
 }

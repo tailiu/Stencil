@@ -70,6 +70,8 @@ type EvalConfig struct {
 	DstAnomaliesVsMigrationSizeFile string
 	InterruptionDurationFile string
 	MigrationRateFile string
+	MigratedDataSizeFile string
+	MigrationTimeFile string
 	SrcDanglingDataInSystemFile string
 	DstDanglingDataInSystemFile string
 }
@@ -93,12 +95,16 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.DstAnomaliesVsMigrationSizeFile, 
 	evalConfig.InterruptionDurationFile,
 	evalConfig.MigrationRateFile,
+	evalConfig.MigratedDataSizeFile,
+	evalConfig.MigrationTimeFile,
 	evalConfig.SrcDanglingDataInSystemFile,
 	evalConfig.DstDanglingDataInSystemFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
 		"migrationRate",
+		"migratedDataSize",
+		"migrationTime",
 		"srcSystemDanglingData",
 		"dstSystemDanglingData"
 
