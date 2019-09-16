@@ -94,8 +94,8 @@ func InitializeEvalConfig() *EvalConfig {
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
 		"migrationRate",
-		"srcDanglingDataInSystem",
-		"dstDanglingDataInSystem"
+		"srcSystemDanglingDataIn",
+		"dstSystemDanglingDataIn"
 
 	return evalConfig
 }

@@ -1,20 +1,8 @@
 package evaluation
 
 import (
-	"log"
 	"fmt"
-	"stencil/db"
-	"database/sql"
 )
-
-func getCountsSystem(dbConn *sql.DB, query string) int64 {
-	data, err := db.DataCall(dbConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return data[0]["count"].(int64)
-}
 
 func getDanglingLikesNumSystem(evalConfig *EvalConfig, danglingDataStats map[string]int64) {
 	key := "likes:posts"

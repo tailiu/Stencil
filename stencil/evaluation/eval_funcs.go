@@ -262,3 +262,12 @@ func getMigratedColsOfApp(stencilDBConn *sql.DB, appID string, migration_id stri
 
 	return mCols
 }
+
+func getCountsSystem(dbConn *sql.DB, query string) int64 {
+	data, err := db.DataCall(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data[0]["count"].(int64)
+}

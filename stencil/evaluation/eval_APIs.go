@@ -59,4 +59,5 @@ func SystemLevelDanglingData(evalConfig *EvalConfig) {
 	log.Println(dstDanglingDataStats)
 
 	WriteStrToLog(evalConfig.SrcDanglingDataInSystemFile, ConvertMapInt64ToJSONString(srcDanglingDataStats))
+	WriteStrToLog(evalConfig.DstDanglingDataInSystemFile, ConvertMapInt64ToJSONString(dstDanglingDataStats))
 }
