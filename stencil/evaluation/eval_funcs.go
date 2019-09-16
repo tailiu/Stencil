@@ -17,7 +17,7 @@ const logDir = "./evaluation/logs/"
 func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
 	query := fmt.Sprintf("select * from migration_registration where dst_app = '%s' %s;", 
 		appID, extraConditions)
-	log.Println(query)
+	// log.Println(query)
 
 	migrationIDs, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
@@ -138,8 +138,8 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int) 
 		}
 	}
 	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
-	log.Println(table)
-	log.Println(query)
+	// log.Println(table)
+	// log.Println(query)
 	row, err2 := db.DataCall1(AppDBConn, query)
 	if err2 != nil {
 		log.Fatal(err2)

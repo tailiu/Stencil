@@ -146,6 +146,6 @@ func main() {
 	evalConfig := evaluation.InitializeEvalConfig()
 	// leftoverVsMigrated(evalConfig)
 	// anomaliesVsMigrationSize(evalConfig)
-	evaluation.MigrationRate("1203415167", evalConfig)
-
+	// evaluation.MigrationRate("1203415167", evalConfig)
+	evaluation.SystemLevelDanglingData(evalConfig)
 }

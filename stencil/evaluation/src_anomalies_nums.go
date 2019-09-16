@@ -127,7 +127,7 @@ func GetAnomaliesNumsInSrc(evalConfig *EvalConfig, migrationID string) (map[stri
 		} else {
 			checkedRow[key] = true
 
-			danglingDataStats1 := srcDanglingData(evalConfig, migrationID, table, pKey)
+			danglingDataStats1 := srcDanglingDataNonSystem(evalConfig, migrationID, table, pKey)
 			violateStats1, interruptionDuration1 := srcViolateDependencies(evalConfig, table, pKey, data1["deleted_at"].(time.Time), migrationID)
 
 			IncreaseMapValByMapInt64(danglingDataStats, danglingDataStats1)

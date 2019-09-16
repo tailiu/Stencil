@@ -50,3 +50,13 @@ func MigrationRate(migrationID string, evalConfig *EvalConfig) {
 	
 	WriteStrToLog(evalConfig.MigrationRateFile, ConvertMapStringToJSONString(migrationRate))
 }
+
+func SystemLevelDanglingData(evalConfig *EvalConfig) {
+	srcDanglingDataStats := srcDanglingDataSystem(evalConfig)
+	log.Println(srcDanglingDataStats)
+
+	dstDanglingDataStats := dstDanglingDataSystem(evalConfig)
+	log.Println(dstDanglingDataStats)
+
+	WriteStrToLog(evalConfig.SrcDanglingDataInSystemFile, ConvertMapInt64ToJSONString(srcDanglingDataStats))
+}

@@ -3,7 +3,7 @@ package evaluation
 import (
 	"database/sql"
 	"strconv"
-	"log"
+	// "log"
 )
 
 func getMigratedDataInRowSize(AppDBConn *sql.DB, data1 map[string]interface{}, mCols map[string][]string, table string, pKey int) int64 {

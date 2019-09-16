@@ -49,7 +49,7 @@ func getDanglingMessagesNum(evalConfig *EvalConfig, danglingDataStats map[string
 	}
 }
 
-func srcDanglingData(evalConfig *EvalConfig, migrationID string, table string, pKey int) map[string]int64 {
+func srcDanglingDataNonSystem(evalConfig *EvalConfig, migrationID string, table string, pKey int) map[string]int64 {
 	danglingDataStats := make(map[string]int64)
 
 	log.Println("Dangling data to check:", table, pKey)
