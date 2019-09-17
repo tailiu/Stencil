@@ -29,6 +29,7 @@ func getMigratedDataInRowSize(AppDBConn *sql.DB, data1 map[string]interface{}, m
 func GetMigratedDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, migrationID string) int64 {
 	conditions := "dst_table != 'n/a'"
 	data := getTableKeyInLogicalSchemaOfMigrationWithConditions(stencilDBConn, migrationID, "src", conditions)
+	// log.Println(data)
 	mCols := getMigratedColsOfApp(stencilDBConn, AppID, migrationID)
 	// log.Println(mCols)
 	checkedRow := make(map[string]bool) 

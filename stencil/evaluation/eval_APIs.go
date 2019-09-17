@@ -92,6 +92,12 @@ func GetDataBagOfUser(migrationID, sourceApp, dstApp string, evalConfig *EvalCon
 	log.Println(dstDataBagSize)
 }
 
-func GetDataDownTime(migrationID, evalConfig *EvalConfig) {
+func GetDataDowntimeInStencil(migrationID string, evalConfig *EvalConfig) {
+	dataDowntimeInStencil := getDataDowntimeInStencil(migrationID, evalConfig)
+	WriteStrArrToLog(evalConfig.DataDowntimeInStencilFile, ConvertDurationToString(dataDowntimeInStencil))
+}
 
+func GetDataDowntimeInNaiveMigration(migrationID string, naiveMigrationID string, evalConfig *EvalConfig) {
+	dataDowntimeInNaive := getDataDowntimeInNaive(migrationID, naiveMigrationID, evalConfig)
+	WriteStrArrToLog(evalConfig.DataDowntimeInNaiveFile, ConvertDurationToString(dataDowntimeInNaive))
 }

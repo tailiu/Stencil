@@ -148,8 +148,9 @@ func main() {
 	// anomaliesVsMigrationSize(evalConfig)
 	// evaluation.MigrationRate("1725984712", evalConfig)
 	// evaluation.SystemLevelDanglingData(evalConfig)
+	// evaluation.GetSize("1297001241", evalConfig)
+	// evaluation.GetTime("1297001241", evalConfig)
 	// evaluation.GetDataBagOfUser("1590693271", "diaspora", "mastodon", evalConfig)
-	// evaluation.GetDataDownTime("1590693271", evalConfig)
-	evaluation.GetSize("1725984712", evalConfig)
-	evaluation.GetTime("1725984712", evalConfig)
+	evaluation.GetDataDowntimeInStencil("1491323842", evalConfig)
+	evaluation.GetDataDowntimeInNaiveMigration("1491323842", evalConfig)
 }

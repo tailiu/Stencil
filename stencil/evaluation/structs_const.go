@@ -74,9 +74,16 @@ type EvalConfig struct {
 	MigrationTimeFile string
 	SrcDanglingDataInSystemFile string
 	DstDanglingDataInSystemFile string
+	DataDowntimeInStencilFile string
+	DataDowntimeInNaiveFile string
 }
 
 type DataBagData struct {
+	TableID 	string
+	RowIDs 		[]string
+}
+
+type DisplayedData struct {
 	TableID 	string
 	RowIDs 		[]string
 }
@@ -98,7 +105,9 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.MigratedDataSizeFile,
 	evalConfig.MigrationTimeFile,
 	evalConfig.SrcDanglingDataInSystemFile,
-	evalConfig.DstDanglingDataInSystemFile = 
+	evalConfig.DstDanglingDataInSystemFile,
+	evalConfig.DataDowntimeInStencilFile,
+	evalConfig.DataDowntimeInNaiveFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -106,7 +115,9 @@ func InitializeEvalConfig() *EvalConfig {
 		"migratedDataSize",
 		"migrationTime",
 		"srcSystemDanglingData",
-		"dstSystemDanglingData"
+		"dstSystemDanglingData",
+		"dataDowntimeInStencil",
+		"dataDowntimeInNaive"
 
 	return evalConfig
 }
