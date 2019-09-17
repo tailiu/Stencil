@@ -36,21 +36,33 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 				{
 					for {
 						if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break
 					}
 					for {
 						if err := mWorker.SecondPhase(thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break
 					}
 					for {
 						if err := mWorker.MigrateProcessBags(thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break
@@ -60,7 +72,11 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 				{
 					for {
 						if err := mWorker.ConsistentMigration(thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break
@@ -70,7 +86,11 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 				{
 					for {
 						if err := mWorker.IndependentMigration(thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break
@@ -131,14 +151,22 @@ func LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *t
 				{
 					for {
 						if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break
 					}
 					for {
 						if err := mWorker.SecondPhase(thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break
@@ -148,7 +176,11 @@ func LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *t
 				{
 					for {
 						if err := mWorker.ConsistentMigration(thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break
@@ -158,7 +190,11 @@ func LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *t
 				{
 					for {
 						if err := mWorker.IndependentMigration(thread_id); err != nil {
-							mWorker.RenewDBConn()
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
 							continue
 						}
 						break

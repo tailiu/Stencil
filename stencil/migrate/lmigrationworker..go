@@ -657,7 +657,7 @@ func (self *LMigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 					fmt.Println("@ERROR_Delete")
 					fmt.Println("@SQL:", tagMember, srcID)
 					fmt.Println("@ARGS:", tagMember, srcID)
-					log.Fatal(derr)
+					// log.Fatal(derr)
 					return derr
 				}
 				if serr := db.SaveForEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppName, self.DstAppConfig.AppName, tagMember, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
@@ -766,7 +766,7 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 	}
 
 	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-	visited := true
+
 	if self.IsNodeOwnedByRoot(node){
 		if err := self.MigrateNode(node, false); err == nil {
 			log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
@@ -779,9 +779,8 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 					log.Println(err)
 					return err
 				}
-				if strings.EqualFold(err.Error(), "deadlock"){
-					log.Println(err)
-					visited = false
+				if strings.Contains(err.Error(), "deadlock"){
+					return err
 				}
 			}
 		}
@@ -789,9 +788,7 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 		log.Println(fmt.Sprintf("x%2dx UN-OWNED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	}
 
-	if visited {
-		self.MarkAsVisited(node)
-	}
+	self.MarkAsVisited(node)
 
 	fmt.Println("------------------------------------------------------------------------")
 
@@ -848,9 +845,12 @@ func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 						break
 					}
 				} else {
-					log.Println(fmt.Sprintf("x%2dx | %d/%d | FAILED    node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					log.Println(fmt.Sprintf("x%2dx | %d/%d | FAILED    node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 					if strings.EqualFold(err.Error(), "0") {
 						log.Println(err)
+						return err
+					}
+					if strings.Contains(err.Error(), "deadlock"){
 						return err
 					}
 				}

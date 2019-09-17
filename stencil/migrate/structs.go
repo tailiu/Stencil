@@ -17,6 +17,7 @@ const (
 type DependencyNode struct {
 	Tag  config.Tag
 	SQL  string
+	SizeSQL  string
 	Data map[string]interface{}
 }
 
