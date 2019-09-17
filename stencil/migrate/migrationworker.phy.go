@@ -897,18 +897,20 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 			if strings.EqualFold(err.Error(), "2") {
 				log.Println(fmt.Sprintf("x%dx BAGGED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			} else {
-				failed = true
 				log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 				if strings.EqualFold(err.Error(), "0") {
 					log.Println(err)
 					return err
+				}
+				if strings.EqualFold(err.Error(), "deadlock"){
+					failed = true
 				}
 			}
 		}
 	}else{
 		log.Println(fmt.Sprintf("x%2dx UN-OWNED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	}
-	if !failed{
+	if !failed {
 		self.MarkAsVisited(node)
 	}
 
@@ -1002,6 +1004,7 @@ func (self *MigrationWorker) ConsistentMigration(threadID int) error {
 			return err
 		}
 		for _, node := range nodes {
+			visited := true
 			nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 			log.Println(fmt.Sprintf("~%d~ | Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
 			if err := self.HandleMigration(node); err == nil {
@@ -1020,9 +1023,15 @@ func (self *MigrationWorker) ConsistentMigration(threadID int) error {
 						log.Println(err)
 						return err
 					}
+					if strings.EqualFold(err.Error(), "deadlock"){
+						visited = false
+					}
+					
 				}
 			}
-			self.MarkAsVisited(node)
+			if visited {
+				self.MarkAsVisited(node)
+			}
 		}
 	}
 	if err := self.HandleMigration(self.root); err == nil {

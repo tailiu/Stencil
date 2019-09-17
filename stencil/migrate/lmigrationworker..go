@@ -512,13 +512,13 @@ func (self *LMigrationWorker) MarkRowAsDeleted(node *DependencyNode, tx *sql.Tx)
 		if _, ok := node.Data[idCol]; ok {
 			srcID := fmt.Sprint(node.Data[idCol])
 			if derr := db.DeleteRowFromAppDB(tx, tagMember, srcID); derr != nil {
-				fmt.Println("@ERROR_DeleteRowFromAppDB")
+				fmt.Println("@ERROR_DeleteRowFromAppDB", derr)
 				fmt.Println("@QARGS:", tagMember, srcID)
 				// log.Fatal(derr)
 				return derr
 			}
 			if derr := db.UpdateLEvaluation(self.logTxn.DBconn, tagMember, srcID, self.logTxn.Txn_id); derr != nil {
-				fmt.Println("@ERROR_UpdateLEvaluation")
+				fmt.Println("@ERROR_UpdateLEvaluation", derr)
 				fmt.Println("@QARGS:", tagMember, srcID, self.logTxn.Txn_id)
 				// log.Fatal(derr)
 				return derr
@@ -766,7 +766,7 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 	}
 
 	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-	
+	visited := true
 	if self.IsNodeOwnedByRoot(node){
 		if err := self.MigrateNode(node, false); err == nil {
 			log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
@@ -779,12 +779,19 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 					log.Println(err)
 					return err
 				}
+				if strings.EqualFold(err.Error(), "deadlock"){
+					log.Println(err)
+					visited = false
+				}
 			}
 		}
 	}else{
 		log.Println(fmt.Sprintf("x%2dx UN-OWNED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	}
-	self.MarkAsVisited(node)
+
+	if visited {
+		self.MarkAsVisited(node)
+	}
 
 	fmt.Println("------------------------------------------------------------------------")
 
