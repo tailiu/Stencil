@@ -199,7 +199,7 @@ def danglingDataSystem():
         'Dangling statuses without conversations in Mastodon',
         'Dangling favourites without statuses in Mastodon'
     ]
-    xs = 'Num of migration users'
+    xs = 'Num of migrated users'
     ys = [
         'Num of dangling likes',
         'Num of dangling comments',
@@ -219,13 +219,27 @@ def getMigrationRate(data):
         size.append(returnNumOrZero(data1, "size"))
     return time, size
 
-def migrationRatePoints():
-    data = readFile3(logDir + migrationRate)
+def migrationRateDifferentNumOfThreads():
+    data = []
+    data.append(readFile3(logDir + migrationRate + "_1"))
+    data.append(readFile3(logDir + migrationRate + "_10"))
+    data.append(readFile3(logDir + migrationRate + "_50"))
+    data.append(readFile3(logDir + migrationRate + "_100"))
 
-    time, size = getMigrationRate(data)
+    time = []
+    size = []
+
+    for data1 in data:
+        time1, size1 = getMigrationRate(data1)
+        time.append(time1)
+        size.append(size1)
+    
+    labels = ["1 thread", "10 threads", "50 threads", "100 threads"]
+    xlabel = 'Migration Time (s)'
+    ylabel = 'Migration size (bytes)'
+    title = 'Migration rates using different numbers of migration threads'
     # g.line(time, size, "Migration time (s)", "Migration size (Bytes)", "Migration rate")
-    g.mulPointsDanglingData(time, size, "migration rate")
-
+    g.mulPoints(time, size, labels, xlabel, ylabel, title)
 
 # leftoverCDF()
 # danglingData()
@@ -234,5 +248,5 @@ def migrationRatePoints():
 # serviceInterruptionCumSum()
 # anomaliesCumSum()
 # danglingDataPoints()
-danglingDataSystem()
-migrationRatePoints()
+# danglingDataSystem()
+migrationRateDifferentNumOfThreads()
