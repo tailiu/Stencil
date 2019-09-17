@@ -7,7 +7,10 @@ leftoverVsMigratedFile = "leftoverVsMigrated"
 interruptionTimeFile = "interruptionDuration"
 dstAnomalies = "dstAnomaliesVsMigrationSize"
 srcAnomalies = "srcAnomaliesVsMigrationSize"
-cumNum = 1000
+srcSystemDanglingData = "srcSystemDanglingData"
+dstSystemDanglingData = "dstSystemDanglingData"
+migrationRate = "migrationRate"
+cumNum = 543
 
 def readFile1(filePath):
     data = []
@@ -162,11 +165,65 @@ def anomaliesCumSum():
 
     g.mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, statusesBeforeConversationsCS)
 
+def getDanglingDataInSrcSystem(data):
+    danglingLikes = []
+    danglingComments = []
+    danglingMessages = []
+    for i, data1 in enumerate(data):
+        danglingLikes.append(returnNumOrZero(data1, "likes:posts"))
+        danglingComments.append(returnNumOrZero(data1, "comments:posts"))
+        danglingMessages.append(returnNumOrZero(data1, "messages:conversations"))
+    return danglingLikes, danglingComments, danglingMessages
+
+def getDanglingDataInDstSystem(data):
+    danglingStatuses = []
+    danglingFav = []
+    for i, data1 in enumerate(data):
+        danglingStatuses.append(returnNumOrZero(data1, "statuses:conversations"))
+        danglingFav.append(returnNumOrZero(data1, "favourites:statuses"))
+    return danglingStatuses, danglingFav
+
+def danglingDataSystem():
+    srcData = readFile3(logDir + srcSystemDanglingData)
+    dstData = readFile3(logDir + dstSystemDanglingData)
+    danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrcSystem(srcData)
+    danglingStatuses, danglingFav = getDanglingDataInDstSystem(dstData)
+
+    x = np.arange(1, cumNum + 1)
+
+    data = [danglingLikes, danglingComments, danglingMessages, danglingStatuses, danglingFav]
+    label = [
+        'Dangling likes without posts in Diaspora',
+        'Dangling comments without posts in Diaspora',
+        'Dangling messages without comments in Diaspora',
+        'Dangling statuses without conversations in Mastodon',
+        'Dangling favourites without statuses in Mastodon'
+    ]
+    for i in range(len(data)):
+        g.mulPointsDanglingData(x, data[i], label[i])
+
+def getMigrationRate(data):
+    time = []
+    size = []
+    for i, data1 in enumerate(data):
+        time.append(returnNumOrZero(data1, "time"))
+        size.append(returnNumOrZero(data1, "size"))
+    return time, size
+
+def migrationRateLine():
+    data = readFile3(logDir + migrationRate)
+
+    time, size = getMigrationRate(data)
+    # g.line(time, size, "Migration time (s)", "Migration size (Bytes)", "Migration rate")
+    g.mulPointsDanglingData(time, size, "migration rate")
+
 
 # leftoverCDF()
 # danglingData()
-interruptionTimeCDF()
-danglingDataCumSum()
-serviceInterruptionCumSum()
-anomaliesCumSum()
-danglingDataPoints()
+# interruptionTimeCDF()
+# danglingDataCumSum()
+# serviceInterruptionCumSum()
+# anomaliesCumSum()
+# danglingDataPoints()
+# danglingDataSystem()
+migrationRateLine()
