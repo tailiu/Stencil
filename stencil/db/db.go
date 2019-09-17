@@ -78,7 +78,7 @@ func Delete(db *sql.DB, SQL string, args ...interface{}) error {
 
 	if _, err := db.Query(SQL, args...); err != nil {
 		log.Println(SQL, args)
-		log.Fatal("## DB ERROR: ", err)
+		// log.Fatal("## DB ERROR: ", err)
 		return err
 	}
 	return nil
@@ -114,7 +114,7 @@ func DeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
 	query := fmt.Sprintf("UPDATE %s SET mark_as_delete = $1 WHERE id = $2", table)
 	if _, err := tx.Exec(query, true, id); err != nil {
 		log.Println(query, "true", id)
-		log.Fatal("## DB ERROR: ", err)
+		// log.Fatal("## DB ERROR: ", err)
 		return err
 	}
 	return nil

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"stencil/migrate"
+	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
 	"stencil/evaluation"
@@ -47,16 +48,21 @@ func main() {
 			log.Fatal("can't read migration type")
 		}
 
-		mWorker := migrate.CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype)
-
-		if mthread.LThreadController(mWorker, threads) {
+		// mWorker := migrate.CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype)
+		mappings := config.GetSchemaMappingsFor(srcApp, dstApp)
+		if mappings == nil {
+			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
+		}
+		if mthread.LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads) {
 			transaction.LogOutcome(logTxn, "COMMIT")
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 		}
-		evaluation.AnomaliesDanglingData(fmt.Sprint(logTxn.Txn_id), evalConfig)
+		// evaluation.AnomaliesDanglingData(fmt.Sprint(logTxn.Txn_id), evalConfig)
 		evaluation.MigrationRate(fmt.Sprint(logTxn.Txn_id), evalConfig)
 		evaluation.SystemLevelDanglingData(evalConfig)
+		evaluation.GetSize(fmt.Sprint(logTxn.Txn_id), evalConfig)
+		evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)
 	}

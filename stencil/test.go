@@ -63,9 +63,9 @@ func test5() {
 	stencilDB := db.GetDBConn(db.STENCIL_DB)
 	appconfig, _ := config.CreateAppConfig("diaspora", "1")
 	qs := qr.CreateQS(appconfig.QR)
-	qs.SelectColumns("contacts.*")
-	qs.FromTable(map[string]string{"table":"contacts"})
-	qs.RowIDs("134238299")
+	qs.SelectColumns("notifications.*")
+	qs.FromTable(map[string]string{"table":"notifications"})
+	// qs.RowIDs("134238299")
 	sql := qs.GenSQLSize()
 	fmt.Println(sql)
 	if res, err := db.DataCall(stencilDB, sql); err == nil{
