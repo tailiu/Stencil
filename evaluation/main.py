@@ -10,7 +10,7 @@ srcAnomalies = "srcAnomaliesVsMigrationSize"
 srcSystemDanglingData = "srcSystemDanglingData"
 dstSystemDanglingData = "dstSystemDanglingData"
 migrationRate = "migrationRate"
-cumNum = 543
+cumNum = 1000
 
 def readFile1(filePath):
     data = []
@@ -192,15 +192,24 @@ def danglingDataSystem():
     x = np.arange(1, cumNum + 1)
 
     data = [danglingLikes, danglingComments, danglingMessages, danglingStatuses, danglingFav]
-    label = [
+    title = [
         'Dangling likes without posts in Diaspora',
         'Dangling comments without posts in Diaspora',
-        'Dangling messages without comments in Diaspora',
+        'Dangling messages without conversations in Diaspora',
         'Dangling statuses without conversations in Mastodon',
         'Dangling favourites without statuses in Mastodon'
     ]
+    xs = 'Num of migration users'
+    ys = [
+        'Num of dangling likes',
+        'Num of dangling comments',
+        'Num of dangling messages',
+        'Num of dangling statuses',
+        'Num of dangling favourites'
+    ]
     for i in range(len(data)):
-        g.mulPointsDanglingData(x, data[i], label[i])
+        g.line(x, data[i], xs, ys[i], title[i])
+        # g.mulPointsDanglingData(x, data[i], title[i])
 
 def getMigrationRate(data):
     time = []
@@ -210,7 +219,7 @@ def getMigrationRate(data):
         size.append(returnNumOrZero(data1, "size"))
     return time, size
 
-def migrationRateLine():
+def migrationRatePoints():
     data = readFile3(logDir + migrationRate)
 
     time, size = getMigrationRate(data)
@@ -225,5 +234,5 @@ def migrationRateLine():
 # serviceInterruptionCumSum()
 # anomaliesCumSum()
 # danglingDataPoints()
-# danglingDataSystem()
-migrationRateLine()
+danglingDataSystem()
+migrationRatePoints()
