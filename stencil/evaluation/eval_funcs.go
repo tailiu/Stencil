@@ -2,6 +2,8 @@ package evaluation
 
 import (
 	"stencil/db"
+	"stencil/config"
+	"stencil/transaction"
 	"fmt"
 	"database/sql"
 	"log"
@@ -295,4 +297,33 @@ func getAllDisplayedData(evalConfig *EvalConfig, migrationID, appID string) []Di
 
 	log.Println(displayedData)
 	return displayedData
+}
+
+func getAppConfig(evalConfig *EvalConfig, app string) *config.AppConfig {
+	app_id := db.GetAppIDByAppName(evalConfig.StencilDBConn, app)
+	appConfig, err := config.CreateAppConfigDisplay(app, app_id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &appConfig
+}
+
+func GetTableNameByTableID(evalConfig *EvalConfig, tableID string) string {
+	query := fmt.Sprintf("select table_name from app_tables where pk = %s", tableID)
+	data1, err1 := db.DataCall1(evalConfig.StencilDBConn, query)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+	return data1["table_name"].(string)
+}
+
+func getMigrationEndTime(stencilDBConn *sql.DB, migrationID int) time.Time {
+	log_txn := new(transaction.Log_txn)
+	log_txn.DBconn = stencilDBConn
+	log_txn.Txn_id = migrationID
+	if endTime := log_txn.GetCreatedAt("COMMIT"); len(endTime) == 1 {
+		return endTime[0]
+	} else {
+		panic("Should never happen here!")
+	}
 }

@@ -9,15 +9,6 @@ import (
 	"strings"
 )
 
-func getAppConfig(evalConfig *EvalConfig, app string) *config.AppConfig {
-	app_id := db.GetAppIDByAppName(evalConfig.StencilDBConn, app)
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &appConfig
-}
-
 func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *config.AppConfig) []DataBagData {
 	query := fmt.Sprintf("select table_id, array_agg(row_id) as row_ids from migration_table where bag = true and app_id = %s and migration_id = %s group by group_id, table_id;",
 		appConfig.AppID, migrationID)
@@ -41,15 +32,6 @@ func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *
 
 	log.Println(dataBag)
 	return dataBag
-}
-
-func GetTableNameByTableID(evalConfig *EvalConfig, tableID string) string {
-	query := fmt.Sprintf("select table_name from app_tables where pk = %s", tableID)
-	data1, err1 := db.DataCall1(evalConfig.StencilDBConn, query)
-	if err1 != nil {
-		log.Fatal(err1)
-	}
-	return data1["table_name"].(string)
 }
 
 func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, tableID string, rowIDs []string) int {
