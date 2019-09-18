@@ -86,10 +86,10 @@ func SystemLevelDanglingData(migrationID string, evalConfig *EvalConfig) {
 }
 
 func GetDataBagOfUser(migrationID, sourceApp, dstApp string, evalConfig *EvalConfig) {
-	srcDataBagSize := getDataBagSize(evalConfig, sourceApp, migrationID)
-	dstDataBagSize := getDataBagSize(evalConfig, dstApp, migrationID)
-	log.Println(srcDataBagSize)
-	log.Println(dstDataBagSize)
+	migratedNodeSize := getTotalMigratedNodeSize(evalConfig, dstApp, migrationID)
+	log.Println(migratedNodeSize)
+	displayedDataSize := getDisplayedDataSize(evalConfig, dstApp, migrationID)
+	log.Println(displayedDataSize)
 }
 
 func GetDataDowntimeInStencil(migrationID string, evalConfig *EvalConfig) {

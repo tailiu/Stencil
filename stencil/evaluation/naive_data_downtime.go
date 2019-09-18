@@ -14,21 +14,21 @@ func getDeletedAt(evalConfig *EvalConfig, data map[string]interface{}, naiveMigr
 	log.Println(tableName + ".id")
 	query := fmt.Sprintf("select deleted_at from evaluation where migration_id = '%s' and dst_app = '2' and dst_id = '%s' and dst_table = '%s'", 
 		naiveMigrationID, data[tableName + ".id"].(string), tableName)
-	log.Println(query)
+	// log.Println(query)
 	result, err := db.DataCall1(evalConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 	
-	log.Println(result)
+	// log.Println(result)
 	return result["deleted_at"].(time.Time)
 }
 
 func getDowntimeBasedOnStencilMigration(data DisplayedData, naiveMigrationID string, evalConfig *EvalConfig, appConfig *config.AppConfig, naiveMigrationEndTime time.Time) time.Duration {
 	tableName := GetTableNameByTableID(evalConfig, data.TableID)
 	data1 := getData1FromPhysicalSchemaByRowID(evalConfig, appConfig, tableName, data.RowIDs)
-	log.Println(data1)
-	log.Println(tableName)
+	// log.Println(data1)
+	// log.Println(tableName)
 	return naiveMigrationEndTime.Sub(getDeletedAt(evalConfig, data1, naiveMigrationID, tableName))
 }
 
@@ -47,7 +47,7 @@ func getData1FromPhysicalSchemaByRowID(evalConfig *EvalConfig, appConfig *config
 	qs.RowIDs(strRowIDs)
 	physicalQuery := qs.GenSQL()
 
-	log.Println(physicalQuery)
+	// log.Println(physicalQuery)
 	
 	result, err := db.DataCall1(evalConfig.StencilDBConn, physicalQuery)
 	if err != nil {
