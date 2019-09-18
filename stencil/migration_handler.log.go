@@ -60,7 +60,7 @@ func main() {
 		}
 		// evaluation.AnomaliesDanglingData(fmt.Sprint(logTxn.Txn_id), evalConfig)
 		evaluation.MigrationRate(fmt.Sprint(logTxn.Txn_id), evalConfig)
-		evaluation.SystemLevelDanglingData(evalConfig)
+		evaluation.SystemLevelDanglingData(fmt.Sprint(logTxn.Txn_id), evalConfig)
 		evaluation.GetSize(fmt.Sprint(logTxn.Txn_id), evalConfig)
 		evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {

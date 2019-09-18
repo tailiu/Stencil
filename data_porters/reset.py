@@ -88,11 +88,11 @@ if __name__ == "__main__":
             truncatePhysicalTables()
         if arg in ["log", "row", "all"]:
             # DeleteRowsFromMigrationRegistration(sys.argv[1])
-            truncateTableFromStencil("migration_registration")
-            truncateTableFromStencil("evaluation")
+            # truncateTableFromStencil("migration_registration")
+            # truncateTableFromStencil("evaluation")
             truncateTableFromStencil("user_table")
             truncateTableFromStencil("display_flags")
-            truncateTableFromStencil("txn_logs")
+            # truncateTableFromStencil("txn_logs")
             if arg in ["log", "all"]:
                 truncate("mastodon", blade=True)
                 reverseMarkAsDelete("diaspora", blade=False)

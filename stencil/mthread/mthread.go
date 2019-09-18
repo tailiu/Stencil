@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"stencil/migrate"
+	"stencil/display_algorithm"
 	"stencil/config"
 	"stencil/transaction"
 	"stencil/db"
@@ -27,6 +28,13 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 	}
 
 	for threadID := 0; threadID < threads; threadID++ {
+		wg.Add(1)
+		go func(thread_id int, commitChannel chan ThreadChannel) {
+			defer wg.Done()
+			display_algorithm.DisplayThread(dstApp, logTxn.Txn_id, false)
+			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id, size: 0}
+		}(threadID, commitChannel)
+		
 		wg.Add(1)
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
