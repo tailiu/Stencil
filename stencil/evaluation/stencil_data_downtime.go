@@ -12,7 +12,7 @@ func getDowntime(data DisplayedData, appID string, evalConfig *EvalConfig) time.
 		appID, data.TableID, data.RowIDs[0])
 	
 	data1, err1 := db.DataCall1(evalConfig.StencilDBConn, query)
-	// log.Println(data1)
+	log.Println(data1)
 	if err1 != nil {
 		log.Fatal(err1)
 	}

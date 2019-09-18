@@ -150,7 +150,7 @@ func main() {
 	// evaluation.SystemLevelDanglingData("1246276584", evalConfig)
 	// evaluation.GetSize("1297001241", evalConfig)
 	// evaluation.GetTime("1297001241", evalConfig)
-	// evaluation.GetDataDowntimeInStencil("924598472", evalConfig)
-	// evaluation.GetDataDowntimeInNaiveMigration("924598472", "704236429", evalConfig)
-	evaluation.GetDataBagOfUser("1590693271", "diaspora", "mastodon", evalConfig)
+	// evaluation.GetDataDowntimeInStencil("859988132", evalConfig)
+	evaluation.GetDataDowntimeInNaiveMigration("859988132", "31424028", evalConfig)
+	// evaluation.GetDataBagOfUser("1590693271", "diaspora", "mastodon", evalConfig)
 }

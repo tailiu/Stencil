@@ -114,7 +114,6 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deleti
 	}
 
 	for _, dataHint := range dataHints {
-		t := time.Now().Format(time.RFC3339)
 		for _, rowID := range dataHint.RowIDs {
 
 			// This is an optimization to prevent possible path conflict
@@ -123,8 +122,8 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deleti
 				return errors.New("Path conflict"), dhStack
 			}
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf("UPDATE migration_table SET mflag = 0, updated_at = '%s' WHERE row_id = %d and app_id = %d and table_id = %s", 
-					t, rowID, appID1, dataHint.TableID)
+			query := fmt.Sprintf("UPDATE migration_table SET mflag = 0, updated_at = now() WHERE row_id = %d and app_id = %d and table_id = %s", 
+					rowID, appID1, dataHint.TableID)
 			log.Println("**************************************")
 			log.Println(query)
 			log.Println("**************************************")
@@ -166,7 +165,6 @@ func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct)
 	}
 
 	for _, dataHint := range dataHints {
-		t := time.Now().Format(time.RFC3339)
 		for _, rowID := range dataHint.RowIDs {
 
 			// Similar to displaying data, this is an optimization to prevent possible path conflict
@@ -175,8 +173,8 @@ func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct)
 				return errors.New("Path conflict")
 			}
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf("UPDATE migration_table SET bag = true, mark_as_delete = true, mflag = 0, updated_at = '%s' WHERE row_id = %d and app_id = %d and table_id = %s",
-								 t, rowID, appID1, dataHint.TableID)
+			query := fmt.Sprintf("UPDATE migration_table SET bag = true, mark_as_delete = true, mflag = 0, updated_at = now() WHERE row_id = %d and app_id = %d and table_id = %s",
+					rowID, appID1, dataHint.TableID)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 			log.Println(query)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")

@@ -6,7 +6,6 @@ import (
 	"stencil/qr"
 	"log"
 	"fmt"
-	"strings"
 )
 
 func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, tableID string, rowIDs []string) int64 {
@@ -35,8 +34,8 @@ func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *confi
 	log.Println(result)
 
 	var size int64
-	for k, v := range result {
-		size += result[k]
+	for _, v := range result {
+		size += v.(int64)
 	}
 
 	return size
@@ -50,7 +49,7 @@ func calculateDisplayedDataSizeInStencilModel(evalConfig *EvalConfig, appConfig 
 	return size
 }
 
-func getDisplayedDataSize(evalConfig *EvalConfig, app, migrationID string) int {
+func getDisplayedDataSize(evalConfig *EvalConfig, app, migrationID string) int64 {
 	appConfig := getAppConfig(evalConfig, app)
 	displayedData := getAllDisplayedData(evalConfig, migrationID, appConfig.AppID)
 	return calculateDisplayedDataSizeInStencilModel(evalConfig, appConfig, displayedData)
@@ -59,7 +58,7 @@ func getDisplayedDataSize(evalConfig *EvalConfig, app, migrationID string) int {
 func getTotalMigratedNodeSize(evalConfig *EvalConfig, app, migrationID string) int64 {
 	app_id := db.GetAppIDByAppName(evalConfig.StencilDBConn, app)
 	query := fmt.Sprintf("select msize from migration_registration where dst_app = %s and migration_id = %s", app_id, migrationID)
-	result, err := db.DataCall1(evalConfig.StencilDBConn, physicalQuery)
+	result, err := db.DataCall1(evalConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -11,16 +11,16 @@ import (
 )
 
 func getDeletedAt(evalConfig *EvalConfig, data map[string]interface{}, naiveMigrationID string, tableName string) time.Time {
-	log.Println(tableName + ".id")
+	// log.Println(tableName + ".id")
 	query := fmt.Sprintf("select deleted_at from evaluation where migration_id = '%s' and dst_app = '2' and dst_id = '%s' and dst_table = '%s'", 
-		naiveMigrationID, data[tableName + ".id"].(string), tableName)
-	// log.Println(query)
+		naiveMigrationID, fmt.Sprint(data[tableName + ".id"]), tableName)
+	log.Println(query)
 	result, err := db.DataCall1(evalConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 	
-	// log.Println(result)
+	log.Println(result)
 	return result["deleted_at"].(time.Time)
 }
 
