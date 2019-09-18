@@ -1,5 +1,5 @@
 /*
- * Migration Handler
+ * Logical Migration Handler
  */
 
 package main

@@ -354,10 +354,10 @@ func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID, number_
 	return true
 }
 
-func FinishMigration(dbConn *sql.DB, migrationID int) bool {
-	query := "UPDATE migration_registration SET end_time = now() WHERE migration_id = $1;"
+func FinishMigration(dbConn *sql.DB, migrationID, size int) bool {
+	query := "UPDATE migration_registration SET end_time = now(), msize = $2 WHERE migration_id = $1;"
 	if _, err := dbConn.Exec(query, migrationID); err != nil {
-		fmt.Println(query, migrationID)
+		fmt.Println(query, migrationID, size)
 		log.Fatal("Insert Error in FinishMigration", err)
 		return false
 	}

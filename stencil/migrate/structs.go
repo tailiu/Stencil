@@ -17,7 +17,6 @@ const (
 type DependencyNode struct {
 	Tag  config.Tag
 	SQL  string
-	SizeSQL  string
 	Data map[string]interface{}
 }
 
@@ -53,6 +52,7 @@ type MigrationWorker struct {
 	mtype        string
 	visitedNodes map[string]map[string]bool
 	arg 		 string
+	Size int
 	// threadID     int
 }
 

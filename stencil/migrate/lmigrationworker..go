@@ -811,9 +811,9 @@ func (self *LMigrationWorker) SecondPhase(threadID int) error {
 	return nil
 }
 
-func (self *LMigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
-	return db.FinishMigration(self.logTxn.DBconn, self.logTxn.Txn_id)
-}
+// func (self *LMigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
+// 	return db.FinishMigration(self.logTxn.DBconn, self.logTxn.Txn_id)
+// }
 
 func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 

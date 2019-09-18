@@ -98,7 +98,7 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 				}
 
 			}
-			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
+			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id, size: mWorker.Size}
 		}(threadID, commitChannel)
 	}
 
@@ -108,7 +108,7 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 	}()
 
 	finished := true
-
+	msize := 0
 	var finished_threads []string
 	for threadResponse := range commitChannel {
 		fmt.Println("THREAD FINISHED WORKING", threadResponse, strings.Join(finished_threads, ","))
@@ -116,13 +116,14 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 			finished = false
 		}
 		finished_threads = append(finished_threads, fmt.Sprint(threadResponse.Thread_id))
+		msize += threadResponse.size
 	}
 
 	if mtype == migrate.DELETION {
 		// mWorker.HandleLeftOverWaitingNodes()
 	}
 
-	db.FinishMigration(logTxn.DBconn, logTxn.Txn_id)
+	db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, msize)
 	return finished
 }
 
@@ -226,6 +227,6 @@ func LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *t
 		// mWorker.HandleLeftOverWaitingNodes()
 	}
 	
-	db.FinishMigration(logTxn.DBconn, logTxn.Txn_id)
+	db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, 0)
 	return finished
 }

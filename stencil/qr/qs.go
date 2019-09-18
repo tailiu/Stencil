@@ -302,3 +302,28 @@ func (self *QS) GenSQLSize() string {
 	}
 	return sql
 }
+
+func (self *QS) GenSQLWithSize() string {
+	var arrayRowIDCols []string
+	var tableColSize []string
+	for table := range self.TableAliases {
+		tableColSize = append(tableColSize, fmt.Sprintf("pg_column_size(%s.*) - pg_column_size(%s.\"%s.rowids\")", table, table, table))
+		arrayRowIDCols = append(arrayRowIDCols, fmt.Sprintf("%s.\"%s.rowids\"", table, table))
+	}
+	self.Columns = append(self.Columns, fmt.Sprintf("array_to_string(uniq(sort(array[%s])),',') as rowids", strings.Join(arrayRowIDCols, " || ")))
+	self.Columns = append(self.Columns, fmt.Sprintf("%s as rowsize", strings.Join(tableColSize, " + ")))
+	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
+	if len(self.Where) > 0 {
+		sql += fmt.Sprintf("WHERE %s ", self.Where)
+	}
+	if len(self.Group) > 0 {
+		sql += fmt.Sprintf("GROUP BY %s ", self.Group)
+	}
+	if len(self.Order) > 0 {
+		sql += fmt.Sprintf("ORDER BY %s ", self.Order)
+	}
+	if len(self.Limit) > 0 {
+		sql += fmt.Sprintf("LIMIT %s ", self.Limit)
+	}
+	return sql
+}
