@@ -183,13 +183,20 @@ def getDanglingDataInDstSystem(data):
         danglingFav.append(returnNumOrZero(data1, "favourites:statuses"))
     return danglingStatuses, danglingFav
 
+def getPercentageInX():
+    x = []
+    distribution = np.arange(1, cumNum + 1)
+    for i in distribution:
+        x.append(float(i)/float(cumNum))
+    return x
+
 def danglingDataSystem():
     srcData = readFile3(logDir + srcSystemDanglingData)
     dstData = readFile3(logDir + dstSystemDanglingData)
     danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrcSystem(srcData)
     danglingStatuses, danglingFav = getDanglingDataInDstSystem(dstData)
 
-    x = np.arange(1, cumNum + 1)
+    x = getPercentageInX()
 
     data = [danglingLikes, danglingComments, danglingMessages, danglingStatuses, danglingFav]
     title = [
@@ -199,7 +206,7 @@ def danglingDataSystem():
         'Dangling statuses without conversations in Mastodon',
         'Dangling favourites without statuses in Mastodon'
     ]
-    xs = 'Num of migrated users'
+    xs = 'Percentage of migrated users'
     ys = [
         'Num of dangling likes',
         'Num of dangling comments',
@@ -219,12 +226,12 @@ def getMigrationRate(data):
         size.append(returnNumOrZero(data1, "size"))
     return time, size
 
-def migrationRateDifferentNumOfThreads():
+def migrationRateDifferentNumOfThreads(title, fileName):
     data = []
-    data.append(readFile3(logDir + migrationRate + "_1"))
-    data.append(readFile3(logDir + migrationRate + "_10"))
-    data.append(readFile3(logDir + migrationRate + "_50"))
-    data.append(readFile3(logDir + migrationRate + "_100"))
+    data.append(readFile3(logDir + fileName + "_1"))
+    data.append(readFile3(logDir + fileName + "_10"))
+    data.append(readFile3(logDir + fileName + "_50"))
+    data.append(readFile3(logDir + fileName + "_100"))
 
     time = []
     size = []
@@ -237,7 +244,7 @@ def migrationRateDifferentNumOfThreads():
     labels = ["1 thread", "10 threads", "50 threads", "100 threads"]
     xlabel = 'Migration Time (s)'
     ylabel = 'Migration size (bytes)'
-    title = 'Migration rates using different numbers of migration threads'
+    title = title
     # g.line(time, size, "Migration time (s)", "Migration size (Bytes)", "Migration rate")
     g.mulPoints(time, size, labels, xlabel, ylabel, title)
 
@@ -248,5 +255,6 @@ def migrationRateDifferentNumOfThreads():
 # serviceInterruptionCumSum()
 # anomaliesCumSum()
 # danglingDataPoints()
-# danglingDataSystem()
-migrationRateDifferentNumOfThreads()
+danglingDataSystem()
+# migrationRateDifferentNumOfThreads('Consistent/independent migration', migrationRate)
+# migrationRateDifferentNumOfThreads('Deletion migration', migrationRate)
