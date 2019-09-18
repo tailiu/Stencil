@@ -114,9 +114,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 	}
 
 	// log.Println(procDependencies)
-	log.Println("|||||||||||||||")
-	log.Println(result)
-	log.Println("|||||||||||||||")
+	// log.Println(result)
 	if len(procDependencies) == 0 {
 		return result, nil
 	} else {

@@ -7,6 +7,9 @@ leftoverVsMigratedFile = "leftoverVsMigrated"
 interruptionTimeFile = "interruptionDuration"
 dstAnomalies = "dstAnomaliesVsMigrationSize"
 srcAnomalies = "srcAnomaliesVsMigrationSize"
+srcSystemDanglingData = "srcSystemDanglingData"
+dstSystemDanglingData = "dstSystemDanglingData"
+migrationRate = "migrationRate"
 cumNum = 1000
 
 def readFile1(filePath):
@@ -162,11 +165,88 @@ def anomaliesCumSum():
 
     g.mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, statusesBeforeConversationsCS)
 
+def getDanglingDataInSrcSystem(data):
+    danglingLikes = []
+    danglingComments = []
+    danglingMessages = []
+    for i, data1 in enumerate(data):
+        danglingLikes.append(returnNumOrZero(data1, "likes:posts"))
+        danglingComments.append(returnNumOrZero(data1, "comments:posts"))
+        danglingMessages.append(returnNumOrZero(data1, "messages:conversations"))
+    return danglingLikes, danglingComments, danglingMessages
+
+def getDanglingDataInDstSystem(data):
+    danglingStatuses = []
+    danglingFav = []
+    for i, data1 in enumerate(data):
+        danglingStatuses.append(returnNumOrZero(data1, "statuses:conversations"))
+        danglingFav.append(returnNumOrZero(data1, "favourites:statuses"))
+    return danglingStatuses, danglingFav
+
+def danglingDataSystem():
+    srcData = readFile3(logDir + srcSystemDanglingData)
+    dstData = readFile3(logDir + dstSystemDanglingData)
+    danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrcSystem(srcData)
+    danglingStatuses, danglingFav = getDanglingDataInDstSystem(dstData)
+
+    x = np.arange(1, cumNum + 1)
+
+    data = [danglingLikes, danglingComments, danglingMessages, danglingStatuses, danglingFav]
+    title = [
+        'Dangling likes without posts in Diaspora',
+        'Dangling comments without posts in Diaspora',
+        'Dangling messages without conversations in Diaspora',
+        'Dangling statuses without conversations in Mastodon',
+        'Dangling favourites without statuses in Mastodon'
+    ]
+    xs = 'Num of migrated users'
+    ys = [
+        'Num of dangling likes',
+        'Num of dangling comments',
+        'Num of dangling messages',
+        'Num of dangling statuses',
+        'Num of dangling favourites'
+    ]
+    for i in range(len(data)):
+        g.line(x, data[i], xs, ys[i], title[i])
+        # g.mulPointsDanglingData(x, data[i], title[i])
+
+def getMigrationRate(data):
+    time = []
+    size = []
+    for i, data1 in enumerate(data):
+        time.append(returnNumOrZero(data1, "time"))
+        size.append(returnNumOrZero(data1, "size"))
+    return time, size
+
+def migrationRateDifferentNumOfThreads():
+    data = []
+    data.append(readFile3(logDir + migrationRate + "_1"))
+    data.append(readFile3(logDir + migrationRate + "_10"))
+    data.append(readFile3(logDir + migrationRate + "_50"))
+    data.append(readFile3(logDir + migrationRate + "_100"))
+
+    time = []
+    size = []
+
+    for data1 in data:
+        time1, size1 = getMigrationRate(data1)
+        time.append(time1)
+        size.append(size1)
+    
+    labels = ["1 thread", "10 threads", "50 threads", "100 threads"]
+    xlabel = 'Migration Time (s)'
+    ylabel = 'Migration size (bytes)'
+    title = 'Migration rates using different numbers of migration threads'
+    # g.line(time, size, "Migration time (s)", "Migration size (Bytes)", "Migration rate")
+    g.mulPoints(time, size, labels, xlabel, ylabel, title)
 
 # leftoverCDF()
 # danglingData()
-interruptionTimeCDF()
-danglingDataCumSum()
-serviceInterruptionCumSum()
-anomaliesCumSum()
-danglingDataPoints()
+# interruptionTimeCDF()
+# danglingDataCumSum()
+# serviceInterruptionCumSum()
+# anomaliesCumSum()
+# danglingDataPoints()
+# danglingDataSystem()
+migrationRateDifferentNumOfThreads()

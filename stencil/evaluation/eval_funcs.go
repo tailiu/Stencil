@@ -2,6 +2,8 @@ package evaluation
 
 import (
 	"stencil/db"
+	"stencil/config"
+	"stencil/transaction"
 	"fmt"
 	"database/sql"
 	"log"
@@ -270,4 +272,58 @@ func getCountsSystem(dbConn *sql.DB, query string) int64 {
 	}
 
 	return data[0]["count"].(int64)
+}
+
+func getAllDisplayedData(evalConfig *EvalConfig, migrationID, appID string) []DisplayedData {
+	query := fmt.Sprintf("select table_id, array_agg(row_id) as row_ids from migration_table where bag = false and app_id = %s and migration_id = %s and mark_as_delete = false group by group_id, table_id;",
+		appID, migrationID)
+	
+	data := db.GetAllColsOfRows(evalConfig.StencilDBConn, query)
+
+	var displayedData []DisplayedData
+	for _, data1 := range data {
+		var rowIDs []string
+		s := data1["row_ids"][1:len(data1["row_ids"]) - 1]
+		s1 := strings.Split(s, ",")
+		for _, rowID := range s1 {
+			rowIDs = append(rowIDs, rowID)
+		}
+
+		data2 := DisplayedData{}
+		data2.TableID = data1["table_id"]
+		data2.RowIDs = rowIDs
+		displayedData = append(displayedData, data2)
+	}
+
+	log.Println(displayedData)
+	return displayedData
+}
+
+func getAppConfig(evalConfig *EvalConfig, app string) *config.AppConfig {
+	app_id := db.GetAppIDByAppName(evalConfig.StencilDBConn, app)
+	appConfig, err := config.CreateAppConfigDisplay(app, app_id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &appConfig
+}
+
+func GetTableNameByTableID(evalConfig *EvalConfig, tableID string) string {
+	query := fmt.Sprintf("select table_name from app_tables where pk = %s", tableID)
+	data1, err1 := db.DataCall1(evalConfig.StencilDBConn, query)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+	return data1["table_name"].(string)
+}
+
+func getMigrationEndTime(stencilDBConn *sql.DB, migrationID int) time.Time {
+	log_txn := new(transaction.Log_txn)
+	log_txn.DBconn = stencilDBConn
+	log_txn.Txn_id = migrationID
+	if endTime := log_txn.GetCreatedAt("COMMIT"); len(endTime) == 1 {
+		return endTime[0]
+	} else {
+		panic("Should never happen here!")
+	}
 }

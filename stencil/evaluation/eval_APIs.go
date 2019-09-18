@@ -74,11 +74,11 @@ func GetTime(migrationID string, evalConfig *EvalConfig) {
 	WriteStrToLog(evalConfig.MigrationTimeFile, ConvertMapStringToJSONString(migration))
 }
 
-func SystemLevelDanglingData(evalConfig *EvalConfig) {
+func SystemLevelDanglingData(migrationID string, evalConfig *EvalConfig) {
 	srcDanglingDataStats := srcDanglingDataSystem(evalConfig)
 	log.Println(srcDanglingDataStats)
 
-	dstDanglingDataStats := dstDanglingDataSystem(evalConfig)
+	dstDanglingDataStats := dstDanglingDataSystem(evalConfig, migrationID)
 	log.Println(dstDanglingDataStats)
 
 	WriteStrToLog(evalConfig.SrcDanglingDataInSystemFile, ConvertMapInt64ToJSONString(srcDanglingDataStats))
@@ -92,6 +92,12 @@ func GetDataBagOfUser(migrationID, sourceApp, dstApp string, evalConfig *EvalCon
 	log.Println(dstDataBagSize)
 }
 
-func GetDataDownTime(migrationID, evalConfig *EvalConfig) {
+func GetDataDowntimeInStencil(migrationID string, evalConfig *EvalConfig) {
+	dataDowntimeInStencil := getDataDowntimeInStencil(migrationID, evalConfig)
+	WriteStrArrToLog(evalConfig.DataDowntimeInStencilFile, ConvertDurationToString(dataDowntimeInStencil))
+}
 
+func GetDataDowntimeInNaiveMigration(stencilMigrationID string, naiveMigrationID string, evalConfig *EvalConfig) {
+	dataDowntimeInNaive := getDataDowntimeInNaive(stencilMigrationID, naiveMigrationID, evalConfig)
+	WriteStrArrToLog(evalConfig.DataDowntimeInNaiveFile, ConvertDurationToString(dataDowntimeInNaive))
 }

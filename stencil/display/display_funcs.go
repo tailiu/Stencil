@@ -71,7 +71,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 		hint.RowIDs = rowIDs
 		displayHints = append(displayHints, hint)
 	}
-	log.Println(displayHints)
+	// log.Println(displayHints)
 	return displayHints
 }
 
