@@ -64,38 +64,58 @@ def DeleteRowsFromMigrationRegistration(arg):
 def resetRowDesc():
     conn, cur = getDB("stencil", blade=False)
     
-    # q = "select rowid from row_desc group by rowid having count(*) > 1;"
-    # cur.execute(q)
-    # for row in cur.fetchall():
-    #     q = "delete from row_desc where app_id != 1 and rowid = %s" %row[0]
-    #     print q
-    #     cur.execute(q)
-    # q = "update row_desc set app_id = 1, mflag = 0;"
-    q = "delete from migration_table where app_id != 1"
+    q = "drop table migration_table;"
     print q
     cur.execute(q)
-    q = "update migration_table set mark_as_delete = false, mflag = 0, bag = false, migration_id = NULL, user_id = NULL, copy_on_write = false;"
+    conn.commit()
+    q = "create table migration_table as table migration_table_backup;"
     print q
+    conn.commit()
     cur.execute(q)
+    constraints = [ "CREATE INDEX migration_table_app ON public.migration_table (app_id int4_ops,table_id int8_ops,mflag int4_ops,mark_as_delete bool_ops);",
+                    "CREATE INDEX migration_table_app_table_rowid ON public.migration_table (app_id int4_ops,table_id int8_ops,row_id int8_ops);",
+                    "CREATE INDEX migration_table_bag ON public.migration_table (bag bool_ops);",
+                    "CREATE INDEX migration_table_dst_app ON public.migration_table (app_id int4_ops);",
+                    "CREATE INDEX migration_table_dst_app_dst_rowid_org_rowid ON public.migration_table (app_id int4_ops,row_id int8_ops,group_id int8_ops);",
+                    "CREATE INDEX migration_table_dst_rowid ON public.migration_table (row_id int8_ops);",
+                    "CREATE INDEX migration_table_dst_rowid_org_rowid ON public.migration_table (row_id int8_ops,group_id int8_ops);",
+                    "CREATE INDEX migration_table_dst_table ON public.migration_table (table_id int8_ops);",
+                    "CREATE INDEX migration_table_dst_table_dst_app_dst_rowid_org_rowid ON public.migration_table (app_id int4_ops,row_id int8_ops,group_id int8_ops,table_id int8_ops);",
+                    "CREATE INDEX migration_table_mark_as_deleted ON public.migration_table (mark_as_delete bool_ops);",
+                    "CREATE INDEX migration_table_mflag ON public.migration_table (mflag int4_ops);",
+                    "CREATE INDEX migration_table_migration_id ON public.migration_table (migration_id int4_ops);",
+                    "CREATE INDEX migration_table_org_rowid ON public.migration_table (group_id int8_ops);",
+                    "CREATE INDEX migration_table_user_id ON public.migration_table (user_id int4_ops);",
+                    "ALTER TABLE public.migration_table ADD CONSTRAINT migration_table_pk PRIMARY KEY (app_id, table_id, group_id, row_id, mark_as_delete);",
+                    "ALTER TABLE ONLY public.migration_table ALTER COLUMN mark_as_delete SET DEFAULT false;",
+                    "ALTER TABLE ONLY public.migration_table ALTER COLUMN bag SET DEFAULT false;",
+                    "ALTER TABLE ONLY public.migration_table ALTER COLUMN copy_on_write SET DEFAULT false;",
+                    "ALTER TABLE ONLY public.migration_table ALTER COLUMN mflag SET DEFAULT 0;",
+                    "ALTER TABLE ONLY public.migration_table ALTER COLUMN updated_at SET DEFAULT now();",
+                    "ALTER TABLE ONLY public.migration_table ALTER COLUMN created_at SET DEFAULT now();",
+                    "CREATE TRIGGER update_migration_table_changetimestamp BEFORE UPDATE ON migration_table FOR EACH ROW EXECUTE PROCEDURE update_changetimestamp_column();"]
+    for q in constraints:
+        print q
+        cur.execute(q)
     conn.commit()
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
-        print "provide an argument (phy, log, row, all), exiting."
+        print "provide an argument (phy, log, row, all, both), exiting."
     else:
         arg = sys.argv[1]
         if arg in ["phy", "all"]:
             truncatePhysicalTables()
-        if arg in ["log", "row", "all"]:
+        if arg in ["log", "row", "all", "both"]:
             # DeleteRowsFromMigrationRegistration(sys.argv[1])
-            # truncateTableFromStencil("migration_registration")
-            # truncateTableFromStencil("evaluation")
+            truncateTableFromStencil("migration_registration")
+            truncateTableFromStencil("evaluation")
             truncateTableFromStencil("user_table")
             truncateTableFromStencil("display_flags")
-            # truncateTableFromStencil("txn_logs")
-            if arg in ["log", "all"]:
+            truncateTableFromStencil("txn_logs")
+            if arg in ["log", "all", "both"]:
                 truncate("mastodon", blade=True)
                 reverseMarkAsDelete("diaspora", blade=False)
-            if arg in ["row", "all"]:
+            if arg in ["row", "all", "both"]:
                 # truncateTableFromStencil("data_bags")
                 resetRowDesc()
