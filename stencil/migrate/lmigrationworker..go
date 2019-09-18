@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"log"
 	"stencil/config"
 	"stencil/db"
@@ -498,11 +499,44 @@ func (self *LMigrationWorker) GetMappedData(toTable config.ToTable, node *Depend
 				orgCols += fmt.Sprintf("%s,", fromAttr)
 			}
 		} else if strings.Contains(fromAttr, "#") {
-			// Resolve Mapping Method
+			assignedTabCol := strings.Trim(fromAttr, "#ASSIGN()")
+			if strings.Contains(fromAttr, "#ASSIGN"){
+				// fmt.Println(fromAttr)
+				if nodeVal, ok := node.Data[assignedTabCol]; ok {
+					// fmt.Println("found attr: ", assignedTabCol, " ", nodeVal)
+					ivals = append(ivals, nodeVal)
+					vals += fmt.Sprintf("$%d,", len(ivals))
+					cols += fmt.Sprintf("%s,", toAttr)
+					orgCols += fmt.Sprintf("%s,", assignedTabCol)
+				}
+				// fmt.Println("IN: ", strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft, undoAction)
+				// log.Fatal("found attr: ", assignedTabCol)
+			}else{
+				switch fromAttr {
+					case "#GUID": {
+						ivals = append(ivals, uuid.New())
+						vals += fmt.Sprintf("$%d,", len(ivals))
+						cols += fmt.Sprintf("%s,", toAttr)
+						orgCols += fmt.Sprintf("%s,", assignedTabCol)
+					}
+					case "#RANDINT": {
+						ivals = append(ivals, self.SrcAppConfig.QR.NewRowId())
+						vals += fmt.Sprintf("$%d,", len(ivals))
+						cols += fmt.Sprintf("%s,", toAttr)
+						orgCols += fmt.Sprintf("%s,", assignedTabCol)
+					}
+					default: {
+						fmt.Println(toTable.Table, toAttr, fromAttr)
+						log.Fatal("@GetMappedData: Case not found:" + fromAttr)
+					}
+				}
+			}
+			// log.Fatal(fromAttr)
 		} else {
 			orgColsLeft += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
 		}
 	}
+	// fmt.Println(strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft, undoAction)
 	return strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft, undoAction
 }
 
@@ -553,6 +587,10 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 		}
 		if cols, placeholders, ivals, orgCols, _, undoAction := self.GetMappedData(toTable, node); len(cols) > 0 && len(placeholders) > 0 && len(ivals) > 0 {
 			undoAction.AddDstTable(toTable.Table)
+			// if strings.Contains(toTable.Table, "status_"){
+			// 	fmt.Println(toTable.Table, cols, placeholders, ivals)
+			// 	log.Fatal("--------------")
+			// }
 			if id, err := db.InsertRowIntoAppDB(dsttx, toTable.Table, cols, placeholders, ivals...); err == nil {
 				if err := self.PushData(toTable.Table, fmt.Sprint(id), orgCols, cols, undoAction, node); err != nil {
 					fmt.Println("@ERROR_PushData")
@@ -817,7 +855,7 @@ func (self *LMigrationWorker) SecondPhase(threadID int) error {
 
 func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 
-	nodelimit := 100
+	nodelimit := 1
 	for nodes, err := self.GetOwnedNodes(threadID, nodelimit); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID, nodelimit) {
 		if err != nil {
 			return err

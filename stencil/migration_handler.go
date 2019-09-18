@@ -11,13 +11,13 @@ import (
 	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
-	"stencil/evaluation"
+	// "stencil/evaluation"
 	"strconv"
 	"fmt"
 )
 
 func main() {
-	evalConfig := evaluation.InitializeEvalConfig()
+	// evalConfig := evaluation.InitializeEvalConfig()
 	srcApp, srcAppID := "diaspora", "1"
 	dstApp, dstAppID := "mastodon", "2"
 	threads, err := strconv.Atoi(os.Args[1])
@@ -65,6 +65,6 @@ func main() {
 	} else {
 		transaction.LogOutcome(stencilLogTxn, "ABORT")
 	}
-	evaluation.GetDataDowntimeInStencil(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
-	evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(stencilLogTxn.Txn_id), fmt.Sprint(appLogTxn.Txn_id), evalConfig)
+	// evaluation.GetDataDowntimeInStencil(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
+	// evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(stencilLogTxn.Txn_id), fmt.Sprint(appLogTxn.Txn_id), evalConfig)
 }

@@ -100,7 +100,7 @@ func (self *AppConfig) GetShuffledOwnerships() []Ownership {
 func (self *AppConfig) GetOrderedOwnerships() []Ownership {
 
 	var orderedOwnerships []Ownership
-	orderOfOwnerships := []string{"post", "like", "comment", "conversation", "message"}
+	orderOfOwnerships := []string{"post", "like", "comment", "conversation", "message", "contact", "notification"}
 
 	for _, ownershipName := range orderOfOwnerships {
 		for _, ownership := range self.Ownerships{

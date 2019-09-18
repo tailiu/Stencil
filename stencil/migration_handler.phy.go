@@ -12,12 +12,12 @@ import (
 	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
-	"stencil/evaluation"
+	// "stencil/evaluation"
 	"strconv"
 )
 
 func main() {
-	evalConfig := evaluation.InitializeEvalConfig()
+	// evalConfig := evaluation.InitializeEvalConfig()
 
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		MaD := "0"
@@ -61,7 +61,7 @@ func main() {
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 		}
-		evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
+		// evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)
 	}

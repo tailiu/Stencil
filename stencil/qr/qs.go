@@ -307,7 +307,7 @@ func (self *QS) GenSQLWithSize() string {
 	var arrayRowIDCols []string
 	var tableColSize []string
 	for table := range self.TableAliases {
-		tableColSize = append(tableColSize, fmt.Sprintf("pg_column_size(%s.*) - pg_column_size(%s.\"%s.rowids\")", table, table, table))
+		tableColSize = append(tableColSize, fmt.Sprintf("COALESCE(pg_column_size(%s.*) - pg_column_size(%s.\"%s.rowids\"), 0)", table, table, table))
 		arrayRowIDCols = append(arrayRowIDCols, fmt.Sprintf("%s.\"%s.rowids\"", table, table))
 	}
 	self.Columns = append(self.Columns, fmt.Sprintf("array_to_string(uniq(sort(array[%s])),',') as rowids", strings.Join(arrayRowIDCols, " || ")))
