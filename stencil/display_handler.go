@@ -6,9 +6,9 @@ import (
 )
 
 func main() {
-	threadNum := 1
+	threadNum := 5
 	dstApp := "mastodon"
-	migrationID := 1699042543
+	migrationID := 924598472
 
 	deletionHoldEnable := false
 

@@ -74,11 +74,11 @@ func GetTime(migrationID string, evalConfig *EvalConfig) {
 	WriteStrToLog(evalConfig.MigrationTimeFile, ConvertMapStringToJSONString(migration))
 }
 
-func SystemLevelDanglingData(evalConfig *EvalConfig) {
+func SystemLevelDanglingData(migrationID string, evalConfig *EvalConfig) {
 	srcDanglingDataStats := srcDanglingDataSystem(evalConfig)
 	log.Println(srcDanglingDataStats)
 
-	dstDanglingDataStats := dstDanglingDataSystem(evalConfig)
+	dstDanglingDataStats := dstDanglingDataSystem(evalConfig, migrationID)
 	log.Println(dstDanglingDataStats)
 
 	WriteStrToLog(evalConfig.SrcDanglingDataInSystemFile, ConvertMapInt64ToJSONString(srcDanglingDataStats))

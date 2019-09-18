@@ -47,6 +47,8 @@ func getData1FromPhysicalSchemaByRowID(evalConfig *EvalConfig, appConfig *config
 	qs.RowIDs(strRowIDs)
 	physicalQuery := qs.GenSQL()
 
+	log.Println(physicalQuery)
+	
 	result, err := db.DataCall1(evalConfig.StencilDBConn, physicalQuery)
 	if err != nil {
 		log.Fatal(err)
