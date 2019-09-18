@@ -30,7 +30,7 @@ func CreateLMigrationWorkerWithAppsConfig(uid, srcApp, srcAppID, dstApp, dstAppI
 		unmappedTags: CreateUnmappedTags(),
 		SrcDBConn:    db.GetDBConn(srcApp),
 		DstDBConn:    db.GetDBConn2(dstApp),
-		logTxn:       logTxn,
+		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		visitedNodes: make(map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
@@ -39,7 +39,7 @@ func CreateLMigrationWorkerWithAppsConfig(uid, srcApp, srcAppID, dstApp, dstAppI
 	return mWorker
 }
 
-func CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string) LMigrationWorker {
+func CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp) LMigrationWorker {
 	srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID)
 	if err != nil {
 		log.Fatal(err)
@@ -47,10 +47,6 @@ func CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logT
 	dstAppConfig, err := config.CreateAppConfig(dstApp, dstAppID)
 	if err != nil {
 		log.Fatal(err)
-	}
-	mappings := config.GetSchemaMappingsFor(srcApp, dstApp)
-	if mappings == nil {
-		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
 	}
 	dstAppConfig.QR.Migration = true
 	srcAppConfig.QR.Migration = true
@@ -63,7 +59,7 @@ func CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logT
 		unmappedTags: CreateUnmappedTags(),
 		SrcDBConn:    db.GetDBConn(srcApp),
 		DstDBConn:    db.GetDBConn2(dstApp),
-		logTxn:       logTxn,
+		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		visitedNodes: make(map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
@@ -379,8 +375,50 @@ func (self *LMigrationWorker) CheckMappingConditions(toTable config.ToTable, nod
 	breakCondition := false
 	if len(toTable.Conditions) > 0 {
 		for conditionKey, conditionVal := range toTable.Conditions {
-			if nodeVal, err := node.GetValueForKey(conditionKey); err == nil {
-				if !strings.EqualFold(nodeVal, conditionVal) {
+			if nodeVal, ok := node.Data[conditionKey]; ok {
+				if conditionVal[:1] == "#" {
+					// fmt.Println("VerifyMappingConditions: conditionVal[:1] == #")
+					// fmt.Println(conditionKey, conditionVal, nodeVal)
+					// fmt.Scanln()
+					switch conditionVal {
+						case "#NULL": {
+							if nodeVal != nil {
+								// log.Println(nodeVal, "!=", conditionVal)
+								// fmt.Println(conditionKey, conditionVal, nodeVal)
+								// log.Fatal("@VerifyMappingConditions: return false, from case #NULL:")
+								return false
+							}
+						}
+						case "#NOTNULL": {
+							if nodeVal == nil {
+								// log.Println(nodeVal, "!=", conditionVal)
+								// fmt.Println(conditionKey, conditionVal, nodeVal)
+								// log.Fatal("@VerifyMappingConditions: return false, from case #NOTNULL:")
+								return false
+							}		
+						}
+						default: {
+							fmt.Println(toTable.Table, conditionKey, conditionVal)
+							log.Fatal("@CheckMappingConditions: Case not found:" + conditionVal)
+						}
+					}
+				} else if conditionVal[:1] == "$" {
+					// fmt.Println("VerifyMappingConditions: conditionVal[:1] == $")
+					// fmt.Println(conditionKey, conditionVal, nodeVal)
+					// fmt.Scanln()
+					if inputVal, err := self.mappings.GetInput(conditionVal); err == nil {
+						if !strings.EqualFold(fmt.Sprint(nodeVal), inputVal) {
+							log.Println(nodeVal, "!=", inputVal)
+							fmt.Println(conditionKey, conditionVal, inputVal, nodeVal)
+							log.Fatal("@CheckMappingConditions: return false, from conditionVal[:1] == $")
+							return false
+						}
+					}else {
+						fmt.Println("node data:", node.Data)
+						fmt.Println(conditionKey, conditionVal)
+						log.Fatal("@CheckMappingConditions: input doesn't exist?", err)
+					}
+				} else if !strings.EqualFold(fmt.Sprint(nodeVal), conditionVal) {
 					breakCondition = true
 					// log.Println(conditionKey, conditionVal, "!=", nodeVal)
 					return true
@@ -474,15 +512,15 @@ func (self *LMigrationWorker) MarkRowAsDeleted(node *DependencyNode, tx *sql.Tx)
 		if _, ok := node.Data[idCol]; ok {
 			srcID := fmt.Sprint(node.Data[idCol])
 			if derr := db.DeleteRowFromAppDB(tx, tagMember, srcID); derr != nil {
-				fmt.Println("@ERROR_DeleteRowFromAppDB")
+				fmt.Println("@ERROR_DeleteRowFromAppDB", derr)
 				fmt.Println("@QARGS:", tagMember, srcID)
-				log.Fatal(derr)
+				// log.Fatal(derr)
 				return derr
 			}
 			if derr := db.UpdateLEvaluation(self.logTxn.DBconn, tagMember, srcID, self.logTxn.Txn_id); derr != nil {
-				fmt.Println("@ERROR_UpdateLEvaluation")
+				fmt.Println("@ERROR_UpdateLEvaluation", derr)
 				fmt.Println("@QARGS:", tagMember, srcID, self.logTxn.Txn_id)
-				log.Fatal(derr)
+				// log.Fatal(derr)
 				return derr
 			}
 		} else {
@@ -619,7 +657,7 @@ func (self *LMigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 					fmt.Println("@ERROR_Delete")
 					fmt.Println("@SQL:", tagMember, srcID)
 					fmt.Println("@ARGS:", tagMember, srcID)
-					log.Fatal(derr)
+					// log.Fatal(derr)
 					return derr
 				}
 				if serr := db.SaveForEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppName, self.DstAppConfig.AppName, tagMember, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
@@ -728,7 +766,7 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 	}
 
 	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-	
+
 	if self.IsNodeOwnedByRoot(node){
 		if err := self.MigrateNode(node, false); err == nil {
 			log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
@@ -741,11 +779,15 @@ func (self *LMigrationWorker) DeletionMigration(node *DependencyNode, threadID i
 					log.Println(err)
 					return err
 				}
+				if strings.Contains(err.Error(), "deadlock"){
+					return err
+				}
 			}
 		}
 	}else{
 		log.Println(fmt.Sprintf("x%2dx UN-OWNED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	}
+
 	self.MarkAsVisited(node)
 
 	fmt.Println("------------------------------------------------------------------------")
@@ -769,13 +811,9 @@ func (self *LMigrationWorker) SecondPhase(threadID int) error {
 	return nil
 }
 
-func (self *LMigrationWorker) RegisterMigration(mtype string, number_of_threads int) bool {
-	return db.RegisterMigration(self.uid, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, mtype, self.logTxn.Txn_id, number_of_threads, self.logTxn.DBconn, true)
-}
-
-func (self *LMigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
-	return db.FinishMigration(self.logTxn.DBconn, self.logTxn.Txn_id)
-}
+// func (self *LMigrationWorker) FinishMigration(mtype string, number_of_threads int) bool {
+// 	return db.FinishMigration(self.logTxn.DBconn, self.logTxn.Txn_id)
+// }
 
 func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 
@@ -807,9 +845,12 @@ func (self *LMigrationWorker) ConsistentMigration(threadID int) error {
 						break
 					}
 				} else {
-					log.Println(fmt.Sprintf("x%2dx | %d/%d | FAILED    node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					log.Println(fmt.Sprintf("x%2dx | %d/%d | FAILED    node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 					if strings.EqualFold(err.Error(), "0") {
 						log.Println(err)
+						return err
+					}
+					if strings.Contains(err.Error(), "deadlock"){
 						return err
 					}
 				}

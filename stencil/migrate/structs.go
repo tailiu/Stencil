@@ -52,6 +52,7 @@ type MigrationWorker struct {
 	mtype        string
 	visitedNodes map[string]map[string]bool
 	arg 		 string
+	Size int
 	// threadID     int
 }
 

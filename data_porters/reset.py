@@ -50,6 +50,17 @@ def truncateTableFromStencil(table):
     cur.execute(q)
     conn.commit()
 
+def DeleteRowsFromMigrationRegistration(arg):
+    conn, cur = getDB("stencil", blade=False)
+    if arg == "log":
+        is_log = "true"
+    else:
+        is_log = "false"
+    q = "DELETE FROM migration_registration WHERE is_logical = "+is_log
+    print q
+    cur.execute(q)
+    conn.commit()
+
 def resetRowDesc():
     conn, cur = getDB("stencil", blade=False)
     
@@ -76,11 +87,12 @@ if __name__ == "__main__":
         if arg in ["phy", "all"]:
             truncatePhysicalTables()
         if arg in ["log", "row", "all"]:
-            # truncateTableFromStencil("migration_registration")
-            # truncateTableFromStencil("evaluation")
-            # truncateTableFromStencil("user_table")
-            # truncateTableFromStencil("display_flags")
-            # truncateTableFromStencil("txn_logs")
+            # DeleteRowsFromMigrationRegistration(sys.argv[1])
+            truncateTableFromStencil("migration_registration")
+            truncateTableFromStencil("evaluation")
+            truncateTableFromStencil("user_table")
+            truncateTableFromStencil("display_flags")
+            truncateTableFromStencil("txn_logs")
             if arg in ["log", "all"]:
                 truncate("mastodon", blade=True)
                 reverseMarkAsDelete("diaspora", blade=False)

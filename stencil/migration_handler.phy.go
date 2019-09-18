@@ -1,5 +1,5 @@
 /*
- * Migration Handler
+ * Physical Migration Handler
  */
 
 package main
@@ -7,13 +7,18 @@ package main
 import (
 	"log"
 	"os"
+	"fmt"
 	"stencil/migrate"
+	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
+	"stencil/evaluation"
 	"strconv"
 )
 
 func main() {
+	evalConfig := evaluation.InitializeEvalConfig()
+
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		MaD := "0"
 		if len(os.Args) > 8{
@@ -47,14 +52,16 @@ func main() {
 		if len(mtype) <= 0 {
 			log.Fatal("can't read migration type")
 		}
-
-		mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, MaD)
-
-		if mthread.ThreadController(mWorker, threads) {
+		mappings := config.GetSchemaMappingsFor(srcApp, dstApp)
+		if mappings == nil {
+			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
+		}
+		if mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD) {
 			transaction.LogOutcome(logTxn, "COMMIT")
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 		}
+		evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)
 	}
