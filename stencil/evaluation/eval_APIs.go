@@ -97,7 +97,7 @@ func GetDataDowntimeInStencil(migrationID string, evalConfig *EvalConfig) {
 	WriteStrArrToLog(evalConfig.DataDowntimeInStencilFile, ConvertDurationToString(dataDowntimeInStencil))
 }
 
-func GetDataDowntimeInNaiveMigration(migrationID string, naiveMigrationID string, evalConfig *EvalConfig) {
-	dataDowntimeInNaive := getDataDowntimeInNaive(migrationID, naiveMigrationID, evalConfig)
+func GetDataDowntimeInNaiveMigration(stencilMigrationID string, naiveMigrationID string, evalConfig *EvalConfig) {
+	dataDowntimeInNaive := getDataDowntimeInNaive(stencilMigrationID, naiveMigrationID, evalConfig)
 	WriteStrArrToLog(evalConfig.DataDowntimeInNaiveFile, ConvertDurationToString(dataDowntimeInNaive))
 }

@@ -151,6 +151,6 @@ func main() {
 	// evaluation.GetSize("1297001241", evalConfig)
 	// evaluation.GetTime("1297001241", evalConfig)
 	// evaluation.GetDataBagOfUser("1590693271", "diaspora", "mastodon", evalConfig)
-	evaluation.GetDataDowntimeInStencil("1491323842", evalConfig)
-	evaluation.GetDataDowntimeInNaiveMigration("1491323842", "1491323842", evalConfig)
+	// evaluation.GetDataDowntimeInStencil("1699042543", evalConfig)
+	evaluation.GetDataDowntimeInNaiveMigration("1699042543", "1982984855", evalConfig)
 }

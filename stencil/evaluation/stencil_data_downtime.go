@@ -8,10 +8,11 @@ import (
 )
 
 func getDowntime(data DisplayedData, appID string, evalConfig *EvalConfig) time.Duration {
-	query := fmt.Sprintf("select created_at, updated_at from migration_table where bag = false and mark_as_delete = false group and appID = %s and table_id = %s and row_id = %s;",
+	query := fmt.Sprintf("select created_at, updated_at from migration_table where bag = false and mark_as_delete = false and app_id = %s and table_id = %s and row_id = %s",
 		appID, data.TableID, data.RowIDs[0])
 	
 	data1, err1 := db.DataCall1(evalConfig.StencilDBConn, query)
+	log.Println(data1)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
