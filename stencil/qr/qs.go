@@ -161,12 +161,23 @@ func (self *QS) RowIDs(rowids string) {
 
 func (self *QS) ExcludeRowIDs(rowids string) {
 	if len(rowids) <= 0 {return}
+	
+	var arrayRowIDCols []string
 	for table := range self.TableAliases {
-		if len(self.Where) > 0 {
-			self.Where += " AND "
-		}
-		self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> \"%s\".\"%s.rowids\"", rowids, table, table)	
+		arrayRowIDCols = append(arrayRowIDCols, fmt.Sprintf("\"%s\".\"%s.rowids\"", table, table))
 	}
+
+	if len(self.Where) > 0 {
+		self.Where += " AND "
+	}
+	self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> %s", rowids, fmt.Sprintf("uniq(sort(array[%s]))", strings.Join(arrayRowIDCols, " || ")))	
+
+	// for table := range self.TableAliases {
+	// 	if len(self.Where) > 0 {
+	// 		self.Where += " AND "
+	// 	}
+	// 	self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> \"%s\".\"%s.rowids\"", rowids, table, table)	
+	// }
 }
 
 func (self *QS) GroupByString(col string) {

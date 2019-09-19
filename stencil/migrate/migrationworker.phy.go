@@ -398,15 +398,16 @@ func (self *MigrationWorker) VerifyMappingConditions(toTable config.ToTable, nod
 						log.Fatal("@VerifyMappingConditions: input doesn't exist?", err)
 					}
 				} else {
-					if strings.EqualFold(conditionVal, "true") {
-						if nodeVal.(bool) == false {
-							return false
-						}	
-					} else if strings.EqualFold(conditionVal, "false") {
-						if nodeVal.(bool) == true {
-							return false
-						}		
-					} else if !strings.EqualFold(fmt.Sprint(nodeVal), conditionVal) {
+					// if strings.EqualFold(conditionVal, "true") {
+					// 	if nodeVal.(bool) == false {
+					// 		return false
+					// 	}	
+					// } else if strings.EqualFold(conditionVal, "false") {
+					// 	if nodeVal.(bool) == true {
+					// 		return false
+					// 	}		
+					// } else 
+					if !strings.EqualFold(fmt.Sprint(nodeVal), conditionVal) {
 						// log.Println(conditionKey, " : ", nodeVal, "!=", conditionVal)
 						return false
 					}
