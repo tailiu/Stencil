@@ -218,7 +218,6 @@ func (self *QS) GenSQL() string {
 	if len(self.Limit) > 0 {
 		sql += fmt.Sprintf("LIMIT %s ", self.Limit)
 	}
-	log.Fatal()
 	return sql
 }
 
