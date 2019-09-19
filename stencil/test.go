@@ -61,10 +61,33 @@ func test5() {
 	stencilDB := db.GetDBConn(db.STENCIL_DB)
 	appconfig, _ := config.CreateAppConfig("diaspora", "1")
 	qs := qr.CreateQS(appconfig.QR)
+	qs.SelectColumns("people.*,users.*,profiles.*")
+	qs.FromTable(map[string]string{"table":"people"})
+	qs.JoinTable(map[string]string{"table":"users", "condition1":"people.owner_id=users.id"})
+	qs.JoinTable(map[string]string{"table":"profiles", "condition1":"profiles.person_id=people.id"})
+	qs.RowIDs("2042989316,1201370542,672206183")
+	sql := qs.GenSQL()
+	fmt.Println(sql)
+	if res, err := db.DataCall(stencilDB, sql); err == nil{
+		for _, r := range res {
+			fmt.Println("========================================================================================================================================================================")
+			fmt.Println(r)
+		}
+		fmt.Println("------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+		fmt.Println("Total Rows:", len(res))
+	}else{ 
+		fmt.Println(err)
+	}
+}
+
+func test6() {
+	stencilDB := db.GetDBConn(db.STENCIL_DB)
+	appconfig, _ := config.CreateAppConfig("diaspora", "1")
+	qs := qr.CreateQS(appconfig.QR)
 	qs.SelectColumns("notifications.*")
 	qs.FromTable(map[string]string{"table":"notifications"})
-	// qs.RowIDs("134238299")
-	sql := qs.GenSQLSize()
+	qs.RowIDs("2031573135,3044756")
+	sql := qs.GenSQL()
 	fmt.Println(sql)
 	if res, err := db.DataCall(stencilDB, sql); err == nil{
 		for _, r := range res {
@@ -80,7 +103,7 @@ func test5() {
 
 func main() {
 
-	test3()
+	test6()
 	return
 
 	app := os.Args[1]

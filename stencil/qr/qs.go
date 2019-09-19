@@ -155,7 +155,7 @@ func (self *QS) RowIDs(rowids string) {
 		if len(self.Where) > 0 {
 			self.Where += " AND "
 		}
-		self.Where += fmt.Sprintf("array[%s] <@ \"%s\".\"%s.rowids\"", rowids, table, table)	
+		self.Where += fmt.Sprintf("array[%s] @> \"%s\".\"%s.rowids\"", rowids, table, table)	
 	}
 }
 
