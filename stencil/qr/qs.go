@@ -19,7 +19,8 @@ func CreateQS(QR *QR) *QS {
 
 func (self *QS) SelectColumns(columns string){
 	for _, col := range strings.Split(columns, ","){
-		self.Columns = append(self.Columns, col)
+		parts := strings.Split(col, ".")
+		self.Columns = append(self.Columns, fmt.Sprintf("\"%s\".%s", parts[0], parts[1]))
 	}
 }
 
@@ -78,7 +79,7 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 
 	cols = append(cols, fmt.Sprintf("uniq(sort(array_remove(array[%s]::int4[], null))) as \"%s.rowids\"", strings.Join(pkCols, ","), args["alias"]))
 	cols = append(cols, fmt.Sprintf("array_to_string(uniq(sort(array_remove(array[%s]::int4[], null))),',') as \"%s.rowids_str\"", strings.Join(pkCols, ","), args["alias"]))
-	tableQuery := fmt.Sprintf(" (SELECT %s FROM %s) %s ", strings.Join(cols, ","), from, args["alias"])
+	tableQuery := fmt.Sprintf(" (SELECT %s FROM %s) \"%s\" ", strings.Join(cols, ","), from, args["alias"])
 	
 	if len(tableQuery) > 0 {
 		return tableQuery	
@@ -86,70 +87,6 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 
 	log.Fatal("error resolving query for table: " + args["table"])
 
-	return ""
-}
-
-func (self *QS) GenCombinedTableQuery2(args map[string]string) string {
-
-	if _, ok := args["alias"]; !ok {
-		args["alias"] = args["table"]
-	}
-	if _, ok := args["mflag"]; !ok {
-		args["mflag"] = "0"
-	}
-	if _, ok := args["mark_as_delete"]; !ok {
-		args["mark_as_delete"] = "false"
-	}
-
-	var cols, prevOnCol []string
-
-	prev, from := "", ""	
-	fromMT := fmt.Sprintf("(SELECT array_agg(org_rowid) AS rowids FROM migration_table WHERE dst_table = '%s' and dst_app = %s AND mflag = %s GROUP BY dst_rowid) mt ", args["table"], self.QR.AppID, args["mflag"])
-	phyTab := self.QR.GetPhyMappingForLogicalTable(args["table"])
-	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
-
-	for _, ptab := range phyTabKeys {
-		for _, pair := range phyTab[ptab] {
-			pColName := fmt.Sprintf("%s.%s as \"%s.%s\"", self.getTableAlias(args["alias"], ptab), pair[0], args["alias"], pair[1])
-			cols = append(cols, pColName)
-			pSizeColName := fmt.Sprintf("pg_column_size(%s.\"%s.%s\") as \"%s.%s\"", args["alias"], args["alias"], pair[0], args["alias"], pair[1])
-			self.ColumnsWSize = append(self.ColumnsWSize, pSizeColName)
-		}
-		// if _, ok := self.seen[ptab]; !ok {
-		pTabAlias := self.getTableAlias(args["alias"], ptab)
-		fromMT += fmt.Sprintf(" LEFT JOIN %s %s ON %s.pk = ANY(mt.rowids) ", ptab, pTabAlias, pTabAlias)
-		if prev == "" {
-			from += fmt.Sprintf(" %s %s ", ptab, pTabAlias)
-		} else {
-			prevAlias := self.getTableAlias(args["alias"], prev)
-			if len(prevOnCol) <= 0{			
-				from += fmt.Sprintf(" FULL JOIN %s %s ON %s.pk = %s.pk ", ptab, pTabAlias, prevAlias, pTabAlias)
-			}else{
-				from += fmt.Sprintf(" FULL JOIN %s %s ON COALESCE(%s.pk,%s) = %s.pk ", ptab, pTabAlias, prevAlias, strings.Join(prevOnCol, ","), pTabAlias)
-			}
-			prevOnCol = append(prevOnCol, prevAlias+".pk")
-		}
-		prev = ptab
-			// self.seen[ptab] = true
-		// }
-	}
-	if len(prevOnCol) <= 0 {
-		prevOnCol = append(prevOnCol, self.getTableAlias(args["alias"], prev)+".pk")
-	}
-	cols = append(cols, fmt.Sprintf("uniq(sort(array_remove(array[%s]::int4[], null))) as \"%s.rowids\"", strings.Join(prevOnCol, ","), args["alias"]))
-	cols = append(cols, fmt.Sprintf("array_to_string(uniq(sort(array_remove(array[%s]::int4[], null))),',') as \"%s.rowids_str\"", strings.Join(prevOnCol, ","), args["alias"]))
-	if len(from) > 0 {
-		mTableQuery := fmt.Sprintf("SELECT %s FROM %s", strings.Join(cols, ","), fromMT)
-		conditions := fmt.Sprintf("WHERE EXISTS (SELECT 1 FROM row_desc WHERE mark_as_delete = %s and app_id = %s AND \"table\" = '%s' AND rowid IN (%s))", args["mark_as_delete"], self.QR.AppID, args["table"], strings.Join(prevOnCol, ","))
-		tableQuery := fmt.Sprintf("SELECT %s FROM %s %s", strings.Join(cols, ","), from, conditions)
-		return fmt.Sprintf("(%s UNION %s) %s ", tableQuery, mTableQuery, args["alias"])
-		// self.From = fmt.Sprintf("(SELECT %s FROM %s) %s ", strings.Join(cols, ","), from, table)
-		// self.From = fmt.Sprintf("(SELECT %s FROM %s) %s ", strings.Join(cols, ","), fromMT, table)
-		// return fmt.Sprintf("(SELECT %s FROM %s WHERE EXISTS (SELECT 1 FROM row_desc WHERE app_id = %s AND \"table\" = '%s' AND rowid IN (%s))  UNION SELECT %s FROM %s) %s ", strings.Join(cols, ","), from, self.QR.AppID, args["table"], strings.Join(prevOnCol, ","), strings.Join(cols, ","), fromMT, args["alias"])
-		
-	} else {
-		log.Fatal("error adding table "+ args["table"])
-	}
 	return ""
 }
 
@@ -179,28 +116,28 @@ func (self *QS) JoinTable(args map[string]string) {
 
 func (self *QS) AddWhereWithValue(col, op, val string) {
 	tokens := strings.Split(col, ".")
-	self.Where = fmt.Sprintf("%s.\"%s\" %s '%s'", tokens[0], col, op, val)
+	self.Where = fmt.Sprintf("\"%s\".\"%s\" %s '%s'", tokens[0], col, op, val)
 }
 
 func (self *QS) AddWhereWithColumn(col1, op, col2 string) {
 	tokens1 := strings.Split(col1, ".")
 	tokens2 := strings.Split(col1, ".")
-	self.Where = fmt.Sprintf("%s.\"%s\" %s %s.\"%s\"", tokens1[0], col1, op, tokens2[0], col2)
+	self.Where = fmt.Sprintf("\"%s\".\"%s\" %s \"%s\".\"%s\"", tokens1[0], col1, op, tokens2[0], col2)
 }
 
 func (self *QS) AdditionalWhereWithValue(coop, col, op, val string) {
 	tokens := strings.Split(col, ".")
 	if len(self.Where) > 0 {
-		self.Where += fmt.Sprintf(" %s %s.\"%s\" %s '%s'", coop, tokens[0], col, op, val)
+		self.Where += fmt.Sprintf(" %s \"%s\".\"%s\" %s '%s'", coop, tokens[0], col, op, val)
 	}else{
-		self.Where = fmt.Sprintf(" %s.\"%s\" %s '%s'", tokens[0], col, op, val)
+		self.Where = fmt.Sprintf(" \"%s\".\"%s\" %s '%s'", tokens[0], col, op, val)
 	}
 }
 
 func (self *QS) AdditionalWhereWithColumn(coop, col1, op, col2 string) {
 	tokens1 := strings.Split(col1, ".")
 	tokens2 := strings.Split(col1, ".")
-	self.Where += fmt.Sprintf(" %s %s.\"%s\" %s %s.\"%s\"", coop, tokens1[0], col1, op, tokens2[0], col2)
+	self.Where += fmt.Sprintf(" %s \"%s\".\"%s\" %s %s.\"%s\"", coop, tokens1[0], col1, op, tokens2[0], col2)
 }
 
 func (self *QS) AddWhereAsString(operator, condition string) { // AND, OR, NOT
@@ -244,9 +181,9 @@ func (self *QS) GroupByString(col string) {
 func (self *QS) OrderByColumn(col string) {
 	table := strings.Split(col, ".")[0]
 	if strings.EqualFold(self.Order, "") {
-		self.Order = fmt.Sprintf("%s.\"%s\"", table, col)
+		self.Order = fmt.Sprintf("\"%s\".\"%s\"", table, col)
 	} else {
-		self.Order += fmt.Sprintf(", %s.\"%s\"", table, col)
+		self.Order += fmt.Sprintf(", \"%s\".\"%s\"", table, col)
 	}
 }
 
@@ -265,7 +202,7 @@ func (self *QS) LimitResult(limit string) {
 func (self *QS) GenSQL() string {
 	var arrayRowIDCols []string
 	for table := range self.TableAliases {
-		arrayRowIDCols = append(arrayRowIDCols, fmt.Sprintf("%s.\"%s.rowids\"", table, table))
+		arrayRowIDCols = append(arrayRowIDCols, fmt.Sprintf("\"%s\".\"%s.rowids\"", table, table))
 	}
 	self.Columns = append(self.Columns, fmt.Sprintf("array_to_string(uniq(sort(array[%s])),',') as rowids", strings.Join(arrayRowIDCols, " || ")))
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.Columns, ","), self.From)
@@ -281,6 +218,7 @@ func (self *QS) GenSQL() string {
 	if len(self.Limit) > 0 {
 		sql += fmt.Sprintf("LIMIT %s ", self.Limit)
 	}
+	log.Fatal()
 	return sql
 }
 
