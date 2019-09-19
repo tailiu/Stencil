@@ -6,9 +6,10 @@ import (
 )
 
 func main() {
-	threadNum := 5
-	dstApp := "mastodon"
-	migrationID := 859988132
+	threadNum := 1
+	// dstApp := "mastodon"
+	dstApp := "diaspora"
+	migrationID := 2067581641
 
 	deletionHoldEnable := false
 

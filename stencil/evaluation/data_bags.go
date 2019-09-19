@@ -6,12 +6,13 @@ import (
 	"stencil/qr"
 	"log"
 	"fmt"
+	"strings"
 )
 
-func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, tableID string, rowIDs []string) int64 {
+func getColsSizeOfDataInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, tableID string, rowIDs []string) map[string]interface{} {
 	qs := qr.CreateQS(appConfig.QR)
 	tableName := GetTableNameByTableID(evalConfig, tableID)
-	qs.FromTable(map[string]string{"table":tableName, "mflag": "0", "mark_as_delete": "true", "bag": "true"})
+	qs.FromTable(map[string]string{"table":tableName, "mflag": "0", "mark_as_delete": "false", "bag": "false"})
 	qs.SelectColumns(tableName + ".*")
 	var strRowIDs string 
 	for i, rowID := range rowIDs {
@@ -30,38 +31,47 @@ func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *confi
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	log.Println(result)
 
-	var size int64
-	for _, v := range result {
-		size += v.(int64)
-	}
+	return result
+}
 
+func filterColsAndResultsBasedOnSchemaMapping(data map[string]interface{}, srcApp, dstApp string) int64 {
+	var size int64
+	for k, v := range data {
+		if strings.Contains(k, ".mark_as_delete") {
+			continue
+		} else {
+			size += v.(int64)
+		}
+	}
 	return size
 }
 
-func calculateDisplayedDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, displayedData []DisplayedData) int64 {
+func calculateDisplayedDataSizeInBagEvaluation(evalConfig *EvalConfig, appConfig *config.AppConfig, srcApp, dstApp string, displayedData []DisplayedData) int64 {
 	var size int64
 	for _, data := range displayedData {
-		size += calculateOneDataSizeInStencilModel(evalConfig, appConfig, data.TableID, data.RowIDs)
+		size += filterColsAndResultsBasedOnSchemaMapping(getColsSizeOfDataInStencilModel(evalConfig, appConfig, data.TableID, data.RowIDs), srcApp, dstApp)
 	}
 	return size
 }
 
-func getDisplayedDataSize(evalConfig *EvalConfig, app, migrationID string) int64 {
-	appConfig := getAppConfig(evalConfig, app)
-	displayedData := getAllDisplayedData(evalConfig, migrationID, appConfig.AppID)
-	return calculateDisplayedDataSizeInStencilModel(evalConfig, appConfig, displayedData)
+func getDisplayedDataSize(evalConfig *EvalConfig, srcApp, dstApp, migrationID string) int64 {
+	dstAppConfig := getAppConfig(evalConfig, dstApp)
+	displayedData := getAllDisplayedData(evalConfig, migrationID, dstAppConfig.AppID)
+	log.Println(displayedData)
+	return calculateDisplayedDataSizeInBagEvaluation(evalConfig, dstAppConfig, srcApp, dstApp, displayedData)
 }
 
-func getTotalMigratedNodeSize(evalConfig *EvalConfig, app, migrationID string) int64 {
-	app_id := db.GetAppIDByAppName(evalConfig.StencilDBConn, app)
-	query := fmt.Sprintf("select msize from migration_registration where dst_app = %s and migration_id = %s", app_id, migrationID)
+// We use dstApp here to get the total migrated node size in the source application
+func getTotalMigratedNodeSize(evalConfig *EvalConfig, dstApp string, migrationID string) int64 {
+	dstAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, dstApp)
+	query := fmt.Sprintf("select msize from migration_registration where dst_app = %s and migration_id = %s", dstAppID, migrationID)
 	result, err := db.DataCall1(evalConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println(result)
-	return result["misze"].(int64)
+	// return result["misze"].(int64)
+	return 0
 }

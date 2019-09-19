@@ -2,7 +2,7 @@ package dependency_handler
 
 import (
 	"errors"
-	// "log"
+	"log"
 	"stencil/config"
 	"stencil/display"
 	"database/sql"
@@ -19,6 +19,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hi
 	var data map[string]interface{}
 	hintID := -1
 	for i, condition := range conditions {
+		log.Println(condition)
 		tableAttr1 := strings.Split(condition, ":")[0]
 		tableAttr2 := strings.Split(condition, ":")[1]
 		t1 := strings.Split(tableAttr1, ".")[0]

@@ -8,6 +8,7 @@ import (
 	"stencil/display"
 	// "strconv"
 	"strings"
+	"fmt"
 )
 
 func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.DB, val string, dep string) (map[string]interface{}, error) {
@@ -69,7 +70,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 						log.Println("Fail to get one data because the value of the relevant column is nil")
 						continue
 					}
-					data1, err1 := getOneRowBasedOnDependency(appConfig, stencilDBConn, val.(string), dep)
+					data1, err1 := getOneRowBasedOnDependency(appConfig, stencilDBConn, fmt.Sprint(val), dep)
 					if err1 != nil {
 						// log.Println(err1)
 						// fmt.Println(result)

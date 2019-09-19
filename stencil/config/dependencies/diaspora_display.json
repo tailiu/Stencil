@@ -263,7 +263,7 @@
 			"tag": "like",
 			"depends_on": [
 				{
-					"tag": "Post",
+					"tag": "post",
 					"conditions": [
 						{
 							"tag_attr": "post_id",

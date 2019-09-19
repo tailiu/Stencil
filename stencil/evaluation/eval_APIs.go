@@ -85,10 +85,10 @@ func SystemLevelDanglingData(migrationID string, evalConfig *EvalConfig) {
 	WriteStrToLog(evalConfig.DstDanglingDataInSystemFile, ConvertMapInt64ToJSONString(dstDanglingDataStats))
 }
 
-func GetDataBagOfUser(migrationID, sourceApp, dstApp string, evalConfig *EvalConfig) {
+func GetDataBagOfUser(migrationID, srcApp, dstApp string, evalConfig *EvalConfig) {
 	migratedNodeSize := getTotalMigratedNodeSize(evalConfig, dstApp, migrationID)
 	log.Println(migratedNodeSize)
-	displayedDataSize := getDisplayedDataSize(evalConfig, dstApp, migrationID)
+	displayedDataSize := getDisplayedDataSize(evalConfig, srcApp, dstApp, migrationID)
 	log.Println(displayedDataSize)
 }
 
