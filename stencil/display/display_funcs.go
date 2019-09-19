@@ -48,7 +48,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 		appID, migrationID)
 	
 	data := db.GetAllColsOfRows(stencilDBConn, query)
-	// log.Println(data)
+	log.Println(data)
 
 	// If we don't use physical schema, both table_name and id are necessary to identify a piece of migratd data.
 	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
@@ -71,7 +71,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 		hint.RowIDs = rowIDs
 		displayHints = append(displayHints, hint)
 	}
-	// log.Println(displayHints)
+	log.Println(displayHints)
 	return displayHints
 }
 
