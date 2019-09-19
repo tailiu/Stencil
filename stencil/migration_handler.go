@@ -78,6 +78,9 @@ func main() {
 		transaction.LogOutcome(stencilLogTxn, "COMMIT")
 		wg.Wait()
 		db.FinishMigration(stencilLogTxn.DBconn, stencilLogTxn.Txn_id, msize)
+		evaluation.GetTime(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
+		evaluation.GetTime(fmt.Sprint(appLogTxn.Txn_id), evalConfig)
+		evaluation.GetSize(fmt.Sprint(appLogTxn.Txn_id), evalConfig)
 		evaluation.GetDataDowntimeInStencil(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
 		evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(stencilLogTxn.Txn_id), fmt.Sprint(appLogTxn.Txn_id), evalConfig)
 	} else {
