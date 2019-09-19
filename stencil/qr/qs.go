@@ -108,7 +108,7 @@ func (self *QS) JoinTable(args map[string]string) {
 			conditions := strings.Split(val, "=")
 			table1 := strings.Split(conditions[0], ".")[0]
 			table2 := strings.Split(conditions[1], ".")[0]
-			tableConditions = append(tableConditions, fmt.Sprintf("%s.\"%s\"::varchar = %s.\"%s\"::varchar ", table1, conditions[0], table2, conditions[1]))
+			tableConditions = append(tableConditions, fmt.Sprintf("\"%s\".\"%s\"::varchar = \"%s\".\"%s\"::varchar ", table1, conditions[0], table2, conditions[1]))
 		}
 	}
 	self.From += fmt.Sprintf(" %s %s ON %s ", args["join"], tableQuery, strings.Join(tableConditions, " AND "))
@@ -244,8 +244,8 @@ func (self *QS) GenSQLWithSize() string {
 	var arrayRowIDCols []string
 	var tableColSize []string
 	for table := range self.TableAliases {
-		tableColSize = append(tableColSize, fmt.Sprintf("COALESCE(pg_column_size(%s.*) - pg_column_size(%s.\"%s.rowids\"), 0)", table, table, table))
-		arrayRowIDCols = append(arrayRowIDCols, fmt.Sprintf("%s.\"%s.rowids\"", table, table))
+		tableColSize = append(tableColSize, fmt.Sprintf("COALESCE(pg_column_size(\"%s\".*) - pg_column_size(\"%s\".\"%s.rowids\"), 0)", table, table, table))
+		arrayRowIDCols = append(arrayRowIDCols, fmt.Sprintf("\"%s\".\"%s.rowids\"", table, table))
 	}
 	self.Columns = append(self.Columns, fmt.Sprintf("array_to_string(uniq(sort(array[%s])),',') as rowids", strings.Join(arrayRowIDCols, " || ")))
 	self.Columns = append(self.Columns, fmt.Sprintf("%s as rowsize", strings.Join(tableColSize, " + ")))
