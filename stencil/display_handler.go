@@ -9,7 +9,7 @@ func main() {
 	threadNum := 1
 	// dstApp := "mastodon"
 	dstApp := "diaspora"
-	migrationID := 1507763752
+	migrationID := 1148085788
 
 	deletionHoldEnable := false
 

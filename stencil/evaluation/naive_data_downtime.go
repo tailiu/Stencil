@@ -21,15 +21,11 @@ func getDeletedAt(evalConfig *EvalConfig, data map[string]interface{}, naiveMigr
 	}
 	
 	log.Println(result)
-	return result["deleted_at"].(time.Time)
-}
-
-func getDowntimeBasedOnStencilMigration(data DisplayedData, naiveMigrationID string, evalConfig *EvalConfig, appConfig *config.AppConfig, naiveMigrationEndTime time.Time) time.Duration {
-	tableName := GetTableNameByTableID(evalConfig, data.TableID)
-	data1 := getData1FromPhysicalSchemaByRowID(evalConfig, appConfig, tableName, data.RowIDs)
-	// log.Println(data1)
-	// log.Println(tableName)
-	return naiveMigrationEndTime.Sub(getDeletedAt(evalConfig, data1, naiveMigrationID, tableName))
+	if result["deleted_at"] == nil {
+		return time.Time{}
+	} else {
+		return result["deleted_at"].(time.Time)
+	} 
 }
 
 func getData1FromPhysicalSchemaByRowID(evalConfig *EvalConfig, appConfig *config.AppConfig, tableName string, rowIDs []string) map[string]interface{} {	
@@ -67,7 +63,17 @@ func getDataDowntimeInNaive(stencilMigrationID string, naiveMigrationID string, 
 	naiveMigrationEndTime := getMigrationEndTime(evalConfig.StencilDBConn, intNaiveMigrationID)
 	displayedData := getAllDisplayedData(evalConfig, stencilMigrationID, appConfig.AppID)
 	for _, data := range displayedData {
-		dataDowntime = append(dataDowntime, getDowntimeBasedOnStencilMigration(data, naiveMigrationID, evalConfig, appConfig, naiveMigrationEndTime))
+		tableName := GetTableNameByTableID(evalConfig, data.TableID)
+		data1 := getData1FromPhysicalSchemaByRowID(evalConfig, appConfig, tableName, data.RowIDs)
+		// log.Println(data1)
+		// log.Println(tableName)
+		deletedAt := getDeletedAt(evalConfig, data1, naiveMigrationID, tableName)
+		if deletedAt.IsZero() {
+			log.Println("GOT ONE ZERO", data1, tableName)
+			continue
+		} else {
+			dataDowntime = append(dataDowntime, naiveMigrationEndTime.Sub(deletedAt))
+		}
 	}
 	return dataDowntime
 }

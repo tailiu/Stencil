@@ -16,7 +16,7 @@ func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, f
 	qs.FromTable(map[string]string{"table":from, "mflag": "0,1"})
 	qs.AddWhereWithValue(col, op, val)
 	physicalQuery := qs.GenSQL()
-	// log.Println(physicalQuery)
+	log.Println(physicalQuery)
 
 	result, err := db.DataCall1(stencilDBConn, physicalQuery)
 	if err != nil {
@@ -45,6 +45,8 @@ func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, QR *qr.QR, appID, 
 	}
 	qs.RowIDs(strRowIDs)
 	physicalQuery := qs.GenSQL()
+
+	log.Println(physicalQuery)
 
 	result, err := db.DataCall1(stencilDBConn, physicalQuery)
 	if err != nil {
