@@ -8,8 +8,8 @@ import (
 func main() {
 	threadNum := 1
 	// dstApp := "mastodon"
-	dstApp := "mastodon"
-	migrationID := 1923587293
+	dstApp := "diaspora"
+	migrationID := 1507763752
 
 	deletionHoldEnable := false
 
