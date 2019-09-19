@@ -629,14 +629,16 @@ func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping confi
 							cow = "true"
 						}
 						case DELETION: {
-							if err := db.MarkRowAsDeleted(tx, src_rowid, FromTableID); err != nil {
-								fmt.Println(src_rowids, src_rowid, self.SrcAppConfig.AppID)
+							if err := db.DeleteFromMigrationTable(tx, src_rowid, FromTableID); err != nil {
+							// if err := db.MarkRowAsDeleted(tx, src_rowid, FromTableID); err != nil {
+								// fmt.Println(src_rowids, src_rowid, self.SrcAppConfig.AppID)
 								// log.Fatal("HandleMappedMembersOfNode: MarkRowAsDeleted | ", err)
 								return nil, err
 							}
 						}
 						case BAGS: {
-							if err := db.RemoveBag(tx, src_rowid, FromTableID); err != nil {
+							if err := db.DeleteFromMigrationTable(tx, src_rowid, FromTableID); err != nil {
+							// if err := db.RemoveBag(tx, src_rowid, FromTableID); err != nil {
 								// log.Fatal("HandleMappedMembersOfNode: PopBag | ", err)
 								return nil, err
 							}
@@ -892,7 +894,7 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 
 	log.Println(fmt.Sprintf("#%d# Process   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	
-	if self.IsNodeOwnedByRoot(node){
+	if self.IsNodeOwnedByRoot(node) || strings.Contains(node.Tag.Name, "root") {
 		if err := self.HandleMigration(node); err == nil {
 			log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			self.UpdateMigrationSize(node)

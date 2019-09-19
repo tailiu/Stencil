@@ -9,6 +9,7 @@ import (
 	"os"
 	"sync"
 	"stencil/migrate"
+	"stencil/db"
 	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
@@ -73,9 +74,10 @@ func main() {
 			display_algorithm.DisplayThread(dstApp, stencilLogTxn.Txn_id, false)
 		}()
 	}
-	if mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, stencilLogTxn, mtype, mappings, threads, "0") {
+	if msize, err := mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, stencilLogTxn, mtype, mappings, threads, "0"); err==nil {
 		transaction.LogOutcome(stencilLogTxn, "COMMIT")
 		wg.Wait()
+		db.FinishMigration(stencilLogTxn.DBconn, stencilLogTxn.Txn_id, msize)
 		evaluation.GetDataDowntimeInStencil(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
 		evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(stencilLogTxn.Txn_id), fmt.Sprint(appLogTxn.Txn_id), evalConfig)
 	} else {

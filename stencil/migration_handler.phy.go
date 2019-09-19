@@ -13,6 +13,7 @@ import (
 	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
+	"stencil/db"
 	"stencil/display_algorithm"
 	// "stencil/evaluation"
 	"strconv"
@@ -66,9 +67,10 @@ func main() {
 				display_algorithm.DisplayThread(dstApp, logTxn.Txn_id, false)
 			}()
 		}
-		if mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD) {
+		if msize, err := mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD); err == nil {
 			transaction.LogOutcome(logTxn, "COMMIT")
 			wg.Wait()
+			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, msize)
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 			log.Println("Transaction aborted:", logTxn.Txn_id)

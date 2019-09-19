@@ -219,6 +219,12 @@ func DeleteFromRowDescByRowID(tx *sql.Tx, rowid string) error {
 	return err
 }
 
+func DeleteFromMigrationTable(tx *sql.Tx, rowid, table_id string) error {
+	q := "DELETE FROM migration_table WHERE row_id = $1 AND table_id = $2"
+	_, err := tx.Exec(q, rowid, table_id)
+	return err
+}
+
 func MarkRowAsDeleted(tx *sql.Tx, rowid, table_id string) error {
 
 	q := "UPDATE migration_table SET mark_as_delete = $1 WHERE row_id = $2 AND table_id = $3"
