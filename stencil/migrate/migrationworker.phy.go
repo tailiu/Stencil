@@ -231,7 +231,7 @@ func (self *MigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*De
 	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
 			log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
-			// if !strings.EqualFold("notification", dep.Tag){continue}
+			if strings.Contains(dep.Tag, "notification"){continue}
 			qs := self.SrcAppConfig.GetTagQS(child, map[string]string{"mflag":self.arg})
 			self.ResolveDependencyConditions(node, dep, child, qs)
 			qs.ExcludeRowIDs(strings.Join(self.VisitedPKs(dep.Tag), ","))

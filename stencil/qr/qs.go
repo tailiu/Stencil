@@ -69,7 +69,7 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 		for _, pair := range phyTab[ptab] {
 			pColName := fmt.Sprintf("%s.%s as \"%s.%s\"", self.getTableAlias(args["alias"], ptab), pair[0], args["alias"], pair[1])
 			cols = append(cols, pColName)
-			pSizeColName := fmt.Sprintf("pg_column_size(%s.\"%s.%s\") as \"%s.%s\"", args["alias"], args["alias"], pair[1], args["alias"], pair[1])
+			pSizeColName := fmt.Sprintf("pg_column_size(\"%s\".\"%s.%s\") as \"%s.%s\"", args["alias"], args["alias"], pair[1], args["alias"], pair[1])
 			self.ColumnsWSize = append(self.ColumnsWSize, pSizeColName)
 		}
 		pTabAlias := self.getTableAlias(args["alias"], ptab)
