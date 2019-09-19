@@ -77,3 +77,14 @@ func getDataDowntimeInNaive(stencilMigrationID string, naiveMigrationID string, 
 	}
 	return dataDowntime
 }
+
+func GetNaiveAndStencilDataDowntimeMigrations(evalConfig *EvalConfig) []map[string]interface{} {
+	query := fmt.Sprintf("select m2.migration_id as stencil, m1.migration_id as naive from migration_registration as m1 join migration_registration as m2 on m1.user_id = m2.user_id where m1.src_app = 1 and m1.dst_app = 2 and m1.is_logical = true and m2.is_logical = false and m2.src_app = 1 and m2.dst_app = 2;")
+
+	result1, err1 := db.DataCall(evalConfig.StencilDBConn, query)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	return result1
+}
