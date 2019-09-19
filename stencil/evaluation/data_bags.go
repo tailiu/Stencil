@@ -139,7 +139,7 @@ func filterColsAndResultsBasedOnSchemaMapping(data map[string]interface{}, evalC
 				size += v.(int64)
 			}
 		} else {
-			panic("should never happen!!")
+			size += v.(int64)
 		}
 	}
 	return size
