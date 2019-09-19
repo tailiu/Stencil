@@ -155,7 +155,7 @@ func (self *QS) RowIDs(rowids string) {
 		if len(self.Where) > 0 {
 			self.Where += " AND "
 		}
-		self.Where += fmt.Sprintf("array[%s] <@ %s.\"%s.rowids\"", rowids, table, table)	
+		self.Where += fmt.Sprintf("array[%s] <@ \"%s\".\"%s.rowids\"", rowids, table, table)	
 	}
 }
 
@@ -165,16 +165,16 @@ func (self *QS) ExcludeRowIDs(rowids string) {
 		if len(self.Where) > 0 {
 			self.Where += " AND "
 		}
-		self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> %s.\"%s.rowids\"", rowids, table, table)	
+		self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> \"%s\".\"%s.rowids\"", rowids, table, table)	
 	}
 }
 
 func (self *QS) GroupByString(col string) {
 	table := strings.Split(col, ".")[0]
 	if strings.EqualFold(self.Group, "") {
-		self.Group = fmt.Sprintf("%s.\"%s\"", table, col)
+		self.Group = fmt.Sprintf("\"%s\".\"%s\"", table, col)
 	} else {
-		self.Group += fmt.Sprintf(", %s.\"%s\"", table, col)
+		self.Group += fmt.Sprintf(", \"%s\".\"%s\"", table, col)
 	}
 }
 
