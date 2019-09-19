@@ -56,9 +56,9 @@ func getData1FromPhysicalSchema(stencilDBConn *sql.DB, QR *qr.QR, appID, cols, f
 func filterColsAndResultsBasedOnSchemaMapping(data map[string]interface{}, evalConfig *EvalConfig, dstAppConfig *config.AppConfig, tableName, srcApp, dstApp string) int64 {
 	var size int64
 	for k, v := range data {
-		if strings.Contains(k, ".mark_as_delete") {
-			continue
-		} else if v == nil {
+		// if strings.Contains(k, ".mark_as_delete") {
+		// 	continue
+		if v == nil {
 			continue
 		} else if srcApp == "diaspora" && dstApp == "mastodon" {
 			if tableName == "status_stats" {
