@@ -7,17 +7,19 @@ package main
 import (
 	"log"
 	"os"
+	"sync"
 	"stencil/migrate"
 	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
-	// "stencil/evaluation"
+	"stencil/display_algorithm"
+	"stencil/evaluation"
 	"strconv"
 	"fmt"
 )
 
 func main() {
-	// evalConfig := evaluation.InitializeEvalConfig()
+	evalConfig := evaluation.InitializeEvalConfig()
 	srcApp, srcAppID := "diaspora", "1"
 	dstApp, dstAppID := "mastodon", "2"
 	threads, err := strconv.Atoi(os.Args[1])
@@ -43,6 +45,7 @@ func main() {
 	if len(mtype) <= 0 {
 		log.Fatal("can't read migration type")
 	}
+
 	appLogTxn, err := transaction.BeginTransaction()
 	if err != nil {
 		log.Fatal("Can't begin appLogTxn transaction", err)
@@ -55,16 +58,28 @@ func main() {
 		transaction.LogOutcome(appLogTxn, "COMMIT")
 	} else {
 		transaction.LogOutcome(appLogTxn, "ABORT")
+		log.Println("Transaction aborted:", appLogTxn.Txn_id)
 	}
+
 	stencilLogTxn, err := transaction.BeginTransaction()
 	if err != nil {
 		log.Fatal("Can't begin stencilLogTxn transaction", err)
 	}
+	var wg sync.WaitGroup
+	for threadID := 0; threadID < threads; threadID++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			display_algorithm.DisplayThread(dstApp, stencilLogTxn.Txn_id, false)
+		}()
+	}
 	if mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, stencilLogTxn, mtype, mappings, threads, "0") {
 		transaction.LogOutcome(stencilLogTxn, "COMMIT")
+		wg.Wait()
+		evaluation.GetDataDowntimeInStencil(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
+		evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(stencilLogTxn.Txn_id), fmt.Sprint(appLogTxn.Txn_id), evalConfig)
 	} else {
 		transaction.LogOutcome(stencilLogTxn, "ABORT")
+		log.Println("Transaction aborted:", stencilLogTxn.Txn_id)
 	}
-	// evaluation.GetDataDowntimeInStencil(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
-	// evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(stencilLogTxn.Txn_id), fmt.Sprint(appLogTxn.Txn_id), evalConfig)
 }

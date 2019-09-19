@@ -8,10 +8,12 @@ import (
 	"log"
 	"os"
 	"fmt"
+	"sync"
 	"stencil/migrate"
 	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
+	"stencil/display_algorithm"
 	// "stencil/evaluation"
 	"strconv"
 )
@@ -56,10 +58,20 @@ func main() {
 		if mappings == nil {
 			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
 		}
+		var wg sync.WaitGroup
+		for threadID := 0; threadID < threads; threadID++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				display_algorithm.DisplayThread(dstApp, logTxn.Txn_id, false)
+			}()
+		}
 		if mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD) {
 			transaction.LogOutcome(logTxn, "COMMIT")
+			wg.Wait()
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
+			log.Println("Transaction aborted:", logTxn.Txn_id)
 		}
 		// evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
