@@ -3,6 +3,7 @@ package mthread
 import (
 	"fmt"
 	"log"
+	"errors"
 	"stencil/migrate"
 	"stencil/config"
 	"stencil/transaction"
@@ -11,7 +12,7 @@ import (
 	"sync"
 )
 
-func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, MaD string) bool {
+func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, MaD string) (int, error) {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
@@ -123,8 +124,12 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 		// mWorker.HandleLeftOverWaitingNodes()
 	}
 
-	db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, msize)
-	return finished
+	// db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, msize)
+	if finished {
+		return msize, nil
+	} else {
+		return msize, errors.New("Some thread crashed?")
+	}
 }
 
 func LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int) bool {

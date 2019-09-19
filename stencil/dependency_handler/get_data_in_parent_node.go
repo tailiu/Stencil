@@ -3,6 +3,7 @@ package dependency_handler
 import (
 	"errors"
 	"log"
+	"fmt"
 	"stencil/config"
 	"stencil/display"
 	"database/sql"
@@ -44,7 +45,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hi
 				if hints[hintID].Data[t1 + "." + a1] == nil {
 					return display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 				}
-				data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, t2 + ".*", t2, t2 + "." + a2, "=", hints[hintID].Data[t1 + "." + a1].(string))
+				data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, t2 + ".*", t2, t2 + "." + a2, "=", fmt.Sprint(hints[hintID].Data[t1 + "." + a1]))
 				// log.Println(".....first check......")
 				// log.Println(data)
 				// log.Println("...........")
@@ -53,7 +54,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hi
 				}
 			}
 		} else {
-			data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, t2 + ".*", t2, t2 + "." + a2, "=", data[t1 + "." + a1].(string))
+			data = display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, t2 + ".*", t2, t2 + "." + a2, "=", fmt.Sprint(data[t1 + "." + a1]) )
 			if len(data) == 0 {
 				return display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 			}
