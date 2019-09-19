@@ -277,7 +277,7 @@
 			"tag": "message",
 			"depends_on": [
 				{
-					"tag": "Conversation",
+					"tag": "conversation",
 					"conditions": [
 						{
 							"tag_attr": "conversation_id",
