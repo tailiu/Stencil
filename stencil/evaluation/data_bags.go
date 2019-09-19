@@ -58,6 +58,8 @@ func filterColsAndResultsBasedOnSchemaMapping(data map[string]interface{}, evalC
 	for k, v := range data {
 		if strings.Contains(k, ".mark_as_delete") {
 			continue
+		} else if v == nil {
+			continue
 		} else if srcApp == "diaspora" && dstApp == "mastodon" {
 			if tableName == "status_stats" {
 				break
@@ -169,9 +171,5 @@ func getTotalMigratedNodeSize(evalConfig *EvalConfig, dstApp string, migrationID
 	}
 	log.Println(result)
 
-	if result["misze"] == nil {
-		return 0
-	} else {
-		return result["misze"].(int64)
-	}
+	return result["msize"].(int64)
 }
