@@ -295,7 +295,7 @@ func getAllDisplayedData(evalConfig *EvalConfig, migrationID, appID string) []Di
 		displayedData = append(displayedData, data2)
 	}
 
-	log.Println(displayedData)
+	// log.Println(displayedData)
 	return displayedData
 }
 

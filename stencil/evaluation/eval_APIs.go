@@ -90,6 +90,11 @@ func GetDataBagOfUser(migrationID, srcApp, dstApp string, evalConfig *EvalConfig
 	log.Println(migratedNodeSize)
 	displayedDataSize := getDisplayedDataSize(evalConfig, srcApp, dstApp, migrationID)
 	log.Println(displayedDataSize)
+
+	dataBags := make(map[string]int64)
+	dataBags["migratedNodeSize"] = migratedNodeSize
+	dataBags["displayedDataSize"] = displayedDataSize
+	WriteStrToLog(evalConfig.DataBags, ConvertMapInt64ToJSONString(dataBags))
 }
 
 func GetDataDowntimeInStencil(migrationID string, evalConfig *EvalConfig) {

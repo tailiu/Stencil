@@ -76,6 +76,7 @@ type EvalConfig struct {
 	DstDanglingDataInSystemFile string
 	DataDowntimeInStencilFile string
 	DataDowntimeInNaiveFile string
+	DataBags string
 }
 
 type DataBagData struct {
@@ -107,7 +108,8 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.SrcDanglingDataInSystemFile,
 	evalConfig.DstDanglingDataInSystemFile,
 	evalConfig.DataDowntimeInStencilFile,
-	evalConfig.DataDowntimeInNaiveFile = 
+	evalConfig.DataDowntimeInNaiveFile,
+	evalConfig.DataBags = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -117,7 +119,8 @@ func InitializeEvalConfig() *EvalConfig {
 		"srcSystemDanglingData",
 		"dstSystemDanglingData",
 		"dataDowntimeInStencil",
-		"dataDowntimeInNaive"
+		"dataDowntimeInNaive",
+		"dataBags"
 
 	return evalConfig
 }
