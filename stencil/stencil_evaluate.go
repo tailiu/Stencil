@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	// "time"
+	"fmt"
 )
 
 const (
@@ -151,6 +152,11 @@ func main() {
 	// evaluation.GetSize("1297001241", evalConfig)
 	// evaluation.GetTime("1297001241", evalConfig)
 	// evaluation.GetDataDowntimeInStencil("859988132", evalConfig)
-	evaluation.GetDataDowntimeInNaiveMigration("1941329965", "1957297160", evalConfig)
+
+	migrationIDPairs := evaluation.GetNaiveAndStencilDataDowntimeMigrations(evalConfig)
+	log.Println(migrationIDPairs)
+	for _, migrationIDPair := range migrationIDPairs {
+		evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(migrationIDPair["stencil"]), fmt.Sprint(migrationIDPair["naive"]), evalConfig)
+	}
 	// evaluation.GetDataBagOfUser("120911885", "diaspora", "mastodon", evalConfig)
 }
