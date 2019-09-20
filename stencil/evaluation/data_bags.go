@@ -60,87 +60,90 @@ func filterColsAndResultsBasedOnSchemaMapping(data map[string]interface{}, evalC
 		// 	continue
 		if v == nil {
 			continue
-		} else if srcApp == "diaspora" && dstApp == "mastodon" {
-			if tableName == "status_stats" {
-				break
-			} else if tableName == "conversations" {
-				data1 := getData1FromPhysicalSchema(evalConfig.StencilDBConn, dstAppConfig.QR, dstAppConfig.AppID, "statuses.*", "statuses", 
-					"statuses.id", "=", fmt.Sprint(data["conversations.id"]))
-				if len(data1) == 0 {
-					continue
-				} else {
-					break
-				}
-			} else {
-				size += v.(int64)
-			}
-		} else if srcApp == "diaspora" && dstApp == "twitter" {
-			if tableName == "conversation_participants" && k == "conversation_participants.role" {
-				continue
-			} else if tableName == "user_actions" && k == "user_actions.action_type" {
-				continue
-			} else {
-				size += v.(int64)
-			}
-		} else if srcApp == "diaspora" && dstApp == "gnusocial" {
-			if tableName == "conversation_participants" && k == "conversation_participants.role" {
-				continue
-			} else if tableName == "profile" && (k == "profile.nickname" || k == "profile.id") {
-				continue
-			} else {
-				size += v.(int64)
-			}
-		} else if srcApp == "mastodon" && dstApp == "diaspora" {
-			if strings.Contains(k, ".guid") || strings.Contains(k, ".commentable_type") || strings.Contains(k, ".target_type") {
-				continue
-			} else if tableName == "notification_actors" && (strings.Contains(k, ".created_at") || strings.Contains(k, ".updated_at")) {
-				continue
-			} else {
-				size += v.(int64)
-			}
-		} else if srcApp == "mastodon" && dstApp == "twitter" {
-			if tableName == "credentials" && (strings.Contains(k, ".id") || strings.Contains(k, ".user_id")) {
-				continue
-			} else if strings.Contains(k, ".action_type") {
-				continue
-			} else {
-				size += v.(int64)
-			}
-		} else if srcApp == "mastodon" && dstApp == "gnusocial" { 
-			if tableName == "profile" && strings.Contains(k, ".id") {
-				continue
-			} else {
-				size += v.(int64)
-			}
-		} else if srcApp == "twitter" && dstApp == "mastodon" {
-			if tableName == "users" && (strings.Contains(k, ".id") || strings.Contains(k, ".account_id")) {
-				continue
-			} else if tableName == "media_attachments" {
-				break
-			} else {
-				size += v.(int64)
-			}
-		} else if srcApp == "twitter" && dstApp == "diaspora" { 
-			if tableName == "profiles" {
-				break
-			} else if tableName == "posts" && strings.Contains(k, ".type") {
-				continue
-			} else if strings.Contains(k, ".receiving") || strings.Contains(k, ".sharing"){
-				continue
-			} else if tableName == "notification_actors" && (strings.Contains(k, ".created_at") || strings.Contains(k, ".updated_at")) {
-				continue 
-			} else {
-				size += v.(int64)
-			}
-		} else if srcApp == "twitter" && dstApp == "gnusocial" {
-			if tableName == "profile" && (k == "profile.nickname" || k == "profile.id") {
-				continue
-			} else {
-				size += v.(int64)
-			}
 		} else {
 			size += v.(int64)
 		}
+		// } else if srcApp == "diaspora" && dstApp == "mastodon" {
+		// 	if tableName == "status_stats" {
+		// 		break
+		// 	} else if tableName == "conversations" {
+		// 		data1 := getData1FromPhysicalSchema(evalConfig.StencilDBConn, dstAppConfig.QR, dstAppConfig.AppID, "statuses.*", "statuses", 
+		// 			"statuses.id", "=", fmt.Sprint(data["conversations.id"]))
+		// 		if len(data1) == 0 {
+		// 			continue
+		// 		} else {
+		// 			break
+		// 		}
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else if srcApp == "diaspora" && dstApp == "twitter" {
+		// 	if tableName == "conversation_participants" && k == "conversation_participants.role" {
+		// 		continue
+		// 	} else if tableName == "user_actions" && k == "user_actions.action_type" {
+		// 		continue
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else if srcApp == "diaspora" && dstApp == "gnusocial" {
+		// 	if tableName == "conversation_participants" && k == "conversation_participants.role" {
+		// 		continue
+		// 	} else if tableName == "profile" && (k == "profile.nickname" || k == "profile.id") {
+		// 		continue
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else if srcApp == "mastodon" && dstApp == "diaspora" {
+		// 	if strings.Contains(k, ".guid") || strings.Contains(k, ".commentable_type") || strings.Contains(k, ".target_type") {
+		// 		continue
+		// 	} else if tableName == "notification_actors" && (strings.Contains(k, ".created_at") || strings.Contains(k, ".updated_at")) {
+		// 		continue
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else if srcApp == "mastodon" && dstApp == "twitter" {
+		// 	if tableName == "credentials" && (strings.Contains(k, ".id") || strings.Contains(k, ".user_id")) {
+		// 		continue
+		// 	} else if strings.Contains(k, ".action_type") {
+		// 		continue
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else if srcApp == "mastodon" && dstApp == "gnusocial" { 
+		// 	if tableName == "profile" && strings.Contains(k, ".id") {
+		// 		continue
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else if srcApp == "twitter" && dstApp == "mastodon" {
+		// 	if tableName == "users" && (strings.Contains(k, ".id") || strings.Contains(k, ".account_id")) {
+		// 		continue
+		// 	} else if tableName == "media_attachments" {
+		// 		break
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else if srcApp == "twitter" && dstApp == "diaspora" { 
+		// 	if tableName == "profiles" {
+		// 		break
+		// 	} else if tableName == "posts" && strings.Contains(k, ".type") {
+		// 		continue
+		// 	} else if strings.Contains(k, ".receiving") || strings.Contains(k, ".sharing"){
+		// 		continue
+		// 	} else if tableName == "notification_actors" && (strings.Contains(k, ".created_at") || strings.Contains(k, ".updated_at")) {
+		// 		continue 
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else if srcApp == "twitter" && dstApp == "gnusocial" {
+		// 	if tableName == "profile" && (k == "profile.nickname" || k == "profile.id") {
+		// 		continue
+		// 	} else {
+		// 		size += v.(int64)
+		// 	}
+		// } else {
+		// 	size += v.(int64)
+		// }
 	}
 	return size
 }
