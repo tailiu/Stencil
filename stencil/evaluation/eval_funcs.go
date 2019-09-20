@@ -328,27 +328,27 @@ func getMigrationEndTime(stencilDBConn *sql.DB, migrationID int) time.Time {
 	}
 }
 
-func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *config.AppConfig) []DataBagData {
-	query := fmt.Sprintf("select table_id, array_agg(row_id) as row_ids from migration_table where bag = true and app_id = %s and migration_id = %s group by group_id, table_id;",
-		appConfig.AppID, migrationID)
+// func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *config.AppConfig) []DataBagData {
+// 	query := fmt.Sprintf("select table_id, array_agg(row_id) as row_ids from migration_table where bag = true and app_id = %s and migration_id = %s group by group_id, table_id;",
+// 		appConfig.AppID, migrationID)
 	
-	data := db.GetAllColsOfRows(evalConfig.StencilDBConn, query)
+// 	data := db.GetAllColsOfRows(evalConfig.StencilDBConn, query)
 
-	var dataBag []DataBagData
-	for _, data1 := range data {
-		var rowIDs []string
-		s := data1["row_ids"][1:len(data1["row_ids"]) - 1]
-		s1 := strings.Split(s, ",")
-		for _, rowID := range s1 {
-			rowIDs = append(rowIDs, rowID)
-		}
+// 	var dataBag []DataBagData
+// 	for _, data1 := range data {
+// 		var rowIDs []string
+// 		s := data1["row_ids"][1:len(data1["row_ids"]) - 1]
+// 		s1 := strings.Split(s, ",")
+// 		for _, rowID := range s1 {
+// 			rowIDs = append(rowIDs, rowID)
+// 		}
 
-		dataBagData := DataBagData{}
-		dataBagData.TableID = data1["table_id"]
-		dataBagData.RowIDs = rowIDs
-		dataBag = append(dataBag, dataBagData)
-	}
+// 		dataBagData := DataBagData{}
+// 		dataBagData.TableID = data1["table_id"]
+// 		dataBagData.RowIDs = rowIDs
+// 		dataBag = append(dataBag, dataBagData)
+// 	}
 
-	log.Println(dataBag)
-	return dataBag
-}
+// 	log.Println(dataBag)
+// 	return dataBag
+// }
