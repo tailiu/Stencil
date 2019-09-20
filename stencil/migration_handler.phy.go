@@ -14,7 +14,7 @@ import (
 	"stencil/mthread"
 	"stencil/transaction"
 	"stencil/db"
-	"stencil/display_algorithm"
+	// "stencil/display_algorithm"
 	"stencil/evaluation"
 	"strconv"
 )
@@ -25,7 +25,7 @@ func main() {
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		MaD := "0"
 		if len(os.Args) > 8{
-			// MaD = os.Args[8]
+			MaD = os.Args[8]
 		}
 		srcApp, srcAppID := os.Args[4], os.Args[5]
 		dstApp, dstAppID := os.Args[6], os.Args[7]
@@ -64,7 +64,7 @@ func main() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				display_algorithm.DisplayThread(dstApp, logTxn.Txn_id, false)
+				// display_algorithm.DisplayThread(dstApp, logTxn.Txn_id, false)
 			}()
 		}
 		if msize, err := mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD); err == nil {
