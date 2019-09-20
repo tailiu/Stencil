@@ -306,7 +306,7 @@ func (self *MigrationWorker) GetOwnedNodes(threadID, limit int) ([]*DependencyNo
 			log.Println(fmt.Sprintf("x%dx | UNMAPPED  tag  { %s } ", threadID, own.Tag))
 			continue
 		}
-		// if strings.Contains(own.Tag, "notification"){continue}
+		if strings.Contains(own.Tag, "notification"){continue}
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
 			qs := self.SrcAppConfig.GetTagQS(child, map[string]string{"mflag":self.arg})
 			self.ResolveOwnershipConditions(own, child, qs)
