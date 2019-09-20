@@ -6,7 +6,7 @@ import (
 	"stencil/qr"
 	"log"
 	"fmt"
-	// "strings"
+	"strings"
 )
 
 func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *config.AppConfig) []DataBagData {
@@ -37,7 +37,7 @@ func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *
 func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, tableID string, rowIDs []string) int64 {
 	qs := qr.CreateQS(appConfig.QR)
 	tableName := GetTableNameByTableID(evalConfig, tableID)
-	qs.FromTable(map[string]string{"table":tableName, "mflag": "0", "mark_as_delete": "true", "bag": "true"})
+	qs.FromTable(map[string]string{"table":tableName, "mflag": "0,1", "mark_as_delete": "true", "bag": "true"})
 	qs.SelectColumns(tableName + ".*")
 	var strRowIDs string 
 	for i, rowID := range rowIDs {
