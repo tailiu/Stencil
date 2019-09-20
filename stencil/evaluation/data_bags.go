@@ -30,11 +30,11 @@ func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *
 		dataBag = append(dataBag, dataBagData)
 	}
 
-	log.Println(dataBag)
+	// log.Println(dataBag)
 	return dataBag
 }
 
-func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, tableID string, rowIDs []string) int {
+func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, tableID string, rowIDs []string) int64 {
 	qs := qr.CreateQS(appConfig.QR)
 	tableName := GetTableNameByTableID(evalConfig, tableID)
 	qs.FromTable(map[string]string{"table":tableName, "mflag": "0", "mark_as_delete": "true", "bag": "true"})
@@ -50,27 +50,36 @@ func calculateOneDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *confi
 	qs.RowIDs(strRowIDs)
 	physicalQuery := qs.GenSQLSize()
 
-	log.Println(physicalQuery)
+	// log.Println(physicalQuery)
 
 	result, err := db.DataCall1(evalConfig.StencilDBConn, physicalQuery)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println(result)
+	// log.Println(result)
 
-	return 0
+	var size int64
+	for k, v := range result {
+		if result[k] == nil {
+			continue
+		} else {
+			size += v.(int64)
+		}
+	} 
+
+	return size
 }
 
-func calculateDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, dataBag []DataBagData) int {
-	size := 0
+func calculateDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.AppConfig, dataBag []DataBagData) int64 {
+	var size int64
 	for _, data := range dataBag {
 		size += calculateOneDataSizeInStencilModel(evalConfig, appConfig, data.TableID, data.RowIDs)
 	}
 	return size
 }
 
-func getDataBagSize(evalConfig *EvalConfig, app, migrationID string) int {
+func getDataBagSize(evalConfig *EvalConfig, app, migrationID string) int64 {
 	appConfig := getAppConfig(evalConfig, app)
 	dataBag := getAllDataInDataBag(evalConfig, migrationID, appConfig)
 	return calculateDataSizeInStencilModel(evalConfig, appConfig, dataBag)
