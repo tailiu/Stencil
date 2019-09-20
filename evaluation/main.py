@@ -1,6 +1,7 @@
 import graph as g
 import proc_data as pd
 import numpy as np
+import copy
 
 logDir = "../stencil/evaluation/logs/"
 leftoverVsMigratedFile = "leftoverVsMigrated"
@@ -10,7 +11,13 @@ srcAnomalies = "srcAnomaliesVsMigrationSize"
 srcSystemDanglingData = "srcSystemDanglingData"
 dstSystemDanglingData = "dstSystemDanglingData"
 migrationRate = "migrationRate"
+dataDownTimeInStencil = "dataDowntimeInStencil"
+dataDownTimeInNaive = "dataDowntimeInNaive"
+migrationTime = "migrationTime"
+migratedDataSize = "migratedDataSize"
+dataBags = "dataBags"
 cumNum = 1000
+apps = ['Diaspora','Mastodon', 'Twitter', 'GNU Social', 'Diaspora']
 
 def readFile1(filePath):
     data = []
@@ -248,13 +255,96 @@ def migrationRateDifferentNumOfThreads(title, fileName):
     # g.line(time, size, "Migration time (s)", "Migration size (Bytes)", "Migration rate")
     g.mulPoints(time, size, labels, xlabel, ylabel, title)
 
+def dataDownTime():
+    data = []
+    data.append(readFile2(logDir + dataDownTimeInStencil))
+    data.append(readFile2(logDir + dataDownTimeInNaive))
+    labels = [
+        "Stencil",
+        "Naive"
+    ]
+    g.cumulativeGraph(data, labels, "Data Downtime (s)", "Cumulative probability")
+
+def getTime(data):
+    time1 = []
+    time2 = []
+    for i, data1 in enumerate(data):
+        if i % 2 == 0:
+            time1.append(data1["time"])
+        else:
+            time2.append(data1["time"])
+    return time1, time2
+
+def migrationRateDataModels():
+    data1 = readFile3(logDir + migrationTime)
+    data2 = readFile3(logDir + migratedDataSize)
+
+    stencilTime, naiveTime = getTime(data1)
+
+    x = []
+    for data in data2:
+        x.append(data["size"])
+
+    times = [stencilTime, naiveTime]
+    sizes = [x, x]
+    labels = ["Stencil", "Application"]
+    xlabel = 'Migration Time (s)'
+    ylabel = 'Migration size (bytes)'
+
+    g.mulPoints(times, sizes, labels, xlabel, ylabel)
+
+def randomWalk():
+    data = readFile3(logDir + dataBags)
+
+    # size = 0
+    # bags = [size]
+    # for i, data1 in enumerate(data):
+    #     if i % (len(apps) - 1) == 0 and i != 0:        
+    #         size = 0
+    #         bags.append(size)
+    #     size = size + data1["srcDataBagSize"]
+    #     bags.append(size)
+    data2 = [0] * (len(apps) - 1)
+
+    for i, data1 in enumerate(data):
+        data2[i % (len(apps) - 1)] += data1["srcDataBagSize"]
+
+    # print data2
+    for i, data3 in enumerate(data2):
+        data2[i] = float(data3) / float(len(data)/4)
+    data2.insert(0, 0.0)
+    g.dataBag(data2, apps, "Data bag size (bytes)")
+
+
+def danglingDataSystemCombined():
+    srcData = readFile3(logDir + srcSystemDanglingData)
+    danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrcSystem(srcData)
+
+    x = getPercentageInX()
+
+    print len(x)
+    print len(danglingLikes)
+    data = [danglingLikes, danglingComments]
+    xlabel = 'Percentage of migrated users'
+    ylabel = 'Dangling data size'
+    labels = [
+        'likes',
+        'comments'
+    ]
+
+    g.danglingDataSystemCombined(x, data, xlabel, ylabel, labels)
+
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
-# danglingDataCumSum()
+danglingDataCumSum()
 # serviceInterruptionCumSum()
 # anomaliesCumSum()
 # danglingDataPoints()
-danglingDataSystem()
+# danglingDataSystem()
 # migrationRateDifferentNumOfThreads('Consistent/independent migration', migrationRate)
 # migrationRateDifferentNumOfThreads('Deletion migration', migrationRate)
+# dataDownTime()
+# migrationRateDataModels()
+# randomWalk()
+# danglingDataSystemCombined()

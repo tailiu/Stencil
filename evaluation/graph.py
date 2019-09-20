@@ -1,6 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+plt.rcParams.update({'font.size': 15})
+colors = ['g', 'b', 'r', 'k', 'c', 'm', 'y', 'w']
+lineStyles = ['-', '--', '-.', ':']
+legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
+
 def line(x, y, xlabel, ylabel, title):
     xs, ys = _sortX(x, y)
 
@@ -79,7 +84,17 @@ def allTimeVsSizeGraph():
 
     plt.show()
 
-def cumulativeGraph(data, xlabel, ylabel):
+def processCumulativeData(data):
+    h, edges = np.histogram(data, density=True, bins=100, )
+    h = np.cumsum(h)/np.cumsum(h).max()
+
+    x = edges.repeat(2)[:-1]
+    y = np.zeros_like(x)
+    y[1:] = h.repeat(2)
+
+    return x, y
+
+def cumulativeGraph(dataArr, labels, xlabel, ylabel):
     # data = sorted(data)
     # plt.hist(data, cumulative=1, normed=1, bins=100, histtype='step')
     # plt.xticks([i+0.5 for i in years], years)
@@ -88,20 +103,25 @@ def cumulativeGraph(data, xlabel, ylabel):
     # plt.xlabel(xlabel)
     # plt.ylabel(ylabel)
     # plt.show()
+    
+    x = []
+    y = []
 
-    h, edges = np.histogram(data, density=True, bins=100, )
-    h = np.cumsum(h)/np.cumsum(h).max()
+    for data in dataArr:
+        x1, y1 = processCumulativeData(data)
+        x.append(x1)
+        y.append(y1)
 
-    X = edges.repeat(2)[:-1]
-    y = np.zeros_like(X)
-    y[1:] = h.repeat(2)
+    fig, ax = plt.subplots()
+    for i, y1 in enumerate(y):
+        ax.plot(x[i], y1, colors[i] + lineStyles[i], lw=2, label = labels[i])
 
-    fig, ax=plt.subplots()
-    ax.plot(X,y, lw=2)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.grid(True)
-    # ax.legend(loc='upper left')
+    
+    legend = ax.legend(loc=1, fontsize=legendFontSize[4])
+
     plt.show()
 
 def barGraph(x, y, xlabel, ylabel, step):
@@ -133,28 +153,25 @@ def mulPointsDanglingData(x, data, labelName):
     
     plt.show()
 
-def mulPoints(x, y, labels, xlabel, ylabel, title):
+def mulPoints(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
-    style = "."
     for i, x1 in enumerate(x):
-        ax.plot(x1, y[i], colors[i] + style, label=labels[i])
+        ax.plot(x1, y[i], colors[i] + ".", label=labels[i])
     ax.grid(True)
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
 
-    legend = ax.legend(loc=1, fontsize='x-small', numpoints=1)
+    legend = ax.legend(loc=1, fontsize=legendFontSize[4], numpoints=1)
     
     plt.show()
 
 def mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS):
     fig, ax = plt.subplots()
-    ax.plot(x, danglingLikesCS, 'c--', label='Dangling likes without posts in Diaspora')
-    ax.plot(x, danglingCommentsCS, 'g--', label='Dangling comments without posts in Diaspora')
-    ax.plot(x, danglingMessagesCS, 'r--', label='Dangling messages without conversations in Diaspora')
-    ax.plot(x, danglingTotalCS, 'k--', label='Dangling likes, comments and messages in Diaspora')
+    # ax.plot(x, danglingLikesCS, 'c--', label='Dangling likes without posts in Diaspora')
+    # ax.plot(x, danglingCommentsCS, 'g--', label='Dangling comments without posts in Diaspora')
+    # ax.plot(x, danglingMessagesCS, 'r--', label='Dangling messages without conversations in Diaspora')
+    # ax.plot(x, danglingTotalCS, 'k--', label='Dangling likes, comments and messages in Diaspora')
     ax.plot(x, danglingStatusesCS, 'b', label='Dangling statuses without conversations in Mastodon')
     ax.plot(x, danglingFavCS, 'm', label='Dangling favourites without statuses in Mastodon')
 
@@ -185,5 +202,33 @@ def mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, st
     ax.grid(True)
 
     legend = ax.legend(loc=2, fontsize='small')
+
+    plt.show()
+
+
+def dataBag(data, apps, ylabel):
+    fig, ax = plt.subplots()
+
+    x = np.arange(0, len(apps))
+
+    for i in range(len(data)/len(apps)):
+        ax.plot(x, data[i:i+len(apps)], colors[0] + "-.")
+    
+    ax.set_xticks(x)
+    ax.set_xticklabels(apps, fontsize=18)
+    ax.grid(True)
+    ax.set_ylabel(ylabel)
+
+    plt.show()
+
+def danglingDataSystemCombined(x, y, xlabel, ylabel, labels):
+    fig, ax = plt.subplots()
+    for i, y1 in enumerate(y):
+        ax.plot(x, y1, colors[i] + lineStyles[0], label=labels[i])
+    
+    ax.grid(True)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    legend = ax.legend(loc=2, fontsize='x-small')
 
     plt.show()
