@@ -68,8 +68,8 @@ func GetRowIDsFromData(data map[string]interface{}) []int  {
 					log.Fatal(err)
 				}
 				rowIDs = append(rowIDs, rowID)
-				return rowIDs
 			}
+			return rowIDs
 		}
 	}
 	
