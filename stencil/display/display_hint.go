@@ -2,11 +2,13 @@ package display
 
 import (
 	"errors"
-	// "log"
+	"log"
 	"stencil/config"
-	// "stencil/db"
+	"stencil/db"
 	// "strconv"
 	"strings"
+	"database/sql"
+	"fmt"
 )
 
 type HintStruct struct {
@@ -155,4 +157,16 @@ func (hint HintStruct) GetRestrictionsInTag(appConfig *config.AppConfig) ([]map[
 	}
 
 	return nil, errors.New("No matched tag found!")
+}
+
+func (hint HintStruct) GetAllRowIDs(stencilDBConn *sql.DB, appID string) []map[string]interface{} {
+	query := fmt.Sprintf("select row_id from migration_table where app_id = %s and table_id = %s and group_id in (select group_id from migration_table where row_id = %d and table_id = %s and app_id = %s);",
+		appID, hint.TableID, hint.RowIDs[0], hint.TableID, appID)
+	
+	result, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	return result
 }

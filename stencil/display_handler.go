@@ -7,9 +7,9 @@ import (
 
 func main() {
 	threadNum := 1
-	// dstApp := "mastodon"
-	dstApp := "diaspora"
-	migrationID := 1148085788
+	dstApp := "mastodon"
+	// dstApp := "diaspora"
+	migrationID := 1722677882
 
 	deletionHoldEnable := false
 

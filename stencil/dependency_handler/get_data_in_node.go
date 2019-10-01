@@ -220,9 +220,9 @@ func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint displa
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
 	if data, err = getDataInNode(appConfig, hint, stencilDBConn); err != nil {
-		// log.Println(("**************"))
+		// log.Println("++++++++++++")
 		// log.Println(data)
-		// log.Println(("**************"))
+		// log.Println("++++++++++++")
 		// The setting "default_display_setting" means only display a node when the node is complete.
 		// Therefore, return nil and error message when node is not complete.
 		if displaySetting == "default_display_setting" {
@@ -232,7 +232,6 @@ func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint displa
 			// Note: if a piece of data in a node depends on some data not existing in the node,
 			// it needs to be deleted from the data set and cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {
-			// fmt.Println(data)
 			return trimDataBasedOnInnerDependencies(appConfig, data, tagName), err
 		}
 		// If a node is complete, return all the data in the node regardless of the setting.

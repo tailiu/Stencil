@@ -48,7 +48,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 		appID, migrationID)
 	
 	data := db.GetAllColsOfRows(stencilDBConn, query)
-	log.Println(data)
+	// log.Println(data)
 
 	// If we don't use physical schema, both table_name and id are necessary to identify a piece of migratd data.
 	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
@@ -71,7 +71,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 		hint.RowIDs = rowIDs
 		displayHints = append(displayHints, hint)
 	}
-	log.Println(displayHints)
+	// log.Println(displayHints)
 	return displayHints
 }
 
@@ -107,23 +107,21 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 
 func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deletionHoldEnable bool, dhStack [][]int, threadID int) (error, [][]int) {
 	var queries []string
-	
-	appID1, err1 := strconv.Atoi(appID)
-	if err1 != nil {
-		log.Fatal(err1)
-	}
 
 	for _, dataHint := range dataHints {
-		for _, rowID := range dataHint.RowIDs {
 
-			// This is an optimization to prevent possible path conflict
-			if CheckDisplay(stencilDBConn, appID, dataHint) == 0 {
-				log.Println("Found that there is a path conflict!! When displaying data")
-				return errors.New("Path conflict"), dhStack
-			}
+		// This is an optimization to prevent possible path conflict
+		// We only need to test one rowID in a data hint
+		if CheckDisplay(stencilDBConn, appID, dataHint) == 0 {
+			log.Println("Found that there is a path conflict!! When displaying data")
+			return errors.New("Path conflict"), dhStack
+		}
+
+		rowIDs := dataHint.GetAllRowIDs(stencilDBConn, appID)
+		for _, rowID := range rowIDs {
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf("UPDATE migration_table SET mflag = 0, updated_at = now() WHERE row_id = %d and app_id = %d and table_id = %s", 
-					rowID, appID1, dataHint.TableID)
+			query := fmt.Sprintf("UPDATE migration_table SET mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s", 
+				fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
 			log.Println("**************************************")
 			log.Println(query)
 			log.Println("**************************************")
@@ -158,23 +156,21 @@ func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
 
 func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct) error {
 	var queries []string
-	
-	appID1, err1 := strconv.Atoi(appID)
-	if err1 != nil {
-		log.Fatal(err1)
-	}
 
 	for _, dataHint := range dataHints {
-		for _, rowID := range dataHint.RowIDs {
+		
+		// Similar to displaying data, this is an optimization to prevent possible path conflict
+		// We only need to test one rowID in a data hint
+		if alreadyInBag(stencilDBConn, appID, dataHint) {
+			log.Println("Found that there is a path conflict!! When putting data in a databag")
+			return errors.New("Path conflict")
+		}
 
-			// Similar to displaying data, this is an optimization to prevent possible path conflict
-			if alreadyInBag(stencilDBConn, appID, dataHint) {
-				log.Println("Found that there is a path conflict!! When putting data in a databag")
-				return errors.New("Path conflict")
-			}
+		rowIDs := dataHint.GetAllRowIDs(stencilDBConn, appID)
+		for _, rowID := range rowIDs {
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf("UPDATE migration_table SET bag = true, mark_as_delete = true, mflag = 0, updated_at = now() WHERE row_id = %d and app_id = %d and table_id = %s",
-					rowID, appID1, dataHint.TableID)
+			query := fmt.Sprintf("UPDATE migration_table SET bag = true, mark_as_delete = true, mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s",
+					fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 			log.Println(query)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
