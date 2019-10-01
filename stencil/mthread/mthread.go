@@ -57,17 +57,17 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 						}
 						break
 					}
-					// for {
-					// 	if err := mWorker.MigrateProcessBags(thread_id); err != nil {
-					// 		if !strings.Contains(err.Error(), "deadlock"){
-					// 			mWorker.RenewDBConn()
-					// 		}else{
-					// 			fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
-					// 		}
-					// 		continue
-					// 	}
-					// 	break
-					// }
+					for {
+						if err := mWorker.MigrateProcessBags(thread_id); err != nil {
+							if !strings.Contains(err.Error(), "deadlock"){
+								mWorker.RenewDBConn()
+							}else{
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
+							continue
+						}
+						break
+					}
 				}
 			case migrate.CONSISTENT:
 				{

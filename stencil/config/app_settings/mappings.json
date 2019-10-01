@@ -222,25 +222,12 @@
                                 {
                                     "table": "mentions",
                                     "conditions": {
-                                        "reply": "True"
                                     },
                                     "mapping":{
                                         "id":"mentions.id",
                                         "person_id":"mentions.account_id",
                                         "mentions_container_id":"mentions.status_id",
                                         "mentions_container_type":"$mentions_type1"
-                                    }
-                                },
-                                {
-                                    "table": "mentions",
-                                    "conditions": {
-                                        "reply": "False"
-                                    },
-                                    "mapping":{
-                                        "id":"mentions.id",
-                                        "person_id":"mentions.account_id",
-                                        "mentions_container_id":"mentions.status_id",
-                                        "mentions_container_type":"$mentions_type2"
                                     }
                                 }
                             ]

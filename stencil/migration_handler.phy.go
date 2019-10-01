@@ -15,12 +15,12 @@ import (
 	"stencil/transaction"
 	"stencil/db"
 	"stencil/display_algorithm"
-	// "stencil/evaluation"
+	"stencil/evaluation"
 	"strconv"
 )
 
 func main() {
-	// evalConfig := evaluation.InitializeEvalConfig()
+	evalConfig := evaluation.InitializeEvalConfig()
 
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		MaD := "0"
@@ -75,7 +75,7 @@ func main() {
 			transaction.LogOutcome(logTxn, "ABORT")
 			log.Println("Transaction aborted:", logTxn.Txn_id)
 		}
-		// evaluation.GetDataBagOfUser(fmt.Sprint(logTxn.Txn_id), srcApp, dstApp, evalConfig)
+		evaluation.GetDataBagOfUser(fmt.Sprint(logTxn.Txn_id), srcApp, dstApp, evalConfig)
 		// evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)

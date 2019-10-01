@@ -727,7 +727,7 @@ func (self *MigrationWorker) MigrateNode(mapping config.Mapping, node *Dependenc
 				} else {
 					log.Fatal("MigrateNode: unable to GenUndoActionJSON", err)
 				}
-				tx.Commit()
+				return tx.Commit()
 			} else {
 				return self.HandleUnmappedNode(node)
 			}
@@ -735,7 +735,7 @@ func (self *MigrationWorker) MigrateNode(mapping config.Mapping, node *Dependenc
 			return err
 		}
 	}
-	return nil
+	// return nil
 }
 
 func (self *MigrationWorker) HandleWaitingList(appMapping config.Mapping, tagMembers []string, node *DependencyNode) (*DependencyNode, error) {
@@ -816,26 +816,61 @@ func (self *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 	}
 }
 
-func (self *MigrationWorker) HandleMigration(node *DependencyNode) error {
-	// log.Println(fmt.Sprintf("#%d# HandleMigration { %s } From [%s] to [%s]", 0, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-	for _, mapping := range self.mappings.Mappings {
-		tagMembers := node.Tag.GetTagMembers()
+// func (self *MigrationWorker) HandleMigration(node *DependencyNode) error {
+// 	// log.Println(fmt.Sprintf("#%d# HandleMigration { %s } From [%s] to [%s]", 0, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+// 	for _, mapping := range self.mappings.Mappings {
+// 		tagMembers := node.Tag.GetTagMembers()
+// 		if mappedTables := helper.IntersectString(tagMembers, mapping.FromTables); len(mappedTables) > 0 {
+// 			if helper.Sublist(tagMembers, mapping.FromTables) { // other mappings HANDLE!
+// 				return self.MigrateNode(mapping, node)
+// 			}
+// 			if wNode, err := self.HandleWaitingList(mapping, tagMembers, node); wNode != nil && err == nil {
+// 				return self.MigrateNode(mapping, wNode)
+// 			} else {
+// 				return err
+// 			}
+// 		}
+// 	}
+// 	if self.mtype == BAGS || !strings.EqualFold(self.mtype, DELETION) {
+// 		self.unmappedTags.Add(node.Tag.Name)
+// 		return fmt.Errorf("no mapping found for node: %s", node.Tag.Name)
+// 	}
+// 	return self.HandleUnmappedNode(node)
+// }
+
+func (self *MigrationWorker) FetchMappingsForNode(node *DependencyNode) (config.Mapping, bool) {
+	var combinedMapping config.Mapping
+	tagMembers := node.Tag.GetTagMembers()
+	mappingFound := false
+	for _, mapping := range self.mappings.Mappings {	
 		if mappedTables := helper.IntersectString(tagMembers, mapping.FromTables); len(mappedTables) > 0 {
-			if helper.Sublist(tagMembers, mapping.FromTables) { // other mappings HANDLE!
-				return self.MigrateNode(mapping, node)
-			}
-			if wNode, err := self.HandleWaitingList(mapping, tagMembers, node); wNode != nil && err == nil {
-				return self.MigrateNode(mapping, wNode)
-			} else {
-				return err
-			}
+			combinedMapping.FromTables = append(combinedMapping.FromTables, mapping.FromTables...)
+			combinedMapping.ToTables = append(combinedMapping.ToTables, mapping.ToTables...)
+			mappingFound = true
 		}
 	}
-	if self.mtype == BAGS || !strings.EqualFold(self.mtype, DELETION) {
-		self.unmappedTags.Add(node.Tag.Name)
-		return fmt.Errorf("no mapping found for node: %s", node.Tag.Name)
+	return combinedMapping, mappingFound
+}
+
+func (self *MigrationWorker) HandleMigration(node *DependencyNode) error {
+	
+	if mapping, found := self.FetchMappingsForNode(node); found {
+		tagMembers := node.Tag.GetTagMembers()
+		if helper.Sublist(tagMembers, mapping.FromTables) { // other mappings HANDLE!
+			return self.MigrateNode(mapping, node)
+		}
+		if wNode, err := self.HandleWaitingList(mapping, tagMembers, node); wNode != nil && err == nil {
+			return self.MigrateNode(mapping, wNode)
+		} else {
+			return err
+		}
+	} else {
+		if self.mtype == BAGS || !strings.EqualFold(self.mtype, DELETION) {
+			self.unmappedTags.Add(node.Tag.Name)
+			return fmt.Errorf("no mapping found for node: %s", node.Tag.Name)
+		}
+		return self.HandleUnmappedNode(node)
 	}
-	return self.HandleUnmappedNode(node)
 }
 
 func (self *MigrationWorker) HandleLeftOverWaitingNodes() {
