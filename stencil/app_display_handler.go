@@ -1,7 +1,7 @@
 package main
 
 import (
-	"stencil/display_algorithm"
+	"stencil/app_display_algorithm"
 	"fmt"
 )
 
@@ -11,10 +11,8 @@ func main() {
 	// dstApp := "diaspora"
 	migrationID := 404871548
 
-	deletionHoldEnable := false
-
 	for i := 0; i < threadNum; i++ {
-		go display_algorithm.DisplayThread(dstApp, migrationID, deletionHoldEnable)
+		go app_display_algorithm.DisplayThread(dstApp, migrationID)
 	}
 
 	for {
