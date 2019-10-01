@@ -16,7 +16,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 	startTime := time.Now()
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appConfig, threadID := display.Initialize(app)
+	stencilDBConn, appConfig, threadID, userID := display.Initialize(migrationID, app)
 
 	// display.CreateDeletionHoldTable(stencilDBConn)
 	log.Println("Thread ID:", threadID)
@@ -29,7 +29,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 		
 		var dhStack [][]int
 		for _, oneMigratedData := range migratedData {
-			_, dhStack, _ = checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, secondRound, deletionHoldEnable, dhStack, threadID)
+			_, dhStack, _ = checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, secondRound, deletionHoldEnable, dhStack, threadID, userID)
 			if deletionHoldEnable {
 				display.RemoveDeletionHold(stencilDBConn, dhStack, threadID)
 			}
@@ -42,7 +42,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 	secondRoundMigratedData := display.GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 		var dhStack [][]int
-		_, dhStack, _ = checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, secondRound, deletionHoldEnable, dhStack, threadID)
+		_, dhStack, _ = checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, secondRound, deletionHoldEnable, dhStack, threadID, userID)
 		if deletionHoldEnable {
 			display.RemoveDeletionHold(stencilDBConn, dhStack, threadID)
 		}
@@ -54,7 +54,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 }
 
 // Two-way display check
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, secondRound bool, deletionHoldEnable bool, dhStack [][]int, threadID int) (string, [][]int, error) {
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData display.HintStruct, secondRound bool, deletionHoldEnable bool, dhStack [][]int, threadID int, userID string) (string, [][]int, error) {
 	display.CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
 	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(appConfig, oneMigratedData, stencilDBConn)
 	log.Println("-----------")
@@ -65,7 +65,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 	if len(dataInNode) == 0 {
 		log.Println(err1)
 		if secondRound {
-			err10 := display.PutIntoDataBag(stencilDBConn, appConfig.AppID, []display.HintStruct{oneMigratedData})
+			err10 := display.PutIntoDataBag(stencilDBConn, appConfig.AppID, []display.HintStruct{oneMigratedData}, userID)
 			// Found path conflicts
 			if err10 != nil {
 				return "No Data In a Node Can be Displayed", dhStack, err10
@@ -135,7 +135,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 						// }
 						var result string
 						var err7 error
-						result, dhStack, err7 = checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode, secondRound, deletionHoldEnable, dhStack, threadID)
+						result, dhStack, err7 = checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode, secondRound, deletionHoldEnable, dhStack, threadID, userID)
 						if err7 != nil {
 							log.Println(err7)
 							// If there is path confilct, just return until to the original layer and remove the already added deletion hold
@@ -166,7 +166,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 					return display.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 				} else {
 					if secondRound {
-						err9 := display.PutIntoDataBag(stencilDBConn, appConfig.AppID, dataInNode)
+						err9 := display.PutIntoDataBag(stencilDBConn, appConfig.AppID, dataInNode, userID)
 						// Found path conflicts
 						if err9 != nil {
 							return "No Data In a Node Can be Displayed", dhStack, err9

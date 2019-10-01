@@ -163,6 +163,10 @@ func (hint HintStruct) GetAllRowIDs(stencilDBConn *sql.DB, appID string) []map[s
 	query := fmt.Sprintf("select row_id from migration_table where app_id = %s and table_id = %s and group_id in (select group_id from migration_table where row_id = %d and table_id = %s and app_id = %s);",
 		appID, hint.TableID, hint.RowIDs[0], hint.TableID, appID)
 	
+	// log.Println("++++++++")
+	// log.Println(query)
+	// log.Println("++++++++")
+
 	result, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)

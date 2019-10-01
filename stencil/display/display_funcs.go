@@ -21,7 +21,18 @@ func RandomNonnegativeInt() int {
 	return rand.Intn(math.MaxInt32)
 }
 
-func Initialize(app string) (*sql.DB, *config.AppConfig, int) {
+func getUserIDByMigrationID(stencilDBConn *sql.DB, migrationID int) string {
+	query := fmt.Sprintf("select user_id from migration_registration where migration_id = %d", migrationID)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["user_id"])
+}
+
+func Initialize(migrationID int, app string) (*sql.DB, *config.AppConfig, int, string) {
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
@@ -33,7 +44,9 @@ func Initialize(app string) (*sql.DB, *config.AppConfig, int) {
 
 	threadID := RandomNonnegativeInt()
 
-	return stencilDBConn, &appConfig, threadID
+	userID := getUserIDByMigrationID(stencilDBConn, migrationID)
+
+	return stencilDBConn, &appConfig, threadID, userID
 }
 
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfig *config.AppConfig) []HintStruct {
@@ -154,7 +167,7 @@ func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
 	return data1["bag"].(bool)
 }
 
-func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct) error {
+func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, userID string) error {
 	var queries []string
 
 	for _, dataHint := range dataHints {
@@ -169,8 +182,8 @@ func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct)
 		rowIDs := dataHint.GetAllRowIDs(stencilDBConn, appID)
 		for _, rowID := range rowIDs {
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf("UPDATE migration_table SET bag = true, mark_as_delete = true, mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s",
-					fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
+			query := fmt.Sprintf("UPDATE migration_table SET userID = %s, bag = true, mark_as_delete = true, mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s",
+				userID, fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 			log.Println(query)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
