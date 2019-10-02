@@ -97,15 +97,27 @@ func SystemLevelDanglingData(migrationID string, evalConfig *EvalConfig) {
 // 	WriteStrToLog(evalConfig.DataBags, ConvertMapInt64ToJSONString(dataBags))
 // }
 
-func GetDataBagOfUser(migrationID, sourceApp, dstApp string, evalConfig *EvalConfig) {
-	srcDataBagSize := getDataBagSize(evalConfig, sourceApp, migrationID)
-	dstDataBagSize := getDataBagSize(evalConfig, dstApp, migrationID)
-	log.Println(srcDataBagSize)
-	log.Println(dstDataBagSize)
+// func GetDataBagOfUserBasedOnApp(migrationID, sourceApp, dstApp string, evalConfig *EvalConfig) {
+// 	srcDataBagSize := getDataBagSize(evalConfig, sourceApp, migrationID)
+// 	dstDataBagSize := getDataBagSize(evalConfig, dstApp, migrationID)
+// 	log.Println(srcDataBagSize)
+// 	log.Println(dstDataBagSize)
 
+// 	dataBags := make(map[string]int64)
+// 	dataBags["srcDataBagSize"] = srcDataBagSize
+// 	dataBags["dstDataBagSize"] = dstDataBagSize
+// 	WriteStrToLog(evalConfig.DataBags, ConvertMapInt64ToJSONString(dataBags))
+// }
+
+func GetDataBagOfUser(userID string, evalConfig *EvalConfig) {
+	apps := getAllAppsOfDataBag(evalConfig, userID)
+	
+	var size int64 
+	for _, app := range apps {
+		size += getDataBagSize(evalConfig, app, userID)
+	}
 	dataBags := make(map[string]int64)
-	dataBags["srcDataBagSize"] = srcDataBagSize
-	dataBags["dstDataBagSize"] = dstDataBagSize
+	dataBags["dataBagSize"] = size
 	WriteStrToLog(evalConfig.DataBags, ConvertMapInt64ToJSONString(dataBags))
 }
 

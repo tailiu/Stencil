@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *config.AppConfig) []DataBagData {
-	query := fmt.Sprintf("select table_id, array_agg(row_id) as row_ids from migration_table where bag = true and app_id = %s and migration_id = %s group by group_id, table_id;",
-		appConfig.AppID, migrationID)
+func getAllDataInDataBag(evalConfig *EvalConfig, userID string, appConfig *config.AppConfig) []DataBagData {
+	query := fmt.Sprintf("select table_id, array_agg(row_id) as row_ids from migration_table where bag = true and app_id = %s and user_id = %s group by group_id, table_id;",
+		appConfig.AppID, userID)
 	
 	data := db.GetAllColsOfRows(evalConfig.StencilDBConn, query)
 
@@ -79,8 +79,24 @@ func calculateDataSizeInStencilModel(evalConfig *EvalConfig, appConfig *config.A
 	return size
 }
 
-func getDataBagSize(evalConfig *EvalConfig, app, migrationID string) int64 {
+func getAllAppsOfDataBag(evalConfig *EvalConfig, userID string) []string {
+	query := fmt.Sprintf("select distinct a.app_name from migration_table m join apps a on m.app_id = a.pk where user_id = %s and bag = true;",
+		userID)
+	
+	result, err := db.DataCall(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var apps []string 
+	for _, app := range result {
+		apps = append(apps, fmt.Sprint(app["app_name"]))
+	}
+	return apps
+}
+
+func getDataBagSize(evalConfig *EvalConfig, app, userID string) int64 {
 	appConfig := getAppConfig(evalConfig, app)
-	dataBag := getAllDataInDataBag(evalConfig, migrationID, appConfig)
+	dataBag := getAllDataInDataBag(evalConfig, userID, appConfig)
 	return calculateDataSizeInStencilModel(evalConfig, appConfig, dataBag)
 }

@@ -159,5 +159,5 @@ func main() {
 	// 	evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(migrationIDPair["stencil"]), fmt.Sprint(migrationIDPair["naive"]), evalConfig)
 	// }
 
-	evaluation.GetDataBagOfUser("1067649141", "diaspora", "mastodon", evalConfig)
+	evaluation.GetDataBagOfUser("23926", evalConfig)
 }
