@@ -182,7 +182,7 @@ func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct,
 		rowIDs := dataHint.GetAllRowIDs(stencilDBConn, appID)
 		for _, rowID := range rowIDs {
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf("UPDATE migration_table SET userID = %s, bag = true, mark_as_delete = true, mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s",
+			query := fmt.Sprintf("UPDATE migration_table SET user_id = %s, bag = true, mark_as_delete = true, mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s",
 				userID, fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 			log.Println(query)
