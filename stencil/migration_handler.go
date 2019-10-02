@@ -13,7 +13,7 @@ import (
 	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
-	"stencil/display_algorithm"
+	// "stencil/display_algorithm"
 	"stencil/evaluation"
 	"strconv"
 	"fmt"
@@ -71,7 +71,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			display_algorithm.DisplayThread(dstApp, stencilLogTxn.Txn_id, false)
+			// display_algorithm.DisplayThread(dstApp, stencilLogTxn.Txn_id, false)
 		}()
 	}
 	if msize, err := mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, stencilLogTxn, mtype, mappings, threads, "0"); err==nil {
@@ -81,8 +81,8 @@ func main() {
 		evaluation.GetTime(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
 		evaluation.GetTime(fmt.Sprint(appLogTxn.Txn_id), evalConfig)
 		evaluation.GetSize(fmt.Sprint(appLogTxn.Txn_id), evalConfig)
-		evaluation.GetDataDowntimeInStencil(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
-		evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(stencilLogTxn.Txn_id), fmt.Sprint(appLogTxn.Txn_id), evalConfig)
+		// evaluation.GetDataDowntimeInStencil(fmt.Sprint(stencilLogTxn.Txn_id), evalConfig)
+		// evaluation.GetDataDowntimeInNaiveMigration(fmt.Sprint(stencilLogTxn.Txn_id), fmt.Sprint(appLogTxn.Txn_id), evalConfig)
 	} else {
 		transaction.LogOutcome(stencilLogTxn, "ABORT")
 		log.Println("Transaction aborted:", stencilLogTxn.Txn_id)
