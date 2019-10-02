@@ -719,7 +719,21 @@ func (self *LMigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 	}
 }
 
-func (self *LMigrationWorker) MigrateNode(node *DependencyNode, isBag bool) error {
+func (self *LMigrationWorker) FetchMappingsForNode(node *DependencyNode) (config.Mapping, bool) {
+	var combinedMapping config.Mapping
+	tagMembers := node.Tag.GetTagMembers()
+	mappingFound := false
+	for _, mapping := range self.mappings.Mappings {	
+		if mappedTables := helper.IntersectString(tagMembers, mapping.FromTables); len(mappedTables) > 0 {
+			combinedMapping.FromTables = append(combinedMapping.FromTables, mapping.FromTables...)
+			combinedMapping.ToTables = append(combinedMapping.ToTables, mapping.ToTables...)
+			mappingFound = true
+		}
+	}
+	return combinedMapping, mappingFound
+}
+
+func (self *LMigrationWorker) _MigrateNode(node *DependencyNode, isBag bool) error {
 
 	for _, appMapping := range self.mappings.Mappings {
 		tagMembers := node.Tag.GetTagMembers()
@@ -742,6 +756,27 @@ func (self *LMigrationWorker) MigrateNode(node *DependencyNode, isBag bool) erro
 		return fmt.Errorf("no mapping found for node: %s", node.Tag.Name)
 	}
 	return self.HandleUnmappedNode(node)
+}
+
+func (self *LMigrationWorker) MigrateNode(node *DependencyNode, isBag bool) error {
+	
+	if mapping, found := self.FetchMappingsForNode(node); found {
+		tagMembers := node.Tag.GetTagMembers()
+		if helper.Sublist(tagMembers, mapping.FromTables) { // other mappings HANDLE!
+			return self.HandleMigration(mapping.ToTables, node)
+		}
+		if wNode, err := self.HandleWaitingList(mapping, tagMembers, node); wNode != nil && err == nil {
+			return self.HandleMigration(mapping.ToTables, wNode)
+		} else {
+			return err
+		}
+	} else {
+		if isBag || !strings.EqualFold(self.mtype, DELETION) {
+			self.unmappedTags.Add(node.Tag.Name)
+			return fmt.Errorf("no mapping found for node: %s", node.Tag.Name)
+		}
+		return self.HandleUnmappedNode(node)
+	}
 }
 
 func (self *LMigrationWorker) HandleLeftOverWaitingNodes() {
