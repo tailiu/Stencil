@@ -93,7 +93,9 @@ def resetRowDesc():
                     "ALTER TABLE ONLY public.migration_table ALTER COLUMN mflag SET DEFAULT 0;",
                     "ALTER TABLE ONLY public.migration_table ALTER COLUMN updated_at SET DEFAULT now();",
                     "ALTER TABLE ONLY public.migration_table ALTER COLUMN created_at SET DEFAULT now();",
-                    "CREATE TRIGGER update_migration_table_changetimestamp BEFORE UPDATE ON migration_table FOR EACH ROW EXECUTE PROCEDURE update_changetimestamp_column();"]
+                    "CREATE TRIGGER update_migration_table_changetimestamp BEFORE UPDATE ON migration_table FOR EACH ROW EXECUTE PROCEDURE update_changetimestamp_column();",
+                    "ALTER TABLE ONLY public.migration_table ADD CONSTRAINT migration_table_apps_fkey FOREIGN KEY (app_id) REFERENCES public.apps(pk);",
+                    "ALTER TABLE ONLY public.migration_table ADD CONSTRAINT migration_table_app_tables_fkey FOREIGN KEY (table_id) REFERENCES public.app_tables(pk);"]
     for q in constraints:
         print q
         cur.execute(q)
