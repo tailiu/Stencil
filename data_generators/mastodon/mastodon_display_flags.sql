@@ -95,7 +95,7 @@ CREATE TABLE public.account_conversations (
     last_status_id bigint,
     lock_version integer DEFAULT 0 NOT NULL,
     unread boolean DEFAULT false NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -132,7 +132,7 @@ CREATE TABLE public.account_domain_blocks (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     account_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -170,7 +170,7 @@ CREATE TABLE public.account_moderation_notes (
     target_account_id bigint NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -207,7 +207,7 @@ CREATE TABLE public.account_pins (
     target_account_id bigint,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -247,7 +247,7 @@ CREATE TABLE public.account_stats (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     last_status_at timestamp without time zone,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -285,7 +285,7 @@ CREATE TABLE public.account_tag_stats (
     hidden boolean DEFAULT false NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -321,7 +321,7 @@ CREATE TABLE public.account_warning_presets (
     text text DEFAULT ''::text NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -360,7 +360,7 @@ CREATE TABLE public.account_warnings (
     text text DEFAULT ''::text NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -434,7 +434,7 @@ CREATE TABLE public.accounts (
     actor_type character varying,
     discoverable boolean,
     also_known_as character varying[],
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -468,7 +468,7 @@ ALTER SEQUENCE public.accounts_id_seq OWNED BY public.accounts.id;
 CREATE TABLE public.accounts_tags (
     account_id bigint NOT NULL,
     tag_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -487,7 +487,7 @@ CREATE TABLE public.admin_action_logs (
     recorded_changes text DEFAULT ''::text NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -523,7 +523,7 @@ CREATE TABLE public.ar_internal_metadata (
     value character varying,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -543,7 +543,7 @@ CREATE TABLE public.backups (
     processed boolean DEFAULT false NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -581,7 +581,7 @@ CREATE TABLE public.blocks (
     account_id bigint NOT NULL,
     target_account_id bigint NOT NULL,
     uri character varying,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -616,7 +616,7 @@ CREATE TABLE public.conversation_mutes (
     id bigint NOT NULL,
     conversation_id bigint NOT NULL,
     account_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -652,7 +652,7 @@ CREATE TABLE public.conversations (
     uri character varying,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -697,7 +697,7 @@ CREATE TABLE public.custom_emojis (
     uri character varying,
     image_remote_url character varying,
     visible_in_picker boolean DEFAULT true NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -738,7 +738,7 @@ CREATE TABLE public.custom_filters (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     whole_word boolean DEFAULT true NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -777,7 +777,7 @@ CREATE TABLE public.domain_blocks (
     severity integer DEFAULT 0,
     reject_media boolean DEFAULT false NOT NULL,
     reject_reports boolean DEFAULT false NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -813,7 +813,7 @@ CREATE TABLE public.email_domain_blocks (
     domain character varying DEFAULT ''::character varying NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -850,7 +850,7 @@ CREATE TABLE public.favourites (
     updated_at timestamp without time zone NOT NULL,
     account_id bigint NOT NULL,
     status_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -889,7 +889,7 @@ CREATE TABLE public.follow_requests (
     target_account_id bigint NOT NULL,
     show_reblogs boolean DEFAULT true NOT NULL,
     uri character varying,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -928,7 +928,7 @@ CREATE TABLE public.follows (
     target_account_id bigint NOT NULL,
     show_reblogs boolean DEFAULT true NOT NULL,
     uri character varying,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -966,7 +966,7 @@ CREATE TABLE public.identities (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     user_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1008,7 +1008,7 @@ CREATE TABLE public.imports (
     data_file_size integer,
     data_updated_at timestamp without time zone,
     account_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1049,7 +1049,7 @@ CREATE TABLE public.invites (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     autofollow boolean DEFAULT false NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1085,7 +1085,7 @@ CREATE TABLE public.list_accounts (
     list_id bigint NOT NULL,
     account_id bigint NOT NULL,
     follow_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1122,7 +1122,7 @@ CREATE TABLE public.lists (
     title character varying DEFAULT ''::character varying NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1169,7 +1169,7 @@ CREATE TABLE public.media_attachments (
     account_id bigint,
     description text,
     scheduled_status_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1207,7 +1207,7 @@ CREATE TABLE public.mentions (
     updated_at timestamp without time zone NOT NULL,
     account_id bigint,
     silent boolean DEFAULT false NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1245,7 +1245,7 @@ CREATE TABLE public.mutes (
     account_id bigint NOT NULL,
     target_account_id bigint NOT NULL,
     hide_notifications boolean DEFAULT true NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1284,7 +1284,7 @@ CREATE TABLE public.notifications (
     updated_at timestamp without time zone NOT NULL,
     account_id bigint NOT NULL,
     from_account_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1325,7 +1325,7 @@ CREATE TABLE public.oauth_access_grants (
     scopes character varying,
     application_id bigint NOT NULL,
     resource_owner_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1366,7 +1366,7 @@ CREATE TABLE public.oauth_access_tokens (
     scopes character varying,
     application_id bigint,
     resource_owner_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1411,7 +1411,7 @@ CREATE TABLE public.oauth_applications (
     owner_type character varying,
     owner_id bigint,
     confidential boolean DEFAULT true NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1449,7 +1449,7 @@ CREATE TABLE public.pghero_space_stats (
     relation text,
     size bigint,
     captured_at timestamp without time zone,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1500,7 +1500,7 @@ CREATE TABLE public.preview_cards (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     embed_url character varying DEFAULT ''::character varying NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1534,7 +1534,7 @@ ALTER SEQUENCE public.preview_cards_id_seq OWNED BY public.preview_cards.id;
 CREATE TABLE public.preview_cards_statuses (
     preview_card_id bigint NOT NULL,
     status_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1551,7 +1551,7 @@ CREATE TABLE public.relays (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     state integer DEFAULT 0 NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1589,7 +1589,7 @@ CREATE TABLE public.report_notes (
     account_id bigint NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1631,7 +1631,7 @@ CREATE TABLE public.reports (
     action_taken_by_account_id bigint,
     target_account_id bigint NOT NULL,
     assigned_account_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1667,7 +1667,7 @@ CREATE TABLE public.scheduled_statuses (
     account_id bigint,
     scheduled_at timestamp without time zone,
     params jsonb,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1700,7 +1700,7 @@ ALTER SEQUENCE public.scheduled_statuses_id_seq OWNED BY public.scheduled_status
 
 CREATE TABLE public.schema_migrations (
     version character varying NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1720,7 +1720,7 @@ CREATE TABLE public.session_activations (
     access_token_id bigint,
     user_id bigint NOT NULL,
     web_push_subscription_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1759,7 +1759,7 @@ CREATE TABLE public.settings (
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
     thing_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1800,7 +1800,7 @@ CREATE TABLE public.site_uploads (
     meta json,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1837,7 +1837,7 @@ CREATE TABLE public.status_pins (
     status_id bigint NOT NULL,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1876,7 +1876,7 @@ CREATE TABLE public.status_stats (
     favourites_count bigint DEFAULT 0 NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1926,7 +1926,7 @@ CREATE TABLE public.statuses (
     account_id bigint NOT NULL,
     application_id bigint,
     in_reply_to_account_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1953,7 +1953,7 @@ ALTER TABLE public.statuses_id_seq OWNER TO mastodon;
 CREATE TABLE public.statuses_tags (
     status_id bigint NOT NULL,
     tag_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -1971,7 +1971,7 @@ CREATE TABLE public.stream_entries (
     updated_at timestamp without time zone NOT NULL,
     hidden boolean DEFAULT false NOT NULL,
     account_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -2013,7 +2013,7 @@ CREATE TABLE public.subscriptions (
     last_successful_delivery_at timestamp without time zone,
     domain character varying,
     account_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -2049,7 +2049,7 @@ CREATE TABLE public.tags (
     name character varying DEFAULT ''::character varying NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -2086,7 +2086,7 @@ CREATE TABLE public.tombstones (
     uri character varying NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -2152,7 +2152,7 @@ CREATE TABLE public.users (
     remember_token character varying,
     chosen_languages character varying[],
     created_by_application_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -2193,7 +2193,7 @@ CREATE TABLE public.web_push_subscriptions (
     updated_at timestamp without time zone NOT NULL,
     access_token_id bigint,
     user_id bigint,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
@@ -2230,7 +2230,7 @@ CREATE TABLE public.web_settings (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     user_id bigint NOT NULL,
-    display_flag boolean DEFAULT FALSE NOT NULL
+    display_flag boolean DEFAULT TRUE NOT NULL
 );
 
 
