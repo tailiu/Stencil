@@ -8,13 +8,14 @@ import (
 )
 
 const APP = "diaspora" 
-const USER_NUM = 1000
+const USER_NUM = 10000
 const FOLLOW_NUM = 30575
-const POST_NUM = 8230
-const COMMENT_NUM = 14170
-const LIKE_NUM = 85880
+const POST_NUM = 80292
+const COMMENT_NUM = 139708
+const LIKE_NUM = 856715
 const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-const MESSAGE_NUM = 4215
+const MESSAGE_NUM = 40146
+const IMAGE_NUM = 36934
 
 func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 	var users []data_generator.User
@@ -270,13 +271,29 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 	log.Println("Total conversations:", conversationNum)
 }
 
+func genPostImages(genConfig *data_generator.GenConfig, postScores map[int]float64) {
+	var scores []float64
+	var postIDs []int 
+	for postID, score := range postScores {
+		postIDs = append(postIDs, postID)
+		scores = append(scores, score)
+	}
+
+	imageNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, IMAGE_NUM)
+	for seq1, post := range postIDs {
+		for i := 0; i < imageNumsOfPosts[seq1]; i++ {
+		}
+	}
+}
+
 func main() {
 	genConfig := data_generator.Initialize(APP, USER_NUM)
 	// users, postScores := prepareTest(genConfig)
 	users := genUsers(genConfig)
 	postScores := genPosts(genConfig, users)
-	genFollows(genConfig, users)
-	genComments(genConfig, users, postScores)
-	genLikes(genConfig, users, postScores)
-	genConversationsAndMessages(genConfig, users)
+	// genFollows(genConfig, users)
+	// genComments(genConfig, users, postScores)
+	// genLikes(genConfig, users, postScores)
+	// genConversationsAndMessages(genConfig, users)
+	genPostImages(genConfig, postScores)
 }

@@ -77,25 +77,25 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 		}
 	} else {
 
-		var displayedData, notDisplayedData []display.HintStruct
-		for _, dataInNode1 := range dataInNode {
-			displayed := display.CheckDisplay(stencilDBConn, appConfig.AppID, dataInNode1)
-			if displayed == 1 {
-				notDisplayedData = append(notDisplayedData, dataInNode1)
-			} else {
-				displayedData = append(displayedData, dataInNode1)
-			}
-		}
-		// Note: This will be changed when considering ongoing application services
-		// and the existence of other display threads !!
-		if len(displayedData) != 0 {
-			var err6 error
-			err6, dhStack = display.Display(stencilDBConn, appConfig.AppID, notDisplayedData, deletionHoldEnable, dhStack, threadID)
-			if err6 != nil {
-				return "", dhStack, err6
-			}
-			return display.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
-		}
+		// var displayedData, notDisplayedData []display.HintStruct
+		// for _, dataInNode1 := range dataInNode {
+		// 	displayed := display.CheckDisplay(stencilDBConn, appConfig.AppID, dataInNode1)
+		// 	if displayed == 1 {
+		// 		notDisplayedData = append(notDisplayedData, dataInNode1)
+		// 	} else {
+		// 		displayedData = append(displayedData, dataInNode1)
+		// 	}
+		// }
+		// // Note: This will be changed when considering ongoing application services
+		// // and the existence of other display threads !!
+		// if len(displayedData) != 0 {
+		// 	var err6 error
+		// 	err6, dhStack = display.Display(stencilDBConn, appConfig.AppID, notDisplayedData, deletionHoldEnable, dhStack, threadID)
+		// 	if err6 != nil {
+		// 		return "", dhStack, err6
+		// 	}
+		// 	return display.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+		// }
 
 		pTags, err2 := oneMigratedData.GetParentTags(appConfig)
 		if err2 != nil {
