@@ -12,7 +12,7 @@ import (
 // The Key should be the primay key of the Table
 type HintStruct struct {
 	Table  string
-	TableID int
+	TableID string
 	KeyVal map[string]int
 }
 

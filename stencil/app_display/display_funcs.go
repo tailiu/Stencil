@@ -17,7 +17,7 @@ func Initialize(app string) (*sql.DB, config.AppConfig) {
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id, false)
+	appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,28 +25,23 @@ func Initialize(app string) (*sql.DB, config.AppConfig) {
 	return stencilDBConn, appConfig
 }
 
-func getTableIDNamePairsInApp(stencilDBConn *sql.DB, appConfig config.AppConfig) {
-	query := fmt.Sprintf("select pk, table_name from app_tables where app_id = %s", appConfig.AppID)
-
-	
-}
-
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig config.AppConfig, migrationID int) []HintStruct {
 	var displayHints []HintStruct
 	query := fmt.Sprintf("SELECT table_id, id FROM display_flags WHERE app_id = %s and migration_id = %d and display_flag = true", appConfig.AppID, migrationID)
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	// fmt.Println(data)
-	for _, oneData := range data {
+
+	for _, data1 := range data {
 		hint := HintStruct{}
-		table := oneData["table_name"]
-		intVal, err := strconv.Atoi(oneData["id"])
+		intVal, err := strconv.Atoi(data1["id"])
 		if err != nil {
 			log.Fatal(err)
 		}
 		keyVal := map[string]int{
 			"id": intVal,
 		}
-		hint.Table = table
+		hint.Table = appConfig.TableIDNamePairs[data1["table_id"]]
+		hint.TableID = data1["table_id"]
 		hint.KeyVal = keyVal
 		displayHints = append(displayHints, hint)
 	}
@@ -64,18 +59,30 @@ func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 	}
 }
 
-func Display(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHints []HintStruct, pks map[string]string) error {
-	var queries []string
+func Display(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHints []HintStruct) error {
+	var queries1 []string
+	var queries2 []string
 
 	for _, dataHint := range dataHints {
-		table := dataHint.Table
-		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = false, updated_at = now() WHERE app_id = %s and table_name = '%s' and id = %d;",
-			appConfig.AppID, table, dataHint.KeyVal["id"])
+		query1 := fmt.Sprintf("UPDATE %s SET display_flag = false WHERE id = %d;",
+			dataHint.Table, dataHint.KeyVal["id"])
+		query2 := fmt.Sprintf("UPDATE Display_flags SET display_flag = false, updated_at = now() WHERE app_id = %s and table_id = %s and id = %d;",
+			appConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
 		log.Println("**************************************")
-		log.Println(query)
+		log.Println(query1)
+		log.Println(query2)
 		log.Println("**************************************")
-		queries = append(queries, query)
+		queries1 = append(queries1, query1)
+		queries2 = append(queries2, query2)
 	}
 
-	return db.TxnExecute(stencilDBConn, queries)
+	if err := db.TxnExecute(appConfig.DBConn, queries1); err != nil {
+		return err
+	} else {
+		if err := db.TxnExecute(stencilDBConn, queries2); err != nil {
+			return err
+		} else {
+			return nil
+		}
+	}
 }

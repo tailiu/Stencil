@@ -58,7 +58,7 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 	return appConfig, nil
 }
 
-func CreateAppConfigDisplay(app, app_id string, newDB bool) (AppConfig, error) {
+func CreateAppConfigDisplay(app, app_id string, stencilDBConn *sql.DB, newDB bool) (AppConfig, error) {
 
 	var appConfig AppConfig
 	var dconfig string
@@ -100,7 +100,24 @@ func CreateAppConfigDisplay(app, app_id string, newDB bool) (AppConfig, error) {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 	appConfig.Rand = rand.New(rand.NewSource(time.Now().Unix()))
+
+	tableIDNamePairs := getTableIDNamePairsInApp(stencilDBConn, app_id)
+	for _, tableIDNamePair := range tableIDNamePairs {
+		appConfig.TableIDNamePairs[fmt.Sprint(tableIDNamePair["pk"])] = fmt.Sprint(tableIDNamePair["table_name"])
+	}
+
 	return appConfig, nil
+}
+
+func getTableIDNamePairsInApp(stencilDBConn *sql.DB, app_id string) []map[string]interface{} {
+	query := fmt.Sprintf("select pk, table_name from app_tables where app_id = %s", app_id)
+
+	result, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	return result
 }
 
 func LoadSchemaMappings() (*SchemaMappings, error) {
