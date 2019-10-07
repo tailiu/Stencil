@@ -37,7 +37,7 @@ func Initialize(migrationID int, app string) (*sql.DB, *config.AppConfig, int, s
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id)
+	appConfig, err := config.CreateAppConfigDisplay(app, app_id, true)
 	if err != nil {
 		log.Fatal(err)
 	}

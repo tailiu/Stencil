@@ -57,13 +57,13 @@ func DisplayThread(app string, migrationID int) {
 	startTime := time.Now()
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appConfig, pks := app_display.Initialize(app, "")
+	stencilDBConn, appConfig := app_display.Initialize(app)
 
 	log.Println("--------- First Phase --------")
 	secondRound := false
-	for migratedData := app_display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks); 
+	for migratedData := app_display.GetUndisplayedMigratedData(stencilDBConn, appConfig, migrationID); 
 		!app_display.CheckMigrationComplete(stencilDBConn, migrationID); 
-		migratedData = app_display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks) {
+		migratedData = app_display.GetUndisplayedMigratedData(stencilDBConn, appConfig, migrationID) {
 
 		for _, oneMigratedData := range migratedData {
 			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, app, pks, secondRound)
@@ -73,7 +73,7 @@ func DisplayThread(app string, migrationID int) {
 
 	log.Println("--------- Second Phase ---------")
 	secondRound = true
-	secondRoundMigratedData := app_display.GetUndisplayedMigratedData(stencilDBConn, app, migrationID, pks)
+	secondRoundMigratedData := app_display.GetUndisplayedMigratedData(stencilDBConn, appConfig, migrationID)
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, app, pks, secondRound)
 	}

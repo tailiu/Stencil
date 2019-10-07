@@ -12,30 +12,28 @@ import (
 
 const StencilDBName = "stencil"
 
-func Initialize(app, app_id string) (*sql.DB, config.AppConfig, map[string]string) {
-	appConfig, err := config.CreateAppConfig(app, app_id)
+func Initialize(app string) (*sql.DB, config.AppConfig) {
+	stencilDBConn := db.GetDBConn(StencilDBName)
+
+	app_id := db.GetAppIDByAppName(stencilDBConn, app)
+
+	appConfig, err := config.CreateAppConfigDisplay(app, app_id, false)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	stencilDBConn := db.GetDBConn(StencilDBName)
-
-	pks := make(map[string]string)
-	tables := db.GetTablesOfDB(appConfig.DBConn, app)
-	for _, table := range tables {
-		pk, err := db.GetPrimaryKeyOfTable(appConfig.DBConn, table)
-		if err != nil {
-			fmt.Println(err)
-		}
-		pks[table] = pk
-	}
-
-	return stencilDBConn, appConfig, pks
+	return stencilDBConn, appConfig
 }
 
-func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID int, pks map[string]string) []HintStruct {
+func getTableIDNamePairsInApp(stencilDBConn *sql.DB, appConfig config.AppConfig) {
+	query := fmt.Sprintf("select pk, table_name from app_tables where app_id = %s", appConfig.AppID)
+
+	
+}
+
+func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig config.AppConfig, migrationID int) []HintStruct {
 	var displayHints []HintStruct
-	query := fmt.Sprintf("SELECT * FROM display_flags WHERE app = '%s' and migration_id = %d and display_flag = false", app, migrationID)
+	query := fmt.Sprintf("SELECT table_id, id FROM display_flags WHERE app_id = %s and migration_id = %d and display_flag = true", appConfig.AppID, migrationID)
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	// fmt.Println(data)
 	for _, oneData := range data {
@@ -46,7 +44,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, app string, migrationID i
 			log.Fatal(err)
 		}
 		keyVal := map[string]int{
-			pks[table]: intVal,
+			"id": intVal,
 		}
 		hint.Table = table
 		hint.KeyVal = keyVal
@@ -66,14 +64,13 @@ func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 	}
 }
 
-func Display(stencilDBConn *sql.DB, app string, dataHints []HintStruct, pks map[string]string) error {
+func Display(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHints []HintStruct, pks map[string]string) error {
 	var queries []string
 
 	for _, dataHint := range dataHints {
 		table := dataHint.Table
-		t := time.Now().Format(time.RFC3339)
-		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = true, updated_at = '%s' WHERE app = '%s' and table_name = '%s' and id = %d;",
-			t, app, table, dataHint.KeyVal[pks[table]])
+		query := fmt.Sprintf("UPDATE Display_flags SET display_flag = false, updated_at = now() WHERE app_id = %s and table_name = '%s' and id = %d;",
+			appConfig.AppID, table, dataHint.KeyVal["id"])
 		log.Println("**************************************")
 		log.Println(query)
 		log.Println("**************************************")

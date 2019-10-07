@@ -58,7 +58,7 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 	return appConfig, nil
 }
 
-func CreateAppConfigDisplay(app, app_id string) (AppConfig, error) {
+func CreateAppConfigDisplay(app, app_id string, newDB bool) (AppConfig, error) {
 
 	var appConfig AppConfig
 	var dconfig string
@@ -88,7 +88,11 @@ func CreateAppConfigDisplay(app, app_id string) (AppConfig, error) {
 
 	appConfig.AppName = app
 	appConfig.AppID = app_id
-	appConfig.DBConn = db.GetDBConn(app)
+	if newDB {
+		appConfig.DBConn = db.GetDBConn(app)
+	} else {
+		appConfig.DBConn = db.GetDBConn2(app)
+	}
 
 	if app_id != "" {
 		appConfig.QR = qr.NewQR(app, app_id)
