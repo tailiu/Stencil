@@ -265,29 +265,27 @@ def dataDownTime():
     ]
     g.cumulativeGraph(data, labels, "Data Downtime (s)", "Cumulative probability")
 
-def getTime(data):
-    time1 = []
-    time2 = []
+def getTimeGroups(data, groupNum):
+    times = []
+    for i in range(groupNum):
+        times.append([])
     for i, data1 in enumerate(data):
-        if i % 2 == 0:
-            time1.append(data1["time"])
-        else:
-            time2.append(data1["time"])
-    return time1, time2
+        group = i % groupNum
+        times[group].append(data1["time"])
+    return times
 
-def migrationRateDataModels():
-    data1 = readFile3(logDir + migrationTime)
-    data2 = readFile3(logDir + migratedDataSize)
+def migrationRate(groupNum, labels):
+    times = readFile3(logDir + migrationTime)
+    sizes = readFile3(logDir + migratedDataSize)
 
-    stencilTime, naiveTime = getTime(data1)
+    times = getTimeGroups(times, groupNum)
 
     x = []
-    for data in data2:
-        x.append(data["size"])
+    for i, data in enumerate(sizes):
+        if i % 2 == 0:
+            x.append(data["size"])
 
-    times = [stencilTime, naiveTime]
-    sizes = [x, x]
-    labels = ["Stencil", "Application"]
+    sizes = [x] * groupNum
     xlabel = 'Migration Time (s)'
     ylabel = 'Migration size (bytes)'
 
@@ -337,7 +335,7 @@ def danglingDataSystemCombined():
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
-danglingDataCumSum()
+# danglingDataCumSum()
 # serviceInterruptionCumSum()
 # anomaliesCumSum()
 # danglingDataPoints()
@@ -345,6 +343,6 @@ danglingDataCumSum()
 # migrationRateDifferentNumOfThreads('Consistent/independent migration', migrationRate)
 # migrationRateDifferentNumOfThreads('Deletion migration', migrationRate)
 # dataDownTime()
-# migrationRateDataModels()
+migrationRate(4, ["Stencil without DAG", "Application without DAG", "Stencil with DAG", "Application with DAG"])
 # randomWalk()
 # danglingDataSystemCombined()

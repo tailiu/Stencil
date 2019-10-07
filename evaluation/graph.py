@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 plt.rcParams.update({'font.size': 15})
-colors = ['g', 'b', 'r', 'k', 'c', 'm', 'y', 'w']
+colors = ['g', 'b', 'c', 'r', 'y', 'm', 'w', 'k']
 lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 
@@ -156,9 +156,9 @@ def mulPointsDanglingData(x, data, labelName):
 def mulPoints(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
     for i, x1 in enumerate(x):
-        ax.plot(x1, y[i], colors[i] + ".", label=labels[i])
+        ax.plot(x1, y[i], colors[i] + ".", label=labels[i], markersize=9)
+    
     ax.grid(True)
-
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
