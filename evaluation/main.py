@@ -307,7 +307,7 @@ def randomWalk():
     data2 = [0] * (len(apps) - 1)
 
     for i, data1 in enumerate(data):
-        data2[i % (len(apps) - 1)] += data1["srcDataBagSize"]
+        data2[i % (len(apps) - 1)] += data1["dataBagSize"]
 
     # print data2
     for i, data3 in enumerate(data2):
@@ -337,7 +337,7 @@ def danglingDataSystemCombined():
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
-danglingDataCumSum()
+# danglingDataCumSum()
 # serviceInterruptionCumSum()
 # anomaliesCumSum()
 # danglingDataPoints()
@@ -346,5 +346,5 @@ danglingDataCumSum()
 # migrationRateDifferentNumOfThreads('Deletion migration', migrationRate)
 # dataDownTime()
 # migrationRateDataModels()
-# randomWalk()
+randomWalk()
 # danglingDataSystemCombined()
