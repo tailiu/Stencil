@@ -1012,7 +1012,7 @@ func (mWorker *MigrationWorker) MigrateProcessBags(threadID int) error {
 	if res, err := db.GetAppsThatHaveBagsForUser(mWorker.DBConn, mWorker.uid); err == nil {
 		for _, row := range res {
 			if app_id, ok := row["app_id"]; ok {
-				if !strings.EqualFold(fmt.Sprint(app_id), mWorker.SrcAppConfig.AppID) {
+				// if !strings.EqualFold(fmt.Sprint(app_id), mWorker.SrcAppConfig.AppID) {
 					bagWorker := CreateBagWorker(mWorker.uid, fmt.Sprint(row["app_name"]), fmt.Sprint(app_id), mWorker.DstAppConfig, mWorker.logTxn)
 					for bagNodes, err := bagWorker.GetBagNodes(threadID, limit);  err != nil || bagNodes != nil;  bagNodes, err = bagWorker.GetBagNodes(threadID, limit) {
 						for _, node := range bagNodes {
@@ -1051,7 +1051,7 @@ func (mWorker *MigrationWorker) MigrateProcessBags(threadID int) error {
 						}
 					}
 					mWorker.Size += bagWorker.Size
-				}
+				// }
 			} else {
 				fmt.Println(res)
 				fmt.Println(row)
