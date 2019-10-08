@@ -86,3 +86,15 @@ func Display(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHints []Hint
 		}
 	}
 }
+
+func CheckDisplay(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHint HintStruct) bool {
+	query := fmt.Sprintf("SELECT display_flag from %s where id = %s",
+		dataHint.Table, dataHint.KeyVal["id"])
+	
+	data1, err := db.DataCall1(appConfig.DBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// log.Println(data1)
+	return data1["display_flag"].(bool)
+}

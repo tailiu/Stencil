@@ -2,7 +2,6 @@ package app_display
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	// "time"
@@ -34,30 +33,30 @@ func GenDisplayFlag(dbConn *sql.DB, app_id, table_id, id, migration_id string) e
 }
 
 
-func GetDisplayFlag(dbConn *sql.DB, app, table string, id int) (bool, error) {
-	op := fmt.Sprintf("SELECT display_flag FROM display_flags WHERE app = '%s' and table_name = '%s' and id = %d LIMIT 1;",
-		app, table, id)
-	row, err := dbConn.Query(op)
-	if err != nil {
-		log.Fatal(err)
-	}
+// func GetDisplayFlag(dbConn *sql.DB, app, table string, id int) (bool, error) {
+// 	op := fmt.Sprintf("SELECT display_flag FROM display_flags WHERE app = '%s' and table_name = '%s' and id = %d LIMIT 1;",
+// 		app, table, id)
+// 	row, err := dbConn.Query(op)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
 
-	var display_flag bool
-	find := false
-	for row.Next() {
-		if err := row.Scan(&display_flag); err != nil {
-			log.Fatal(err)
-		}
-		find = true
-	}
+// 	var display_flag bool
+// 	find := false
+// 	for row.Next() {
+// 		if err := row.Scan(&display_flag); err != nil {
+// 			log.Fatal(err)
+// 		}
+// 		find = true
+// 	}
 
-	if !find {
-		return false, errors.New("Check Display Flag Error: Data Being Checked Does Not Exist!")
-	} else {
-		return display_flag, nil
-	}
+// 	if !find {
+// 		return false, errors.New("Check Display Flag Error: Data Being Checked Does Not Exist!")
+// 	} else {
+// 		return display_flag, nil
+// 	}
 
-}
+// }
 
 // func UpdateDisplayFlag(dbConn *sql.DB, app, table string, id int, display_flag bool) error {
 // 	t := time.Now().Format(time.RFC3339)
