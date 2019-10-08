@@ -140,6 +140,66 @@ func NewPost(dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int {
 	return post_id
 }
 
+func NewPhotoPost(dbConn *sql.DB, user_id, person_id int, aspect_ids []int, numOfPhotos int) int {
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		log.Println("create post transaction can't even begin")
+		return -1
+	}
+	defer tx.Rollback()
+
+	// Post Params
+	guid := uuid.New()
+	post_type := "StatusMessage"
+	text := helper.RandomText(helper.RandomNumber(20, 200))
+	
+	// Photo Params
+	photo_path := "/home/zain/project/resources/"
+	public := false
+	pending := false
+	photo_text := "test image"
+	status_message_guid := guid
+	comments_count := 0
+	height := 60
+	width := 60
+	
+	// SQLs
+
+	sql := "INSERT INTO posts (author_id, guid, type, text, created_at, updated_at, interacted_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
+	post_id, _ := db.RunTxWQnArgsReturningId(tx, sql, person_id, guid, post_type, text, time.Now(), time.Now(), time.Now())
+
+	for count := 0; count < numOfPhotos; count++ {
+		// Photo Params
+		photo_id := helper.RandomNumber(1, 5)
+		photo_guid := uuid.New()
+		remote_photo_name := fmt.Sprintf("%d.jpg", photo_id)
+		remote_photo_path := photo_path + remote_photo_name
+		random_string := helper.RandomText(helper.RandomNumber(20, 30))
+		processed_image := remote_photo_name
+		unprocessed_image := remote_photo_name
+		sql = "INSERT INTO photos (author_id, public, guid, pending, text, remote_photo_path, remote_photo_name, random_string, processed_image, created_at, updated_at, unprocessed_image, status_message_guid, comments_count, height, width) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)"
+		if err := db.RunTxWQnArgs(tx, sql, person_id, public, photo_guid, pending, photo_text, remote_photo_path, remote_photo_name, random_string, processed_image, time.Now(), time.Now(), unprocessed_image, status_message_guid, comments_count, height, width); err != nil {
+			return -1
+		}
+	}
+
+	sql = "INSERT INTO aspect_visibilities (shareable_id, aspect_id) VALUES ($1, $2)"
+
+	for _, aid := range aspect_ids {
+		if helper.RandomNumber(1, 50)%2 == 0 {
+			db.RunTxWQnArgs(tx, sql, post_id, aid)
+		}
+	}
+
+	sql = "INSERT INTO share_visibilities (shareable_id, user_id) VALUES ($1, $2)"
+	db.RunTxWQnArgs(tx, sql, post_id, user_id)
+
+	tx.Commit()
+
+	return post_id
+}
+
 func NewComment(dbConn *sql.DB, post_id, person_id, post_owner_id int) (int, error) {
 
 	// log.Println("Creating new comment!")
