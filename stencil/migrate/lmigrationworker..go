@@ -362,7 +362,7 @@ func (self *LMigrationWorker) PushData(dtable config.ToTable, pk, orgCols, cols 
 	for _, fromTable := range undoAction.OrgTables {
 		if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
 			srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
-			if serr := db.SaveForLEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, dtable.Table, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
+			if serr := db.SaveForLEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
 				log.Fatal(serr)
 				return errors.New("0")
 			}
