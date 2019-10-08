@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
+	// "time"
 )
 
 func CreateDisplayFlagsTable(dbConn *sql.DB) {
@@ -22,9 +22,9 @@ func CreateDisplayFlagsTable(dbConn *sql.DB) {
 	}
 }
 
-func GenDisplayFlag(dbConn *sql.DB, app_id, table_id, id, migration_id int) error {
+func GenDisplayFlag(dbConn *sql.DB, app_id, table_id, id, migration_id string) error {
 	var op string
-	op = fmt.Sprintf("INSERT INTO display_flags (app_id, table_id, id, migration_id, display_flag, created_at, updated_at) VALUES ( %d, %d, %d, %d, true, now(), now());",
+	op = fmt.Sprintf("INSERT INTO display_flags (app_id, table_id, id, migration_id, display_flag, created_at, updated_at) VALUES ( %s, %s, %s, %s, true, now(), now());",
 		app_id, table_id, id, migration_id)
 	if _, err := dbConn.Exec(op); err != nil {
 		fmt.Println(op)

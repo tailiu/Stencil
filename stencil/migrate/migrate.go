@@ -8,7 +8,7 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
-	"stencil/display"
+	// "stencil/display"
 	"stencil/helper"
 	"stencil/transaction"
 	"strings"
@@ -288,14 +288,14 @@ func GenerateAndInsert(mappings *config.MappedApp, dstApp config.AppConfig, toTa
 			undoActionSerialized, _ := json.Marshal(undoAction)
 			if id, err := db.Insert(dstApp.DBConn, isql, ivals...); err == nil {
 				transaction.LogChange(string(undoActionSerialized), log_txn)
-				displayFlag := false
-				if strings.EqualFold(node.Tag.Name, "root") {
-					displayFlag = true
-				}
-				if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, string(id), displayFlag, log_txn.Txn_id); err != nil {
-					log.Println("## DISPLAY ERROR!", err)
-					errs = append(errs, err)
-				}
+				// displayFlag := false
+				// if strings.EqualFold(node.Tag.Name, "root") {
+				// 	displayFlag = true
+				// }
+				// if err := display.GenDisplayFlag(log_txn.DBconn, dstApp.AppName, toTable.Table, string(id), displayFlag, log_txn.Txn_id); err != nil {
+				// 	log.Println("## DISPLAY ERROR!", err)
+				// 	errs = append(errs, err)
+				// }
 				for _, fromTable := range undoAction.OrgTables {
 					srcID := "0"
 					if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
@@ -358,13 +358,13 @@ func PostProcessInsert(id int, dstApp config.AppConfig, toTable config.ToTable, 
 	undoAction.AddDstTable(toTable.Table)
 	undoActionSerialized, _ := json.Marshal(undoAction)
 	transaction.LogChange(string(undoActionSerialized), log_txn)
-	displayFlag := false
-	if strings.EqualFold(node.Tag.Name, "root") {
-		displayFlag = true
-	}
-	if err := display.GenDisplayFlag(dbConn, dstApp.AppName, toTable.Table, string(id), displayFlag, log_txn.Txn_id); err != nil {
-		log.Println("## DISPLAY ERROR!", err)
-	}
+	// displayFlag := false
+	// if strings.EqualFold(node.Tag.Name, "root") {
+	// 	displayFlag = true
+	// }
+	// if err := display.GenDisplayFlag(dbConn, dstApp.AppName, toTable.Table, string(id), displayFlag, log_txn.Txn_id); err != nil {
+	// 	log.Println("## DISPLAY ERROR!", err)
+	// }
 	for _, fromTable := range undoAction.OrgTables {
 		srcID := "0"
 		if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {

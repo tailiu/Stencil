@@ -13,6 +13,7 @@ import (
 	"stencil/qr"
 	"strings"
 	"time"
+	"database/sql"
 )
 
 var SchemaMappingsObj *SchemaMappings
