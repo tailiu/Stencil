@@ -6,7 +6,7 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
-	"stencil/display"
+	// "stencil/display"
 	"stencil/helper"
 	"stencil/qr"
 	"stencil/transaction"
@@ -340,10 +340,10 @@ func (self *MigrationWorker) GetOwnedNodes(threadID, limit int) ([]*DependencyNo
 }
 
 func (self *MigrationWorker) PushData(stable, dtable, pk string) error {
-	if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, dtable, pk, false, self.logTxn.Txn_id); err != nil {
-		log.Println("## DISPLAY ERROR!", err)
-		return errors.New("0")
-	}
+	// if err := display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppName, dtable, pk, false, self.logTxn.Txn_id); err != nil {
+	// 	log.Println("## DISPLAY ERROR!", err)
+	// 	return errors.New("0")
+	// }
 	if err := db.SaveForEvaluation(self.DBConn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, stable, dtable, pk, pk, "-", "-", fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 		log.Println("## SaveForEvaluation ERROR!", err)
 		return errors.New("0")
@@ -671,7 +671,11 @@ func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping confi
 				}
 			}
 			if newRow := self.CreateMissingData(toTable, node); len(dst_rowid) > 0 && len(newRow) > 0 {
-				self.InsertMissingData(tx, toTable.Table, dst_rowid, newRow)
+				if err := self.InsertMissingData(tx, toTable.Table, dst_rowid, newRow); err == nil {
+					log.Println(fmt.Sprintf("~%d~ | Current   Node: { %s } Created New Data in table: %s with pk: %s | ", 0, node.Tag.Name, toTable.Table, dst_rowid), newRow)
+				} else {
+					return updatedPKs, err
+				}
 			}
 		}
 	}

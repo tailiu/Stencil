@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	// "time"
 )
 
 func CreateDisplayFlagsTable(dbConn *sql.DB) {

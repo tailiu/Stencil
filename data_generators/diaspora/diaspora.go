@@ -542,6 +542,14 @@ func getParetoResultFromPython(alpha float32, total int) []float64 { // alpha = 
 	return dist
 }
 
+func test() {
+	dbConn := db.GetDBConn(config.APP_NAME)
+	users := datagen.GetAllUsersWithAspects(dbConn)
+	for uid := 0; uid < len(users); uid++ {
+		datagen.NewPhotoPost(dbConn, users[uid].User_ID, users[uid].Person_ID, users[uid].Aspects, 5)
+	}	
+}
+
 func main() {
 
 	helper.Init()
@@ -549,6 +557,8 @@ func main() {
 	arg := os.Args[1]
 
 	switch arg {
+	case "test":
+		test()
 	case "posts":
 		fmt.Println("Creating New Posts!")
 		ParetoNewPosts(2, 8030)

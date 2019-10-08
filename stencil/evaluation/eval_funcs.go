@@ -301,7 +301,7 @@ func getAllDisplayedData(evalConfig *EvalConfig, migrationID, appID string) []Di
 
 func getAppConfig(evalConfig *EvalConfig, app string) *config.AppConfig {
 	app_id := db.GetAppIDByAppName(evalConfig.StencilDBConn, app)
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id)
+	appConfig, err := config.CreateAppConfigDisplay(app, app_id, evalConfig.StencilDBConn, true)
 	if err != nil {
 		log.Fatal(err)
 	}

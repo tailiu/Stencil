@@ -141,6 +141,26 @@ func LoadSchemaMappings() (*SchemaMappings, error) {
 
 		json.Unmarshal(jsonAsBytes, SchemaMappingsObj)
 
+		dbConn := db.GetDBConn(db.STENCIL_DB)
+
+		for i, mapping := range SchemaMappingsObj.AllMappings {
+			for j, toApp := range mapping.ToApps {
+				appID := db.GetAppIDByAppName(dbConn, toApp.Name)
+				for k, toAppMapping := range toApp.Mappings {
+					for l, toTable := range toAppMapping.ToTables {
+						ToTableID, err := db.TableID(dbConn, toTable.Table, appID);
+						if  err != nil{
+							fmt.Println("LoadSchemaMappings: Unable to resolve ToTableID for table: ", toTable.Table, toApp.Name, appID)
+							log.Fatal(err)
+						}
+						SchemaMappingsObj.AllMappings[i].ToApps[j].Mappings[k].ToTables[l].TableID = ToTableID
+						// fmt.Println(toTable.Table, toApp.Name, appID, ToTableID)
+					}
+				}
+			}
+		}
+		// fmt.Println(SchemaMappingsObj.AllMappings[0].ToApps[0].Mappings[0].ToTables)
+		// log.Fatal()
 		jsonFile.Close()
 	}
 	return SchemaMappingsObj, nil

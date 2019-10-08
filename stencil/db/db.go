@@ -74,6 +74,19 @@ func CloseDBConn(app string) {
 	}
 }
 
+func GetAppIDByAppName(dbConn *sql.DB, app string) string{
+	sql := fmt.Sprintf("SELECT pk from apps WHERE app_name = '%s'", app)
+	if result, err := DataCall1(dbConn, sql); err == nil {
+		if val, ok := result["pk"]; ok {
+			return fmt.Sprint(val)
+		}
+		log.Fatal("db.GetAppIDByAppName: Can't find app id for app ", app)
+	} else {
+		log.Fatal("db.GetAppIDByAppName:  ", err)
+	}
+	return ""
+}
+
 func Delete(db *sql.DB, SQL string, args ...interface{}) error {
 
 	if _, err := db.Query(SQL, args...); err != nil {
