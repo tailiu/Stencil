@@ -9,7 +9,7 @@ import (
 
 const APP = "diaspora" 
 const USER_NUM = 10000
-const FOLLOW_NUM = 30575
+const FOLLOW_NUM = 1652800
 const POST_NUM = 80292
 const COMMENT_NUM = 139708
 const LIKE_NUM = 856715
@@ -115,19 +115,53 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 	}
 }
 
+// func genPostImages(genConfig *data_generator.GenConfig, postScores map[int]float64) {
+// 	var scores []float64
+// 	var postIDs []int 
+// 	for postID, score := range postScores {
+// 		postIDs = append(postIDs, postID)
+// 		scores = append(scores, score)
+// 	}
+
+// 	imageNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, IMAGE_NUM)
+// 	for seq1, post := range postIDs {
+// 		for i := 0; i < imageNumsOfPosts[seq1]; i++ {
+// 		}
+// 	}
+// }
+
 // We randomly assign posts to the users proportionally to the popularity of users. 
 func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
 	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
+	totalPosts := data_generator.GetSumOfIntSlice(postAssignment)
 	log.Println("Posts assignments to users:", postAssignment)
-	log.Println("Total posts:", data_generator.GetSumOfIntSlice(postAssignment))
+	log.Println("Total posts:", totalPosts)
 
-	for seq, user := range users {
-		for n := 0; n < postAssignment[seq]; n++ {
-			datagen.NewPost(genConfig.DBConn, user.User_ID, user.Person_ID, user.Aspects)
+	seqNum := data_generator.MakeRange(0, totalPosts - 1)
+	seqScores := data_generator.AssignParetoDistributionScoresToDataReturnSlice(len(seqNum))
+	imageNumsOfSeq := data_generator.RandomNumWithProbGenerator(seqScores, IMAGE_NUM)
+
+	postSeq := 0
+	imageNums := 0
+	postScores := make(map[int]float64)
+	for userSeq, user := range users {
+		for n := 0; n < postAssignment[userSeq]; n++ {
+			var postID int
+			imageNum := imageNumsOfSeq[postSeq]
+			if imageNum == 0 {
+				postID = datagen.NewPost(genConfig.DBConn, user.User_ID, user.Person_ID, user.Aspects)
+			} else {
+				postID = datagen.NewPhotoPost(genConfig.DBConn, user.User_ID, user.Person_ID, user.Aspects, imageNum)
+			}
+			postScores[postID] = seqScores[postSeq]
+			postSeq += 1
+			imageNums += imageNum
 		}
 	}
+	
+	log.Println("Total images:", imageNums)
 
-	return data_generator.AssignParetoDistributionScoresToData(datagen.GetAllPostIDs(genConfig.DBConn))
+	return postScores
 }
 
 // Only for test
@@ -271,29 +305,13 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 	log.Println("Total conversations:", conversationNum)
 }
 
-func genPostImages(genConfig *data_generator.GenConfig, postScores map[int]float64) {
-	var scores []float64
-	var postIDs []int 
-	for postID, score := range postScores {
-		postIDs = append(postIDs, postID)
-		scores = append(scores, score)
-	}
-
-	imageNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, IMAGE_NUM)
-	for seq1, post := range postIDs {
-		for i := 0; i < imageNumsOfPosts[seq1]; i++ {
-		}
-	}
-}
-
 func main() {
 	genConfig := data_generator.Initialize(APP, USER_NUM)
 	// users, postScores := prepareTest(genConfig)
 	users := genUsers(genConfig)
 	postScores := genPosts(genConfig, users)
-	// genFollows(genConfig, users)
-	// genComments(genConfig, users, postScores)
-	// genLikes(genConfig, users, postScores)
-	// genConversationsAndMessages(genConfig, users)
-	genPostImages(genConfig, postScores)
+	genFollows(genConfig, users)
+	genComments(genConfig, users, postScores)
+	genLikes(genConfig, users, postScores)
+	genConversationsAndMessages(genConfig, users)
 }

@@ -183,3 +183,11 @@ func TransformCommentsAssignmentToScores(assignment map[int]int, scores []float6
 	}
 	return result
 }
+
+func MakeRange(min, max int) []int {
+    a := make([]int, max-min+1)
+    for i := range a {
+        a[i] = min + i
+    }
+    return a
+}
