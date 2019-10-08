@@ -115,22 +115,9 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 	}
 }
 
-// func genPostImages(genConfig *data_generator.GenConfig, postScores map[int]float64) {
-// 	var scores []float64
-// 	var postIDs []int 
-// 	for postID, score := range postScores {
-// 		postIDs = append(postIDs, postID)
-// 		scores = append(scores, score)
-// 	}
-
-// 	imageNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, IMAGE_NUM)
-// 	for seq1, post := range postIDs {
-// 		for i := 0; i < imageNumsOfPosts[seq1]; i++ {
-// 		}
-// 	}
-// }
-
-// We randomly assign posts to the users proportionally to the popularity of users. 
+// The number of posts of users is proportional to the popularity of users, so it is more likely that popular users
+// will have popular posts.
+// We randomly assign images to the posts proportionally to the popularity of posts.
 func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
 	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
 	totalPosts := data_generator.GetSumOfIntSlice(postAssignment)
@@ -207,9 +194,9 @@ func genComments(genConfig *data_generator.GenConfig, users []data_generator.Use
 			}
 		}
 		
-		likeNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, commentNum)
+		commentNumsOfPosts := data_generator.RandomNumWithProbGenerator(scores, commentNum)
 		for seq2, post := range posts {
-			for i := 0; i < likeNumsOfPosts[seq2]; i++ {
+			for i := 0; i < commentNumsOfPosts[seq2]; i++ {
 				datagen.NewComment(genConfig.DBConn, post.ID, personID, post.Author)
 			}
 		}
