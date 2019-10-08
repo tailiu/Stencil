@@ -50,6 +50,7 @@ type AppConfig struct {
 	AppName      string
 	AppID        string
 	TableIDNamePairs map[string]string
+	TableNameIDPairs map[string]string
 	Tags         []Tag        `json:"tags"`
 	Dependencies []Dependency `json:"dependencies"`
 	Ownerships   []Ownership  `json:"ownership"`

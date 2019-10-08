@@ -63,12 +63,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []app_display.HintS
 	} else {
 		var result []app_display.HintStruct
 		for _, oneData := range data {
-			oneHint, err := app_display.TransformRowToHint(appConfig.DBConn, oneData, table)
-			if err != nil {
-				return nil, err
-			} else {
-				result = append(result, oneHint)
-			}
+			result = append(result, app_display.TransformRowToHint(appConfig, oneData, table))
 		}
 		return result, nil
 	}

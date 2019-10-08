@@ -36,7 +36,7 @@ func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string)
 	}
 }
 
-func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint app_display.HintStruct, app string) ([]app_display.HintStruct, error) {
+func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint app_display.HintStruct, appConfig *config.AppConfig) ([]app_display.HintStruct, error) {
 	var result []app_display.HintStruct
 
 	procDependencies := make(map[string][]string)
@@ -57,7 +57,7 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 	var data map[string]string
 	var err error
 	for k, v := range hint.KeyVal {
-		data, err = getOneRowBasedOnHint(dbConn, app, hint.Table, k, v)
+		data, err = getOneRowBasedOnHint(dbConn, appConfig.AppName, hint.Table, k, v)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +85,7 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 					log.Fatal("Error in Getting Data in Node: Converting '%s' to Integer", val)
 				}
 				for _, dep := range deps {
-					data, err = getOneRowBasedOnDependency(dbConn, app, intVal, dep)
+					data, err = getOneRowBasedOnDependency(dbConn, appConfig.AppName, intVal, dep)
 					// fmt.Println(data)
 
 					if err != nil {
@@ -103,19 +103,16 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 						Data:  data,
 					})
 
-					pk, err1 := db.GetPrimaryKeyOfTable(dbConn, table1)
-					if err1 != nil {
-						log.Fatal(err1)
-					}
-					intPK, err2 := strconv.Atoi(data[pk])
+					intPK, err2 := strconv.Atoi(data["id"])
 					if err2 != nil {
 						log.Fatal(err2)
 					}
 					keyVal := map[string]int{
-						pk: intPK,
+						"id": intPK,
 					}
 					result = append(result, app_display.HintStruct{
-						Table:  table1,
+						Table: table1,
+						TableID: appConfig.TableNameIDPairs[table1],
 						KeyVal: keyVal,
 					})
 
@@ -155,7 +152,7 @@ func getDataInNode(appConfig *config.AppConfig, hint app_display.HintStruct) ([]
 				} else {
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					return getRemainingDataInNode(appConfig.DBConn, tag.InnerDependencies, tag.Members, hint, appConfig.AppName)
+					return getRemainingDataInNode(appConfig.DBConn, tag.InnerDependencies, tag.Members, hint, appConfig)
 				}
 			}
 		}

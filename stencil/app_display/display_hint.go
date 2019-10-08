@@ -1,12 +1,10 @@
 package app_display
 
 import (
-	"database/sql"
 	"errors"
-	"log"
 	"stencil/config"
-	"stencil/db"
 	"strconv"
+	"log"
 )
 
 // The Key should be the primay key of the Table
@@ -17,23 +15,16 @@ type HintStruct struct {
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
-func TransformRowToHint(dbConn *sql.DB, row map[string]string, table string) (HintStruct, error) {
+func TransformRowToHint(appConfig *config.AppConfig, row map[string]string, table string) HintStruct {
 	hint := HintStruct{}
-	pk, err := db.GetPrimaryKeyOfTable(dbConn, table)
+	hint.Table = table
+	intVal, err := strconv.Atoi(row["id"])
 	if err != nil {
-		return hint, err
-	} else {
-		intPK, err1 := strconv.Atoi(row[pk])
-		if err1 != nil {
-			log.Fatal(err1)
-		}
-		keyVal := map[string]int{
-			pk: intPK,
-		}
-		hint.Table = table
-		hint.KeyVal = keyVal
+		log.Fatal(err)
 	}
-	return hint, nil
+	hint.KeyVal = map[string]int{"id": intVal}
+	hint.TableID = appConfig.TableNameIDPairs[table]
+	return hint
 }
 
 func (hint HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) {

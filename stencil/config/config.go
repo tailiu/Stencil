@@ -103,8 +103,11 @@ func CreateAppConfigDisplay(app, app_id string, stencilDBConn *sql.DB, newDB boo
 	appConfig.Rand = rand.New(rand.NewSource(time.Now().Unix()))
 
 	tableIDNamePairs := getTableIDNamePairsInApp(stencilDBConn, app_id)
+	appConfig.TableIDNamePairs = make(map[string]string)
+	appConfig.TableNameIDPairs = make(map[string]string)
 	for _, tableIDNamePair := range tableIDNamePairs {
 		appConfig.TableIDNamePairs[fmt.Sprint(tableIDNamePair["pk"])] = fmt.Sprint(tableIDNamePair["table_name"])
+		appConfig.TableNameIDPairs[fmt.Sprint(tableIDNamePair["table_name"])] = fmt.Sprint(tableIDNamePair["pk"])
 	}
 
 	return appConfig, nil
