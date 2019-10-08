@@ -2,10 +2,8 @@ package app_display
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
-	"time"
 )
 
 func CreateDisplayFlagsTable(dbConn *sql.DB) {

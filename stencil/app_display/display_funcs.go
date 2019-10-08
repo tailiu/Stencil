@@ -7,7 +7,6 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"strconv"
-	"time"
 )
 
 const StencilDBName = "stencil"
@@ -87,7 +86,7 @@ func Display(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHints []Hint
 	}
 }
 
-func CheckDisplay(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHints []HintStruct) bool {
+func CheckDisplay(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHint HintStruct) bool {
 	query := fmt.Sprintf("SELECT display_flag from %s where id = %s",
 		dataHint.Table, dataHint.KeyVal["id"])
 	

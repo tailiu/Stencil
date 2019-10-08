@@ -94,10 +94,6 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 
 		var displayedData, notDisplayedData []app_display.HintStruct
 		for _, oneDataInNode := range dataInNode {
-			var val int
-			for _, v := range oneDataInNode.KeyVal {
-				val = v
-			}
 			displayed := app_display.CheckDisplay(stencilDBConn, appConfig, oneDataInNode)
 			if !displayed {
 				notDisplayedData = append(notDisplayedData, oneDataInNode)

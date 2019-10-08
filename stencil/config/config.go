@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"database/sql"
 	"errors"
 	"fmt"
 	"go/build"
