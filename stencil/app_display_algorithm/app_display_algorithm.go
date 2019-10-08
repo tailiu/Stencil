@@ -12,47 +12,6 @@ import (
 
 const checkInterval = 200 * time.Millisecond
 
-func returnResultBasedOnNodeCompleteness(err error) (string, error) {
-	if err != nil {
-		return "Data In a Node Can be partially Displayed", err
-	} else {
-		return "Data In a Node Can be completely Displayed", nil
-	}
-}
-
-func returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting string, secondRound bool) bool {
-	if !secondRound {
-		if displaySetting != "parent_node_not_displays_without_check" {
-			return true
-		} else {
-			return false
-		}
-	} else {
-		if displaySetting == "parent_node_not_displays_with_check" || displaySetting == "parent_node_not_displays_without_check" {
-			return true
-		} else {
-			return false
-		}
-	}
-}
-
-func returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting string) bool {
-	if displaySetting != "parent_node_complete_displays" {
-		return true
-	} else {
-		return false
-	}
-}
-
-func checkDisplayConditions(appConfig *config.AppConfig, pTagConditions map[string]bool, oneMigratedData app_display.HintStruct) bool {
-	for _, result := range pTagConditions {
-		if result {
-			return true
-		}
-	}
-	return false
-}
-
 func DisplayThread(app string, migrationID int) {
 	startTime := time.Now()
 	log.Println("--------- Start of Display Check ---------")
@@ -68,6 +27,7 @@ func DisplayThread(app string, migrationID int) {
 		for _, oneMigratedData := range migratedData {
 			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, secondRound)
 		}
+
 		time.Sleep(checkInterval)
 	}
 
@@ -108,7 +68,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 			if err6 != nil {
 				log.Fatal(err6)
 			}
-			return returnResultBasedOnNodeCompleteness(err1)
+			return app_display.ReturnResultBasedOnNodeCompleteness(err1)
 		}
 
 		pTags, err2 := oneMigratedData.GetParentTags(&appConfig)
@@ -121,7 +81,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 				if err3 != nil {
 					log.Fatal(err3)
 				}
-				return returnResultBasedOnNodeCompleteness(err1)
+				return app_display.ReturnResultBasedOnNodeCompleteness(err1)
 			} else {
 				pTagConditions := make(map[string]bool)
 				for _, pTag := range pTags {
@@ -136,7 +96,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 						case "This Data Does not Depend on Any Data in the Parent Node":
 							pTagConditions[pTag] = true
 						case "Fail To Get Any Data in the Parent Node":
-							pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+							pTagConditions[pTag] = app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
 						}
 					} else {
 						// For now, there is no case where there is more than one piece of data in a parent node
@@ -150,9 +110,9 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 						log.Println(result, err7)
 						switch result {
 						case "No Data In a Node Can be Displayed":
-							pTagConditions[pTag] = returnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+							pTagConditions[pTag] = app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
 						case "Data In a Node Can be partially Displayed":
-							pTagConditions[pTag] = returnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
+							pTagConditions[pTag] = app_display.ReturnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
 						case "Data In a Node Can be completely Displayed":
 							pTagConditions[pTag] = true
 						}
@@ -162,12 +122,12 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 				// For now, without checking the combined_display_setting,
 				// this check app_display condition func will return true
 				// as long as one pTagCondition is true
-				if checkResult := checkDisplayConditions(&appConfig, pTagConditions, oneMigratedData); checkResult {
+				if checkResult := app_display.CheckDisplayConditions(&appConfig, pTagConditions, oneMigratedData); checkResult {
 					err8 := app_display.Display(stencilDBConn, appConfig, dataInNode)
 					if err8 != nil {
 						log.Fatal(err8)
 					}
-					return returnResultBasedOnNodeCompleteness(err1)
+					return app_display.ReturnResultBasedOnNodeCompleteness(err1)
 				} else {
 					return "No Data In a Node Can be Displayed", errors.New("Display Setting does not allow the data in the node to be displayed")
 				}

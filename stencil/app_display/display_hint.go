@@ -9,9 +9,10 @@ import (
 
 // The Key should be the primay key of the Table
 type HintStruct struct {
-	Table  string
+	Table 	string
 	TableID string
-	KeyVal map[string]int
+	KeyVal 	map[string]int
+	Data   	map[string]interface{}
 }
 
 // NOTE: We assume that primary key is only one integer value!!!

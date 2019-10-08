@@ -1,7 +1,6 @@
 package app_dependency_handler
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -12,10 +11,10 @@ import (
 	"strings"
 )
 
-func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, depDataValue int) (map[string]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", depDataTable, depDataKey, depDataValue)
+func getOneRowBasedOnHint(appConfig *config.AppConfig, hint app_display.HintStruct) (map[string]string, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %d LIMIT 1;", hint.Table, hint.KeyVal["id"])
 
-	data := db.GetAllColsOfRows(dbConn, query)
+	data := db.GetAllColsOfRows(appConfig.DBConn, query)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
@@ -24,10 +23,10 @@ func getOneRowBasedOnHint(dbConn *sql.DB, app, depDataTable, depDataKey string, 
 	}
 }
 
-func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string) (map[string]string, error) {
+func getOneRowBasedOnDependency(appConfig *config.AppConfig, val int, dep string) (map[string]string, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
 	// fmt.Println(query)
-	data := db.GetAllColsOfRows(dbConn, query)
+	data := db.GetAllColsOfRows(appConfig.DBConn, query)
 	// fmt.Println(data)
 	if len(data) == 0 {
 		return nil, errors.New("Error: Cannot Find One Remaining Data in the Node")
@@ -36,7 +35,7 @@ func getOneRowBasedOnDependency(dbConn *sql.DB, app string, val int, dep string)
 	}
 }
 
-func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, members map[string]string, hint app_display.HintStruct, appConfig *config.AppConfig) ([]app_display.HintStruct, error) {
+func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[string]string, members map[string]string, hint app_display.HintStruct) ([]app_display.HintStruct, error) {
 	var result []app_display.HintStruct
 
 	procDependencies := make(map[string][]string)
@@ -54,20 +53,11 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 	}
 	// fmt.Println(procDependencies)
 
-	var data map[string]string
-	var err error
-	for k, v := range hint.KeyVal {
-		data, err = getOneRowBasedOnHint(dbConn, appConfig.AppName, hint.Table, k, v)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	result = append(result, hint)
 
 	queue := []DataInDependencyNode{DataInDependencyNode{
 		Table: hint.Table,
-		Data:  data,
+		Data:  hint.Data,
 	}}
 	for len(queue) != 0 && len(procDependencies) != 0 {
 		// fmt.Println(queue)
@@ -85,7 +75,7 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 					log.Fatal("Error in Getting Data in Node: Converting '%s' to Integer", val)
 				}
 				for _, dep := range deps {
-					data, err = getOneRowBasedOnDependency(dbConn, appConfig.AppName, intVal, dep)
+					data, err = getOneRowBasedOnDependency(appConfig, intVal, dep)
 					// fmt.Println(data)
 
 					if err != nil {
@@ -144,6 +134,16 @@ func getRemainingDataInNode(dbConn *sql.DB, dependencies []map[string]string, me
 }
 
 func getDataInNode(appConfig *config.AppConfig, hint app_display.HintStruct) ([]app_display.HintStruct, error) {
+	var data map[string]string
+	var err error
+	
+	data, err = getOneRowBasedOnHint(appConfig, hint)
+	if err != nil {
+		return nil, err
+	} else {
+		hint.Data = data
+	}
+
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members {
 			if hint.Table == member {
@@ -152,7 +152,7 @@ func getDataInNode(appConfig *config.AppConfig, hint app_display.HintStruct) ([]
 				} else {
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					return getRemainingDataInNode(appConfig.DBConn, tag.InnerDependencies, tag.Members, hint, appConfig)
+					return getRemainingDataInNode(appConfig, tag.InnerDependencies, tag.Members, hint)
 				}
 			}
 		}
