@@ -23,7 +23,8 @@
        {
           "name":"post",
           "members":{
-             "member1":"posts"
+             "member1":"posts",
+             "member2":"photos"
           },
           "keys":{
              "id":"member1.id",
@@ -32,6 +33,11 @@
              "root_guid":"member1.root_guid",
              "type":"member1.type"
           },
+          "inner_dependencies":[
+            {
+              "member1.guid":"member2.status_message_guid"
+            }
+         ],
           "restrictions":[
              {
                 "col":"type",

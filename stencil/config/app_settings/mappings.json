@@ -89,7 +89,7 @@
                             ]
                         },
                         {
-                            "fromTables": ["statuses", "status_stats"],
+                            "fromTables": ["statuses", "status_stats", "media_attachments"],
                             "toTables": [
                                 {
                                     "table": "posts",
@@ -105,7 +105,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type": "$reshare",
-                                        "guid":"#GUID",
+                                        "guid":"#ASSIGN(statuses.id)",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -125,7 +125,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type": "$mentions_type1",
-                                        "guid":"#GUID",
+                                        "guid":"#ASSIGN(statuses.id)",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -145,7 +145,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "commentable_type": "$commentable_type",
-                                        "guid":"#GUID"
+                                        "guid":"#ASSIGN(statuses.id)"
             
                                     }
                                 },
@@ -161,7 +161,21 @@
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "guid":"#GUID"
+                                        "guid":"#ASSIGN(statuses.id)"
+                                    }
+                                },
+                                {
+                                    "table": "photos",
+                                    "conditions": {
+                                    },
+                                    "mapping":{    
+                                        "id": "media_attachments.id",
+                                        "author_id": "media_attachments.account_id",
+                                        "status_message_guid": "#ASSIGN(statuses.id)",
+                                        "text":"media_attachments.description",
+                                        "updated_at":"media_attachments.updated_at",
+                                        "created_at":"media_attachments.created_at",
+                                        "remote_photo_path":"media_attachments.remote_url"
                                     }
                                 }
                             ]
@@ -587,7 +601,7 @@
                             ]
                         },
                         {
-                            "fromTables": ["posts"],
+                            "fromTables": ["posts", "photos"],
                             "toTables": [
                                 {
                                     "table": "statuses",
@@ -630,6 +644,24 @@
                                         "id": "posts.id",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at"
+                                    }
+                                },
+                                {
+                                    "table": "media_attachments",
+                                    "conditions":{
+                                        "posts.type": "StatusMessage"
+                                    },
+                                    "media": {
+                                        "path": "photos.remote_photo_path"
+                                    },
+                                    "mapping": {
+                                        "id": "photos.id",
+                                        "account_id": "photos.author_id",
+                                        "status_id": "#ASSIGN(posts.id)",
+                                        "description":"photos.text",
+                                        "updated_at":"photos.updated_at",
+                                        "created_at":"photos.created_at",
+                                        "remote_url":"photos.remote_photo_path"
                                     }
                                 }
                             ]
