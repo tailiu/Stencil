@@ -232,6 +232,6 @@ func LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *t
 		// mWorker.HandleLeftOverWaitingNodes()
 	}
 	
-	db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, 0)
+	// db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, 0)
 	return finished
 }

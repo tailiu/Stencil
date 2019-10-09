@@ -7,11 +7,14 @@ package main
 import (
 	"log"
 	"os"
+	"sync"
 	"stencil/migrate"
 	"stencil/config"
 	"stencil/mthread"
 	"stencil/transaction"
 	"stencil/evaluation"
+	"stencil/db"
+	"stencil/app_display_algorithm"
 	"strconv"
 	"fmt"
 )
@@ -53,8 +56,18 @@ func main() {
 		if mappings == nil {
 			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
 		}
+		var wg sync.WaitGroup
+		for threadID := 0; threadID < threads; threadID++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				app_display_algorithm.DisplayThread(dstApp, logTxn.Txn_id)
+			}()
+		}
 		if mthread.LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads) {
 			transaction.LogOutcome(logTxn, "COMMIT")
+			wg.Wait()
+			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, 0)
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 		}
