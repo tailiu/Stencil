@@ -168,6 +168,9 @@
                                     "table": "photos",
                                     "conditions": {
                                     },
+                                    "media": {
+                                        "path": "media_attachments.remote_url"
+                                    },
                                     "mapping":{    
                                         "id": "media_attachments.id",
                                         "author_id": "media_attachments.account_id",

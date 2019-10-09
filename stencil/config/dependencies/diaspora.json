@@ -37,7 +37,7 @@
             {
               "member1.guid":"member2.status_message_guid"
             }
-         ],
+          ],
           "restrictions":[
              {
                 "col":"type",

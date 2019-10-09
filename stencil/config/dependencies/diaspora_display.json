@@ -21,23 +21,30 @@
 			]
 		},
 		{
-			"name": "post",
-			"members": {
-				"member1": "posts"
+			"name":"post",
+			"members":{
+			   "member1":"posts",
+			   "member2":"photos"
 			},
-			"keys": {
-				"id": "member1.id",
-				"author_id": "member1.author_id",
-				"guid": "member1.guid",
-				"root_guid": "member1.root_guid",
-				"type": "member1.type"
+			"keys":{
+			   "id":"member1.id",
+			   "author_id":"member1.author_id",
+			   "guid":"member1.guid",
+			   "root_guid":"member1.root_guid",
+			   "type":"member1.type"
 			},
-			"restrictions": [
-				{
-					"col": "type",
-					"val": "StatusMessage"
-				}
-			]
+			"inner_dependencies":[
+			  {
+				"member1.guid":"member2.status_message_guid"
+			  }
+		   	],
+			"restrictions":[
+			   {
+				  "col":"type",
+				  "val":"StatusMessage"
+			   }
+			],
+			"display_setting": "display_based_on_inner_dependencies"
 		},
 		{
 			"name": "aspect",

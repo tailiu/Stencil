@@ -11,27 +11,20 @@ import (
 	"strings"
 )
 
-func getOneRowBasedOnHint(appConfig *config.AppConfig, hint app_display.HintStruct) (map[string]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %d LIMIT 1;", hint.Table, hint.KeyVal["id"])
-
-	data := db.GetAllColsOfRows(appConfig.DBConn, query)
-
-	if len(data) == 0 {
-		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
-	} else {
-		return data[0], nil
-	}
-}
-
-func getOneRowBasedOnDependency(appConfig *config.AppConfig, val int, dep string) (map[string]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d LIMIT 1;", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
+func getOneRowBasedOnDependency(appConfig *config.AppConfig, val int, dep string) (map[string]interface{}, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d", strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
 	// fmt.Println(query)
-	data := db.GetAllColsOfRows(appConfig.DBConn, query)
+
+	data, err := db.DataCall1(appConfig.DBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// fmt.Println(data)
 	if len(data) == 0 {
 		return nil, errors.New("Error: Cannot Find One Remaining Data in the Node")
 	} else {
-		return data[0], nil
+		return data, nil
 	}
 }
 
@@ -70,16 +63,16 @@ func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[stri
 		for col, val := range dataInDependencyNode.Data {
 			if deps, ok := procDependencies[table+"."+col]; ok {
 				// We assume that this is an integer value otherwise we have to define it in dependency config
-				intVal, err := strconv.Atoi(val)
+				intVal, err := strconv.Atoi(fmt.Sprint(val))
 				if err != nil {
 					log.Fatal("Error in Getting Data in Node: Converting '%s' to Integer", val)
 				}
 				for _, dep := range deps {
-					data, err = getOneRowBasedOnDependency(appConfig, intVal, dep)
+					data, err1 := getOneRowBasedOnDependency(appConfig, intVal, dep)
 					// fmt.Println(data)
 
-					if err != nil {
-						// fmt.Println(err)
+					if err1 != nil {
+						// fmt.Println(err1)
 						// fmt.Println(result)
 						continue
 					}
@@ -93,7 +86,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[stri
 						Data:  data,
 					})
 
-					intPK, err2 := strconv.Atoi(data["id"])
+					intPK, err2 := strconv.Atoi(fmt.Sprint(data["id"]))
 					if err2 != nil {
 						log.Fatal(err2)
 					}
@@ -104,6 +97,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[stri
 						Table: table1,
 						TableID: appConfig.TableNameIDPairs[table1],
 						KeyVal: keyVal,
+						Data: data,
 					})
 
 					deps1 := procDependencies[table1+"."+key1]
@@ -133,17 +127,31 @@ func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[stri
 	}
 }
 
-func getDataInNode(appConfig *config.AppConfig, hint app_display.HintStruct) ([]app_display.HintStruct, error) {
-	var data map[string]string
-	var err error
-	
-	data, err = getOneRowBasedOnHint(appConfig, hint)
+func getOneRowBasedOnHint(appConfig *config.AppConfig, hint app_display.HintStruct) (map[string]interface{}, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %d", hint.Table, hint.KeyVal["id"])
+	data, err := db.DataCall1(appConfig.DBConn, query)
 	if err != nil {
-		return nil, err
-	} else {
-		hint.Data = data
+		log.Fatal(err)
 	}
 
+	if len(data) == 0 {
+		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
+	} else {
+		return data, nil
+	}
+}
+
+func getDataInNode(appConfig *config.AppConfig, hint app_display.HintStruct) ([]app_display.HintStruct, error) {
+
+	if hint.Data == nil {
+		data, err := getOneRowBasedOnHint(appConfig, hint)
+		if err != nil {
+			return nil, err
+		} else {
+			hint.Data = data
+		}
+	}
+	
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members {
 			if hint.Table == member {
