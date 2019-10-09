@@ -328,6 +328,9 @@
                                             "statuses.visibility": "0",
                                             "statuses.reblog_of_id": "#NULL"
                                     },
+                                    "media": {
+                                        "path": "media_attachments.remote_url"
+                                    },
                                     "mapping": {
                                         "id":"statuses.id",
                                         "user_id":"statuses.account_id",
@@ -356,6 +359,9 @@
                                     "table": "messages",
                                     "conditions": {
                                             "statuses.visibility": "3"
+                                    },
+                                    "media": {
+                                        "path": "media_attachments.remote_url"
                                     },
                                     "mapping":{    
                                         "id":"statuses.id",
@@ -855,19 +861,23 @@
                             ]
                         },
                         {
-                            "fromTables": ["posts"],
+                            "fromTables": ["posts", "photos"],
                             "toTables": [
                                 {
                                     "table": "tweets",
                                     "conditions":{
                                         "posts.type": "StatusMessage"
                                     },
+                                    "media": {
+                                        "path": "photos.remote_photo_path"
+                                    },
                                     "mapping": {
                                         "id":"posts.id",
                                         "user_id": "posts.author_id",
                                         "content":"posts.text",
                                         "created_at":"posts.created_at",
-                                        "updated_at":"posts.updated_at"
+                                        "updated_at":"posts.updated_at",
+                                        "tweet_media":"photos.remote_photo_path"
                                     }
                                 }
                             ]
@@ -1172,6 +1182,23 @@
                                         "in_reply_to_id":"tweets.reply_to_id",
                                         "account_id":"tweets.user_id"
                                     }
+                                },
+                                {
+                                    "table": "media_attachments",
+                                    "conditions": {
+                                        "tweets.tweet_media": "#NOTNULL"
+                                    },
+                                    "media": {
+                                        "path": "tweets.tweet_media"
+                                    },
+                                    "mapping" : {
+                                        "id": "#RANDINT",
+                                        "remote_url": "tweets.tweet_media",
+                                        "status_id": "tweets.id",
+                                        "created_at": "tweets.created_at",
+                                        "updated_at": "tweets.updated_at",
+                                        "account_id": "tweets.user_id"
+                                    }
                                 }
                             ]
                         },
@@ -1222,7 +1249,12 @@
                                 },
                                 {
                                     "table": "media_attachments",
-                                    "conditions": {},
+                                    "conditions": {
+                                        "messages.message_media": "#NOTNULL"
+                                    },
+                                    "media": {
+                                        "path": "messages.message_media"
+                                    },
                                     "mapping" : {
                                         "id": "#RANDINT",
                                         "remote_url": "messages.message_media",
@@ -1329,6 +1361,23 @@
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
                                         "type":"$post_type_status"
+                                    }
+                                },
+                                {
+                                    "table": "photos",
+                                    "conditions": {
+                                        "tweets.reply_to_id" : "#NULL"
+                                    },
+                                    "media": {
+                                        "path": "tweets.tweet_media"
+                                    },
+                                    "mapping":{    
+                                        "id": "#RANDINT",
+                                        "author_id": "tweets.user_id",
+                                        "status_message_guid": "#ASSIGN(tweets.id)",
+                                        "updated_at":"tweets.updated_at",
+                                        "created_at":"tweets.created_at",
+                                        "remote_photo_path":"tweets.tweet_media"
                                     }
                                 }
                             ]
