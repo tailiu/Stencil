@@ -9,7 +9,7 @@ import (
 
 const APP = "diaspora" 
 const USER_NUM = 10000
-const FOLLOW_NUM = 151875
+const FOLLOW_NUM = 206600
 const POST_NUM = 80292
 const COMMENT_NUM = 139708
 const LIKE_NUM = 856715

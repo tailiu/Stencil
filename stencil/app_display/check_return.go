@@ -14,7 +14,7 @@ func ReturnResultBasedOnNodeCompleteness(err error) (string, error) {
 
 func ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting string, secondRound bool) bool {
 	if !secondRound {
-		if displaySetting != "parent_node_not_displays_without_check" {
+		if displaySetting == "parent_node_not_displays_without_check" {
 			return true
 		} else {
 			return false
