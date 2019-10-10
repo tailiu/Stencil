@@ -599,7 +599,8 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 					return err
 				}
 				if len(toTable.Media) > 0 {
-					if filePath, ok := toTable.Media["path"]; ok {
+					if filePathCol, ok := toTable.Media["path"]; ok {
+						filePath := fmt.Sprint(node.Data[filePathCol])
 						if err := TransferMedia(filePath); err != nil {
 							log.Fatal("@HandleMigration: ", err)
 						}
