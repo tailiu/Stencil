@@ -24,7 +24,7 @@ func main() {
 
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		MaD := "0"
-		if len(os.Args) > 8{
+		if len(os.Args) > 8 {
 			MaD = os.Args[8]
 		}
 		srcApp, srcAppID := os.Args[4], os.Args[5]

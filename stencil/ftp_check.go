@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 	"github.com/secsy/goftp"
+	"github.com/jlaffaye/ftp"
 )
 
-
-func main() {
+func testSecsyGoFTP() {
 
 	config := goftp.Config{
 		User:               "zain",
@@ -19,9 +19,10 @@ func main() {
 		Logger:             os.Stderr,
 	}
 
-	ip := "10.230.12.75"
-	port := "21"//"4410"
+	ip := "10.230.12.76"
+	port := "4410"
 
+	// client, err := goftp.Dial(ip+":"+port)
 	client, err := goftp.DialConfig(config, ip+":"+port)
 	if err != nil {
 		panic(err)
@@ -52,4 +53,25 @@ func main() {
 		panic(err)
 	}
 	log.Println("Done!")
+}
+
+func testJlaffayeFTP() {
+
+	ip := "10.230.12.76"
+	port := "4410"
+
+	log.Println("Dialing...")
+	client, err := ftp.Dial(fmt.Sprintf("%s:%s", ip, port))
+	if err != nil {
+		panic(err)
+	}
+	log.Println("Trying to log in...")
+	if err := client.Login("zain", "Robust_Killer007"); err != nil {
+		panic(err)
+	}
+	log.Println("Done!")
+}
+
+func main() {
+	testJlaffayeFTP()
 }
