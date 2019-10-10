@@ -6,10 +6,10 @@ import (
 )
 
 func main() {
-	threadNum := 1
+	threadNum := 5
 	dstApp := "mastodon"
 	// dstApp := "diaspora"
-	migrationID := 547075486
+	migrationID := 1961592388
 
 	for i := 0; i < threadNum; i++ {
 		go app_display_algorithm.DisplayThread(dstApp, migrationID)
