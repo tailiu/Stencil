@@ -5,6 +5,7 @@ import (
 	"stencil/config"
 	"strconv"
 	"log"
+	"fmt"
 )
 
 // The Key should be the primay key of the Table
@@ -29,13 +30,13 @@ func TransformRowToHint(appConfig *config.AppConfig, row map[string]interface{},
 	return hint
 }
 
-func TransformDisplayFlagDataToHint(data map[string]string) HintStruct {
+func TransformDisplayFlagDataToHint(appConfig *config.AppConfig, data map[string]string) HintStruct {
 	hint := HintStruct{}
 	intVal, err := strconv.Atoi(data["id"])
 	if err != nil {
 		log.Fatal(err)
 	}
-	hint.KeyVal = keyVal := map[string]int{"id": intVal}
+	hint.KeyVal = map[string]int{"id": intVal}
 	hint.Table = appConfig.TableIDNamePairs[data["table_id"]]
 	hint.TableID = data["table_id"]
 	return hint

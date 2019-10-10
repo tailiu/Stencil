@@ -6,8 +6,6 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
-	"strconv"
-	// "time"
 )
 
 const StencilDBName = "stencil"
@@ -32,7 +30,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig config.AppConfi
 	// fmt.Println(data)
 
 	for _, data1 := range data {
-		displayHints = append(displayHints, app_display.TransformDisplayFlagDataToHint(data1))
+		displayHints = append(displayHints, TransformDisplayFlagDataToHint(&appConfig, data1))
 	}
 	// fmt.Println(displayHints)
 	return displayHints

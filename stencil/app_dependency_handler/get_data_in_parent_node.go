@@ -33,7 +33,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []app_display.HintS
 			}
 			if hintID == -1 {
 				// In this case, since data may be incomplete, we cannot get the data in the parent node
-				return nil, errors.New("Fail To Get Any Data in the Parent Node")
+				return app_display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 			} else {
 				from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
 					t1, seq1, t2, seq2, seq1, a1, seq2, a2)
@@ -64,7 +64,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []app_display.HintS
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-		return nil, errors.New("Fail To Get Any Data in the Parent Node")
+		return app_display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
 	} else {
 		return app_display.TransformRowToHint(appConfig, data, table), nil
 	}
@@ -101,7 +101,7 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hints []app_display.H
 		tableCol := replaceKey(appConfig, tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 		for _, hint := range hints {
-			if hint.TableName == table {
+			if hint.Table == table {
 				if hint.Data[tableCol] == nil {
 					return false, errors.New("This Data Does not Depend on Any Data in the Parent Node")
 				} else {
@@ -121,7 +121,7 @@ func GetdataFromParentNode(appConfig *config.AppConfig, hints []app_display.Hint
 
 	// Before getting data from a parent node, we check the existence of the data based on the cols of a child node
 	if exists, err := dataFromParentNodeExists(appConfig, hints, pTag); !exists {
-		return nil, err
+		return app_display.HintStruct{}, err
 	}
 
 	tag, _ := hints[0].GetTagName(appConfig)
