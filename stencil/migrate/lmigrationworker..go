@@ -598,6 +598,15 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 					log.Fatal(err)
 					return err
 				}
+				if len(toTable.Media) > 0 {
+					if filePath, ok := toTable.Media["path"]; ok {
+						if err := TransferMedia(filePath); err != nil {
+							log.Fatal("@HandleMigration: ", err)
+						}
+					} else {
+						log.Fatal("@HandleMigration > toTable.Media: Path not found in map!")
+					}
+				}
 			} else {
 				if !strings.Contains(err.Error(), "duplicate key value") {
 					fmt.Println("@ERROR_Insert")

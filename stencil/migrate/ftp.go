@@ -34,8 +34,10 @@ func TransferMedia(filePath string) error {
 
 	fpTokens := strings.Split(filePath, "/")
 	fileName := fpTokens[len(fpTokens)-1]
+	fsName := "/"+fileName
 
-	if err := client.Stor("/"+fileName, file); err != nil {
+	log.Println(fmt.Sprintf("Transferring file [%s] with name [%s] to [%s%s]...", filePath, fileName, addr, fsName))
+	if err := client.Stor(fsName, file); err != nil {
 		log.Println("File Transfer Failed: ", err)
 		return err
 	}
