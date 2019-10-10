@@ -624,9 +624,10 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 				}
 				if len(toTable.Media) > 0 {
 					if filePathCol, ok := toTable.Media["path"]; ok {
-						filePath := fmt.Sprint(node.Data[filePathCol])
-						if err := self.TransferMedia(filePath); err != nil {
-							log.Fatal("@HandleMigration: ", err)
+						if filePath, ok := node.Data[filePathCol]; ok {
+							if err := self.TransferMedia(fmt.Sprint(filePath)); err != nil {
+								log.Fatal("@HandleMigration: ", err)
+							}
 						}
 					} else {
 						log.Fatal("@HandleMigration > toTable.Media: Path not found in map!")
