@@ -12,15 +12,15 @@ import (
 func testSecsyGoFTP() {
 
 	config := goftp.Config{
-		User:               "zain",
-		Password:           "Robust_Killer007",
+		User:               "admin",
+		Password:           "123456",
 		ConnectionsPerHost: 10,
 		Timeout:            10 * time.Second,
-		Logger:             os.Stderr,
+		// Logger:             os.Stderr,
 	}
 
-	ip := "10.230.12.76"
-	port := "4410"
+	ip := "127.0.0.1"
+	port := "2121"
 
 	// client, err := goftp.Dial(ip+":"+port)
 	client, err := goftp.DialConfig(config, ip+":"+port)
@@ -30,14 +30,13 @@ func testSecsyGoFTP() {
 	
 	fmt.Println("Connected!")
 
-	path := "/home/zain/project/resources/1.jpg"
+	path := "/home/user/Downloads/res/1.jpg"
 
-	wd, err := client.Getwd();
-	if  err != nil {
+	if  _, err = client.Getwd(); err != nil {
 		panic(err)
 	}
 
-	// fileInfo, err := client.Stat(path);
+	// fileInfo, err := client.Stat("/");
 	// if  err != nil {
 	// 	panic(err)
 	// }
@@ -48,7 +47,7 @@ func testSecsyGoFTP() {
 		panic(err)
 	}
 
-	err = client.Store(wd, media)
+	err = client.Store("/", media)
 	if err != nil {
 		panic(err)
 	}
@@ -57,8 +56,8 @@ func testSecsyGoFTP() {
 
 func testJlaffayeFTP() {
 
-	ip := "10.230.12.76"
-	port := "4410"
+	ip := "10.230.12.75"
+	port := "21"
 
 	log.Println("Dialing...")
 	client, err := ftp.Dial(fmt.Sprintf("%s:%s", ip, port))
@@ -66,9 +65,23 @@ func testJlaffayeFTP() {
 		panic(err)
 	}
 	log.Println("Trying to log in...")
-	if err := client.Login("zain", "Robust_Killer007"); err != nil {
+	if err := client.Login("cowftp", "Big1Fat2Cow3"); err != nil {
+		log.Println("Login Authentication Error!")
 		panic(err)
 	}
+
+	filePath := "/home/user/Downloads/res/1.jpg"
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Println("Can't open the file at: ",filePath)
+		panic(err)
+	}
+
+	if err := client.Stor("/1.jpg", file); err != nil {
+		log.Println("File Transfer Failed!")
+		panic(err)
+	}
+
 	log.Println("Done!")
 }
 
