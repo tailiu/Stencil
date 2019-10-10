@@ -22,8 +22,12 @@ import (
 func main() {
 	evalConfig := evaluation.InitializeEvalConfig()
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
-		srcApp, srcAppID := "diaspora", "1"
-		dstApp, dstAppID := "mastodon", "2"
+		srcApp, srcAppID := os.Args[4], os.Args[5]
+		dstApp, dstAppID := os.Args[6], os.Args[7]
+		dflag := "f"
+		if len(os.Args) > 8 {
+			dflag = os.Args[8]
+		}
 		threads, err := strconv.Atoi(os.Args[1])
 		if err != nil {
 			log.Fatal(err)
@@ -57,12 +61,14 @@ func main() {
 			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
 		}
 		var wg sync.WaitGroup
-		for threadID := 0; threadID < threads; threadID++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				app_display_algorithm.DisplayThread(dstApp, logTxn.Txn_id)
-			}()
+		if dflag == "t" {
+			for threadID := 0; threadID < threads; threadID++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					app_display_algorithm.DisplayThread(dstApp, logTxn.Txn_id)
+				}()
+			}
 		}
 		if mthread.LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads) {
 			transaction.LogOutcome(logTxn, "COMMIT")
