@@ -100,10 +100,10 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 						}
 					} else {
 						// For now, there is no case where there is more than one piece of data in a parent node
-						if len(dataInParentNode) != 1 {
-							log.Fatal("Find more than one piece of data in a parent node!!")
-						}
-						result, err7 := checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode[0], secondRound)
+						// if len(dataInParentNode) != 1 {
+						// 	log.Fatal("Find more than one piece of data in a parent node!!")
+						// }
+						result, err7 := checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode, secondRound)
 						if err7 != nil {
 							log.Println(err7)
 						}

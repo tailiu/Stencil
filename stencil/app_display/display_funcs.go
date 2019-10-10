@@ -32,18 +32,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig config.AppConfi
 	// fmt.Println(data)
 
 	for _, data1 := range data {
-		hint := HintStruct{}
-		intVal, err := strconv.Atoi(data1["id"])
-		if err != nil {
-			log.Fatal(err)
-		}
-		keyVal := map[string]int{
-			"id": intVal,
-		}
-		hint.Table = appConfig.TableIDNamePairs[data1["table_id"]]
-		hint.TableID = data1["table_id"]
-		hint.KeyVal = keyVal
-		displayHints = append(displayHints, hint)
+		displayHints = append(displayHints, app_display.TransformDisplayFlagDataToHint(data1))
 	}
 	// fmt.Println(displayHints)
 	return displayHints

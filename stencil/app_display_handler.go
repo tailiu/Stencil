@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	threadNum := 5
+	threadNum := 1
 	dstApp := "mastodon"
 	// dstApp := "diaspora"
 	migrationID := 1961592388

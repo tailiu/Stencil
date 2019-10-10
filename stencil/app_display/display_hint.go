@@ -16,15 +16,28 @@ type HintStruct struct {
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
-func TransformRowToHint(appConfig *config.AppConfig, row map[string]string, table string) HintStruct {
+func TransformRowToHint(appConfig *config.AppConfig, row map[string]interface{}, table string) HintStruct {
 	hint := HintStruct{}
 	hint.Table = table
-	intVal, err := strconv.Atoi(row["id"])
+	intVal, err := strconv.Atoi(fmt.Sprint(row["id"]))
 	if err != nil {
 		log.Fatal(err)
 	}
 	hint.KeyVal = map[string]int{"id": intVal}
 	hint.TableID = appConfig.TableNameIDPairs[table]
+	hint.Data = row
+	return hint
+}
+
+func TransformDisplayFlagDataToHint(data map[string]string) HintStruct {
+	hint := HintStruct{}
+	intVal, err := strconv.Atoi(data["id"])
+	if err != nil {
+		log.Fatal(err)
+	}
+	hint.KeyVal = keyVal := map[string]int{"id": intVal}
+	hint.Table = appConfig.TableIDNamePairs[data["table_id"]]
+	hint.TableID = data["table_id"]
 	return hint
 }
 
