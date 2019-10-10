@@ -13,6 +13,7 @@ import (
 	"stencil/helper"
 	"stencil/transaction"
 	"strings"
+	"os"
 )
 
 func CreateLMigrationWorkerWithAppsConfig(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, srcAppConfig, dstAppConfig config.AppConfig) LMigrationWorker {
@@ -33,6 +34,7 @@ func CreateLMigrationWorkerWithAppsConfig(uid, srcApp, srcAppID, dstApp, dstAppI
 		DstDBConn:    db.GetDBConn2(dstApp),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
+		FTPClient: GetFTPClient(),
 		visitedNodes: make(map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
 		log.Fatal(err)
@@ -62,6 +64,7 @@ func CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logT
 		DstDBConn:    db.GetDBConn2(dstApp),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
+		FTPClient: GetFTPClient(),
 		visitedNodes: make(map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
 		log.Fatal(err)
@@ -565,6 +568,27 @@ func (self *LMigrationWorker) MarkRowAsDeleted(node *DependencyNode, tx *sql.Tx)
 	return nil
 }
 
+func (self *LMigrationWorker) TransferMedia(filePath string) error {
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Println("Can't open the file at: ", filePath, err)
+		return err
+	}
+
+	fpTokens := strings.Split(filePath, "/")
+	fileName := fpTokens[len(fpTokens)-1]
+	fsName := "/"+fileName
+
+	log.Println(fmt.Sprintf("Transferring file [%s] with name [%s] to [%s]...", filePath, fileName, fsName))
+	if err := self.FTPClient.Stor(fsName, file); err != nil {
+		log.Println("File Transfer Failed: ", err)
+		return err
+	}
+
+	return nil
+}
+
 func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *DependencyNode) error {
 
 	srctx, err := self.SrcDBConn.Begin()
@@ -601,7 +625,7 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 				if len(toTable.Media) > 0 {
 					if filePathCol, ok := toTable.Media["path"]; ok {
 						filePath := fmt.Sprint(node.Data[filePathCol])
-						if err := TransferMedia(filePath); err != nil {
+						if err := self.TransferMedia(filePath); err != nil {
 							log.Fatal("@HandleMigration: ", err)
 						}
 					} else {

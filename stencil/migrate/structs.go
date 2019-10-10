@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"stencil/config"
 	"stencil/transaction"
+	"github.com/jlaffaye/ftp"
 	"sync"
 )
 
@@ -69,5 +70,6 @@ type LMigrationWorker struct {
 	logTxn       *transaction.Log_txn
 	mtype        string
 	visitedNodes map[string]bool
+	FTPClient    *ftp.ServerConn
 	// threadID     int
 }
