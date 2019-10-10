@@ -572,7 +572,7 @@ func (self *LMigrationWorker) TransferMedia(filePath string) error {
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Println("Can't open the file at: ", filePath, err)
+		log.Println(fmt.Sprintf("Can't open the file at: %s | ", filePath), err)
 		return err
 	}
 
