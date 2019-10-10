@@ -19,7 +19,9 @@
             "name": "notice",
             "members": {
                 "member1": "notice",
-                "member2": "conversation"
+                "member2": "conversation",
+                "member3": "file",
+                "member4": "file_to_post"
             },
             "keys": {
                 "id": "member1.id",
@@ -29,7 +31,9 @@
             },
             "inner_dependencies" : [
                 {
-                    "member1.conversation": "member2.id"
+                    "member1.conversation": "member2.id",
+                    "member1.id": "member4.post_id",
+                    "member3.id": "member4.file_id"
                 }
             ],
             "display_setting": "display_based_on_inner_dependencies"
