@@ -6,7 +6,7 @@ import (
 	// "log"
 )
 
-func getMigratedDataInRowSize(AppDBConn *sql.DB, data1 map[string]interface{}, mCols map[string][]string, table string, pKey int) int64 {
+func getMigratedDataInRowSize(AppDBConn *sql.DB, data1 map[string]interface{}, mCols map[string][]string, table string, pKey int, AppID string) int64 {
 	row := getLogicalRow(AppDBConn, table, pKey)
 
 	var keys []string
@@ -23,7 +23,9 @@ func getMigratedDataInRowSize(AppDBConn *sql.DB, data1 map[string]interface{}, m
 			} 
 		}
 	}
-	return calculateRowSize(AppDBConn, keys, table, pKey)
+	// log.Println(table)
+	// log.Println(keys)
+	return calculateRowSize(AppDBConn, keys, table, pKey, AppID)
 }
 
 func GetMigratedDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, migrationID string) int64 {
@@ -42,7 +44,7 @@ func GetMigratedDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, migrat
 			continue
 		} else {
 			checkedRow[key] = true
-			migratedDataSize += getMigratedDataInRowSize(AppDBConn, data1, mCols, table, pKey)
+			migratedDataSize += getMigratedDataInRowSize(AppDBConn, data1, mCols, table, pKey, AppID)
 		}
 	}
 

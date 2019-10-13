@@ -16,6 +16,14 @@ import (
 
 const logDir = "./evaluation/logs/"
 
+var mediaSize = map[string]int64 {
+	"1.jpg": 512017,
+	"2.jpg": 206993,
+	"3.jpg": 102796,
+	"4.jpg": 51085,
+	"5.jpg": 1033414,
+}
+
 func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
 	query := fmt.Sprintf("select * from migration_registration where dst_app = '%s' %s;", 
 		appID, extraConditions)
@@ -128,7 +136,51 @@ func WriteStrArrToLog(fileName string, data []string) {
 	fmt.Fprintln(f)
 }
 
-func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int) int64 {
+func calculateFileSize(AppDBConn *sql.DB, table string, pKey int, AppID string) int64 {
+	if AppID == "1" && table == "photos" {
+		query := fmt.Sprintf("select remote_photo_name from %s where id = %d",
+				table, pKey)
+		res, err2 := db.DataCall1(AppDBConn, query)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+		return mediaSize[fmt.Sprint(res["remote_photo_name"])]
+	} else if AppID == "2" && table == "media_attachments" {
+		query := fmt.Sprintf("select remote_url from %s where id = %d",
+				table, pKey)
+		res, err2 := db.DataCall1(AppDBConn, query)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+		parts := strings.Split(fmt.Sprint(res["remote_url"]), "/")
+		mediaName := parts[len(parts) - 1]
+		return mediaSize[mediaName]
+	} else if AppID == "3" && table == "tweets" {
+		query := fmt.Sprintf("select tweet_media from %s where id = %d",
+				table, pKey)
+		res, err2 := db.DataCall1(AppDBConn, query)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+		parts := strings.Split(fmt.Sprint(res["tweet_media"]), "/")
+		mediaName := parts[len(parts) - 1]
+		return mediaSize[mediaName]
+	} else if AppID == "4" && table == "file" {
+		query := fmt.Sprintf("select url from %s where id = %d",
+				table, pKey)
+		res, err2 := db.DataCall1(AppDBConn, query)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+		parts := strings.Split(fmt.Sprint(res["url"]), "/")
+		mediaName := parts[len(parts) - 1]
+		return mediaSize[mediaName]
+	} else {
+		return 0
+	}
+}
+
+func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int, AppID string) int64 {
 	selectQuery := "select"
 	for i, col := range cols {
 		selectQuery += " pg_column_size(" + col + ") "
@@ -147,7 +199,7 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int) 
 		log.Fatal(err2)
 	}
 	// log.Println(row["cols_size"].(int64))
-	return row["cols_size"].(int64)
+	return row["cols_size"].(int64) + calculateFileSize(AppDBConn, table, pKey, AppID)
 }
 
 func transformTableKeyToNormalType(tableKey map[string]interface{}) (string, int) {

@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func getLeftoverDataInRowSize(AppDBConn *sql.DB, mCols map[string][]string, table string, pKey int) int64 {
+func getLeftoverDataInRowSize(AppDBConn *sql.DB, mCols map[string][]string, table string, pKey int, AppID string) int64 {
 	row := getLogicalRow(AppDBConn, table, pKey)
 
 	var keys []string
@@ -30,7 +30,7 @@ func getLeftoverDataInRowSize(AppDBConn *sql.DB, mCols map[string][]string, tabl
 		}
 	}
 
-	return calculateRowSize(AppDBConn, keys, table, pKey)
+	return calculateRowSize(AppDBConn, keys, table, pKey, AppID)
 }
 
 func getEntireRowInEvaluation(stencilDBConn *sql.DB, migrationID string) []map[string]interface{} {
@@ -57,13 +57,13 @@ func getLeftoverDataInRowsSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, 
 			continue
 		} else {
 			checkedRow[key] = true
-			leftoverDataInRowSize += getLeftoverDataInRowSize(AppDBConn, mCols, table, pKey)
+			leftoverDataInRowSize += getLeftoverDataInRowSize(AppDBConn, mCols, table, pKey, AppID)
 		}
 	}
 	return leftoverDataInRowSize
 }
 
-func getEntireUnmappedRowSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, migrationID string) int64 {
+func getEntireUnmappedRowSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, migrationID, AppID string) int64 {
 	conditions := "dst_table = 'n/a'"
 	data := getTableKeyInLogicalSchemaOfMigrationWithConditions(stencilDBConn, migrationID, "src", conditions)
 
@@ -80,14 +80,14 @@ func getEntireUnmappedRowSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, migratio
 			keys = append(keys, k)
 		}
 
-		entireUnmappedRowSize += calculateRowSize(AppDBConn, keys, table, pKey)
+		entireUnmappedRowSize += calculateRowSize(AppDBConn, keys, table, pKey, AppID)
 	}
 
 	return entireUnmappedRowSize
 }
 
 func GetLeftoverDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB, AppID, migrationID string) int64 {
-	entireUnmappedRowSize := getEntireUnmappedRowSize(stencilDBConn, AppDBConn, migrationID)
+	entireUnmappedRowSize := getEntireUnmappedRowSize(stencilDBConn, AppDBConn, migrationID, AppID)
 	// log.Println(entireUnmappedRowSize)
 	leftoverDataInRowSize := getLeftoverDataInRowsSize(stencilDBConn, AppDBConn, AppID, migrationID)
 	// log.Println(leftoverDataInRowSize)
