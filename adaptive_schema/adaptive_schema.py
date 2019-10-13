@@ -39,6 +39,15 @@ def createIndices():
                 # print idxsql
                 cur.execute(idxsql)
 
+def refreshMaterializedViews():
+
+    sql = "select schemaname as schema_name, matviewname as view_name from pg_matviews;"
+    cur.execute(sql)
+    for row in cur.fetchall():
+        sql = "REFRESH MATERIALIZED VIEW %s.%s WITH DATA;"%(row["schema_name"], row["view_name"])
+        # print sql
+        cur.execute(sql)
+
 def deletePhysicalTables():
     for table in getPhysicalTables():
         q = 'DROP TABLE "%s" CASCADE;'%table
@@ -47,8 +56,9 @@ def deletePhysicalTables():
 def truncatePhysicalTables():
     tables = ["supplementary_tables", "physical_schema", "physical_mappings"]
     for table in tables:
-        sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
-        cur.execute(sql)
+        if table not in ["migration_registration", "display_flags", "txn_logs", "evaluation"]:
+            sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
+            cur.execute(sql)
 
 def getAppNameById(app_id):
     sql = "SELECT app_name FROM apps WHERE pk = " + str(app_id)
@@ -326,11 +336,11 @@ def createSupplementaryTables():
         cur.execute(tsql)
 
 if __name__ == "__main__":
-    
+
     t = 0.5
 
     db, cur = getDBConn("stencil", True)
-
+    
     print "Reset Physical DB"
     truncatePhysicalTables()
     deletePhysicalTables()
@@ -363,3 +373,6 @@ if __name__ == "__main__":
 
     print "createIndices"    
     createIndices()
+
+    print "refreshMaterializedViews"
+    refreshMaterializedViews()
