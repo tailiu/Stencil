@@ -22,7 +22,7 @@ func getOneRowBasedOnDependency(appConfig *config.AppConfig, val int, dep string
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-		return nil, errors.New("Error: Cannot Find One Remaining Data in the Node")
+		return nil, app_display.CannotFindRemainingData
 	} else {
 		return data, nil
 	}
@@ -123,7 +123,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[stri
 	if len(procDependencies) == 0 {
 		return result, nil
 	} else {
-		return result, errors.New("Error: node is not complete")
+		return result, app_display.NodeIncomplete
 	}
 }
 
@@ -135,7 +135,7 @@ func getOneRowBasedOnHint(appConfig *config.AppConfig, hint app_display.HintStru
 	}
 
 	if len(data) == 0 {
-		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
+		return nil, app_display.DataNotExists
 	} else {
 		return data, nil
 	}

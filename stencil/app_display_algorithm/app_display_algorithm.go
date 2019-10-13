@@ -92,10 +92,10 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 						log.Fatal(err5)
 					}
 					if err4 != nil {
-						switch err4.Error() {
-						case "This Data Does not Depend on Any Data in the Parent Node":
+						switch err4 {
+						case app_display.NotDependsOnAnyData:
 							pTagConditions[pTag] = true
-						case "Fail To Get Any Data in the Parent Node":
+						case app_display.CannotFindAnyDataInParent:
 							pTagConditions[pTag] = app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
 						}
 					} else {

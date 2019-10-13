@@ -1,7 +1,6 @@
 package app_dependency_handler
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"stencil/config"
@@ -33,7 +32,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []app_display.HintS
 			}
 			if hintID == -1 {
 				// In this case, since data may be incomplete, we cannot get the data in the parent node
-				return app_display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
+				return app_display.HintStruct{}, app_display.CannotFindAnyDataInParent
 			} else {
 				from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
 					t1, seq1, t2, seq2, seq1, a1, seq2, a2)
@@ -64,7 +63,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []app_display.HintS
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-		return app_display.HintStruct{}, errors.New("Fail To Get Any Data in the Parent Node")
+		return app_display.HintStruct{}, app_display.CannotFindAnyDataInParent
 	} else {
 		return app_display.TransformRowToHint(appConfig, data, table), nil
 	}
@@ -103,7 +102,7 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hints []app_display.H
 		for _, hint := range hints {
 			if hint.Table == table {
 				if hint.Data[tableCol] == nil {
-					return false, errors.New("This Data Does not Depend on Any Data in the Parent Node")
+					return false, app_display.NotDependsOnAnyData
 				} else {
 					return true, nil
 				}
@@ -113,7 +112,7 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hints []app_display.H
 	}
 	// In this case, since data may be incomplete, we cannot find the existence of the data in a parent node
 	// This also implies that it cannot find any data in a parent node
-	return false, errors.New("Fail To Get Any Data in the Parent Node")
+	return false, app_display.CannotFindAnyDataInParent
 }
 
 // Note: this function may return multiple hints based on dependencies
