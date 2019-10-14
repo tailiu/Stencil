@@ -4,11 +4,11 @@ import (
 	"stencil/config"
 )
 
-func ReturnResultBasedOnNodeCompleteness(err error) (string, error) {
+func ReturnResultBasedOnNodeCompleteness(err error) error {
 	if err != nil {
-		return "Data In a Node Can be partially Displayed", err
+		return PartiallyDisplayed
 	} else {
-		return "Data In a Node Can be completely Displayed", nil
+		return CompletelyDisplayed
 	}
 }
 
