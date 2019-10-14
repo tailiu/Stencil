@@ -42,16 +42,16 @@ func DisplayThread(app string, migrationID int) {
 	log.Println("Time used: ", endTime.Sub(startTime))
 }
 
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConfig, oneMigratedData app_display.HintStruct, secondRound bool) error {
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData *app_display.HintStruct, secondRound bool) error {
 
-	log.Println("Check Data ", oneMigratedData)
-	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(&appConfig, oneMigratedData)
+	log.Println("Check Data ", *oneMigratedData)
+	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(appConfig, oneMigratedData)
 	if dataInNode == nil {
 		log.Println(err1)
 		return app_display.NoNodeCanBeDisplayed
 	} else {
 
-		var displayedData, notDisplayedData []app_display.HintStruct
+		var displayedData, notDisplayedData []*app_display.HintStruct
 		for _, oneDataInNode := range dataInNode {
 			displayed := app_display.CheckDisplay(stencilDBConn, appConfig, oneDataInNode)
 			if !displayed {
@@ -70,7 +70,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 			return app_display.ReturnResultBasedOnNodeCompleteness(err1)
 		}
 
-		pTags, err2 := oneMigratedData.GetParentTags(&appConfig)
+		pTags, err2 := oneMigratedData.GetParentTags(appConfig)
 		if err2 != nil {
 			log.Fatal(err2)
 		} else {
@@ -84,9 +84,9 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 			} else {
 				pTagConditions := make(map[string]bool)
 				for _, pTag := range pTags {
-					dataInParentNode, err4 := app_dependency_handler.GetdataFromParentNode(&appConfig, dataInNode, pTag)
+					dataInParentNode, err4 := app_dependency_handler.GetdataFromParentNode(appConfig, dataInNode, pTag)
 					log.Println(dataInParentNode, err4)
-					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(&appConfig, oneMigratedData, pTag)
+					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(appConfig, oneMigratedData, pTag)
 					if err5 != nil {
 						log.Fatal(err5)
 					}
@@ -120,7 +120,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig config.AppConf
 				// For now, without checking the combined_display_setting,
 				// this check app_display condition func will return true
 				// as long as one pTagCondition is true
-				if checkResult := app_display.CheckDisplayConditions(&appConfig, pTagConditions, oneMigratedData); checkResult {
+				if checkResult := app_display.CheckDisplayConditions(appConfig, pTagConditions, oneMigratedData); checkResult {
 					err8 := app_display.Display(stencilDBConn, appConfig, dataInNode)
 					if err8 != nil {
 						log.Fatal(err8)

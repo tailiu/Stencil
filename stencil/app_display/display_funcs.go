@@ -10,7 +10,7 @@ import (
 
 const StencilDBName = "stencil"
 
-func Initialize(app string) (*sql.DB, config.AppConfig) {
+func Initialize(app string) (*sql.DB, *config.AppConfig) {
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
@@ -20,17 +20,17 @@ func Initialize(app string) (*sql.DB, config.AppConfig) {
 		log.Fatal(err)
 	}
 
-	return stencilDBConn, appConfig
+	return stencilDBConn, &appConfig
 }
 
-func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig config.AppConfig, migrationID int) []HintStruct {
-	var displayHints []HintStruct
+func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int) []*HintStruct {
+	var displayHints []*HintStruct
 	query := fmt.Sprintf("SELECT table_id, id FROM display_flags WHERE app_id = %s and migration_id = %d and display_flag = true", appConfig.AppID, migrationID)
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	// fmt.Println(data)
 
 	for _, data1 := range data {
-		displayHints = append(displayHints, TransformDisplayFlagDataToHint(&appConfig, data1))
+		displayHints = append(displayHints, TransformDisplayFlagDataToHint(appConfig, data1))
 	}
 	// fmt.Println(displayHints)
 	return displayHints
@@ -46,7 +46,7 @@ func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 	}
 }
 
-func Display(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHints []HintStruct) error {
+func Display(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHints []*HintStruct) error {
 	var queries1 []string
 	var queries2 []string
 
@@ -74,7 +74,7 @@ func Display(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHints []Hint
 	}
 }
 
-func CheckDisplay(stencilDBConn *sql.DB, appConfig config.AppConfig, dataHint HintStruct) bool {
+func CheckDisplay(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHint *HintStruct) bool {
 	query := fmt.Sprintf("SELECT display_flag from %s where id = %d",
 		dataHint.Table, dataHint.KeyVal["id"])
 	

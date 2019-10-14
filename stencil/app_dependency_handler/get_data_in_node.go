@@ -28,8 +28,8 @@ func getOneRowBasedOnDependency(appConfig *config.AppConfig, val int, dep string
 	}
 }
 
-func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[string]string, members map[string]string, hint app_display.HintStruct) ([]app_display.HintStruct, error) {
-	var result []app_display.HintStruct
+func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[string]string, members map[string]string, hint *app_display.HintStruct) ([]*app_display.HintStruct, error) {
+	var result []*app_display.HintStruct
 
 	procDependencies := make(map[string][]string)
 	for _, dependency := range dependencies {
@@ -93,7 +93,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[stri
 					keyVal := map[string]int{
 						"id": intPK,
 					}
-					result = append(result, app_display.HintStruct{
+					result = append(result, &app_display.HintStruct{
 						Table: table1,
 						TableID: appConfig.TableNameIDPairs[table1],
 						KeyVal: keyVal,
@@ -127,8 +127,9 @@ func getRemainingDataInNode(appConfig *config.AppConfig, dependencies []map[stri
 	}
 }
 
-func getOneRowBasedOnHint(appConfig *config.AppConfig, hint app_display.HintStruct) (map[string]interface{}, error) {
+func getOneRowBasedOnHint(appConfig *config.AppConfig, hint *app_display.HintStruct) (map[string]interface{}, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %d", hint.Table, hint.KeyVal["id"])
+	log.Println(query)
 	data, err := db.DataCall1(appConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
@@ -141,7 +142,7 @@ func getOneRowBasedOnHint(appConfig *config.AppConfig, hint app_display.HintStru
 	}
 }
 
-func getDataInNode(appConfig *config.AppConfig, hint app_display.HintStruct) ([]app_display.HintStruct, error) {
+func getDataInNode(appConfig *config.AppConfig, hint *app_display.HintStruct) ([]*app_display.HintStruct, error) {
 
 	if hint.Data == nil {
 		data, err := getOneRowBasedOnHint(appConfig, hint)
@@ -156,7 +157,7 @@ func getDataInNode(appConfig *config.AppConfig, hint app_display.HintStruct) ([]
 		for _, member := range tag.Members {
 			if hint.Table == member {
 				if len(tag.Members) == 1 {
-					return []app_display.HintStruct{hint}, nil
+					return []*app_display.HintStruct{hint}, nil
 				} else {
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
@@ -170,7 +171,7 @@ func getDataInNode(appConfig *config.AppConfig, hint app_display.HintStruct) ([]
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func checkDependsOnExists(appConfig *config.AppConfig, allData []app_display.HintStruct, tagName string, data app_display.HintStruct) bool {
+func checkDependsOnExists(appConfig *config.AppConfig, allData []*app_display.HintStruct, tagName string, data *app_display.HintStruct) bool {
 	memberID, _ := data.GetMemberID(appConfig, tagName)
 	// fmt.Println(memberID)
 	dependsOnTables := appConfig.GetDependsOnTables(tagName, memberID)
@@ -198,8 +199,8 @@ func checkDependsOnExists(appConfig *config.AppConfig, allData []app_display.Hin
 	return true
 }
 
-func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []app_display.HintStruct, tagName string) []app_display.HintStruct {
-	var trimmedData []app_display.HintStruct
+func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []*app_display.HintStruct, tagName string) []*app_display.HintStruct {
+	var trimmedData []*app_display.HintStruct
 
 	for _, data := range allData {
 		if checkDependsOnExists(appConfig, allData, tagName, data) {
@@ -210,8 +211,8 @@ func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []app
 	return trimmedData
 }
 
-func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint app_display.HintStruct) ([]app_display.HintStruct, error) {
-	var data []app_display.HintStruct
+func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint *app_display.HintStruct) ([]*app_display.HintStruct, error) {
+	var data []*app_display.HintStruct
 
 	tagName, err := hint.GetTagName(appConfig)
 	if err != nil {

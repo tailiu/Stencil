@@ -84,12 +84,10 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 						Data:  data1,
 					})
 
-					rowID := display.GetRowIDsFromData(data1)
-					tableID := display.GetTableIDByTableName(stencilDBConn, table1, appConfig.AppID)
 					result = append(result, display.HintStruct{
 						TableName: table1,
-						TableID: tableID,
-						RowIDs: rowID,
+						TableID: appConfig.TableNameIDPairs[table1],
+						RowIDs: display.GetRowIDsFromData(data1),
 						Data: data1,
 					})
 
@@ -213,8 +211,6 @@ func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint displa
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println("Check Data ", hint)
 
 	displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
 	// Whether a node is complete or not, get all the data in a node.

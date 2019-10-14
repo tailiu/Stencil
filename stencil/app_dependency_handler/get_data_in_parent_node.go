@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func getHintsInParentNode(appConfig *config.AppConfig, hints []app_display.HintStruct, conditions []string) (app_display.HintStruct, error) {
+func getHintsInParentNode(appConfig *config.AppConfig, hints []*app_display.HintStruct, conditions []string) (*app_display.HintStruct, error) {
 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
 	from := ""
 	table := ""
@@ -32,7 +32,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []app_display.HintS
 			}
 			if hintID == -1 {
 				// In this case, since data may be incomplete, we cannot get the data in the parent node
-				return app_display.HintStruct{}, app_display.CannotFindAnyDataInParent
+				return nil, app_display.CannotFindAnyDataInParent
 			} else {
 				from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
 					t1, seq1, t2, seq2, seq1, a1, seq2, a2)
@@ -63,7 +63,7 @@ func getHintsInParentNode(appConfig *config.AppConfig, hints []app_display.HintS
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-		return app_display.HintStruct{}, app_display.CannotFindAnyDataInParent
+		return nil, app_display.CannotFindAnyDataInParent
 	} else {
 		return app_display.TransformRowToHint(appConfig, data, table), nil
 	}
@@ -89,7 +89,7 @@ func replaceKey(appConfig *config.AppConfig, tag string, key string) string {
 	return ""
 }
 
-func dataFromParentNodeExists(appConfig *config.AppConfig, hints []app_display.HintStruct, pTag string) (bool, error) {
+func dataFromParentNodeExists(appConfig *config.AppConfig, hints []*app_display.HintStruct, pTag string) (bool, error) {
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(appConfig, pTag)
 
 	// If display existence setting is not set, then we have to try to get data in the parent node in any case
@@ -116,11 +116,11 @@ func dataFromParentNodeExists(appConfig *config.AppConfig, hints []app_display.H
 }
 
 // Note: this function may return multiple hints based on dependencies
-func GetdataFromParentNode(appConfig *config.AppConfig, hints []app_display.HintStruct, pTag string) (app_display.HintStruct, error) {
+func GetdataFromParentNode(appConfig *config.AppConfig, hints []*app_display.HintStruct, pTag string) (*app_display.HintStruct, error) {
 
 	// Before getting data from a parent node, we check the existence of the data based on the cols of a child node
 	if exists, err := dataFromParentNodeExists(appConfig, hints, pTag); !exists {
-		return app_display.HintStruct{}, err
+		return nil, err
 	}
 
 	tag, _ := hints[0].GetTagName(appConfig)

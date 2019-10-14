@@ -11,7 +11,6 @@ import (
 	"errors"
 	"math/rand"
 	"math"
-	"strings"
 )
 
 const StencilDBName = "stencil"
@@ -67,22 +66,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
 	// We use table_name to optimize performance
 	for _, data1 := range data {
-		var rowIDs []int
-		s := data1["row_ids"][1:len(data1["row_ids"]) - 1]
-		s1 := strings.Split(s, ",")
-		for _, strRowID := range s1 {
-			rowID, err1 := strconv.Atoi(strRowID)
-			if err1 != nil {
-				log.Fatal(err1)
-			} 
-			rowIDs = append(rowIDs, rowID)
-		}
-
-		hint := HintStruct{}
-		// hint.Table = GetTableNameByTableID(stencilDBConn, data1["table_id"])
-		hint.TableID = data1["table_id"]
-		hint.RowIDs = rowIDs
-		displayHints = append(displayHints, hint)
+		displayHints = append(displayHints, TransformRowToHint(appConfig, data1))
 	}
 	// log.Println(displayHints)
 	return displayHints

@@ -199,6 +199,10 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int, 
 		log.Fatal(err2)
 	}
 	// log.Println(row["cols_size"].(int64))
+	// if table == "photos" {
+	// 	fmt.Print(fmt.Sprint(pKey) + ":" + fmt.Sprint(calculateFileSize(AppDBConn, table, pKey, AppID)) + ",")
+	// }
+	
 	return row["cols_size"].(int64) + calculateFileSize(AppDBConn, table, pKey, AppID)
 }
 
