@@ -81,7 +81,7 @@ func Sublist(first, second []string) bool {
 			fmt.Println("value not found", value)
 			fmt.Println("1:", first)
 			fmt.Println("2:", second)
-			log.Fatal("check")
+			log.Fatal("check: stencil.helper.Sublist()")
 			return false
 		}
 	}

@@ -23,8 +23,7 @@
        {
           "name":"post",
           "members":{
-             "member1":"posts",
-             "member2":"photos"
+             "member1":"posts"
           },
           "keys":{
              "id":"member1.id",
@@ -33,11 +32,6 @@
              "root_guid":"member1.root_guid",
              "type":"member1.type"
           },
-          "inner_dependencies":[
-            {
-              "member1.guid":"member2.status_message_guid"
-            }
-          ],
           "restrictions":[
              {
                 "col":"type",
@@ -45,6 +39,17 @@
              }
           ]
        },
+       {
+         "name":"photo",
+         "members":{
+            "member1":"photos"
+         },
+         "keys":{
+            "id":"member1.id",
+            "post_guid":"member1.status_message_guid",
+            "author_id":"member1.author_id"
+         }
+      },
        {
           "name":"aspect",
           "members":{
@@ -204,6 +209,20 @@
              }
           ]
        },
+       {
+         "tag":"photo",
+         "depends_on":[
+            {
+               "tag":"post",
+               "conditions":[
+                  {
+                     "tag_attr":"post_guid",
+                     "depends_on_attr":"guid"
+                  }
+               ]
+            }
+         ]
+      },
        {
           "tag":"aspect",
           "depends_on":[
@@ -384,6 +403,16 @@
              }
           ]
        },
+       {
+         "tag":"photo",
+         "owned_by":"root",
+         "conditions":[
+            {
+               "tag_attr":"author_id",
+               "depends_on_attr":"person_id"
+            }
+         ]
+      },
        {
           "tag":"notification",
           "owned_by":"root",

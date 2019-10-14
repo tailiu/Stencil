@@ -639,7 +639,7 @@
                             ]
                         },
                         {
-                            "fromTables": ["posts", "photos"],
+                            "fromTables": ["posts"],
                             "toTables": [
                                 {
                                     "table": "statuses",
@@ -655,7 +655,6 @@
                                         "visibility": "$visibility0",
                                         "reply": "$reply1",
                                         "conversation_id": "#ASSIGN(posts.id)"
-
                                     }
                                 },
                                 { 
@@ -683,11 +682,15 @@
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at"
                                     }
-                                },
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["photos"],
+                            "toTables": [
                                 {
                                     "table": "media_attachments",
                                     "conditions":{
-                                        "posts.type": "StatusMessage"
                                     },
                                     "media": {
                                         "path": "photos.remote_photo_path"
@@ -695,7 +698,7 @@
                                     "mapping": {
                                         "id": "photos.id",
                                         "account_id": "photos.author_id",
-                                        "status_id": "#ASSIGN(posts.id)",
+                                        "status_id": "#FETCH(posts.id,posts.guid,photos.status_message_guid)",
                                         "description":"photos.text",
                                         "updated_at":"photos.updated_at",
                                         "created_at":"photos.created_at",

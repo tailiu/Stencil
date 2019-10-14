@@ -434,7 +434,7 @@ func (self *LMigrationWorker) CheckMappingConditions(toTable config.ToTable, nod
 				log.Println("Condition Key", conditionKey, "doesn't exist!")
 				fmt.Println("node data:", node.Data)
 				fmt.Println("node sql:", node.SQL)
-				log.Fatal("stop here and check")
+				log.Fatal("@CheckMappingConditions: stop here and check")
 			}
 		}
 	}
@@ -502,19 +502,37 @@ func (self *LMigrationWorker) GetMappedData(toTable config.ToTable, node *Depend
 				orgCols += fmt.Sprintf("%s,", fromAttr)
 			}
 		} else if strings.Contains(fromAttr, "#") {
-			assignedTabCol := strings.Trim(fromAttr, "#ASSIGN()")
+			assignedTabCol := strings.Trim(fromAttr, "#ASSIGN#FETCH()")
 			if strings.Contains(fromAttr, "#ASSIGN"){
-				// fmt.Println(fromAttr)
 				if nodeVal, ok := node.Data[assignedTabCol]; ok {
-					// fmt.Println("found attr: ", assignedTabCol, " ", nodeVal)
 					ivals = append(ivals, nodeVal)
 					vals += fmt.Sprintf("$%d,", len(ivals))
 					cols += fmt.Sprintf("%s,", toAttr)
 					orgCols += fmt.Sprintf("%s,", assignedTabCol)
 				}
-				// fmt.Println("IN: ", strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft, undoAction)
-				// log.Fatal("found attr: ", assignedTabCol)
-			}else{
+			} else if strings.Contains(fromAttr, "#FETCH") {
+				// #FETCH(targetSrcTable.targetSrcCol, targetSrcTable.srcColToCompare, currentSrcTable.currentSrcColForComparison)
+				args := strings.Split(assignedTabCol, ",")
+				// fmt.Println("ARGS:", args)
+				if nodeVal, ok := node.Data[args[2]]; ok {
+					targetTabCol := strings.Split(args[0], ".")
+					comparisonTabCol := strings.Split(args[1], ".")
+					if res, err := db.FetchForMapping(self.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
+						fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
+						log.Fatal("@GetMappedData: FetchForMapping | ", err)
+					} else {
+						ivals = append(ivals, res[targetTabCol[1]])
+						vals += fmt.Sprintf("$%d,", len(ivals))
+						cols += fmt.Sprintf("%s,", toAttr)
+						orgCols += fmt.Sprintf("%s,", assignedTabCol)
+					}
+				} else {
+					fmt.Println(node.Tag.Name, node.Data)
+					log.Fatal("@GetMappedData: unable to fetch ", args[2])
+				}
+				// fmt.Println(strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft)
+				// log.Fatal("check")
+			} else{
 				switch fromAttr {
 					case "#GUID": {
 						ivals = append(ivals, uuid.New())

@@ -183,6 +183,11 @@ func DeleteBagsByRowIDS(dbConn *sql.DB, rowids string) error {
 	return err
 }
 
+func FetchForMapping(dbConn *sql.DB, targetTable, targetCol, conditionCol, conditionVal string) (map[string]interface{}, error) {
+	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", targetCol, targetTable, conditionCol)
+	return DataCall1(dbConn, q, conditionVal)
+}
+
 func SetAppID(tx *sql.Tx, pk, app_id string) error {
 	log.Fatal("Arrived at db.SetAppID. Check why!")
 	q := "UPDATE row_desc SET app_id = $1 WHERE rowid = $2"
