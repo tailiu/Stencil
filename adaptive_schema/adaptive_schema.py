@@ -56,9 +56,9 @@ def deletePhysicalTables():
 def truncatePhysicalTables():
     tables = ["supplementary_tables", "physical_schema", "physical_mappings"]
     for table in tables:
-        if table not in ["migration_registration", "display_flags", "txn_logs", "evaluation"]:
-            sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
-            cur.execute(sql)
+        # if table not in ["migration_registration", "display_flags", "txn_logs", "evaluation"]:
+        sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table
+        cur.execute(sql)
 
 def getAppNameById(app_id):
     sql = "SELECT app_name FROM apps WHERE pk = " + str(app_id)
@@ -221,7 +221,7 @@ def bendTheKnee(values):
         sd = [values[i+1] + values[i-1] - 2 * values[i] for i in range(1, len(values)-1)]
         return sd.index([max(sd)])
     except ValueError as e:
-        print "Got:", e, "| Returning: 1"
+        print "Exception:", e, "| Returning: 1"
         return 1
 
 def getNumberOfK(node_vector):

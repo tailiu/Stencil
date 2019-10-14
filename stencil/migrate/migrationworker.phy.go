@@ -440,7 +440,27 @@ func (self *MigrationWorker) CreateMissingData(toTable config.ToTable, node *Dep
 				if nodeVal, ok := node.Data[assignedTabCol]; ok {
 					newRows[toCol] = fmt.Sprint(nodeVal)
 				}
-			}else{
+			} else if strings.Contains(mappedTabCol, "#FETCH") {
+				assignedTabCol := strings.Trim(mappedTabCol, "#FETCH()")
+				args := strings.Split(assignedTabCol, ",")
+				if nodeVal, ok := node.Data[args[2]]; ok {
+					targetTabCol := strings.Split(args[0], ".")
+					comparisonTabCol := strings.Split(args[1], ".")
+					if res, err := db.FetchForMapping(self.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
+						fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
+						log.Fatal("@GetMappedData: FetchForMapping | ", err)
+					} else {
+						newRows[toCol] = fmt.Sprint(res[targetTabCol[1]])
+					}
+				} else {
+					fmt.Println(node.Tag.Name, node.Data)
+					log.Fatal("@GetMappedData: unable to fetch ", args[2])
+				}
+				fmt.Println(args)
+				fmt.Println(newRows[toCol])
+				fmt.Println(newRows)
+				log.Fatal("check")
+			} else {
 				switch mappedTabCol {
 					case "#GUID": {
 						newRows[toCol] = fmt.Sprint(uuid.New())

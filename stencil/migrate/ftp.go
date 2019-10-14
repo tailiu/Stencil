@@ -21,5 +21,6 @@ func GetFTPClient() *ftp.ServerConn {
 		log.Println("FTP Login Authentication Error: ", err)
 		panic(err)
 	}
+	log.Println("FTP Connection Established!")
 	return client
 }
