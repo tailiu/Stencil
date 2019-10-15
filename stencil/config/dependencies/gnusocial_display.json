@@ -42,6 +42,7 @@
                 "member2": "file_to_post"
             },
             "keys": {
+                "profile_id": "member1.profile_id",
                 "post_id": "member2.post_id"
             },
             "inner_dependencies" : [
@@ -184,6 +185,16 @@
     "ownership":[
         {
             "tag":"notice",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"profile_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "name": "file",
             "owned_by":"root",
             "conditions": [
                 {

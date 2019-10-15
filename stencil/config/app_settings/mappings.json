@@ -523,7 +523,8 @@
                                         "size": "media_attachments.file_file_size",
                                         "date": "media_attachments.created_at",
                                         "filename": "media_attachments.file_file_name",
-                                        "modified": "media_attachments.updated_at"
+                                        "modified": "media_attachments.updated_at",
+                                        "profile_id": "media_attachments.account_id"
                                     }
                                 },
                                 {
@@ -1106,8 +1107,8 @@
                                         "date": "photos.created_at",
                                         "modified": "photos.updated_at",
                                         "width": "photos.width",
-                                        "height": "photos.height"
-                                        
+                                        "height": "photos.height",
+                                        "profile_id": "photos.author_id"
                                     }
                                 },
                                 {
@@ -1742,7 +1743,8 @@
                                         "created_at": "file.date",
                                         "updated_at": "file.modified",
                                         "file_file_name": "file.filename",
-                                        "status_id": "file_to_post.post_id"
+                                        "status_id": "file_to_post.post_id",
+                                        "account_id": "file.profile_id"
                                     }
                                 }
                             ]
@@ -1998,7 +2000,8 @@
                                         "updated_at": "file.modified",
                                         "width": "file.width",
                                         "height": "file.height",
-                                        "guid": "file_to_post.post_id"
+                                        "guid": "file_to_post.post_id",
+                                        "author_id": "file.profile_id"
                                     }
                                 }
                             ]
