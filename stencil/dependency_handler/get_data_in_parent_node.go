@@ -64,7 +64,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, hi
 	// log.Println(data)
 	// log.Println("...........")
 
-	return display.TransformDataToHint(data), nil
+	return display.TransformRowToHint1(appConfig, data), nil
 }
 
 func replaceKey(appConfig *config.AppConfig, tag string, key string) string {

@@ -5,7 +5,7 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
-	// "strconv"
+	"strconv"
 	"strings"
 	"database/sql"
 	"fmt"
@@ -18,8 +18,27 @@ type HintStruct struct {
 	Data		map[string]interface{}
 }
 
+func TransformRowToHint(appConfig *config.AppConfig, data map[string]string) HintStruct {
+	var rowIDs []int
+	s := data["row_ids"][1:len(data["row_ids"]) - 1]
+	s1 := strings.Split(s, ",")
+	for _, strRowID := range s1 {
+		rowID, err1 := strconv.Atoi(strRowID)
+		if err1 != nil {
+			log.Fatal(err1)
+		} 
+		rowIDs = append(rowIDs, rowID)
+	}
+
+	hint := HintStruct{}
+	hint.TableID = data["table_id"]
+	hint.TableName = appConfig.TableIDNamePairs[data["table_id"]]
+	hint.RowIDs = rowIDs
+	return hint
+}
+
 // NOTE: We assume that primary key is only one integer value!!!
-func TransformDataToHint(data map[string]interface{}) HintStruct {
+func TransformRowToHint1(appConfig *config.AppConfig, data map[string]interface{}) HintStruct {
 	hint := HintStruct{}
 	hint.Data = data
 	hint.RowIDs = GetRowIDsFromData(data)
@@ -29,6 +48,7 @@ func TransformDataToHint(data map[string]interface{}) HintStruct {
 			break
 		}
 	}
+	hint.TableID = appConfig.TableNameIDPairs[hint.TableName]
 	return hint
 }
 

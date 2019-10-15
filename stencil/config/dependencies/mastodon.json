@@ -26,7 +26,6 @@
                 "member1":"statuses",
                 "member2":"status_stats",
                 "member3":"mentions",
-                "member4":"media_attachments",
                 "member5":"stream_entries",
                 "member6":"conversations"
             },
@@ -45,15 +44,22 @@
                     "member1.id":"member3.status_id"
                 },
                 {
-                    "member1.id":"member4.status_id"
-                },
-                {
                     "member1.id":"member5.activity_id"
                 },
                 {
                     "member1.conversation_id":"member6.id"
                 }
             ]
+        },
+        {
+            "name": "media_attachments",
+            "members": {
+                "member1":"media_attachments"
+            },
+            "keys":{
+                "status_id": "member1.status_id",
+                "account_id":"member1.account_id"
+            }
         },
         {
             "name" : "follows",
@@ -129,6 +135,20 @@
             ]
         },
         {
+            "tag": "media_attachments",
+            "depends_on": [
+                {
+                    "tag": "statuses",
+                    "conditions": [
+                        {   
+                            "tag_attr": "status_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "tag": "follows",
             "depends_on": [
                 {
@@ -178,6 +198,16 @@
             "conditions": [
                 {
                     "tag_attr":"account",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag": "media_attachments",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account_id",
                     "depends_on_attr":"id"
                 }
             ]

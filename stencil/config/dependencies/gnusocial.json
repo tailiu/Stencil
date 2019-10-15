@@ -20,9 +20,7 @@
             "name": "notice",
             "members": {
                 "member1": "notice",
-                "member2": "conversation",
-                "member3": "file",
-                "member4": "file_to_post"
+                "member2": "conversation"
             },
             "keys": {
                 "id": "member1.id",
@@ -32,9 +30,23 @@
             },
             "inner_dependencies" : [
                 {
-                    "member1.conversation": "member2.id",
-                    "member1.id": "member4.post_id",
-                    "member3.id": "member4.file_id"
+                    "member1.conversation": "member2.id"
+                }
+            ]
+        },
+        {
+            "name": "file",
+            "members": {
+                "member1": "file",
+                "member2": "file_to_post"
+            },
+            "keys": {
+                "profile_id": "member1.profile_id",
+                "post_id": "member2.post_id"
+            },
+            "inner_dependencies" : [
+                {
+                    "member1.id": "member2.file_id"
                 }
             ]
         },
@@ -113,6 +125,20 @@
             ]
         },
         {
+            "tag": "file",
+            "depends_on": [
+                {
+                    "tag":"notice",
+                    "conditions": [
+                        {   
+                            "tag_attr": "post_id",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "tag": "fave",
             "depends_on": [
                 {
@@ -158,6 +184,16 @@
     "ownership":[
         {
             "tag":"notice",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"profile_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "name": "file",
             "owned_by":"root",
             "conditions": [
                 {
