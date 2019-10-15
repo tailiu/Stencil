@@ -179,7 +179,7 @@
                                     "mapping":{    
                                         "id": "media_attachments.id",
                                         "author_id": "media_attachments.account_id",
-                                        "status_message_guid": "#FETCH(statuses.id,statuses.id,media_attachments.status_id)",
+                                        "status_message_guid": "#ASSIGN(media_attachments.status_id)",
                                         "text":"media_attachments.description",
                                         "updated_at":"media_attachments.updated_at",
                                         "created_at":"media_attachments.created_at",
@@ -325,7 +325,7 @@
                             ]   
                         },
                         {
-                            "fromTables": ["statuses", "media_attachments"],
+                            "fromTables": ["statuses"],
                             "toTables": [
                                 {
                                     "table": "tweets",
@@ -333,17 +333,13 @@
                                             "statuses.visibility": "0",
                                             "statuses.reblog_of_id": "#NULL"
                                     },
-                                    "media": {
-                                        "path": "media_attachments.remote_url"
-                                    },
                                     "mapping": {
                                         "id":"statuses.id",
                                         "user_id":"statuses.account_id",
                                         "content":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "reply_to_id": "statuses.in_reply_to_id",
-                                        "tweet_media": "media_attachments.remote_url"
+                                        "reply_to_id": "statuses.in_reply_to_id"
                                     }
                                 },
                                 {
@@ -365,17 +361,13 @@
                                     "conditions": {
                                             "statuses.visibility": "3"
                                     },
-                                    "media": {
-                                        "path": "media_attachments.remote_url"
-                                    },
                                     "mapping":{    
                                         "id":"statuses.id",
                                         "user_id":"statuses.account_id",
                                         "conversation_id":"statuses.conversation_id",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "content": "statuses.text",
-                                        "message_media": "media_attachments.remote_url"
+                                        "content": "statuses.text"
                                     }
                                 }
                             ]
@@ -899,23 +891,19 @@
                             ]
                         },
                         {
-                            "fromTables": ["posts", "photos"],
+                            "fromTables": ["posts"],
                             "toTables": [
                                 {
                                     "table": "tweets",
                                     "conditions":{
                                         "posts.type": "StatusMessage"
                                     },
-                                    "media": {
-                                        "path": "photos.remote_photo_path"
-                                    },
                                     "mapping": {
                                         "id":"posts.id",
                                         "user_id": "posts.author_id",
                                         "content":"posts.text",
                                         "created_at":"posts.created_at",
-                                        "updated_at":"posts.updated_at",
-                                        "tweet_media":"photos.remote_photo_path"
+                                        "updated_at":"posts.updated_at"
                                     }
                                 }
                             ]
@@ -1251,23 +1239,6 @@
                                         "in_reply_to_id":"tweets.reply_to_id",
                                         "account_id":"tweets.user_id"
                                     }
-                                },
-                                {
-                                    "table": "media_attachments",
-                                    "conditions": {
-                                        "tweets.tweet_media": "#NOTNULL"
-                                    },
-                                    "media": {
-                                        "path": "tweets.tweet_media"
-                                    },
-                                    "mapping" : {
-                                        "id": "#RANDINT",
-                                        "remote_url": "tweets.tweet_media",
-                                        "status_id": "tweets.id",
-                                        "created_at": "tweets.created_at",
-                                        "updated_at": "tweets.updated_at",
-                                        "account_id": "tweets.user_id"
-                                    }
                                 }
                             ]
                         },
@@ -1314,23 +1285,6 @@
                                         "text":"messages.content",
                                         "account_id":"messages.user_id",
                                         "conversation_id":"messages.conversation_id"
-                                    }
-                                },
-                                {
-                                    "table": "media_attachments",
-                                    "conditions": {
-                                        "messages.message_media": "#NOTNULL"
-                                    },
-                                    "media": {
-                                        "path": "messages.message_media"
-                                    },
-                                    "mapping" : {
-                                        "id": "#RANDINT",
-                                        "remote_url": "messages.message_media",
-                                        "status_id": "messages.id",
-                                        "created_at": "messages.created_at",
-                                        "updated_at": "messages.updated_at",
-                                        "account_id": "messages.user_id"
                                     }
                                 }
                             ]
@@ -1430,23 +1384,6 @@
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
                                         "type":"$post_type_status"
-                                    }
-                                },
-                                {
-                                    "table": "photos",
-                                    "conditions": {
-                                        "tweets.reply_to_id" : "#NULL"
-                                    },
-                                    "media": {
-                                        "path": "tweets.tweet_media"
-                                    },
-                                    "mapping":{    
-                                        "id": "#RANDINT",
-                                        "author_id": "tweets.user_id",
-                                        "status_message_guid": "#ASSIGN(tweets.id)",
-                                        "updated_at":"tweets.updated_at",
-                                        "created_at":"tweets.created_at",
-                                        "remote_photo_path":"tweets.tweet_media"
                                     }
                                 }
                             ]
@@ -1642,27 +1579,6 @@
                                         "created": "tweets.created_at",
                                         "modified":"tweets.updated_at",
                                         "reply_to":"tweets.reply_to_id"
-                                    }
-                                },
-                                {
-                                    "table": "file",
-                                    "conditions": {},
-                                    "media": {
-                                        "path": "tweets.tweet_media"
-                                    },
-                                    "mapping": {
-                                        "id": "#ASSIGN(tweets.id)",
-                                        "url": "tweets.tweet_media",
-                                        "mimetype": "tweets.media_type"
-                                    }
-                                },
-                                {
-                                    "table": "file_to_post",
-                                    "conditions": {},
-                                    "mapping": {
-                                        "file_id": "#ASSIGN(tweets.id)",
-                                        "post_id": "tweets.id",
-                                        "modified": "tweets.updated_at"
                                     }
                                 }
                             ]
@@ -1914,15 +1830,12 @@
                             ]
                         },
                         {
-                            "fromTables": ["notice", "file"],
+                            "fromTables": ["notice"],
                             "toTables": [
                                 {
                                     "table": "tweets",
                                     "conditions":{
                                         "notice.repeat_of": "#NULL"
-                                    },
-                                    "media": {
-                                        "path": "file.url"
                                     },
                                     "mapping": {
                                         "id": "notice.id",
@@ -1930,9 +1843,7 @@
                                         "user_id": "notice.profile_id",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
-                                        "reply_to_id":"notice.reply_to",
-                                        "tweet_media": "file.url",
-                                        "media_type": "file.mimetype"
+                                        "reply_to_id":"notice.reply_to"
                                     }
                                 },
                                 {
