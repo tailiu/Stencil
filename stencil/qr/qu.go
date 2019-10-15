@@ -20,13 +20,14 @@ func (self *QU) SetTable(table string) {
 	self.Tables[table] = true
 }
 
-func (self *QU) SetUpdate(col, val string) {
+func (self *QU) SetUpdate(col, val string) (string, string) {
 	ptab, pcol := self.QR.GetPhyTabCol(col)
 	if _, ok := self.Update[ptab]; ok {
 		self.Update[ptab] = fmt.Sprintf(" AND %s = '%s'", pcol, val)
 	} else {
 		self.Update[ptab] = fmt.Sprintf("%s = '%s' ", pcol, val)
 	}
+	return ptab, pcol
 }
 
 func (self *QU) SetUpdate_(col, val string) {
@@ -132,3 +133,20 @@ func (self *QU) GenSQL() []string {
 	}
 	return sqls
 }
+
+func (self *QU) GenSQLWithPK(pk string) []string {
+	var sqls []string
+	for table, update := range self.Update {
+		sql := fmt.Sprintf("UPDATE %s SET %s WHERE pk IN (%s)", table, update, pk)
+		sqls = append(sqls, sql)
+	}
+	return sqls
+}
+
+func (self *QU) Reset() {
+	self.Update = make(map[string]string)
+	self.Where = make(map[string]string)	
+	self.affected_tables = nil
+	self.affected_rows   = nil
+}
+

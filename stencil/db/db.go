@@ -303,6 +303,18 @@ func TableID(dbConn *sql.DB, table, app string) (string, error) {
 	}
 }
 
+func CheckPhyRowExists(ptab, rowid string, dbConn *sql.DB) bool {
+	sql := fmt.Sprintf("SELECT * FROM %s WHERE pk = $1", ptab)
+	if res, err := DataCall1(dbConn, sql, rowid); err == nil {
+		if len(res) > 0 {
+			return true
+		}
+	} else {
+		log.Fatal(err)
+	}
+	return false
+}
+
 func RemoveUserFromApp(uid, app_id string, dbConn *sql.DB) bool {
 	sql := "DELETE FROM user_table WHERE user_id = $1 AND app_id = $2"
 	if err := Delete(dbConn, sql, uid, app_id); err == nil {

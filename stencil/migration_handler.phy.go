@@ -64,6 +64,7 @@ func main() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
+				return
 				display_algorithm.DisplayThread(dstApp, logTxn.Txn_id, false)
 			}()
 		}

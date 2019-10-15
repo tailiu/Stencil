@@ -231,7 +231,7 @@ func (self *MigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*De
 	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
 			log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
-			if strings.Contains(dep.Tag, "notification"){continue}
+			// if !strings.Contains(dep.Tag, "post"){continue}
 			qs := self.SrcAppConfig.GetTagQS(child, map[string]string{"mflag":self.arg})
 			self.ResolveDependencyConditions(node, dep, child, qs)
 			qs.ExcludeRowIDs(strings.Join(self.VisitedPKs(dep.Tag), ","))
@@ -306,7 +306,7 @@ func (self *MigrationWorker) GetOwnedNodes(threadID, limit int) ([]*DependencyNo
 			log.Println(fmt.Sprintf("x%dx | UNMAPPED  tag  { %s } ", threadID, own.Tag))
 			continue
 		}
-		if strings.Contains(own.Tag, "notification"){continue}
+		// if !strings.Contains(own.Tag, "post"){continue}
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
 			qs := self.SrcAppConfig.GetTagQS(child, map[string]string{"mflag":self.arg})
 			self.ResolveOwnershipConditions(own, child, qs)
@@ -456,10 +456,10 @@ func (self *MigrationWorker) CreateMissingData(toTable config.ToTable, node *Dep
 					fmt.Println(node.Tag.Name, node.Data)
 					log.Fatal("@GetMappedData: unable to fetch ", args[2])
 				}
-				fmt.Println(args)
-				fmt.Println(newRows[toCol])
-				fmt.Println(newRows)
-				log.Fatal("check")
+				// fmt.Println(args)
+				// fmt.Println(newRows[toCol])
+				// fmt.Println(newRows)
+				// log.Fatal("check")
 			} else {
 				switch mappedTabCol {
 					case "#GUID": {
@@ -479,6 +479,41 @@ func (self *MigrationWorker) CreateMissingData(toTable config.ToTable, node *Dep
 	return newRows
 }
 
+func (self *MigrationWorker) UpdateMissingData(tx *sql.Tx, appTable, rowid string, data map[string]string) (map[string]string, error) {
+	
+	qu := qr.CreateQU(self.DstAppConfig.QR)
+	qu.SetTable(appTable)
+
+	for col, val := range data {
+		qu.SetUpdate(fmt.Sprintf("%s.%s", appTable, col), val)
+		// fmt.Println("qu.Update => ", qu.Update)
+		for ptab, update := range qu.Update {
+			if db.CheckPhyRowExists(ptab, rowid, self.DBConn) {
+				query := fmt.Sprintf("UPDATE %s SET %s WHERE pk IN (%s)", ptab, update, rowid)
+				fmt.Println("qu.Update => ", qu.Update)
+				fmt.Println(query)
+				if _, err := tx.Exec(query); err != nil {
+					fmt.Println("@UpdateMissingData: Some error:", err)
+					fmt.Println(query)
+					fmt.Println(qu)
+					log.Fatal(err)
+					return data, err
+				}
+				delete(data, col);
+				fmt.Println(col, data)
+				log.Fatal("check update case")
+			} else {
+				// fmt.Println("@UpdateMissingData: Row doesn't exist ", rowid, ptab)
+			}
+		}
+		qu.Reset()
+	}
+
+	// fmt.Println("UpdateMissingData")
+	// fmt.Scanln()
+	return data, nil
+}
+
 func (self *MigrationWorker) InsertMissingData(tx *sql.Tx, table, rowid string, data map[string]string) error {
 	var cols []string
 	var vals []interface{}
@@ -492,7 +527,7 @@ func (self *MigrationWorker) InsertMissingData(tx *sql.Tx, table, rowid string, 
 			query, args := qi.GenSQL()
 			// fmt.Println(query, args)
 			if _, err := tx.Exec(query, args...); err != nil {
-				fmt.Println("Some error:", err)
+				fmt.Println("@InsertMissingData: Some error:", err)
 				fmt.Println(query, args)
 				fmt.Println(qi)
 				// log.Fatal(err)
@@ -691,8 +726,14 @@ func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping confi
 				}
 			}
 			if newRow := self.CreateMissingData(toTable, node); len(dst_rowid) > 0 && len(newRow) > 0 {
-				if err := self.InsertMissingData(tx, toTable.Table, dst_rowid, newRow); err == nil {
-					log.Println(fmt.Sprintf("~%d~ | Current   Node: { %s } Created New Data in table: %s with pk: %s | ", 0, node.Tag.Name, toTable.Table, dst_rowid), newRow)
+				if newRows, err := self.UpdateMissingData(tx, toTable.Table, dst_rowid, newRow); err == nil {
+					if len(newRows) > 0 {
+						if err := self.InsertMissingData(tx, toTable.Table, dst_rowid, newRow); err == nil {
+							log.Println(fmt.Sprintf("~%d~ | Current   Node: { %s } Created New Data in table: %s with pk: %s | ", 0, node.Tag.Name, toTable.Table, dst_rowid), newRow)
+						} else {
+							return updatedPKs, err
+						}
+					}
 				} else {
 					return updatedPKs, err
 				}
