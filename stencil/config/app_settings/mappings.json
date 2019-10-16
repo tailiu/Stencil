@@ -721,7 +721,7 @@
                                         "updated_at":"comments.updated_at",
                                         "visibility": "$visibility0",
                                         "reply": "$reply2",
-                                        "in_reply_to_id":"comments.commentable_id"
+                                        "in_reply_to_id":"#CONJUGATE(comments.commentable_id,posts.id)"
                                     }
                                 },
                                 {

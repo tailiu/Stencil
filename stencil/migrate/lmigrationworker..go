@@ -353,7 +353,7 @@ func (self *LMigrationWorker) GetOwnedNodes(threadID, nodelimit int) ([]*Depende
 	return nil, nil
 }
 
-func (self *LMigrationWorker) PushData(dtable config.ToTable, pk, orgCols, cols string, undoAction *transaction.UndoAction, node *DependencyNode) error {
+func (self *LMigrationWorker) PushData(tx *sql.Tx, dtable config.ToTable, pk, orgCols, cols string, undoAction *transaction.UndoAction, node *DependencyNode) error {
 
 	undoActionSerialized, _ := json.Marshal(undoAction)
 	transaction.LogChange(string(undoActionSerialized), self.logTxn)
@@ -365,12 +365,20 @@ func (self *LMigrationWorker) PushData(dtable config.ToTable, pk, orgCols, cols 
 	for _, fromTable := range undoAction.OrgTables {
 		if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
 			srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
-			if serr := db.SaveForLEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
-				log.Fatal(serr)
-				return errors.New("0")
+			if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
+				if err := db.InsertIntoIdentityTable(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, ); err == nil {
+
+				}
+				if serr := db.SaveForLEvaluation(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
+					log.Println("@SaveForLEvaluation:db.SaveForLEvaluation: ", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id))
+					log.Fatal(serr)
+					return errors.New("0")
+				}
+			} else {
+				log.Println("@SaveForLEvaluation:db.TableID: ", fromTable, self.SrcAppConfig.AppID)
+				log.Fatal(err)
 			}
 		}
-
 	}
 	return nil
 }
@@ -623,6 +631,13 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 	}
 	defer dsttx.Rollback()
 
+	stenciltx, err := self.logTxn.DBconn.Begin()
+	if err != nil {
+		log.Println("Can't create stenciltx transaction!")
+		return errors.New("0")
+	}
+	defer dsttx.Rollback()
+
 	for _, toTable := range toTables {
 		if self.CheckMappingConditions(toTable, node) {
 			continue
@@ -634,7 +649,7 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 			// 	log.Fatal("--------------")
 			// }
 			if id, err := db.InsertRowIntoAppDB(dsttx, toTable.Table, cols, placeholders, ivals...); err == nil {
-				if err := self.PushData(toTable, fmt.Sprint(id), orgCols, cols, undoAction, node); err != nil {
+				if err := self.PushData(stenciltx, toTable, fmt.Sprint(id), orgCols, cols, undoAction, node); err != nil {
 					fmt.Println("@ERROR_PushData")
 					fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), orgCols, cols, undoAction, node)
 					log.Fatal(err)
@@ -652,20 +667,21 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 					}
 				}
 			} else {
-				if !strings.Contains(err.Error(), "duplicate key value") {
-					fmt.Println("@ERROR_Insert")
-					fmt.Println("@QARGS:", toTable.Table, cols, placeholders, ivals)
-					log.Fatal(err)
-					return err
-				} else {
-					// log.Println("@Already_Exists in:", toTable.Table, node.Data)
-					if err := self.MarkRowAsDeleted(node, srctx); err == nil {
-						srctx.Commit()
-						dsttx.Commit()
-					}
-					return errors.New("3")
-					// break
-				}
+				log.Fatal("@HandleMigration:", err)
+				// if !strings.Contains(err.Error(), "duplicate key value") {
+				// 	fmt.Println("@ERROR_Insert")
+				// 	fmt.Println("@QARGS:", toTable.Table, cols, placeholders, ivals)
+				// 	log.Fatal(err)
+				// 	return err
+				// } else {
+				// 	// log.Println("@Already_Exists in:", toTable.Table, node.Data)
+				// 	if err := self.MarkRowAsDeleted(node, srctx); err == nil {
+				// 		srctx.Commit()
+				// 		dsttx.Commit()
+				// 	}
+				// 	return errors.New("3")
+				// 	// break
+				// }
 			}
 		} else {
 			log.Fatal("@ERROR_GetMappedData:", cols, placeholders, ivals, orgCols, undoAction)
@@ -676,6 +692,7 @@ func (self *LMigrationWorker) HandleMigration(toTables []config.ToTable, node *D
 	if err := self.MarkRowAsDeleted(node, srctx); err == nil {
 		srctx.Commit()
 		dsttx.Commit()
+		stenciltx.Commit()
 	}
 	// }
 
