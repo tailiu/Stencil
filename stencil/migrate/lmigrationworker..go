@@ -366,7 +366,7 @@ func (self *LMigrationWorker) PushData(tx *sql.Tx, dtable config.ToTable, pk, or
 		if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
 			srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
 			if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
-				if err := db.InsertIntoIdentityTable(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, ); err == nil {
+				if err := db.InsertIntoIdentityTable(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, ); err == nil { 
 
 				}
 				if serr := db.SaveForLEvaluation(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
@@ -510,9 +510,17 @@ func (self *LMigrationWorker) GetMappedData(toTable config.ToTable, node *Depend
 				orgCols += fmt.Sprintf("%s,", fromAttr)
 			}
 		} else if strings.Contains(fromAttr, "#") {
-			assignedTabCol := strings.Trim(fromAttr, "#ASSIGN#FETCH()")
+			assignedTabCol := strings.Trim(fromAttr, "(#ASSIGN#FETCH#CONJUGATE)")
 			if strings.Contains(fromAttr, "#ASSIGN"){
 				if nodeVal, ok := node.Data[assignedTabCol]; ok {
+					ivals = append(ivals, nodeVal)
+					vals += fmt.Sprintf("$%d,", len(ivals))
+					cols += fmt.Sprintf("%s,", toAttr)
+					orgCols += fmt.Sprintf("%s,", assignedTabCol)
+				}
+			} else if strings.Contains(fromAttr, "#CONJUGATE"){
+				args := strings.Split(assignedTabCol, ",")
+				if nodeVal, ok := node.Data[args[0]]; ok {
 					ivals = append(ivals, nodeVal)
 					vals += fmt.Sprintf("$%d,", len(ivals))
 					cols += fmt.Sprintf("%s,", toAttr)
