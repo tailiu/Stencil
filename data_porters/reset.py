@@ -1,11 +1,13 @@
 import psycopg2, datetime, time, sys
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-def getDB(dbname, blade=False):
+def getDB(dbname, blade=False, autocommit=False):
     if blade:
         host = "10.230.12.75"
     else:
         host = "10.230.12.86"
     conn = psycopg2.connect(dbname=dbname, user="cow", host=host, port="5432", password="123456")
+    if autocommit: conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
     return conn, cursor
 
@@ -101,6 +103,18 @@ def resetRowDesc():
         cur.execute(q)
     conn.commit()
 
+def DropAndRecreateDB(app):
+    conn, cur = getDB("stencil", blade=False, autocommit=True)
+    q = "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname in ('%s', '%s_backup') AND pid <> pg_backend_pid();"%(app,app)
+    print q
+    cur.execute(q)
+    q = "DROP DATABASE %s;"%app
+    print q
+    cur.execute(q)
+    q = "CREATE DATABASE %s WITH TEMPLATE %s_backup OWNER cow;"%(app,app)
+    print q
+    cur.execute(q)
+
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
         print "provide an argument (phy, log, row, all, both), exiting."
@@ -109,15 +123,12 @@ if __name__ == "__main__":
         if arg in ["phy", "all"]:
             truncatePhysicalTables()
         if arg in ["log", "row", "all", "both"]:
-            # DeleteRowsFromMigrationRegistration(sys.argv[1])
-            # truncateTableFromStencil("migration_registration")
-            # truncateTableFromStencil("evaluation")
-            # truncateTableFromStencil("user_table")
-            # truncateTableFromStencil("display_flags")
-            # truncateTableFromStencil("txn_logs")
+            truncateTableFromStencil("migration_registration")
+            truncateTableFromStencil("evaluation")
+            truncateTableFromStencil("display_flags")
+            truncateTableFromStencil("txn_logs")
             if arg in ["log", "all", "both"]:
+                DropAndRecreateDB("diaspora")
                 truncate("mastodon", blade=True)
-                reverseMarkAsDelete("diaspora", blade=False)
             if arg in ["row", "all", "both"]:
-                # truncateTableFromStencil("data_bags")
                 resetRowDesc()
