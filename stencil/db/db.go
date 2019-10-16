@@ -125,7 +125,7 @@ func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...in
 
 func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, migrationID string) error {
 	query := "INSERT INTO identity_table (src_app, src_table, src_id, dst_app, dst_table, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
-	_, err := tx.Exec(query, srcApp, dstApp, srcTable, dstTable, srcID, dstID, migrationID)
+	_, err := tx.Exec(query, srcApp, srcTable, srcID, dstApp, dstTable, dstID, migrationID)
 	return err
 }
 
