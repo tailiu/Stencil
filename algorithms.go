@@ -33,38 +33,15 @@ package main
 	}
 	t1, t2, t3 := srcDB.BeginTransaction(), dstDB.BeginTransaction(), stencilDB.BeginTransaction()
 	if node.Owner == uid || node.SharedWith(uid) {
-		for _, nextNode := range GetAllNextNodes(node) { // returns a list of all next nodes, ignoring mark as visited flag
-			// GetAllPrecedingNodes doesn't consider ownerships, only uses dependencies.
-			// We can also add predicate locks to prevent precedingNodes from being added, but since it is very rare in social media applications,
-			// We do not do that.
-			if precedingNodes := GetAllPrecedingNodes(nextNode); len(precedingNodes) <= 1 && nextNode.Rules.DisplayOnlyIfPrecedingNodeExists {
-				sendToBag(nextNode, nextNode.Owner);
-			}
-			// else {
-			addToReferences(node, nextNode);
-			// }
-		}
+		checkNextNode(node);
 		acquireWriteLock(node)
 		for _, precedingNode := range GetAllPrecedingNodes(node) {
-			if precedingNode.Owner != uid && !precedingNode.SharedWith(uid) {
-				addToReferences(precedingNode, node);
-			}
+			addToReferences(precedingNode, node);
 		}
-		// resolveReferences(node); // Moved To Display
 		migrateNode(uid, srcApp, dstApp, node);
 		releaseWriteLock(node);
 	} else {
-		if precedingNodes := GetAllPrecedingNodes(node); len(precedingNodes) <= 1 && node.Rules.DisplayOnlyIfPrecedingNodeExists {
-			// GetAllNextNodes doesn't consider ownerships, only uses dependencies.
-			for _, nextNode := range GetAllNextNodes(node) { // ignore mark as visited flag while getting next nodes
-				if precedingNodes := GetAllPrecedingNodes(nextNode); len(precedingNodes) <= 1 && nextNode.Rules.DisplayOnlyIfPrecedingNodeExists {
-					sendToBag(nextNode, nextNode.Owner);
-				}
-			}
-			sendToBag(node, node.Owner);
-		} else {
-			markAsVisited(node);
-		}
+		markAsVisited(node);
 	}
 	err1, err2, err3 := t1.PrepareTransaction(), t2.PrepareTransaction(), t3.PrepareTransaction()
 	if !err1 && !err2 && !err3 {
@@ -79,6 +56,15 @@ package main
 	releasePredicateLock(node);
  }
 
+func (t Thread) checkNextNode(node) {
+	for _, nextNode := range GetAllNextNodes(node) {
+		addToReferences(node, nextNode);
+		if precedingNodes := GetAllPrecedingNodes(nextNode); len(precedingNodes) <= 1 && nextNode.Rules.DisplayOnlyIfPrecedingNodeExists {
+			checkNextNode(nextNode)
+			sendToBag(nextNode, nextNode.Owner);
+		}
+	}
+} 
 /*
  *	Note about #REF in Mappings:
  *
@@ -156,7 +142,7 @@ func (t Thread) ResolveReferenceByBackTraversal(app, member, id, org_member, org
 			// if refIdentityRow := ForwardTraverseIDTable(ref.App, ref.ToMember, ref.ToMemberID, org_member, org_id); refIdentityRow != nil || ref.App == t.DstApp {
 			var refIdentityRows [];
 			var refID, refMember;
-			ForwardTraverseIDTable(ref.App, ref.FromMember, ref.FromMemberID, org_member, org_id, refIdentityRows);
+			ForwardTraverseIDTable(ref.App, ref.ToMember, ref.ToMemberID, org_member, org_id, refIdentityRows);
 			if len(refIdentityRows) > 0 {
 				for refIdentityRow := range refIdentityRows {
 					AttrToUpdate:= t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, org_member) 
