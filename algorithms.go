@@ -6,23 +6,47 @@ package main
  * 1. Threads don't communicate with each other. Reasons: Simplicity, performance.
  * 2. If threads die, they just restart
  * 
- * Independent Migration:
- * 1. Migration threads neither need to delete data, nor put data into data bags.
+ * 
+ * Independent Migration, Stencil v2:
+ * 1. Migration threads neither need to delete data from SrcApp (if data is migrated), nor put data into data bags (if data cannot be migrated).
  * 2. Migration threads only follow ownership relationships to migrate data.
  * 3. Migration threads still need to migrate data from data bags.
  * 4. If the data cannot be displayed after the display check, delete the data from the destination db, identity table and display_flags. 
  *    Then there will be two cases:
  *    a. If the data is from the source application, delete reference to this data in the references table.
- *    b. If the data is from data bags, put the data back in the bag.
+ *    b. If the data is from data bags, put the data back in the bag. 
+ * 5. Compared with Stencil v1, there will be "duplicate" data when users migrate back. 
+ * 6. We add a column migration_id in the references table and use a unique index involving all columns on this table
+ *    to make sure that there are no duplicate rows produced during one migration. So when we deal with concurrent 
+ *    independent migrations, we can delete one row after handling that row.
+ * 7. Bags are going to be serial. Every migration must acquire some kind of a "right to use bag" or a "lock" and all other subsequent migrations for that user
+ *    must wait for the previous migration to finish using the bag before starting to process the bag for itself. This applies to all concurrent migrations for a user.
+ *    Migration registration may be used to indicate which migration is using the bag. Probably assign priority numbers and the migration having the lowest number gets to use the bag.
  *
- * Consistent Migration:
- * 1. Migration threads neither need to delete data, nor put data into data bags. 
+ *
+ * Independent Migration, Stencil v1:
+ * 1. Migration threads neither need to delete data from SrcApp (if data is migrated), nor put data into data bags (if data cannot be migrated).
  * 2. Migration threads only follow ownership relationships to migrate data.
  * 3. Migration threads still need to migrate data from data bags.
- * 4. If the data cannot be displayed after the display check, 
+ * 4. If the data cannot be displayed after the display check, delete the rows pointing to this data in DstApp in Migration Table. 
+ *    If the data is from data bags, put the data back in the bag.
+ * 5. All migrated data are marked with a copy on write flag. If data is modified, a copy of the data is created in the DstApp.
+ * 6. Bags are going to be serial. Every migration must acquire some kind of a "right to use bag" or a "lock" and all other subsequent migrations for that user
+ *    must wait for the previous migration to finish using the bag before starting to process the bag for itself. This applies to all concurrent migrations for a user.
+ *    Migration registration may be used to indicate which migration is using the bag. Probably assign priority numbers and the migration having the lowest number gets to use the bag.
  *
  *
- *
+ * Consistent Migration, Stencil v1:
+ * 1. Migration threads neither need to delete data from SrcApp (if data is migrated), nor put data into data bags (if data cannot be migrated).
+ * 2. Migration threads only follow ownership relationships to migrate data.
+ * 3. Migration threads still need to migrate data from data bags.
+ * 4. If the data cannot be displayed after the display check, delete the rows pointing to this data in DstApp in Migration Table. 
+ *    If the data is from data bags, put the data back in the bag.
+ * 5. If data is modified in either srcApp or dstApp, the modifications are reflected in both apps.
+ * 6. Bags are going to be serial. Every migration must acquire some kind of a "right to use bag" or a "lock" and all other subsequent migrations for that user
+ *    must wait for the previous migration to finish using the bag before starting to process the bag for itself. This applies to all concurrent migrations for a user.
+ *    Migration registration may be used to indicate which migration is using the bag. Probably assign priority numbers and the migration having the lowest number gets to use the bag.
+ * 7. If there is a deletion migration following a consistent migration, Stencil needs to ask user whether to delete consistent data in other applications.
  */
 
  func (t Thread) OwnershipMigration(uid int, srcApp, dstApp string, root *DependencyNode) {
