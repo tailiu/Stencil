@@ -9,7 +9,7 @@ func main() {
 	threadNum := 1
 	dstApp := "mastodon"
 	// dstApp := "diaspora"
-	migrationID := 1021491633
+	migrationID := 676062970
 
 	for i := 0; i < threadNum; i++ {
 		go app_display_algorithm.DisplayThread(dstApp, migrationID)

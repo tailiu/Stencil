@@ -100,7 +100,7 @@
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
-                                        "author_id":"statuses.account_id",
+                                        "author_id":"#REF(statuses.account_id)",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
@@ -120,7 +120,7 @@
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
-                                        "author_id":"statuses.account_id",
+                                        "author_id":"#REF(statuses.account_id)",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
@@ -139,8 +139,8 @@
                                     },
                                     "mapping":{
                                         "id":"statuses.id",
-                                        "author_id":"statuses.account_id",
-                                        "commentable_id":"statuses.in_reply_to_id",
+                                        "author_id":"#REF(statuses.account_id,accounts.id)",
+                                        "commentable_id":"#REF(statuses.in_reply_to_id,statuses.id)",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
@@ -339,7 +339,7 @@
                                         "content":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "reply_to_id": "statuses.in_reply_to_id"
+                                        "reply_to_id": "#CONJUGATE(statuses.in_reply_to_id,statuses.id)"
                                     }
                                 },
                                 {
@@ -603,6 +603,7 @@
                                     "table": "accounts",
                                     "conditions":{},
                                     "mapping": {
+                                        "id": "people.id",
                                         "username":"users.username",
                                         "private_key":"users.serialized_private_key",
                                         "created_at":"users.created_at",
@@ -617,6 +618,7 @@
                                     "table": "users",
                                     "conditions":{},
                                     "mapping": {
+                                        "id":"users.id",
                                         "email":"users.email",
                                         "encrypted_password":"users.encrypted_password",
                                         "reset_password_token":"users.reset_password_token",
@@ -630,7 +632,7 @@
                                         "unconfirmed_email":"users.unconfirmed_email",
                                         "created_at":"users.created_at",
                                         "updated_at":"users.updated_at",
-                                        "account_id":"#CONJUGATE(people.id,people.id)"
+                                        "account_id":"#REF(people.id,people.id)"
                                     }
                                 }
                             ]
@@ -644,13 +646,14 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping": {
-                                        "account_id": "#CONJUGATE(posts.author_id,people.id)",
+                                        "id": "statuses.id",
+                                        "account_id": "#REF(posts.author_id,people.id)",
                                         "text":"posts.text",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at",
                                         "visibility": "$visibility0",
                                         "reply": "$reply1",
-                                        "conversation_id": "#CONJUGATE(posts.id,posts.id)"
+                                        "conversation_id": "#REF(posts.id,posts.id)"
                                     }
                                 },
                                 { 
@@ -659,7 +662,7 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping":{
-                                        "status_id":"#CONJUGATE(posts.id,posts.id)",
+                                        "status_id":"#REF(posts.id,posts.id)",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at",
                                         "replies_count": "posts.comments_count",
@@ -673,7 +676,7 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping": {
-                                        "id": "#CONJUGATE(posts.id,posts.id)",
+                                        "id": "#REF(posts.id,posts.id)",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at"
                                     }
@@ -691,8 +694,8 @@
                                         "path": "photos.remote_photo_path"
                                     },
                                     "mapping": {
-                                        "account_id": "#CONJUGATE(photos.author_id,people.id)",
-                                        "status_id": "#FETCH(posts.id,posts.guid,photos.status_message_guid)/#CONJUGATE(posts.id,posts.id)",
+                                        "account_id":"#REF(photos.author_id,people.id)",
+                                        "status_id":"#REF(#FETCH(posts.id,posts.guid,photos.status_message_guid),posts.id)",
                                         "description":"photos.text",
                                         "updated_at":"photos.updated_at",
                                         "created_at":"photos.created_at",
@@ -711,14 +714,14 @@
                                         "conversation_id":"posts.id"
                                     },
                                     "mapping":{
-                                        "conversation_id": "comments.commentable_id",
-                                        "account_id": "#CONJUGATE(comments.author_id,people.id)",
+                                        "conversation_id": "#REF(comments.commentable_id,posts.id)",
+                                        "account_id": "#REF(comments.author_id,people.id)",
                                         "text":"comments.text",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at",
                                         "visibility": "$visibility0",
-                                        "reply": "$reply2",
-                                        "in_reply_to_id":"#CONJUGATE(comments.commentable_id,posts.id)"
+                                        "reply":"$reply2",
+                                        "in_reply_to_id":"#REF(comments.commentable_id,posts.id)"
                                     }
                                 },
                                 {
@@ -912,7 +915,7 @@
                                         "content":"comments.text",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at",
-                                        "reply_to_id":"comments.commentable_id"
+                                        "reply_to_id":"#CONJUGATE(comments.commentable_id,posts.id)"
                                     }
                                 }
                             ]

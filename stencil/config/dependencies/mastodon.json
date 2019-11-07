@@ -29,12 +29,24 @@
                 "member5":"stream_entries",
                 "member6":"conversations"
             },
+            "member_ids":{
+                "member1": "id",
+                "member2": "id",
+                "member3": "id",
+                "member4": "id",
+                "member5": "id",
+                "member6": "id"
+            },
             "keys": {
                 "conversation_id":"member1.conversation_id",
                 "id":"member1.id",
                 "reply":"member1.in_reply_to_id",
                 "reblog":"member1.reblog_of_id",
-                "account":"member1.account_id"
+                "account":"member1.account_id",
+                "status_id1": "member2.status_id",
+                "status_id2": "member3.status_id",
+                "activity_id": "member5.activity_id",
+                "id1": "member6.id"
             },
             "inner_dependencies":[
                 {
