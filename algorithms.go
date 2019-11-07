@@ -5,9 +5,35 @@ package main
  * Assumptions:
  * 1. Threads don't communicate with each other. Reasons: Simplicity, performance.
  * 2. If threads die, they just restart
+ * 
+ * Independent Migration:
+ * 1. Migration threads neither need to delete data, nor put data into data bags.
+ * 2. Migration threads only follow ownership relationships to migrate data.
+ * 3. Migration threads still need to migrate data from data bags.
+ * 4. If the data cannot be displayed after the display check, delete the data from the destination db, identity table and display_flags. 
+ *    Then there will be two cases:
+ *    a. If the data is from the source application, delete reference to this data in the references table.
+ *    b. If the data is from data bags, put the data back in the bag.
+ *
+ * Consistent Migration:
+ * 1. Migration threads neither need to delete data, nor put data into data bags. 
+ * 2. Migration threads only follow ownership relationships to migrate data.
+ * 3. Migration threads still need to migrate data from data bags.
+ * 4. If the data cannot be displayed after the display check, 
+ *
+ *
  *
  */
 
+ func (t Thread) OwnershipMigration(uid int, srcApp, dstApp string, root *DependencyNode) {
+	 for {
+		if node, err := self.GetOwnedNode(); err != nil {
+			break; // no owned node found
+		} else {
+			migrateNode(uid, srcApp, dstApp, node);	
+		}
+	 }
+ }
 
  func (t Thread) AggressiveMigration(uid int, srcApp, dstApp string, node *DependencyNode) {
 
@@ -34,12 +60,12 @@ package main
 	t1, t2, t3 := srcDB.BeginTransaction(), dstDB.BeginTransaction(), stencilDB.BeginTransaction()
 	if node.Owner == uid || node.SharedWith(uid) {
 		checkNextNode(node);
-		acquireWriteLock(node)
+		// acquireWriteLock(node)
 		for _, precedingNode := range GetAllPrecedingNodes(node) {
 			addToReferences(precedingNode, node);
 		}
 		migrateNode(uid, srcApp, dstApp, node);
-		releaseWriteLock(node);
+		// releaseWriteLock(node);
 	} else {
 		markAsVisited(node);
 	}
@@ -57,14 +83,82 @@ package main
  }
 
 func (t Thread) checkNextNode(node) {
+	// Only through data dependencies
 	for _, nextNode := range GetAllNextNodes(node) {
+		acquirePredicateLock(nextNode);
 		addToReferences(node, nextNode);
 		if precedingNodes := GetAllPrecedingNodes(nextNode); len(precedingNodes) <= 1 && nextNode.Rules.DisplayOnlyIfPrecedingNodeExists {
 			checkNextNode(nextNode)
-			sendToBag(nextNode, nextNode.Owner);
+			sendNodeToBag(nextNode, nextNode.Owner);
 		}
+		releasePredicateLock(nextNode);
 	}
 } 
+
+func (t Thread) migrateBags(uid int, srcApp, dstApp string) { 
+	idQuery  := "INSERT INTO identity_table (from_app, dst_app, src_table, dst_table, src_id, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
+	insertQuery := "INSERT INTO %s (%s) VALUES (%s);"
+	for bagRow := range t.GetBagsFromBagTable(uid) {
+		srcMember := bagRow.member
+		memberData := bagRow.data
+		if bagRow.App == dstApp {
+			dstMemberID := t.DstDB.Query(fmt.Sprintf(insertQuery, srcMember, srcMember.Columns, memberData.Values))
+			srcMemberIDAttr := node.Tag.FetchMemberAttr(srcMember) // input: statuses, returns: statuses.id
+			t.StencilDB.Query(idQuery, srcApp, dstApp, srcMember, srcMember, memberData[srcMemberIDAttr], dstMemberID, t.MigrationID)
+			deleteQuery := fmt.Sprintf("DELETE FROM data_bags WHERE id = %s;", memberData.ID) 
+			t.SrcDB.Query(deleteQuery)
+		} else if mappings := t.Mappings(srcApp, dstApp, srcMember); len(mappings) > 0 {
+			for dstMemberMapping := range mappings {
+				// if mapped attr has #REF method, assign NULL value to that attr when migrating.
+				dstMemberID := t.DstDB.Query(fmt.Sprintf(insertQuery, dstMemberMapping.MemberName, dstMemberMapping.Columns, memberData.Values))
+				srcMemberIDAttr := node.Tag.FetchMemberAttr(srcMember) // input: statuses, returns: statuses.id
+				t.StencilDB.Query(idQuery, srcApp, dstApp, srcMember, dstMemberMapping.MemberName, memberData[srcMemberIDAttr], dstMemberID, t.MigrationID)
+			}
+			deleteQuery := fmt.Sprintf("DELETE FROM data_bags WHERE id = %s;", memberData.ID) 
+			t.SrcDB.Query(deleteQuery)
+		}
+	}
+}
+
+func (t Thread) sendMemberToBag(member string, data map[string]interface{}, uid int) {
+	bagQuery := "INSERT INTO data_bags (user_id, app_id, member, id, data) VALUES ($1,$2,$3,$4,$5); "
+	refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	db.Query(bagQuery, uid, t.SrcApp, member, data[id], json(data))
+	if mappings := t.Mappings(t.srcApp, t.dstApp, member); len(mappings) > 0 {
+		for dstMemberMapping := range mappings {
+			for ref := range dstMemberMapping.references {
+				var toID, fromMember, fromID, fromAttr 
+				if strings.Contains(ref.FirstArgument, "#FETCH") {
+					fromID = t.Mapping.Fetch(ref.FirstArgument)
+					fromMember = t.Mapping.Fetch(ref.FirstArgument).Args[0].member
+					fromAttr =  t.Mapping.Fetch(ref.FirstArgument).Args[0].attr
+					toID = fromID
+				} else {
+					toID = data[ref.FirstArgument.member][ref.FirstArgument.attr] // node.Data[posts][author_id]
+					fromMember = ref.FirstArgument.member
+					fromID = data[ref.FirstArgument.member][ID] // node.Data[posts][id]
+					fromAttr = ref.FirstArgument.attr
+				}
+				t.StencilDB.Query(refQuery, t.SrcApp, fromMember, fromID, fromAttr, ref.SecondArgument.member, toID, ref.SecondArgument.attr)	
+			}
+		}
+	}
+	deleteQuery := fmt.Sprintf("DELETE FROM %s (%s) WHERE id = %s;", member, data.member.ID) 
+	t.SrcDB.Query(deleteQuery)
+}
+
+func (t Thread) sendNodeToBag(node *DependencyNode, uid int) {
+	refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	for member := node.Members {
+		t.sendMemberToBag(member.Name, node.member.Data, uid)
+	}
+	for inDep := range node.Tag.InnerDependencies {
+		for Dependee, Dependent := range inDep {
+			t.StencilDB.Query(refQuery, t.SrcApp, Dependent.Member, Node.Dependent.ID, Dependent.Attr, Dependee.Member, Node.Dependee.ID, Dependee.Attr)
+		}
+	}
+ }
+
 /*
  *	Note about #REF in Mappings:
  *
@@ -83,35 +177,47 @@ func (t Thread) checkNextNode(node) {
  *	Assumption:
  *	The second argument (ToReference and ToID) will always be ID/PK of the row that is referenced and not any other attr.
  */
-func (t Thread) migrateNode(uid int, srcApp, dstApp string, node *DependencyNode) (int, error) {
 
-	idQuery  := "INSERT INTO identity_table (src_app, dst_app, src_table, dst_table, src_id, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
+func (t Thread) migrateNode(uid int, srcApp, dstApp string, node *DependencyNode) (int, error) {
 	refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
 	for srcMember := range node.Members {
-		mappings := t.Mappings(srcApp, dstApp, srcMember)
-		for dstMemberMapping := range mappings {
-			// if mapped attr has #REF method, assign NULL value to that attr when migrating.
-			insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", dstMemberMapping.MemberName, dstMemberMapping.Columns, srcMember.Values) 
-			dstMemberID := t.DstDB.Query(insertQuery)
-			t.StencilDB.Query(idQuery, srcApp, dstApp, srcMember, dstMemberMapping.MemberName, node.srcMember.ID, dstMemberID, t.MigrationID)
-			for ref := range dstMemberMapping.references {
-				var toID, fromMember, fromID, fromAttr 
-				if strings.Contains(ref.FirstArgument, "#FETCH"){
-					fromID = t.Mapping.Fetch(ref.FirstArgument)
-					fromMember = t.Mapping.Fetch(ref.FirstArgument).Args[0].member
-					fromAttr =  t.Mapping.Fetch(ref.FirstArgument).Args[0].attr
-					toID = fromID
-				} else {
-					toID = node.Data[ref.FirstArgument.member][ref.FirstArgument.attr] // node.Data[posts][author_id]
-					fromMember = ref.FirstArgument.member
-					fromID = node.Data[ref.FirstArgument.member][ID] // node.Data[posts][id]
-					fromAttr = ref.FirstArgument.attr
+		memberData := extractMemberDataFromNodeData(srcMember, node.Data)
+		idQuery  := "INSERT INTO identity_table (src_app, dst_app, src_table, dst_table, src_id, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
+		refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+		if mappings := t.Mappings(srcApp, dstApp, srcMember); len(mappings) > 0 {
+			for dstMemberMapping := range mappings {
+				// if mapped attr has #REF method, assign NULL value to that attr when migrating.
+				insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", dstMemberMapping.MemberName, dstMemberMapping.Columns, memberData.Values) 
+				dstMemberID := t.DstDB.Query(insertQuery)
+				srcMemberIDAttr := node.Tag.FetchMemberAttr(srcMember) // input: statuses, returns: statuses.id
+				t.StencilDB.Query(idQuery, srcApp, dstApp, srcMember, dstMemberMapping.MemberName, node.Data[srcMemberIDAttr], dstMemberID, t.MigrationID)
+				for ref := range dstMemberMapping.references {
+					var toID, fromMember, fromID, fromAttr 
+					if strings.Contains(ref.FirstArgument, "#FETCH") {
+						fromID = t.Mapping.Fetch(ref.FirstArgument)
+						fromMember = t.Mapping.Fetch(ref.FirstArgument).Args[0].member
+						fromAttr =  t.Mapping.Fetch(ref.FirstArgument).Args[0].attr
+						toID = fromID
+					} else {
+						toID = node.Data[ref.FirstArgument.member][ref.FirstArgument.attr] // node.Data[posts][author_id]
+						fromMember = ref.FirstArgument.member
+						fromID = node.Data[ref.FirstArgument.member][ID] // node.Data[posts][id]
+						fromAttr = ref.FirstArgument.attr
+					}
+					t.StencilDB.Query(refQuery, t.SrcApp, fromMember, fromID, fromAttr, ref.SecondArgument.member, toID, ref.SecondArgument.attr)	
 				}
-				t.StencilDB.Query(refQuery, t.SrcApp, fromMember, fromID, fromAttr, ref.SecondArgument.member, toID, ref.SecondArgument.attr)	
 			}
+		} else if t.migrationType == DELETION {
+			// partial node sent to bag
+			// eg: conversation and statuses are in the same node
+			// only statuses has a mapping to dstApp
+			// statuses will be migrated and conversation will be sent to bag
+			sendMemberToBag(srcMember, memberData, uid)
 		}
-		deleteQuery := fmt.Sprintf("DELETE FROM %s (%s) WHERE id = %s;", srcMember, node.SrcMember.ID) 
-		t.SrcDB.Query(deleteQuery)
+		if t.migrationType == DELETION {
+			deleteQuery := fmt.Sprintf("DELETE FROM %s (%s) WHERE id = %s;", srcMember, node.SrcMember.ID) 
+			t.SrcDB.Query(deleteQuery)
+		}
 	}
 	for inDep := range node.Tag.InnerDependencies {
 		for Dependee, Dependent := range inDep {
@@ -145,14 +251,16 @@ func (t Thread) ResolveReferenceByBackTraversal(app, member, id, org_member, org
 			ForwardTraverseIDTable(ref.App, ref.ToMember, ref.ToMemberID, org_member, org_id, refIdentityRows);
 			if len(refIdentityRows) > 0 {
 				for refIdentityRow := range refIdentityRows {
-					AttrToUpdate:= t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, org_member) 
-					attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, refIdentityRow.ToMember) 
-					updateReferences(ref, refIdentityRow.ToMember, refIdentityRow.ToID, attr, org_member, org_id, AttrToUpdate)
+					attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, refIdentityRow.ToMember)
+					for AttrToUpdate := range t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, org_member) {
+						updateReferences(ref, refIdentityRow.ToMember, refIdentityRow.ToID, attr, org_member, org_id, AttrToUpdate)
+					}
 				}
 			} else if ref.App == t.DstApp {
-				AttrToUpdate:= t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, org_member) 
 				attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, ref.ToMember) 
-				updateReferences(ref, ref.ToMember, ref.ToID, attr, org_member, org_id, AttrToUpdate)
+				for AttrToUpdate := range t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, org_member) {
+					updateReferences(ref, ref.ToMember, ref.ToID, attr, org_member, org_id, AttrToUpdate)
+				}
 			}
 		}
 		// You are already on the right/to part
@@ -166,14 +274,20 @@ func (t Thread) ResolveReferenceByBackTraversal(app, member, id, org_member, org
 			ForwardTraverseIDTable(ref.App, ref.FromMember, ref.FromMemberID, org_member, org_id, refIdentityRows);
 			if len(refIdentityRows) > 0 {
 				for refIdentityRow := range refIdentityRows {
-					AttrToUpdate := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, refIdentityRow.ToMember) 
 					attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, org_member) 
-					updateReferences(ref, org_member, org_id, attr, refIdentityRow.ToMember, refIdentityRow.ToID, AttrToUpdate)
+					// There could be multiple attributes to update when there are one-to-multple mappings. 
+					// For example, when migrating comments to statuses, comments.commentable_id is mapped to both conversation_id and in_reply_to_id.
+					// However, when there are multple-to-one mappings, there will be multiple references inserted by migration threads,
+					// so we will cope with it in the outer loop "ref" instead of here.
+					for AttrToUpdate := range t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, refIdentityRow.ToMember) {
+						updateReferences(ref, org_member, org_id, attr, refIdentityRow.ToMember, refIdentityRow.ToID, AttrToUpdate)
+					}
 				}
 			} else if ref.App == t.DstApp {
-				AttrToUpdate := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, ref.ToMember) 
-				attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, org_member) 
-				updateReferences(ref, org_member, org_id, attr, refIdentityRow.ToMember, ref.ToID, AttrToUpdate)
+				attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, org_member)
+				for AttrToUpdate := range t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, ref.ToMember) {
+					updateReferences(ref, org_member, org_id, attr, refIdentityRow.ToMember, ref.ToID, AttrToUpdate)
+				}
 			}
 		}
 		ResolveReferenceByBackTraversal(IDRow.FromApp, IDRow.FromMember, IDRow.FromID, org_member, org_id)
@@ -186,7 +300,7 @@ func (t Thread) ForwardTraverseIDTable(app, member, id, org_member, org_id, list
 		ForwardTraverseIDTable(IDRow.ToApp, IDRow.ToMember, IDRow.ToID, org_member, org_id, listToBeReturned)
 	}
 	if len(IDRows) == 0 {
-		if app == t.DstApp && member != org_member {
+		if app == t.DstApp && member != org_member && id != org_id {
 			listToBeReturned = append(listToBeReturned, []string{tag, member, id})
 		}
 	}
