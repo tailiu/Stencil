@@ -119,18 +119,24 @@ func (t Thread) checkNextNode(node) {
 	}
 } 
 
+// This function will run once all threads have finished processing the DAG
+// and it will ignore data bags that have been already processed in the same migration
+// these bags are referenced in the bags_processed table, which contains the id of the processed bag and the migration_id.
 func (t Thread) migrateBags(uid int, srcApp, dstApp string) { 
 	idQuery  := "INSERT INTO identity_table (from_app, dst_app, src_table, dst_table, src_id, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
 	insertQuery := "INSERT INTO %s (%s) VALUES (%s);"
-	for bagRow := range t.GetBagsFromBagTable(uid) {
+
+	for bagRow := range t.GetBagsFromBagTable(uid) { // ignore the processed bags, only consider untouched bags in this migration
 		srcMember := bagRow.member
 		memberData := bagRow.data
 		if bagRow.App == dstApp {
 			dstMemberID := t.DstDB.Query(fmt.Sprintf(insertQuery, srcMember, srcMember.Columns, memberData.Values))
 			srcMemberIDAttr := node.Tag.FetchMemberAttr(srcMember) // input: statuses, returns: statuses.id
 			t.StencilDB.Query(idQuery, srcApp, dstApp, srcMember, srcMember, memberData[srcMemberIDAttr], dstMemberID, t.MigrationID)
-			deleteQuery := fmt.Sprintf("DELETE FROM data_bags WHERE id = %s;", memberData.ID) 
-			t.SrcDB.Query(deleteQuery)
+			if len(bagRow) == 0 {
+				deleteQuery := fmt.Sprintf("DELETE FROM data_bags WHERE id = %s;", memberData.ID) 
+				t.SrcDB.Query(deleteQuery)
+			}
 		} else if mappings := t.Mappings(srcApp, dstApp, srcMember); len(mappings) > 0 {
 			for dstMemberMapping := range mappings {
 				// if mapped attr has #REF method, assign NULL value to that attr when migrating.
@@ -138,8 +144,10 @@ func (t Thread) migrateBags(uid int, srcApp, dstApp string) {
 				srcMemberIDAttr := node.Tag.FetchMemberAttr(srcMember) // input: statuses, returns: statuses.id
 				t.StencilDB.Query(idQuery, srcApp, dstApp, srcMember, dstMemberMapping.MemberName, memberData[srcMemberIDAttr], dstMemberID, t.MigrationID)
 			}
-			deleteQuery := fmt.Sprintf("DELETE FROM data_bags WHERE id = %s;", memberData.ID) 
-			t.SrcDB.Query(deleteQuery)
+			if len(bagRow) == 0 {
+				deleteQuery := fmt.Sprintf("DELETE FROM data_bags WHERE id = %s;", memberData.ID) 
+				t.SrcDB.Query(deleteQuery)
+			}
 		}
 	}
 }
@@ -202,43 +210,80 @@ func (t Thread) sendNodeToBag(node *DependencyNode, uid int) {
  *	The second argument (ToReference and ToID) will always be ID/PK of the row that is referenced and not any other attr.
  */
 
-func (t Thread) migrateNode(uid int, srcApp, dstApp string, node *DependencyNode) (int, error) {
-	refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
-	for srcMember := range node.Members {
-		memberData := extractMemberDataFromNodeData(srcMember, node.Data)
-		idQuery  := "INSERT INTO identity_table (src_app, dst_app, src_table, dst_table, src_id, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
-		refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
-		if mappings := t.Mappings(srcApp, dstApp, srcMember); len(mappings) > 0 {
-			for dstMemberMapping := range mappings {
-				// if mapped attr has #REF method, assign NULL value to that attr when migrating.
-				insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", dstMemberMapping.MemberName, dstMemberMapping.Columns, memberData.Values) 
-				dstMemberID := t.DstDB.Query(insertQuery)
-				srcMemberIDAttr := node.Tag.FetchMemberAttr(srcMember) // input: statuses, returns: statuses.id
-				t.StencilDB.Query(idQuery, srcApp, dstApp, srcMember, dstMemberMapping.MemberName, node.Data[srcMemberIDAttr], dstMemberID, t.MigrationID)
-				for ref := range dstMemberMapping.references {
-					var toID, fromMember, fromID, fromAttr 
-					if strings.Contains(ref.FirstArgument, "#FETCH") {
-						fromID = t.Mapping.Fetch(ref.FirstArgument)
-						fromMember = t.Mapping.Fetch(ref.FirstArgument).Args[0].member
-						fromAttr =  t.Mapping.Fetch(ref.FirstArgument).Args[0].attr
-						toID = fromID
-					} else {
-						toID = node.Data[ref.FirstArgument.member][ref.FirstArgument.attr] // node.Data[posts][author_id]
-						fromMember = ref.FirstArgument.member
-						fromID = node.Data[ref.FirstArgument.member][ID] // node.Data[posts][id]
-						fromAttr = ref.FirstArgument.attr
+func (t Thread) fetchDataFromBags(uid int, bagData map[string]Interface{}, app, member, id, dstMember) {
+	for idRow := range GetRowsFromIDTableByTo(app, member, id) {
+		if bagRow := t.GetBagRowFromBagTable(uid, idRow.FromApp, idRow.FromMember, idRow.FromID); bagRow != nil {
+			if mappings := t.Mappings(idRow.FromApp, idRow.FromMember, t.DstApp, dstMember); mappings != nil {
+				for fromAttr, toAttr := range mappings.mapping {
+					if contains(fromAttr, bagRow) {
+						if value, exists := bagData[toAttr]; !exists {
+							bagData[toAttr] = GetDataFromBagRow(bagRow, fromAttr)
+						}
+						DeleteDataFromBagRow(bagRow, fromAttr)
+						db.AddBagToBagsProcessedTable(t.migrationID, bagRow.id)
 					}
-					t.StencilDB.Query(refQuery, t.SrcApp, fromMember, fromID, fromAttr, ref.SecondArgument.member, toID, ref.SecondArgument.attr)	
+				}
+				if len(bagRow) == 0 {
+					DeleteBagRow(bagRow)
 				}
 			}
-		} else if t.migrationType == DELETION {
-			// partial node sent to bag
-			// eg: conversation and statuses are in the same node
-			// only statuses has a mapping to dstApp
-			// statuses will be migrated and conversation will be sent to bag
-			sendMemberToBag(srcMember, memberData, uid)
 		}
-		if t.migrationType == DELETION {
+		fetchDataFromBags(uid, bagData, idRow.FromApp, idRow.FromMember, idRow.FromID)
+	}
+}
+
+func (t Thread) migrateNode(uid int, srcApp, dstApp string, node *DependencyNode) (int,error) {
+	refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	idQuery  := "INSERT INTO identity_table (src_app, dst_app, src_table, dst_table, src_id, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
+	insertQuery := "INSERT INTO %s (%s) VALUES (%s);"
+	
+	mappings, unmappedMembers := t.FetchMappingsForNode(node)
+	var tempNode *DependencyNode = node
+	for dstMapping := range mappings {
+		var mappedData map[string]Interface{}
+		var mappedSrcMembers map[string]bool
+		for srcMember := range node.Members {
+			for fromAttr, toAttr := range dstMapping.mappings {
+				if value, exists := node.Data[fromAttr]; exists {
+					mappedData[toAttr] = value
+					mappedSrcMembers[srcMember] = true
+				}
+			}
+			fetchDataFromBags(uid, mappedData, t.SrcApp, srcMember, node.Data[fmt.Sprintf("%s.id", srcMember)], dstMapping.MemberName)
+		}
+		dstMemberID := t.DstDB.Query(fmt.Sprintf(insertQuery, dstMapping.MemberName, mappedData.Columns, mappedData.Values))
+		tempNode := DeleteDataFromNode(mappedData.Columns, mappedData.Values)
+		for mappedSrcMember := range mappedSrcMembers {
+			srcMemberIDAttr := node.Tag.FetchMemberAttr(mappedSrcMember) // input: statuses, returns: statuses.id
+			t.StencilDB.Query(idQuery, srcApp, dstApp, mappedSrcMember, dstMapping.MemberName, node.Data[srcMemberIDAttr], dstMemberID, t.MigrationID)
+		}
+
+		for ref := range dstMapping.references {
+			var toID, fromMember, fromID, fromAttr 
+			if strings.Contains(ref.FirstArgument, "#FETCH") {
+				fromID = t.Mapping.Fetch(ref.FirstArgument)
+				fromMember = t.Mapping.Fetch(ref.FirstArgument).Args[0].member
+				fromAttr =  t.Mapping.Fetch(ref.FirstArgument).Args[0].attr
+				toID = fromID
+			} else {
+				toID = node.Data[ref.FirstArgument.member][ref.FirstArgument.attr] // node.Data[posts][author_id]
+				fromMember = ref.FirstArgument.member
+				fromID = node.Data[ref.FirstArgument.member][ID] // node.Data[posts][id]
+				fromAttr = ref.FirstArgument.attr
+			}
+			t.StencilDB.Query(refQuery, t.SrcApp, fromMember, fromID, fromAttr, ref.SecondArgument.member, toID, ref.SecondArgument.attr)	
+		}
+	}
+	if t.migrationType == DELETION {
+		// partial node sent to bag
+		// eg: conversation and statuses are in the same node
+		// only statuses has a mapping to dstApp
+		// statuses will be migrated and conversation will be sent to bag
+		for unmappedMember := range unmappedMembers {
+			sendMemberToBag(unmappedMember, unmappedMemberData, uid)
+		}
+		sendNodeToBag(tempNode)
+		for srcMember := range node.Members {
 			deleteQuery := fmt.Sprintf("DELETE FROM %s (%s) WHERE id = %s;", srcMember, node.SrcMember.ID) 
 			t.SrcDB.Query(deleteQuery)
 		}
@@ -249,6 +294,57 @@ func (t Thread) migrateNode(uid int, srcApp, dstApp string, node *DependencyNode
 		}
 	}
 }
+
+// func (t Thread) migrateNode(uid int, srcApp, dstApp string, node *DependencyNode) (int, error) {
+// 	refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	
+// 	for srcMember := range node.Members {
+// 		memberData := extractMemberDataFromNodeData(srcMember, node.Data)
+// 		idQuery  := "INSERT INTO identity_table (src_app, dst_app, src_table, dst_table, src_id, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
+// 		refQuery := "INSERT INTO references (app, fromMember, fromID, fromReference, toMember, toID, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+// 		if mappings := t.Mappings(srcApp, dstApp, srcMember); len(mappings) > 0 {
+// 			bagData := fetchDataFromBags(uid, srcMember)
+// 			// do something with bag data
+// 			for dstMemberMapping := range mappings {
+// 				// if mapped attr has #REF method, assign NULL value to that attr when migrating.
+// 				insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", dstMemberMapping.MemberName, dstMemberMapping.Columns, memberData.Values) 
+// 				dstMemberID := t.DstDB.Query(insertQuery)
+// 				srcMemberIDAttr := node.Tag.FetchMemberAttr(srcMember) // input: statuses, returns: statuses.id
+// 				t.StencilDB.Query(idQuery, srcApp, dstApp, srcMember, dstMemberMapping.MemberName, node.Data[srcMemberIDAttr], dstMemberID, t.MigrationID)
+// 				for ref := range dstMemberMapping.references {
+// 					var toID, fromMember, fromID, fromAttr 
+// 					if strings.Contains(ref.FirstArgument, "#FETCH") {
+// 						fromID = t.Mapping.Fetch(ref.FirstArgument)
+// 						fromMember = t.Mapping.Fetch(ref.FirstArgument).Args[0].member
+// 						fromAttr =  t.Mapping.Fetch(ref.FirstArgument).Args[0].attr
+// 						toID = fromID
+// 					} else {
+// 						toID = node.Data[ref.FirstArgument.member][ref.FirstArgument.attr] // node.Data[posts][author_id]
+// 						fromMember = ref.FirstArgument.member
+// 						fromID = node.Data[ref.FirstArgument.member][ID] // node.Data[posts][id]
+// 						fromAttr = ref.FirstArgument.attr
+// 					}
+// 					t.StencilDB.Query(refQuery, t.SrcApp, fromMember, fromID, fromAttr, ref.SecondArgument.member, toID, ref.SecondArgument.attr)	
+// 				}
+// 			}
+// 		} else if t.migrationType == DELETION {
+// 			// partial node sent to bag
+// 			// eg: conversation and statuses are in the same node
+// 			// only statuses has a mapping to dstApp
+// 			// statuses will be migrated and conversation will be sent to bag
+// 			sendMemberToBag(srcMember, memberData, uid)
+// 		}
+// 		if t.migrationType == DELETION {
+// 			deleteQuery := fmt.Sprintf("DELETE FROM %s (%s) WHERE id = %s;", srcMember, node.SrcMember.ID) 
+// 			t.SrcDB.Query(deleteQuery)
+// 		}
+// 	}
+// 	for inDep := range node.Tag.InnerDependencies {
+// 		for Dependee, Dependent := range inDep {
+// 			t.StencilDB.Query(refQuery, t.SrcApp, Dependent.Member, Node.Dependent.ID, Dependent.Attr, Dependee.Member, Node.Dependee.ID, Dependee.Attr)
+// 		}
+// 	}
+// }
 
 func (t Thread) addToReferences(toNode, fromNode) {
 	refQuery  := "INSERT INTO references (app, fromMember, toMember, fromID, toID, fromReference, toReference) VALUES ($1, $2, $3, $4, $5, $6, $7)"
@@ -352,62 +448,6 @@ func (t Thread) updateReferences(refID, member, id, attr, memberToBeUpdated, IDT
 		t.StencilDB.DeleteReference(refID)
 	}
 }
-
-// func (t Thread) ForwardTraverseIDTable(app, tag, member, id, org_member, org_id, listToBeReturned) {
-// 	IDRow := GetRowsFromIDTableByFrom(app, tag, member, id)
-// 	// Only find the final app is equal to the dst app, will this function return
-// 	if IDRow == nil {
-// 		if app == t.DstApp && member != org_member { 
-// 			return tag, member, id 
-// 		}
-// 		return nil
-// 	}
-// 	return ForwardTraverseIDTable(IDRow.ToApp, IDRow.ToTag, IDRow.ToMember, IDRow.ToID, org_member, org_id, listToBeReturned)
-// }
-
-// func (t Thread) resolveReferences(idRow, member, memberID) {
-	
-// 	for ref := range t.GetFromReferences(idRow.FromApp, idRow.FromMember, idRow.FromID) {
-// 		for refIdentityRow := range t.GetRowsFromIdentityTable(ref.App, ref.ToMember, ref.ToMemberID) { 
-// 			if refIdentityRow.App == t.DstApp  {
-// 				updateReferences(toTable, toID, fromTable, fromID, fromReference)
-// 			}
-// 		}
-// 	}
-	
-// 	for ref := range t.GetToReferences(idRow.FromApp, idRow.FromMember, idRow.FromID) {
-// 		updateReferences(member, memberID, ref.FromMembe, ref.FromID, ref.FromReference)
-// 	}
-// }
-
-// func (t Thread) handleReferences(app, member, memberID) {
-// 	for idRow := range t.GetRowsFromIdentityTable(app, member, memberID) {
-// 		resolveReferences(idRow, member, memberID)
-// 		// if idRow.FromApp != t.DstApp {
-// 		// 	handleReferences(idRow.FromApp, idRow.FromMember, idRow.FromID)
-// 		// } else {
-// 		// 	resolveReferences(idRow, member, memberID)
-// 		// }
-// 	}
-// }
-
-
-
-// func (t Thread) resolveReferences(node) {
-// 	for member := range node.Members {
-// 		for idRow := range t.GetRowsFromIdentityTable(node.App, member, member.ID) {
-// 			if idRow.SrcApp != t.DstApp {continue}
-// 			for ref := range t.GetFromReferences(idRow.SrcApp, idRow.SrcMember, idRow.SrcID) {
-// 				toData := t.DstDB.GetDataForTable(ref.ToMember, ref.ToID)
-// 				if toData != nil {
-// 					node.Data[ref.FromReference] = toData.Data[ref.ToReference]
-// 					t.StencilDB.DeleteReference(ref)
-// 				}
-// 			}
-// 			break // what if there are multiple
-// 		}
-// 	}
-// }
 
 
 func (t Thread) AggressiveMigration(userid int, srcApp, dstApp string, node *DependencyNode) {
