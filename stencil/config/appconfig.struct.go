@@ -3,10 +3,11 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log"
 	"stencil/helper"
 	"stencil/qr"
 	"strings"
-	"log"
+
 	"github.com/drgrib/maps"
 )
 
@@ -92,6 +93,19 @@ func (self *AppConfig) GetSubDependencies(tagName string) []Dependency {
 	return deps
 }
 
+func (self *AppConfig) GetParentDependencies(tagName string) []Dependency {
+
+	var deps []Dependency
+
+	for _, dep := range self.Dependencies {
+		if strings.EqualFold(dep.Tag, tagName) {
+			deps = append(deps, dep)
+		}
+	}
+
+	return deps
+}
+
 func (self *AppConfig) GetShuffledOwnerships() []Ownership {
 
 	return self.ShuffleOwnerships(self.Ownerships)
@@ -103,8 +117,8 @@ func (self *AppConfig) GetOrderedOwnerships() []Ownership {
 	orderOfOwnerships := []string{"photo", "post", "like", "comment", "conversation", "message", "contact", "notification"}
 
 	for _, ownershipName := range orderOfOwnerships {
-		for _, ownership := range self.Ownerships{
-			if strings.EqualFold(ownershipName, ownership.Tag){
+		for _, ownership := range self.Ownerships {
+			if strings.EqualFold(ownershipName, ownership.Tag) {
 				orderedOwnerships = append(orderedOwnerships, ownership)
 			}
 		}
@@ -116,7 +130,7 @@ func (self *AppConfig) GetOrderedOwnerships() []Ownership {
 func (self *AppConfig) GetOwnership(tagName, owner string) *Ownership {
 
 	for _, own := range self.Ownerships {
-		if strings.EqualFold(own.Tag, tagName) && strings.EqualFold(own.OwnedBy, owner){
+		if strings.EqualFold(own.Tag, tagName) && strings.EqualFold(own.OwnedBy, owner) {
 			return &own
 		}
 	}
@@ -135,9 +149,9 @@ func (self *AppConfig) GetItemsFromKey(tag Tag, key string) (string, string) {
 	}
 }
 
-func (self *AppConfig) CheckOwnership(tag string) bool{
-	for _, ownership := range self.Ownerships{
-		if strings.EqualFold(ownership.Tag, tag){
+func (self *AppConfig) CheckOwnership(tag string) bool {
+	for _, ownership := range self.Ownerships {
+		if strings.EqualFold(ownership.Tag, tag) {
 			return true
 		}
 	}
@@ -318,14 +332,14 @@ func (self *AppConfig) GetDepDisplaySetting(tag string, pTag string) (string, er
 }
 
 func (self *AppConfig) GetTagQS(tag Tag, params map[string]string) *qr.QS {
-	
+
 	qs := qr.CreateQS(self.QR)
 	if len(tag.InnerDependencies) > 0 {
 		joinMap := tag.CreateInDepMap()
 		seenMap := make(map[string]bool)
 		for fromTable, toTablesMap := range joinMap {
 			if _, ok := seenMap[fromTable]; !ok {
-				args := map[string]string{"table":fromTable}
+				args := map[string]string{"table": fromTable}
 				helper.ConcatMaps(args, params)
 				qs.FromTable(args)
 				qs.SelectColumns(fromTable + ".*")
@@ -342,7 +356,7 @@ func (self *AppConfig) GetTagQS(tag Tag, params map[string]string) *qr.QS {
 						joinArgs[fmt.Sprintf("condition%d", i)] = condition
 					}
 					qs.JoinTable(joinArgs)
-					
+
 					qs.SelectColumns(toTable + ".*")
 					seenMap[toTable] = true
 				}
@@ -352,7 +366,7 @@ func (self *AppConfig) GetTagQS(tag Tag, params map[string]string) *qr.QS {
 	} else {
 		table := tag.Members["member1"]
 		qs = qr.CreateQS(self.QR)
-		args := map[string]string{"table":table}
+		args := map[string]string{"table": table}
 		helper.ConcatMaps(args, params)
 		qs.FromTable(args)
 		qs.SelectColumns(table + ".*")

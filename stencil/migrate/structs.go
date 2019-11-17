@@ -73,3 +73,20 @@ type LMigrationWorker struct {
 	FTPClient    *ftp.ServerConn
 	// threadID     int
 }
+
+type MigrationWorkerV2 struct {
+	uid          string
+	SrcAppConfig config.AppConfig
+	DstAppConfig config.AppConfig
+	mappings     *config.MappedApp
+	wList        WaitingList
+	unmappedTags UnmappedTags
+	root         *DependencyNode
+	SrcDBConn    *sql.DB
+	DstDBConn    *sql.DB
+	logTxn       *transaction.Log_txn
+	mtype        string
+	visitedNodes map[string]bool
+	FTPClient    *ftp.ServerConn
+	// threadID     int
+}

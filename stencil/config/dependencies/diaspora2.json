@@ -165,29 +165,48 @@
           "tag":"post",
           "depends_on":[
              {
-               "tag":"post",
-               "conditions":[
-                  {
-                     "tag_attr":"root_guid",
-                     "depends_on_attr":"guid",
-                     "restrictions":[
-                        {
-                           "col":"type",
-                           "val":"Reshare"
-                        }
-                     ]
-                  }
-               ]
-            },
-            {
-               "tag":"aspect",
-               "conditions":[
-                  {
-                     "tag_attr":"id",
-                     "depends_on_attr":"shareable_id"
-                  }
-               ]
-            }
+                "tag":"root",
+                "conditions":[
+                   {
+                      "tag_attr":"author_id",
+                      "depends_on_attr":"person_id"
+                   }
+                ]
+             }
+          ]
+       },
+       {
+          "tag":"post",
+          "depends_on":[
+             {
+                "tag":"post",
+                "conditions":[
+                   {
+                      "tag_attr":"root_guid",
+                      "depends_on_attr":"guid",
+                      "restrictions":[
+                         {
+                            "col":"type",
+                            "val":"Reshare"
+                         }
+                      ]
+                   }
+                ]
+             }
+          ]
+       },
+       {
+          "tag":"post",
+          "depends_on":[
+             {
+                "tag":"aspect",
+                "conditions":[
+                   {
+                      "tag_attr":"id",
+                      "depends_on_attr":"shareable_id"
+                   }
+                ]
+             }
           ]
        },
        {
@@ -203,6 +222,20 @@
                ]
             }
          ]
+      },
+       {
+          "tag":"aspect",
+          "depends_on":[
+             {
+                "tag":"root",
+                "conditions":[
+                   {
+                      "tag_attr":"user_id",
+                      "depends_on_attr":"user_id"
+                   }
+                ]
+             }
+          ]
        },
        {
           "tag":"comment",
@@ -250,7 +283,7 @@
           "tag":"like",
           "depends_on":[
              {
-                "tag":"post",
+                "tag":"Post",
                 "conditions":[
                    {
                       "tag_attr":"post_id",
@@ -264,11 +297,45 @@
           "tag":"message",
           "depends_on":[
              {
-                "tag":"conversation",
+                "tag":"Conversation",
                 "conditions":[
                    {
                       "tag_attr":"conversation_id",
                       "depends_on_attr":"id"
+                   }
+                ]
+             }
+          ]
+       },
+       {
+          "tag":"conversation",
+          "depends_on":[
+             {
+                "tag":"root",
+                "conditions":[
+                   {
+                      "tag_attr":"author_id",
+                      "depends_on_attr":"person_id"
+                   }
+                ]
+             }
+          ]
+       },
+       {
+          "tag":"contact",
+          "depends_on":[
+             {
+                "tag":"root",
+                "conditions":[
+                   {
+                      "tag_attr":"user_id",
+                      "depends_on_attr":"person_id",
+                      "restrictions":[
+                         {
+                            "col":"receiving",
+                            "val":"t"
+                         }
+                      ]
                    }
                 ]
              }
@@ -312,13 +379,7 @@
           "conditions":[
              {
                 "tag_attr":"user_id",
-                "depends_on_attr":"person_id",
-                "restrictions":[
-                  {
-                     "col":"receiving",
-                     "val":"t"
-                  }
-               ]
+                "depends_on_attr":"person_id"
              }
           ]
        },

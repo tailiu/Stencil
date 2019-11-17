@@ -76,8 +76,8 @@ func main() {
 			transaction.LogOutcome(logTxn, "ABORT")
 			log.Println("Transaction aborted:", logTxn.Txn_id)
 		}
-		evaluation.GetDataBagOfUser(uid, evalConfig)
-		// evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
+		// evaluation.GetDataBagOfUser(uid, evalConfig)
+		evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)
 	}
