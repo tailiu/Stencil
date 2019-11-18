@@ -105,6 +105,56 @@ func (self *MigrationWorkerV2) MigrationID() int {
 	return self.logTxn.Txn_id
 }
 
+func (self *MigrationWorkerV2) ResolveParentDependencyConditions(node *DependencyNode, dconditions []config.DCondition, parentTag config.Tag) string {
+
+	conditionStr := ""
+	for _, condition := range dconditions {
+		tagAttr, err := node.Tag.ResolveTagAttr(condition.TagAttr)
+		if err != nil {
+			log.Println(err, node.Tag.Name, condition.TagAttr)
+			log.Fatal("@ResolveParentDependencyConditions: tagAttr in condition doesn't exist? ", condition.TagAttr)
+			break
+		}
+		if len(condition.Restrictions) > 0 {
+			restricted := false
+			for _, restriction := range condition.Restrictions {
+				if restrictionAttr, err := node.Tag.ResolveTagAttr(restriction["col"]); err == nil {
+					if val, ok := node.Data[restrictionAttr]; ok {
+						if strings.EqualFold(fmt.Sprint(val), restriction["val"]) {
+							restricted = true
+						}
+					} else {
+						fmt.Println(node.Data)
+						log.Fatal("@ResolveParentDependencyConditions:", tagAttr, " doesn't exist in node data? ", node.Tag.Name)
+					}
+				} else {
+					log.Fatal("@ResolveParentDependencyConditions: Col in restrictions doesn't exist? ", restriction["col"])
+					break
+				}
+			}
+			if restricted {
+				return ""
+			}
+		}
+		depOnAttr, err := parentTag.ResolveTagAttr(condition.DependsOnAttr)
+		if err != nil {
+			log.Println(err, parentTag.Name, condition.DependsOnAttr)
+			log.Fatal("@ResolveParentDependencyConditions: depOnAttr in condition doesn't exist? ", condition.DependsOnAttr)
+			break
+		}
+		if val, ok := node.Data[tagAttr]; ok {
+			if conditionStr != "" {
+				conditionStr += " AND "
+			}
+			conditionStr += fmt.Sprintf("%s = '%v'", depOnAttr, val)
+		} else {
+			fmt.Println(node.Data)
+			log.Fatal("ResolveDependencyConditions:", tagAttr, " doesn't exist in node data? ", node.Tag.Name)
+		}
+	}
+	return conditionStr
+}
+
 func (self *MigrationWorkerV2) ResolveDependencyConditions(node *DependencyNode, dep config.Dependency, tag config.Tag) string {
 
 	where := ""
@@ -289,29 +339,29 @@ func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode, threadID in
 
 func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode, threadID int) ([]*DependencyNode, error) {
 	var nodes []*DependencyNode
-	for _, pdep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetParentDependencies(node.Tag.Name)) {
-		if child, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
-			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, pdep.Tag))
-			where := self.ResolveDependencyConditions(node, pdep, child)
-			ql, wmad := self.GetTagQL(child)
-			sql := fmt.Sprintf("%s WHERE %s AND %s", ql, where, wmad)
-			if restrictions := self.ResolveRestrictions(child); restrictions != "" {
-				sql += restrictions
-			}
-			sql += " ORDER BY random()"
-			// log.Fatal(sql)
-			if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
-				for _, datum := range data {
-					newNode := new(DependencyNode)
-					newNode.Tag = child
-					newNode.SQL = sql
-					newNode.Data = datum
-					if !self.wList.IsAlreadyWaiting(*newNode) && !self.IsVisited(newNode) {
+	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetParentDependencies(node.Tag.Name)) {
+		for _, pdep := range dep.DependsOn {
+			if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
+				log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, pdep.Tag))
+				where := self.ResolveParentDependencyConditions(node, pdep.Conditions, parent)
+				ql, _ := self.GetTagQL(parent)
+				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+				sql += self.ResolveRestrictions(parent)
+				log.Fatal(sql)
+				if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
+					for _, datum := range data {
+						newNode := new(DependencyNode)
+						newNode.Tag = parent
+						newNode.SQL = sql
+						newNode.Data = datum
 						nodes = append(nodes, newNode)
 					}
+				} else {
+					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
+					return nil, err
 				}
 			} else {
-				return nil, err
+				log.Fatal("@GetAllPreviousNodes: Tag doesn't exist? ", pdep.Tag)
 			}
 		}
 	}
