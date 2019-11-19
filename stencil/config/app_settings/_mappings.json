@@ -100,7 +100,7 @@
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
-                                        "author_id":"#REF(statuses.account_id)",
+                                        "author_id":"statuses.account_id",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
@@ -120,7 +120,7 @@
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
-                                        "author_id":"#REF(statuses.account_id)",
+                                        "author_id":"statuses.account_id",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
@@ -139,8 +139,8 @@
                                     },
                                     "mapping":{
                                         "id":"statuses.id",
-                                        "author_id":"#REF(statuses.account_id,accounts.id)",
-                                        "commentable_id":"#REF(statuses.in_reply_to_id,statuses.id)",
+                                        "author_id":"statuses.account_id",
+                                        "commentable_id":"statuses.in_reply_to_id",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
@@ -339,7 +339,7 @@
                                         "content":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "reply_to_id": "#CONJUGATE(statuses.in_reply_to_id,statuses.id)"
+                                        "reply_to_id": "statuses.in_reply_to_id"
                                     }
                                 },
                                 {
@@ -603,7 +603,7 @@
                                     "table": "accounts",
                                     "conditions":{},
                                     "mapping": {
-                                        "id": "people.id",
+                                        "id":"people.id",
                                         "username":"users.username",
                                         "private_key":"users.serialized_private_key",
                                         "created_at":"users.created_at",
@@ -632,7 +632,7 @@
                                         "unconfirmed_email":"users.unconfirmed_email",
                                         "created_at":"users.created_at",
                                         "updated_at":"users.updated_at",
-                                        "account_id":"#REF(people.id,people.id)"
+                                        "account_id":"people.id"
                                     }
                                 }
                             ]
@@ -646,14 +646,14 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping": {
-                                        "id": "statuses.id",
-                                        "account_id": "#REF(posts.author_id,people.id)",
+                                        "id":"posts.id",
+                                        "account_id": "posts.author_id",
                                         "text":"posts.text",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at",
                                         "visibility": "$visibility0",
                                         "reply": "$reply1",
-                                        "conversation_id": "#REF(posts.id,posts.id)"
+                                        "conversation_id": "#ASSIGN(posts.id)"
                                     }
                                 },
                                 { 
@@ -662,7 +662,8 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping":{
-                                        "status_id":"#REF(posts.id,posts.id)",
+                                        "id":"#ASSIGN(posts.id)",
+                                        "status_id":"posts.id",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at",
                                         "replies_count": "posts.comments_count",
@@ -676,7 +677,7 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping": {
-                                        "id": "#REF(posts.id,posts.id)",
+                                        "id": "posts.id",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at"
                                     }
@@ -694,8 +695,9 @@
                                         "path": "photos.remote_photo_path"
                                     },
                                     "mapping": {
-                                        "account_id":"#REF(photos.author_id,people.id)",
-                                        "status_id":"#REF(#FETCH(posts.id,posts.guid,photos.status_message_guid),posts.id)",
+                                        "id": "photos.id",
+                                        "account_id": "photos.author_id",
+                                        "status_id": "#FETCH(posts.id,posts.guid,photos.status_message_guid)",
                                         "description":"photos.text",
                                         "updated_at":"photos.updated_at",
                                         "created_at":"photos.created_at",
@@ -710,25 +712,24 @@
                                 {
                                     "table": "statuses",
                                     "conditions":{},
-                                    "conjugate": {
-                                        "conversation_id":"posts.id"
-                                    },
                                     "mapping":{
-                                        "conversation_id": "#REF(comments.commentable_id,posts.id)",
-                                        "account_id": "#REF(comments.author_id,people.id)",
+                                        "id":"comments.id",
+                                        "conversation_id": "#ASSIGN(comments.commentable_id)",
+                                        "account_id": "comments.author_id",
                                         "text":"comments.text",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at",
                                         "visibility": "$visibility0",
-                                        "reply":"$reply2",
-                                        "in_reply_to_id":"#REF(comments.commentable_id,posts.id)"
+                                        "reply": "$reply2",
+                                        "in_reply_to_id":"comments.commentable_id"
                                     }
                                 },
                                 {
                                     "table": "status_stats",
                                     "conditions":{},
                                     "mapping":{
-                                        "status_id":"#CONJUGATE(comments.id,comments.id)",
+                                        "id":"#ASSIGN(comments.id)",
+                                        "status_id":"comments.id",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at"
                                     }
@@ -741,9 +742,10 @@
                                 {
                                     "table": "statuses",
                                     "conditions":{},
-                                    "mapping":{
-                                        "account_id": "#CONJUGATE(messages.author_id,people.id)",
-                                        "conversation_id":"#CONJUGATE(messages.conversation_id,conversations.id)",
+                                    "mapping":{    
+                                        "id":"messages.id",
+                                        "account_id": "messages.author_id",
+                                        "conversation_id":"messages.conversation_id",
                                         "text":"messages.text",
                                         "created_at":"messages.created_at",
                                         "updated_at":"messages.updated_at",
@@ -754,7 +756,8 @@
                                     "table": "status_stats",
                                     "conditions":{},
                                     "mapping":{
-                                        "status_id":"#CONJUGATE(messages.id,messages.id)",
+                                        "id":"#ASSIGN(messages.id)",
+                                        "status_id":"messages.id",
                                         "created_at":"messages.created_at",
                                         "updated_at":"messages.updated_at"
                                     }
@@ -768,6 +771,7 @@
                                     "table": "conversations",
                                     "conditions":{},
                                     "mapping": {
+                                        "id":"conversations.id",
                                         "created_at":"conversations.created_at",
                                         "updated_at":"conversations.updated_at"
                                     }
@@ -781,10 +785,11 @@
                                     "table": "favourites",
                                     "conditions":{},
                                     "mapping": {
-                                        "status_id":"#CONJUGATE(likes.target_id,posts.id)",
+                                        "id":"likes.id",
+                                        "status_id":"likes.target_id",
                                         "created_at":"likes.created_at",
                                         "updated_at":"likes.updated_at",
-                                        "account_id":"#CONJUGATE(likes.author_id,people.id)"
+                                        "account_id":"likes.author_id"
                                     }
                                 }
                             ]
@@ -797,7 +802,8 @@
                                     "conditions": {
                                         "contacts.receiving": "true"
                                     },
-                                    "mapping":{
+                                    "mapping":{ 
+                                        "id":"contacts.id",
                                         "created_at":"contacts.created_at",
                                         "updated_at":"contacts.updated_at",
                                         "account_id":"contacts.user_id",
@@ -915,7 +921,7 @@
                                         "content":"comments.text",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at",
-                                        "reply_to_id":"#CONJUGATE(comments.commentable_id,posts.id)"
+                                        "reply_to_id":"comments.commentable_id"
                                     }
                                 }
                             ]
@@ -1039,6 +1045,7 @@
                                 {
                                     "table": "profile",
                                     "mapping": {
+                                        "id":"people.id",
                                         "nickname": "users.username",
                                         "fullname":"profiles.full_name",
                                         "bio":"profiles.bio",
