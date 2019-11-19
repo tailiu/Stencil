@@ -307,19 +307,11 @@ func (self *MigrationWorkerV2) FetchRoot() error {
 	if root, err := self.SrcAppConfig.GetTag(tagName); err == nil {
 		rootTable, rootCol := self.SrcAppConfig.GetItemsFromKey(root, "root_id")
 		where := fmt.Sprintf("%s.%s = '%s'", rootTable, rootCol, self.uid)
-		ql, wmad := self.GetTagQL(root)
-		sql := fmt.Sprintf("%s WHERE %s AND %s", ql, where, wmad)
-		if restrictions := self.ResolveRestrictions(root); restrictions != "" {
-			sql += restrictions
-		}
-		// log.Fatal(sql)
+		ql, _ := self.GetTagQL(root)
+		sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+		sql += self.ResolveRestrictions(root)
 		if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
-			rootNode := new(DependencyNode)
-			rootNode.Tag = root
-			rootNode.SQL = sql
-			rootNode.Data = data
-			self.root = rootNode
-			return nil
+			self.root = &DependencyNode{Tag: root, SQL: sql, Data: data}
 		} else {
 			if err == nil {
 				err = errors.New("no data returned for root node, doesn't exist?")
@@ -330,16 +322,41 @@ func (self *MigrationWorkerV2) FetchRoot() error {
 		log.Fatal("Can't fetch root tag:", err)
 		return err
 	}
+	return nil
 }
 
 func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode, threadID int) ([]*DependencyNode, error) {
 	var nodes []*DependencyNode
+	for _, dep := range self.SrcAppConfig.GetSubDependencies(node.Tag.Name) {
+		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
+			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
+			where := self.ResolveDependencyConditions(node, dep, child)
+			ql, _ := self.GetTagQL(child)
+			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+			sql += self.ResolveRestrictions(child)
+			log.Fatal(sql)
+			if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
+				for _, datum := range data {
+					newNode := new(DependencyNode)
+					newNode.Tag = child
+					newNode.SQL = sql
+					newNode.Data = datum
+					nodes = append(nodes, newNode)
+				}
+			} else {
+				log.Fatal("@GetAllNextNodes: Error while DataCall: ", err)
+				return nil, err
+			}
+		} else {
+			log.Fatal("@GetAllNextNodes: Tag doesn't exist? ", dep.Tag)
+		}
+	}
 	return nodes, nil
 }
 
 func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode, threadID int) ([]*DependencyNode, error) {
 	var nodes []*DependencyNode
-	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetParentDependencies(node.Tag.Name)) {
+	for _, dep := range self.SrcAppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
 				log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, pdep.Tag))
@@ -370,14 +387,7 @@ func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode, threadI
 
 func (self *MigrationWorkerV2) GetAdjNode(node *DependencyNode, threadID int) (*DependencyNode, error) {
 	if strings.EqualFold(node.Tag.Name, "root") {
-		if nodes, err := self.GetOwnedNodes(threadID, 1); err == nil {
-			if len(nodes) > 0 {
-				return nodes[0], err
-			}
-			return nil, err
-		} else {
-			return nil, err
-		}
+		return self.GetOwnedNode(threadID)
 	}
 	return self.GetDependentNode(node, threadID)
 }
@@ -390,22 +400,18 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 			where := self.ResolveDependencyConditions(node, dep, child)
 			ql, wmad := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s AND %s", ql, where, wmad)
-			if restrictions := self.ResolveRestrictions(child); restrictions != "" {
-				sql += restrictions
-			}
+			sql += self.ResolveRestrictions(child)
 			sql += " ORDER BY random()"
-			// log.Fatal(sql)
-			if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
-				for _, datum := range data {
-					newNode := new(DependencyNode)
-					newNode.Tag = child
-					newNode.SQL = sql
-					newNode.Data = datum
-					if !self.wList.IsAlreadyWaiting(*newNode) && !self.IsVisited(newNode) {
-						return newNode, nil
-					}
+			log.Fatal(sql)
+			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
+				newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
+				if !self.wList.IsAlreadyWaiting(newNode) && !self.IsVisited(newNode) {
+					return &newNode, nil
 				}
 			} else {
+				if err == nil {
+					err = errors.New("no data returned for root node, doesn't exist?")
+				}
 				return nil, err
 			}
 		}
@@ -413,40 +419,30 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 	return nil, nil
 }
 
-func (self *MigrationWorkerV2) GetOwnedNodes(threadID, nodelimit int) ([]*DependencyNode, error) {
+func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, error) {
 
-	for _, own := range self.SrcAppConfig.GetOrderedOwnerships() {
+	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
 		log.Println(fmt.Sprintf("x%2dx |         FETCHING  tag  { %s } ", threadID, own.Tag))
-		if self.unmappedTags.Exists(own.Tag) {
-			log.Println(fmt.Sprintf("x%2dx |         UNMAPPED  tag  { %s } ", threadID, own.Tag))
-			continue
-		}
+		// if self.unmappedTags.Exists(own.Tag) {
+		// 	log.Println(fmt.Sprintf("x%2dx |         UNMAPPED  tag  { %s } ", threadID, own.Tag))
+		// 	continue
+		// }
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
 			where := self.ResolveOwnershipConditions(own, child)
-			ql, wmad := self.GetTagQL(child)
-			sql := fmt.Sprintf("%s WHERE %s AND %s", ql, where, wmad)
-			if restrictions := self.ResolveRestrictions(child); restrictions != "" {
-				sql += restrictions
-			}
-			sql += " ORDER BY random() LIMIT " + fmt.Sprint(nodelimit)
-			// log.Fatal(sql)
-			if result, err := db.DataCall(self.SrcDBConn, sql); err == nil {
-				var nodes []*DependencyNode
-				for _, data := range result {
-					if len(data) > 0 {
-						newNode := new(DependencyNode)
-						newNode.Tag = child
-						newNode.SQL = sql
-						newNode.Data = data
-						if !self.wList.IsAlreadyWaiting(*newNode) {
-							nodes = append(nodes, newNode)
-						}
-					}
-				}
-				if len(nodes) > 0 {
-					return nodes, nil
+			ql, _ := self.GetTagQL(child)
+			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+			sql += self.ResolveRestrictions(child)
+			sql += " ORDER BY random() "
+			log.Fatal(sql)
+			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
+				newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
+				if !self.wList.IsAlreadyWaiting(newNode) {
+					return &newNode, nil
 				}
 			} else {
+				if err == nil {
+					err = errors.New("no data returned for root node, doesn't exist?")
+				}
 				return nil, err
 			}
 		}
@@ -691,7 +687,7 @@ func (self *MigrationWorkerV2) MarkRowAsDeleted(node *DependencyNode, tx *sql.Tx
 		idCol := fmt.Sprintf("%s.id", tagMember)
 		if _, ok := node.Data[idCol]; ok {
 			srcID := fmt.Sprint(node.Data[idCol])
-			if derr := db.DeleteRowFromAppDB(tx, tagMember, srcID); derr != nil {
+			if derr := db.ReallyDeleteRowFromAppDB(tx, tagMember, srcID); derr != nil {
 				fmt.Println("@ERROR_DeleteRowFromAppDB", derr)
 				fmt.Println("@QARGS:", tagMember, srcID)
 				// log.Fatal(derr)
@@ -950,7 +946,7 @@ func (self *MigrationWorkerV2) HandleLeftOverWaitingNodes() {
 	}
 }
 
-func (self *MigrationWorkerV2) IsVisited(node *DependencyNode) bool {
+func (self *MigrationWorkerV2) IsVisited(node DependencyNode) bool {
 	for _, tagMember := range node.Tag.Members {
 		idCol := fmt.Sprintf("%s.id", tagMember)
 		if _, ok := node.Data[idCol]; ok {
@@ -1050,35 +1046,27 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 
 func (self *MigrationWorkerV2) ConsistentMigration(threadID int) error {
 
-	nodelimit := 1
-	for nodes, err := self.GetOwnedNodes(threadID, nodelimit); err != nil || nodes != nil; nodes, err = self.GetOwnedNodes(threadID, nodelimit) {
-		if err != nil {
-			return err
-		}
-		totalNodes := len(nodes)
-		existingNodesCount := 0 // consecutive 10 already exist? break loop!
-		for nodeNum, node := range nodes {
+	for {
+		if node, err := self.GetOwnedNode(threadID); err == nil {
+			if node == nil {
+				return nil
+			}
 			nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
-			log.Println(fmt.Sprintf("~%2d~ | %d/%d | Current   Node: { %s } ID: %v", threadID, nodeNum, totalNodes, node.Tag.Name, node.Data[nodeIDAttr]))
+			log.Println(fmt.Sprintf("~%2d~ | Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
 			if err := self.MigrateNode(node, false); err == nil {
-				existingNodesCount = 0
-				log.Println(fmt.Sprintf("x%2dx | %d/%d | MIGRATED  node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				log.Println(fmt.Sprintf("x%2dx | MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			} else {
-				log.Println(fmt.Sprintf("x%2dx | %d/%d | RCVD ERR  node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+				log.Println(fmt.Sprintf("x%2dx | RCVD ERR  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 				if self.unmappedTags.Exists(node.Tag.Name) {
-					log.Println(fmt.Sprintf("x%2dx | %d/%d | BREAKLOOP node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+					log.Println(fmt.Sprintf("x%2dx | BREAKLOOP node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 					break
 				}
 				if strings.EqualFold(err.Error(), "2") {
-					log.Println(fmt.Sprintf("x%2dx | %d/%d | IGNORED   node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+					log.Println(fmt.Sprintf("x%2dx | IGNORED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 				} else if strings.EqualFold(err.Error(), "3") {
-					existingNodesCount++
-					log.Println(fmt.Sprintf("x%2dx | %d/%d | EXISTS    node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-					if existingNodesCount > 10 {
-						break
-					}
+					log.Println(fmt.Sprintf("x%2dx | EXISTS    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 				} else {
-					log.Println(fmt.Sprintf("x%2dx | %d/%d | FAILED    node { %s } From [%s] to [%s]", threadID, nodeNum, totalNodes, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+					log.Println(fmt.Sprintf("x%2dx | FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 					if strings.EqualFold(err.Error(), "0") {
 						log.Println(err)
 						return err
@@ -1088,8 +1076,11 @@ func (self *MigrationWorkerV2) ConsistentMigration(threadID int) error {
 					}
 				}
 			}
+		} else {
+			return err
 		}
 	}
+
 	if err := self.MigrateNode(self.root, false); err == nil {
 		log.Println(fmt.Sprintf("x%2dx | MIGRATED  node { %s } From [%s] to [%s]", threadID, self.root.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 	} else {

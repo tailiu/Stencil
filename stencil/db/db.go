@@ -9,9 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"reflect"
 	"strings"
-	"math/rand"
+
 	_ "github.com/lib/pq" // postgres driver
 )
 
@@ -74,7 +75,7 @@ func CloseDBConn(app string) {
 	}
 }
 
-func GetAppIDByAppName(dbConn *sql.DB, app string) string{
+func GetAppIDByAppName(dbConn *sql.DB, app string) string {
 	sql := fmt.Sprintf("SELECT pk from apps WHERE app_name = '%s'", app)
 	if result, err := DataCall1(dbConn, sql); err == nil {
 		if val, ok := result["pk"]; ok {
@@ -127,6 +128,16 @@ func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, src
 	query := "INSERT INTO identity_table (src_app, src_table, src_id, dst_app, dst_table, dst_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
 	_, err := tx.Exec(query, srcApp, srcTable, srcID, dstApp, dstTable, dstID, migrationID)
 	return err
+}
+
+func ReallyDeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
+	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", table)
+	if _, err := tx.Exec(query, id); err != nil {
+		log.Println(query, id)
+		log.Fatal("## DB ERROR: ", err)
+		return err
+	}
+	return nil
 }
 
 func DeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
@@ -301,10 +312,10 @@ func TableID(dbConn *sql.DB, table, app string) (string, error) {
 	if res, err := DataCall1(dbConn, sql); err == nil {
 		if pk, ok := res["pk"]; ok {
 			return fmt.Sprint(pk), nil
-		}else{
+		} else {
 			return "", errors.New("Something bad with the returned result!")
 		}
-	}else{
+	} else {
 		return "", err
 	}
 }
@@ -641,9 +652,9 @@ func GetPK(app, table string) []string {
 }
 
 func GetNewRowID(dbConn *sql.DB) int32 {
-	
+
 	var rowid int32
-	for{
+	for {
 		rowid = rand.Int31n(2147483647)
 		q := "SELECT row_id FROM migration_table WHERE row_id = $1"
 		if v, err := DataCall1(dbConn, q, rowid); err == nil && v == nil {
@@ -770,13 +781,13 @@ func LogError(dbConn *sql.DB, dbquery, args, migration_id, dst_app, qerr string)
 func GetUserListFromAppDB(appName, userTable, userCol string) []string {
 	dbConn := GetDBConn(appName)
 	query := fmt.Sprintf("SELECT %s FROM %s ORDER BY random()", userCol, userTable)
-	if res, err := DataCall(dbConn, query); err == nil{
+	if res, err := DataCall(dbConn, query); err == nil {
 		var users []string
 		for _, row := range res {
 			users = append(users, fmt.Sprint(row[userCol]))
 		}
 		return users
-	}else {
+	} else {
 		fmt.Println(query, userTable, userCol, appName)
 		log.Fatal(err)
 	}
