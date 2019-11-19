@@ -67,7 +67,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"accounts.id",
-                                        "owner_id":"users.id",
+                                        "owner_id":"#REF(users.id,users.id)",
                                         "serialized_public_key":"accounts.public_key",
                                         "diaspora_handle":"accounts.display_name",
                                         "created_at":"accounts.created_at",
@@ -79,7 +79,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"#RANDINT",
-                                        "person_id":"accounts.id",
+                                        "person_id":"#REF(accounts.id,accounts.id)",
                                         "bio":"accounts.note",
                                         "image_url":"accounts.avatar_remote_url",
                                         "created_at":"accounts.created_at",
@@ -100,12 +100,12 @@
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
-                                        "author_id":"#REF(statuses.account_id)",
+                                        "author_id":"#REF(statuses.account_id,accounts.id)",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type": "$reshare",
-                                        "guid":"#ASSIGN(statuses.id)",
+                                        "guid":"#REF(statuses.id,statuses.id)",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -120,12 +120,12 @@
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
-                                        "author_id":"#REF(statuses.account_id)",
+                                        "author_id":"#REF(statuses.account_id,accounts.id)",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "type": "$mentions_type1",
-                                        "guid":"#ASSIGN(statuses.id)",
+                                        "type":"$mentions_type1",
+                                        "guid":"#REF(statuses.id,statuses.id)",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -144,8 +144,8 @@
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "commentable_type": "$commentable_type",
-                                        "guid":"#ASSIGN(statuses.id)"
+                                        "commentable_type":"$commentable_type",
+                                        "guid":"#REF(statuses.id,statuses.id)"
             
                                     }
                                 },
@@ -156,12 +156,12 @@
                                     },
                                     "mapping":{    
                                         "id":"statuses.id",
-                                        "author_id":"statuses.account_id",
-                                        "conversation_id":"statuses.conversation_id",
+                                        "author_id":"#REF(statuses.account_id,accounts.id)",
+                                        "conversation_id":"#REF(statuses.conversation_id,conversations.id)",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "guid":"#ASSIGN(statuses.id)"
+                                        "guid":"#REF(statuses.id,statuses.id)"
                                     }
                                 }
                             ]
@@ -176,10 +176,10 @@
                                     "media": {
                                         "path": "media_attachments.remote_url"
                                     },
-                                    "mapping":{    
+                                    "mapping":{
                                         "id": "media_attachments.id",
-                                        "author_id": "media_attachments.account_id",
-                                        "status_message_guid": "#ASSIGN(media_attachments.status_id)",
+                                        "author_id": "#REF(media_attachments.account_id,accounts.id)",
+                                        "status_message_guid": "#REF(media_attachments.status_id,statuses.id)",
                                         "text":"media_attachments.description",
                                         "updated_at":"media_attachments.updated_at",
                                         "created_at":"media_attachments.created_at",
@@ -211,10 +211,10 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"favourites.id",
-                                        "target_id":"favourites.status_id",
+                                        "target_id":"#REF(favourites.status_id,statuses.id)",
                                         "created_at":"favourites.created_at",
                                         "updated_at":"favourites.updated_at",
-                                        "author_id":"favourites.account_id",
+                                        "author_id":"#REF(favourites.account_id,accounts.id)",
                                         "target_type":"$like_target_type"
                                     }
                                 }
@@ -230,8 +230,8 @@
                                         "id":"follows.id",
                                         "created_at":"follows.created_at",
                                         "updated_at":"follows.updated_at",
-                                        "user_id":"follows.account_id",
-                                        "person_id":"follows.target_account_id",
+                                        "user_id":"#REF(follows.account_id,accounts.id)",
+                                        "person_id":"#REF(follows.target_account_id,accounts.id)",
                                         "sharing":"$F",
                                         "receiving":"$T"
                                     }
@@ -247,8 +247,8 @@
                                     },
                                     "mapping":{
                                         "id":"mentions.id",
-                                        "person_id":"mentions.account_id",
-                                        "mentions_container_id":"mentions.status_id",
+                                        "person_id":"#REF(mentions.account_id,accounts.id)",
+                                        "mentions_container_id":"#REF(mentions.status_id,statuses.id)",
                                         "mentions_container_type":"$mentions_type1"
                                     }
                                 }
@@ -259,12 +259,11 @@
                             "toTables": [
                                 {
                                     "table": "notifications",
-                                    "conditions": {
-                                    },
+                                    "conditions": {},
                                     "mapping":{ 
                                         "id":"notifications.id",
                                         "target_type":"notifications.activity_type",
-                                        "recipient_id":"notifications.account_id",
+                                        "recipient_id":"#REF(notifications.account_id,accounts.id)",
                                         "target_id":"notifications.activity_id",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
@@ -276,7 +275,7 @@
                                     },
                                     "mapping": {
                                         "notification_id":"notifications.id",
-                                        "person_id":"notifications.from_account_id",
+                                        "person_id":"#REF(notifications.from_account_id,accounts.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }
