@@ -325,11 +325,10 @@ func (self *MigrationWorkerV2) FetchRoot() error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode, threadID int) ([]*DependencyNode, error) {
+func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode) ([]*DependencyNode, error) {
 	var nodes []*DependencyNode
 	for _, dep := range self.SrcAppConfig.GetSubDependencies(node.Tag.Name) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
-			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
 			where := self.ResolveDependencyConditions(node, dep, child)
 			ql, _ := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
@@ -354,12 +353,11 @@ func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode, threadID in
 	return nodes, nil
 }
 
-func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode, threadID int) ([]*DependencyNode, error) {
+func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*DependencyNode, error) {
 	var nodes []*DependencyNode
 	for _, dep := range self.SrcAppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
-				log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, pdep.Tag))
 				where := self.ResolveParentDependencyConditions(node, pdep.Conditions, parent)
 				ql, _ := self.GetTagQL(parent)
 				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
@@ -916,6 +914,10 @@ func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (confi
 	return combinedMapping, mappingFound
 }
 
+func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
+	return nil
+}
+
 func (self *MigrationWorkerV2) MigrateNode(node *DependencyNode, isBag bool) error {
 
 	if mapping, found := self.FetchMappingsForNode(node); found {
@@ -976,6 +978,23 @@ func (self *MigrationWorkerV2) MarkAsVisited(node *DependencyNode) {
 }
 
 func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
+	if nextNodes, err := self.GetAllNextNodes(node); err == nil {
+		for _, nextNode := range nextNodes {
+			self.AddToReferences(node, nextNode)
+			if precedingNodes, err := self.GetAllPreviousNodes(node); err != nil {
+				return err
+			} else if len(precedingNodes) <= 1 {
+				if err := self.CheckNextNode(nextNode); err != nil {
+					return err
+				}
+				if err := self.SendNodeToBag(nextNode); err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		return err
+	}
 	return nil
 }
 
@@ -1009,7 +1028,7 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 			return err
 		}
 
-		if previousNodes, err := self.GetAllPreviousNodes(node, threadID); err == nil {
+		if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
 			for _, previousNode := range previousNodes {
 				self.AddToReferences(node, previousNode)
 			}
