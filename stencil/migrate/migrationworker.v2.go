@@ -915,6 +915,8 @@ func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (confi
 }
 
 func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
+	// get owner of the bag
+	// db.CreateNewBag()
 	return nil
 }
 
@@ -980,7 +982,7 @@ func (self *MigrationWorkerV2) MarkAsVisited(node *DependencyNode) {
 func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
 	if nextNodes, err := self.GetAllNextNodes(node); err == nil {
 		for _, nextNode := range nextNodes {
-			self.AddToReferences(node, nextNode)
+			self.AddToReferences(nextNode, node)
 			if precedingNodes, err := self.GetAllPreviousNodes(node); err != nil {
 				return err
 			} else if len(precedingNodes) <= 1 {
@@ -992,13 +994,107 @@ func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
 				}
 			}
 		}
+		return nil
 	} else {
+		return err
+	}
+}
+
+func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, referencedNode *DependencyNode) error {
+
+	if dep, err := self.SrcAppConfig.CheckDependency(currentNode.Tag.Name, referencedNode.Tag.Name); err != nil {
+		fmt.Println(err)
+		log.Fatal("@AddToReferences: CheckDependency can't find dependency!")
+	} else {
+		for _, condition := range dep.Conditions {
+			tagAttr, err := currentNode.Tag.ResolveTagAttr(condition.TagAttr)
+			if err != nil {
+				log.Println(err, currentNode.Tag.Name, condition.TagAttr)
+				log.Fatal("@AddToReferences: tagAttr in condition doesn't exist? ", condition.TagAttr)
+				break
+			}
+			tagAttrTokens := strings.Split(tagAttr, ".")
+			fromMember := tagAttrTokens[0]
+			fromReference := tagAttrTokens[1]
+			fromMemberID, err := db.TableID(self.logTxn.DBconn, fromMember, self.SrcAppConfig.AppID)
+			if err != nil {
+				log.Fatal("@AddToReferences: Unable to resolve id for fromMember ", fromMember)
+			}
+
+			depOnAttr, err := referencedNode.Tag.ResolveTagAttr(condition.DependsOnAttr)
+			if err != nil {
+				log.Println(err, referencedNode.Tag.Name, condition.DependsOnAttr)
+				log.Fatal("@AddToReferences: depOnAttr in condition doesn't exist? ", condition.DependsOnAttr)
+				break
+			}
+			depOnAttrTokens := strings.Split(depOnAttr, ".")
+			toMember := depOnAttrTokens[0]
+			toReference := depOnAttrTokens[1]
+			toMemberID, err := db.TableID(self.logTxn.DBconn, toMember, self.SrcAppConfig.AppID)
+			if err != nil {
+				log.Fatal("@AddToReferences: Unable to resolve id for toMember ", toMember)
+			}
+
+			var fromID, toID string
+
+			if val, ok := currentNode.Data[fromMember+".id"]; ok {
+				fromID = fmt.Sprint(val)
+			} else {
+				fmt.Println(currentNode.Data)
+				log.Fatal("@AddToReferences:", fromMember+".id", " doesn't exist in node data? ", currentNode.Tag.Name)
+			}
+
+			if val, ok := referencedNode.Data[toMember+".id"]; ok {
+				toID = fmt.Sprint(val)
+			} else {
+				fmt.Println(referencedNode.Data)
+				log.Fatal("@AddToReferences:", toMember+".id", " doesn't exist in node data? ", referencedNode.Tag.Name)
+			}
+
+			if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, fromMemberID, fromID, toMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), fromReference, toReference); err != nil {
+				fmt.Println("#Args: ", self.SrcAppConfig.AppID, fromMemberID, fromID, toMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), fromReference, toReference)
+				log.Fatal("@AddToReferences: Unable to CreateNewReference: ", err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (self *MigrationWorkerV2) InitTransactions() error {
+	var err error
+	self.tx.SrcTx, err = self.SrcDBConn.Begin()
+	if err != nil {
+		log.Fatal("Error creating Source DB Transaction! ", err)
+		return err
+	}
+	self.tx.DstTx, err = self.DstDBConn.Begin()
+	if err != nil {
+		log.Fatal("Error creating Dst DB Transaction! ", err)
+		return err
+	}
+	self.tx.StencilTx, err = self.logTxn.DBconn.Begin()
+	if err != nil {
+		log.Fatal("Error creating Stencil DB Transaction! ", err)
 		return err
 	}
 	return nil
 }
 
-func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, referencedNode *DependencyNode) error {
+func (self *MigrationWorkerV2) CommitTransactions() error {
+
+	if err := self.tx.SrcTx.Commit(); err != nil {
+		log.Fatal("Error committing Source DB Transaction! ", err)
+		return err
+	}
+	if err := self.tx.DstTx.Commit(); err != nil {
+		log.Fatal("Error committing Destination DB Transaction! ", err)
+		return err
+	}
+	if err := self.tx.StencilTx.Commit(); err != nil {
+		log.Fatal("Error committing Stencil DB Transaction! ", err)
+		return err
+	}
 	return nil
 }
 
@@ -1024,6 +1120,14 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 	log.Println(fmt.Sprintf("#%d# Process   Node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 
 	if self.IsNodeOwnedByRoot(node) {
+		if err := self.InitTransactions(); err != nil {
+			return err
+		} else {
+			defer self.tx.SrcTx.Rollback()
+			defer self.tx.DstTx.Rollback()
+			defer self.tx.StencilTx.Rollback()
+		}
+
 		if err := self.CheckNextNode(node); err != nil {
 			return err
 		}
@@ -1052,6 +1156,11 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 				// 	return err
 				// }
 			}
+		}
+		if err := self.CommitTransactions(); err != nil {
+			return err
+		} else {
+			log.Println(fmt.Sprintf("x%2dx COMMITTED node { %s } ", threadID, node.Tag.Name))
 		}
 	} else {
 		log.Println(fmt.Sprintf("x%2dx VISITED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))

@@ -4,16 +4,23 @@ import (
 	"database/sql"
 	"stencil/config"
 	"stencil/transaction"
-	"github.com/jlaffaye/ftp"
 	"sync"
+
+	"github.com/jlaffaye/ftp"
 )
 
 const (
 	INDEPENDENT = "0"
 	CONSISTENT  = "1"
 	DELETION    = "3"
-	BAGS	    = "4"
+	BAGS        = "4"
 )
+
+type Transactions struct {
+	SrcTx     *sql.Tx
+	DstTx     *sql.Tx
+	StencilTx *sql.Tx
+}
 
 type DependencyNode struct {
 	Tag  config.Tag
@@ -52,8 +59,8 @@ type MigrationWorker struct {
 	logTxn       *transaction.Log_txn
 	mtype        string
 	visitedNodes map[string]map[string]bool
-	arg 		 string
-	Size int
+	arg          string
+	Size         int
 	// threadID     int
 }
 
@@ -88,5 +95,6 @@ type MigrationWorkerV2 struct {
 	mtype        string
 	visitedNodes map[string]bool
 	FTPClient    *ftp.ServerConn
+	tx           Transactions
 	// threadID     int
 }

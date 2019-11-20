@@ -75,7 +75,7 @@ func (self *AppConfig) CheckDependency(tagName, dependsOnTag string) (DependsOn,
 		}
 	}
 
-	return *new(DependsOn), nil
+	return *new(DependsOn), errors.New("Dependency " + tagName + " : " + dependsOnTag + "doesn't exist!")
 }
 
 func (self *AppConfig) GetSubDependencies(tagName string) []Dependency {
