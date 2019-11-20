@@ -156,7 +156,7 @@ func NewBag(tx *sql.Tx, pk, rowid, user_id, table, app string, migration_id int)
 	return err
 }
 
-func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id int, data []byte) error {
+func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id string, data []byte) error {
 	query := "INSERT INTO data_bags (app, member, id, data, user_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING"
 	_, err := tx.Exec(query, app, member, id, data, user_id, migration_id)
 	return err

@@ -549,44 +549,43 @@ func (self *MigrationWorkerV2) CheckMappingConditions(toTable config.ToTable, no
 	return breakCondition
 }
 
-func (self *MigrationWorkerV2) IsNodeOwnedByRoot(node *DependencyNode) bool {
+func (self *MigrationWorkerV2) GetNodeOwner(node *DependencyNode) (string, bool) {
 
 	if ownership := self.SrcAppConfig.GetOwnership(node.Tag.Name, self.root.Tag.Name); ownership != nil {
 		for _, condition := range ownership.Conditions {
 			tagAttr, err := node.Tag.ResolveTagAttr(condition.TagAttr)
 			if err != nil {
-				log.Fatal("Resolving TagAttr in IsNodeOwnedByRoot", err, node.Tag.Name, condition.TagAttr)
+				log.Fatal("Resolving TagAttr in GetNodeOwner", err, node.Tag.Name, condition.TagAttr)
 				break
 			}
 			depOnAttr, err := self.root.Tag.ResolveTagAttr(condition.DependsOnAttr)
 			if err != nil {
-				log.Fatal("Resolving depOnAttr in IsNodeOwnedByRoot", err, node.Tag.Name, condition.DependsOnAttr)
+				log.Fatal("Resolving depOnAttr in GetNodeOwner", err, node.Tag.Name, condition.DependsOnAttr)
 				break
 			}
 			if nodeVal, err := node.GetValueForKey(tagAttr); err == nil {
 				if rootVal, err := self.root.GetValueForKey(depOnAttr); err == nil {
 					if !strings.EqualFold(nodeVal, rootVal) {
-						return false
+						return nodeVal, true
+					} else {
+						return nodeVal, false
 					}
-					// else {
-					// 	fmt.Println(nodeVal, "==", rootVal)
-					// }
 				} else {
 					fmt.Println("Ownership Condition Key in Root Data:", depOnAttr, "doesn't exist!")
 					fmt.Println("root data:", self.root.Data)
-					log.Fatal("stop here and check ownership conditions wrt root")
+					log.Fatal("@GetNodeOwner: stop here and check ownership conditions wrt root")
 				}
 			} else {
 				fmt.Println("Ownership Condition Key", tagAttr, "doesn't exist!")
 				fmt.Println("node data:", node.Data)
 				fmt.Println("node sql:", node.SQL)
-				log.Fatal("stop here and check ownership conditions")
+				log.Fatal("@GetNodeOwner: stop here and check ownership conditions")
 			}
 		}
 	} else {
-		// log.Fatal("Ownership not found in IsNodeOwnedByRoot:", node.Tag.Name)
+		log.Fatal("Ownership not found in GetNodeOwner:", node.Tag.Name)
 	}
-	return true
+	return "", false
 }
 
 func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) (string, string, []interface{}, string, string, *transaction.UndoAction) {
@@ -915,8 +914,45 @@ func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (confi
 }
 
 func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
-	// get owner of the bag
-	// db.CreateNewBag()
+	if ownerID, _ := self.GetNodeOwner(node); len(ownerID) > 0 {
+		for _, member := range node.Tag.Members {
+			if memberID, err := db.TableID(self.logTxn.DBconn, member, self.SrcAppConfig.AppID); err != nil {
+				log.Fatal("@SendNodeToBag > TableID: error in getting table id for member! ", member, err)
+				return err
+			} else {
+				var bagData map[string]interface{}
+				for col, val := range node.Data {
+					colTokens := strings.Split(col, ".")
+					colMember := colTokens[0]
+					colAttr := colTokens[1]
+					if strings.Contains(colMember, member) {
+						bagData[colAttr] = val
+					}
+				}
+				if len(bagData) > 0 {
+					if id, ok := node.Data[member+".id"]; ok {
+						if jsonData, err := json.Marshal(bagData); err == nil {
+							if err := db.CreateNewBag(self.tx.StencilTx, self.SrcAppConfig.AppID, memberID, fmt.Sprint(id), ownerID, fmt.Sprint(self.logTxn.Txn_id), jsonData); err != nil {
+								log.Fatal("@SendNodeToBag: error in creating bag! ", err)
+								return err
+							}
+						} else {
+							fmt.Println(bagData)
+							log.Fatal("@SendNodeToBag: unable to convert bag data to JSON ", err)
+						}
+					} else {
+						fmt.Println(node.Data)
+						log.Fatal("@SendNodeToBag: member doesn't contain id! ", member)
+						return err
+					}
+				}
+			}
+		}
+	} else {
+		fmt.Println(node)
+		log.Fatal("@SendNodeToBag > GetNodeOwner: ownerID error! ")
+	}
+
 	return nil
 }
 
@@ -1119,7 +1155,7 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 
 	log.Println(fmt.Sprintf("#%d# Process   Node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 
-	if self.IsNodeOwnedByRoot(node) {
+	if ownerID, isRoot := self.GetNodeOwner(node); isRoot && len(ownerID) > 0 {
 		if err := self.InitTransactions(); err != nil {
 			return err
 		} else {
