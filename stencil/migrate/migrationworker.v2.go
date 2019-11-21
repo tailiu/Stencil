@@ -945,6 +945,12 @@ func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
 						log.Fatal("@SendNodeToBag: member doesn't contain id! ", member)
 						return err
 					}
+					if err := self.AddInnerReferences(node); err != nil {
+						fmt.Println(node.Tag.Members)
+						fmt.Println(node.Tag.InnerDependencies)
+						fmt.Println(node.Data)
+						log.Fatal("@SendNodeToBag > AddInnerReferences: Adding Inner References failed ", err)
+					}
 				}
 			}
 		}
@@ -1034,6 +1040,10 @@ func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
 	} else {
 		return err
 	}
+}
+
+func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
+	return nil
 }
 
 func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, referencedNode *DependencyNode) error {
