@@ -1043,6 +1043,47 @@ func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
 }
 
 func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
+
+	for _, innerDependency := range node.Tag.InnerDependencies {
+		for dependee, dependsOn := range innerDependency {
+			depTokens := strings.Split(dependee, ".")
+			dependeeMember := node.Tag.Members[depTokens[0]]
+			dependeeMemberID, err := db.TableID(self.logTxn.DBconn, dependeeMember, self.SrcAppConfig.AppID)
+			if err != nil {
+				log.Fatal("@AddInnerReferences: Unable to resolve id for dependeeMember ", dependeeMember)
+			}
+
+			depOnTokens := strings.Split(dependsOn, ".")
+			depOnMember := node.Tag.Members[depOnTokens[0]]
+			depOnMemberID, err := db.TableID(self.logTxn.DBconn, depOnMember, self.SrcAppConfig.AppID)
+			if err != nil {
+				log.Fatal("@AddInnerReferences: Unable to resolve id for depOnMember ", depOnMember)
+			}
+
+			var fromID, toID string
+
+			if val, ok := node.Data[dependeeMember+".id"]; ok {
+				fromID = fmt.Sprint(val)
+			} else {
+				fmt.Println(node.Data)
+				log.Fatal("@AddInnerReferences:", dependeeMember+".id", " doesn't exist in node data? ", node.Tag.Name)
+			}
+
+			if val, ok := node.Data[depOnMember+".id"]; ok {
+				toID = fmt.Sprint(val)
+			} else {
+				fmt.Println(node.Data)
+				log.Fatal("@AddInnerReferences:", depOnMember+".id", " doesn't exist in node data? ", node.Tag.Name)
+			}
+
+			if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, dependeeMemberID, fromID, depOnMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), depTokens[1], depOnTokens[1]); err != nil {
+				fmt.Println("#Args: ", self.SrcAppConfig.AppID, dependeeMemberID, fromID, depOnMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), depTokens[1], depOnTokens[1])
+				log.Fatal("@AddInnerReferences: Unable to CreateNewReference: ", err)
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
