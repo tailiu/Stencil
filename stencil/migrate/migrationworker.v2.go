@@ -609,7 +609,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 				orgCols += fmt.Sprintf("%s,", fromAttr)
 			}
 		} else if strings.Contains(fromAttr, "#") {
-			assignedTabCol := strings.Trim(fromAttr, "(#ASSIGN#FETCH#CONJUGATE)")
+			assignedTabCol := strings.Trim(fromAttr, "(#ASSIGN#FETCH#REF)")
 			if strings.Contains(fromAttr, "#ASSIGN") {
 				if nodeVal, ok := node.Data[assignedTabCol]; ok {
 					ivals = append(ivals, nodeVal)
@@ -617,7 +617,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					cols += fmt.Sprintf("%s,", toAttr)
 					orgCols += fmt.Sprintf("%s,", assignedTabCol)
 				}
-			} else if strings.Contains(fromAttr, "#CONJUGATE") {
+			} else if strings.Contains(fromAttr, "#REF") {
 				args := strings.Split(assignedTabCol, ",")
 				if nodeVal, ok := node.Data[args[0]]; ok {
 					ivals = append(ivals, nodeVal)
@@ -725,32 +725,15 @@ func (self *MigrationWorkerV2) TransferMedia(filePath string) error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) HandleUnmappedMembersOfNode(tx *sql.Tx, mapping config.Mapping, node *DependencyNode) error {
+func (self *MigrationWorkerV2) HandleUnmappedMembersOfNode(mapping config.Mapping, node *DependencyNode) error {
 
 	if self.mtype != DELETION {
 		return nil
 	}
 	for _, nodeMember := range node.Tag.GetTagMembers() {
 		if !helper.Contains(mapping.FromTables, nodeMember) {
-			for _, fromTable := range mapping.FromTables {
-				node_rowids := node.Data[fromTable+".rowids_str"]
-				if node_rowids == nil {
-					continue
-				}
-				src_rowids := strings.Split(fmt.Sprint(node_rowids), ",")
-				for _, src_rowid := range src_rowids {
-					tableID, err := db.TableID(self.logTxn.DBconn, nodeMember, self.SrcAppConfig.AppID)
-					if err != nil {
-						fmt.Println("HandleUnmappedMembersOfNode: Unable to resolve table id for table: ", nodeMember)
-						log.Fatal(err)
-					}
-					if err := db.MarkRowAsBag(tx, src_rowid, tableID, fmt.Sprint(self.logTxn.Txn_id), self.uid); err != nil {
-						fmt.Println(fmt.Sprintf("HandleUnmappedMembersOfNode: DstAppConfig.AppID '%s' src_rowid '%s' fromTable '%s' nodeMember '%s' Txn_id '%d'", self.DstAppConfig.AppID, src_rowid, fromTable, nodeMember, self.logTxn.Txn_id))
-						fmt.Println(fmt.Sprintf("Args: '%s' '%s' '%s' '%s' '%s' '%s' '%d'", node_rowids, src_rowids, src_rowid, self.uid, nodeMember, self.SrcAppConfig.AppID, self.logTxn.Txn_id))
-						// log.Fatal("HandleUnmappedMembersOfNode :: NewBag :", err)
-						return err
-					}
-				}
+			if err := self.SendMemberToBag(node, nodeMember, self.uid, false); err != nil {
+				return err
 			}
 		}
 
@@ -797,7 +780,11 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 	}
 
 	if self.mtype == DELETION {
+		if err := self.HandleUnmappedMembersOfNode(mapping, node); err != nil {
+			return err
+		}
 		if err := self.DeleteRow(node); err == nil {
+			return err
 		}
 	}
 
