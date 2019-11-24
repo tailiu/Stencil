@@ -913,46 +913,66 @@ func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (confi
 	return combinedMapping, mappingFound
 }
 
+func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, ownerID string, fromNode bool) error {
+	if memberID, err := db.TableID(self.logTxn.DBconn, member, self.SrcAppConfig.AppID); err != nil {
+		log.Fatal("@SendMemberToBag > TableID: error in getting table id for member! ", member, err)
+		return err
+	} else {
+		var bagData map[string]interface{}
+		for col, val := range node.Data {
+			colTokens := strings.Split(col, ".")
+			colMember := colTokens[0]
+			colAttr := colTokens[1]
+			if strings.Contains(colMember, member) {
+				bagData[colAttr] = val
+			}
+		}
+		if len(bagData) > 0 {
+			if id, ok := node.Data[member+".id"]; ok {
+				if jsonData, err := json.Marshal(bagData); err == nil {
+					if err := db.CreateNewBag(self.tx.StencilTx, self.SrcAppConfig.AppID, memberID, fmt.Sprint(id), ownerID, fmt.Sprint(self.logTxn.Txn_id), jsonData); err != nil {
+						log.Fatal("@SendMemberToBag: error in creating bag! ", err)
+						return err
+					}
+				} else {
+					fmt.Println(bagData)
+					log.Fatal("@SendMemberToBag: unable to convert bag data to JSON ", err)
+					return err
+				}
+			} else {
+				fmt.Println(node.Data)
+				log.Fatal("@SendMemberToBag: member doesn't contain id! ", member)
+				return err
+			}
+			if !fromNode {
+				if err := self.AddInnerReferences(node, member); err != nil {
+					fmt.Println(node.Tag.Members)
+					fmt.Println(node.Tag.InnerDependencies)
+					fmt.Println(node.Data)
+					log.Fatal("@SendMemberToBag > AddInnerReferences: Adding Inner References failed ", err)
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
 	if ownerID, _ := self.GetNodeOwner(node); len(ownerID) > 0 {
 		for _, member := range node.Tag.Members {
-			if memberID, err := db.TableID(self.logTxn.DBconn, member, self.SrcAppConfig.AppID); err != nil {
-				log.Fatal("@SendNodeToBag > TableID: error in getting table id for member! ", member, err)
-				return err
-			} else {
-				var bagData map[string]interface{}
-				for col, val := range node.Data {
-					colTokens := strings.Split(col, ".")
-					colMember := colTokens[0]
-					colAttr := colTokens[1]
-					if strings.Contains(colMember, member) {
-						bagData[colAttr] = val
-					}
-				}
-				if len(bagData) > 0 {
-					if id, ok := node.Data[member+".id"]; ok {
-						if jsonData, err := json.Marshal(bagData); err == nil {
-							if err := db.CreateNewBag(self.tx.StencilTx, self.SrcAppConfig.AppID, memberID, fmt.Sprint(id), ownerID, fmt.Sprint(self.logTxn.Txn_id), jsonData); err != nil {
-								log.Fatal("@SendNodeToBag: error in creating bag! ", err)
-								return err
-							}
-						} else {
-							fmt.Println(bagData)
-							log.Fatal("@SendNodeToBag: unable to convert bag data to JSON ", err)
-						}
-					} else {
-						fmt.Println(node.Data)
-						log.Fatal("@SendNodeToBag: member doesn't contain id! ", member)
-						return err
-					}
-					if err := self.AddInnerReferences(node); err != nil {
-						fmt.Println(node.Tag.Members)
-						fmt.Println(node.Tag.InnerDependencies)
-						fmt.Println(node.Data)
-						log.Fatal("@SendNodeToBag > AddInnerReferences: Adding Inner References failed ", err)
-					}
-				}
+			if err := self.SendMemberToBag(node, member, ownerID, true); err != nil {
+				fmt.Println(node)
+				log.Fatal("@SendNodeToBag > SendMemberToBag: ownerID error! ")
 			}
+		}
+		if err := self.AddInnerReferences(node, ""); err != nil {
+			fmt.Println(node.Tag.Members)
+			fmt.Println(node.Tag.InnerDependencies)
+			fmt.Println(node.Data)
+			log.Fatal("@SendNodeToBag > AddInnerReferences: Adding Inner References failed ", err)
+			return err
 		}
 	} else {
 		fmt.Println(node)
@@ -1042,10 +1062,11 @@ func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
 	}
 }
 
-func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
+func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode, member string) error {
 
 	for _, innerDependency := range node.Tag.InnerDependencies {
 		for dependee, dependsOn := range innerDependency {
+
 			depTokens := strings.Split(dependee, ".")
 			dependeeMember := node.Tag.Members[depTokens[0]]
 			dependeeMemberID, err := db.TableID(self.logTxn.DBconn, dependeeMember, self.SrcAppConfig.AppID)
@@ -1058,6 +1079,12 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
 			depOnMemberID, err := db.TableID(self.logTxn.DBconn, depOnMember, self.SrcAppConfig.AppID)
 			if err != nil {
 				log.Fatal("@AddInnerReferences: Unable to resolve id for depOnMember ", depOnMember)
+			}
+
+			if member != "" {
+				if !strings.EqualFold(dependeeMember, member) && !strings.EqualFold(depOnMember, member) {
+					continue
+				}
 			}
 
 			var fromID, toID string
