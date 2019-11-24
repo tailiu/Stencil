@@ -588,47 +588,59 @@ func (self *MigrationWorkerV2) GetNodeOwner(node *DependencyNode) (string, bool)
 	return "", false
 }
 
-func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) (string, string, []interface{}, string, string, *transaction.UndoAction) {
-	undoAction := new(transaction.UndoAction)
-	cols, vals := "", ""
-	orgCols, orgColsLeft := "", ""
-	var ivals []interface{}
+func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface{}) {
+	self.ivals = append(self.ivals, ival)
+	self.vals += fmt.Sprintf("$%d,", len(self.ivals))
+	self.cols += fmt.Sprintf("%s,", col)
+	self.orgCols += fmt.Sprintf("%s,", orgCol)
+	if fromTable != "" {
+		self.srcTables[fromTable] = true
+	}
+}
+
+func (self *MappedData) Trim(chars string) {
+	self.vals = strings.Trim(self.vals, chars)
+	self.cols = strings.Trim(self.cols, chars)
+	self.orgCols = strings.Trim(self.orgCols, chars)
+}
+
+func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) MappedData {
+
+	data := MappedData{
+		cols:        "",
+		vals:        "",
+		orgCols:     "",
+		orgColsLeft: "",
+		undoAction:  new(transaction.UndoAction)}
+
 	for toAttr, fromAttr := range toTable.Mapping {
 		if val, ok := node.Data[fromAttr]; ok {
-			ivals = append(ivals, val)
-			vals += fmt.Sprintf("$%d,", len(ivals))
-			cols += fmt.Sprintf("%s,", toAttr)
-			orgCols += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
-			undoAction.AddData(fromAttr, val)
-			undoAction.AddOrgTable(strings.Split(fromAttr, ".")[0])
+			fromTokens := strings.Split(fromAttr, ".")
+			data.UpdateData(toAttr, fromTokens[1], fromTokens[0], val)
+			data.undoAction.AddData(fromAttr, val)
+			data.undoAction.AddOrgTable(fromTokens[0])
 		} else if strings.Contains(fromAttr, "$") {
 			if inputVal, err := self.mappings.GetInput(fromAttr); err == nil {
-				ivals = append(ivals, inputVal)
-				vals += fmt.Sprintf("$%d,", len(ivals))
-				cols += fmt.Sprintf("%s,", toAttr)
-				orgCols += fmt.Sprintf("%s,", fromAttr)
+				data.UpdateData(toAttr, fromAttr, "", inputVal)
 			}
 		} else if strings.Contains(fromAttr, "#") {
 			assignedTabCol := strings.Trim(fromAttr, "(#ASSIGN#FETCH#REF)")
 			if strings.Contains(fromAttr, "#ASSIGN") {
 				if nodeVal, ok := node.Data[assignedTabCol]; ok {
-					ivals = append(ivals, nodeVal)
-					vals += fmt.Sprintf("$%d,", len(ivals))
-					cols += fmt.Sprintf("%s,", toAttr)
-					orgCols += fmt.Sprintf("%s,", assignedTabCol)
+					assignedTabColTokens := strings.Split(assignedTabCol, ".")
+					data.UpdateData(toAttr, assignedTabColTokens[1], assignedTabColTokens[0], nodeVal)
 				}
 			} else if strings.Contains(fromAttr, "#REF") {
 				args := strings.Split(assignedTabCol, ",")
 				if nodeVal, ok := node.Data[args[0]]; ok {
-					ivals = append(ivals, nodeVal)
-					vals += fmt.Sprintf("$%d,", len(ivals))
-					cols += fmt.Sprintf("%s,", toAttr)
-					orgCols += fmt.Sprintf("%s,", assignedTabCol)
+					data.UpdateData(toAttr, assignedTabCol, "", nodeVal)
 				}
 			} else if strings.Contains(fromAttr, "#FETCH") {
 				// #FETCH(targetSrcTable.targetSrcCol, targetSrcTable.srcColToCompare, currentSrcTable.currentSrcColForComparison)
+
+				// # Do we need to create an identity entry for row referenced in fetch?
+
 				args := strings.Split(assignedTabCol, ",")
-				// fmt.Println("ARGS:", args)
 				if nodeVal, ok := node.Data[args[2]]; ok {
 					targetTabCol := strings.Split(args[0], ".")
 					comparisonTabCol := strings.Split(args[1], ".")
@@ -636,10 +648,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 						fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
 						log.Fatal("@GetMappedData: FetchForMapping | ", err)
 					} else {
-						ivals = append(ivals, res[targetTabCol[1]])
-						vals += fmt.Sprintf("$%d,", len(ivals))
-						cols += fmt.Sprintf("%s,", toAttr)
-						orgCols += fmt.Sprintf("%s,", assignedTabCol)
+						data.UpdateData(toAttr, assignedTabCol, targetTabCol[0], res[targetTabCol[1]])
 					}
 				} else {
 					fmt.Println(node.Tag.Name, node.Data)
@@ -651,17 +660,11 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 				switch fromAttr {
 				case "#GUID":
 					{
-						ivals = append(ivals, uuid.New())
-						vals += fmt.Sprintf("$%d,", len(ivals))
-						cols += fmt.Sprintf("%s,", toAttr)
-						orgCols += fmt.Sprintf("%s,", assignedTabCol)
+						data.UpdateData(toAttr, assignedTabCol, "", uuid.New())
 					}
 				case "#RANDINT":
 					{
-						ivals = append(ivals, self.SrcAppConfig.QR.NewRowId())
-						vals += fmt.Sprintf("$%d,", len(ivals))
-						cols += fmt.Sprintf("%s,", toAttr)
-						orgCols += fmt.Sprintf("%s,", assignedTabCol)
+						data.UpdateData(toAttr, assignedTabCol, "", self.SrcAppConfig.QR.NewRowId())
 					}
 				default:
 					{
@@ -672,11 +675,12 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 			}
 			// log.Fatal(fromAttr)
 		} else {
-			orgColsLeft += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
+			data.orgColsLeft += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
 		}
 	}
 	// fmt.Println(strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft, undoAction)
-	return strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft, undoAction
+	data.Trim(",")
+	return data
 }
 
 func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
@@ -736,46 +740,61 @@ func (self *MigrationWorkerV2) HandleUnmappedMembersOfNode(mapping config.Mappin
 				return err
 			}
 		}
-
 	}
 	return nil
 }
 
 func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *DependencyNode) error {
 
+	// Handle partial bags
+
 	for _, toTable := range mapping.ToTables {
 		if self.CheckMappingConditions(toTable, node) {
 			continue
 		}
-		if cols, placeholders, ivals, orgCols, _, undoAction := self.GetMappedData(toTable, node); len(cols) > 0 && len(placeholders) > 0 && len(ivals) > 0 {
-			undoAction.AddDstTable(toTable.Table)
+		if mappedData := self.GetMappedData(toTable, node); len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
+			mappedData.undoAction.AddDstTable(toTable.Table)
 			// if strings.Contains(toTable.Table, "status_"){
 			// 	fmt.Println(toTable.Table, cols, placeholders, ivals)
 			// 	log.Fatal("--------------")
 			// }
-			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, cols, placeholders, ivals...); err == nil {
-				if err := self.PushData(self.tx.StencilTx, toTable, fmt.Sprint(id), orgCols, cols, undoAction, node); err != nil {
-					fmt.Println("@ERROR_PushData")
-					fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), orgCols, cols, undoAction, node)
-					log.Fatal(err)
-					return err
-				}
-				if len(toTable.Media) > 0 {
-					if filePathCol, ok := toTable.Media["path"]; ok {
-						if filePath, ok := node.Data[filePathCol]; ok {
-							if err := self.TransferMedia(fmt.Sprint(filePath)); err != nil {
-								log.Fatal("@MigrateNode: ", err)
+			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
+				if toTableID, err := db.TableID(self.logTxn.DBconn, toTable.Table, self.DstAppConfig.AppID); err != nil {
+					for fromTable := range mappedData.srcTables {
+						if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err != nil {
+							fromID := fmt.Sprint(node.Data[fromTable+".id"])
+							if err := db.InsertIntoIdentityTable(self.tx.StencilTx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, toTableID, fromID, fmt.Sprint(id), fmt.Sprint(self.logTxn.Txn_id)); err != nil {
+								fmt.Println("@ERROR_PushData")
+								fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
+								log.Fatal(err)
+								return err
 							}
 						}
-					} else {
-						log.Fatal("@MigrateNode > toTable.Media: Path not found in map!")
+					}
+					if err := self.PushData(self.tx.StencilTx, toTable, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node); err != nil {
+						fmt.Println("@ERROR_PushData")
+						fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
+						log.Fatal(err)
+						return err
+					}
+					if len(toTable.Media) > 0 {
+						if filePathCol, ok := toTable.Media["path"]; ok {
+							if filePath, ok := node.Data[filePathCol]; ok {
+								if err := self.TransferMedia(fmt.Sprint(filePath)); err != nil {
+									log.Fatal("@MigrateNode: ", err)
+								}
+							}
+						} else {
+							log.Fatal("@MigrateNode > toTable.Media: Path not found in map!")
+						}
 					}
 				}
 			} else {
 				log.Fatal("@MigrateNode:", err)
+				return err
 			}
 		} else {
-			log.Fatal("@MigrateNode > GetMappedData:", cols, placeholders, ivals, orgCols, undoAction)
+			log.Fatal("@MigrateNode > GetMappedData:", mappedData)
 		}
 	}
 
@@ -783,7 +802,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 		if err := self.HandleUnmappedMembersOfNode(mapping, node); err != nil {
 			return err
 		}
-		if err := self.DeleteRow(node); err == nil {
+		if err := self.DeleteRow(node); err != nil {
 			return err
 		}
 	}

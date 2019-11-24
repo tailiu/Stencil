@@ -47,6 +47,16 @@ type UnmappedTags struct {
 	tags  []string
 }
 
+type MappedData struct {
+	cols        string
+	vals        string
+	orgCols     string
+	orgColsLeft string
+	srcTables   map[string]bool
+	ivals       []interface{}
+	undoAction  *transaction.UndoAction
+}
+
 type MigrationWorker struct {
 	uid          string
 	SrcAppConfig config.AppConfig
