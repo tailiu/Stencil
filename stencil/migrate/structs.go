@@ -47,6 +47,15 @@ type UnmappedTags struct {
 	tags  []string
 }
 
+type MappingRef struct {
+	fromID     string
+	fromMember string
+	fromAttr   string
+	toID       string
+	toMember   string
+	toAttr     string
+}
+
 type MappedData struct {
 	cols        string
 	vals        string
@@ -55,6 +64,7 @@ type MappedData struct {
 	srcTables   map[string]bool
 	ivals       []interface{}
 	undoAction  *transaction.UndoAction
+	refs        []MappingRef
 }
 
 type MigrationWorker struct {

@@ -604,7 +604,40 @@ func (self *MappedData) Trim(chars string) {
 	self.orgCols = strings.Trim(self.orgCols, chars)
 }
 
-func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) MappedData {
+func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, assignedTabCol string, data *MappedData) error {
+	args := strings.Split(assignedTabCol, ",")
+	for i, arg := range args {
+		args[i] = strings.Trim(arg, "()")
+	}
+	if nodeVal, ok := node.Data[args[2]]; ok {
+		targetTabCol := strings.Split(args[0], ".")
+		comparisonTabCol := strings.Split(args[1], ".")
+		if res, err := db.FetchForMapping(self.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
+			fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
+			log.Fatal("@GetMappedData: FetchForMapping | ", err)
+			return err
+		} else {
+			data.UpdateData(toAttr, assignedTabCol, targetTabCol[0], res[targetTabCol[1]])
+			if len(args) > 3 {
+				toMemberTokens := strings.Split(args[3], ".")
+				data.refs = append(data.refs, MappingRef{
+					fromID:     fmt.Sprint(res[targetTabCol[1]]),
+					fromMember: targetTabCol[0],
+					fromAttr:   targetTabCol[1],
+					toID:       fmt.Sprint(res[targetTabCol[1]]),
+					toMember:   toMemberTokens[0],
+					toAttr:     toMemberTokens[1]})
+			}
+		}
+	} else {
+		fmt.Println(node.Tag.Name, node.Data)
+		log.Fatal("@GetMappedData: unable to fetch ", args[2])
+		return errors.New("Unable to fetch data from node")
+	}
+	return nil
+}
+
+func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) (MappedData, error) {
 
 	data := MappedData{
 		cols:        "",
@@ -631,28 +664,46 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					data.UpdateData(toAttr, assignedTabColTokens[1], assignedTabColTokens[0], nodeVal)
 				}
 			} else if strings.Contains(fromAttr, "#REF") {
-				args := strings.Split(assignedTabCol, ",")
-				if nodeVal, ok := node.Data[args[0]]; ok {
-					data.UpdateData(toAttr, assignedTabCol, "", nodeVal)
+				if strings.Contains(fromAttr, "#FETCH") {
+					self.FetchFromMapping(node, toAttr, assignedTabCol, &data)
+				} else {
+					args := strings.Split(assignedTabCol, ",")
+					if nodeVal, ok := node.Data[args[0]]; ok {
+						data.UpdateData(toAttr, assignedTabCol, "", nodeVal)
+					}
+					var toID, fromID string
+
+					if val, ok := node.Data[args[0]]; ok {
+						toID = fmt.Sprint(val)
+					} else {
+						fmt.Println(args[0], " | ", args)
+						fmt.Println(node.Data)
+						log.Fatal("@GetMappedData > #REF > toID: Unable to find ref value in node data")
+						return data, errors.New("Unable to find ref value in node data")
+					}
+
+					firstMemberTokens := strings.Split(args[0], ".")
+					secondMemberTokens := strings.Split(args[1], ".")
+
+					if val, ok := node.Data[firstMemberTokens[0]+".id"]; ok {
+						fromID = fmt.Sprint(val)
+					} else {
+						fmt.Println(args[0], " | ", args)
+						fmt.Println(node.Data)
+						log.Fatal("@GetMappedData > #REF > fromID: Unable to find ref value in node data")
+						return data, errors.New("Unable to find ref value in node data")
+					}
+
+					data.refs = append(data.refs, MappingRef{fromID: fromID, fromMember: firstMemberTokens[0], fromAttr: fromAttr, toID: toID, toAttr: secondMemberTokens[1], toMember: secondMemberTokens[0]})
 				}
 			} else if strings.Contains(fromAttr, "#FETCH") {
 				// #FETCH(targetSrcTable.targetSrcCol, targetSrcTable.srcColToCompare, currentSrcTable.currentSrcColForComparison)
-
 				// # Do we need to create an identity entry for row referenced in fetch?
-
-				args := strings.Split(assignedTabCol, ",")
-				if nodeVal, ok := node.Data[args[2]]; ok {
-					targetTabCol := strings.Split(args[0], ".")
-					comparisonTabCol := strings.Split(args[1], ".")
-					if res, err := db.FetchForMapping(self.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
-						fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
-						log.Fatal("@GetMappedData: FetchForMapping | ", err)
-					} else {
-						data.UpdateData(toAttr, assignedTabCol, targetTabCol[0], res[targetTabCol[1]])
-					}
-				} else {
-					fmt.Println(node.Tag.Name, node.Data)
-					log.Fatal("@GetMappedData: unable to fetch ", args[2])
+				if err := self.FetchFromMapping(node, toAttr, assignedTabCol, &data); err != nil {
+					fmt.Println(node.Data)
+					fmt.Println(toAttr, assignedTabCol)
+					log.Fatal("@GetMappedData > #FETCH > FetchFromMapping: Unable to fetch")
+					return data, err
 				}
 				// fmt.Println(strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft)
 				// log.Fatal("check")
@@ -680,7 +731,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 	}
 	// fmt.Println(strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft, undoAction)
 	data.Trim(",")
-	return data
+	return data, nil
 }
 
 func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
@@ -752,7 +803,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 		if self.CheckMappingConditions(toTable, node) {
 			continue
 		}
-		if mappedData := self.GetMappedData(toTable, node); len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
+		if mappedData, _ := self.GetMappedData(toTable, node); len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
 			mappedData.undoAction.AddDstTable(toTable.Table)
 			// if strings.Contains(toTable.Table, "status_"){
 			// 	fmt.Println(toTable.Table, cols, placeholders, ivals)
@@ -791,6 +842,11 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 			} else {
 				log.Fatal("@MigrateNode:", err)
+				return err
+			}
+
+			if err := self.AddMappedReferences(mappedData.refs); err != nil {
+				log.Fatal("@MigrateNode > AddMappedReferences: ", err)
 				return err
 			}
 		} else {
@@ -1061,6 +1117,32 @@ func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
 	} else {
 		return err
 	}
+}
+
+func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
+
+	for _, ref := range refs {
+
+		dependeeMemberID, err := db.TableID(self.logTxn.DBconn, ref.fromMember, self.SrcAppConfig.AppID)
+		if err != nil {
+			log.Fatal("@AddMappedReferences: Unable to resolve id for dependeeMember ", ref.fromMember)
+			return err
+		}
+
+		depOnMemberID, err := db.TableID(self.logTxn.DBconn, ref.toMember, self.SrcAppConfig.AppID)
+		if err != nil {
+			log.Fatal("@AddMappedReferences: Unable to resolve id for depOnMember ", ref.toMember)
+			return err
+		}
+
+		if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
+			fmt.Println("#Args: ", self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+			log.Fatal("@AddMappedReferences: Unable to CreateNewReference: ", err)
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode, member string) error {
