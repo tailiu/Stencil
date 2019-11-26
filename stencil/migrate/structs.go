@@ -47,6 +47,15 @@ type UnmappedTags struct {
 	tags  []string
 }
 
+type MappingRef struct {
+	fromID     string
+	fromMember string
+	fromAttr   string
+	toID       string
+	toMember   string
+	toAttr     string
+}
+
 type MappedData struct {
 	cols        string
 	vals        string
@@ -55,6 +64,7 @@ type MappedData struct {
 	srcTables   map[string]bool
 	ivals       []interface{}
 	undoAction  *transaction.UndoAction
+	refs        []MappingRef
 }
 
 type MigrationWorker struct {
@@ -103,7 +113,7 @@ type MigrationWorkerV2 struct {
 	DstDBConn    *sql.DB
 	logTxn       *transaction.Log_txn
 	mtype        string
-	visitedNodes map[string]bool
+	visitedNodes map[string]map[string]bool
 	FTPClient    *ftp.ServerConn
 	tx           Transactions
 	// threadID     int

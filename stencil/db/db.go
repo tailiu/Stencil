@@ -163,7 +163,7 @@ func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id string, dat
 }
 
 func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference string) error {
-	query := "INSERT INTO references (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING"
+	query := "INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;"
 	_, err := tx.Exec(query, app, fromMember, fromID, fromReference, toMember, toID, toReference, migration_id)
 	return err
 }
@@ -496,6 +496,47 @@ func GetRow(rows *sql.Rows) map[string]interface{} {
 	}
 	// }
 	return myMap
+}
+
+func DataCallIgnoreVisited(db *sql.DB, SQL string, visited []string, args ...interface{}) ([]map[string]interface{}, error) {
+
+	// db := GetDBConn(app)
+	// log.Println(SQL, args)
+	if rows, err := db.Query(SQL, args...); err != nil {
+		log.Println("ERROR:", SQL, args, err)
+		return nil, err
+	} else {
+		defer rows.Close()
+
+		if colNames, err := rows.Columns(); err != nil {
+			return nil, err
+		} else {
+			var result []map[string]interface{}
+
+			for rows.Next() {
+				var data = make(map[string]interface{})
+				cols := make([]interface{}, len(colNames))
+				colPtrs := make([]interface{}, len(colNames))
+				for i := 0; i < len(colNames); i++ {
+					colPtrs[i] = &cols[i]
+				}
+				// for rows.Next() {
+				err = rows.Scan(colPtrs...)
+				if err != nil {
+					log.Fatal(err)
+				}
+				for i, col := range cols {
+					data[colNames[i]] = col
+				}
+				// Do something with the map
+				// for key, val := range data {
+				// 	fmt.Println("Key:", key, "Value Type:", reflect.TypeOf(val), fmt.Sprint(val))
+				// }
+				result = append(result, data)
+			}
+			return result, nil
+		}
+	}
 }
 
 func DataCall(db *sql.DB, SQL string, args ...interface{}) ([]map[string]interface{}, error) {
