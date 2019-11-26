@@ -18,7 +18,8 @@
                 {
                     "member1.id":"member3.account_id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name" : "statuses",
@@ -29,24 +30,13 @@
                 "member5":"stream_entries",
                 "member6":"conversations"
             },
-            "member_ids":{
-                "member1": "id",
-                "member2": "id",
-                "member3": "id",
-                "member4": "id",
-                "member5": "id",
-                "member6": "id"
-            },
             "keys": {
                 "conversation_id":"member1.conversation_id",
                 "id":"member1.id",
                 "reply":"member1.in_reply_to_id",
                 "reblog":"member1.reblog_of_id",
                 "account":"member1.account_id",
-                "status_id1": "member2.status_id",
-                "status_id2": "member3.status_id",
-                "activity_id": "member5.activity_id",
-                "id1": "member6.id"
+                "activity_id": "member5.activity_id"
             },
             "inner_dependencies":[
                 {
@@ -61,7 +51,8 @@
                 {
                     "member1.conversation_id":"member6.id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name": "media_attachments",
@@ -109,42 +100,30 @@
             "tag": "statuses",
             "depends_on": [
                 {
-                    "tag":"root",
-                    "conditions": [
-                        {   
-                            "tag_attr": "account",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "statuses",
-            "depends_on": [
-                {
                     "tag":"statuses",
+                    "as": "S1",
                     "conditions":[
                         {   "tag_attr": "reblog",
                             "depends_on_attr": "id"
                         }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "statuses",
-            "depends_on": [
+                    ],
+                    "display_existence": "reblog",
+                    "display_setting": "parent_node_not_displays_with_check"
+                },
                 {
                     "tag":"statuses",
+                    "as": "S2",
                     "conditions":[
                         {   "tag_attr": "reply",
                             "depends_on_attr": "id"
                         }
                     
-                    ]
+                    ],
+                    "display_existence": "reply",
+                    "display_setting": "parent_node_not_displays_with_check"
                 }
-            ]
+            ],
+            "combined_display_setting":"S1 or S2"
         },
         {
             "tag": "media_attachments",
@@ -156,21 +135,8 @@
                             "tag_attr": "status_id",
                             "depends_on_attr": "id"
                         }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "follows",
-            "depends_on": [
-                {
-                    "tag": "root",
-                    "conditions": [
-                        {   
-                            "tag_attr": "account_id",
-                            "depends_on_attr": "id"
-                        }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         },
@@ -184,21 +150,8 @@
                             "tag_attr": "status_id",
                             "depends_on_attr": "id"
                         }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "notifications",
-            "depends_on" : [
-                {
-                    "tag": "root",
-                    "conditions": [
-                        {
-                            "tag_attr": "account_id",
-                            "depends_on_attr": "id"
-                        }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         }

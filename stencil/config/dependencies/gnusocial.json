@@ -32,7 +32,8 @@
                 {
                     "member1.conversation": "member2.id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name": "file",
@@ -87,42 +88,30 @@
             "depends_on": [
                 {
                     "tag":"notice",
+                    "as": "N1",
                     "conditions": [
                         {   
                             "tag_attr": "reply_to",
                             "depends_on_attr": "id"
                         }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag":"notice",
-            "depends_on": [
+                    ],
+                    "display_existence": "reply_to",
+                    "display_setting": "parent_node_partially_displays"
+                },
                 {
                     "tag":"notice",
+                    "as": "N2",
                     "conditions": [
                         {   
                             "tag_attr": "repeat_of",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_existence": "repeat_of",
+                    "display_setting": "parent_node_partially_displays"
                 }
-            ]
-        },
-        {
-            "tag":"notice",
-            "depends_on": [
-                {
-                    "tag":"root",
-                    "conditions": [
-                        {   
-                            "tag_attr": "profile_id",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
+            ],
+            "combined_display_setting":"N1 and N2"
         },
         {
             "tag": "file",
@@ -134,7 +123,8 @@
                             "tag_attr": "post_id",
                             "depends_on_attr": "id"
                         }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ]
         },
@@ -148,35 +138,10 @@
                             "tag_attr": "notice_id",
                             "depends_on_attr": "id"
                         }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "message",
-            "depends_on": [
-                {
-                    "tag": "root",
-                    "conditions": [
-                        {
-                            "tag_attr": "from_profile",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "subscription",
-            "depends_on": [
-                {
-                    "tag": "root",
-                    "conditions": [
-                        {
-                            "tag_attr": "subscriber",
-                            "depends_on_attr": "id"
-                        }
-                    ]
+                    ],
+                    "display_setting": "parent_node_partially_displays",
+                    "_comment":"the notice node could be incomplete due to the lack of its conv"
+
                 }
             ]
         }

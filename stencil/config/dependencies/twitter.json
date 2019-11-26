@@ -31,7 +31,8 @@
                 {
                     "member1.id": "member2.tweet_id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name": "messages",
@@ -58,7 +59,8 @@
                 {
                     "member1.id": "member2.conversation_id"
                 }
-            ]
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
         },
         {
             "name": "notifications",
@@ -102,21 +104,9 @@
                             "tag_attr": "reply_to",
                             "depends_on_attr": "id"
                         }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "tweets",
-            "depends_on": [
-                {
-                    "tag":"root",
-                    "conditions": [
-                        {   
-                            "tag_attr": "user_id",
-                            "depends_on_attr": "id"
-                        }
-                    ]
+                    ],
+                    "display_existence": "reply_to",
+                    "display_setting": "parent_node_not_displays_with_check"
                 }
             ]
         },
@@ -143,20 +133,6 @@
                     "conditions": [
                         {
                             "tag_attr": "tweet",
-                            "depends_on_attr": "id"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "tag": "notifications",
-            "depends_on" : [
-                {
-                    "tag": "root",
-                    "conditions": [
-                        {
-                            "tag_attr": "to_user",
                             "depends_on_attr": "id"
                         }
                     ]
