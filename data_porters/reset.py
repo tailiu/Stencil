@@ -127,6 +127,9 @@ if __name__ == "__main__":
             truncateTableFromStencil("evaluation")
             truncateTableFromStencil("display_flags")
             truncateTableFromStencil("txn_logs")
+            truncateTableFromStencil("reference_table")
+            truncateTableFromStencil("identity_table")
+            truncateTableFromStencil("data_bags")
             if arg in ["log", "all", "both"]:
                 DropAndRecreateDB("diaspora")
                 truncate("mastodon", blade=True)
