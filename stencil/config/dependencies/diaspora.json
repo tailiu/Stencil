@@ -68,7 +68,8 @@
             {
                "member1.id" : "member2.aspect_id"
             }
-         ]
+         ],
+         "display_setting": "display_based_on_inner_dependencies"
        },
       {
          "name":"aspect_memberships",
@@ -177,7 +178,8 @@
                         }
                      ]
                   }
-               ]
+               ],
+               "display_existence": "root_guid"
             },
             {
                "tag":"aspect",
@@ -188,7 +190,8 @@
                   }
                ]
             }
-          ]
+		  ],
+		  "combined_display_setting":"post or aspect"
        },
        {
          "tag":"photo",
