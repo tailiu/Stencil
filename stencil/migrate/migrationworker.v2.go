@@ -321,6 +321,7 @@ func (self *MigrationWorkerV2) FetchRoot() error {
 		log.Fatal("Can't fetch root tag:", err)
 		return err
 	}
+	fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 	return nil
 }
 
@@ -332,7 +333,7 @@ func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode) ([]*Depende
 			ql := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 			sql += self.ResolveRestrictions(child)
-			log.Fatal("@GetAllNextNodes | ", sql)
+			// log.Println("@GetAllNextNodes | ", sql)
 			if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
 				for _, datum := range data {
 					newNode := new(DependencyNode)
@@ -349,6 +350,10 @@ func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode) ([]*Depende
 			log.Fatal("@GetAllNextNodes: Tag doesn't exist? ", dep.Tag)
 		}
 	}
+	// if len(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) > 0 {
+	// 	log.Println("@GetAllNextNodes:", len(nodes))
+	// 	log.Fatal(nodes)
+	// }
 	return nodes, nil
 }
 
@@ -395,14 +400,14 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 
 	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
-			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
+			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag for dependency { %s > %s } ", threadID, node.Tag.Name, dep.Tag))
 			where := self.ResolveDependencyConditions(node, dep, child)
 			ql := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 			sql += self.ResolveRestrictions(child)
 			sql += self.ExcludeVisited(child)
 			sql += " ORDER BY random()"
-
+			// log.Fatal(sql)
 			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {
 				if len(data) > 0 {
 					newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
@@ -423,7 +428,7 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, error) {
 
 	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
-		log.Println(fmt.Sprintf("x%2dx |         FETCHING  tag  { %s } ", threadID, own.Tag))
+		log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  for ownership { %s } ", threadID, own.Tag))
 		// if self.unmappedTags.Exists(own.Tag) {
 		// 	log.Println(fmt.Sprintf("x%2dx |         UNMAPPED  tag  { %s } ", threadID, own.Tag))
 		// 	continue
@@ -570,9 +575,10 @@ func (self *MigrationWorkerV2) GetNodeOwner(node *DependencyNode) (string, bool)
 			if nodeVal, err := node.GetValueForKey(tagAttr); err == nil {
 				if rootVal, err := self.root.GetValueForKey(depOnAttr); err == nil {
 					if !strings.EqualFold(nodeVal, rootVal) {
-						return nodeVal, true
-					} else {
+						// fmt.Println(fmt.Sprintf("root:%s:%s; user:%s:%s", depOnAttr, rootVal, tagAttr, nodeVal))
 						return nodeVal, false
+					} else {
+						return nodeVal, true
 					}
 				} else {
 					fmt.Println("Ownership Condition Key in Root Data:", depOnAttr, "doesn't exist!")
@@ -980,7 +986,7 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 		log.Fatal("@SendMemberToBag > TableID: error in getting table id for member! ", member, err)
 		return err
 	} else {
-		var bagData map[string]interface{}
+		bagData := make(map[string]interface{})
 		for col, val := range node.Data {
 			colTokens := strings.Split(col, ".")
 			colMember := colTokens[0]
@@ -1291,7 +1297,7 @@ func (self *MigrationWorkerV2) InitTransactions() error {
 }
 
 func (self *MigrationWorkerV2) CommitTransactions() error {
-	log.Fatal("@CommitTransactions: About to Commit!")
+	// log.Fatal("@CommitTransactions: About to Commit!")
 	if err := self.tx.SrcTx.Commit(); err != nil {
 		log.Fatal("Error committing Source DB Transaction! ", err)
 		return err
@@ -1316,11 +1322,12 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 			if adjNode == nil {
 				break
 			}
-			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-			log.Println(fmt.Sprintf("~%2d~ Current   Node: { %s } ", threadID, node.Tag.Name))
-			log.Println(fmt.Sprintf("~%2d~ Adjacent  Node: { %s } ", threadID, adjNode.Tag.Name))
+			nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
+			adjNodeIDAttr, _ := adjNode.Tag.ResolveTagAttr("id")
+			log.Println(fmt.Sprintf("~%2d~ Current   Node: { %s } | ID: %v ", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
+			log.Println(fmt.Sprintf("~%2d~ Adjacent  Node: { %s } | ID: %v ", threadID, adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr]))
 			if err := self.DeletionMigration(adjNode, threadID); err != nil {
-				log.Fatal(fmt.Sprintf("~%2d~ ERROR! NODE : { %s }, ADJ_NODE : { %s } | err: [ %s ]", threadID, node.Tag.Name, adjNode.Tag.Name, err))
+				log.Fatal(fmt.Sprintf("~%2d~ ERROR! NODE : { %s } | ID: %v, ADJ_NODE : { %s } | ID: %v | err: [ %s ]", threadID, node.Tag.Name, node.Data[nodeIDAttr], adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr], err))
 				return err
 			}
 		}
@@ -1372,7 +1379,8 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 			log.Println(fmt.Sprintf("x%2dx COMMITTED node { %s } ", threadID, node.Tag.Name))
 		}
 	} else {
-		log.Println(fmt.Sprintf("x%2dx VISITED   node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+
+		log.Println(fmt.Sprintf("x%2dx VISITED   node { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
 		self.MarkAsVisited(node)
 	}
 
