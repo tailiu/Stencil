@@ -36,7 +36,7 @@ func CreateMigrationWorkerV2WithAppsConfig(uid, srcApp, srcAppID, dstApp, dstApp
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		FTPClient:    GetFTPClient(),
-		visitedNodes: make(map[string]bool)}
+		visitedNodes: make(map[string]map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
 		log.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		FTPClient:    GetFTPClient(),
-		visitedNodes: make(map[string]bool)}
+		visitedNodes: make(map[string]map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
 		log.Fatal(err)
 	}
@@ -237,27 +237,35 @@ func (self *MigrationWorkerV2) ResolveOwnershipConditions(own config.Ownership, 
 	return where
 }
 
+func (self *MigrationWorkerV2) ExcludeVisited(tag config.Tag) string {
+	visited := ""
+	for _, tagMember := range tag.Members {
+		if memberIDs, ok := self.visitedNodes[tagMember]; ok {
+			pks := ""
+			for pk := range memberIDs {
+				pks += pk + ","
+			}
+			pks = strings.Trim(pks, ",")
+			visited += fmt.Sprintf(" AND %s.id NOT IN (%s) ", tagMember, pks)
+		}
+	}
+	return visited
+}
+
 func (self *MigrationWorkerV2) ResolveRestrictions(tag config.Tag) string {
 	restrictions := ""
-	if len(tag.Restrictions) > 0 {
-		restrictions := ""
-		for _, restriction := range tag.Restrictions {
-			if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
-				if restrictions != "" {
-					restrictions += " AND "
-				}
-				restrictions += fmt.Sprintf("%s = '%s'", restrictionAttr, restriction["val"])
-			}
-
+	for _, restriction := range tag.Restrictions {
+		if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
+			restrictions += fmt.Sprintf(" AND %s = '%s' ", restrictionAttr, restriction["val"])
 		}
+
 	}
 	return restrictions
 }
 
-func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) (string, string) {
+func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 
 	sql := "SELECT %s FROM %s "
-	where_mad := ""
 
 	if len(tag.InnerDependencies) > 0 {
 		cols := ""
@@ -269,10 +277,6 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) (string, string) {
 				joinStr += fromTable
 				_, colStr := db.GetColumnsForTable(self.SrcDBConn, fromTable)
 				cols += colStr + ","
-				if where_mad != "" {
-					where_mad += " AND "
-				}
-				where_mad += fmt.Sprintf("%s.mark_as_delete = false", fromTable)
 			}
 			for toTable, conditions := range toTablesMap {
 				if conditions != nil {
@@ -284,10 +288,6 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) (string, string) {
 					_, colStr := db.GetColumnsForTable(self.SrcDBConn, toTable)
 					cols += colStr + ","
 					seenMap[toTable] = true
-					if where_mad != "" {
-						where_mad += " AND "
-					}
-					where_mad += fmt.Sprintf("%s.mark_as_delete = false", toTable)
 				}
 			}
 			seenMap[fromTable] = true
@@ -297,9 +297,8 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) (string, string) {
 		table := tag.Members["member1"]
 		_, cols := db.GetColumnsForTable(self.SrcAppConfig.DBConn, table)
 		sql = fmt.Sprintf(sql, cols, table)
-		where_mad = fmt.Sprintf("%s.mark_as_delete = false", table)
 	}
-	return sql, where_mad
+	return sql
 }
 
 func (self *MigrationWorkerV2) FetchRoot() error {
@@ -307,7 +306,7 @@ func (self *MigrationWorkerV2) FetchRoot() error {
 	if root, err := self.SrcAppConfig.GetTag(tagName); err == nil {
 		rootTable, rootCol := self.SrcAppConfig.GetItemsFromKey(root, "root_id")
 		where := fmt.Sprintf("%s.%s = '%s'", rootTable, rootCol, self.uid)
-		ql, _ := self.GetTagQL(root)
+		ql := self.GetTagQL(root)
 		sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 		sql += self.ResolveRestrictions(root)
 		if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
@@ -330,10 +329,10 @@ func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode) ([]*Depende
 	for _, dep := range self.SrcAppConfig.GetSubDependencies(node.Tag.Name) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
 			where := self.ResolveDependencyConditions(node, dep, child)
-			ql, _ := self.GetTagQL(child)
+			ql := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 			sql += self.ResolveRestrictions(child)
-			log.Fatal(sql)
+			log.Fatal("@GetAllNextNodes | ", sql)
 			if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
 				for _, datum := range data {
 					newNode := new(DependencyNode)
@@ -359,10 +358,11 @@ func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*Dep
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
 				where := self.ResolveParentDependencyConditions(node, pdep.Conditions, parent)
-				ql, _ := self.GetTagQL(parent)
+				ql := self.GetTagQL(parent)
 				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 				sql += self.ResolveRestrictions(parent)
-				log.Fatal(sql)
+				// fmt.Println(node.SQL)
+				// log.Fatal("@GetAllPreviousNodes | ", sql)
 				if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
 					for _, datum := range data {
 						newNode := new(DependencyNode)
@@ -372,6 +372,7 @@ func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*Dep
 						nodes = append(nodes, newNode)
 					}
 				} else {
+					fmt.Println(sql)
 					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
 					return nil, err
 				}
@@ -396,20 +397,22 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
 			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
 			where := self.ResolveDependencyConditions(node, dep, child)
-			ql, wmad := self.GetTagQL(child)
-			sql := fmt.Sprintf("%s WHERE %s AND %s", ql, where, wmad)
+			ql := self.GetTagQL(child)
+			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 			sql += self.ResolveRestrictions(child)
+			sql += self.ExcludeVisited(child)
 			sql += " ORDER BY random()"
-			log.Fatal(sql)
-			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
-				newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
-				if !self.wList.IsAlreadyWaiting(newNode) && !self.IsVisited(newNode) {
-					return &newNode, nil
+
+			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {
+				if len(data) > 0 {
+					newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
+					if !self.wList.IsAlreadyWaiting(newNode) && !self.IsVisited(&newNode) {
+						return &newNode, nil
+					}
 				}
 			} else {
-				if err == nil {
-					err = errors.New("no data returned for root node, doesn't exist?")
-				}
+				fmt.Println(err)
+				log.Fatal(sql)
 				return nil, err
 			}
 		}
@@ -427,20 +430,21 @@ func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, erro
 		// }
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
 			where := self.ResolveOwnershipConditions(own, child)
-			ql, _ := self.GetTagQL(child)
+			ql := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 			sql += self.ResolveRestrictions(child)
 			sql += " ORDER BY random() "
-			log.Fatal(sql)
-			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
-				newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
-				if !self.wList.IsAlreadyWaiting(newNode) {
-					return &newNode, nil
+			// log.Fatal(sql)
+			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {
+				if len(data) > 0 {
+					newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
+					if !self.wList.IsAlreadyWaiting(newNode) {
+						return &newNode, nil
+					}
 				}
 			} else {
-				if err == nil {
-					err = errors.New("no data returned for root node, doesn't exist?")
-				}
+				fmt.Println(err)
+				log.Fatal(sql)
 				return nil, err
 			}
 		}
@@ -644,6 +648,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 		vals:        "",
 		orgCols:     "",
 		orgColsLeft: "",
+		srcTables:   make(map[string]bool),
 		undoAction:  new(transaction.UndoAction)}
 
 	for toAttr, fromAttr := range toTable.Mapping {
@@ -1069,12 +1074,16 @@ func (self *MigrationWorkerV2) HandleLeftOverWaitingNodes() {
 	}
 }
 
-func (self *MigrationWorkerV2) IsVisited(node DependencyNode) bool {
+func (self *MigrationWorkerV2) IsVisited(node *DependencyNode) bool {
+
 	for _, tagMember := range node.Tag.Members {
+		if _, ok := self.visitedNodes[tagMember]; !ok {
+			continue
+		}
 		idCol := fmt.Sprintf("%s.id", tagMember)
 		if _, ok := node.Data[idCol]; ok {
 			srcID := fmt.Sprint(node.Data[idCol])
-			if _, ok := self.visitedNodes[srcID]; ok {
+			if _, ok := self.visitedNodes[tagMember][srcID]; ok {
 				return true
 			}
 		} else {
@@ -1089,8 +1098,11 @@ func (self *MigrationWorkerV2) MarkAsVisited(node *DependencyNode) {
 	for _, tagMember := range node.Tag.Members {
 		idCol := fmt.Sprintf("%s.id", tagMember)
 		if _, ok := node.Data[idCol]; ok {
+			if _, ok := self.visitedNodes[tagMember]; !ok {
+				self.visitedNodes[tagMember] = make(map[string]bool)
+			}
 			srcID := fmt.Sprint(node.Data[idCol])
-			self.visitedNodes[srcID] = true
+			self.visitedNodes[tagMember][srcID] = true
 		} else {
 			log.Println("In: MarkAsVisited | node.Data =>", node.Data)
 			log.Fatal(idCol, "NOT PRESENT IN NODE DATA")
@@ -1279,7 +1291,7 @@ func (self *MigrationWorkerV2) InitTransactions() error {
 }
 
 func (self *MigrationWorkerV2) CommitTransactions() error {
-
+	log.Fatal("@CommitTransactions: About to Commit!")
 	if err := self.tx.SrcTx.Commit(); err != nil {
 		log.Fatal("Error committing Source DB Transaction! ", err)
 		return err
@@ -1305,16 +1317,16 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 				break
 			}
 			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-			log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data["id"]))
-			log.Println(fmt.Sprintf("~%d~ Adjacent  Node: { %s } ID: %v", threadID, adjNode.Tag.Name, adjNode.Data["id"]))
+			log.Println(fmt.Sprintf("~%2d~ Current   Node: { %s } ", threadID, node.Tag.Name))
+			log.Println(fmt.Sprintf("~%2d~ Adjacent  Node: { %s } ", threadID, adjNode.Tag.Name))
 			if err := self.DeletionMigration(adjNode, threadID); err != nil {
-				log.Println(fmt.Sprintf("~%d~ ERROR! NODE : { %s } ID: %v, ADJ_NODE : { %s } ID: %v | err: [ %s ]", threadID, node.Tag.Name, node.Data["id"], adjNode.Tag.Name, adjNode.Data["id"], err))
+				log.Fatal(fmt.Sprintf("~%2d~ ERROR! NODE : { %s }, ADJ_NODE : { %s } | err: [ %s ]", threadID, node.Tag.Name, adjNode.Tag.Name, err))
 				return err
 			}
 		}
 	}
 
-	log.Println(fmt.Sprintf("#%d# Process   Node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+	log.Println(fmt.Sprintf("#%2d# Process   Node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 
 	if ownerID, isRoot := self.GetNodeOwner(node); isRoot && len(ownerID) > 0 {
 		if err := self.InitTransactions(); err != nil {

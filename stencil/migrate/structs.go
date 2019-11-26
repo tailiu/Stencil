@@ -113,7 +113,7 @@ type MigrationWorkerV2 struct {
 	DstDBConn    *sql.DB
 	logTxn       *transaction.Log_txn
 	mtype        string
-	visitedNodes map[string]bool
+	visitedNodes map[string]map[string]bool
 	FTPClient    *ftp.ServerConn
 	tx           Transactions
 	// threadID     int
