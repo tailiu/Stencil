@@ -7,7 +7,19 @@ import (
 )
 
 // You are on the left/from part
-func updateMyDataBasedOnReferences() {
+func updateMyDataBasedOnReferences(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int, IDRow map[string]string) {
+	
+	for _, ref := range getFromReferences(stencilDBConn, migrationID, IDRow) {
+		
+		proRef := transformInterfaceToString(ref)	
+		data := &identity{
+			app: 	proRef["app"],
+			member:	proRef["from_member"],
+			id:		proRef["from_id"],
+		}
+		forwardTraverseIDTable(stencilDBConn, migrationID, data, data, appConfig.AppID)
+
+	}
 
 }
 
@@ -18,15 +30,18 @@ func updateOtherDataBasedOnReferences() {
 
 func ResolveReferenceByBackTraversal(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int, hint *app_display.HintStruct) {
 	
-	for _, IDRow := range GetRowsFromIDTableByTo(stencilDBConn, appConfig, migrationID, member, id) {
+	for _, IDRow := range getRowsFromIDTableByTo(stencilDBConn, appConfig, migrationID, hint) {
+		
+		proIDRow := transformInterfaceToString(IDRow)
+
 		// You are on the left/from part
-		updateMyDataBasedOnReferences()
+		updateMyDataBasedOnReferences(stencilDBConn, appConfig, migrationID, proIDRow)
 
 		// You are on the right/to part
-		updateOtherDataBasedOnReferences()
+		// updateOtherDataBasedOnReferences()
 
 		// Traverse back
-		ResolveReferenceByBackTraversal()
+		// ResolveReferenceByBackTraversal()
 	}
 
 }

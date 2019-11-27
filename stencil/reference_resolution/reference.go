@@ -4,12 +4,13 @@ import (
 	"stencil/db"
 	"database/sql"
 	"fmt"
+	"log"
 )
 
-func GetFromReferences(stencilDBConn *sql.DB, appConfig *config.AppConfig, IDRow map[string]interface{}) []map[string]interface{} {
+func getFromReferences(stencilDBConn *sql.DB, migrationID int, IDRow map[string]string) []map[string]interface{} {
 
-	query := fmt.Sprintf("SELECT * FROM references WHERE to_app = %d and to_member = %d and to_id = %d and migration_id = %d",
-		appConfig.AppID, member, id, migrationID)
+	query := fmt.Sprintf("SELECT * FROM reference_table WHERE app = %s and from_member = %s and from_id = %s and migration_id = %d;",
+		IDRow["from_app"], IDRow["from_member"], IDRow["from_id"], migrationID)
 	
 	data, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
