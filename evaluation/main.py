@@ -274,6 +274,11 @@ def getTimeGroups(data, groupNum):
         times[group].append(data1["time"])
     return times
 
+def convertBytesToMB(data):
+    for i, data1 in enumerate(data):
+        data[i] = float(data1) / 1000000.0
+    return data
+
 def migrationRate(groupNum, labels):
     times = readFile3(logDir + migrationTime)
     sizes = readFile3(logDir + migratedDataSize)
@@ -282,12 +287,13 @@ def migrationRate(groupNum, labels):
 
     x = []
     for i, data in enumerate(sizes):
-        if i % 2 == 0:
+        if i % 4 == 0:
             x.append(data["size"])
-
+    
+    x = convertBytesToMB(x)
     sizes = [x] * groupNum
     xlabel = 'Migration Time (s)'
-    ylabel = 'Migration size (bytes)'
+    ylabel = 'Migration size (MB)'
 
     g.mulPoints(times, sizes, labels, xlabel, ylabel)
 
@@ -343,6 +349,6 @@ def danglingDataSystemCombined():
 # migrationRateDifferentNumOfThreads('Consistent/independent migration', migrationRate)
 # migrationRateDifferentNumOfThreads('Deletion migration', migrationRate)
 # dataDownTime()
-migrationRate(4, ["Stencil without DAG", "Application without DAG", "Stencil with DAG", "Application with DAG"])
+migrationRate(4, ["App with DAG and display", "App without DAG but with display", "App with DAG but without display", "App without DAG or display"])
 # randomWalk()
 # danglingDataSystemCombined()
