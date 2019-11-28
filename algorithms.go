@@ -10,7 +10,7 @@ package main
  * Independent Migration, Stencil v2:
  * 1. Migration threads neither need to delete data from SrcApp (if data is migrated), nor put data into data bags (if data cannot be migrated).
  * 2. Migration threads only follow ownership relationships to migrate data.
- * 3. Migration threads still need to migrate data from data bags.
+ * 3. Migration threads still need to migrate data from data bags (two phase).
  * 4. If the data cannot be displayed after the display check, delete the data from the destination db, identity table and display_flags. 
  *    Then there will be two cases:
  *    a. If the data is from the source application, delete reference to this data in the references table.
@@ -22,6 +22,8 @@ package main
  * 7. Bags are going to be serial. Every migration must acquire some kind of a "right to use bag" or a "lock" and all other subsequent migrations for that user
  *    must wait for the previous migration to finish using the bag before starting to process the bag for itself. This applies to all concurrent migrations for a user.
  *    Migration registration may be used to indicate which migration is using the bag. Probably assign priority numbers and the migration having the lowest number gets to use the bag.
+ * 8. Migrated data needs to be marked to avoid being migrated again.
+ * 9. Independent migrations can be concurrent?
  *
  *
  * Independent Migration, Stencil v1:
@@ -34,6 +36,7 @@ package main
  * 6. Bags are going to be serial. Every migration must acquire some kind of a "right to use bag" or a "lock" and all other subsequent migrations for that user
  *    must wait for the previous migration to finish using the bag before starting to process the bag for itself. This applies to all concurrent migrations for a user.
  *    Migration registration may be used to indicate which migration is using the bag. Probably assign priority numbers and the migration having the lowest number gets to use the bag.
+ * 7. Independent migrations can be concurrent?
  *
  *
  * Consistent Migration, Stencil v1:
