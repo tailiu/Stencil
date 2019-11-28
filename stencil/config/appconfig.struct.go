@@ -308,6 +308,7 @@ func (self *AppConfig) GetDependsOnConditions(tagName string, pTagName string) (
 	return nil, errors.New("Error: No Conditions Found")
 }
 
+// For finding display setting 
 func (self *AppConfig) GetDepDisplaySetting(tag string, pTag string) (string, error) {
 
 	for _, dependency := range self.Dependencies {

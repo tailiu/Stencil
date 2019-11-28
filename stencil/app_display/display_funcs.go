@@ -42,12 +42,15 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConf
 
 func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 	query := fmt.Sprintf("SELECT 1 FROM txn_logs WHERE action_id = %d and action_type='COMMIT' LIMIT 1", migrationID)
+	
 	data := db.GetAllColsOfRows(stencilDBConn, query)
+	
 	if len(data) == 0 {
 		return false
 	} else {
 		return true
 	}
+	
 }
 
 func Display(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHints []*HintStruct) error {
@@ -55,8 +58,10 @@ func Display(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHints []*Hi
 	var queries2 []string
 
 	for _, dataHint := range dataHints {
+		
 		query1 := fmt.Sprintf("UPDATE %s SET display_flag = false WHERE id = %d;",
 			dataHint.Table, dataHint.KeyVal["id"])
+
 		query2 := fmt.Sprintf("UPDATE Display_flags SET display_flag = false, updated_at = now() WHERE app_id = %s and table_id = %s and id = %d;",
 			appConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
 		
@@ -88,6 +93,37 @@ func CheckDisplay(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHint *
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	// log.Println(data1)
+	
 	return !data1["display_flag"].(bool)
+}
+
+
+func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
+	query := fmt.Sprintf("select app_name from apps where pk = %s", appID)
+	
+	log.Println(query)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["app_name"])
+
+}
+
+func getAttrNameByAttrID(stencilDBConn *sql.DB, attrID string) {
+	//Need to change
+	query := fmt.Sprintf("select column_name from app_schemas where pk = %s", attrID)
+	
+	log.Println(query)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["app_name"])
 }

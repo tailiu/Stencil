@@ -22,3 +22,7 @@ func getFromReferences(stencilDBConn *sql.DB, migrationID int, IDRow map[string]
 	return data
 
 }
+
+func updateReferences() {
+	
+}

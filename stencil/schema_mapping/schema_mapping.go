@@ -1,5 +1,26 @@
 package schema_mapping
 
-func GetMappedAttributeFromSchemaMappings() {
-	
+import (
+	"stencil/config"
+	"database/sql"
+	"log"
+)
+
+func GetMappedAttributeFromSchemaMappings(stencilDBConn *sql.DB, fromApp, fromTable, fromAttr, toApp, toTable string) string {
+	fromAppID := getAppNameByAppID(stencilDBConn, fromApp)
+
+	fromTableName := getTableNameByTableID(stencilDBConn, fromTable)
+
+	fromAttrName := getAttrNameByAttrID(stencilDBConn, fromAttr)
+
+	toTableName := getTableNameByTableID(stencilDBConn, toTable)
+
+	schemaMappings, err := config.LoadSchemaMappings()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(schemaMappings)
+
+	return ""
 }

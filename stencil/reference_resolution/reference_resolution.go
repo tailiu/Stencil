@@ -27,8 +27,17 @@ func updateMyDataBasedOnReferences(stencilDBConn *sql.DB, appConfig *config.AppC
 		if len(refIdentityRows) > 0 {
 			
 			for _, refIdentityRow := range refIdentityRows {
-				schema_mapping.GetMappedAttributeFromSchemaMappings(
-					proRef["App"], proRef["to_member"], proRef["to_reference"], appConfig.AppID, refIdentityRow.member)
+
+				attr := schema_mapping.GetMappedAttributeFromSchemaMappings(stencilDBConn, 
+					proRef["app"], proRef["to_member"], proRef["to_reference"], appConfig.AppName, refIdentityRow.member)
+				
+				log.Println(attr)
+				// for _, attrToUpdate := range schema_mapping.GetMappedAttributeFromSchemaMappings(
+				// 	proRef["app"], proRef["from_member"], proRef["from_reference"], appConfig.AppName, org_member) {
+					
+					// updateReferences(ref, refIdentityRow.ToMember, refIdentityRow.ToID, attr, org_member, org_id, AttrToUpdate)
+					
+				// }
 			}
 
 		} else if proRef["app"] == appConfig.AppID {

@@ -52,6 +52,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 	var displayHints []HintStruct
 
 	appID, _ := strconv.Atoi(appConfig.AppID)
+	
 	// This is important that table id / group id should also be used to get results in the new design
 	// For example, in the one-to-multiple mapping, the same row id has different group ids / table ids
 	// Those rows could be displayed differently
@@ -68,7 +69,9 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 	for _, data1 := range data {
 		displayHints = append(displayHints, TransformRowToHint(appConfig, data1))
 	}
+
 	// log.Println(displayHints)
+	
 	return displayHints
 }
 
@@ -87,13 +90,16 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+
 	// Here for one group, we only need to check one row_id to see whether the group is displayed or not
 	// It should be noted that table_id / group_id should also be considered
 	query := fmt.Sprintf("SELECT mflag FROM migration_table WHERE row_id = %d and app_id = %d and table_id = %s", data.RowIDs[0], appID1, data.TableID)
+	
 	// log.Println("==========")
 	// log.Println(query)
 	// log.Println(data)
 	// log.Println("==========")
+	
 	data1, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
@@ -196,25 +202,33 @@ func GetTableIDByTableName(stencilDBConn *sql.DB, tableName, appID string) strin
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	query := fmt.Sprintf("select pk from app_tables where app_id = %d and table_name = '%s'", appID1, tableName)
 	// log.Println(query)
+	
 	data1, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
+	
 	// log.Println(data1)
+	
 	return strconv.FormatInt(data1["pk"].(int64), 10)
 }
 
 func CheckAndGetTableNameAndID(stencilDBConn *sql.DB, data *HintStruct, appID string) {
 	tableName := data.TableName
+	
 	tableID := data.TableID
+	
 	if tableName == "" &&  tableID != "" {
 		data.TableName = GetTableNameByTableID(stencilDBConn, tableID)
 	} 
+	
 	if tableName != "" &&  tableID == "" {
 		data.TableID = GetTableIDByTableName(stencilDBConn, tableName, appID)
 	}
+
 	// log.Println(data.TableID)
 	// log.Println(data.TableName)
 }
