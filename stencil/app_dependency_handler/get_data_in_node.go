@@ -172,10 +172,13 @@ func getDataInNode(appConfig *config.AppConfig, hint *app_display.HintStruct) ([
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
 func checkDependsOnExists(appConfig *config.AppConfig, allData []*app_display.HintStruct, tagName string, data *app_display.HintStruct) bool {
+	
 	memberID, _ := data.GetMemberID(appConfig, tagName)
 	// fmt.Println(memberID)
+
 	dependsOnTables := appConfig.GetDependsOnTables(tagName, memberID)
 	// fmt.Println(dependsOnTables)
+	
 	if len(dependsOnTables) == 0 {
 		return true
 	} else {
@@ -220,21 +223,25 @@ func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint *app_d
 	}
 
 	displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
+
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
 	if data, err = getDataInNode(appConfig, hint); err != nil {
+
 		// The setting "default_display_setting" means only display a node when the node is complete.
 		// Therefore, return nil and error message when node is not complete.
 		if displaySetting == "default_display_setting" {
 			return nil, err
-			// The setting "display_based_on_inner_dependencies" means display as much data in a node as possible
-			// based on inner dependencies.
-			// Note: if a piece of data in a node depends on some data not existing in the node,
-			// it needs to be deleted from the data set and cannot be displayed.
+
+		// The setting "display_based_on_inner_dependencies" means display as much data in a node as possible
+		// based on inner dependencies.
+		// Note: if a piece of data in a node depends on some data not existing in the node,
+		// it needs to be deleted from the data set and cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {
 			// fmt.Println(data)
 			return trimDataBasedOnInnerDependencies(appConfig, data, tagName), err
 		}
+	
 		// If a node is complete, return all the data in the node regardless of the setting.
 	} else {
 		return data, nil

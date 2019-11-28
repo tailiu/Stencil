@@ -19,37 +19,62 @@ type HintStruct struct {
 // NOTE: We assume that primary key is only one integer value!!!
 func TransformRowToHint(appConfig *config.AppConfig, row map[string]interface{}, table string) *HintStruct {
 	hint := HintStruct{}
+
 	hint.Table = table
+	
 	intVal, err := strconv.Atoi(fmt.Sprint(row["id"]))
 	if err != nil {
 		log.Fatal(err)
 	}
 	hint.KeyVal = map[string]int{"id": intVal}
+
 	hint.TableID = appConfig.TableNameIDPairs[table]
 	hint.Data = row
+	
 	return &hint
 }
 
 func TransformDisplayFlagDataToHint(appConfig *config.AppConfig, data map[string]string) *HintStruct {
 	hint := HintStruct{}
+
 	intVal, err := strconv.Atoi(data["id"])
 	if err != nil {
 		log.Fatal(err)
 	}
 	hint.KeyVal = map[string]int{"id": intVal}
+
 	hint.Table = appConfig.TableIDNamePairs[data["table_id"]]
 	hint.TableID = data["table_id"]
+	
 	return &hint
 }
 
+// // By default, a member name is a table name 
+// func (hint *HintStruct) GetMemberName(appConfig *config.AppConfig) (string, error) {
+// 	for _, tag := range appConfig.Tags {
+
+// 		for _, member := range tag.Members {
+// 			if hint.Table == member {
+// 				return member, nil
+// 			}
+// 		}
+
+// 	}
+
+// 	return "", errors.New("No Corresponding Member Found!")  
+// }
+
 func (hint *HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) {
 	for _, tag := range appConfig.Tags {
+
 		for _, member := range tag.Members {
 			if hint.Table == member {
 				return tag.Name, nil
 			}
 		}
+
 	}
+
 	return "", errors.New("No Corresponding Tag Found!")
 }
 

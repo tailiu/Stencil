@@ -13,6 +13,7 @@ const checkInterval = 200 * time.Millisecond
 
 func DisplayThread(app string, migrationID int) {
 	startTime := time.Now()
+
 	log.Println("--------- Start of Display Check ---------")
 
 	stencilDBConn, appConfig := app_display.Initialize(app)
@@ -38,6 +39,7 @@ func DisplayThread(app string, migrationID int) {
 	}
 
 	log.Println("--------- End of Display Check ---------")
+	
 	endTime := time.Now()
 	log.Println("Time used: ", endTime.Sub(startTime))
 }

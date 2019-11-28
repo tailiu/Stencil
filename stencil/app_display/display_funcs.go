@@ -25,7 +25,10 @@ func Initialize(app string) (*sql.DB, *config.AppConfig) {
 
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int) []*HintStruct {
 	var displayHints []*HintStruct
-	query := fmt.Sprintf("SELECT table_id, id FROM display_flags WHERE app_id = %s and migration_id = %d and display_flag = true", appConfig.AppID, migrationID)
+
+	query := fmt.Sprintf("SELECT table_id, id FROM display_flags WHERE app_id = %s and migration_id = %d and display_flag = true", 
+		appConfig.AppID, migrationID)
+	
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	// fmt.Println(data)
 
@@ -33,6 +36,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConf
 		displayHints = append(displayHints, TransformDisplayFlagDataToHint(appConfig, data1))
 	}
 	// fmt.Println(displayHints)
+	
 	return displayHints
 }
 
@@ -55,10 +59,12 @@ func Display(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHints []*Hi
 			dataHint.Table, dataHint.KeyVal["id"])
 		query2 := fmt.Sprintf("UPDATE Display_flags SET display_flag = false, updated_at = now() WHERE app_id = %s and table_id = %s and id = %d;",
 			appConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
+		
 		log.Println("**************************************")
 		log.Println(query1)
 		log.Println(query2)
 		log.Println("**************************************")
+		
 		queries1 = append(queries1, query1)
 		queries2 = append(queries2, query2)
 	}
