@@ -2,8 +2,10 @@ package reference_resolution
 
 import (
 	"stencil/app_display"
-	"database/sql"
 	"stencil/config"
+	"stencil/schema_mapping"
+	"database/sql"
+	"log"
 )
 
 // You are on the left/from part
@@ -11,13 +13,27 @@ func updateMyDataBasedOnReferences(stencilDBConn *sql.DB, appConfig *config.AppC
 	
 	for _, ref := range getFromReferences(stencilDBConn, migrationID, IDRow) {
 		
-		proRef := transformInterfaceToString(ref)	
+		proRef := transformInterfaceToString(ref)
+		// log.Println(proRef)
+
 		data := &identity{
 			app: 	proRef["app"],
-			member:	proRef["from_member"],
-			id:		proRef["from_id"],
+			member:	proRef["to_member"],
+			id:		proRef["to_id"],
 		}
-		forwardTraverseIDTable(stencilDBConn, migrationID, data, data, appConfig.AppID)
+		refIdentityRows := forwardTraverseIDTable(stencilDBConn, migrationID, data, data, appConfig.AppID)
+		// log.Println(refIdentityRows[0])
+
+		if len(refIdentityRows) > 0 {
+			
+			for _, refIdentityRow := range refIdentityRows {
+				schema_mapping.GetMappedAttributeFromSchemaMappings(
+					proRef["App"], proRef["to_member"], proRef["to_reference"], appConfig.AppID, refIdentityRow.member)
+			}
+
+		} else if proRef["app"] == appConfig.AppID {
+			
+		}
 
 	}
 
@@ -33,6 +49,7 @@ func ResolveReferenceByBackTraversal(stencilDBConn *sql.DB, appConfig *config.Ap
 	for _, IDRow := range getRowsFromIDTableByTo(stencilDBConn, appConfig, migrationID, hint) {
 		
 		proIDRow := transformInterfaceToString(IDRow)
+		log.Println(proIDRow)
 
 		// You are on the left/from part
 		updateMyDataBasedOnReferences(stencilDBConn, appConfig, migrationID, proIDRow)

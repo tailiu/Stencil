@@ -19,7 +19,7 @@ func getRowsFromIDTableByTo(stencilDBConn *sql.DB, appConfig *config.AppConfig, 
 		log.Fatal(err)
 	}
 
-	// fmt.Println(data)
+	// log.Println(data)
 
 	return data
 
@@ -36,7 +36,7 @@ func getRowsFromIDTableByFrom(stencilDBConn *sql.DB, migrationID int, ID *identi
 		log.Fatal(err)
 	}
 
-	// fmt.Println(data)
+	// log.Println(data)
 
 	return data
 
@@ -47,14 +47,15 @@ func forwardTraverseIDTable(stencilDBConn *sql.DB, migrationID int, ID, orginalI
 	var res []*identity
 
 	IDRows := getRowsFromIDTableByFrom(stencilDBConn, migrationID, ID)
+	// log.Println(IDRows)
 
 	for _, IDRow := range IDRows {
 		
 		procIDRow := transformInterfaceToString(IDRow)
 		nextData := &identity {
-			app: 	procIDRow["app"],
-			member:	procIDRow["from_member"],
-			id:		procIDRow["from_id"],
+			app: 	procIDRow["to_app"],
+			member:	procIDRow["to_member"],
+			id:		procIDRow["to_id"],
 		}
 		res = append(res, forwardTraverseIDTable(stencilDBConn, migrationID, nextData, orginalID, dstAppID)...)
 
