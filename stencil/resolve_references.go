@@ -8,19 +8,21 @@ import (
 	"log"
 )
 
-func main() {
+func main() { 
 	migrationID := 908913181
 
-	StencilDBName := "stencil"
-	stencilDBConn := db.GetDBConn(StencilDBName)
+	// StencilDBName := "stencil"
+	// stencilDBConn := db.GetDBConn(StencilDBName)
 
 	app := "mastodon"
-	app_id := db.GetAppIDByAppName(stencilDBConn, app)
+	// app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, true)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, true)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	displayConfig := config.CreateDisplayConfig(app, migrationID, true)
 
 	var hint = app_display.HintStruct{
 		Table:		"favourites",
@@ -28,5 +30,6 @@ func main() {
 		KeyVal:		map[string]int{"id":24},
 	}
 
-	reference_resolution.ResolveReferenceByBackTraversal(stencilDBConn, &appConfig, migrationID, &hint)
+	// reference_resolution.ResolveReferenceByBackTraversal(stencilDBConn, &appConfig, migrationID, &hint)
+	reference_resolution.ResolveReferenceByBackTraversal(displayConfig, &hint)
 }

@@ -9,9 +9,9 @@ import (
 )
 
 // You are on the left/from part
-func updateMyDataBasedOnReferences(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int, IDRow map[string]string) {
+func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow map[string]string) {
 	
-	for _, ref := range getFromReferences(stencilDBConn, migrationID, IDRow) {
+	for _, ref := range getFromReferences(displayConfig, IDRow) {
 		
 		proRef := transformInterfaceToString(ref)
 		// log.Println(proRef)
@@ -21,15 +21,16 @@ func updateMyDataBasedOnReferences(stencilDBConn *sql.DB, appConfig *config.AppC
 			member:	proRef["to_member"],
 			id:		proRef["to_id"],
 		}
-		refIdentityRows := forwardTraverseIDTable(stencilDBConn, migrationID, data, data, appConfig.AppID)
+		refIdentityRows := forwardTraverseIDTable(displayConfig, data, data, displayConfig.AppConfig.AppID)
 		// log.Println(refIdentityRows[0])
 
 		if len(refIdentityRows) > 0 {
 			
 			for _, refIdentityRow := range refIdentityRows {
 
-				attr := schema_mapping.GetMappedAttributeFromSchemaMappings(stencilDBConn, 
-					proRef["app"], proRef["to_member"], proRef["to_reference"], appConfig.AppName, refIdentityRow.member)
+				attr := schema_mapping.GetMappedAttributeFromSchemaMappings(displayConfig, 
+					proRef["app"], proRef["to_member"], proRef["to_reference"], 
+					appConfig.AppName, refIdentityRow.member)
 				
 				log.Println(attr)
 				// for _, attrToUpdate := range schema_mapping.GetMappedAttributeFromSchemaMappings(
@@ -53,15 +54,15 @@ func updateOtherDataBasedOnReferences() {
 
 }
 
-func ResolveReferenceByBackTraversal(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int, hint *app_display.HintStruct) {
+func ResolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) {
 	
-	for _, IDRow := range getRowsFromIDTableByTo(stencilDBConn, appConfig, migrationID, hint) {
+	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, hint) {
 		
 		proIDRow := transformInterfaceToString(IDRow)
 		log.Println(proIDRow)
 
 		// You are on the left/from part
-		updateMyDataBasedOnReferences(stencilDBConn, appConfig, migrationID, proIDRow)
+		updateMyDataBasedOnReferences(displayConfig, proIDRow)
 
 		// You are on the right/to part
 		// updateOtherDataBasedOnReferences()

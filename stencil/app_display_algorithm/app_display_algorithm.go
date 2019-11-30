@@ -11,6 +11,10 @@ import (
 
 const checkInterval = 200 * time.Millisecond
 
+type DisplayThread struct {
+	
+}
+
 func DisplayThread(app string, migrationID int) {
 	startTime := time.Now()
 

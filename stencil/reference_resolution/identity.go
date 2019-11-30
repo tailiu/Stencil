@@ -9,12 +9,12 @@ import (
 	"log"
 )
 
-func getRowsFromIDTableByTo(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int, hint *app_display.HintStruct) []map[string]interface{} {
+func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) []map[string]interface{} {
 
 	query := fmt.Sprintf("SELECT * FROM identity_table WHERE to_app = %s and to_member = %s and to_id = %d and migration_id = %d",
-		appConfig.AppID, hint.TableID, hint.KeyVal["id"], migrationID)
+		displayConfig.appConfig.AppID, hint.TableID, hint.KeyVal["id"], displayConfig.MigrationID)
 	
-	data, err := db.DataCall(stencilDBConn, query)
+	data, err := db.DataCall(displayConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,12 +26,12 @@ func getRowsFromIDTableByTo(stencilDBConn *sql.DB, appConfig *config.AppConfig, 
 }
 
 
-func getRowsFromIDTableByFrom(stencilDBConn *sql.DB, migrationID int, ID *identity) []map[string]interface{} {
+func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig, ID *identity) []map[string]interface{} {
 	
 	query := fmt.Sprintf("SELECT * FROM identity_table WHERE from_app = %s and from_member = %s and from_id = %s and migration_id = %d",
-		ID.app, ID.member, ID.id, migrationID)
+		ID.app, ID.member, ID.id, displayConfig.MigrationID)
 
-	data, err := db.DataCall(stencilDBConn, query)
+	data, err := db.DataCall(displayConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,11 +42,11 @@ func getRowsFromIDTableByFrom(stencilDBConn *sql.DB, migrationID int, ID *identi
 
 }
 
-func forwardTraverseIDTable(stencilDBConn *sql.DB, migrationID int, ID, orginalID *identity, dstAppID string) []*identity {
+func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *identity, dstAppID string) []*identity {
 	
 	var res []*identity
 
-	IDRows := getRowsFromIDTableByFrom(stencilDBConn, migrationID, ID)
+	IDRows := getRowsFromIDTableByFrom(displayConfig, ID)
 	// log.Println(IDRows)
 
 	for _, IDRow := range IDRows {
@@ -57,7 +57,7 @@ func forwardTraverseIDTable(stencilDBConn *sql.DB, migrationID int, ID, orginalI
 			member:	procIDRow["to_member"],
 			id:		procIDRow["to_id"],
 		}
-		res = append(res, forwardTraverseIDTable(stencilDBConn, migrationID, nextData, orginalID, dstAppID)...)
+		res = append(res, forwardTraverseIDTable(displayConfig, nextData, orginalID, dstAppID)...)
 
 	}
 

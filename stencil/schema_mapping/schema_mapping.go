@@ -6,14 +6,15 @@ import (
 	"log"
 )
 
-func GetMappedAttributeFromSchemaMappings(stencilDBConn *sql.DB, fromApp, fromTable, fromAttr, toApp, toTable string) string {
-	fromAppID := getAppNameByAppID(stencilDBConn, fromApp)
+func GetMappedAttributeFromSchemaMappings(displayConfig *config.DisplayConfig, 
+		fromApp, fromTable, fromAttr, toApp, toTable string) string {
+	// fromAppID := getAppNameByAppID(stencilDBConn, fromApp)
 
-	fromTableName := getTableNameByTableID(stencilDBConn, fromTable)
+	// fromTableName := getTableNameByTableID(stencilDBConn, fromTable)
 
-	fromAttrName := getAttrNameByAttrID(stencilDBConn, fromAttr)
+	// fromAttrName := getAttrNameByAttrID(stencilDBConn, fromAttr)
 
-	toTableName := getTableNameByTableID(stencilDBConn, toTable)
+	// toTableName := getTableNameByTableID(stencilDBConn, toTable)
 
 	schemaMappings, err := config.LoadSchemaMappings()
 	if err != nil {
