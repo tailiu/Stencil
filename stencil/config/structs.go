@@ -6,6 +6,8 @@ import (
 	"stencil/qr"
 )
 
+const StencilDBName = "stencil"
+
 type DataQuery struct {
 	SQL, Table string
 }
@@ -45,6 +47,14 @@ type ToTable struct {
 
 type App struct {
 	Tables []map[string]string `json:""`
+}
+
+type DisplayConfig struct {
+	AppConfig			*AppConfig
+	StencilDBConn 		*sql.DB
+	AttrIDNamePairs		map[string]string
+	AppIDNamePairs		map[string]string
+	MigrationID			int
 }
 
 type AppConfig struct {

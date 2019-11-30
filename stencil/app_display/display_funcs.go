@@ -10,7 +10,31 @@ import (
 
 const StencilDBName = "stencil"
 
+func CreateDisplayConfig(app string, migrationID int, newDB bool) *config.DisplayConfig {
+
+	var displayConfig DisplayConfig
+
+	stencilDBConn := db.GetDBConn(StencilDBName)
+
+	app_id := db.GetAppIDByAppName(stencilDBConn, app)
+
+	appConfig, err := CreateAppConfigDisplay(app, app_id, stencilDBConn, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	displayConfig.AppConfig = &appConfig
+	displayConfig.AttrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)
+	displayConfig.AppIDNamePairs = GetAppIDNamePairs(stencilDBConn)
+	displayConfig.StencilDBConn = stencilDBConn
+	displayConfig.MigrationID = migrationID
+
+	return &displayConfig
+
+}
+
 func Initialize(app string) (*sql.DB, *config.AppConfig) {
+
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
@@ -21,9 +45,11 @@ func Initialize(app string) (*sql.DB, *config.AppConfig) {
 	}
 
 	return stencilDBConn, &appConfig
+
 }
 
 func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int) []*HintStruct {
+
 	var displayHints []*HintStruct
 
 	query := fmt.Sprintf("SELECT table_id, id FROM display_flags WHERE app_id = %s and migration_id = %d and display_flag = true", 
@@ -38,6 +64,7 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConf
 	// fmt.Println(displayHints)
 	
 	return displayHints
+
 }
 
 func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
@@ -126,4 +153,43 @@ func getAttrNameByAttrID(stencilDBConn *sql.DB, attrID string) {
 	}
 
 	return fmt.Sprint(data["app_name"])
+}
+
+func GetAppIDNamePairs(displayConfig *config.DisplayConfig) map[string]string {
+	appIDNamePairs := make(map[string]string)
+
+	query := fmt.Sprintf("select app_name, pk from apps")
+
+	log.Println(query)
+
+	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+		appIDNamePairs[fmt.Sprint(data1["pk"])] = fmt.Sprint(data1["app_name"])
+	}
+
+	return appIDNamePairs
+}
+
+func GetAttrIDNamePairs(displayConfig *config.DisplayConfig) map[string]string {
+	attrIDNamePairs := make(map[string]string)
+
+	//Need to change
+	query := fmt.Sprintf("select column_name, pk from app_schemas")
+	
+	log.Println(query)
+
+	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+		attrIDNamePairs[fmt.Sprint(data1["pk"])] = fmt.Sprint(data1["column_name"])
+	}
+
+	return attrIDNamePairs
 }
