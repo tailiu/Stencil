@@ -2,17 +2,34 @@ package reference_resolution
 
 import (
 	"stencil/db"
-	"database/sql"
 	"stencil/config"
 	"stencil/app_display"
+	"strconv"
 	"fmt"
 	"log"
 )
 
-func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) []map[string]interface{} {
+func createIdentity(app, member, id string) *identity {
+	
+	ID := &identity{
+		app: 	app,
+		member:	member,
+		id:		id,
+	}
 
-	query := fmt.Sprintf("SELECT * FROM identity_table WHERE to_app = %s and to_member = %s and to_id = %d and migration_id = %d",
-		displayConfig.appConfig.AppID, hint.TableID, hint.KeyVal["id"], displayConfig.MigrationID)
+	return ID
+}
+
+func transformHintToIdenity(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) *identity {
+
+	return createIdentity(displayConfig.AppConfig.AppID, hint.TableID, strconv.Itoa(hint.KeyVal["id"]))
+
+}
+
+func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, ID *identity) []map[string]interface{} {
+
+	query := fmt.Sprintf("SELECT * FROM identity_table WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d",
+		ID.app, ID.member, ID.id, displayConfig.MigrationID)
 	
 	data, err := db.DataCall(displayConfig.StencilDBConn, query)
 	if err != nil {

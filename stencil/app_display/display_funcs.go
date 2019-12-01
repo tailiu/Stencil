@@ -12,7 +12,7 @@ const StencilDBName = "stencil"
 
 func CreateDisplayConfig(app string, migrationID int, newDB bool) *config.DisplayConfig {
 
-	var displayConfig DisplayConfig
+	var displayConfig config.DisplayConfig
 
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
@@ -141,11 +141,11 @@ func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
 
 }
 
-func getAttrNameByAttrID(stencilDBConn *sql.DB, attrID string) {
+func getAttrNameByAttrID(stencilDBConn *sql.DB, attrID string) string {
 	//Need to change
 	query := fmt.Sprintf("select column_name from app_schemas where pk = %s", attrID)
 	
-	log.Println(query)
+	// log.Println(query)
 
 	data, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
@@ -155,14 +155,14 @@ func getAttrNameByAttrID(stencilDBConn *sql.DB, attrID string) {
 	return fmt.Sprint(data["app_name"])
 }
 
-func GetAppIDNamePairs(displayConfig *config.DisplayConfig) map[string]string {
+func GetAppIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	appIDNamePairs := make(map[string]string)
 
 	query := fmt.Sprintf("select app_name, pk from apps")
 
-	log.Println(query)
+	// log.Println(query)
 
-	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	data, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func GetAppIDNamePairs(displayConfig *config.DisplayConfig) map[string]string {
 	return appIDNamePairs
 }
 
-func GetAttrIDNamePairs(displayConfig *config.DisplayConfig) map[string]string {
+func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	attrIDNamePairs := make(map[string]string)
 
 	//Need to change
@@ -182,7 +182,7 @@ func GetAttrIDNamePairs(displayConfig *config.DisplayConfig) map[string]string {
 	
 	log.Println(query)
 
-	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	data, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

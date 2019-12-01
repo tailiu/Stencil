@@ -4,7 +4,6 @@ import (
 	"stencil/app_display"
 	"stencil/config"
 	"stencil/schema_mapping"
-	"database/sql"
 	"log"
 )
 
@@ -30,7 +29,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 
 				attr := schema_mapping.GetMappedAttributeFromSchemaMappings(displayConfig, 
 					proRef["app"], proRef["to_member"], proRef["to_reference"], 
-					appConfig.AppName, refIdentityRow.member)
+					displayConfig.AppConfig.AppName, refIdentityRow.member)
 				
 				log.Println(attr)
 				// for _, attrToUpdate := range schema_mapping.GetMappedAttributeFromSchemaMappings(
@@ -41,7 +40,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 				// }
 			}
 
-		} else if proRef["app"] == appConfig.AppID {
+		} else if proRef["app"] == displayConfig.AppConfig.AppID {
 			
 		}
 
@@ -54,9 +53,9 @@ func updateOtherDataBasedOnReferences() {
 
 }
 
-func ResolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) {
+func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, ID *identity) {
 	
-	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, hint) {
+	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 		
 		proIDRow := transformInterfaceToString(IDRow)
 		log.Println(proIDRow)
@@ -68,7 +67,15 @@ func ResolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, hint *
 		// updateOtherDataBasedOnReferences()
 
 		// Traverse back
-		// ResolveReferenceByBackTraversal()
+		// resolveReferenceByBackTraversal()
 	}
+
+}
+
+func ResolveReference(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) {
+	
+	ID := transformHintToIdenity(displayConfig, hint)
+	
+	resolveReferenceByBackTraversal(displayConfig, ID)
 
 }

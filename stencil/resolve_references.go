@@ -3,9 +3,6 @@ package main
 import (
 	"stencil/reference_resolution"
 	"stencil/app_display"
-	"stencil/config"
-	"stencil/db"
-	"log"
 )
 
 func main() { 
@@ -22,7 +19,7 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
-	displayConfig := config.CreateDisplayConfig(app, migrationID, true)
+	displayConfig := app_display.CreateDisplayConfig(app, migrationID, true)
 
 	var hint = app_display.HintStruct{
 		Table:		"favourites",
@@ -31,5 +28,5 @@ func main() {
 	}
 
 	// reference_resolution.ResolveReferenceByBackTraversal(stencilDBConn, &appConfig, migrationID, &hint)
-	reference_resolution.ResolveReferenceByBackTraversal(displayConfig, &hint)
+	reference_resolution.ResolveReference(displayConfig, &hint)
 }
