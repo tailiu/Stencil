@@ -69,11 +69,9 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *
 	for _, IDRow := range IDRows {
 		
 		procIDRow := transformInterfaceToString(IDRow)
-		nextData := &identity {
-			app: 	procIDRow["to_app"],
-			member:	procIDRow["to_member"],
-			id:		procIDRow["to_id"],
-		}
+
+		nextData := createIdentity(procIDRow["to_app"], procIDRow["to_member"], procIDRow["to_id"],)
+
 		res = append(res, forwardTraverseIDTable(displayConfig, nextData, orginalID, dstAppID)...)
 
 	}
@@ -82,12 +80,10 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *
 
 		if ID.app == dstAppID && ID.member != orginalID.member && ID.id != orginalID.id {
 			
-			resData := &identity {
-				app: 	ID.app,
-				member:	ID.member,
-				id:		ID.id,
-			}
+			resData := createIdentity(ID.app, ID.member, ID.id)
+
 			res = append(res, resData)
+			
 		}
 
 	}

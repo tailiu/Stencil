@@ -15,13 +15,10 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 		proRef := transformInterfaceToString(ref)
 		// log.Println(proRef)
 
-		data := &identity{
-			app: 	proRef["app"],
-			member:	proRef["to_member"],
-			id:		proRef["to_id"],
-		}
+		data := createIdentity(proRef["app"], proRef["to_member"], proRef["to_id"])
+		
 		refIdentityRows := forwardTraverseIDTable(displayConfig, data, data, displayConfig.AppConfig.AppID)
-		// log.Println(refIdentityRows[0])
+		log.Println(refIdentityRows[0])
 
 		if len(refIdentityRows) > 0 {
 			
@@ -58,7 +55,7 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, ID *id
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 		
 		proIDRow := transformInterfaceToString(IDRow)
-		log.Println(proIDRow)
+		// log.Println(proIDRow)
 
 		// You are on the left/from part
 		updateMyDataBasedOnReferences(displayConfig, proIDRow)
