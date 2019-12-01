@@ -8,13 +8,11 @@ import (
 	"stencil/db"
 )
 
-const StencilDBName = "stencil"
-
 func CreateDisplayConfig(app string, migrationID int, newDB bool) *config.DisplayConfig {
 
 	var displayConfig DisplayConfig
 
-	stencilDBConn := db.GetDBConn(StencilDBName)
+	stencilDBConn := db.GetDBConn(config.StencilDBName)
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
@@ -35,7 +33,7 @@ func CreateDisplayConfig(app string, migrationID int, newDB bool) *config.Displa
 
 func Initialize(app string) (*sql.DB, *config.AppConfig) {
 
-	stencilDBConn := db.GetDBConn(StencilDBName)
+	stencilDBConn := db.GetDBConn(config.StencilDBName)
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
