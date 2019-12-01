@@ -2,7 +2,7 @@ package reference_resolution
 
 import (
 	"stencil/db"
-	"database/sql"
+	"stencil/config"
 	"fmt"
 	"log"
 )
@@ -24,5 +24,5 @@ func getFromReferences(displayConfig *config.DisplayConfig, IDRow map[string]str
 }
 
 func updateReferences() {
-	
+
 }

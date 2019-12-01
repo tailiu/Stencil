@@ -2,7 +2,7 @@ package schema_mapping
 
 import (
 	"stencil/config"
-	"database/sql"
+	// "database/sql"
 	"log"
 )
 

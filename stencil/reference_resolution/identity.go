@@ -2,17 +2,34 @@ package reference_resolution
 
 import (
 	"stencil/db"
-	"database/sql"
 	"stencil/config"
 	"stencil/app_display"
+	"strconv"
 	"fmt"
 	"log"
 )
 
-func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) []map[string]interface{} {
+func createIdentity(app, member, id string) *identity {
+	
+	ID := &identity{
+		app: 	app,
+		member:	member,
+		id:		id,
+	}
 
-	query := fmt.Sprintf("SELECT * FROM identity_table WHERE to_app = %s and to_member = %s and to_id = %d and migration_id = %d",
-		displayConfig.appConfig.AppID, hint.TableID, hint.KeyVal["id"], displayConfig.MigrationID)
+	return ID
+}
+
+func transformHintToIdenity(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) *identity {
+
+	return createIdentity(displayConfig.AppConfig.AppID, hint.TableID, strconv.Itoa(hint.KeyVal["id"]))
+
+}
+
+func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, ID *identity) []map[string]interface{} {
+
+	query := fmt.Sprintf("SELECT * FROM identity_table WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d",
+		ID.app, ID.member, ID.id, displayConfig.MigrationID)
 	
 	data, err := db.DataCall(displayConfig.StencilDBConn, query)
 	if err != nil {
@@ -52,11 +69,9 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *
 	for _, IDRow := range IDRows {
 		
 		procIDRow := transformInterfaceToString(IDRow)
-		nextData := &identity {
-			app: 	procIDRow["to_app"],
-			member:	procIDRow["to_member"],
-			id:		procIDRow["to_id"],
-		}
+
+		nextData := createIdentity(procIDRow["to_app"], procIDRow["to_member"], procIDRow["to_id"],)
+
 		res = append(res, forwardTraverseIDTable(displayConfig, nextData, orginalID, dstAppID)...)
 
 	}
@@ -65,12 +80,10 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *
 
 		if ID.app == dstAppID && ID.member != orginalID.member && ID.id != orginalID.id {
 			
-			resData := &identity {
-				app: 	ID.app,
-				member:	ID.member,
-				id:		ID.id,
-			}
+			resData := createIdentity(ID.app, ID.member, ID.id)
+
 			res = append(res, resData)
+			
 		}
 
 	}
