@@ -1323,6 +1323,18 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int) error {
 				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO DELETE BAG : %s | %s ", threadID, bagID, err))
 				return err
 			}
+		} else {
+			if jsonData, err := json.Marshal(bagNode.Data); err == nil {
+				if err := db.UpdateBag(self.tx.StencilTx, bagID, self.logTxn.Txn_id, jsonData); err != nil {
+					fmt.Println(bag)
+					log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO UPDATE BAG : %s | %s ", threadID, bagID, err))
+					return err
+				}
+			} else {
+				fmt.Println(bagNode.Data)
+				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO MARSHALL BAG DATA : %s | %s ", threadID, bagID, err))
+				return err
+			}
 		}
 	}
 	return nil
