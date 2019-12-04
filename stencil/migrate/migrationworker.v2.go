@@ -653,6 +653,16 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 	return nil
 }
 
+func (self *MigrationWorkerV2) RemoveMappedDataFromNodeData(mappedData MappedData, node *DependencyNode) {
+	for _, col := range strings.Split(mappedData.orgCols, ",") {
+		for key := range node.Data {
+			if strings.Contains(key, col) {
+				delete(node.Data, key)
+			}
+		}
+	}
+}
+
 func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) (MappedData, error) {
 
 	data := MappedData{
@@ -822,10 +832,6 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 		}
 		if mappedData, _ := self.GetMappedData(toTable, node); len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
 			mappedData.undoAction.AddDstTable(toTable.Table)
-			// if strings.Contains(toTable.Table, "status_"){
-			// 	fmt.Println(toTable.Table, cols, placeholders, ivals)
-			// 	log.Fatal("--------------")
-			// }
 			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
 				if toTableID, err := db.TableID(self.logTxn.DBconn, toTable.Table, self.DstAppConfig.AppID); err == nil {
 					for fromTable := range mappedData.srcTables {
@@ -868,6 +874,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 					log.Fatal("@MigrateNode > TableID, toTable: error in getting table id for member! ", toTable.Table, err)
 					return err
 				}
+				self.RemoveMappedDataFromNodeData(mappedData, node)
 			} else {
 				fmt.Println(toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
 				log.Fatal("@MigrateNode > InsertRowIntoAppDB:", err)
@@ -884,10 +891,21 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 	}
 
 	if !isBag && self.mtype == DELETION {
+		if len(node.Data) > 0 {
+			if err := self.SendNodeToBag(node); err != nil {
+				fmt.Println(node.Data)
+				log.Fatal("@MigrateNode > SendNodeToBag:", err)
+				return err
+			}
+		}
 		if err := self.HandleUnmappedMembersOfNode(mapping, node); err != nil {
+			fmt.Println(mapping, node)
+			log.Fatal("@MigrateNode > HandleUnmappedMembersOfNode:", err)
 			return err
 		}
 		if err := self.DeleteRow(node); err != nil {
+			fmt.Println(node)
+			log.Fatal("@MigrateNode > DeleteRow:", err)
 			return err
 		}
 	}
@@ -1285,6 +1303,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int) error {
 		bagAppID := fmt.Sprint(bag["app"])
 		srcMember := fmt.Sprint(bag["member"])
 		bagID := fmt.Sprint(bag["id"])
+		log.Println(fmt.Sprintf("~%2d~ Current    Bag: { %s } | ID: %s, App: %s ", threadID, srcMember, bagID, bagAppID))
 		bagData := make(map[string]interface{})
 		if err := json.Unmarshal([]byte(fmt.Sprint(bag["data"])), &bagData); err != nil {
 			fmt.Println(bag["data"])
