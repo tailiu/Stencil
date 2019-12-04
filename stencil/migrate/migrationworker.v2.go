@@ -569,12 +569,12 @@ func (self *MigrationWorkerV2) GetNodeOwner(node *DependencyNode) (string, bool)
 		for _, condition := range ownership.Conditions {
 			tagAttr, err := node.Tag.ResolveTagAttr(condition.TagAttr)
 			if err != nil {
-				log.Fatal("Resolving TagAttr in GetNodeOwner", err, node.Tag.Name, condition.TagAttr)
+				log.Fatal("@GetNodeOwner: Resolving TagAttr", err, node.Tag.Name, condition.TagAttr)
 				break
 			}
 			depOnAttr, err := self.root.Tag.ResolveTagAttr(condition.DependsOnAttr)
 			if err != nil {
-				log.Fatal("Resolving depOnAttr in GetNodeOwner", err, node.Tag.Name, condition.DependsOnAttr)
+				log.Fatal("@GetNodeOwner: Resolving depOnAttr", err, node.Tag.Name, condition.DependsOnAttr)
 				break
 			}
 			if nodeVal, err := node.GetValueForKey(tagAttr); err == nil {
@@ -586,19 +586,19 @@ func (self *MigrationWorkerV2) GetNodeOwner(node *DependencyNode) (string, bool)
 						return nodeVal, true
 					}
 				} else {
-					fmt.Println("Ownership Condition Key in Root Data:", depOnAttr, "doesn't exist!")
-					fmt.Println("root data:", self.root.Data)
+					fmt.Println("@GetNodeOwner: Ownership Condition Key in Root Data:", depOnAttr, "doesn't exist!")
+					fmt.Println("@GetNodeOwner: root data:", self.root.Data)
 					log.Fatal("@GetNodeOwner: stop here and check ownership conditions wrt root")
 				}
 			} else {
-				fmt.Println("Ownership Condition Key", tagAttr, "doesn't exist!")
-				fmt.Println("node data:", node.Data)
-				fmt.Println("node sql:", node.SQL)
+				fmt.Println("@GetNodeOwner: Ownership Condition Key", tagAttr, "doesn't exist!")
+				fmt.Println("@GetNodeOwner: node data:", node.Data)
+				fmt.Println("@GetNodeOwner: node sql:", node.SQL)
 				log.Fatal("@GetNodeOwner: stop here and check ownership conditions")
 			}
 		}
 	} else {
-		log.Fatal("Ownership not found in GetNodeOwner:", node.Tag.Name)
+		log.Fatal("@GetNodeOwner: Ownership not found:", node.Tag.Name)
 	}
 	return "", false
 }
@@ -629,7 +629,7 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 		comparisonTabCol := strings.Split(args[1], ".")
 		if res, err := db.FetchForMapping(self.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
 			fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
-			log.Fatal("@GetMappedData: FetchForMapping | ", err)
+			log.Fatal("@FetchFromMapping: FetchForMapping | ", err)
 			return err
 		} else {
 			data.UpdateData(toAttr, assignedTabCol, targetTabCol[0], res[targetTabCol[1]])
@@ -647,7 +647,7 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 		}
 	} else {
 		fmt.Println(node.Tag.Name, node.Data)
-		log.Fatal("@GetMappedData: unable to fetch ", args[2])
+		log.Fatal("@FetchFromMapping: unable to fetch ", args[2])
 		return errors.New("Unable to fetch data from node")
 	}
 	return nil
@@ -656,11 +656,20 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 func (self *MigrationWorkerV2) RemoveMappedDataFromNodeData(mappedData MappedData, node *DependencyNode) {
 	for _, col := range strings.Split(mappedData.orgCols, ",") {
 		for key := range node.Data {
-			if strings.Contains(key, col) {
+			if strings.Contains(key, col) && !strings.Contains(key, ".id") {
 				delete(node.Data, key)
 			}
 		}
 	}
+}
+
+func (self *MigrationWorkerV2) IsNodeDataEmpty(node *DependencyNode) bool {
+	for key := range node.Data {
+		if !strings.Contains(key, ".id") {
+			return false
+		}
+	}
+	return true
 }
 
 func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) (MappedData, error) {
@@ -825,7 +834,7 @@ func (self *MigrationWorkerV2) HandleUnmappedMembersOfNode(mapping config.Mappin
 func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *DependencyNode, isBag bool) error {
 
 	// Handle partial bags
-
+	var allMappedData []MappedData
 	for _, toTable := range mapping.ToTables {
 		if self.CheckMappingConditions(toTable, node) {
 			continue
@@ -874,7 +883,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 					log.Fatal("@MigrateNode > TableID, toTable: error in getting table id for member! ", toTable.Table, err)
 					return err
 				}
-				self.RemoveMappedDataFromNodeData(mappedData, node)
+				allMappedData = append(allMappedData, mappedData)
 			} else {
 				fmt.Println(toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
 				log.Fatal("@MigrateNode > InsertRowIntoAppDB:", err)
@@ -890,13 +899,20 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 		}
 	}
 
+	for _, mappedData := range allMappedData {
+		self.RemoveMappedDataFromNodeData(mappedData, node)
+	}
+
 	if !isBag && self.mtype == DELETION {
-		if len(node.Data) > 0 {
-			if err := self.SendNodeToBag(node); err != nil {
+		if !self.IsNodeDataEmpty(node) {
+			if err := self.SendNodeToBagWithOwnerID(node, self.uid); err != nil {
 				fmt.Println(node.Data)
-				log.Fatal("@MigrateNode > SendNodeToBag:", err)
+				log.Fatal("@MigrateNode > SendNodeToBagWithOwnerID:", err)
 				return err
 			}
+		} else {
+			fmt.Println(node.Data)
+			log.Fatal("@MigrateNode > IsNodeDataEmpty: true")
 		}
 		if err := self.HandleUnmappedMembersOfNode(mapping, node); err != nil {
 			fmt.Println(mapping, node)
@@ -997,9 +1013,9 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 		for col, val := range node.Data {
 			colTokens := strings.Split(col, ".")
 			colMember := colTokens[0]
-			colAttr := colTokens[1]
+			// colAttr := colTokens[1]
 			if strings.Contains(colMember, member) {
-				bagData[colAttr] = val
+				bagData[col] = val
 			}
 		}
 		if len(bagData) > 0 {
@@ -1043,19 +1059,27 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 	return nil
 }
 
+func (self *MigrationWorkerV2) SendNodeToBagWithOwnerID(node *DependencyNode, ownerID string) error {
+	for _, member := range node.Tag.Members {
+		if err := self.SendMemberToBag(node, member, ownerID, true); err != nil {
+			fmt.Println(node)
+			log.Fatal("@SendNodeToBagWithOwnerID > SendMemberToBag: ownerID error! ")
+			return err
+		}
+	}
+	if err := self.AddInnerReferences(node, ""); err != nil {
+		fmt.Println(node.Tag.Members)
+		fmt.Println(node.Tag.InnerDependencies)
+		fmt.Println(node.Data)
+		log.Fatal("@SendNodeToBagWithOwnerID > AddInnerReferences: Adding Inner References failed ", err)
+		return err
+	}
+	return nil
+}
+
 func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
 	if ownerID, _ := self.GetNodeOwner(node); len(ownerID) > 0 {
-		for _, member := range node.Tag.Members {
-			if err := self.SendMemberToBag(node, member, ownerID, true); err != nil {
-				fmt.Println(node)
-				log.Fatal("@SendNodeToBag > SendMemberToBag: ownerID error! ")
-			}
-		}
-		if err := self.AddInnerReferences(node, ""); err != nil {
-			fmt.Println(node.Tag.Members)
-			fmt.Println(node.Tag.InnerDependencies)
-			fmt.Println(node.Data)
-			log.Fatal("@SendNodeToBag > AddInnerReferences: Adding Inner References failed ", err)
+		if err := self.SendNodeToBagWithOwnerID(node, ownerID); err != nil {
 			return err
 		}
 	} else {
@@ -1336,7 +1360,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int) error {
 			log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO MIGRATE BAG : %s | %s ", threadID, bagID, err))
 			return err
 		}
-		if len(bagNode.Data) < 1 {
+		if self.IsNodeDataEmpty(&bagNode) {
 			if err := db.DeleteBagV2(self.tx.StencilTx, bagID); err != nil {
 				fmt.Println(bag)
 				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO DELETE BAG : %s | %s ", threadID, bagID, err))
