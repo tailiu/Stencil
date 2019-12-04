@@ -17,10 +17,10 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateMigrationWorkerV2WithAppsConfig(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, srcAppConfig, dstAppConfig config.AppConfig) MigrationWorkerV2 {
-	mappings := config.GetSchemaMappingsFor(srcApp, dstApp)
+func CreateMigrationWorkerV2WithAppsConfig(uid string, logTxn *transaction.Log_txn, mtype string, srcAppConfig, dstAppConfig config.AppConfig) MigrationWorkerV2 {
+	mappings := config.GetSchemaMappingsFor(srcAppConfig.AppName, dstAppConfig.AppName)
 	if mappings == nil {
-		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
+		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcAppConfig.AppName, dstAppConfig.AppName))
 	}
 	dstAppConfig.QR.Migration = true
 	srcAppConfig.QR.Migration = true
@@ -31,8 +31,8 @@ func CreateMigrationWorkerV2WithAppsConfig(uid, srcApp, srcAppID, dstApp, dstApp
 		mappings:     mappings,
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
-		SrcDBConn:    db.GetDBConn(srcApp),
-		DstDBConn:    db.GetDBConn2(dstApp),
+		SrcDBConn:    db.GetDBConn(srcAppConfig.AppName),
+		DstDBConn:    db.GetDBConn2(dstAppConfig.AppName),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		FTPClient:    GetFTPClient(),
@@ -812,7 +812,7 @@ func (self *MigrationWorkerV2) HandleUnmappedMembersOfNode(mapping config.Mappin
 	return nil
 }
 
-func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *DependencyNode) error {
+func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *DependencyNode, isBag bool) error {
 
 	// Handle partial bags
 
@@ -883,7 +883,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 		}
 	}
 
-	if self.mtype == DELETION {
+	if !isBag && self.mtype == DELETION {
 		if err := self.HandleUnmappedMembersOfNode(mapping, node); err != nil {
 			return err
 		}
@@ -1053,10 +1053,10 @@ func (self *MigrationWorkerV2) HandleMigration(node *DependencyNode, isBag bool)
 	if mapping, found := self.FetchMappingsForNode(node); found {
 		tagMembers := node.Tag.GetTagMembers()
 		if helper.Sublist(tagMembers, mapping.FromTables) { // other mappings HANDLE!
-			return self.MigrateNode(mapping, node)
+			return self.MigrateNode(mapping, node, isBag)
 		}
 		if wNode, err := self.HandleWaitingList(mapping, tagMembers, node); wNode != nil && err == nil {
-			return self.MigrateNode(mapping, wNode)
+			return self.MigrateNode(mapping, wNode, isBag)
 		} else {
 			return err
 		}
@@ -1267,6 +1267,60 @@ func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, refe
 			if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, fromMemberID, fromID, toMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), fromReference, toReference); err != nil {
 				fmt.Println("#Args: ", self.SrcAppConfig.AppID, fromMemberID, fromID, toMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), fromReference, toReference)
 				log.Fatal("@AddToReferences: Unable to CreateNewReference: ", err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (self *MigrationWorkerV2) MigrateBags(threadID int) error {
+
+	bags, err := db.GetBagsV2(self.logTxn.DBconn, self.uid, self.logTxn.Txn_id)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("x%2dx UNABLE TO FETCH BAGS FOR USER: %s | %s", threadID, self.uid, err))
+		return err
+	}
+	for _, bag := range bags {
+		bagAppID := fmt.Sprint(bag["app"])
+		srcMember := fmt.Sprint(bag["member"])
+		bagID := fmt.Sprint(bag["id"])
+		bagData := make(map[string]interface{})
+		if err := json.Unmarshal([]byte(fmt.Sprint(bag["data"])), &bagData); err != nil {
+			fmt.Println(bag["data"])
+			fmt.Println(bag)
+			log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO CONVERT BAG TO MAP: %s | %s", threadID, self.uid, err))
+			return err
+		}
+		bagAppName, err := db.GetAppNameByAppID(self.logTxn.DBconn, bagAppID)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO GET BAG APP NAME BY ID : %s | %s", threadID, bagAppID, err))
+			return err
+		}
+		bagAppConfig := self.DstAppConfig
+		if !strings.EqualFold(bagAppID, self.DstAppConfig.AppID) {
+			bagAppConfig, err = config.CreateAppConfig(bagAppName, bagAppID)
+			if err != nil {
+				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO CREATE BAG APP CONFIG : %s, %s | %s", threadID, bagAppID, bagAppName, err))
+				log.Fatal(err)
+			}
+		}
+		bagWorker := CreateMigrationWorkerV2WithAppsConfig(self.uid, self.logTxn, self.mtype, self.SrcAppConfig, bagAppConfig)
+		bagTag, err := bagAppConfig.GetTagByMember(srcMember)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO GET BAG TAG BY MEMBER : %s | %s", threadID, srcMember, err))
+			return err
+		}
+		bagNode := DependencyNode{Tag: *bagTag, Data: bagData}
+		if err := bagWorker.HandleMigration(&bagNode, true); err != nil {
+			fmt.Println(bag)
+			log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO MIGRATE BAG : %s | %s ", threadID, bagID, err))
+			return err
+		}
+		if len(bagNode.Data) < 1 {
+			if err := db.DeleteBagV2(self.tx.StencilTx, bagID); err != nil {
+				fmt.Println(bag)
+				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO DELETE BAG : %s | %s ", threadID, bagID, err))
 				return err
 			}
 		}
