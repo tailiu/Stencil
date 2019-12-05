@@ -88,6 +88,19 @@ func GetAppIDByAppName(dbConn *sql.DB, app string) string {
 	return ""
 }
 
+func GetAppNameByAppID(dbConn *sql.DB, appID string) (string, error) {
+	sql := "SELECT app_name FROM apps WHERE pk = $1"
+	if result, err := DataCall1(dbConn, sql, appID); err == nil {
+		if val, ok := result["app_name"]; ok {
+			return fmt.Sprint(val), nil
+		}
+		log.Fatal("db.GetAppIDByAppName: Can't find app_name for id ", appID)
+	} else {
+		log.Fatal("db.GetAppIDByAppName:  ", err)
+	}
+	return "", fmt.Errorf("can't find app_name by id %s", appID)
+}
+
 func Delete(db *sql.DB, SQL string, args ...interface{}) error {
 
 	if _, err := db.Query(SQL, args...); err != nil {
@@ -156,10 +169,27 @@ func NewBag(tx *sql.Tx, pk, rowid, user_id, table, app string, migration_id int)
 	return err
 }
 
+func UpdateBag(tx *sql.Tx, pk string, migration_id int, data []byte) error {
+	query := "UPDATE data_bags SET data = $1, migration_id = $2 WHERE pk = $3;"
+	_, err := tx.Exec(query, data, migration_id, pk)
+	return err
+}
+
+func DeleteBagV2(tx *sql.Tx, pk string) error {
+	query := "DELETE FROM data_bags WHERE pk = $1;"
+	_, err := tx.Exec(query, pk)
+	return err
+}
+
 func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id string, data []byte) error {
 	query := "INSERT INTO data_bags (app, member, id, data, user_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING"
 	_, err := tx.Exec(query, app, member, id, data, user_id, migration_id)
 	return err
+}
+
+func GetBagsV2(dbConn *sql.DB, user_id string, migration_id int) ([]map[string]interface{}, error) {
+	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND migration_id != $2"
+	return DataCall(dbConn, query, user_id, migration_id)
 }
 
 func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference string) error {
