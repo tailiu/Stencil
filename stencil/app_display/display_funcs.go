@@ -175,10 +175,9 @@ func GetAppIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	attrIDNamePairs := make(map[string]string)
 
-	//Need to change
 	query := fmt.Sprintf("select column_name, pk from app_schemas")
 	
-	log.Println(query)
+	// log.Println(query)
 
 	data, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
