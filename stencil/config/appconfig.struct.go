@@ -212,6 +212,18 @@ func (self *AppConfig) GetTagsByTables(tables []string) []Tag {
 	return tags
 }
 
+func (self *AppConfig) GetTagByMember(member string) (*Tag, error) {
+	// no member can appear in more than one tag
+	for _, tag := range self.Tags {
+		for _, tagMember := range tag.Members {
+			if strings.EqualFold(member, tagMember) {
+				return &tag, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("No tag found for member: %s", member)
+}
+
 func (self *AppConfig) GetTagsByTablesExcept(tables []string, tagName string) []Tag {
 	var tags []Tag
 	// no member can appear in more than one tag
@@ -308,7 +320,7 @@ func (self *AppConfig) GetDependsOnConditions(tagName string, pTagName string) (
 	return nil, errors.New("Error: No Conditions Found")
 }
 
-// For finding display setting 
+// For finding display setting
 func (self *AppConfig) GetDepDisplaySetting(tag string, pTag string) (string, error) {
 
 	for _, dependency := range self.Dependencies {

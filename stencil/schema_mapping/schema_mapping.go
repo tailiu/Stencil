@@ -8,13 +8,6 @@ import (
 
 func GetMappedAttributeFromSchemaMappings(displayConfig *config.DisplayConfig, 
 		fromApp, fromTable, fromAttr, toApp, toTable string) string {
-	// fromAppID := getAppNameByAppID(stencilDBConn, fromApp)
-
-	// fromTableName := getTableNameByTableID(stencilDBConn, fromTable)
-
-	// fromAttrName := getAttrNameByAttrID(stencilDBConn, fromAttr)
-
-	// toTableName := getTableNameByTableID(stencilDBConn, toTable)
 
 	schemaMappings, err := config.LoadSchemaMappings()
 	if err != nil {
@@ -24,4 +17,5 @@ func GetMappedAttributeFromSchemaMappings(displayConfig *config.DisplayConfig,
 	log.Println(schemaMappings)
 
 	return ""
+	
 }
