@@ -112,13 +112,13 @@ package main
 func (t Thread) checkNextNode(node) {
 	// Only through data dependencies
 	for _, nextNode := range GetAllNextNodes(node) {
-		acquirePredicateLock(nextNode);
 		addToReferences(node, nextNode);
 		if precedingNodes := GetAllPrecedingNodes(nextNode); len(precedingNodes) <= 1 && nextNode.Rules.DisplayOnlyIfPrecedingNodeExists {
+			acquirePredicateLock(nextNode);
 			checkNextNode(nextNode)
 			sendNodeToBag(nextNode, nextNode.Owner);
+			releasePredicateLock(nextNode);
 		}
-		releasePredicateLock(nextNode);
 	}
 } 
 
