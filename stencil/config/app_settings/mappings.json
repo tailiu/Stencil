@@ -645,7 +645,7 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping": {
-                                        "id": "statuses.id",
+                                        "id": "posts.id",
                                         "account_id": "#REF(posts.author_id,people.id)",
                                         "text":"posts.text",
                                         "created_at":"posts.created_at",

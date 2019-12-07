@@ -1,32 +1,67 @@
 package main
 
 import (
-	"stencil/reference_resolution"
-	"stencil/app_display"
+	// "stencil/reference_resolution"
+	// "stencil/app_display"
+	"log"
+	"stencil/config"
 )
 
 func main() { 
-	migrationID := 908913181
+	// migrationID := 908913181
 
-	// StencilDBName := "stencil"
-	// stencilDBConn := db.GetDBConn(StencilDBName)
+	// // StencilDBName := "stencil"
+	// // stencilDBConn := db.GetDBConn(StencilDBName)
 
-	app := "mastodon"
-	// app_id := db.GetAppIDByAppName(stencilDBConn, app)
+	// app := "mastodon"
+	// // app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
-	// appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, true)
-	// if err != nil {
-	// 	log.Fatal(err)
+	// // appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, true)
+	// // if err != nil {
+	// // 	log.Fatal(err)
+	// // }
+
+	// displayConfig := app_display.CreateDisplayConfig(app, migrationID, true)
+
+	// var hint = app_display.HintStruct{
+	// 	Table:		"favourites",
+	// 	TableID:	"72",
+	// 	KeyVal:		map[string]int{"id":24},
 	// }
 
-	displayConfig := app_display.CreateDisplayConfig(app, migrationID, true)
+	// // reference_resolution.ResolveReference(displayConfig, &hint)
 
-	var hint = app_display.HintStruct{
-		Table:		"favourites",
-		TableID:	"72",
-		KeyVal:		map[string]int{"id":24},
+	schemaMappings, err := config.LoadSchemaMappings()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// reference_resolution.ResolveReferenceByBackTraversal(stencilDBConn, &appConfig, migrationID, &hint)
-	reference_resolution.ResolveReference(displayConfig, &hint)
+	// log.Println(schemaMappings["mastodon"])
+	fromApp, fromTable, fromAttr, toApp, toTable := "diaspora", "posts", "posts.id", "mastodon", "statuses"
+
+	for _, mappings := range schemaMappings.AllMappings {
+		if mappings.FromApp == fromApp {
+			for _, app := range mappings.ToApps {
+				if app.Name == toApp {
+					for _, mapping := range app.Mappings {
+						for _, fTable := range mapping.FromTables {
+							if fTable == fromTable {
+								for _, tTable := range mapping.ToTables {
+									if tTable.Table == toTable {
+										// log.Println(tTable)
+										for tAttr, fAttr := range tTable.Mapping {
+											if fAttr == fromAttr {
+												log.Println(tAttr)
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 }

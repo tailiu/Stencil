@@ -53,7 +53,7 @@ func updateOtherDataBasedOnReferences() {
 func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, ID *identity) {
 	
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
-		
+
 		proIDRow := transformInterfaceToString(IDRow)
 		// log.Println(proIDRow)
 
