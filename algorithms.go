@@ -497,37 +497,51 @@ func Display(dstApp string, migrationID int) {
 		!IsMigrationComplete(migrationID);
 		migratedData = GetUndisplayedMigratedData(migrationID) {
 		
-		CheckData(migratedData, secondPhase)
-
+		deletionHolds, _ := CheckData(migratedData, secondPhase)
+		RemoveDeletionHoldIfEnabled(deletionHolds)
 	}
 
 	secondPhase = true
 	// Only Executed After The Migration Is Complete
 	// Remaning Migration Nodes:
 	// -> The Migrated Nodes In The Destination Application That Still Have Their Migration Flags Raised
-	for _, migratedNode := range GetUndisplayedMigratedData(migrationID) {
-		CheckData(migratedNode, secondPhase)
+	for _, migratedData := range GetUndisplayedMigratedData(migrationID) {
+		if deletionHoldEnable {
+		
+		deletionHolds, _ := CheckData(migratedData, secondPhase)
+		RemoveDeletionHoldIfEnabled(deletionHolds)
 	}
 }
 
-func CheckData(node *DependencyNode, secondPhase bool) {
-	if AlreadyDisplayed(node) {
-		return true
-	}
-	if t.Root == node.GetParent() {
-		Display(node)
-		return true
-	} else {
-		if CheckDisplay(node.GetParent(), SecondPhase) {
-			Display(node)
-			return true
+func CheckData(data *HintStruct, secondPhase bool) (string, [][]int) {
+	dataInNode, status := GetDataInNode(data)
+
+	if SatisfyIntraNodeDependency(dataInNode, status) {
+		
+		if NeedToCheckPreceedingNode(dataInNode) {
+			var allPreNodeCheckResults 
+			var allPreDeletionHolds 
+			for _, precNode := range getAllPrecedingNodes {
+				preNodeCheckResult, preDeletionHolds := CheckData(GetOneDataInPreceedingNodes(dataInNode), secondPhase)
+				allPreNodeCheckResults.append(preDeletionHolds)
+				allPreDeletionHolds.append(preDeletionHolds)
+			}
+
+			if SatisfyInterNodeDependency(precedingNodeCheckResults, secondPhase) {
+				currDeletionHolds := DisplayDataInNodeAndAddDeletionHoldIfEnabled(dataInNode)
+				return displayStatus(status), currDeletionHolds.append(allPreDeletionHolds)
+			} else {
+				return "NoDataDisplayed", allPreDeletionHolds
+			}
+
+		} else {
+			deletionHolds := DisplayDataInNode(dataInNode)
+			return displayStatus(status), deletionHolds
 		}
+
+	} else {
+		return "NoDataDisplayed", nil
 	}
-	if secondPhase && node.DisplayFlag {
-		Display(node)
-		return true
-	}
-	return  false
 }
 
 // func CheckDisplay(oneUndisplayedMigratedData dataStruct, finalRound bool) bool {
