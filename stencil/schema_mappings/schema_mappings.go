@@ -6,13 +6,15 @@ import (
 	"log"
 )
 
-func GetMappedAttributeFromSchemaMappings(
-		fromApp, fromTable, fromAttr, toApp, toTable string) (string, error) {
+func GetMappedAttributesFromSchemaMappings(
+		fromApp, fromTable, fromAttr, toApp, toTable string) ([]string, error) {
 
 	schemaMappings, err := config.LoadSchemaMappings()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var attributes []string
 
 	// log.Println(schemaMappings)
 	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
@@ -30,10 +32,11 @@ func GetMappedAttributeFromSchemaMappings(
 								for _, tTable := range mapping.ToTables {
 									// toTable
 									if tTable.Table == toTable {
+										log.Println(tTable)
 										for tAttr, fAttr := range tTable.Mapping {
 											// fromAttr
 											if fAttr == fromAttr {
-												return tAttr, nil
+												attributes = append(attributes, tAttr)
 											}
 										}
 									}
@@ -46,7 +49,11 @@ func GetMappedAttributeFromSchemaMappings(
 		}
 	}
 
-	return "", NoMappedAttrFound
+	if len(attributes) == 0 {
+		return nil, NoMappedAttrFound
+	} else {
+		return attributes, nil
+	}
 	
 }
 

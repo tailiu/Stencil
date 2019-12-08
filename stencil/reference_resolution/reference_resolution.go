@@ -17,14 +17,15 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 
 		data := createIdentity(proRef["app"], proRef["to_member"], proRef["to_id"])
 
-		refIdentityRows := forwardTraverseIDTable(displayConfig, data, data, displayConfig.AppConfig.AppID)
+		refIdentityRows := forwardTraverseIDTable(
+			displayConfig, data, data, displayConfig.AppConfig.AppID)
 		log.Println(refIdentityRows[0])
 
 		if len(refIdentityRows) > 0 {
 			
 			for _, refIdentityRow := range refIdentityRows {
 
-				attr, err := schema_mappings.GetMappedAttributeFromSchemaMappings( 
+				attr, err := schema_mappings.GetMappedAttributesFromSchemaMappings( 
 					displayConfig.AppIDNamePairs[proRef["app"]], 
 					displayConfig.TableIDNamePairs[proRef["to_member"]],
 					displayConfig.TableIDNamePairs[proRef["to_member"]] + "." + proRef["to_reference"], 
@@ -35,13 +36,22 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 					log.Fatal(err)
 				}
 
-				log.Println(attr)
-				// for _, attrToUpdate := range schema_mapping.GetMappedAttributeFromSchemaMappings(
-				// 	proRef["app"], proRef["from_member"], proRef["from_reference"], appConfig.AppName, org_member) {
+				// log.Println(attr)
+
+				attrsToUpdate, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(
+					displayConfig.AppIDNamePairs[proRef["app"]], 
+					displayConfig.TableIDNamePairs[proRef["from_member"]], 
+					proRef["from_reference"], 
+					displayConfig.AppConfig.AppName,
+					org_member)
+
+				for _, attrToUpdate := range attrsToUpdate {
 					
-					// updateReferences(ref, refIdentityRow.ToMember, refIdentityRow.ToID, attr, org_member, org_id, AttrToUpdate)
+					log.Println(attrToUpdate)
+					// updateReferences(
+						// ref, refIdentityRow.ToMember, refIdentityRow.ToID, attr, org_member, org_id, AttrToUpdate)
 					
-				// }
+				}
 			}
 
 		} else if proRef["app"] == displayConfig.AppConfig.AppID {
