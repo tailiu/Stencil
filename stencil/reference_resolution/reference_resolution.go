@@ -8,7 +8,7 @@ import (
 )
 
 // You are on the left/from part
-func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow map[string]string) {
+func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow map[string]string, orgID *identity) {
 	
 	for _, ref := range getFromReferences(displayConfig, IDRow) {
 		
@@ -25,31 +25,58 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 			
 			for _, refIdentityRow := range refIdentityRows {
 
+				// This is a little bit dirty hack. For example, when trying to find
+				// the mapped attribute from Diaspora Posts Posts.id to Mastodon Statuses,
+				// if we consider arguments in #REF, 
+				// there are two results: id and conversation_id which should not be included
+				ignoreREF := true
+
 				attr, err := schema_mappings.GetMappedAttributesFromSchemaMappings( 
 					displayConfig.AppIDNamePairs[proRef["app"]], 
 					displayConfig.TableIDNamePairs[proRef["to_member"]],
 					displayConfig.TableIDNamePairs[proRef["to_member"]] + "." + proRef["to_reference"], 
 					displayConfig.AppConfig.AppName,
-					displayConfig.TableIDNamePairs[refIdentityRow.member])
+					displayConfig.TableIDNamePairs[refIdentityRow.member],
+					ignoreREF)
 
 				if err != nil {
 					log.Fatal(err)
 				}
 
-				// log.Println(attr)
+				log.Println(attr)
 
-				attrsToUpdate, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(
+				ignoreREF = false 
+
+				attrsToUpdate, err1 := schema_mappings.GetMappedAttributesFromSchemaMappings(
 					displayConfig.AppIDNamePairs[proRef["app"]], 
 					displayConfig.TableIDNamePairs[proRef["from_member"]], 
-					proRef["from_reference"], 
+					displayConfig.TableIDNamePairs[proRef["from_member"]] + "." + proRef["from_reference"], 
 					displayConfig.AppConfig.AppName,
-					org_member)
+					displayConfig.TableIDNamePairs[orgID.member],
+					ignoreREF)
+
+				if err1 != nil {
+					log.Fatal(err1)
+				}
+
+				log.Println(attrsToUpdate)
 
 				for _, attrToUpdate := range attrsToUpdate {
 					
 					log.Println(attrToUpdate)
-					// updateReferences(
-						// ref, refIdentityRow.ToMember, refIdentityRow.ToID, attr, org_member, org_id, AttrToUpdate)
+
+					err2 := updateReferences(displayConfig,
+						proRef["pk"], 
+						displayConfig.TableIDNamePairs[refIdentityRow.member], 
+						refIdentityRow.id, 
+						attr[0], 
+						displayConfig.TableIDNamePairs[orgID.member], 
+						orgID.id, 
+						attrToUpdate)
+					
+					if err2 != nil {
+						log.Println(err2)
+					}
 					
 				}
 			}
@@ -67,15 +94,15 @@ func updateOtherDataBasedOnReferences() {
 
 }
 
-func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, ID *identity) {
+func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, ID *identity, orgID *identity) {
 	
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 
 		proIDRow := transformInterfaceToString(IDRow)
-		log.Println(proIDRow)
+		// log.Println(proIDRow)
 
 		// You are on the left/from part
-		updateMyDataBasedOnReferences(displayConfig, proIDRow)
+		updateMyDataBasedOnReferences(displayConfig, proIDRow, orgID)
 
 		// You are on the right/to part
 		// updateOtherDataBasedOnReferences()
@@ -90,6 +117,6 @@ func ResolveReference(displayConfig *config.DisplayConfig, hint *app_display.Hin
 	
 	ID := transformHintToIdenity(displayConfig, hint)
 	
-	resolveReferenceByBackTraversal(displayConfig, ID)
+	resolveReferenceByBackTraversal(displayConfig, ID, ID)
 
 }

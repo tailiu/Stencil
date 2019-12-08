@@ -3,11 +3,12 @@ package schema_mappings
 import (
 	"stencil/config"
 	// "database/sql"
+	"strings"
 	"log"
 )
 
 func GetMappedAttributesFromSchemaMappings(
-		fromApp, fromTable, fromAttr, toApp, toTable string) ([]string, error) {
+		fromApp, fromTable, fromAttr, toApp, toTable string, ignoreREF bool) ([]string, error) {
 
 	schemaMappings, err := config.LoadSchemaMappings()
 	if err != nil {
@@ -35,6 +36,15 @@ func GetMappedAttributesFromSchemaMappings(
 										log.Println(tTable)
 										for tAttr, fAttr := range tTable.Mapping {
 											// fromAttr
+
+											// If not ignore #REF
+											if !ignoreREF {
+												// If there exists #REF
+												if strings.Contains(fAttr, "#REF(") {
+													fAttr = getFirstArgFromREF(fAttr)
+												}
+											}
+																						
 											if fAttr == fromAttr {
 												attributes = append(attributes, tAttr)
 											}
@@ -57,6 +67,11 @@ func GetMappedAttributesFromSchemaMappings(
 	
 }
 
-func handleREF() {
+// Return the first argument of #REF
+func getFirstArgFromREF(ref string) string {
+
+	tmp := strings.Split(ref, "#REF(")
 	
+	return strings.Split(tmp[1], ",")[0]
+
 }
