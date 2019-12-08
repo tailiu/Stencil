@@ -130,7 +130,20 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 }
 
 // You are on the right/to part
-func updateOtherDataBasedOnReferences() {
+func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig, 
+	IDRow map[string]string, orgID *identity) {
+	
+	for _, ref := range getToReferences(displayConfig, IDRow) {
+		proRef := transformInterfaceToString(ref)
+		// log.Println(proRef)
+
+		data := createIdentity(proRef["app"], proRef["from_member"], proRef["from_id"])
+
+		refIdentityRows := forwardTraverseIDTable(
+			displayConfig, data, data, displayConfig.AppConfig.AppID)
+		log.Println(refIdentityRows[0])
+
+	}
 
 }
 
@@ -140,16 +153,18 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 
 		proIDRow := transformInterfaceToString(IDRow)
-		// log.Println(proIDRow)
+		log.Println(proIDRow)
 
 		// You are on the left/from part
 		updateMyDataBasedOnReferences(displayConfig, proIDRow, orgID)
 
 		// You are on the right/to part
-		// updateOtherDataBasedOnReferences()
+		updateOtherDataBasedOnReferences(displayConfig, proIDRow, orgID)
 
 		// Traverse back
-		// resolveReferenceByBackTraversal()
+		preID := createIdentity(IDRow["from_app"], IDRow["from_member"], IDRow["from_id"])
+
+		resolveReferenceByBackTraversal(displayConfig, preID, orgID)
 	}
 
 }

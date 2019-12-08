@@ -23,6 +23,22 @@ func getFromReferences(displayConfig *config.DisplayConfig, IDRow map[string]str
 
 }
 
+func getToReferences(displayConfig *config.DisplayConfig, IDRow map[string]string) []map[string]interface{} {
+
+	query := fmt.Sprintf("SELECT * FROM reference_table WHERE app = %s and to_member = %s and to_id = %s and migration_id = %d;",
+		IDRow["from_app"], IDRow["from_member"], IDRow["from_id"], displayConfig.MigrationID)
+	
+	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// fmt.Println(data)
+
+	return data
+
+}
+
 func getDataToUpdateRef(displayConfig *config.DisplayConfig, member, id, attr string) string {
 	
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE id = %s",
