@@ -52,8 +52,9 @@ type App struct {
 type DisplayConfig struct {
 	AppConfig			*AppConfig
 	StencilDBConn 		*sql.DB
-	AttrIDNamePairs		map[string]string
 	AppIDNamePairs		map[string]string
+	TableIDNamePairs	map[string]string
+	AttrIDNamePairs		map[string]string
 	MigrationID			int
 }
 

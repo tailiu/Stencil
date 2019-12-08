@@ -3,7 +3,7 @@ package reference_resolution
 import (
 	"stencil/app_display"
 	"stencil/config"
-	"stencil/schema_mapping"
+	"stencil/schema_mappings"
 	"log"
 )
 
@@ -16,7 +16,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 		// log.Println(proRef)
 
 		data := createIdentity(proRef["app"], proRef["to_member"], proRef["to_id"])
-		
+
 		refIdentityRows := forwardTraverseIDTable(displayConfig, data, data, displayConfig.AppConfig.AppID)
 		log.Println(refIdentityRows[0])
 
@@ -24,10 +24,17 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 			
 			for _, refIdentityRow := range refIdentityRows {
 
-				attr := schema_mapping.GetMappedAttributeFromSchemaMappings(displayConfig, 
-					proRef["app"], proRef["to_member"], proRef["to_reference"], 
-					displayConfig.AppConfig.AppName, refIdentityRow.member)
-				
+				attr, err := schema_mappings.GetMappedAttributeFromSchemaMappings( 
+					displayConfig.AppIDNamePairs[proRef["app"]], 
+					displayConfig.TableIDNamePairs[proRef["to_member"]],
+					displayConfig.TableIDNamePairs[proRef["to_member"]] + "." + proRef["to_reference"], 
+					displayConfig.AppConfig.AppName,
+					displayConfig.TableIDNamePairs[refIdentityRow.member])
+
+				if err != nil {
+					log.Fatal(err)
+				}
+
 				log.Println(attr)
 				// for _, attrToUpdate := range schema_mapping.GetMappedAttributeFromSchemaMappings(
 				// 	proRef["app"], proRef["from_member"], proRef["from_reference"], appConfig.AppName, org_member) {
@@ -55,7 +62,7 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, ID *id
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 
 		proIDRow := transformInterfaceToString(IDRow)
-		// log.Println(proIDRow)
+		log.Println(proIDRow)
 
 		// You are on the left/from part
 		updateMyDataBasedOnReferences(displayConfig, proIDRow)

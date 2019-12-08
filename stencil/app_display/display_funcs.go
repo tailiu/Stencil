@@ -24,6 +24,7 @@ func CreateDisplayConfig(app string, migrationID int, newDB bool) *config.Displa
 	displayConfig.AppConfig = &appConfig
 	displayConfig.AttrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)
 	displayConfig.AppIDNamePairs = GetAppIDNamePairs(stencilDBConn)
+	displayConfig.TableIDNamePairs = GetTableIDNamePairs(stencilDBConn)
 	displayConfig.StencilDBConn = stencilDBConn
 	displayConfig.MigrationID = migrationID
 
@@ -189,4 +190,21 @@ func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	}
 
 	return attrIDNamePairs
+}
+
+func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
+	tableIDNamePairs := make(map[string]string)
+
+	query := fmt.Sprintf("select pk, table_name from app_tables;")
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+		tableIDNamePairs[fmt.Sprint(data1["pk"])] = fmt.Sprint(data1["table_name"])
+	}
+	
+	return tableIDNamePairs
 }
