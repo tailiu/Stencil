@@ -8,7 +8,8 @@ import (
 )
 
 // You are on the left/from part
-func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow map[string]string, orgID *identity) {
+func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, 
+	IDRow map[string]string, orgID *identity) {
 	
 	for _, ref := range getFromReferences(displayConfig, IDRow) {
 		
@@ -31,10 +32,11 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 				// there are two results: id and conversation_id which should not be included
 				ignoreREF := true
 
-				attr, err := schema_mappings.GetMappedAttributesFromSchemaMappings( 
+				attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings( 
 					displayConfig.AppIDNamePairs[proRef["app"]], 
 					displayConfig.TableIDNamePairs[proRef["to_member"]],
-					displayConfig.TableIDNamePairs[proRef["to_member"]] + "." + proRef["to_reference"], 
+					displayConfig.TableIDNamePairs[proRef["to_member"]] + 
+						"." + proRef["to_reference"], 
 					displayConfig.AppConfig.AppName,
 					displayConfig.TableIDNamePairs[refIdentityRow.member],
 					ignoreREF)
@@ -43,14 +45,15 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 					log.Fatal(err)
 				}
 
-				log.Println(attr)
+				log.Println(attrs)
 
 				ignoreREF = false 
 
 				attrsToUpdate, err1 := schema_mappings.GetMappedAttributesFromSchemaMappings(
 					displayConfig.AppIDNamePairs[proRef["app"]], 
 					displayConfig.TableIDNamePairs[proRef["from_member"]], 
-					displayConfig.TableIDNamePairs[proRef["from_member"]] + "." + proRef["from_reference"], 
+					displayConfig.TableIDNamePairs[proRef["from_member"]] +
+						"." + proRef["from_reference"], 
 					displayConfig.AppConfig.AppName,
 					displayConfig.TableIDNamePairs[orgID.member],
 					ignoreREF)
@@ -69,7 +72,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 						proRef["pk"], 
 						displayConfig.TableIDNamePairs[refIdentityRow.member], 
 						refIdentityRow.id, 
-						attr[0], 
+						attrs[0], 
 						displayConfig.TableIDNamePairs[orgID.member], 
 						orgID.id, 
 						attrToUpdate)
@@ -82,7 +85,44 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, IDRow ma
 			}
 
 		} else if proRef["app"] == displayConfig.AppConfig.AppID {
+
+			attr := proRef["to_reference"]
+
+			log.Println(attr)
+
+			ignoreREF := false 
+
+			attrsToUpdate, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
+				displayConfig.AppIDNamePairs[proRef["app"]],
+				displayConfig.TableIDNamePairs[proRef["from_member"]],
+				displayConfig.TableIDNamePairs[proRef["from_member"]] +
+					"." + proRef["from_reference"], 
+				displayConfig.AppConfig.AppName, 
+				displayConfig.TableIDNamePairs[orgID.member],
+				ignoreREF)
 			
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Println(attrsToUpdate)
+
+			for _, attrToUpdate := range attrsToUpdate {
+
+				err1 := updateReferences(displayConfig,
+					proRef["pk"],  
+					displayConfig.TableIDNamePairs[proRef["to_member"]], 
+					displayConfig.TableIDNamePairs[proRef["to_id"]], 
+					attr, 
+					displayConfig.TableIDNamePairs[orgID.member], 
+					orgID.id, 
+					attrToUpdate)
+				
+				if err1 != nil {
+					log.Println(err1)
+				}
+
+			}
 		}
 
 	}
@@ -94,7 +134,8 @@ func updateOtherDataBasedOnReferences() {
 
 }
 
-func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, ID *identity, orgID *identity) {
+func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, 
+	ID *identity, orgID *identity) {
 	
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 

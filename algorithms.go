@@ -329,7 +329,10 @@ func (t Thread) ResolveReferenceByBackTraversal(app, member, id, org_member, org
 					}
 				}
 			} else if ref.App == t.DstApp {
-				attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, ref.ToMember) 
+				// "attr" should not be got used the following method 
+				// because in this case the right part in the reference table is not migrated, and only the left part is migrated to other applications and then back.
+				// attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, ref.ToMember) 
+				attr := ref.ToReference
 				for AttrToUpdate := range t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, org_member) {
 					updateReferences(ref, ref.ToMember, ref.ToID, attr, org_member, org_id, AttrToUpdate)
 				}
