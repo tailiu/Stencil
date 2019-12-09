@@ -63,7 +63,7 @@ func deleteRef(displayConfig *config.DisplayConfig, refID string) {
 
 	query := fmt.Sprintf("DELETE FROM reference_table WHERE pk = %s", refID)
 
-	err := db.TxnExecute1(displayConfig.AppConfig.DBConn, query)
+	err := db.TxnExecute1(displayConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

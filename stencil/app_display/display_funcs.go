@@ -16,7 +16,7 @@ func CreateDisplayConfig(app string, migrationID int, newDB bool) *config.Displa
 
 	app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, true)
+	appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, newDB)
 	if err != nil {
 		log.Fatal(err)
 	}

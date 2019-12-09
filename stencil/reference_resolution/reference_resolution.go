@@ -14,12 +14,12 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 	for _, ref := range getFromReferences(displayConfig, IDRow) {
 		
 		procRef := transformInterfaceToString(ref)
-		// log.Println(procRef)
+		log.Println("ref_row: ", procRef)
 
 		data := createIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
 
 		refIdentityRows := forwardTraverseIDTable(displayConfig, data, orgID)
-		log.Println(refIdentityRows[0])
+		// log.Println(refIdentityRows[0])
 
 		if len(refIdentityRows) > 0 {
 			
@@ -113,7 +113,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					displayConfig,
 					procRef["pk"],  
 					displayConfig.TableIDNamePairs[procRef["to_member"]], 
-					displayConfig.TableIDNamePairs[procRef["to_id"]], 
+					procRef["to_id"], 
 					attr, 
 					displayConfig.TableIDNamePairs[orgID.member], 
 					orgID.id, 
@@ -142,7 +142,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 		data := createIdentity(procRef["app"], procRef["from_member"], procRef["from_id"])
 
 		refIdentityRows := forwardTraverseIDTable(displayConfig, data, orgID)
-		log.Println(refIdentityRows[0])
+		// log.Println(refIdentityRows[0])
 
 		if len(refIdentityRows) > 0 {
 
@@ -153,7 +153,8 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
 					displayConfig.AppIDNamePairs[procRef["app"]], 
 					displayConfig.TableIDNamePairs[procRef["to_member"]], 
-					procRef["to_reference"], 
+					displayConfig.TableIDNamePairs[procRef["to_member"]] + 
+						"." + procRef["to_reference"], 
 					displayConfig.AppConfig.AppName,  
 					displayConfig.TableIDNamePairs[orgID.member],
 					ignoreREF) 
@@ -169,9 +170,10 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				attrsToUpdate, err1 := schema_mappings.GetMappedAttributesFromSchemaMappings(
 					displayConfig.AppIDNamePairs[procRef["app"]], 
 					displayConfig.TableIDNamePairs[procRef["from_member"]], 
-					procRef["from_reference"], 
+					displayConfig.TableIDNamePairs[procRef["from_member"]] +
+						"." + procRef["from_reference"], 
 					displayConfig.AppConfig.AppName, 
-					refIdentityRow.member,
+					displayConfig.TableIDNamePairs[refIdentityRow.member],
 					ignoreREF)
 				
 				if err1 != nil {
@@ -185,10 +187,10 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					err2 := updateReferences(
 						displayConfig,
 						procRef["pk"],
-						orgID.member, 
+						displayConfig.TableIDNamePairs[orgID.member], 
 						orgID.id, 
 						attrs[0], 
-						refIdentityRow.member, 
+						displayConfig.TableIDNamePairs[refIdentityRow.member], 
 						refIdentityRow.id, 
 						attrToUpdate)
 					
@@ -210,7 +212,8 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 			attrsToUpdate, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
 				displayConfig.AppIDNamePairs[procRef["app"]], 
 				displayConfig.TableIDNamePairs[procRef["from_member"]], 
-				procRef["from_reference"], 
+				displayConfig.TableIDNamePairs[procRef["from_member"]] + 
+					"." + procRef["from_reference"], 
 				displayConfig.AppConfig.AppName,
 				displayConfig.TableIDNamePairs[procRef["to_member"]], 
 				ignoreREF)
@@ -224,10 +227,10 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				err1 := updateReferences(
 					displayConfig,
 					procRef["pk"],
-					orgID.member,
+					displayConfig.TableIDNamePairs[orgID.member],
 					orgID.id,
 					attr, 
-					procRef["from_member"], 
+					displayConfig.TableIDNamePairs[procRef["from_member"]], 
 					procRef["from_id"], 
 					attrToUpdate)
 				
@@ -248,7 +251,8 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 
 		procIDRow := transformInterfaceToString(IDRow)
-		log.Println(procIDRow)
+		
+		log.Println("id_row: ", procIDRow)
 
 		// You are on the left/from part
 		updateMyDataBasedOnReferences(displayConfig, procIDRow, orgID)
