@@ -64,12 +64,16 @@ func TransformDisplayFlagDataToHint(appConfig *config.AppConfig, data map[string
 // 	return "", errors.New("No Corresponding Member Found!")  
 // }
 
-func (hint *HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) {
-	for _, tag := range appConfig.Tags {
+func (hint *HintStruct) GetTagName(displayConfig *config.DisplayConfig) (string, error) {
+
+	for _, tag := range displayConfig.AppConfig.Tags {
 
 		for _, member := range tag.Members {
+
 			if hint.Table == member {
+
 				return tag.Name, nil
+
 			}
 		}
 
@@ -78,40 +82,58 @@ func (hint *HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) 
 	return "", errors.New("No Corresponding Tag Found!")
 }
 
-func (hint *HintStruct) GetMemberID(appConfig *config.AppConfig, tagName string) (string, error) {
-	for _, tag := range appConfig.Tags {
+func (hint *HintStruct) GetMemberID(displayConfig *config.AppConfig, tagName string) (string, error) {
+	
+	for _, tag := range displayConfig.AppConfig.Tags {
+
 		if tag.Name == tagName {
+
 			for memberID, memberTable := range tag.Members {
+
 				if memberTable == hint.Table {
+
 					return memberID, nil
+					
 				}
 			}
 		}
 	}
+	
 	return "", errors.New("No Corresponding Tag Found!")
+
 }
 
-func (hint *HintStruct) GetParentTags(appConfig *config.AppConfig) ([]string, error) {
-	tag, err := hint.GetTagName(appConfig)
+func (hint *HintStruct) GetParentTags(displayConfig *config.DisplayConfig) ([]string, error) {
+
+	tag, err := hint.GetTagName(displayConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	var parentTags []string
-	for _, dependency := range appConfig.Dependencies {
+	
+	for _, dependency := range displayConfig.AppConfig.Dependencies {
+
 		if dependency.Tag == tag {
+
 			for _, dependsOn := range dependency.DependsOn {
+
 				// Use As as the tag name to avoid adding duplicate tag names
 				if dependsOn.As != "" {
+
 					parentTags = append(parentTags, dependsOn.As)
+
 				} else {
+
 					parentTags = append(parentTags, dependsOn.Tag)
+
 				}
 			}
 		}
 	}
 
 	return parentTags, nil
+
 }
 
 func (hint *HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig *config.AppConfig, alias string) (string, error) {

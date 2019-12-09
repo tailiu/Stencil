@@ -47,18 +47,19 @@ func Initialize(app string) (*sql.DB, *config.AppConfig) {
 
 }
 
-func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, migrationID int) []*HintStruct {
+func GetUndisplayedMigratedData(displayConfig *config.DisplayConfig) []*HintStruct {
 
 	var displayHints []*HintStruct
 
 	query := fmt.Sprintf("SELECT table_id, id FROM display_flags WHERE app_id = %s and migration_id = %d and display_flag = true", 
-		appConfig.AppID, migrationID)
+		displayConfig.AppConfig.AppID, displayConfig.MigrationID)
 	
-	data := db.GetAllColsOfRows(stencilDBConn, query)
+	data := db.GetAllColsOfRows(displayConfig.StencilDBConn, query)
 	// fmt.Println(data)
 
 	for _, data1 := range data {
-		displayHints = append(displayHints, TransformDisplayFlagDataToHint(appConfig, data1))
+		displayHints = append(displayHints, TransformDisplayFlagDataToHint(
+			displayConfig.AppConfig.AppID, data1))
 	}
 	// fmt.Println(displayHints)
 	
@@ -66,20 +67,27 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConf
 
 }
 
-func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
-	query := fmt.Sprintf("SELECT 1 FROM txn_logs WHERE action_id = %d and action_type='COMMIT' LIMIT 1", migrationID)
+func CheckMigrationComplete(displayConfig *config.DisplayConfig) bool {
 	
-	data := db.GetAllColsOfRows(stencilDBConn, query)
+	query := fmt.Sprintf("SELECT 1 FROM txn_logs WHERE action_id = %d and action_type='COMMIT' LIMIT 1", 
+		displayConfig.MigrationID)
+	
+	data := db.GetAllColsOfRows(displayConfig.StencilDBConn, query)
 	
 	if len(data) == 0 {
+
 		return false
+
 	} else {
+
 		return true
+
 	}
 	
 }
 
-func Display(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHints []*HintStruct) error {
+func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error {
+
 	var queries1 []string
 	var queries2 []string
 
@@ -97,13 +105,15 @@ func Display(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHints []*Hi
 		log.Println("**************************************")
 		
 		queries1 = append(queries1, query1)
+
 		queries2 = append(queries2, query2)
+		
 	}
 
-	if err := db.TxnExecute(appConfig.DBConn, queries1); err != nil {
+	if err := db.TxnExecute(displayConfig.AppConfig.DBConn, queries1); err != nil {
 		return err
 	} else {
-		if err := db.TxnExecute(stencilDBConn, queries2); err != nil {
+		if err := db.TxnExecute(displayConfig.StencilDBConn, queries2); err != nil {
 			return err
 		} else {
 			return nil
@@ -111,11 +121,12 @@ func Display(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHints []*Hi
 	}
 }
 
-func CheckDisplay(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHint *HintStruct) bool {
+func CheckDisplay(displayConfig *config.DisplayConfig, dataHint *HintStruct) bool {
+
 	query := fmt.Sprintf("SELECT display_flag from %s where id = %d",
 		dataHint.Table, dataHint.KeyVal["id"])
 	
-	data1, err := db.DataCall1(appConfig.DBConn, query)
+	data1, err := db.DataCall1(displayConfig.AppConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,6 +134,7 @@ func CheckDisplay(stencilDBConn *sql.DB, appConfig *config.AppConfig, dataHint *
 	// log.Println(data1)
 	
 	return !data1["display_flag"].(bool)
+
 }
 
 

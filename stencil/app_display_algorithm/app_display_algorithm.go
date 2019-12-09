@@ -11,86 +11,125 @@ import (
 
 const checkInterval = 200 * time.Millisecond
 
-type DisplayThread struct {
-	
-}
+func DisplayThread(displayConfig *config.DisplayConfig) {
 
-func DisplayThread(app string, migrationID int) {
 	startTime := time.Now()
 
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appConfig := app_display.Initialize(app)
+	// Have been intialized outside
+	// stencilDBConn, appConfig := app_display.Initialize(app)
 
 	log.Println("--------- First Phase --------")
+
 	secondRound := false
-	for migratedData := app_display.GetUndisplayedMigratedData(stencilDBConn, appConfig, migrationID); 
-		!app_display.CheckMigrationComplete(stencilDBConn, migrationID); 
-		migratedData = app_display.GetUndisplayedMigratedData(stencilDBConn, appConfig, migrationID) {
+
+	for migratedData := app_display.GetUndisplayedMigratedData(displayConfig); 
+		!app_display.CheckMigrationComplete(displayConfig); 
+		migratedData = app_display.GetUndisplayedMigratedData(displayConfig) {
 
 		for _, oneMigratedData := range migratedData {
-			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, secondRound)
+
+			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, displayConfig, secondRound)
+
 		}
 
 		time.Sleep(checkInterval)
 	}
 
+
 	log.Println("--------- Second Phase ---------")
+	
 	secondRound = true
-	secondRoundMigratedData := app_display.GetUndisplayedMigratedData(stencilDBConn, appConfig, migrationID)
+
+	secondRoundMigratedData := app_display.GetUndisplayedMigratedData(displayConfig)
+	
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, secondRound)
+
+		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, displayConfig, secondRound)
+
 	}
 
 	log.Println("--------- End of Display Check ---------")
 	
 	endTime := time.Now()
 	log.Println("Time used: ", endTime.Sub(startTime))
+
 }
 
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData *app_display.HintStruct, secondRound bool) error {
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData *app_display.HintStruct, displayConfig *config.DisplayConfig, secondRound bool) error {
 
 	log.Println("Check Data ", *oneMigratedData)
-	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(appConfig, oneMigratedData)
+
+	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(
+		displayConfig, oneMigratedData)
+
 	if dataInNode == nil {
+
 		log.Println(err1)
+		
 		return app_display.NoNodeCanBeDisplayed
+
 	} else {
 
+		// This is to display data once there is any data already displayed in a node
 		var displayedData, notDisplayedData []*app_display.HintStruct
+
 		for _, oneDataInNode := range dataInNode {
-			displayed := app_display.CheckDisplay(stencilDBConn, appConfig, oneDataInNode)
+
+			displayed := app_display.CheckDisplay(displayConfig, oneDataInNode)
+
 			if !displayed {
+
 				notDisplayedData = append(notDisplayedData, oneDataInNode)
+
 			} else {
+
 				displayedData = append(displayedData, oneDataInNode)
+
 			}
 		}
+
 		// Note: This will be changed when considering ongoing application services
 		// and the existence of other app_display threads !!
 		if len(displayedData) != 0 {
-			err6 := app_display.Display(stencilDBConn, appConfig, notDisplayedData)
+
+			err6 := app_display.Display(displayConfig, notDisplayedData)
 			if err6 != nil {
 				log.Fatal(err6)
 			}
+
 			return app_display.ReturnResultBasedOnNodeCompleteness(err1)
+
 		}
 
-		pTags, err2 := oneMigratedData.GetParentTags(appConfig)
+		pTags, err2 := oneMigratedData.GetParentTags(displayConfig)
 		if err2 != nil {
+
 			log.Fatal(err2)
+
 		} else {
+
 			if pTags == nil {
+
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
-				err3 := app_display.Display(stencilDBConn, appConfig, dataInNode)
+
+				err3 := app_display.Display(displayConfig, dataInNode)
 				if err3 != nil {
 					log.Fatal(err3)
 				}
+				
 				return app_display.ReturnResultBasedOnNodeCompleteness(err1)
+
 			} else {
+
 				pTagConditions := make(map[string]bool)
+
 				for _, pTag := range pTags {
-					dataInParentNode, err4 := app_dependency_handler.GetdataFromParentNode(appConfig, dataInNode, pTag)
+
+					dataInParentNode, err4 := app_dependency_handler.GetdataFromParentNode(
+						appConfig, dataInNode, pTag)
+						
 					log.Println(dataInParentNode, err4)
 					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(appConfig, oneMigratedData, pTag)
 					if err5 != nil {

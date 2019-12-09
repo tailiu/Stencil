@@ -261,7 +261,8 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 		updateOtherDataBasedOnReferences(displayConfig, procIDRow, orgID)
 
 		// Traverse back
-		preID := createIdentity(procIDRow["from_app"], procIDRow["from_member"], procIDRow["from_id"])
+		preID := createIdentity(
+			procIDRow["from_app"], procIDRow["from_member"], procIDRow["from_id"])
 
 		resolveReferenceByBackTraversal(displayConfig, preID, orgID)
 	}
