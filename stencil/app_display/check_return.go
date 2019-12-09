@@ -36,7 +36,9 @@ func ReturnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting strin
 	}
 }
 
-func CheckDisplayConditions(appConfig *config.AppConfig, pTagConditions map[string]bool, oneMigratedData *HintStruct) bool {
+func CheckDisplayConditions(displayConfig *config.DisplayConfig, 
+	pTagConditions map[string]bool, oneMigratedData *HintStruct) bool {
+		
 	for _, result := range pTagConditions {
 		if result {
 			return true

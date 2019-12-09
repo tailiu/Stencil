@@ -17,9 +17,6 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 
 	log.Println("--------- Start of Display Check ---------")
 
-	// Have been intialized outside
-	// stencilDBConn, appConfig := app_display.Initialize(app)
-
 	log.Println("--------- First Phase --------")
 
 	secondRound := false
@@ -30,7 +27,7 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 
 		for _, oneMigratedData := range migratedData {
 
-			checkDisplayOneMigratedData(stencilDBConn, appConfig, oneMigratedData, displayConfig, secondRound)
+			checkDisplayOneMigratedData(oneMigratedData, displayConfig, secondRound)
 
 		}
 
@@ -46,7 +43,7 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 	
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 
-		checkDisplayOneMigratedData(stencilDBConn, appConfig, oneSecondRoundMigratedData, displayConfig, secondRound)
+		checkDisplayOneMigratedData(oneSecondRoundMigratedData, displayConfig, secondRound)
 
 	}
 
@@ -57,7 +54,10 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 
 }
 
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppConfig, oneMigratedData *app_display.HintStruct, displayConfig *config.DisplayConfig, secondRound bool) error {
+func checkDisplayOneMigratedData(
+	oneMigratedData *app_display.HintStruct, 
+	displayConfig *config.DisplayConfig, 
+	secondRound bool) error {
 
 	log.Println("Check Data ", *oneMigratedData)
 
@@ -129,25 +129,33 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 
 					dataInParentNode, err4 := app_dependency_handler.GetdataFromParentNode(
 						appConfig, dataInNode, pTag)
-						
+
 					log.Println(dataInParentNode, err4)
-					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(appConfig, oneMigratedData, pTag)
+					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(
+						displayConfig, oneMigratedData, pTag)
+
 					if err5 != nil {
 						log.Fatal(err5)
 					}
 					if err4 != nil {
 						switch err4 {
+
 						case app_display.NotDependsOnAnyData:
+							
 							pTagConditions[pTag] = true
+
 						case app_display.CannotFindAnyDataInParent:
-							pTagConditions[pTag] = app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+
+							pTagConditions[pTag] = app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+								displaySetting, secondRound)
+							
 						}
 					} else {
 						// For now, there is no case where there is more than one piece of data in a parent node
 						// if len(dataInParentNode) != 1 {
 						// 	log.Fatal("Find more than one piece of data in a parent node!!")
 						// }
-						err7 := checkDisplayOneMigratedData(stencilDBConn, appConfig, dataInParentNode, secondRound)
+						err7 := checkDisplayOneMigratedData(dataInParentNode, displayConfig, secondRound)
 						if err7 != nil {
 							log.Println(err7)
 						}
@@ -162,11 +170,12 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB, appConfig *config.AppCon
 					}
 				}
 				log.Println(pTagConditions)
+
 				// For now, without checking the combined_display_setting,
 				// this check app_display condition func will return true
 				// as long as one pTagCondition is true
-				if checkResult := app_display.CheckDisplayConditions(appConfig, pTagConditions, oneMigratedData); checkResult {
-					err8 := app_display.Display(stencilDBConn, appConfig, dataInNode)
+				if checkResult := app_display.CheckDisplayConditions(displayConfig, pTagConditions, oneMigratedData); checkResult {
+					err8 := app_display.Display(displayConfig, dataInNode)
 					if err8 != nil {
 						log.Fatal(err8)
 					}
