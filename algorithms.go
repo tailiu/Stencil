@@ -317,7 +317,6 @@ func (t Thread) ResolveReferenceByBackTraversal(app, member, id, org_member, org
 	for IDRow := range GetRowsFromIDTableByTo(app, member, id) {
 		// You are on the left/from part
 		for ref := range t.GetFromReferences(IDRow.FromApp, IDRow.FromMember, IDRow.FromID) {
-			// if refIdentityRow := ForwardTraverseIDTable(ref.App, ref.ToMember, ref.ToMemberID, org_member, org_id); refIdentityRow != nil || ref.App == t.DstApp {
 			var refIdentityRows [];
 			var refID, refMember;
 			ForwardTraverseIDTable(ref.App, ref.ToMember, ref.ToMemberID, org_member, org_id, refIdentityRows);
@@ -329,7 +328,10 @@ func (t Thread) ResolveReferenceByBackTraversal(app, member, id, org_member, org
 					}
 				}
 			} else if ref.App == t.DstApp {
-				attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, ref.ToMember) 
+				// "attr" should not be got used the following method 
+				// because in this case the right part in the reference table is not migrated, and only the left part is migrated to other applications and then back.
+				// attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, ref.ToMember) 
+				attr := ref.ToReference
 				for AttrToUpdate := range t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, org_member) {
 					updateReferences(ref, ref.ToMember, ref.ToID, attr, org_member, org_id, AttrToUpdate)
 				}
@@ -356,9 +358,15 @@ func (t Thread) ResolveReferenceByBackTraversal(app, member, id, org_member, org
 					}
 				}
 			} else if ref.App == t.DstApp {
-				attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, org_member)
+				// Same as before
+				// attr := t.GetMappedAttributeFromSchemaMappings(ref.App, ref.ToMember, ref.ToReference, t.DstApp, org_member)
+				attr := ref.ToReference
+				// Even though this is also to get attributes from DstApp to DstApp,
+				// this may result in multiple attributes to be updated when checking schema mappings
+				// So we still use GetMappedAttributeFromSchemaMappings here
 				for AttrToUpdate := range t.GetMappedAttributeFromSchemaMappings(ref.App, ref.FromMember, ref.FromReference, t.DstApp, ref.ToMember) {
-					updateReferences(ref, org_member, org_id, attr, refIdentityRow.ToMember, ref.ToID, AttrToUpdate)
+					// Error here: updateReferences(ref, org_member, org_id, attr, refIdentityRow.ToMember, ref.ToID, AttrToUpdate)
+					updateReferences(ref, org_member, org_id, attr, ref.FromMember, ref.FromID, AttrToUpdate)
 				}
 			}
 		}
@@ -380,9 +388,9 @@ func (t Thread) ForwardTraverseIDTable(app, member, id, org_member, org_id, list
 
 // we use toTable and toID to update fromTable, fromID and fromReference
 func (t Thread) updateReferences(refID, member, id, attr, memberToBeUpdated, IDToBeUpdated, AttrToBeUpdated) { 
-	// If both attr and AttrToBeUpdated are null that means data cannot be not migrated (because there's no mapping for it in the dst app)
+	// If both attr and AttrToBeUpdated are null, that means data cannot be not migrated (because there's no mapping for it in the dst app)
 	// For example, conversation and status move from Mastodon to posts in Diaspora: There's a reference from status to conversation in Mastodon,
-	// but as conversation cannot be mapped to any member in Mastodon, status.conversation_id and conversation.id cannot be found any corresponding mappings in Diaspora.
+	// but as conversation cannot be mapped to any member in Diaspora, status.conversation_id and conversation.id cannot be found in any corresponding mappings in Diaspora.
 	if !attr && !AttrToBeUpdated {
 		return
 	} else if attr && AttrToBeUpdated {

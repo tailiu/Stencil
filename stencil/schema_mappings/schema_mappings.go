@@ -3,16 +3,19 @@ package schema_mappings
 import (
 	"stencil/config"
 	// "database/sql"
+	"strings"
 	"log"
 )
 
-func GetMappedAttributeFromSchemaMappings(
-		fromApp, fromTable, fromAttr, toApp, toTable string) (string, error) {
+func GetMappedAttributesFromSchemaMappings(
+		fromApp, fromTable, fromAttr, toApp, toTable string, ignoreREF bool) ([]string, error) {
 
 	schemaMappings, err := config.LoadSchemaMappings()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var attributes []string
 
 	// log.Println(schemaMappings)
 	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
@@ -30,10 +33,20 @@ func GetMappedAttributeFromSchemaMappings(
 								for _, tTable := range mapping.ToTables {
 									// toTable
 									if tTable.Table == toTable {
+										log.Println(tTable)
 										for tAttr, fAttr := range tTable.Mapping {
 											// fromAttr
+
+											// If not ignore #REF
+											if !ignoreREF {
+												// If there exists #REF
+												if strings.Contains(fAttr, "#REF(") {
+													fAttr = getFirstArgFromREF(fAttr)
+												}
+											}
+																						
 											if fAttr == fromAttr {
-												return tAttr, nil
+												attributes = append(attributes, tAttr)
 											}
 										}
 									}
@@ -46,10 +59,19 @@ func GetMappedAttributeFromSchemaMappings(
 		}
 	}
 
-	return "", NoMappedAttrFound
+	if len(attributes) == 0 {
+		return nil, NoMappedAttrFound
+	} else {
+		return attributes, nil
+	}
 	
 }
 
-func handleREF() {
+// Return the first argument of #REF
+func getFirstArgFromREF(ref string) string {
+
+	tmp := strings.Split(ref, "#REF(")
 	
+	return strings.Split(tmp[1], ",")[0]
+
 }

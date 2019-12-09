@@ -832,6 +832,21 @@ func GetTablesOfDB(dbConn *sql.DB, app string) []string {
 	return tables
 }
 
+func TxnExecute1(dbConn *sql.DB, query string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(query); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func TxnExecute(dbConn *sql.DB, queries []string) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -848,7 +863,6 @@ func TxnExecute(dbConn *sql.DB, queries []string) error {
 
 	tx.Commit()
 	return nil
-
 }
 
 func SaveForEvaluation(dbConn *sql.DB, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID string) error {

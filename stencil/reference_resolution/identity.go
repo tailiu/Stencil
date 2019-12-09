@@ -9,6 +9,7 @@ import (
 	"log"
 )
 
+// app, member, id are all integer corresponding to names
 func createIdentity(app, member, id string) *identity {
 	
 	ID := &identity{
@@ -59,7 +60,7 @@ func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig, ID *identity)
 
 }
 
-func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *identity, dstAppID string) []*identity {
+func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *identity) []*identity {
 	
 	var res []*identity
 
@@ -70,20 +71,20 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *
 		
 		procIDRow := transformInterfaceToString(IDRow)
 
-		nextData := createIdentity(procIDRow["to_app"], procIDRow["to_member"], procIDRow["to_id"],)
+		nextData := createIdentity(procIDRow["to_app"], procIDRow["to_member"], procIDRow["to_id"])
 
-		res = append(res, forwardTraverseIDTable(displayConfig, nextData, orginalID, dstAppID)...)
+		res = append(res, forwardTraverseIDTable(displayConfig, nextData, orginalID)...)
 
 	}
 
 	if len(IDRows) == 0 {
 
-		if ID.app == dstAppID && ID.member != orginalID.member && ID.id != orginalID.id {
+		if ID.app == displayConfig.AppConfig.AppID && ID.member != orginalID.member && ID.id != orginalID.id {
 			
 			resData := createIdentity(ID.app, ID.member, ID.id)
 
 			res = append(res, resData)
-			
+
 		}
 
 	}
