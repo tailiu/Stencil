@@ -187,9 +187,24 @@ func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id string, dat
 	return err
 }
 
+func GetRowsFromIDTableByTo(dbConn *sql.DB, app, member, id string) ([]map[string]interface{}, error) {
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
+	return DataCall(dbConn, query, app, member, id)
+}
+
+func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id string) ([]map[string]interface{}, error) {
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
+	return DataCall(dbConn, query, app, member, id)
+}
+
 func GetBagsV2(dbConn *sql.DB, user_id string, migration_id int) ([]map[string]interface{}, error) {
 	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND migration_id != $2"
 	return DataCall(dbConn, query, user_id, migration_id)
+}
+
+func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id string, migration_id int) (map[string]interface{}, error) {
+	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND app = $2 AND member = $3 and id = $4 AND migration_id != $5"
+	return DataCall1(dbConn, query, user_id, app, member, id, migration_id)
 }
 
 func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference string) error {
