@@ -1,6 +1,3 @@
-package main
-
-
 /*
  * Assumptions:
  * 1. Threads don't communicate with each other. Reasons: Simplicity, performance.
@@ -409,95 +406,6 @@ func (t Thread) updateReferences(refID, member, id, attr, memberToBeUpdated, IDT
 	}
 }
 
-
-func (t Thread) AggressiveMigration(userid int, srcApp, dstApp string, node *DependencyNode) {
-	try:
-		if t.Root == node && !checkUserInApp(userid, dstApp) {
-			addUserToApplication(userid, dstApp)
-		}
-		// randomlyGetAdjacentNode(node) not only gets a migrating user's data but also some data shared by other users
-		// this part (randomlyGetUnvisitedAdjacentNode) needs to be changed: combine ownership and dependencies for traversal. root goes to ownership and then to dependencies. 
-		// root will not be in dependencies anymore; only in ownerships.
-		for child := randomlyGetUnvisitedAdjacentNode(node); child != nil; child = randomlyGetUnvisitedAdjacentNode(node) {
-			AggressiveMigration(userid, srcApp, dstApp, child)
-		}
-		acquirePredicateLock(*node)
-		for child := randomlyGetUnvisitedAdjacentNode(node); child != nil; child = randomlyGetUnvisitedAdjacentNode(node) {
-			AggressiveMigration(userid, srcApp, dstApp, child)
-		}
-		// Log before migrating, and migrate nodes belonging to the migrating user and shared to the user
-		if node.owner == user_id || node.ShareToUser(user_id) {
-			for child := range getDependentNodes(*node) { // ignore mark as visited flag while getting children
-				// if parentNodes := getAllParentNodes(child); len(parentNodes) > 1 || node.Rules.DisplayWhatever {
-				// 	markAsVisited(*child)
-				// }
-				if parentNodes := getAllParentNodes(child); len(parentNodes) <= 1 && node.Rules.DisplayOnlyIfParentExists {
-					sendToBag(*child, child.Owner)
-				}
-			}
-			migrateNode(*node) 
-		} else {
-			if parentNodes := getAllParentNodes(*node); len(parentNodes) > 1 || node.Rules.DisplayWhatever {
-				markAsVisited(*node)
-			} else {
-				for child := range GetAllAdjacentNodes(node) {
-					if parentNodes := getAllParentNodes(child); len(parentNodes) <= 1 && node.Rules.DisplayOnlyIfParentExists {
-						
-					}
-				}
-				sendToBag(*node, node.Owner)
-			}
-		}
-		releasePredicateLock(*node)
-	catch NodeNotFound:
-		t.releaseAllLocks()
-		if t.Root {
-			AggressiveMigration(userid, srcApp, dstApp, t.Root)
-		}else{
-			if checkUserInApp(userid, srcApp){
-				removeUserFromApplication(userid, srcApp)
-			}
-			UpdateMigrationState(userid, srcApp, dstApp)
-			log.Println("Congratulations, this migration worker has finished it's job!")
-		}
-}
-
-//Extending database guarantee to ensure migration correctness (and protect application semantics)
-//we are trying not to lock all application service and other users' data and protect application semantics
-//Our solution is agnostic to threads or concurrent migration
-//we are only interrupting limited things that are going to be migrated and minimizing interruption even not per user basis
-//Aggressive and normal: tradeoff between availability and performance(latency) 
-
-//Diaspora person and user table <-> Twitter user table
-func (t Thread) NormalMigration(userid int, srcApp, dstApp string, node *DependencyNode) {
-	try:
-		if t.Root == node && !checkUserInApp(userid, dstApp) {
-			addUserToApplication(userid, dstApp)
-		}
-		for child := randomlyGetAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
-			NormalMigration(userid, srcApp, dstApp, child)
-		}
-		acquirePredicateLock(*node)
-		if child := randomlyGetAdjacentNode(node); child != nil {
-			releasePredicateLock(*node)
-			NormalMigration(userid, srcApp, dstApp, child)
-		} else {
-			migrateNode(*node)
-			releasePredicateLock(*node)
-		}
-	catch NodeNotFound:
-		t.releaseAllLocks()
-		if t.Root {
-			NormalMigration(userid, srcApp, dstApp, t.Root)
-		}else{
-			if checkUserInApp(userid, srcApp){
-				removeUserFromApplication(userid, srcApp)
-			}
-			UpdateMigrationState(userid, srcApp, dstApp)
-			log.Println("Congratulations, this migration worker has finished it's job!")
-		}
-}
-
 func Display(dstApp string, migrationID int) {
 	secondPhase := false
 
@@ -551,6 +459,99 @@ func CheckData(data *HintStruct, secondPhase bool) (string, [][]int) {
 		return "NoDataDisplayed", nil
 	}
 }
+
+
+// ************************* OLD ALGORITHMS *************************
+
+// //Old normal migration algorithm
+// //Extending database guarantee to ensure migration correctness (and protect application semantics)
+// //we are trying not to lock all application service and other users' data and protect application semantics
+// //Our solution is agnostic to threads or concurrent migration
+// //we are only interrupting limited things that are going to be migrated and minimizing interruption even not per user basis
+// //Aggressive and normal: tradeoff between availability and performance(latency) 
+
+// //Diaspora person and user table <-> Twitter user table
+// func (t Thread) NormalMigration(userid int, srcApp, dstApp string, node *DependencyNode) {
+// 	try:
+// 		if t.Root == node && !checkUserInApp(userid, dstApp) {
+// 			addUserToApplication(userid, dstApp)
+// 		}
+// 		for child := randomlyGetAdjacentNode(node); child != nil; child = randomlyGetAdjacentNode(node) {
+// 			NormalMigration(userid, srcApp, dstApp, child)
+// 		}
+// 		acquirePredicateLock(*node)
+// 		if child := randomlyGetAdjacentNode(node); child != nil {
+// 			releasePredicateLock(*node)
+// 			NormalMigration(userid, srcApp, dstApp, child)
+// 		} else {
+// 			migrateNode(*node)
+// 			releasePredicateLock(*node)
+// 		}
+// 	catch NodeNotFound:
+// 		t.releaseAllLocks()
+// 		if t.Root {
+// 			NormalMigration(userid, srcApp, dstApp, t.Root)
+// 		}else{
+// 			if checkUserInApp(userid, srcApp){
+// 				removeUserFromApplication(userid, srcApp)
+// 			}
+// 			UpdateMigrationState(userid, srcApp, dstApp)
+// 			log.Println("Congratulations, this migration worker has finished it's job!")
+// 		}
+// }
+
+// Old aggresive migration algorithm
+// func (t Thread) AggressiveMigration(userid int, srcApp, dstApp string, node *DependencyNode) {
+// 	try:
+// 		if t.Root == node && !checkUserInApp(userid, dstApp) {
+// 			addUserToApplication(userid, dstApp)
+// 		}
+// 		// randomlyGetAdjacentNode(node) not only gets a migrating user's data but also some data shared by other users
+// 		// this part (randomlyGetUnvisitedAdjacentNode) needs to be changed: combine ownership and dependencies for traversal. root goes to ownership and then to dependencies. 
+// 		// root will not be in dependencies anymore; only in ownerships.
+// 		for child := randomlyGetUnvisitedAdjacentNode(node); child != nil; child = randomlyGetUnvisitedAdjacentNode(node) {
+// 			AggressiveMigration(userid, srcApp, dstApp, child)
+// 		}
+// 		acquirePredicateLock(*node)
+// 		for child := randomlyGetUnvisitedAdjacentNode(node); child != nil; child = randomlyGetUnvisitedAdjacentNode(node) {
+// 			AggressiveMigration(userid, srcApp, dstApp, child)
+// 		}
+// 		// Log before migrating, and migrate nodes belonging to the migrating user and shared to the user
+// 		if node.owner == user_id || node.ShareToUser(user_id) {
+// 			for child := range getDependentNodes(*node) { // ignore mark as visited flag while getting children
+// 				// if parentNodes := getAllParentNodes(child); len(parentNodes) > 1 || node.Rules.DisplayWhatever {
+// 				// 	markAsVisited(*child)
+// 				// }
+// 				if parentNodes := getAllParentNodes(child); len(parentNodes) <= 1 && node.Rules.DisplayOnlyIfParentExists {
+// 					sendToBag(*child, child.Owner)
+// 				}
+// 			}
+// 			migrateNode(*node) 
+// 		} else {
+// 			if parentNodes := getAllParentNodes(*node); len(parentNodes) > 1 || node.Rules.DisplayWhatever {
+// 				markAsVisited(*node)
+// 			} else {
+// 				for child := range GetAllAdjacentNodes(node) {
+// 					if parentNodes := getAllParentNodes(child); len(parentNodes) <= 1 && node.Rules.DisplayOnlyIfParentExists {
+						
+// 					}
+// 				}
+// 				sendToBag(*node, node.Owner)
+// 			}
+// 		}
+// 		releasePredicateLock(*node)
+// 	catch NodeNotFound:
+// 		t.releaseAllLocks()
+// 		if t.Root {
+// 			AggressiveMigration(userid, srcApp, dstApp, t.Root)
+// 		}else{
+// 			if checkUserInApp(userid, srcApp){
+// 				removeUserFromApplication(userid, srcApp)
+// 			}
+// 			UpdateMigrationState(userid, srcApp, dstApp)
+// 			log.Println("Congratulations, this migration worker has finished it's job!")
+// 		}
+// }
 
 // func CheckDisplay(oneUndisplayedMigratedData dataStruct, finalRound bool) bool {
 // 	dataInNode, err := GetDataInNodeBasedOnDisplaySetting(oneUndisplayedMigratedData)
