@@ -27,7 +27,7 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 
 		for _, oneMigratedData := range migratedData {
 
-			checkDisplayOneMigratedData(oneMigratedData, displayConfig, secondRound)
+			checkDisplayOneMigratedData(displayConfig, oneMigratedData , secondRound)
 
 		}
 
@@ -43,7 +43,7 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 	
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 
-		checkDisplayOneMigratedData(oneSecondRoundMigratedData, displayConfig, secondRound)
+		checkDisplayOneMigratedData(displayConfig, oneSecondRoundMigratedData, secondRound)
 
 	}
 
@@ -55,8 +55,8 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 }
 
 func checkDisplayOneMigratedData(
-	oneMigratedData *app_display.HintStruct, 
 	displayConfig *config.DisplayConfig, 
+	oneMigratedData *app_display.HintStruct, 
 	secondRound bool) error {
 
 	log.Println("Check Data ", *oneMigratedData)
@@ -155,7 +155,7 @@ func checkDisplayOneMigratedData(
 						// if len(dataInParentNode) != 1 {
 						// 	log.Fatal("Find more than one piece of data in a parent node!!")
 						// }
-						err7 := checkDisplayOneMigratedData(dataInParentNode, displayConfig, secondRound)
+						err7 := checkDisplayOneMigratedData(displayConfig, dataInParentNode, secondRound)
 						if err7 != nil {
 							log.Println(err7)
 						}
