@@ -7,6 +7,7 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"stencil/app_display"
+	"stencil/reference_resolution"
 	"strconv"
 	"strings"
 )
@@ -78,6 +79,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 		// fmt.Println(procDependencies)
 
 		dataInDependencyNode := queue[0]
+
 		queue = queue[1:]
 
 		table := dataInDependencyNode.Table
@@ -163,6 +165,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 		return result, app_display.NodeIncomplete
 
 	}
+	
 }
 
 func getOneRowBasedOnHint(displayConfig *config.DisplayConfig, 
@@ -217,6 +220,7 @@ func getDataInNode(displayConfig *config.DisplayConfig,
 					return []*app_display.HintStruct{hint}, nil
 
 				} else {
+
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
 					return getRemainingDataInNode(displayConfig,
