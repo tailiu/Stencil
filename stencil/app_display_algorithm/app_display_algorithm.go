@@ -26,11 +26,7 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 
 		for _, oneMigratedData := range migratedData {
 
-<<<<<<< HEAD
-			checkDisplayOneMigratedData(displayConfig, oneMigratedData , secondRound)
-=======
 			checkDisplayOneMigratedData(displayConfig, oneMigratedData, secondRound)
->>>>>>> 8af2beacad04de125ae85349ff1682bc2c01927d
 
 		}
 
@@ -59,11 +55,7 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 
 func checkDisplayOneMigratedData(
 	displayConfig *config.DisplayConfig, 
-<<<<<<< HEAD
-	oneMigratedData *app_display.HintStruct, 
-=======
 	oneMigratedData *app_display.HintStruct,
->>>>>>> 8af2beacad04de125ae85349ff1682bc2c01927d
 	secondRound bool) error {
 
 	log.Println("Check Data ", *oneMigratedData)

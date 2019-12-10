@@ -9,8 +9,10 @@ import (
 
 // You are on the left/from part
 func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, 
-	IDRow map[string]string, orgID *identity) {
+	IDRow map[string]string, orgID *identity) []string {
 	
+	var updatedAttrs []string
+
 	for _, ref := range getFromReferences(displayConfig, IDRow) {
 		
 		procRef := transformInterfaceToString(ref)
@@ -77,6 +79,8 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 						orgID.id, 
 						attrToUpdate)
 					
+					updatedAttrs = append(updatedAttrs, attrToUpdate)
+
 					if err2 != nil {
 						log.Println(err2)
 					}
@@ -119,6 +123,8 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					orgID.id, 
 					attrToUpdate)
 				
+				updatedAttrs = append(updatedAttrs, attrToUpdate)
+
 				if err1 != nil {
 					log.Println(err1)
 				}
@@ -128,12 +134,16 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 	}
 
+	return updatedAttrs
+
 }
 
 // You are on the right/to part
 func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig, 
-	IDRow map[string]string, orgID *identity) {
+	IDRow map[string]string, orgID *identity) []string {
 	
+	var updatedAttrs []string
+
 	for _, ref := range getToReferences(displayConfig, IDRow) {
 
 		procRef := transformInterfaceToString(ref)
@@ -194,6 +204,8 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 						refIdentityRow.id, 
 						attrToUpdate)
 					
+					updatedAttrs = append(updatedAttrs, attrToUpdate)
+
 					if err2 != nil {
 						log.Println(err2)
 					}
@@ -234,6 +246,8 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					procRef["from_id"], 
 					attrToUpdate)
 				
+				updatedAttrs = append(updatedAttrs, attrToUpdate)
+
 				if err1 != nil {
 					log.Println(err1)
 				}
@@ -243,11 +257,15 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 	}
 
+	return updatedAttrs 
+
 }
 
 func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, 
-	ID *identity, orgID *identity) {
-	
+	ID *identity, orgID *identity) []string {
+
+	var updatedAttrs []string
+
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 
 		procIDRow := transformInterfaceToString(IDRow)
@@ -255,24 +273,30 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 		log.Println("id_row: ", procIDRow)
 
 		// You are on the left/from part
-		updateMyDataBasedOnReferences(displayConfig, procIDRow, orgID)
+		updatedAttrs = append(updatedAttrs, 
+			updateMyDataBasedOnReferences(displayConfig, procIDRow, orgID)...)
 
 		// You are on the right/to part
-		updateOtherDataBasedOnReferences(displayConfig, procIDRow, orgID)
+		updatedAttrs = append(updatedAttrs,
+			updateOtherDataBasedOnReferences(displayConfig, procIDRow, orgID)...)
 
 		// Traverse back
 		preID := createIdentity(
 			procIDRow["from_app"], procIDRow["from_member"], procIDRow["from_id"])
 
-		resolveReferenceByBackTraversal(displayConfig, preID, orgID)
+		updatedAttrs = append(updatedAttrs,
+			resolveReferenceByBackTraversal(displayConfig, preID, orgID)...)
+		
 	}
+
+	return updatedAttrs
 
 }
 
-func ResolveReference(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) {
+func ResolveReference(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) []string {
 	
 	ID := transformHintToIdenity(displayConfig, hint)
 	
-	resolveReferenceByBackTraversal(displayConfig, ID, ID)
+	return resolveReferenceByBackTraversal(displayConfig, ID, ID)
 
 }

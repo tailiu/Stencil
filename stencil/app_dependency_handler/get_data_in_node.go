@@ -324,8 +324,8 @@ func GetDataInNodeBasedOnDisplaySetting(displayConfig *config.DisplayConfig,
 		if displaySetting == "default_display_setting" {
 			return nil, err
 
-		// The setting "display_based_on_inner_dependencies" means display as much data in a node as possible
-		// based on inner dependencies.
+		// The setting "display_based_on_inner_dependencies" means 
+		// display as much data in a node as possible based on inner dependencies.
 		// Note: if a piece of data in a node depends on some data not existing in the node,
 		// it needs to be deleted from the data set and cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {

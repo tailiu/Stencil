@@ -4,6 +4,7 @@ import (
 	"stencil/reference_resolution"
 	"stencil/app_display"
 	"stencil/config"
+	"log"
 )
 
 /**
@@ -28,7 +29,9 @@ func test1(displayConfig *config.DisplayConfig) {
 		KeyVal:		map[string]int{"id":235893},
 	}
 
-	reference_resolution.ResolveReference(displayConfig, &hint)
+	updatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
+
+	log.Println(updatedAttrs)
 
 }
 
@@ -54,7 +57,9 @@ func test2(displayConfig *config.DisplayConfig) {
 		KeyVal:		map[string]int{"id":79738},
 	}
 
-	reference_resolution.ResolveReference(displayConfig, &hint)
+	updatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
+
+	log.Println(updatedAttrs)
 
 }
 
@@ -69,4 +74,5 @@ func main() {
 	// test1(displayConfig)
 
 	test2(displayConfig)
+	
 }
