@@ -58,8 +58,9 @@ func GetUndisplayedMigratedData(displayConfig *config.DisplayConfig) []*HintStru
 	// fmt.Println(data)
 
 	for _, data1 := range data {
-		displayHints = append(displayHints, TransformDisplayFlagDataToHint(
-			displayConfig.AppConfig.AppID, data1))
+
+		displayHints = append(displayHints, TransformDisplayFlagDataToHint(displayConfig, data1))
+
 	}
 	// fmt.Println(displayHints)
 	
@@ -97,7 +98,7 @@ func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error
 			dataHint.Table, dataHint.KeyVal["id"])
 
 		query2 := fmt.Sprintf("UPDATE Display_flags SET display_flag = false, updated_at = now() WHERE app_id = %s and table_id = %s and id = %d;",
-			appConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
+			displayConfig.AppConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
 		
 		log.Println("**************************************")
 		log.Println(query1)

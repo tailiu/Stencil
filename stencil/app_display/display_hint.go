@@ -17,7 +17,9 @@ type HintStruct struct {
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
-func TransformRowToHint(appConfig *config.AppConfig, row map[string]interface{}, table string) *HintStruct {
+func TransformRowToHint(displayConfig *config.DisplayConfig,
+	row map[string]interface{}, table string) *HintStruct {
+	
 	hint := HintStruct{}
 
 	hint.Table = table
@@ -28,13 +30,16 @@ func TransformRowToHint(appConfig *config.AppConfig, row map[string]interface{},
 	}
 	hint.KeyVal = map[string]int{"id": intVal}
 
-	hint.TableID = appConfig.TableNameIDPairs[table]
+	hint.TableID = displayConfig.AppConfig.TableNameIDPairs[table]
 	hint.Data = row
 	
 	return &hint
+
 }
 
-func TransformDisplayFlagDataToHint(appConfig *config.AppConfig, data map[string]string) *HintStruct {
+func TransformDisplayFlagDataToHint(displayConfig *config.DisplayConfig,
+	data map[string]string) *HintStruct {
+	
 	hint := HintStruct{}
 
 	intVal, err := strconv.Atoi(data["id"])
@@ -43,10 +48,11 @@ func TransformDisplayFlagDataToHint(appConfig *config.AppConfig, data map[string
 	}
 	hint.KeyVal = map[string]int{"id": intVal}
 
-	hint.Table = appConfig.TableIDNamePairs[data["table_id"]]
+	hint.Table = displayConfig.AppConfig.TableIDNamePairs[data["table_id"]]
 	hint.TableID = data["table_id"]
 	
 	return &hint
+
 }
 
 // // By default, a member name is a table name 
@@ -82,7 +88,7 @@ func (hint *HintStruct) GetTagName(displayConfig *config.DisplayConfig) (string,
 	return "", errors.New("No Corresponding Tag Found!")
 }
 
-func (hint *HintStruct) GetMemberID(displayConfig *config.AppConfig, tagName string) (string, error) {
+func (hint *HintStruct) GetMemberID(displayConfig *config.DisplayConfig, tagName string) (string, error) {
 	
 	for _, tag := range displayConfig.AppConfig.Tags {
 
@@ -136,43 +142,65 @@ func (hint *HintStruct) GetParentTags(displayConfig *config.DisplayConfig) ([]st
 
 }
 
-func (hint *HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig *config.AppConfig, alias string) (string, error) {
-	tag, err := hint.GetTagName(appConfig)
+func (hint *HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(
+	displayConfig *config.DisplayConfig, alias string) (string, error) {
+	
+	tag, err := hint.GetTagName(displayConfig)
 	if err != nil {
 		return "", err
 	}
 
-	for _, dependency := range appConfig.Dependencies {
+	for _, dependency := range displayConfig.AppConfig.Dependencies {
+
 		if dependency.Tag == tag {
+
 			for _, dependsOn := range dependency.DependsOn {
+
 				if dependsOn.As == alias {
+					
 					return dependsOn.Tag, nil
+
 				}
 			}
 		}
 	}
 
 	return alias, errors.New("No Corresponding Tag for the Provided Alias Found!")
+
 }
 
-func (hint *HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig, pTag string) (string, error) {
-	tag, err := hint.GetTagName(appConfig)
+func (hint *HintStruct) GetDisplayExistenceSetting(
+	displayConfig *config.DisplayConfig, pTag string) (string, error) {
+	
+	tag, err := hint.GetTagName(displayConfig)
 	if err != nil {
 		return "", err
 	}
 
-	for _, dependency := range appConfig.Dependencies {
+	for _, dependency := range displayConfig.AppConfig.Dependencies {
+
 		if dependency.Tag == tag {
+			
 			for _, dependsOn := range dependency.DependsOn {
+
 				if dependsOn.As != "" {
+
 					if dependsOn.As == pTag {
+
 						return dependsOn.DisplayExistence, nil
+
 					} else {
+
 						continue
+
 					}
+
 				} else {
+
 					if dependsOn.Tag == pTag {
+
 						return dependsOn.DisplayExistence, nil
+
 					}
 				}
 			}
@@ -180,4 +208,5 @@ func (hint *HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig, 
 	}
 
 	return "", errors.New("Find display existence error!")
+
 }

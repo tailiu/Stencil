@@ -1,7 +1,6 @@
 package app_display_algorithm
 
 import (
-	"database/sql"
 	"log"
 	"stencil/config"
 	"stencil/app_dependency_handler"
@@ -128,7 +127,7 @@ func checkDisplayOneMigratedData(
 				for _, pTag := range pTags {
 
 					dataInParentNode, err4 := app_dependency_handler.GetdataFromParentNode(
-						appConfig, dataInNode, pTag)
+						displayConfig, dataInNode, pTag)
 
 					log.Println(dataInParentNode, err4)
 					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(
