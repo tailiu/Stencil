@@ -9,9 +9,9 @@ import (
 
 // You are on the left/from part
 func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, 
-	IDRow map[string]string, orgID *identity) []string {
+	IDRow map[string]string, orgID *identity) map[string]string {
 	
-	var updatedAttrs []string
+	updatedAttrs := make(map[string]string)
 
 	for _, ref := range getFromReferences(displayConfig, IDRow) {
 		
@@ -78,11 +78,11 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 						displayConfig.TableIDNamePairs[orgID.member], 
 						orgID.id, 
 						attrToUpdate)
-					
-					updatedAttrs = append(updatedAttrs, attrToUpdate)
 
 					if err2 != nil {
 						log.Println(err2)
+					} else {
+						updatedAttrs = append(updatedAttrs, attrToUpdate)
 					}
 					
 				}
@@ -123,10 +123,10 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					orgID.id, 
 					attrToUpdate)
 				
-				updatedAttrs = append(updatedAttrs, attrToUpdate)
-
 				if err1 != nil {
 					log.Println(err1)
+				} else {
+					updatedAttrs = append(updatedAttrs, attrToUpdate)
 				}
 
 			}
@@ -140,9 +140,9 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 // You are on the right/to part
 func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig, 
-	IDRow map[string]string, orgID *identity) []string {
+	IDRow map[string]string, orgID *identity) map[string]string {
 	
-	var updatedAttrs []string
+	updatedAttrs := make(map[string]string)
 
 	for _, ref := range getToReferences(displayConfig, IDRow) {
 
@@ -203,13 +203,13 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 						displayConfig.TableIDNamePairs[refIdentityRow.member], 
 						refIdentityRow.id, 
 						attrToUpdate)
-					
-					updatedAttrs = append(updatedAttrs, attrToUpdate)
 
 					if err2 != nil {
 						log.Println(err2)
+					} else {
+						updatedAttrs = append(updatedAttrs, attrToUpdate)
 					}
-				
+
 				}
 			}
 
@@ -245,11 +245,11 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					displayConfig.TableIDNamePairs[procRef["from_member"]], 
 					procRef["from_id"], 
 					attrToUpdate)
-				
-				updatedAttrs = append(updatedAttrs, attrToUpdate)
 
 				if err1 != nil {
 					log.Println(err1)
+				} else {
+					updatedAttrs = append(updatedAttrs, attrToUpdate)
 				}
 
 			}
@@ -262,9 +262,11 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 }
 
 func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, 
-	ID *identity, orgID *identity) []string {
+	ID *identity, orgID *identity) (map[string]string, map[string]string]) {
 
-	var updatedAttrs []string
+	myUpdatedAttrs := make(map[string]string)
+	
+	othersUpdatedAttrs := make(map[string]string)
 
 	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
 
@@ -273,27 +275,33 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 		log.Println("id_row: ", procIDRow)
 
 		// You are on the left/from part
-		updatedAttrs = append(updatedAttrs, 
+		myUpdatedAttrs = append(updatedAttrs, 
 			updateMyDataBasedOnReferences(displayConfig, procIDRow, orgID)...)
 
 		// You are on the right/to part
-		updatedAttrs = append(updatedAttrs,
+		othersUpdatedAttrs = append(updatedAttrs,
 			updateOtherDataBasedOnReferences(displayConfig, procIDRow, orgID)...)
 
 		// Traverse back
 		preID := createIdentity(
 			procIDRow["from_app"], procIDRow["from_member"], procIDRow["from_id"])
 
-		updatedAttrs = append(updatedAttrs,
-			resolveReferenceByBackTraversal(displayConfig, preID, orgID)...)
+		nextMyUpdatedAttrs, nextOthersUpdatedAttrs = 
+			resolveReferenceByBackTraversal(displayConfig, preID, orgID)
 		
+		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, nextMyUpdatedAttrs)
+		othersUpdatedAttrs = combineTwoMaps(othersUpdatedAttrs, nextOthersUpdatedAttrs)
+
 	}
 
-	return updatedAttrs
+	return myUpdatedAttrs, othersUpdatedAttrs
 
 }
 
-func ResolveReference(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) []string {
+// The first return value is my updated attributes in terms of the argument *hint*
+// The second return value is others' updated attributes
+func ResolveReference(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) 
+	(map[string]string, map[string]string]) {
 	
 	ID := transformHintToIdenity(displayConfig, hint)
 	

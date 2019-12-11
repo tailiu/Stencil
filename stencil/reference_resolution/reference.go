@@ -7,10 +7,12 @@ import (
 	"log"
 )
 
-func getFromReferences(displayConfig *config.DisplayConfig, IDRow map[string]string) []map[string]interface{} {
+func getFromReferences(displayConfig *config.DisplayConfig, 
+	IDRow map[string]string) []map[string]interface{} {
 
-	query := fmt.Sprintf("SELECT * FROM reference_table WHERE app = %s and from_member = %s and from_id = %s and migration_id = %d;",
-		IDRow["from_app"], IDRow["from_member"], IDRow["from_id"], displayConfig.MigrationID)
+	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and from_member = %s 
+		and from_id = %s and migration_id = %d;`, IDRow["from_app"], 
+		IDRow["from_member"], IDRow["from_id"], displayConfig.MigrationID)
 	
 	data, err := db.DataCall(displayConfig.StencilDBConn, query)
 	if err != nil {
@@ -23,10 +25,12 @@ func getFromReferences(displayConfig *config.DisplayConfig, IDRow map[string]str
 
 }
 
-func getToReferences(displayConfig *config.DisplayConfig, IDRow map[string]string) []map[string]interface{} {
+func getToReferences(displayConfig *config.DisplayConfig, 
+	IDRow map[string]string) []map[string]interface{} {
 
-	query := fmt.Sprintf("SELECT * FROM reference_table WHERE app = %s and to_member = %s and to_id = %s and migration_id = %d;",
-		IDRow["from_app"], IDRow["from_member"], IDRow["from_id"], displayConfig.MigrationID)
+	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and to_member = %s 
+		and to_id = %s and migration_id = %d;`, IDRow["from_app"], 
+		IDRow["from_member"], IDRow["from_id"], displayConfig.MigrationID)
 	
 	data, err := db.DataCall(displayConfig.StencilDBConn, query)
 	if err != nil {
@@ -59,37 +63,43 @@ func getDataToUpdateRef(displayConfig *config.DisplayConfig, member, id, attr st
 
 }
 
-func deleteRef(displayConfig *config.DisplayConfig, refID string) {
+func deleteRef(refID string) string {
 
-	query := fmt.Sprintf("DELETE FROM reference_table WHERE pk = %s", refID)
+	return fmt.Sprintf("DELETE FROM reference_table WHERE pk = %s", refID)
 
-	err := db.TxnExecute1(displayConfig.StencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err := db.TxnExecute1(displayConfig.StencilDBConn, query)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 }
 
-func updateDataBasedOnRef(displayConfig *config.DisplayConfig,
-	memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data string) {
+func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data string) string {
 	
-	query := fmt.Sprintf("UPDATE %s SET %s = %s WHERE id = %s",
+	return fmt.Sprintf("UPDATE %s SET %s = %s WHERE id = %s",
 		memberToBeUpdated, attrToBeUpdated, data, IDToBeUpdated)
 
-	err := db.TxnExecute1(displayConfig.AppConfig.DBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err := db.TxnExecute1(displayConfig.AppConfig.DBConn, query)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+}
+
+func addToResolvedReferences() {
+	
+	return fmt.Sprintf("")
 
 }
 
 
-func updateReferences(displayConfig *config.DisplayConfig,
-	refID, member, id, attr, memberToBeUpdated, IDToBeUpdated, attrToBeUpdated string) error {
+func updateReferences(displayConfig *config.DisplayConfig, 
+	refID, member, id, attr, memberToBeUpdated, IDToBeUpdated, attrToBeUpdated string) 
+	(string, error) {
 
 	if attr == "" && attrToBeUpdated == "" {
 		
-		return notMigrated
+		return "", notMigrated
 
 	} else if attr != "" && attrToBeUpdated != "" {
 		
@@ -99,24 +109,44 @@ func updateReferences(displayConfig *config.DisplayConfig,
 
 		if data != "" {
 
-			updateDataBasedOnRef(
-				displayConfig, memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data)
+			q1 := updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data)
 
-			deleteRef(displayConfig, refID)
+			err := db.TxnExecute1(displayConfig.AppConfig.DBConn, q1)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-			return nil
+			var queries []string
+
+			q2 := deleteRef(refID)
+
+			q3 := addToResolvedReferences()
+
+			queries = append(queries, q2, q3)
+			err := db.TxnExecute(displayConfig.StencilDBConn, queries)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			return data, nil
 
 		} else {
 
-			return dataToUpdateOtherDataNotFound
+			return "", dataToUpdateOtherDataNotFound
 
 		}
 	
 	} else {
 		
-		deleteRef(displayConfig, refID)
+		q1 := deleteRef(displayConfig, refID)
 
-		return alreadySolved
+		err := db.TxnExecute1(displayConfig.StencilDBConn, q1)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		return "", alreadySolved
 
 	}
 

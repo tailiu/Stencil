@@ -1,6 +1,7 @@
 package reference_resolution
 
 import (
+	"stencil/db"
 	"stencil/config"
 	"stencil/schema_mappings"
 	"log"
@@ -26,11 +27,25 @@ func NeedToResolveReference(displayConfig *config.DisplayConfig, toTable, toAttr
 	}
 }
 
-func ReferenceResolved(displayConfig *config.DisplayConfig, member, reference string, id int) {
+func ReferenceResolved(displayConfig *config.DisplayConfig, member, reference, it string) string {
 
-	query := fmt.Sprintf("select value from resolved_references where app = %s and member = %s and reference = %s and id = %s",
+	query := fmt.Sprintf(`select value from resolved_references where app = %s 
+		and member = %s and reference = %s and id = %s`,
 		displayConfig.AppConfig.AppID, member, reference, id)
 
+	data, err := db.DataCall1(displayConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	// fmt.Println(data)
+	if len(data) == 0 {
 
+		return ""
+
+	} else {
+
+		return fmt.Sprint(data["value"])
+
+	}
 }
