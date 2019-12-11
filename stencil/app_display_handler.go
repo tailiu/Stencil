@@ -10,14 +10,12 @@ func main() {
 	
 	threadNum := 1
 	
-	dstApp := "mastodon"
-	// dstApp := "diaspora"
-	
 	migrationID := 2124890507
 
+	// If the destination app database is not in the new server, newDB is false
 	newDB := false
 
-	displayConfig := app_display.CreateDisplayConfig(dstApp, migrationID, newDB)
+	displayConfig := app_display.CreateDisplayConfig(migrationID, newDB)
 
 	for i := 0; i < threadNum; i++ {
 

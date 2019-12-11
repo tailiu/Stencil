@@ -7,6 +7,15 @@ import (
 	"log"
 )
 
+// Return the first argument of #REF
+func getFirstArgFromREF(ref string) string {
+
+	tmp := strings.Split(ref, "#REF(")
+	
+	return strings.Split(tmp[1], ",")[0]
+
+}
+
 func GetMappedAttributesFromSchemaMappings(
 		fromApp, fromTable, fromAttr, toApp, toTable string, ignoreREF bool) ([]string, error) {
 
@@ -67,11 +76,4 @@ func GetMappedAttributesFromSchemaMappings(
 	
 }
 
-// Return the first argument of #REF
-func getFirstArgFromREF(ref string) string {
-
-	tmp := strings.Split(ref, "#REF(")
-	
-	return strings.Split(tmp[1], ",")[0]
-
-}
+func 

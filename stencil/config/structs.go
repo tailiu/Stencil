@@ -56,6 +56,7 @@ type DisplayConfig struct {
 	TableIDNamePairs	map[string]string
 	AttrIDNamePairs		map[string]string
 	MigrationID			int
+	SrcAppName			string
 }
 
 type AppConfig struct {

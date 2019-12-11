@@ -7,16 +7,35 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"stencil/app_display"
-	"stencil/reference_resolution"
+	// "stencil/reference_resolution"
 	"strconv"
 	"strings"
 )
 
 func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
-	 val int, dep string) (map[string]interface{}, error) {
+	 val int, table0, col0, table1, col1 string) (map[string]interface{}, error) {
+
+	log.Println("+++++++++++++++++++")
+	log.Println(table0)
+	log.Println(col0)
+	log.Println(table1)
+	log.Println(col1)
+	log.Println("+++++++++++++++++++")
+
+	// First check whether the reference has been resolved
+	// resolved := app_display.RefResolved(displayConfig, )
 	
+	if reference_resolution.NeedToResolveRef(
+		displayConfig.SrcAppName, 
+		displayConfig.AppConfig.AppName,
+		table0, col0) {
+
+		
+		
+	}
+
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d", 
-		strings.Split(dep, ".")[0], strings.Split(dep, ".")[1], val)
+		table1, col1, val)
 	// fmt.Println(query)
 
 	data, err := db.DataCall1(displayConfig.AppConfig.DBConn, query)
@@ -97,7 +116,12 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 
 				for _, dep := range deps {
 
-					data, err1 := getOneRowBasedOnDependency(displayConfig, intVal, dep)
+					// fmt.Println(dep)
+
+					table1 := strings.Split(dep, ".")[0]
+					key1 := strings.Split(dep, ".")[1]
+
+					data, err1 := getOneRowBasedOnDependency(displayConfig, intVal, table, col, table1, key1)
 					// fmt.Println(data)
 
 					if err1 != nil {
@@ -105,15 +129,12 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 						// fmt.Println(result)
 						continue
 					}
-					// fmt.Println(dep)
 
-					table1 := strings.Split(dep, ".")[0]
-					key1 := strings.Split(dep, ".")[1]
-					// fmt.Println(queue)
 					queue = append(queue, DataInDependencyNode{
 						Table: table1,
 						Data:  data,
 					})
+					// fmt.Println(queue)
 
 					intPK, err2 := strconv.Atoi(fmt.Sprint(data["id"]))
 					if err2 != nil {
@@ -165,7 +186,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 		return result, app_display.NodeIncomplete
 
 	}
-	
+
 }
 
 func getOneRowBasedOnHint(displayConfig *config.DisplayConfig, 

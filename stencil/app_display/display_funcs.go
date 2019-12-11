@@ -8,19 +8,25 @@ import (
 	"stencil/db"
 )
 
-func CreateDisplayConfig(app string, migrationID int, newDB bool) *config.DisplayConfig {
+func CreateDisplayConfig(migrationID int, newDB bool) *config.DisplayConfig {
 
 	var displayConfig config.DisplayConfig
 
 	stencilDBConn := db.GetDBConn(config.StencilDBName)
 
-	app_id := db.GetAppIDByAppName(stencilDBConn, app)
+	srcAppID, dstAppID := getSrcDstAppIDsByMigrationID(stencilDBConn, migrationID)
 
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, newDB)
+	dstAppName := getAppNameByAppID(stencilDBConn, dstAppID)
+	srcAppName := getAppNameByAppID(stencilDBConn, srcAppID)
+
+	// app_id := db.GetAppIDByAppName(stencilDBConn, app)
+
+	appConfig, err := config.CreateAppConfigDisplay(dstAppName, dstAppID, stencilDBConn, newDB)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	displayConfig.SrcAppName = srcAppName
 	displayConfig.AppConfig = &appConfig
 	displayConfig.AttrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)
 	displayConfig.AppIDNamePairs = GetAppIDNamePairs(stencilDBConn)
@@ -140,6 +146,7 @@ func CheckDisplay(displayConfig *config.DisplayConfig, dataHint *HintStruct) boo
 
 
 func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
+
 	query := fmt.Sprintf("select app_name from apps where pk = %s", appID)
 	
 	log.Println(query)
@@ -220,4 +227,18 @@ func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	}
 	
 	return tableIDNamePairs
+}
+
+
+func getSrcDstAppIDsByMigrationID(stencilDBConn *sql.DB, migrationID int) (string, string) {
+
+	query := fmt.Sprintf("select src_app, dst_app from migration_registration")
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["src_app"]), fmt.Sprint(data["dst_app"])
+
 }
