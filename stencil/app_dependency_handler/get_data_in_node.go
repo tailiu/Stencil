@@ -13,9 +13,9 @@ import (
 )
 
 func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
-	table, col string, value int) {
+	table, col, value string) (map[string]interface{}, error) {
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d", table, col, value)
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", table, col, value)
 	// fmt.Println(query)
 
 	data, err := db.DataCall1(displayConfig.AppConfig.DBConn, query)
@@ -36,7 +36,7 @@ func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
 }
 
 func checkResolveReference(displayConfig *config.DisplayConfig,
-	value int, table0, col0, table1, col1 string) (map[string]interface{}, error) {
+	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
 	log.Println("+++++++++++++++++++")
 	log.Println(table0)
@@ -46,23 +46,54 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 	log.Println("+++++++++++++++++++")
 
 	// First, we need to get the attribute that requires reference resolution
+	// For example, we have account.id, and we want to get users.account_id
+	// We check whether account.id needs be resolved
 	if reference_resolution.NeedToResolveReference(displayConfig, table0, col0) {
 
-		reference_resolution.ReferenceResolved(displayConfig, member, reference, id)
+		// If account.id should be resolved (in this case, it should not),
+		// we check whether the reference has been resolved or not
+		newVal := reference_resolution.ReferenceResolved(displayConfig, table0, col0, id)
+		
+		// If the reference has been resolved, then use the new reference to get data
+		if newVal != "" {
 
+			value = newVal
+		
+		// Otherwise, we try to resolve the reference
+		} else {
+
+			updatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
+
+			// We check whether the desired attr (col0) has been resolved
+			foundResolvedAttr := false
+			for _, attr := range updatedAttrs {
+				if attr == col0 {
+					foundResolvedAttr = true
+					break
+				}
+			}
+
+			// If we find that col0 has been resolved, then we can use 
+			if foundResolvedAttr {
+
+				return getOneRowBasedOnDependency(displayConfig, table1, col1, value)
+			
+
+			} else {
+				return 
+			}
+		}
+
+	// We check if users.account_id needs be resolved (of course, in this case, it should be)
 	} else {
 		
 		if reference_resolution.NeedToResolveReference(displayConfig, table1, col1) {
-		
+			
 		} else {
 
 			panic("Should have at least one attribute to resolve!")
 		}
 	}
-
-	// Second, we check whether the attribute has been resolved 
-	reference_resolution.ReferenceResolved(displayConfig, tableToResolveRef, colToResolveRef, val)
-
 }
 
 func getRemainingDataInNode(displayConfig *config.DisplayConfig,
@@ -117,13 +148,6 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 
 			if deps, ok := procDependencies[table+"."+col]; ok {
 
-				// We assume that this is an integer value 
-				// otherwise we have to define it in dependency config
-				intVal, err := strconv.Atoi(fmt.Sprint(val))
-				if err != nil {
-					log.Fatal("Error in Getting Data in Node: Converting '%s' to Integer", val)
-				}
-
 				for _, dep := range deps {
 
 					// fmt.Println(dep)
@@ -131,7 +155,25 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 					table1 := strings.Split(dep, ".")[0]
 					key1 := strings.Split(dep, ".")[1]
 
-					data, err1 := getOneRowBasedOnDependency(displayConfig, intVal, table, col, table1, key1)
+					var data map[string]interface{} 
+					var err1 error
+
+					// If resolving reference is required
+					if displayConfig.ResolveReference {
+
+						// We assume that val is an integer value 
+						// otherwise we have to define it in dependency config
+						checkResolveReference(displayConfig, 
+							fmt.Sprint(dataInDependencyNode.Data["id"]),
+							table0, col0, table1, col1, val)
+
+					} else {
+
+						data, err1 = getOneRowBasedOnDependency(
+							displayConfig, table1, key1, val)
+						
+					}
+
 					// fmt.Println(data)
 
 					if err1 != nil {
