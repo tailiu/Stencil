@@ -25,12 +25,7 @@ func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
 	// First check whether the reference has been resolved
 	// resolved := app_display.RefResolved(displayConfig, )
 	
-	if reference_resolution.NeedToResolveRef(
-		displayConfig.SrcAppName, 
-		displayConfig.AppConfig.AppName,
-		table0, col0) {
-
-		
+	if reference_resolution.NeedToResolveRef(displayConfig, table0, col0) {
 		
 	}
 

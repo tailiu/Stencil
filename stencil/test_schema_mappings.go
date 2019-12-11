@@ -3,18 +3,49 @@ package main
 import (
 	"log"
 	"stencil/schema_mappings"
+	"stencil/app_display"
+	"stencil/config"
 )
+
+
+func test1(displayConfig *config.DisplayConfig) {
+	
+	// fromApp, fromTable, fromAttr, toApp, toTable := 
+		// "diaspora", "posts", "posts.id", "mastodon", "statuses"
+	fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF := 
+	"diaspora", "comments", "comments.commentable_id", "mastodon", "statuses", false
+
+	attr, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(
+		fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF)
+
+	log.Println(attr)
+
+}
+
+func test2(displayConfig *config.DisplayConfig) {
+
+	toTable, toAttr := "accounts", "id"
+
+	exists, err := schema_mappings.REFExists(displayConfig, toTable, toAttr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(exists)
+
+}
 
 func main() {
 
-	// fromApp, fromTable, fromAttr, toApp, toTable := 
-		// "diaspora", "posts", "posts.id", "mastodon", "statuses"
-	fromApp, fromTable, fromAttr, toApp, toTable := 
-		"diaspora", "comments", "comments.commentable_id", "mastodon", "statuses"
+	migrationID := 2124890507
 
-	attr, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(
-		fromApp, fromTable, fromAttr, toApp, toTable)
+	// If the destination app database is not in the new server, newDB is false
+	newDB := false
 
-	log.Println(attr)
+	displayConfig := app_display.CreateDisplayConfig(migrationID, newDB)
+
+	// test1(displayConfig)
+
+	test2(displayConfig)
 
 }

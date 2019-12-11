@@ -6,6 +6,7 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
+	"stencil/schema_mappings"
 )
 
 func CreateDisplayConfig(migrationID int, newDB bool) *config.DisplayConfig {
@@ -26,6 +27,12 @@ func CreateDisplayConfig(migrationID int, newDB bool) *config.DisplayConfig {
 		log.Fatal(err)
 	}
 
+	mappingsToDst, err := schema_mappings.GetToAppMappings(srcAppName, dstAppName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	displayConfig.MappingsToDst = mappingsToDst
 	displayConfig.SrcAppName = srcAppName
 	displayConfig.AppConfig = &appConfig
 	displayConfig.AttrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)
@@ -149,7 +156,7 @@ func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
 
 	query := fmt.Sprintf("select app_name from apps where pk = %s", appID)
 	
-	log.Println(query)
+	// log.Println(query)
 
 	data, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {

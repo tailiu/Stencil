@@ -16,18 +16,26 @@ func getFirstArgFromREF(ref string) string {
 
 }
 
-func GetMappedAttributesFromSchemaMappings(
-		fromApp, fromTable, fromAttr, toApp, toTable string, ignoreREF bool) ([]string, error) {
+func containREF(data string) bool {
+
+	if strings.Contains(data, "#REF(") {
+		
+		return true
+
+	} else {
+
+		return false
+	}
+}
+
+func GetToAppMappings(fromApp, toApp string) (config.MappedApp, error) {
 
 	schemaMappings, err := config.LoadSchemaMappings()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var attributes []string
-
 	// log.Println(schemaMappings)
-	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
 
 	for _, mappings := range schemaMappings.AllMappings {
 		// fromApp
@@ -35,31 +43,50 @@ func GetMappedAttributesFromSchemaMappings(
 			for _, app := range mappings.ToApps {
 				// toApp
 				if app.Name == toApp {
-					for _, mapping := range app.Mappings {
-						for _, fTable := range mapping.FromTables {
-							// fromTable
-							if fTable == fromTable {
-								for _, tTable := range mapping.ToTables {
-									// toTable
-									if tTable.Table == toTable {
-										log.Println(tTable)
-										for tAttr, fAttr := range tTable.Mapping {
-											// fromAttr
 
-											// If not ignore #REF
-											if !ignoreREF {
-												// If there exists #REF
-												if strings.Contains(fAttr, "#REF(") {
-													fAttr = getFirstArgFromREF(fAttr)
-												}
-											}
-																						
-											if fAttr == fromAttr {
-												attributes = append(attributes, tAttr)
-											}
-										}
-									}
+					return app, nil
+
+				}
+			}
+		}
+	}
+
+	return config.MappedApp{}, MappingsToAppNotFound
+}
+
+func GetMappedAttributesFromSchemaMappings(
+		fromApp, fromTable, fromAttr, toApp, toTable string, ignoreREF bool) ([]string, error) {
+
+	var attributes []string
+
+	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
+
+	toAppMappings, err := GetToAppMappings(fromApp, toApp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	for _, mapping := range toAppMappings.Mappings {
+		for _, fTable := range mapping.FromTables {
+			// fromTable
+			if fTable == fromTable {
+				for _, tTable := range mapping.ToTables {
+					// toTable
+					if tTable.Table == toTable {
+						log.Println(tTable)
+						for tAttr, fAttr := range tTable.Mapping {
+							// fromAttr
+
+							// If not ignore #REF
+							if !ignoreREF {
+								// If there exists #REF
+								if containREF(fAttr) {
+									fAttr = getFirstArgFromREF(fAttr)
 								}
+							}
+																		
+							if fAttr == fromAttr {
+								attributes = append(attributes, tAttr)
 							}
 						}
 					}
@@ -73,7 +100,37 @@ func GetMappedAttributesFromSchemaMappings(
 	} else {
 		return attributes, nil
 	}
-	
 }
 
-func 
+func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (bool, error) {
+
+	log.Println(toTable, toAttr)
+
+	for _, mapping := range displayConfig.MappingsToDst.Mappings {
+		// toTable
+		for _, tTable := range mapping.ToTables {
+			if tTable.Table == toTable {
+				// toAttr
+				if mappedAttr, ok := tTable.Mapping[toAttr]; ok {
+
+					log.Println(mappedAttr)
+					// If there exists #REF
+					if containREF(mappedAttr) {
+						
+						return true, nil
+
+					} else {
+
+						return false, nil 
+					}
+				} else {
+
+					return false, NoMappedAttrFound
+				}
+			}
+		}
+	}
+
+	return false, NoMappedAttrFound
+
+}
