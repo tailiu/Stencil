@@ -112,11 +112,11 @@ func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (boo
 			if tTable.Table == toTable {
 				// toAttr
 				if mappedAttr, ok := tTable.Mapping[toAttr]; ok {
+					// log.Println(mappedAttr)
 
-					log.Println(mappedAttr)
 					// If there exists #REF
-					if containREF(mappedAttr) {
-						
+					if containREF(mappedAttr) {	
+
 						return true, nil
 
 					} else {

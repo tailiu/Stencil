@@ -9,7 +9,7 @@ import (
 	"stencil/schema_mappings"
 )
 
-func CreateDisplayConfig(migrationID int, newDB bool) *config.DisplayConfig {
+func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
 
 	var displayConfig config.DisplayConfig
 
@@ -32,7 +32,9 @@ func CreateDisplayConfig(migrationID int, newDB bool) *config.DisplayConfig {
 		log.Fatal(err)
 	}
 
+	displayConfig.ResolveReference = resolveReference
 	displayConfig.MappingsToDst = mappingsToDst
+	displayConfig.SrcAppID = srcAppID
 	displayConfig.SrcAppName = srcAppName
 	displayConfig.AppConfig = &appConfig
 	displayConfig.AttrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)

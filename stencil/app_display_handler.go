@@ -15,7 +15,10 @@ func main() {
 	// If the destination app database is not in the new server, newDB is false
 	newDB := false
 
-	displayConfig := app_display.CreateDisplayConfig(migrationID, newDB)
+	// If the display controller needs to resolve references, resolveReference is true
+	resolveReference := true
+
+	displayConfig := app_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 
 	for i := 0; i < threadNum; i++ {
 

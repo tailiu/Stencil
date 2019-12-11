@@ -13,7 +13,7 @@ func test1(displayConfig *config.DisplayConfig) {
 	// fromApp, fromTable, fromAttr, toApp, toTable := 
 		// "diaspora", "posts", "posts.id", "mastodon", "statuses"
 	fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF := 
-	"diaspora", "comments", "comments.commentable_id", "mastodon", "statuses", false
+		"diaspora", "comments", "comments.commentable_id", "mastodon", "statuses", false
 
 	attr, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(
 		fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF)
@@ -24,7 +24,8 @@ func test1(displayConfig *config.DisplayConfig) {
 
 func test2(displayConfig *config.DisplayConfig) {
 
-	toTable, toAttr := "accounts", "id"
+	// toTable, toAttr := "accounts", "id"
+	toTable, toAttr := "users", "account_id"
 
 	exists, err := schema_mappings.REFExists(displayConfig, toTable, toAttr)
 	if err != nil {
@@ -42,7 +43,9 @@ func main() {
 	// If the destination app database is not in the new server, newDB is false
 	newDB := false
 
-	displayConfig := app_display.CreateDisplayConfig(migrationID, newDB)
+	resolveReference := true
+
+	displayConfig := app_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 
 	// test1(displayConfig)
 

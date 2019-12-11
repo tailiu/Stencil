@@ -67,9 +67,11 @@ func main() {
 
 	migrationID := 434969759
 
-	app := "mastodon"
+	newDB := false
 
-	displayConfig := app_display.CreateDisplayConfig(app, migrationID, false)
+	resolveReference := true
+
+	displayConfig := app_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 	
 	// test1(displayConfig)
 

@@ -7,30 +7,15 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"stencil/app_display"
-	// "stencil/reference_resolution"
+	"stencil/reference_resolution"
 	"strconv"
 	"strings"
 )
 
 func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
-	 val int, table0, col0, table1, col1 string) (map[string]interface{}, error) {
+	table, col string, value int) {
 
-	log.Println("+++++++++++++++++++")
-	log.Println(table0)
-	log.Println(col0)
-	log.Println(table1)
-	log.Println(col1)
-	log.Println("+++++++++++++++++++")
-
-	// First check whether the reference has been resolved
-	// resolved := app_display.RefResolved(displayConfig, )
-	
-	if reference_resolution.NeedToResolveRef(displayConfig, table0, col0) {
-		
-	}
-
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d", 
-		table1, col1, val)
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %d", table, col, value)
 	// fmt.Println(query)
 
 	data, err := db.DataCall1(displayConfig.AppConfig.DBConn, query)
@@ -48,6 +33,36 @@ func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
 		return data, nil
 
 	}
+}
+
+func checkResolveReference(displayConfig *config.DisplayConfig,
+	value int, table0, col0, table1, col1 string) (map[string]interface{}, error) {
+
+	log.Println("+++++++++++++++++++")
+	log.Println(table0)
+	log.Println(col0)
+	log.Println(table1)
+	log.Println(col1)
+	log.Println("+++++++++++++++++++")
+
+	// First, we need to get the attribute that requires reference resolution
+	if reference_resolution.NeedToResolveReference(displayConfig, table0, col0) {
+
+		reference_resolution.ReferenceResolved(displayConfig, member, reference, id)
+
+	} else {
+		
+		if reference_resolution.NeedToResolveReference(displayConfig, table1, col1) {
+		
+		} else {
+
+			panic("Should have at least one attribute to resolve!")
+		}
+	}
+
+	// Second, we check whether the attribute has been resolved 
+	reference_resolution.ReferenceResolved(displayConfig, tableToResolveRef, colToResolveRef, val)
+
 }
 
 func getRemainingDataInNode(displayConfig *config.DisplayConfig,

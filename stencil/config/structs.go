@@ -57,7 +57,9 @@ type DisplayConfig struct {
 	AttrIDNamePairs		map[string]string
 	MigrationID			int
 	SrcAppName			string
+	SrcAppID			string
 	MappingsToDst 		MappedApp
+	ResolveReference	bool
 }
 
 type AppConfig struct {
