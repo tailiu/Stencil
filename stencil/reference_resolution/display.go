@@ -5,6 +5,7 @@ import (
 	"stencil/config"
 	"stencil/schema_mappings"
 	"log"
+	"fmt"
 )
 
 func NeedToResolveReference(displayConfig *config.DisplayConfig, toTable, toAttr string) bool {
@@ -27,7 +28,7 @@ func NeedToResolveReference(displayConfig *config.DisplayConfig, toTable, toAttr
 	}
 }
 
-func ReferenceResolved(displayConfig *config.DisplayConfig, member, reference, it string) string {
+func ReferenceResolved(displayConfig *config.DisplayConfig, member, reference, id string) string {
 
 	query := fmt.Sprintf(`select value from resolved_references where app = %s 
 		and member = %s and reference = %s and id = %s`,

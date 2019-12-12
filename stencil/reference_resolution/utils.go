@@ -20,7 +20,7 @@ func combineTwoMaps(m1 map[string]string, m2 map[string]string) map[string]strin
 
 	for k, v := range m2 {
 
-		if v1, ok := m1[k]; ok {
+		if _, ok := m1[k]; ok {
 			log.Println("Found an overlapped key when combing two maps!")
 		} else {
 			m1[k] = v

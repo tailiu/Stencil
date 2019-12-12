@@ -12,11 +12,14 @@ import (
  * Diaspora -> Mastodon
  * 
  * Identity:
- * 	a like (id:12) in Diaspora likes table (id:8) -> a favourite (id:235893) in Mastodon favourite table (id:72)
- * 	a post (id:40) in Diaspora posts table (id:37) -> a status (id:21778) in Mastodon statuses table (id:92)
+ * 	a like (id:12) in Diaspora likes table (id:8) 
+ * 		-> a favourite (id:235893) in Mastodon favourite table (id:72)
+ * 	a post (id:40) in Diaspora posts table (id:37) 
+ *		-> a status (id:21778) in Mastodon statuses table (id:92)
  *
  * Reference:
- *	Diaspora (1), likes (id:8), like (id:12), target_id -> Diaspora (1), posts (id:37), post (id:40), id
+ *	Diaspora (1), likes (id:8), like (id:12), target_id 
+ * 		-> Diaspora (1), posts (id:37), post (id:40), id
  *
  *
 **/
@@ -29,9 +32,9 @@ func test1(displayConfig *config.DisplayConfig) {
 		KeyVal:		map[string]int{"id":235893},
 	}
 
-	updatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
+	myUpdatedAttrs, othersUpdatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
 
-	log.Println(updatedAttrs)
+	log.Println(myUpdatedAttrs, othersUpdatedAttrs)
 
 }
 
@@ -41,11 +44,14 @@ func test1(displayConfig *config.DisplayConfig) {
  * Diaspora -> Mastodon
  * 
  * Identity:
- * 	a like (id:15) in Diaspora likes table (id:8) -> a favourite (id:235977) in Mastodon favourite table (id:72)
- * 	a post (id:50) in Diaspora posts table (id:37) -> a status (id:79738) in Mastodon statuses table (id:92)
+ * 	a like (id:25) in Diaspora likes table (id:8) 
+ *		-> a favourite (id:235959) in Mastodon favourite table (id:72)
+ * 	a post (id:70) in Diaspora posts table (id:37) 
+ *		-> a status (id:21783) in Mastodon statuses table (id:92)
  *
  * Reference:
- *	Diaspora (1), likes table (id:8), like (id:15), target_id -> Diaspora (1), posts table (id:37), post (id:50), id
+ *	Diaspora (1), likes table (id:8), like (id:25), target_id 
+ *		-> Diaspora (1), posts table (id:37), post (id:70), id
  *
 **/
 
@@ -54,12 +60,12 @@ func test2(displayConfig *config.DisplayConfig) {
 	var hint = app_display.HintStruct{
 		Table:		"statuses",
 		TableID:	"92",
-		KeyVal:		map[string]int{"id":79738},
+		KeyVal:		map[string]int{"id":21783},
 	}
 
-	updatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
+	myUpdatedAttrs, othersUpdatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
 
-	log.Println(updatedAttrs)
+	log.Println(myUpdatedAttrs, othersUpdatedAttrs)
 
 }
 

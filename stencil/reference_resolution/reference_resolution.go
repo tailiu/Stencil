@@ -69,7 +69,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					
 					log.Println(attrToUpdate)
 
-					err2 := updateReferences(
+					updatedVal, err2 := updateReferences(
 						displayConfig,
 						procRef["pk"], 
 						displayConfig.TableIDNamePairs[refIdentityRow.member], 
@@ -82,7 +82,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					if err2 != nil {
 						log.Println(err2)
 					} else {
-						updatedAttrs = append(updatedAttrs, attrToUpdate)
+						updatedAttrs[attrToUpdate] = updatedVal
 					}
 					
 				}
@@ -113,7 +113,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 			for _, attrToUpdate := range attrsToUpdate {
 
-				err1 := updateReferences(
+				updatedVal, err1 := updateReferences(
 					displayConfig,
 					procRef["pk"],  
 					displayConfig.TableIDNamePairs[procRef["to_member"]], 
@@ -126,7 +126,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				if err1 != nil {
 					log.Println(err1)
 				} else {
-					updatedAttrs = append(updatedAttrs, attrToUpdate)
+					updatedAttrs[attrToUpdate] = updatedVal
 				}
 
 			}
@@ -194,7 +194,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				
 				for _, attrToUpdate := range attrsToUpdate {
 
-					err2 := updateReferences(
+					updatedVal, err2 := updateReferences(
 						displayConfig,
 						procRef["pk"],
 						displayConfig.TableIDNamePairs[orgID.member], 
@@ -207,7 +207,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					if err2 != nil {
 						log.Println(err2)
 					} else {
-						updatedAttrs = append(updatedAttrs, attrToUpdate)
+						updatedAttrs[refIdentityRow.id + ":" + attrToUpdate] = updatedVal
 					}
 
 				}
@@ -236,7 +236,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 			for _, attrToUpdate := range attrsToUpdate {
 
-				err1 := updateReferences(
+				updatedVal, err1 := updateReferences(
 					displayConfig,
 					procRef["pk"],
 					displayConfig.TableIDNamePairs[orgID.member],
@@ -249,7 +249,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				if err1 != nil {
 					log.Println(err1)
 				} else {
-					updatedAttrs = append(updatedAttrs, attrToUpdate)
+					updatedAttrs[procRef["from_id"] + ":" + attrToUpdate] = updatedVal
 				}
 
 			}
@@ -262,7 +262,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 }
 
 func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, 
-	ID *identity, orgID *identity) (map[string]string, map[string]string]) {
+	ID *identity, orgID *identity) (map[string]string, map[string]string) {
 
 	myUpdatedAttrs := make(map[string]string)
 	
@@ -275,18 +275,20 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 		log.Println("id_row: ", procIDRow)
 
 		// You are on the left/from part
-		myUpdatedAttrs = append(updatedAttrs, 
-			updateMyDataBasedOnReferences(displayConfig, procIDRow, orgID)...)
+		currentMyupdatedAttrs := updateMyDataBasedOnReferences(displayConfig, procIDRow, orgID)
+
+		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, currentMyupdatedAttrs)
 
 		// You are on the right/to part
-		othersUpdatedAttrs = append(updatedAttrs,
-			updateOtherDataBasedOnReferences(displayConfig, procIDRow, orgID)...)
+		currentOthersUpdatedAttrs := updateOtherDataBasedOnReferences(displayConfig, procIDRow, orgID)
+		
+		othersUpdatedAttrs = combineTwoMaps(othersUpdatedAttrs, currentOthersUpdatedAttrs)
 
 		// Traverse back
 		preID := createIdentity(
 			procIDRow["from_app"], procIDRow["from_member"], procIDRow["from_id"])
 
-		nextMyUpdatedAttrs, nextOthersUpdatedAttrs = 
+		nextMyUpdatedAttrs, nextOthersUpdatedAttrs := 
 			resolveReferenceByBackTraversal(displayConfig, preID, orgID)
 		
 		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, nextMyUpdatedAttrs)
@@ -298,10 +300,13 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 
 }
 
-// The first return value is my updated attributes in terms of the argument *hint*
-// The second return value is others' updated attributes
-func ResolveReference(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) 
-	(map[string]string, map[string]string]) {
+// In terms of the argument *hint*, the first return value is my updated attributes, and 
+// the second return value is others' updated attributes.
+// Note that my updated attributes will not have collision, but
+// others' updated attributes may have some collision, 
+// so we use *id:updatedAttr* which is unique as the key in the second return value.
+func ResolveReference(displayConfig *config.DisplayConfig, 
+	hint *app_display.HintStruct) (map[string]string, map[string]string) {
 	
 	ID := transformHintToIdenity(displayConfig, hint)
 	
