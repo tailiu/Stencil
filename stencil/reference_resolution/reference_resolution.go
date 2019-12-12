@@ -304,7 +304,7 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 // the second return value is others' updated attributes.
 // Note that my updated attributes will not have collision, but
 // others' updated attributes may have some collision, 
-// so we use *id:updatedAttr* which is unique as the key in the second return value.
+// so we use *id:updatedAttr*, which is unique, as the key in the second return value.
 func ResolveReference(displayConfig *config.DisplayConfig, 
 	hint *app_display.HintStruct) (map[string]string, map[string]string) {
 	

@@ -16,3 +16,6 @@ var DataNotExists = errors.New("Error: the Data in a Data Hint Does Not Exist")
 // Get data in a parent node
 var CannotFindAnyDataInParent = errors.New("Fail To Get Any Data in the Parent Node")
 var NotDependsOnAnyData = errors.New("This Data Does not Depend on Any Data in the Parent Node")
+
+// Cannot resolve reference
+var CannotResolveReferencesGetDataInNode = errors.New("Fail to resolve references when remaining data in node")

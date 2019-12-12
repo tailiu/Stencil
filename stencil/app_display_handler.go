@@ -16,7 +16,7 @@ func main() {
 	newDB := false
 
 	// If the display controller needs to resolve references, resolveReference is true
-	resolveReference := true
+	resolveReference := false
 
 	displayConfig := app_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 

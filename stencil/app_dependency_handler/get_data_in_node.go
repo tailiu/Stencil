@@ -44,55 +44,126 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 	log.Println(table1)
 	log.Println(col1)
 	log.Println("+++++++++++++++++++")
+	
+	table0ID := displayConfig.AppConfig.TableNameIDPairs[table0]
+	table1ID := displayConfig.AppConfig.TableNameIDPairs[table1]
 
 	// First, we need to get the attribute that requires reference resolution
-	// For example, we have account.id, and we want to get users.account_id
-	// We check whether account.id needs be resolved
+	// For example, we have *account.id*, and we want to get *users.account_id*
+	// We check whether account.id needs to be resolved
 	if reference_resolution.NeedToResolveReference(displayConfig, table0, col0) {
 
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
-		newVal := reference_resolution.ReferenceResolved(displayConfig, table0, col0, id)
+		newVal := reference_resolution.ReferenceResolved(displayConfig, table0ID, col0, id)
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
 
-			value = newVal
+			return getOneRowBasedOnDependency(displayConfig, table1, col1, newVal)
 		
 		// Otherwise, we try to resolve the reference
 		} else {
 
-			updatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
+			hint0 := app_display.CreateHint(table0, table0ID, id)
+
+			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint0)
 
 			// We check whether the desired attr (col0) has been resolved
 			foundResolvedAttr := false
-			for _, attr := range updatedAttrs {
+			for attr, val := range updatedAttrs {
 				if attr == col0 {
+					newVal = val
 					foundResolvedAttr = true
 					break
 				}
 			}
 
-			// If we find that col0 has been resolved, then we can use 
+			// If we find that col0 has been resolved, then we can use it to get other data
 			if foundResolvedAttr {
 
-				return getOneRowBasedOnDependency(displayConfig, table1, col1, value)
+				return getOneRowBasedOnDependency(displayConfig, table1, col1, newVal)
 			
-
+			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
-				return 
+
+				return nil, app_display.CannotResolveReferencesGetDataInNode
 			}
 		}
 
 	// We check if users.account_id needs be resolved (of course, in this case, it should be)
-	} else {
-		
-		if reference_resolution.NeedToResolveReference(displayConfig, table1, col1) {
-			
-		} else {
+	// However we don't know its id. 
+	} else if reference_resolution.NeedToResolveReference(displayConfig, table1, col1) {
 
-			panic("Should have at least one attribute to resolve!")
+		// We assume that users.account_id has already been resolved and get its data
+		data, err := getOneRowBasedOnDependency(displayConfig, table1, col1, value)
+		if err != nil {
+			return nil, app_display.CannotFindRemainingData
 		}
+
+		// Now we have the id of the data, we should check whether it has been resolved before, 
+		// but actually if we can get one, it should always be the one we want to get because
+		// otherwise there will be multiple rows corresponding to one member.
+		// There could be the case where ids are not changed, so even if references are not resolved, 
+		// we can still get the rows we want, but we need to resolve it further.
+		newVal := reference_resolution.ReferenceResolved(displayConfig, table1ID, col1, fmt.Sprint(data["id"]))
+
+		if newVal != "" {
+
+			// Theoretically, if it has been resolved, then it should be the value we have 
+			// given that one member corresponds to one row
+			if newVal == value {
+
+				return data, nil
+
+			} else {
+
+				panic("Should not happen given one member corresponds to one row for now!")
+			
+			}
+
+		} else {
+			
+			hint1 := app_display.CreateHint(table1, table1ID, fmt.Sprint(data["id"]))
+
+			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint1)
+
+			// We check whether the desired attr (col1) has been resolved 
+			// (until this point, it should be resolved)
+			foundResolvedAttr := false
+			for attr, val := range updatedAttrs {
+				if attr == col1 {
+					newVal = val
+					foundResolvedAttr = true
+					break
+				}
+			}
+
+			// If we find that col0 has been resolved, then we can use it to get other data
+			if foundResolvedAttr {
+
+				if newVal == value {
+
+					return data, nil
+	
+				} else {
+	
+					panic("Should not happen given one member corresponds to one row for now!")
+				
+				}
+			
+			// This should not happen
+			} else {
+
+				panic("Should not happen given one member corresponds to one row for now!")
+			}
+		}
+	
+	// Theoretically, there must be one that needs to resolve, so the following should not happen
+	} else {
+
+		panic("Should have at least one attribute to resolve!")
+
 	}
 }
 
@@ -165,12 +236,12 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 						// otherwise we have to define it in dependency config
 						checkResolveReference(displayConfig, 
 							fmt.Sprint(dataInDependencyNode.Data["id"]),
-							table0, col0, table1, col1, val)
+							table, col, table1, key1, fmt.Sprint(val))
 
 					} else {
 
 						data, err1 = getOneRowBasedOnDependency(
-							displayConfig, table1, key1, val)
+							displayConfig, table1, key1, fmt.Sprint(val))
 						
 					}
 

@@ -16,6 +16,24 @@ type HintStruct struct {
 	Data   	map[string]interface{}
 }
 
+func CreateHint(tableName, tableID, id string) *HintStruct {
+
+	hint := &HintStruct{}
+
+	intVal, err := strconv.Atoi(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hint.KeyVal = map[string]int{"id": intVal}
+
+	hint.Table = tableName
+	hint.TableID = tableID
+	
+	return hint
+
+}
+
 // NOTE: We assume that primary key is only one integer value!!!
 func TransformRowToHint(displayConfig *config.DisplayConfig,
 	row map[string]interface{}, table string) *HintStruct {

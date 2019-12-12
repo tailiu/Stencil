@@ -251,3 +251,9 @@ func getSrcDstAppIDsByMigrationID(stencilDBConn *sql.DB, migrationID int) (strin
 	return fmt.Sprint(data["src_app"]), fmt.Sprint(data["dst_app"])
 
 }
+
+// func getDstAttrNameIDPairs(stencilDBConn *sql.DB) {
+
+// 	query := fmt.Sprintf("select pk from migration_registration where ")
+
+// }

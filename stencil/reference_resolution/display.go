@@ -31,7 +31,7 @@ func NeedToResolveReference(displayConfig *config.DisplayConfig, toTable, toAttr
 func ReferenceResolved(displayConfig *config.DisplayConfig, member, reference, id string) string {
 
 	query := fmt.Sprintf(`select value from resolved_references where app = %s 
-		and member = %s and reference = %s and id = %s`,
+		and member = %s and reference = '%s' and id = %s`,
 		displayConfig.AppConfig.AppID, member, reference, id)
 
 	data, err := db.DataCall1(displayConfig.StencilDBConn, query)
