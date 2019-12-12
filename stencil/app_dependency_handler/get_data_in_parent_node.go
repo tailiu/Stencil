@@ -68,7 +68,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 	if len(data) == 0 {
 
 		return nil, app_display.CannotFindAnyDataInParent
-		
+
 	} else {
 
 		return app_display.TransformRowToHint(displayConfig, data, table), nil
@@ -197,7 +197,7 @@ func GetdataFromParentNode(displayConfig *config.DisplayConfig,
 
 	}
 
-	fmt.Println(proConditions)
+	// fmt.Println(proConditions)
 	// fmt.Println(hints)
 
 	return getHintsInParentNode(displayConfig, hints, proConditions)

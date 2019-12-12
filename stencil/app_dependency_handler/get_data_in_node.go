@@ -66,6 +66,7 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 		} else {
 
 			hint0 := app_display.CreateHint(table0, table0ID, id)
+			log.Println("Before resolving reference1: ", hint0)
 
 			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint0)
 
@@ -125,6 +126,7 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 		} else {
 			
 			hint1 := app_display.CreateHint(table1, table1ID, fmt.Sprint(data["id"]))
+			log.Println("Before resolving reference2: ", hint1)
 
 			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint1)
 
@@ -149,7 +151,6 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 				} else {
 	
 					panic("Should not happen given one member corresponds to one row for now!")
-				
 				}
 			
 			// This should not happen
@@ -163,7 +164,6 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 	} else {
 
 		panic("Should have at least one attribute to resolve!")
-
 	}
 }
 

@@ -11,6 +11,8 @@ import (
 func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, 
 	IDRow map[string]string, orgID *identity) map[string]string {
 	
+	log.Println("You are on the left/from part")
+
 	updatedAttrs := make(map[string]string)
 
 	for _, ref := range getFromReferences(displayConfig, IDRow) {
@@ -47,6 +49,16 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				}
 
 				log.Println(attrs)
+
+				// There are cases in which no attribute can be found
+				// For example: diaspora posts posts.id mastodon media_attachments
+				if len(attrs) != 1 {
+					
+					log.Println(notOneAttributeFound)
+					
+					continue
+
+				}
 
 				ignoreREF = false 
 
@@ -142,6 +154,8 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig, 
 	IDRow map[string]string, orgID *identity) map[string]string {
 	
+	log.Println("You are on the right/to part")
+
 	updatedAttrs := make(map[string]string)
 
 	for _, ref := range getToReferences(displayConfig, IDRow) {
@@ -174,6 +188,14 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				}
 
 				log.Println(attrs)
+
+				if len(attrs) != 1 {
+					
+					log.Println(notOneAttributeFound)
+					
+					continue
+
+				}
 
 				ignoreREF = false
 
