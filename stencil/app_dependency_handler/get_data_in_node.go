@@ -35,7 +35,7 @@ func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
 	}
 }
 
-func checkResolveReference(displayConfig *config.DisplayConfig,
+func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
 	log.Println("+++++++++++++++++++")
@@ -249,7 +249,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 
 						// We assume that val is an integer value 
 						// otherwise we have to define it in dependency config
-						data, err1 = checkResolveReference(displayConfig, 
+						data, err1 = checkResolveReferenceInGetDataInNode(displayConfig, 
 							fmt.Sprint(dataInDependencyNode.Data["id"]),
 							table, col, table1, key1, fmt.Sprint(val))
 

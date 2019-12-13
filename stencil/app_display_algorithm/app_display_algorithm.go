@@ -128,7 +128,12 @@ func checkDisplayOneMigratedData(
 
 					dataInParentNode, err4 := app_dependency_handler.GetdataFromParentNode(
 						displayConfig, dataInNode, pTag)
-					log.Println(dataInParentNode, err4)
+					
+					if err4 != nil {
+						log.Println(err4)
+					} else {
+						log.Println(dataInParentNode)
+					}
 
 					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(
 						displayConfig, oneMigratedData, pTag)
@@ -146,18 +151,22 @@ func checkDisplayOneMigratedData(
 
 						case app_display.CannotFindAnyDataInParent:
 
-							pTagConditions[pTag] = app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+							pTagConditions[pTag] = 
+								app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 								displaySetting, secondRound)
 							
 						}
 						
 					} else {
 
-						// For now, there is no case where there is more than one piece of data in a parent node
+						// For now, there is no case where 
+						// there is more than one piece of data in a parent node
 						// if len(dataInParentNode) != 1 {
 						// 	log.Fatal("Find more than one piece of data in a parent node!!")
 						// }
-						err7 := checkDisplayOneMigratedData(displayConfig, dataInParentNode, secondRound)
+						err7 := checkDisplayOneMigratedData(
+							displayConfig, dataInParentNode, secondRound)
+
 						if err7 != nil {
 							log.Println(err7)
 						}
@@ -167,7 +176,8 @@ func checkDisplayOneMigratedData(
 						case app_display.NoNodeCanBeDisplayed:
 
 							pTagConditions[pTag] = app_display.
-								ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+								ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+									displaySetting, secondRound)
 
 						case app_display.PartiallyDisplayed:
 
