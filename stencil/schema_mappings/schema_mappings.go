@@ -73,21 +73,33 @@ func GetMappedAttributesFromSchemaMappings(
 				for _, tTable := range mapping.ToTables {
 					// toTable
 					if tTable.Table == toTable {
-						log.Println(tTable)
+						// log.Println(tTable)
 						for tAttr, fAttr := range tTable.Mapping {
 							// fromAttr
 
 							// If not ignore #REF
 							if !ignoreREF {
+
 								// If there exists #REF
 								if containREF(fAttr) {
 									fAttr = getFirstArgFromREF(fAttr)
+
+									if fAttr == fromAttr {
+										attributes = append(attributes, tAttr)
+									}
 								}
-							}
-																		
-							if fAttr == fromAttr {
-								attributes = append(attributes, tAttr)
-							}
+
+							} else {
+
+								// If there does not exist #REF
+								if !containREF(fAttr) {
+									
+									if fAttr == fromAttr {
+										attributes = append(attributes, tAttr)
+									}
+								}
+							}									
+							
 						}
 					}
 				}

@@ -12,9 +12,11 @@ func test1(displayConfig *config.DisplayConfig) {
 	
 	// fromApp, fromTable, fromAttr, toApp, toTable := 
 		// "diaspora", "posts", "posts.id", "mastodon", "statuses"
+	// fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF := 
+		// 	"diaspora", "comments", "comments.commentable_id", "mastodon", "statuses", false
 	fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF := 
-		"diaspora", "comments", "comments.commentable_id", "mastodon", "statuses", false
-
+		"diaspora", "posts", "posts.id", "mastodon", "status_stats", false
+	
 	attr, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(
 		fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF)
 
@@ -47,8 +49,8 @@ func main() {
 
 	displayConfig := app_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 
-	// test1(displayConfig)
+	test1(displayConfig)
 
-	test2(displayConfig)
+	// test2(displayConfig)
 
 }

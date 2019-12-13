@@ -23,16 +23,19 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 		data := createIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
 
 		refIdentityRows := forwardTraverseIDTable(displayConfig, data, orgID)
-		// log.Println(refIdentityRows[0])
+		// log.Println("refIdentityRows: ", refIdentityRows)
 
 		if len(refIdentityRows) > 0 {
 			
 			for _, refIdentityRow := range refIdentityRows {
 
-				// This is a little bit dirty hack. For example, when trying to find
+				log.Println("refIdentityRow: ", refIdentityRow)
+
+				// For example, when trying to find
 				// the mapped attribute from Diaspora Posts Posts.id to Mastodon Statuses,
 				// if we consider arguments in #REF, 
 				// there are two results: id and conversation_id which should not be included
+				// Basically, the attribute to update other atrributes should not contain #REF
 				ignoreREF := true
 
 				attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings( 
@@ -48,7 +51,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					log.Println(err)
 				}
 
-				log.Println(attrs)
+				log.Println("attr: ", attrs)
 
 				// There are cases in which no attribute can be found
 				// For example: diaspora posts posts.id mastodon media_attachments
@@ -60,6 +63,10 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 				}
 
+				// Basically, the attributes to be updated should always contain #REF
+				// Otherwise, the following inputs:
+				// "diaspora", "comments", "comments.commentable_id", "mastodon", "statuses", false
+				// will return both status_id and id which should not be contained
 				ignoreREF = false 
 
 				attrsToUpdate, err1 := schema_mappings.GetMappedAttributesFromSchemaMappings(
@@ -79,7 +86,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 				for _, attrToUpdate := range attrsToUpdate {
 					
-					log.Println(attrToUpdate)
+					log.Println("attr to be updated:", attrToUpdate)
 
 					updatedVal, err2 := updateReferences(
 						displayConfig,
@@ -104,7 +111,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 			attr := procRef["to_reference"]
 
-			log.Println(attr)
+			log.Println("attr: ", attr)
 
 			ignoreREF := false 
 
@@ -121,9 +128,11 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				log.Println(err)
 			}
 
-			log.Println(attrsToUpdate)
+			// log.Println(attrsToUpdate)
 
 			for _, attrToUpdate := range attrsToUpdate {
+
+				log.Println("attr to be updated:", attrToUpdate)
 
 				updatedVal, err1 := updateReferences(
 					displayConfig,
@@ -187,7 +196,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					log.Println(err)
 				}
 
-				log.Println(attrs)
+				log.Println("attr: ", attrs)
 
 				if len(attrs) != 1 {
 					
@@ -212,9 +221,11 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 					log.Println(err1)
 				}
 
-				log.Println(attrsToUpdate)
+				// log.Println(attrsToUpdate)
 				
 				for _, attrToUpdate := range attrsToUpdate {
+
+					log.Println("attr to be updated:", attrToUpdate)
 
 					updatedVal, err2 := updateReferences(
 						displayConfig,
@@ -239,7 +250,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 			attr := procRef["to_reference"]
 
-			log.Println(attr)
+			log.Println("attr: ", attr)
 
 			ignoreREF := false
 
@@ -257,6 +268,8 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 			}
 
 			for _, attrToUpdate := range attrsToUpdate {
+
+				log.Println("attr to be updated:", attrToUpdate)
 
 				updatedVal, err1 := updateReferences(
 					displayConfig,

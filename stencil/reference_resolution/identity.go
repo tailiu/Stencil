@@ -21,15 +21,19 @@ func createIdentity(app, member, id string) *identity {
 	return ID
 }
 
-func transformHintToIdenity(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) *identity {
+func transformHintToIdenity(displayConfig *config.DisplayConfig, 
+	hint *app_display.HintStruct) *identity {
 
-	return createIdentity(displayConfig.AppConfig.AppID, hint.TableID, strconv.Itoa(hint.KeyVal["id"]))
+	return createIdentity(displayConfig.AppConfig.AppID, 
+		hint.TableID, strconv.Itoa(hint.KeyVal["id"]))
 
 }
 
-func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, ID *identity) []map[string]interface{} {
+func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, 
+	ID *identity) []map[string]interface{} {
 
-	query := fmt.Sprintf("SELECT * FROM identity_table WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d",
+	query := fmt.Sprintf(`SELECT * FROM identity_table 
+		WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d`,
 		ID.app, ID.member, ID.id, displayConfig.MigrationID)
 	
 	data, err := db.DataCall(displayConfig.StencilDBConn, query)
@@ -44,9 +48,11 @@ func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, ID *identity) [
 }
 
 
-func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig, ID *identity) []map[string]interface{} {
+func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig, 
+	ID *identity) []map[string]interface{} {
 	
-	query := fmt.Sprintf("SELECT * FROM identity_table WHERE from_app = %s and from_member = %s and from_id = %s and migration_id = %d",
+	query := fmt.Sprintf(`SELECT * FROM identity_table 
+		WHERE from_app = %s and from_member = %s and from_id = %s and migration_id = %d`,
 		ID.app, ID.member, ID.id, displayConfig.MigrationID)
 
 	data, err := db.DataCall(displayConfig.StencilDBConn, query)
@@ -60,7 +66,8 @@ func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig, ID *identity)
 
 }
 
-func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *identity) []*identity {
+func forwardTraverseIDTable(displayConfig *config.DisplayConfig, 
+	ID, orginalID *identity) []*identity {
 	
 	var res []*identity
 
@@ -71,7 +78,10 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *
 		
 		procIDRow := transformInterfaceToString(IDRow)
 
-		nextData := createIdentity(procIDRow["to_app"], procIDRow["to_member"], procIDRow["to_id"])
+		nextData := createIdentity(
+			procIDRow["to_app"], 
+			procIDRow["to_member"], 
+			procIDRow["to_id"])
 
 		res = append(res, forwardTraverseIDTable(displayConfig, nextData, orginalID)...)
 
@@ -79,7 +89,18 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *
 
 	if len(IDRows) == 0 {
 
-		if ID.app == displayConfig.AppConfig.AppID && ID.member != orginalID.member && ID.id != orginalID.id {
+		// We don't need to test ID.id != orginalID.id becaseu as long as
+		// ID.member != orginalID.member, this means that 
+		// this is different from the original row. 
+		// ID.id may be the same as orginalID.id in the scenario in which
+		// migration does not change ids.
+		// We don't find the cases in which ID.member == orginalID.member but 
+		// ID.id != orginalID.id, however this may happen..
+		// Before changing:
+		// if ID.app == displayConfig.AppConfig.AppID && 
+		// 	ID.member != orginalID.member && ID.id != orginalID.id {
+		if ID.app == displayConfig.AppConfig.AppID && 
+			(ID.member != orginalID.member || ID.id != orginalID.id) {
 			
 			resData := createIdentity(ID.app, ID.member, ID.id)
 
@@ -90,5 +111,4 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *
 	}
 
 	return res
-
 }
