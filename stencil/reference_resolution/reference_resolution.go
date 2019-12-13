@@ -170,7 +170,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 	for _, ref := range getToReferences(displayConfig, IDRow) {
 
 		procRef := transformInterfaceToString(ref)
-		// log.Println(procRef)
+		log.Println(procRef)
 
 		data := createIdentity(procRef["app"], procRef["from_member"], procRef["from_id"])
 
@@ -180,6 +180,8 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 		if len(refIdentityRows) > 0 {
 
 			for _, refIdentityRow := range refIdentityRows {
+
+				log.Println("refIdentityRow: ", refIdentityRow)
 
 				ignoreREF := true
 
@@ -315,7 +317,8 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, currentMyupdatedAttrs)
 
 		// You are on the right/to part
-		currentOthersUpdatedAttrs := updateOtherDataBasedOnReferences(displayConfig, procIDRow, orgID)
+		currentOthersUpdatedAttrs := updateOtherDataBasedOnReferences(displayConfig, 
+			procIDRow, orgID)
 		
 		othersUpdatedAttrs = combineTwoMaps(othersUpdatedAttrs, currentOthersUpdatedAttrs)
 

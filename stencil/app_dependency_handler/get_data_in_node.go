@@ -53,6 +53,8 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 	// We check whether account.id needs to be resolved
 	if reference_resolution.NeedToResolveReference(displayConfig, table0, col0) {
 
+		log.Println("Before checking reference1 resolved or not")
+
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
 		newVal := reference_resolution.ReferenceResolved(displayConfig, table0ID, col0, id)
@@ -97,6 +99,8 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 	// We check if users.account_id needs be resolved (of course, in this case, it should be)
 	// However we don't know its id. 
 	} else if reference_resolution.NeedToResolveReference(displayConfig, table1, col1) {
+
+		log.Println("Before checking reference2 resolved or not")
 
 		// We assume that users.account_id has already been resolved and get its data
 		data, err := getOneRowBasedOnDependency(displayConfig, table1, col1, value)
@@ -167,10 +171,14 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 			}
 		}
 	
-	// Theoretically, there must be one that needs to resolve, so the following should not happen
+	// Normally, there must exist one that needs to be resolved. 
+	// Howver, the following can happen when there is no mapping
+	// For example: 
+	// When migrating from Diaspora to Mastodon:
+	// there is no mapping to stream_entries.activity_id.
 	} else {
 
-		panic("Should have at least one attribute to resolve!")
+		return nil, app_display.NoMappingAndNoReferenceToResolve
 	}
 }
 
@@ -255,7 +263,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 					// fmt.Println(data)
 
 					if err1 != nil {
-						fmt.Println(err1)
+						log.Println(err1)
 						// fmt.Println(result)
 						continue
 					}
@@ -470,7 +478,8 @@ func GetDataInNodeBasedOnDisplaySetting(displayConfig *config.DisplayConfig,
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
 	if data, err = getDataInNode(displayConfig, hint); err != nil {
 
-		// The setting "default_display_setting" means only display a node when the node is complete.
+		// The setting "default_display_setting" means only display a node 
+		// when the node is complete.
 		// Therefore, return nil and error message when node is not complete.
 		if displaySetting == "default_display_setting" {
 			return nil, err
