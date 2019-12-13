@@ -60,6 +60,8 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
 
+			log.Println("reference has been resolve1")
+
 			return getOneRowBasedOnDependency(displayConfig, table1, col1, newVal)
 		
 		// Otherwise, we try to resolve the reference
@@ -105,15 +107,20 @@ func checkResolveReference(displayConfig *config.DisplayConfig,
 		// Now we have the id of the data, we should check whether it has been resolved before, 
 		// but actually if we can get one, it should always be the one we want to get because
 		// otherwise there will be multiple rows corresponding to one member.
-		// There could be the case where ids are not changed, so even if references are not resolved, 
+		// There could be the case where ids are not changed, 
+		// so even if references are not resolved, 
 		// we can still get the rows we want, but we need to resolve it further.
-		newVal := reference_resolution.ReferenceResolved(displayConfig, table1ID, col1, fmt.Sprint(data["id"]))
+		newVal := reference_resolution.ReferenceResolved(displayConfig, 
+			table1ID, col1, fmt.Sprint(data["id"]))
 
 		if newVal != "" {
 
 			// Theoretically, if it has been resolved, then it should be the value we have 
 			// given that one member corresponds to one row
 			if newVal == value {
+
+				log.Println("reference has been resolve2")
+				log.Println(data)
 
 				return data, nil
 
@@ -234,7 +241,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 
 						// We assume that val is an integer value 
 						// otherwise we have to define it in dependency config
-						checkResolveReference(displayConfig, 
+						data, err1 = checkResolveReference(displayConfig, 
 							fmt.Sprint(dataInDependencyNode.Data["id"]),
 							table, col, table1, key1, fmt.Sprint(val))
 
@@ -248,7 +255,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 					// fmt.Println(data)
 
 					if err1 != nil {
-						// fmt.Println(err1)
+						fmt.Println(err1)
 						// fmt.Println(result)
 						continue
 					}

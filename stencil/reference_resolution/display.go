@@ -12,7 +12,11 @@ func NeedToResolveReference(displayConfig *config.DisplayConfig, toTable, toAttr
 	
 	if exists, err := schema_mappings.REFExists(displayConfig, toTable, toAttr); err != nil {
 
-		log.Fatal(err)
+		// This can happen when there is no mapping
+		// For example: 
+		// When migrating from Diaspora to Mastodon:
+		// there is no mapping to stream_entries.activity_id.
+		log.Println(err)
 
 		return false
 

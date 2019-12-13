@@ -14,6 +14,8 @@ func getFromReferences(displayConfig *config.DisplayConfig,
 		and from_id = %s and migration_id = %d;`, IDRow["from_app"], 
 		IDRow["from_member"], IDRow["from_id"], displayConfig.MigrationID)
 	
+	log.Println(query)
+	
 	data, err := db.DataCall(displayConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
@@ -88,7 +90,8 @@ func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, dat
 func addToResolvedReferences(displayConfig *config.DisplayConfig, 
 	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated, data string) string {
 	
-	return fmt.Sprintf(`INSERT INTO resolved_references (app, member, id, migration_id, reference, value)
+	return fmt.Sprintf(`INSERT INTO resolved_references 
+		(app, member, id, migration_id, reference, value)
 		VALUES (%s, %s, %s, %d, '%s', %s)`, 
 		displayConfig.AppConfig.AppID, 
 		memberToBeUpdated,
@@ -101,7 +104,8 @@ func addToResolvedReferences(displayConfig *config.DisplayConfig,
 
 
 func updateReferences(displayConfig *config.DisplayConfig, 
-	refID, member, id, attr, memberToBeUpdated, IDToBeUpdated, attrToBeUpdated string) (string, error) {
+	refID, member, id, attr, memberToBeUpdated, 
+	IDToBeUpdated, attrToBeUpdated string) (string, error) {
 
 	if attr == "" && attrToBeUpdated == "" {
 		

@@ -93,7 +93,7 @@ func GetMappedAttributesFromSchemaMappings(
 
 								// If there does not exist #REF
 								if !containREF(fAttr) {
-									
+
 									if fAttr == fromAttr {
 										attributes = append(attributes, tAttr)
 									}
@@ -116,7 +116,7 @@ func GetMappedAttributesFromSchemaMappings(
 
 func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (bool, error) {
 
-	log.Println(toTable, toAttr)
+	// log.Println(toTable, toAttr)
 
 	for _, mapping := range displayConfig.MappingsToDst.Mappings {
 		// toTable
