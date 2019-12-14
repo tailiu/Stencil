@@ -63,12 +63,28 @@ func checkDisplayOneMigratedData(
 	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(
 		displayConfig, oneMigratedData)
 
+	// Either this data is not in the destination application,
+	// e.g., this data is displayed by other threads and deleted by application services, 
+	// or the data is not able to be displayed 
+	// because of missing some other data it depends on within the node,
+	// e.g., this node only has status_stats without status
 	if dataInNode == nil {
 
 		log.Println(err1)
 		
-		return app_display.NoNodeCanBeDisplayed
+		if secondRound {
 
+			err9 := app_display.PutIntoDataBag(displayConfig, oneMigratedData)
+
+			log.Fatal(err9)
+
+			return app_display.NoNodeCanBeDisplayed
+
+		} else {
+
+			return app_display.NoNodeCanBeDisplayed
+
+		}
 	} else {
 
 		// This is to display data once there is any data already displayed in a node

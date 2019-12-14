@@ -76,11 +76,17 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 }
 
 func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
+
 	query := fmt.Sprintf("SELECT 1 FROM txn_logs WHERE action_id = %d and action_type='COMMIT' LIMIT 1", migrationID)
+	
 	data := db.GetAllColsOfRows(stencilDBConn, query)
+	
 	if len(data) == 0 {
+		
 		return false
+	
 	} else {
+		
 		return true
 	}
 }
@@ -116,48 +122,67 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deleti
 		// This is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
 		if CheckDisplay(stencilDBConn, appID, dataHint) == 0 {
+
 			log.Println("Found that there is a path conflict!! When displaying data")
 			return errors.New("Path conflict"), dhStack
+
 		}
 
 		rowIDs := dataHint.GetAllRowIDs(stencilDBConn, appID)
+
 		for _, rowID := range rowIDs {
+			
 			// It should be noted that table_id / group_id should also be considered
 			query := fmt.Sprintf("UPDATE migration_table SET mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s", 
 				fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
-			log.Println("**************************************")
+			
+				log.Println("**************************************")
 			log.Println(query)
 			log.Println("**************************************")
+			
 			queries = append(queries, query)
+
 		}
 	}
 	if deletionHoldEnable {
+		
 		var dhQueries []string
+		
 		dhQueries, dhStack = AddToDeletionHoldStack(dhStack, dataHints, threadID)
 		queries = append(queries, dhQueries...)
+
 	}
 
 	return db.TxnExecute(stencilDBConn, queries), dhStack
 }
 
 func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
+
 	appID1, err1 := strconv.Atoi(appID)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+	
 	// Here for one group, we only need to check one to see whether the group is displayed or not
 	// It should be noted that table_id / group_id should also be considered
-	query := fmt.Sprintf("SELECT bag FROM migration_table WHERE row_id = %d and app_id = %d and table_id = %s", data.RowIDs[0], appID1, data.TableID)
+	query := fmt.Sprintf("SELECT bag FROM migration_table WHERE row_id = %d and app_id = %d and table_id = %s", 
+		data.RowIDs[0], appID1, data.TableID)
 	// log.Println(query)
+	
 	data1, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
+	
 	// log.Println(data1)
+	
 	return data1["bag"].(bool)
+
 }
 
-func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, userID string) error {
+func PutIntoDataBag(stencilDBConn *sql.DB, 
+	appID string, dataHints []HintStruct, userID string) error {
+	
 	var queries []string
 
 	for _, dataHint := range dataHints {
@@ -165,18 +190,27 @@ func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct,
 		// Similar to displaying data, this is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
 		if alreadyInBag(stencilDBConn, appID, dataHint) {
+
 			log.Println("Found that there is a path conflict!! When putting data in a databag")
+			
 			return errors.New("Path conflict")
+		
 		}
 
 		rowIDs := dataHint.GetAllRowIDs(stencilDBConn, appID)
+		
 		for _, rowID := range rowIDs {
+
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf("UPDATE migration_table SET user_id = %s, bag = true, mark_as_delete = true, mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s",
+			query := fmt.Sprintf(`UPDATE migration_table SET 
+				user_id = %s, bag = true, mark_as_delete = true, mflag = 0, updated_at = now() 
+				WHERE row_id = %s and app_id = %s and table_id = %s`,
 				userID, fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
+			
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 			log.Println(query)
 			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+			
 			queries = append(queries, query)
 		}
 	}
@@ -185,16 +219,21 @@ func PutIntoDataBag(stencilDBConn *sql.DB, appID string, dataHints []HintStruct,
 }
 
 func GetTableNameByTableID(stencilDBConn *sql.DB, tableID string) string {
+
 	iTableID, err := strconv.Atoi(tableID)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	query := fmt.Sprintf("select table_name from app_tables where pk = %d", iTableID)
+	
 	data1, err1 := db.DataCall1(stencilDBConn, query)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+
 	return data1["table_name"].(string)
+
 }
 
 func GetTableIDByTableName(stencilDBConn *sql.DB, tableName, appID string) string {
@@ -203,7 +242,9 @@ func GetTableIDByTableName(stencilDBConn *sql.DB, tableName, appID string) strin
 		log.Fatal(err)
 	}
 
-	query := fmt.Sprintf("select pk from app_tables where app_id = %d and table_name = '%s'", appID1, tableName)
+	query := fmt.Sprintf("select pk from app_tables where app_id = %d and table_name = '%s'", 
+		appID1, tableName)
+
 	// log.Println(query)
 	
 	data1, err := db.DataCall1(stencilDBConn, query)

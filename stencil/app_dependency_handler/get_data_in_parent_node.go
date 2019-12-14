@@ -85,8 +85,9 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 	log.Println(hints[0])
 
 	var data map[string]interface{}
-	var err, err1 error
+	var err0, err1 error
 	var table string
+	var depVal string
 
 	hintID := -1
 
@@ -135,21 +136,29 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 					return nil, app_display.CannotFindAnyDataInParent
 				}
 
-				newVal, err0 := checkResolveReferenceInGetDataInParentNode(
-					displayConfig, 
-					fmt.Sprint(hints[hintID].Data["id"]),
-					t1, a1)
-				
-				// If there is an error, it means that the reference has not been resolved
-				if err0 != nil {
-					return nil, err0
+				if displayConfig.ResolveReference {
+
+					depVal, err0 = checkResolveReferenceInGetDataInParentNode(
+						displayConfig, 
+						fmt.Sprint(hints[hintID].Data["id"]),
+						t1, a1)
+					
+					// If there is an error, it means that the reference has not been resolved
+					if err0 != nil {
+						return nil, err0
+					}
+
+				} else {
+
+					depVal = fmt.Sprint(hints[hintID].Data[a1])
+
 				}
 
-				query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", t2, a2, newVal)
+				query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", t2, a2, depVal)
 
-				data, err = db.DataCall1(displayConfig.AppConfig.DBConn, query)
-				if err != nil {
-					log.Fatal(err)
+				data, err1 = db.DataCall1(displayConfig.AppConfig.DBConn, query)
+				if err1 != nil {
+					log.Fatal(err1)
 				}
 			
 				// log.Println(".....first check......")
@@ -170,19 +179,27 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 		// For now, there is always only one condition.
 		} else {
 
-			newVal, err0 := checkResolveReferenceInGetDataInParentNode(
-				displayConfig, 
-				fmt.Sprint(data["id"]),
-				t1, a1)
-			
-			// If there is an error, it means that the reference has not been resolved
-			// so it cannot be used to get data in the parent node
-			if err0 != nil {
-				return nil, err0
+			if displayConfig.ResolveReference {
+
+				depVal, err0 = checkResolveReferenceInGetDataInParentNode(
+					displayConfig, 
+					fmt.Sprint(data["id"]),
+					t1, a1)
+				
+				// If there is an error, it means that the reference has not been resolved
+				// so it cannot be used to get data in the parent node
+				if err0 != nil {
+					return nil, err0
+				}
+
+			} else {
+
+				depVal = fmt.Sprint(data[a1])
+
 			}
 
 			query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", 
-				t2, a2, newVal)
+				t2, a2, depVal)
 
 			data, err1 = db.DataCall1(displayConfig.AppConfig.DBConn, query)
 			if err1 != nil {

@@ -90,8 +90,10 @@ func checkDisplayOneMigratedData(
 	log.Println("-----------")
 
 	// Either this data is not in the destination application,
+	// e.g., this data is displayed by other threads and deleted by application services, 
 	// or the data is not able to be displayed 
-	// because of missing some other data it is intra-dependent on
+	// because of missing some other data it depends on within the node,
+	// e.g., this node only has status_stats without status
 	if len(dataInNode) == 0 {
 
 		log.Println(err1)

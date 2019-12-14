@@ -61,6 +61,7 @@ type DisplayConfig struct {
 	SrcAppID			string
 	MappingsToDst 		MappedApp
 	ResolveReference	bool
+	UserID				string
 }
 
 type AppConfig struct {

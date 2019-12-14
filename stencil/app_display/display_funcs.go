@@ -7,6 +7,7 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"stencil/schema_mappings"
+	"encoding/json"
 )
 
 func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
@@ -15,7 +16,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.
 
 	stencilDBConn := db.GetDBConn(config.StencilDBName)
 
-	srcAppID, dstAppID := getSrcDstAppIDsByMigrationID(stencilDBConn, migrationID)
+	srcAppID, dstAppID, userID := getSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
 
 	dstAppName := getAppNameByAppID(stencilDBConn, dstAppID)
 	srcAppName := getAppNameByAppID(stencilDBConn, srcAppID)
@@ -42,6 +43,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.
 	displayConfig.TableIDNamePairs = GetTableIDNamePairs(stencilDBConn)
 	displayConfig.StencilDBConn = stencilDBConn
 	displayConfig.MigrationID = migrationID
+	displayConfig.UserID = userID
 
 	return &displayConfig
 
@@ -66,7 +68,8 @@ func GetUndisplayedMigratedData(displayConfig *config.DisplayConfig) []*HintStru
 
 	var displayHints []*HintStruct
 
-	query := fmt.Sprintf("SELECT table_id, id FROM display_flags WHERE app_id = %s and migration_id = %d and display_flag = true", 
+	query := fmt.Sprintf(`SELECT table_id, id FROM display_flags
+		 WHERE app_id = %s and migration_id = %d and display_flag = true`, 
 		displayConfig.AppConfig.AppID, displayConfig.MigrationID)
 	
 	data := db.GetAllColsOfRows(displayConfig.StencilDBConn, query)
@@ -112,7 +115,9 @@ func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error
 		query1 := fmt.Sprintf("UPDATE %s SET display_flag = false WHERE id = %d;",
 			dataHint.Table, dataHint.KeyVal["id"])
 
-		query2 := fmt.Sprintf("UPDATE Display_flags SET display_flag = false, updated_at = now() WHERE app_id = %s and table_id = %s and id = %d;",
+		query2 := fmt.Sprintf(`UPDATE Display_flags SET 
+			display_flag = false, updated_at = now() 
+			WHERE app_id = %s and table_id = %s and id = %d;`,
 			displayConfig.AppConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
 		
 		log.Println("**************************************")
@@ -184,6 +189,7 @@ func getAttrNameByAttrID(stencilDBConn *sql.DB, attrID string) string {
 }
 
 func GetAppIDNamePairs(stencilDBConn *sql.DB) map[string]string {
+	
 	appIDNamePairs := make(map[string]string)
 
 	query := fmt.Sprintf("select app_name, pk from apps")
@@ -200,9 +206,11 @@ func GetAppIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	}
 
 	return appIDNamePairs
+
 }
 
 func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
+	
 	attrIDNamePairs := make(map[string]string)
 
 	query := fmt.Sprintf("select column_name, pk from app_schemas")
@@ -219,9 +227,11 @@ func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	}
 
 	return attrIDNamePairs
+
 }
 
 func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
+	
 	tableIDNamePairs := make(map[string]string)
 
 	query := fmt.Sprintf("select pk, table_name from app_tables;")
@@ -236,24 +246,61 @@ func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	}
 	
 	return tableIDNamePairs
+
 }
 
 
-func getSrcDstAppIDsByMigrationID(stencilDBConn *sql.DB, migrationID int) (string, string) {
+func getSrcDstAppIDsUserIDByMigrationID(stencilDBConn *sql.DB,
+	migrationID int) (string, string, string) {
 
-	query := fmt.Sprintf("select src_app, dst_app from migration_registration")
+	query := fmt.Sprintf("select src_app, dst_app, user_id from migration_registration")
 
 	data, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return fmt.Sprint(data["src_app"]), fmt.Sprint(data["dst_app"])
+	return fmt.Sprint(data["src_app"]), fmt.Sprint(data["dst_app"]), fmt.Sprint(data["user_id"])
 
 }
 
-// func getDstAttrNameIDPairs(stencilDBConn *sql.DB) {
+func ConvertMapToJSONString(data map[string]interface{}) string {
+	
+	convertedData, err := json.Marshal(data)   
+	if err != nil {
+        log.Fatal(err)
+    }
+     
+	return string(convertedData)
+	
+}
 
-// 	query := fmt.Sprintf("select pk from migration_registration where ")
 
-// }
+// When putting data to dag bags, it does not matter whether we set unresolved references
+// to NULLs or not, so we don't set those as NULLs. 
+func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHint *HintStruct) error {
+	
+	var queries []string
+
+	q1 := fmt.Sprintf(`INSERT INTO data_bags VALUES
+		(app, member, id, data, user_id, migration_id) 
+		(%s, %s, %s, '%s', %s, %s)`, 
+		displayConfig.AppConfig.AppID,
+		dataHint.TableID,
+		dataHint.KeyVal["id"],
+		ConvertMapToJSONString(dataHint.Data),
+		displayConfig.UserID,
+		displayConfig.MigrationID)
+
+	q2 := fmt.Sprintf("DELETE FROM %s WHERE id = %s", dataHint.Table, dataHint.KeyVal["id"])
+	
+	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+	log.Println(q1)
+	log.Println(q2)
+	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+	
+	queries = append(queries, q1, q2)
+
+	return db.TxnExecute(displayConfig.StencilDBConn, queries)
+
+}
