@@ -74,7 +74,7 @@ func checkDisplayOneMigratedData(
 		
 		if secondRound {
 
-			err9 := app_display.PutIntoDataBag(displayConfig, oneMigratedData)
+			err9 := app_display.PutIntoDataBag(displayConfig, []*app_display.HintStruct{oneMigratedData})
 
 			log.Fatal(err9)
 
@@ -223,6 +223,13 @@ func checkDisplayOneMigratedData(
 					return app_display.ReturnResultBasedOnNodeCompleteness(err1)
 
 				} else {
+
+					if secondRound {
+						
+						err10 := app_display.PutIntoDataBag(displayConfig, dataInNode)
+
+						log.Fatal(err10)
+					}
 
 					return app_display.NoNodeCanBeDisplayed
 

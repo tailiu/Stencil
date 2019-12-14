@@ -132,11 +132,17 @@ func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error
 	}
 
 	if err := db.TxnExecute(displayConfig.AppConfig.DBConn, queries1); err != nil {
+
 		return err
+
 	} else {
-		if err := db.TxnExecute(displayConfig.StencilDBConn, queries2); err != nil {
-			return err
+
+		if err1 := db.TxnExecute(displayConfig.StencilDBConn, queries2); err1 != nil {
+			
+			return err1
+		
 		} else {
+
 			return nil
 		}
 	}
@@ -278,29 +284,61 @@ func ConvertMapToJSONString(data map[string]interface{}) string {
 
 // When putting data to dag bags, it does not matter whether we set unresolved references
 // to NULLs or not, so we don't set those as NULLs. 
-func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHint *HintStruct) error {
+func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error {
 	
-	var queries []string
+	var queries1 []string
+	var queries2 []string
+	var queries3 []string
 
-	q1 := fmt.Sprintf(`INSERT INTO data_bags VALUES
-		(app, member, id, data, user_id, migration_id) 
-		(%s, %s, %s, '%s', %s, %s)`, 
-		displayConfig.AppConfig.AppID,
-		dataHint.TableID,
-		dataHint.KeyVal["id"],
-		ConvertMapToJSONString(dataHint.Data),
-		displayConfig.UserID,
-		displayConfig.MigrationID)
+	for _, dataHint := range dataHints {
+		
+		q1 := fmt.Sprintf(`INSERT INTO data_bags 
+			(app, member, id, data, user_id, migration_id) VALUES 
+			(%s, %s, %d, '%s', %s, %d)`, 
+			displayConfig.AppConfig.AppID,
+			dataHint.TableID,
+			dataHint.KeyVal["id"],
+			ConvertMapToJSONString(dataHint.Data),
+			displayConfig.UserID,
+			displayConfig.MigrationID)
 
-	q2 := fmt.Sprintf("DELETE FROM %s WHERE id = %s", dataHint.Table, dataHint.KeyVal["id"])
-	
-	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-	log.Println(q1)
-	log.Println(q2)
-	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-	
-	queries = append(queries, q1, q2)
+		q2 := fmt.Sprintf("DELETE FROM %s WHERE id = %d", 
+			dataHint.Table, dataHint.KeyVal["id"])
+		
+		q3 := fmt.Sprintf(`UPDATE Display_flags SET 
+			display_flag = false, updated_at = now() 
+			WHERE app_id = %s and table_id = %s and id = %d;`,
+			displayConfig.AppConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
 
-	return db.TxnExecute(displayConfig.StencilDBConn, queries)
+		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+		log.Println(q1)
+		log.Println(q2)
+		log.Println(q3)
+		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+		
+		queries1 = append(queries1, q1)
+		queries2 = append(queries2, q2)
+		queries3 = append(queries3, q3)
 
+	}
+
+	// The sequence of executing the two queries ensure that
+	// Even if the system crashes in between inserting into data bags 
+	// and deleting from applications, the database can ensure that data can only be
+	// inserted once into data bags and thus data in applications can finally be deleted
+	if err := db.TxnExecute(displayConfig.StencilDBConn, queries1); err != nil {
+
+		return err
+
+	} else {
+
+		if err1 := db.TxnExecute(displayConfig.AppConfig.DBConn, queries2); err1 != nil {
+
+			return err1
+
+		} else {
+
+			return nil
+		}
+	}
 }
