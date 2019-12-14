@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-// The difference between checkResolveReferenceInGetDataInParentNode and getOneRowBasedOnDependency
-// is that 
+// The only big difference between checkResolveReferenceInGetDataInParentNode 
+// and getOneRowBasedOnDependency is that it only needs to check one table and col
 func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayConfig,
 	id, table, col string) (string, error) {
 
@@ -138,7 +138,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 				newVal, err0 := checkResolveReferenceInGetDataInParentNode(
 					displayConfig, 
 					fmt.Sprint(hints[hintID].Data["id"]),
-					t1, tableAttr1)
+					t1, a1)
 				
 				// If there is an error, it means that the reference has not been resolved
 				if err0 != nil {
@@ -173,7 +173,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 			newVal, err0 := checkResolveReferenceInGetDataInParentNode(
 				displayConfig, 
 				fmt.Sprint(data["id"]),
-				t1, tableAttr1)
+				t1, a1)
 			
 			// If there is an error, it means that the reference has not been resolved
 			// so it cannot be used to get data in the parent node
