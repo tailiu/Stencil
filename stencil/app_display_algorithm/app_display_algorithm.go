@@ -58,7 +58,7 @@ func checkDisplayOneMigratedData(
 	oneMigratedData *app_display.HintStruct,
 	secondRound bool) error {
 
-	log.Println("Check Data ", *oneMigratedData)
+	log.Println("Check Data:", *oneMigratedData)
 
 	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(
 		displayConfig, oneMigratedData)
@@ -132,7 +132,7 @@ func checkDisplayOneMigratedData(
 					if err4 != nil {
 						log.Println(err4)
 					} else {
-						log.Println(dataInParentNode)
+						log.Println(*dataInParentNode)
 					}
 
 					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(
@@ -191,7 +191,7 @@ func checkDisplayOneMigratedData(
 						}
 					}
 				}
-				log.Println(pTagConditions)
+				log.Println("Get parent nodes results:", pTagConditions)
 
 				// For now, without checking the combined_display_setting,
 				// this check app_display condition func will return true

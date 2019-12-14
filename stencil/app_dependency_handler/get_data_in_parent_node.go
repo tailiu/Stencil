@@ -6,160 +6,84 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"stencil/app_display"
-	// "strconv"
+	"stencil/reference_resolution"
+	"strconv"
 	"strings"
 )
 
-// func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayConfig,
-// 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
+// The difference between checkResolveReferenceInGetDataInParentNode and getOneRowBasedOnDependency
+// is that 
+func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayConfig,
+	id, table, col string) (string, error) {
 
-// 	log.Println("+++++++++++++++++++")
-// 	log.Println(table0)
-// 	log.Println(col0)
-// 	log.Println(table1)
-// 	log.Println(col1)
-// 	log.Println("+++++++++++++++++++")
+	log.Println("+++++++++++++++++++")
+	log.Println(table)
+	log.Println(col)
+	log.Println("+++++++++++++++++++")
 	
-// 	table0ID := displayConfig.AppConfig.TableNameIDPairs[table0]
-// 	table1ID := displayConfig.AppConfig.TableNameIDPairs[table1]
+	tableID := displayConfig.AppConfig.TableNameIDPairs[table]
 
-// 	// First, we need to get the attribute that requires reference resolution
-// 	// For example, we have *account.id*, and we want to get *users.account_id*
-// 	// We check whether account.id needs to be resolved
-// 	if reference_resolution.NeedToResolveReference(displayConfig, table0, col0) {
+	// First, we need to get the attribute that requires reference resolution
+	// For example, we have *favourites.status_id*, and we want to get *status*
+	// We check whether favourites.status_id needs to be resolved
+	if reference_resolution.NeedToResolveReference(displayConfig, table, col) {
 
-// 		log.Println("Before checking reference1 resolved or not")
+		log.Println("Parent Node: before checking reference resolved or not")
 
-// 		// If account.id should be resolved (in this case, it should not),
-// 		// we check whether the reference has been resolved or not
-// 		newVal := reference_resolution.ReferenceResolved(displayConfig, table0ID, col0, id)
+		// If favourites.status_id should be resolved (in this case, it should be),
+		// we check whether the reference has been resolved or not
+		newVal := reference_resolution.ReferenceResolved(displayConfig, tableID, col, id)
 		
-// 		// If the reference has been resolved, then use the new reference to get data
-// 		if newVal != "" {
+		// If the reference has been resolved, then use the new reference to get data
+		if newVal != "" {
 
-// 			log.Println("reference has been resolve1")
+			log.Println("Parent Node: reference has been resolve")
 
-// 			return getOneRowBasedOnDependency(displayConfig, table1, col1, newVal)
+			return newVal, nil
 		
-// 		// Otherwise, we try to resolve the reference
-// 		} else {
+		// Otherwise, we try to resolve the reference
+		} else {
 
-// 			hint0 := app_display.CreateHint(table0, table0ID, id)
-// 			log.Println("Before resolving reference1: ", hint0)
+			hint := app_display.CreateHint(table, tableID, id)
+			log.Println("Parent Node: Before resolving reference: ", hint)
 
-// 			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint0)
+			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint)
 
-// 			// We check whether the desired attr (col0) has been resolved
-// 			foundResolvedAttr := false
-// 			for attr, val := range updatedAttrs {
-// 				if attr == col0 {
-// 					newVal = val
-// 					foundResolvedAttr = true
-// 					break
-// 				}
-// 			}
+			// We check whether the desired attr (col) has been resolved
+			foundResolvedAttr := false
+			for attr, val := range updatedAttrs {
+				if attr == col {
+					newVal = val
+					foundResolvedAttr = true
+					break
+				}
+			}
 
-// 			// If we find that col0 has been resolved, then we can use it to get other data
-// 			if foundResolvedAttr {
+			// If we find that col has been resolved, then we can use it to get other data
+			if foundResolvedAttr {
 
-// 				return getOneRowBasedOnDependency(displayConfig, table1, col1, newVal)
+				return newVal, nil
 			
-// 			// Otherwise we cannot use the unresolved reference to get other data in node
-// 			} else {
+			// Otherwise we cannot use the unresolved reference to get other data in node
+			} else {
 
-// 				return nil, app_display.CannotResolveReferencesGetDataInNode
-// 			}
-// 		}
-
-// 	// We check if users.account_id needs be resolved (of course, in this case, it should be)
-// 	// However we don't know its id. 
-// 	} else if reference_resolution.NeedToResolveReference(displayConfig, table1, col1) {
-
-// 		log.Println("Before checking reference2 resolved or not")
-
-// 		// We assume that users.account_id has already been resolved and get its data
-// 		data, err := getOneRowBasedOnDependency(displayConfig, table1, col1, value)
-// 		if err != nil {
-// 			return nil, app_display.CannotFindRemainingData
-// 		}
-
-// 		// Now we have the id of the data, we should check whether it has been resolved before, 
-// 		// but actually if we can get one, it should always be the one we want to get because
-// 		// otherwise there will be multiple rows corresponding to one member.
-// 		// There could be the case where ids are not changed, 
-// 		// so even if references are not resolved, 
-// 		// we can still get the rows we want, but we need to resolve it further.
-// 		newVal := reference_resolution.ReferenceResolved(displayConfig, 
-// 			table1ID, col1, fmt.Sprint(data["id"]))
-
-// 		if newVal != "" {
-
-// 			// Theoretically, if it has been resolved, then it should be the value we have 
-// 			// given that one member corresponds to one row
-// 			if newVal == value {
-
-// 				log.Println("reference has been resolve2")
-// 				log.Println(data)
-
-// 				return data, nil
-
-// 			} else {
-
-// 				panic("Should not happen given one member corresponds to one row for now!")
-			
-// 			}
-
-// 		} else {
-			
-// 			hint1 := app_display.CreateHint(table1, table1ID, fmt.Sprint(data["id"]))
-// 			log.Println("Before resolving reference2: ", hint1)
-
-// 			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint1)
-
-// 			// We check whether the desired attr (col1) has been resolved 
-// 			// (until this point, it should be resolved)
-// 			foundResolvedAttr := false
-// 			for attr, val := range updatedAttrs {
-// 				if attr == col1 {
-// 					newVal = val
-// 					foundResolvedAttr = true
-// 					break
-// 				}
-// 			}
-
-// 			// If we find that col0 has been resolved, then we can use it to get other data
-// 			if foundResolvedAttr {
-
-// 				if newVal == value {
-
-// 					return data, nil
+				return "", app_display.CannotResolveReferencesGetDataInNode
+			}
+		}
 	
-// 				} else {
-	
-// 					panic("Should not happen given one member corresponds to one row for now!")
-// 				}
-			
-// 			// This should not happen
-// 			} else {
+	// Normally, there must exist one that needs to be resolved. 
+	} else {
 
-// 				panic("Should not happen given one member corresponds to one row for now!")
-// 			}
-// 		}
-	
-// 	// Normally, there must exist one that needs to be resolved. 
-// 	// Howver, the following can happen when there is no mapping
-// 	// For example: 
-// 	// When migrating from Diaspora to Mastodon:
-// 	// there is no mapping to stream_entries.activity_id.
-// 	} else {
+		panic("Should not happen since there is always one to solve!")
 
-// 		return nil, app_display.NoMappingAndNoReferenceToResolve
-// 	}
-// }
+	}
+}
 
 func getHintsInParentNode(displayConfig *config.DisplayConfig, 
 	hints []*app_display.HintStruct, conditions []string) (*app_display.HintStruct, error) {
 	
+	log.Println(hints[0])
+
 	var data map[string]interface{}
 	var err, err1 error
 	var table string
@@ -168,7 +92,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 
 	for i, condition := range conditions {
 
-		log.Println(condition)
+		// log.Println(condition)
 
 		tableAttr1 := strings.Split(condition, ":")[0]
 		tableAttr2 := strings.Split(condition, ":")[1]
@@ -207,14 +131,21 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 				// so when it is migrated to Mastodon, and becomes a status, 
 				// it does not have conversation_id,  
 				// which is actually necessary for each status in Mastodon.
-				if hints[hintID].Data[t1 + "." + a1] == nil {
-
+				if hints[hintID].Data[a1] == nil {
 					return nil, app_display.CannotFindAnyDataInParent
-
 				}
 
-				query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", 
-					t2, a2, fmt.Sprint(hints[hintID].Data[a1]))
+				newVal, err0 := checkResolveReferenceInGetDataInParentNode(
+					displayConfig, 
+					fmt.Sprint(hints[hintID].Data["id"]),
+					t1, tableAttr1)
+				
+				// If there is an error, it means that the reference has not been resolved
+				if err0 != nil {
+					return nil, err0
+				}
+
+				query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", t2, a2, newVal)
 
 				data, err = db.DataCall1(displayConfig.AppConfig.DBConn, query)
 				if err != nil {
@@ -239,8 +170,19 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 		// For now, there is always only one condition.
 		} else {
 
+			newVal, err0 := checkResolveReferenceInGetDataInParentNode(
+				displayConfig, 
+				fmt.Sprint(data["id"]),
+				t1, tableAttr1)
+			
+			// If there is an error, it means that the reference has not been resolved
+			// so it cannot be used to get data in the parent node
+			if err0 != nil {
+				return nil, err0
+			}
+
 			query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", 
-				t2, a2, fmt.Sprint(data[a1]))
+				t2, a2, newVal)
 
 			data, err1 = db.DataCall1(displayConfig.AppConfig.DBConn, query)
 			if err1 != nil {
@@ -256,6 +198,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 	}
 
 	log.Println("...........")
+	log.Println(table)
 	log.Println(data)
 	log.Println("...........")
 
@@ -263,115 +206,112 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 
 }
 
-// func getHintsInParentNode(displayConfig *config.DisplayConfig, 
-// 	hints []*app_display.HintStruct, conditions []string) (*app_display.HintStruct, error) {
+func oldGetHintsInParentNode(displayConfig *config.DisplayConfig, 
+	hints []*app_display.HintStruct, conditions []string) (*app_display.HintStruct, error) {
 	
-// 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
-// 	from := ""
-// 	table := ""
-// 	hintID := -1
+	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
+	from := ""
+	table := ""
+	hintID := -1
 
-// 	for i, condition := range conditions {
+	for i, condition := range conditions {
 
-// 		tableAttr1 := strings.Split(condition, ":")[0]
-// 		tableAttr2 := strings.Split(condition, ":")[1]
+		tableAttr1 := strings.Split(condition, ":")[0]
+		tableAttr2 := strings.Split(condition, ":")[1]
 
-// 		t1 := strings.Split(tableAttr1, ".")[0]
-// 		a1 := strings.Split(tableAttr1, ".")[1]
+		t1 := strings.Split(tableAttr1, ".")[0]
+		a1 := strings.Split(tableAttr1, ".")[1]
 
-// 		t2 := strings.Split(tableAttr2, ".")[0]
-// 		a2 := strings.Split(tableAttr2, ".")[1]
+		t2 := strings.Split(tableAttr2, ".")[0]
+		a2 := strings.Split(tableAttr2, ".")[1]
 
-// 		seq1 := "t" + strconv.Itoa(i)
-// 		seq2 := "t" + strconv.Itoa(i+1)
+		seq1 := "t" + strconv.Itoa(i)
+		seq2 := "t" + strconv.Itoa(i+1)
 
-// 		if i == 0 {
+		if i == 0 {
 
-// 			// There could be mutliple pieces of data in nodes
-// 			// For example:
-// 			// A statuses node contains status, conversation, and status_stats
-// 			for j, hint := range hints {
+			// There could be mutliple pieces of data in nodes
+			// For example:
+			// A statuses node contains status, conversation, and status_stats
+			for j, hint := range hints {
 
-// 				if hint.Table == t1 {
-// 					hintID = j
-// 				}
+				if hint.Table == t1 {
+					hintID = j
+				}
 
-// 			}
+			}
 
-// 			// In this case, since data may be incomplete, 
-// 			// we cannot get the data in the parent node
-// 			if hintID == -1 {
+			// In this case, since data may be incomplete, 
+			// we cannot get the data in the parent node
+			if hintID == -1 {
 
-// 				return nil, app_display.CannotFindAnyDataInParent
+				return nil, app_display.CannotFindAnyDataInParent
 
-// 			} else {
+			} else {
 				
-// 				// For example:
-// 				// if a condition is [favourites.status_id:statuses.id], 
-// 				// from will be "favourites t0 JOIN statuses t1 ON t0.status_id = t1.id"
-// 				from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
-// 					t1, seq1, t2, seq2, seq1, a1, seq2, a2)
+				// For example:
+				// if a condition is [favourites.status_id:statuses.id], 
+				// from will be "favourites t0 JOIN statuses t1 ON t0.status_id = t1.id"
+				from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
+					t1, seq1, t2, seq2, seq1, a1, seq2, a2)
 
-// 				checkResolveReferenceInGetDataInParentNode()
+			}
 
-// 			}
+		// This is mainly to solve the case in which
+		// conversation cannot directly depend on root
+		// conversation depends on statuses, which in turn depends on root. 
+		// This is now obsolete because there is no dependency between other nodes with root
+		// For now, there is always only one condition.
+		} else {
 
-// 		// This is mainly to solve the case in which
-// 		// conversation cannot directly depend on root
-// 		// conversation depends on statuses, which in turn depends on root. 
-// 		// This is now obsolete because there is no dependency between other nodes with root
-// 		// For now, there is always only one condition.
-// 		} else {
-
-// 			from += fmt.Sprintf("JOIN %s %s on %s.%s = %s.%s ",
-// 				t2, seq2, seq1, a1, seq2, a2)
+			from += fmt.Sprintf("JOIN %s %s on %s.%s = %s.%s ",
+				t2, seq2, seq1, a1, seq2, a2)
 			
-// 			checkResolveReferenceInGetDataInParentNode()
 
-// 		}
+		}
 
-// 		//The last condition
-// 		if i == len(conditions)-1 {
+		//The last condition
+		if i == len(conditions)-1 {
 
-// 			var depDataKey string
-// 			var depDataValue int
+			var depDataKey string
+			var depDataValue int
 
-// 			for k, v := range hints[hintID].KeyVal {
+			for k, v := range hints[hintID].KeyVal {
 
-// 				depDataKey = k
-// 				depDataValue = v
+				depDataKey = k
+				depDataValue = v
 
-// 			}
+			}
 
-// 			// Following the above example,
-// 			// the whole query will be:
-// 			// SELECT t1.* 
-// 			// FROM favourites t0 JOIN statuses t1 ON t0.status_id = t1.id
-// 			// WHERE t0.status_id = 80
-// 			where := fmt.Sprintf("WHERE %s.%s = %d", "t0", depDataKey, depDataValue)
-// 			table = t2
-// 			query += from + where
+			// Following the above example,
+			// the whole query will be:
+			// SELECT t1.* 
+			// FROM favourites t0 JOIN statuses t1 ON t0.status_id = t1.id
+			// WHERE t0.status_id = 80
+			where := fmt.Sprintf("WHERE %s.%s = %d", "t0", depDataKey, depDataValue)
+			table = t2
+			query += from + where
 
-// 		}
-// 	}
-// 	// fmt.Println(query)
+		}
+	}
+	// fmt.Println(query)
 
-// 	data, err := db.DataCall1(displayConfig.AppConfig.DBConn, query)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+	data, err := db.DataCall1(displayConfig.AppConfig.DBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-// 	// fmt.Println(data)
-// 	if len(data) == 0 {
+	// fmt.Println(data)
+	if len(data) == 0 {
 
-// 		return nil, app_display.CannotFindAnyDataInParent
+		return nil, app_display.CannotFindAnyDataInParent
 
-// 	} else {
+	} else {
 
-// 		return app_display.TransformRowToHint(displayConfig, data, table), nil
+		return app_display.TransformRowToHint(displayConfig, data, table), nil
 
-// 	}
-// }
+	}
+}
 
 func replaceKey(displayConfig *config.DisplayConfig, tag string, key string) string {
 
