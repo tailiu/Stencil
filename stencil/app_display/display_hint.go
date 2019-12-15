@@ -3,6 +3,7 @@ package app_display
 import (
 	"errors"
 	"stencil/config"
+	"stencil/reference_resolution"
 	"strconv"
 	"log"
 	"fmt"
@@ -87,6 +88,14 @@ func TransformDisplayFlagDataToHint(displayConfig *config.DisplayConfig,
 
 // 	return "", errors.New("No Corresponding Member Found!")  
 // }
+
+func (hint *HintStruct) TransformHintToIdenity(
+	displayConfig *config.DisplayConfig) *reference_resolution.Identity {
+
+	return reference_resolution.CreateIdentity(displayConfig.AppConfig.AppID, 
+		hint.TableID, strconv.Itoa(hint.KeyVal["id"]))
+
+}
 
 func (hint *HintStruct) GetTagName(displayConfig *config.DisplayConfig) (string, error) {
 

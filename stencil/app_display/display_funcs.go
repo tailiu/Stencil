@@ -105,10 +105,21 @@ func CheckMigrationComplete(displayConfig *config.DisplayConfig) bool {
 	
 }
 
+// Before displaying a piece of data, the unresolved references should be set to be NULLs
+// Setting those references to be NULLs does not influence how data behaves in the application, 
+// but in the next migration it may influence how Stencil migrates data
+// For example, 
+// If the reply field of  a status which was a comment in Diaspora is set to be NULLs because
+// the corresponding post is not migrated, then in the next migration due the reply field is NULL,
+// it may be migrated as a post. We might use a special field indicating that this field has been
+// set to NULLs before and both applications and Stencil should be aware of that
+// to solve this problem, but since setting unresolved references to be NULLs is enough 
+// in our current testing applications, we just use this simple method. 
 func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error {
 
 	var queries1 []string
 	var queries2 []string
+	// var queries3 []string
 
 	for _, dataHint := range dataHints {
 		

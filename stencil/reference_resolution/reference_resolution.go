@@ -1,7 +1,6 @@
 package reference_resolution
 
 import (
-	"stencil/app_display"
 	"stencil/config"
 	"stencil/schema_mappings"
 	"log"
@@ -9,7 +8,7 @@ import (
 
 // You are on the left/from part
 func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, 
-	IDRow map[string]string, orgID *identity) map[string]string {
+	IDRow map[string]string, orgID *Identity) map[string]string {
 	
 	log.Println("You are on the left/from part")
 
@@ -20,7 +19,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 		procRef := transformInterfaceToString(ref)
 		log.Println("ref_row: ", procRef)
 
-		data := createIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
+		data := CreateIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
 
 		refIdentityRows := forwardTraverseIDTable(displayConfig, data, orgID)
 		// log.Println("refIdentityRows: ", refIdentityRows)
@@ -161,7 +160,7 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 // You are on the right/to part
 func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig, 
-	IDRow map[string]string, orgID *identity) map[string]string {
+	IDRow map[string]string, orgID *Identity) map[string]string {
 	
 	log.Println("You are on the right/to part")
 
@@ -172,7 +171,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 		procRef := transformInterfaceToString(ref)
 		log.Println(procRef)
 
-		data := createIdentity(procRef["app"], procRef["from_member"], procRef["from_id"])
+		data := CreateIdentity(procRef["app"], procRef["from_member"], procRef["from_id"])
 
 		refIdentityRows := forwardTraverseIDTable(displayConfig, data, orgID)
 		// log.Println(refIdentityRows[0])
@@ -299,7 +298,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 }
 
 func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, 
-	ID *identity, orgID *identity) (map[string]string, map[string]string) {
+	ID *Identity, orgID *Identity) (map[string]string, map[string]string) {
 
 	myUpdatedAttrs := make(map[string]string)
 	
@@ -323,7 +322,7 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 		othersUpdatedAttrs = combineTwoMaps(othersUpdatedAttrs, currentOthersUpdatedAttrs)
 
 		// Traverse back
-		preID := createIdentity(
+		preID := CreateIdentity(
 			procIDRow["from_app"], procIDRow["from_member"], procIDRow["from_id"])
 
 		nextMyUpdatedAttrs, nextOthersUpdatedAttrs := 
@@ -344,9 +343,7 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 // others' updated attributes may have some collision, 
 // so we use *id:updatedAttr*, which is unique, as the key in the second return value.
 func ResolveReference(displayConfig *config.DisplayConfig, 
-	hint *app_display.HintStruct) (map[string]string, map[string]string) {
-	
-	ID := transformHintToIdenity(displayConfig, hint)
+	ID *Identity) (map[string]string, map[string]string) {
 	
 	return resolveReferenceByBackTraversal(displayConfig, ID, ID)
 

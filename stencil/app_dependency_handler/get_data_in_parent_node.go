@@ -47,7 +47,9 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayCon
 			hint := app_display.CreateHint(table, tableID, id)
 			log.Println("Parent Node: Before resolving reference: ", hint)
 
-			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint)
+			ID := hint.TransformHintToIdenity(displayConfig)
+
+			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, ID)
 
 			// We check whether the desired attr (col) has been resolved
 			foundResolvedAttr := false

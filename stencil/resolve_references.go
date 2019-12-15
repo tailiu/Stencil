@@ -26,13 +26,16 @@ import (
 
 func test1(displayConfig *config.DisplayConfig) {
 
-	var hint = app_display.HintStruct{
+	var hint = &app_display.HintStruct{
 		Table:		"favourites",
 		TableID:	"72",
 		KeyVal:		map[string]int{"id":235970},
 	}
 
-	myUpdatedAttrs, othersUpdatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
+	ID := hint.TransformHintToIdenity(displayConfig)
+
+	myUpdatedAttrs, othersUpdatedAttrs := 
+		reference_resolution.ResolveReference(displayConfig, ID)
 
 	log.Println(myUpdatedAttrs, othersUpdatedAttrs)
 
@@ -57,13 +60,16 @@ func test1(displayConfig *config.DisplayConfig) {
 
 func test2(displayConfig *config.DisplayConfig) {
 
-	var hint = app_display.HintStruct{
+	var hint = &app_display.HintStruct{
 		Table:		"statuses",
 		TableID:	"92",
 		KeyVal:		map[string]int{"id":21783},
 	}
 
-	myUpdatedAttrs, othersUpdatedAttrs := reference_resolution.ResolveReference(displayConfig, &hint)
+	ID := hint.TransformHintToIdenity(displayConfig)
+
+	myUpdatedAttrs, othersUpdatedAttrs := 
+		reference_resolution.ResolveReference(displayConfig, ID)
 
 	log.Println(myUpdatedAttrs, othersUpdatedAttrs)
 

@@ -72,7 +72,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 			hint0 := app_display.CreateHint(table0, table0ID, id)
 			log.Println("Before resolving reference1: ", hint0)
 
-			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint0)
+			ID0 := hint0.TransformHintToIdenity(displayConfig)
+
+			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, ID0)
 
 			// We check whether the desired attr (col0) has been resolved
 			foundResolvedAttr := false
@@ -139,7 +141,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 			hint1 := app_display.CreateHint(table1, table1ID, fmt.Sprint(data["id"]))
 			log.Println("Before resolving reference2: ", hint1)
 
-			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, hint1)
+			ID1 := hint1.TransformHintToIdenity(displayConfig)
+
+			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, ID1)
 
 			// We check whether the desired attr (col1) has been resolved 
 			// (until this point, it should be resolved)

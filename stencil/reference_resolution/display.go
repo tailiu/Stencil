@@ -1,11 +1,11 @@
 package reference_resolution
 
 import (
+	"log"
+	"fmt"
 	"stencil/db"
 	"stencil/config"
 	"stencil/schema_mappings"
-	"log"
-	"fmt"
 )
 
 func NeedToResolveReference(displayConfig *config.DisplayConfig, toTable, toAttr string) bool {
