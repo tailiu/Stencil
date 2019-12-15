@@ -75,8 +75,9 @@ func checkDisplayOneMigratedData(
 		if secondRound {
 
 			err9 := app_display.PutIntoDataBag(displayConfig, []*app_display.HintStruct{oneMigratedData})
-
-			log.Fatal(err9)
+			if err9 != nil {
+				log.Fatal(err9)
+			}
 
 			return app_display.NoNodeCanBeDisplayed
 
@@ -153,6 +154,7 @@ func checkDisplayOneMigratedData(
 
 					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(
 						displayConfig, oneMigratedData, pTag)
+
 					if err5 != nil {
 						log.Fatal(err5)
 					}
@@ -161,15 +163,15 @@ func checkDisplayOneMigratedData(
 
 						switch err4 {
 
-						case app_display.NotDependsOnAnyData:
-							
-							pTagConditions[pTag] = true
+							case app_display.NotDependsOnAnyData:
+								
+								pTagConditions[pTag] = true
 
-						case app_display.CannotFindAnyDataInParent:
+							case app_display.CannotFindAnyDataInParent:
 
-							pTagConditions[pTag] = 
-								app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
-								displaySetting, secondRound)
+								pTagConditions[pTag] = 
+									app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+									displaySetting, secondRound)
 							
 						}
 						
@@ -227,8 +229,10 @@ func checkDisplayOneMigratedData(
 					if secondRound {
 						
 						err10 := app_display.PutIntoDataBag(displayConfig, dataInNode)
-
-						log.Fatal(err10)
+						if err10 != nil {
+							log.Fatal(err10)
+						}
+						
 					}
 
 					return app_display.NoNodeCanBeDisplayed

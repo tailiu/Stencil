@@ -290,30 +290,38 @@ func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHints []*HintStruct
 	var queries2 []string
 	var queries3 []string
 
+	var q1, q2, q3 string
 	for _, dataHint := range dataHints {
 		
-		q1 := fmt.Sprintf(`INSERT INTO data_bags 
-			(app, member, id, data, user_id, migration_id) VALUES 
-			(%s, %s, %d, '%s', %s, %d)`, 
-			displayConfig.AppConfig.AppID,
-			dataHint.TableID,
-			dataHint.KeyVal["id"],
-			ConvertMapToJSONString(dataHint.Data),
-			displayConfig.UserID,
-			displayConfig.MigrationID)
+		// dataHint.Data could be nil if a thread crashes before executing queries3
+		// and after executing queries1 and queries2.
+		// In this case, there is no need to execute queries1 and queries2 again.
+		if dataHint.Data != nil {
 
-		q2 := fmt.Sprintf("DELETE FROM %s WHERE id = %d", 
-			dataHint.Table, dataHint.KeyVal["id"])
+			q1 = fmt.Sprintf(`INSERT INTO data_bags 
+				(app, member, id, data, user_id, migration_id) VALUES 
+				(%s, %s, %d, '%s', %s, %d)`, 
+				displayConfig.AppConfig.AppID,
+				dataHint.TableID,
+				dataHint.KeyVal["id"],
+				ConvertMapToJSONString(dataHint.Data),
+				displayConfig.UserID,
+				displayConfig.MigrationID)
+
+			q2 = fmt.Sprintf("DELETE FROM %s WHERE id = %d", 
+				dataHint.Table, dataHint.KeyVal["id"])
+			
+		}
 		
-		q3 := fmt.Sprintf(`UPDATE Display_flags SET 
+		q3 = fmt.Sprintf(`UPDATE display_flags SET 
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
 			displayConfig.AppConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
 
 		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-		log.Println(q1)
-		log.Println(q2)
-		log.Println(q3)
+		log.Println("INSERT INTO data_bags:", q1)
+		log.Println("DELETE FROM the application:", q2)
+		log.Println("UPDATE display_flags:", q3)
 		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 		
 		queries1 = append(queries1, q1)
@@ -322,10 +330,10 @@ func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHints []*HintStruct
 
 	}
 
-	// The sequence of executing the two queries ensure that
-	// Even if the system crashes in between inserting into data bags 
-	// and deleting from applications, the database can ensure that data can only be
-	// inserted once into data bags and thus data in applications can finally be deleted
+	// Since queries1 and queries3 need to be executed in Stencil, while queries2 
+	// need to be executed in the application database.
+	// The sequence of executing the three queries ensure that
+	// there is no anomaly.
 	if err := db.TxnExecute(displayConfig.StencilDBConn, queries1); err != nil {
 
 		return err
@@ -338,7 +346,14 @@ func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHints []*HintStruct
 
 		} else {
 
-			return nil
+			if err2 := db.TxnExecute(displayConfig.StencilDBConn, queries3); err2 != nil {
+				
+				return err2
+
+			} else {
+
+				return nil				
+			}
 		}
 	}
 }
