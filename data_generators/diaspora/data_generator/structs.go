@@ -4,7 +4,8 @@ import (
 	"database/sql"
 )
 
-const ALPHA = 2.0
+// const ALPHA = 2.0 (old)
+const ALPHA = 0.8
 const XM = 0.2
 
 type User struct {
