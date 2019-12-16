@@ -683,6 +683,9 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 		undoAction:  new(transaction.UndoAction)}
 
 	for toAttr, fromAttr := range toTable.Mapping {
+		if strings.EqualFold("id", toAttr) {
+			continue
+		}
 		if val, ok := node.Data[fromAttr]; ok {
 			fromTokens := strings.Split(fromAttr, ".")
 			data.UpdateData(toAttr, fromTokens[1], fromTokens[0], val)
