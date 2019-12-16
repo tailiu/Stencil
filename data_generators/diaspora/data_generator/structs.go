@@ -5,8 +5,9 @@ import (
 )
 
 // const ALPHA = 2.0 (old)
-const ALPHA = 0.8
-const XM = 0.2
+// const XM = 0.2 (old)
+const ALPHA = 0.5
+const XM = 3.0
 
 type User struct {
 	User_ID       		int

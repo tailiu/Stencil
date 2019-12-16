@@ -68,9 +68,11 @@ func GetMappedAttributesFromSchemaMappings(
 	
 	for _, mapping := range toAppMappings.Mappings {
 		for _, fTable := range mapping.FromTables {
+			
 			// fromTable
 			if fTable == fromTable {
 				for _, tTable := range mapping.ToTables {
+					
 					// toTable
 					if tTable.Table == toTable {
 						// log.Println(tTable)
@@ -114,14 +116,21 @@ func GetMappedAttributesFromSchemaMappings(
 	}
 }
 
+// Here we need to check each from-and-to tables pair.
+// For example, there are two #REFs in the mappings 
+// from Diaspora.Posts to Mastodon.Statuses, while there are three #REFs in 
+// the mappings from Diaspora.Comments to Mastodon.Statuses.
+// REFExists will check all these possiblities
 func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (bool, error) {
 
 	// log.Println(toTable, toAttr)
 
 	for _, mapping := range displayConfig.MappingsToDst.Mappings {
+		
 		// toTable
 		for _, tTable := range mapping.ToTables {
 			if tTable.Table == toTable {
+				
 				// toAttr
 				if mappedAttr, ok := tTable.Mapping[toAttr]; ok {
 					// log.Println(mappedAttr)
@@ -135,14 +144,46 @@ func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (boo
 
 						return false, nil 
 					}
-				} else {
-
-					return false, NoMappedAttrFound
-				}
+				} 
+				// These are commented to take into account the cases mentioned above
+				// else {
+				// 	return false, NoMappedAttrFound
+				// }
 			}
 		}
 	}
 
 	return false, NoMappedAttrFound
 
+}
+
+func GetAllMappedAttributesContainingREFInMappings(displayConfig *config.DisplayConfig,
+	toTable string) map[string]bool {
+
+	mappedAttrsWithREF := make(map[string]bool)
+	
+	for _, mapping := range displayConfig.MappingsToDst.Mappings {
+		
+		// toTable
+		for _, tTable := range mapping.ToTables {
+			if tTable.Table == toTable {
+
+				// attributes
+				for k, v := range tTable.Mapping {
+					
+					// contain #REF
+					if containREF(v) {
+
+						// add only if there does not exist 
+						// to make sure mappedAttrsWithREF contains unique attrs
+						if _, ok := mappedAttrsWithREF[k]; !ok {
+							mappedAttrsWithREF[k] = true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return mappedAttrsWithREF
 }

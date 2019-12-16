@@ -27,6 +27,16 @@ const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
 const MESSAGE_NUM = 401460
 const IMAGE_NUM = 369343
 
+// const APP = "diaspora_1000000" 
+// const USER_NUM = 1000000
+// const FOLLOW_NUM = 3230000
+// const POST_NUM = 8029200
+// const COMMENT_NUM = 13970800
+// const LIKE_NUM = 85671564
+// const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
+// const MESSAGE_NUM = 4014600
+// const IMAGE_NUM = 3693432
+
 func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 
 	var users []data_generator.User

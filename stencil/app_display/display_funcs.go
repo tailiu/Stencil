@@ -7,6 +7,7 @@ import (
 	"stencil/config"
 	"stencil/db"
 	"stencil/schema_mappings"
+	"stencil/reference_resolution"
 	"encoding/json"
 )
 
@@ -117,16 +118,47 @@ func CheckMigrationComplete(displayConfig *config.DisplayConfig) bool {
 // in our current testing applications, we just use this simple method. 
 func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error {
 
-	var queries1 []string
-	var queries2 []string
-	// var queries3 []string
+	var queries1, queries2 []string
+
+	var query1, query2 string
 
 	for _, dataHint := range dataHints {
 		
-		query1 := fmt.Sprintf("UPDATE %s SET display_flag = false WHERE id = %d;",
-			dataHint.Table, dataHint.KeyVal["id"])
+		ID := dataHint.TransformHintToIdenity(displayConfig)
 
-		query2 := fmt.Sprintf(`UPDATE Display_flags SET 
+		myUpdatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, ID)
+
+		attrsToBeUpdated := schema_mappings.GetAllMappedAttributesContainingREFInMappings(
+			displayConfig,
+			dataHint.Table)
+
+		var attrsToBeSetToNULLs []string
+
+		for attr := range attrsToBeUpdated {
+			
+			if _, ok := myUpdatedAttrs[attr]; !ok {
+				attrsToBeSetToNULLs = append(attrsToBeSetToNULLs, attr)
+			}
+
+		}
+
+		// query1 = fmt.Sprintf("UPDATE %s SET display_flag = false WHERE id = %d;",
+		// 	dataHint.Table, dataHint.KeyVal["id"])
+		
+		query1 = fmt.Sprintf("UPDATE %s SET display_flag = false ", dataHint.Table)
+
+		for _, attr := range attrsToBeSetToNULLs {
+			
+			query1 += attr + " = NULL, "
+
+		}
+
+		query1Where := fmt.Sprintf("WHERE id = %d;", dataHint.KeyVal["id"])
+
+		query1 += query1Where
+
+
+		query2 = fmt.Sprintf(`UPDATE Display_flags SET 
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
 			displayConfig.AppConfig.AppID, dataHint.TableID, dataHint.KeyVal["id"])
@@ -142,21 +174,22 @@ func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error
 		
 	}
 
-	if err := db.TxnExecute(displayConfig.AppConfig.DBConn, queries1); err != nil {
+	if err1 := db.TxnExecute(displayConfig.AppConfig.DBConn, queries1); err1 != nil {
 
-		return err
+		return err1
 
 	} else {
 
-		if err1 := db.TxnExecute(displayConfig.StencilDBConn, queries2); err1 != nil {
+		if err2 := db.TxnExecute(displayConfig.StencilDBConn, queries2); err2 != nil {
 			
-			return err1
+			return err2
 		
 		} else {
 
 			return nil
 		}
 	}
+
 }
 
 func CheckDisplay(displayConfig *config.DisplayConfig, dataHint *HintStruct) bool {
@@ -297,16 +330,16 @@ func ConvertMapToJSONString(data map[string]interface{}) string {
 // to NULLs or not, so we don't set those as NULLs. 
 func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error {
 	
-	var queries1 []string
-	var queries2 []string
-	var queries3 []string
+	var queries1, queries2, queries3 []string
 
 	var q1, q2, q3 string
+
 	for _, dataHint := range dataHints {
 		
-		// dataHint.Data could be nil if a thread crashes before executing queries3
-		// and after executing queries1 and queries2.
-		// In this case, there is no need to execute queries1 and queries2 again.
+		// dataHint.Data could be nil, which means there is no data,
+		// if a thread crashes before executing queries3
+		// and after executing queries1 and queries2, or data is deleted by services.
+		// In both cases, there is no need to execute queries1 and queries2 again.
 		if dataHint.Data != nil {
 
 			q1 = fmt.Sprintf(`INSERT INTO data_bags 
