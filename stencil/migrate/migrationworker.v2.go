@@ -470,12 +470,12 @@ func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk, o
 	for _, fromTable := range undoAction.OrgTables {
 		if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
 			srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
-			if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
-				if err := db.InsertIntoIdentityTable(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, fmt.Sprint(self.logTxn.Txn_id)); err != nil {
-					log.Println("@PushData:db.InsertIntoIdentityTable: ", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, fmt.Sprint(self.logTxn.Txn_id))
-					log.Fatal(err)
-					return errors.New("0")
-				}
+			if _, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
+				// if err := db.InsertIntoIdentityTable(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, fmt.Sprint(self.logTxn.Txn_id)); err != nil {
+				// 	log.Println("@PushData:db.InsertIntoIdentityTable: ", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, fmt.Sprint(self.logTxn.Txn_id))
+				// 	log.Fatal(err)
+				// 	return errors.New("0")
+				// }
 				if serr := db.SaveForLEvaluation(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
 					log.Println("@PushData:db.SaveForLEvaluation: ", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id))
 					log.Fatal(serr)
@@ -634,16 +634,16 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 		} else {
 			data.UpdateData(toAttr, assignedTabCol, targetTabCol[0], res[targetTabCol[1]])
 			node.Data[args[0]] = res[targetTabCol[1]]
-			if len(args) > 3 {
-				toMemberTokens := strings.Split(args[3], ".")
-				data.refs = append(data.refs, MappingRef{
-					fromID:     fmt.Sprint(res[targetTabCol[1]]),
-					fromMember: targetTabCol[0],
-					fromAttr:   targetTabCol[1],
-					toID:       fmt.Sprint(res[targetTabCol[1]]),
-					toMember:   toMemberTokens[0],
-					toAttr:     toMemberTokens[1]})
-			}
+			// if len(args) > 3 {
+			// toMemberTokens := strings.Split(args[3], ".")
+			// data.refs = append(data.refs, MappingRef{
+			// 	fromID:     fmt.Sprint(res[targetTabCol[1]]),
+			// 	fromMember: targetTabCol[0],
+			// 	fromAttr:   targetTabCol[1],
+			// 	toID:       fmt.Sprint(res[targetTabCol[1]]),
+			// 	toMember:   toMemberTokens[0],
+			// 	toAttr:     toMemberTokens[1]})
+			// }
 		}
 	} else {
 		fmt.Println(node.Tag.Name, node.Data)
@@ -683,6 +683,9 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 		undoAction:  new(transaction.UndoAction)}
 
 	for toAttr, fromAttr := range toTable.Mapping {
+		if strings.EqualFold("id", toAttr) {
+			continue
+		}
 		if val, ok := node.Data[fromAttr]; ok {
 			fromTokens := strings.Split(fromAttr, ".")
 			data.UpdateData(toAttr, fromTokens[1], fromTokens[0], val)
@@ -731,6 +734,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					}
 
 					data.refs = append(data.refs, MappingRef{fromID: fromID, fromMember: firstMemberTokens[0], fromAttr: firstMemberTokens[1], toID: toID, toAttr: secondMemberTokens[1], toMember: secondMemberTokens[0]})
+					// fmt.Println(toTable.Table, toAttr, fromAttr, data.refs[len(data.refs)-1])
 				}
 			} else if strings.Contains(fromAttr, "#FETCH") {
 				// #FETCH(targetSrcTable.targetSrcCol, targetSrcTable.srcColToCompare, currentSrcTable.currentSrcColForComparison)
