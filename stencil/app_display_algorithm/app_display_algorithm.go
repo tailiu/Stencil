@@ -211,10 +211,9 @@ func checkDisplayOneMigratedData(
 				}
 				log.Println("Get parent nodes results:", pTagConditions)
 
-				// For now, without checking the combined_display_setting,
-				// this check app_display condition func will return true
-				// as long as one pTagCondition is true
-				if checkResult := app_display.CheckDisplayConditions(
+				// Check the combined_display_setting from all parent nodes
+				// to decide whether to display the current node
+				if checkResult := app_display.CheckCombinedDisplayConditions(
 					displayConfig, pTagConditions, oneMigratedData); checkResult {
 					
 					err8 := app_display.Display(displayConfig, dataInNode)
