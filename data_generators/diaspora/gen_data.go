@@ -7,6 +7,8 @@ import (
 	"log"
 )
 
+
+
 // const APP = "diaspora" 
 // const USER_NUM = 10000
 // const FOLLOW_NUM = 206600
@@ -36,6 +38,8 @@ const IMAGE_NUM = 369343
 // const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
 // const MESSAGE_NUM = 4014600
 // const IMAGE_NUM = 3693432
+
+
 
 func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 
@@ -250,7 +254,9 @@ func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, ma
 		users = append(users, user)
 
 	}
-	return users, data_generator.AssignParetoDistributionScoresToData(datagen.GetAllPostIDs(genConfig.DBConn))
+
+	return users, data_generator.AssignParetoDistributionScoresToData(
+		datagen.GetAllPostIDs(genConfig.DBConn))
 
 }
 

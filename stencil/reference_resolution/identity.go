@@ -26,6 +26,8 @@ func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig,
 		WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d`,
 		ID.app, ID.member, ID.id, displayConfig.MigrationID)
 	
+	log.Println(query)
+
 	data, err := db.DataCall(displayConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)

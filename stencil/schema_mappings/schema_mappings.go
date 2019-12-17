@@ -145,6 +145,7 @@ func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (boo
 						return false, nil 
 					}
 				} 
+				
 				// These are commented to take into account the cases mentioned above
 				// else {
 				// 	return false, NoMappedAttrFound

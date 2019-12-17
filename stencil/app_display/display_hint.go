@@ -237,3 +237,29 @@ func (hint *HintStruct) GetDisplayExistenceSetting(
 	return "", errors.New("Find display existence error!")
 
 }
+
+func (hint *HintStruct) GetCombinedDisplaySettings(
+	displayConfig *config.DisplayConfig) (string, error) {
+	
+	tag, err := hint.GetTagName(displayConfig)
+	if err != nil {
+		return "", err
+	}
+
+	for _, dependency := range displayConfig.AppConfig.Dependencies {
+
+		if dependency.Tag == tag {
+
+			if dependency.CombinedDisplaySetting == "" {
+				return "", errors.New("No combined display settings found!")
+			} else {
+				return dependency.CombinedDisplaySetting, nil
+			}
+
+		}
+
+	}
+
+	return "", errors.New("No combined display settings found!")
+
+}
