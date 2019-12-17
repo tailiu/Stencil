@@ -28,6 +28,10 @@ func ParetoScores(alpha, Xm float64, num int) []float64 {
 
 		if val >= 0 {
 
+			// val = 0.5, alhpa = 2 score = 1.414
+			// val = 0.5, alpha = 1, score = 2
+			// val = 0.5, alpha = 0.5, score = 4
+			// val = 0.5, alpha = 0.25, score = 16
 			score := Xm / math.Pow((1.0 - val), (1.0 / alpha))
 
 			scores = append(scores, score)
@@ -214,7 +218,7 @@ func RandomNumWithProbGenerator(scores []float64, sum int) map[int]int {
 		// log.Println(rNum)
 
 		for i := 0; i < len(cumScores); i++ {
-			
+
 			if i == 0 {
 				if rNum < cumScores[i] {
 					if _, ok := results[i]; ok {

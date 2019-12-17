@@ -145,15 +145,15 @@ func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error
 		// query1 = fmt.Sprintf("UPDATE %s SET display_flag = false WHERE id = %d;",
 		// 	dataHint.Table, dataHint.KeyVal["id"])
 		
-		query1 = fmt.Sprintf("UPDATE %s SET display_flag = false ", dataHint.Table)
+		query1 = fmt.Sprintf("UPDATE %s SET display_flag = false", dataHint.Table)
 
 		for _, attr := range attrsToBeSetToNULLs {
-			
-			query1 += attr + " = NULL, "
+
+			query1 += ", "  + attr + " = NULL"
 
 		}
 
-		query1Where := fmt.Sprintf("WHERE id = %d;", dataHint.KeyVal["id"])
+		query1Where := fmt.Sprintf(" WHERE id = %d;", dataHint.KeyVal["id"])
 
 		query1 += query1Where
 
