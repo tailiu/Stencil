@@ -54,7 +54,7 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 
 		if err != nil {
 
-			log.Println(err)
+			// log.Println(err)
 
 		} else {
 			

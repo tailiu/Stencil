@@ -28,40 +28,38 @@ func containREF(data string) bool {
 	}
 }
 
-func GetToAppMappings(fromApp, toApp string) (config.MappedApp, error) {
+func GetToAppMappings(allMappings *config.SchemaMappings, 
+	fromApp, toApp string) (*config.MappedApp, error) {
 
-	schemaMappings, err := config.LoadSchemaMappings()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// log.Println(allMappings)
 
-	// log.Println(schemaMappings)
+	for _, mappings := range allMappings.AllMappings {
 
-	for _, mappings := range schemaMappings.AllMappings {
 		// fromApp
 		if mappings.FromApp == fromApp {
 			for _, app := range mappings.ToApps {
+
 				// toApp
 				if app.Name == toApp {
 
-					return app, nil
+					return &app, nil
 
 				}
 			}
 		}
 	}
 
-	return config.MappedApp{}, MappingsToAppNotFound
+	return &config.MappedApp{}, MappingsToAppNotFound
 }
 
-func GetMappedAttributesFromSchemaMappings(
+func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
 		fromApp, fromTable, fromAttr, toApp, toTable string, ignoreREF bool) ([]string, error) {
 
 	var attributes []string
 
 	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
 
-	toAppMappings, err := GetToAppMappings(fromApp, toApp)
+	toAppMappings, err := GetToAppMappings(allMappings, fromApp, toApp)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -110,8 +108,11 @@ func GetMappedAttributesFromSchemaMappings(
 	}
 
 	if len(attributes) == 0 {
+
 		return nil, NoMappedAttrFound
+	
 	} else {
+
 		return attributes, nil
 	}
 }
@@ -121,11 +122,11 @@ func GetMappedAttributesFromSchemaMappings(
 // from Diaspora.Posts to Mastodon.Statuses, while there are three #REFs in 
 // the mappings from Diaspora.Comments to Mastodon.Statuses.
 // REFExists will check all these possiblities
-func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (bool, error) {
+func REFExists(mappings *config.MappedApp, toTable, toAttr string) (bool, error) {
 
 	// log.Println(toTable, toAttr)
 
-	for _, mapping := range displayConfig.MappingsToDst.Mappings {
+	for _, mapping := range mappings.Mappings {
 		
 		// toTable
 		for _, tTable := range mapping.ToTables {
@@ -145,7 +146,7 @@ func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (boo
 						return false, nil 
 					}
 				} 
-				
+
 				// These are commented to take into account the cases mentioned above
 				// else {
 				// 	return false, NoMappedAttrFound
@@ -158,12 +159,12 @@ func REFExists(displayConfig *config.DisplayConfig, toTable, toAttr string) (boo
 
 }
 
-func GetAllMappedAttributesContainingREFInMappings(displayConfig *config.DisplayConfig,
+func GetAllMappedAttributesContainingREFInMappings(mappings *config.MappedApp,
 	toTable string) map[string]bool {
 
 	mappedAttrsWithREF := make(map[string]bool)
 	
-	for _, mapping := range displayConfig.MappingsToDst.Mappings {
+	for _, mapping := range mappings.Mappings {
 		
 		// toTable
 		for _, tTable := range mapping.ToTables {
@@ -187,4 +188,77 @@ func GetAllMappedAttributesContainingREFInMappings(displayConfig *config.Display
 	}
 
 	return mappedAttrsWithREF
+}
+
+func containFETCH(data string) bool {
+
+	if strings.Contains(data, "#FETCH(") {
+		
+		return true
+
+	} else {
+
+		return false
+	}
+}
+
+func getFirstArgFromFETCH(data string) string {
+	
+	tmp1 := strings.Split(data, "#REF(")
+
+	tmp2 := strings.Split(tmp1[1], "#FETCH(")
+
+	return strings.Split(tmp2[1], ",")[0]
+
+}
+
+func GetMappedAttributesFromSchemaMappingsByFETCH(allMappings *config.SchemaMappings,
+	fromApp, fromAttr, toApp, toTable string) ([]string, error) {
+	
+	var attributes []string
+
+	log.Println(fromApp, fromAttr, toApp, toTable)
+
+	toAppMappings, err := GetToAppMappings(allMappings, fromApp, toApp)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, mapping := range toAppMappings.Mappings {
+
+		for _, tTable := range mapping.ToTables {
+			
+			// toTable
+			if tTable.Table == toTable {
+				// log.Println(tTable)
+				for tAttr, fAttr := range tTable.Mapping {
+					// fromAttr
+
+					// If there exists #REF
+					if containREF(fAttr) {
+
+						if containFETCH(fAttr) {
+
+							fAttr = getFirstArgFromFETCH(fAttr)
+
+							if fAttr == fromAttr {
+								attributes = append(attributes, tAttr)
+							}
+
+						}
+						
+					}
+				}
+			}
+		}
+	}
+
+	if len(attributes) == 0 {
+
+		return nil, NoMappedAttrFound
+
+	} else {
+
+		return attributes, nil
+	}
 }

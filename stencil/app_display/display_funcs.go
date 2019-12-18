@@ -29,12 +29,18 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.
 		log.Fatal(err)
 	}
 
-	mappingsToDst, err := schema_mappings.GetToAppMappings(srcAppName, dstAppName)
-	if err != nil {
-		log.Fatal(err)
+	allMappings, err1 := config.LoadSchemaMappings()
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	mappingsToDst, err2 := schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
+	if err2 != nil {
+		log.Fatal(err2)
 	}
 
 	displayConfig.ResolveReference = resolveReference
+	displayConfig.AllMappings = allMappings
 	displayConfig.MappingsToDst = mappingsToDst
 	displayConfig.SrcAppID = srcAppID
 	displayConfig.SrcAppName = srcAppName
@@ -129,7 +135,7 @@ func Display(displayConfig *config.DisplayConfig, dataHints []*HintStruct) error
 		myUpdatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, ID)
 
 		attrsToBeUpdated := schema_mappings.GetAllMappedAttributesContainingREFInMappings(
-			displayConfig,
+			displayConfig.MappingsToDst,
 			dataHint.Table)
 
 		var attrsToBeSetToNULLs []string

@@ -18,7 +18,8 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 	// Basically, the attribute to update other atrributes should not contain #REF
 	ignoreREF := true
 
-	attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings( 
+	attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
+		displayConfig.AllMappings,
 		displayConfig.AppIDNamePairs[procRef["app"]], 
 		displayConfig.TableIDNamePairs[procRef["to_member"]],
 		displayConfig.TableIDNamePairs[procRef["to_member"]] + 
@@ -37,8 +38,9 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 
 	log.Println("attr: ", attrs)
 
-	// There are cases in which no attribute can be found
-	// For example: diaspora posts posts.id mastodon media_attachments
+	// If #FETCH is ignored, there could be cases in which no attribute can be found.
+	// For example: diaspora posts posts.id mastodon media_attachments. This is caused
+	// by wrong implementation.
 	if len(attrs) != 1 {
 		
 		log.Println(notOneAttributeFound)
@@ -47,13 +49,18 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 
 	}
 
+	var attrsToUpdate, attrsToUpdateInFETCH []string
+
+	var err1, err2 error
+
 	// Basically, the attributes to be updated should always contain #REF
 	// Otherwise, the following inputs:
 	// "diaspora", "comments", "comments.commentable_id", "mastodon", "statuses", false
 	// will return both status_id and id which should not be contained
 	ignoreREF = false 
 
-	attrsToUpdate, err1 := schema_mappings.GetMappedAttributesFromSchemaMappings(
+	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesFromSchemaMappings(
+		displayConfig.AllMappings,
 		displayConfig.AppIDNamePairs[procRef["app"]], 
 		displayConfig.TableIDNamePairs[procRef["from_member"]], 
 		displayConfig.TableIDNamePairs[procRef["from_member"]] +
@@ -63,16 +70,39 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 		ignoreREF)
 
 	if err1 != nil {
+
 		log.Println(err1)
+
 	}
 
 	log.Println(attrsToUpdate)
+
+	// #FETCH case is different from the normal cases.
+	// For example: diaspora posts posts.id mastodon media_attachments, 
+	// in this case, the mappings do not contain the posts table, and 
+	// the first argument (posts.id) of #FETCH is needed to be used to resolve photo.status_id
+	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
+		displayConfig.AllMappings,
+		displayConfig.AppIDNamePairs[procRef["app"]], 
+		displayConfig.TableIDNamePairs[procRef["from_member"]] +
+			"." + procRef["from_reference"], 
+		displayConfig.AppConfig.AppName,
+		displayConfig.TableIDNamePairs[orgID.member],
+	)
+
+	if err2 != nil {
+
+		log.Println(err2)
+
+	}
+
+	log.Println(attrsToUpdateInFETCH)
 
 	for _, attrToUpdate := range attrsToUpdate {
 		
 		log.Println("attr to be updated:", attrToUpdate)
 
-		updatedVal, err2 := updateReferences(
+		updatedVal, err3 := updateReferences(
 			displayConfig,
 			procRef["pk"], 
 			displayConfig.TableIDNamePairs[refIdentityRow.member], 
@@ -82,17 +112,24 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 			orgID.id, 
 			attrToUpdate)
 
-		if err2 != nil {
-			log.Println(err2)
+		if err3 != nil {
+
+			log.Println(err3)
+		
 		} else {
+
 			updatedAttrs[attrToUpdate] = updatedVal
 		}
-		
 	}
+
+	return updatedAttrs
+
 }
 
 func updateRefOnLeftNotUsingRefIDRow(displayConfig *config.DisplayConfig, 
-	procRef map[string]string, orgID *Identity)  map[string]string {
+	procRef map[string]string, orgID *Identity) map[string]string {
+
+	updatedAttrs := make(map[string]string)
 
 	attr := procRef["to_reference"]
 
@@ -101,6 +138,7 @@ func updateRefOnLeftNotUsingRefIDRow(displayConfig *config.DisplayConfig,
 	ignoreREF := false 
 
 	attrsToUpdate, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
+		displayConfig.AllMappings,
 		displayConfig.AppIDNamePairs[procRef["app"]],
 		displayConfig.TableIDNamePairs[procRef["from_member"]],
 		displayConfig.TableIDNamePairs[procRef["from_member"]] +
@@ -136,4 +174,6 @@ func updateRefOnLeftNotUsingRefIDRow(displayConfig *config.DisplayConfig,
 		}
 
 	}
+
+	return updatedAttrs
 }
