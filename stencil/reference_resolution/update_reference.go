@@ -75,7 +75,7 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 
 	}
 
-	log.Println(attrsToUpdate)
+	// log.Println("attrsToUpdate:",attrsToUpdate)
 
 	// #FETCH case is different from the normal cases.
 	// For example: diaspora posts posts.id mastodon media_attachments, 
@@ -87,8 +87,7 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 		displayConfig.TableIDNamePairs[procRef["from_member"]] +
 			"." + procRef["from_reference"], 
 		displayConfig.AppConfig.AppName,
-		displayConfig.TableIDNamePairs[orgID.member],
-	)
+		displayConfig.TableIDNamePairs[orgID.member])
 
 	if err2 != nil {
 
@@ -96,7 +95,11 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 
 	}
 
-	log.Println(attrsToUpdateInFETCH)
+	// log.Println("attrsToUpdateInFETCH:", attrsToUpdateInFETCH)
+
+	attrsToUpdate = append(attrsToUpdate, attrsToUpdateInFETCH...)
+
+	log.Println("attrsToUpdate:",attrsToUpdate)
 
 	for _, attrToUpdate := range attrsToUpdate {
 		
@@ -135,9 +138,13 @@ func updateRefOnLeftNotUsingRefIDRow(displayConfig *config.DisplayConfig,
 
 	log.Println("attr: ", attr)
 
+	var attrsToUpdate, attrsToUpdateInFETCH []string
+
+	var err1, err2 error
+
 	ignoreREF := false 
 
-	attrsToUpdate, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
+	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesFromSchemaMappings(
 		displayConfig.AllMappings,
 		displayConfig.AppIDNamePairs[procRef["app"]],
 		displayConfig.TableIDNamePairs[procRef["from_member"]],
@@ -147,11 +154,33 @@ func updateRefOnLeftNotUsingRefIDRow(displayConfig *config.DisplayConfig,
 		displayConfig.TableIDNamePairs[orgID.member],
 		ignoreREF)
 	
-	if err != nil {
-		log.Println(err)
+	if err1 != nil {
+
+		log.Println(err1)
+
 	}
 
-	// log.Println(attrsToUpdate)
+	// log.Println("attrsToUpdate:",attrsToUpdate)
+
+	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
+		displayConfig.AllMappings,
+		displayConfig.AppIDNamePairs[procRef["app"]], 
+		displayConfig.TableIDNamePairs[procRef["from_member"]] +
+			"." + procRef["from_reference"], 
+		displayConfig.AppConfig.AppName,
+		displayConfig.TableIDNamePairs[orgID.member])
+
+	if err2 != nil {
+
+		log.Println(err2)
+
+	}
+
+	// log.Println("attrsToUpdateInFETCH:", attrsToUpdateInFETCH)
+
+	attrsToUpdate = append(attrsToUpdate, attrsToUpdateInFETCH...)
+
+	log.Println("attrsToUpdate:",attrsToUpdate)
 
 	for _, attrToUpdate := range attrsToUpdate {
 
@@ -176,4 +205,179 @@ func updateRefOnLeftNotUsingRefIDRow(displayConfig *config.DisplayConfig,
 	}
 
 	return updatedAttrs
+}
+
+func updateRefOnRightUsingRefIDRow(displayConfig *config.DisplayConfig, 
+	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
+
+	updatedAttrs := make(map[string]string)
+
+	ignoreREF := true
+
+	attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
+		displayConfig.AllMappings,
+		displayConfig.AppIDNamePairs[procRef["app"]], 
+		displayConfig.TableIDNamePairs[procRef["to_member"]], 
+		displayConfig.TableIDNamePairs[procRef["to_member"]] + 
+			"." + procRef["to_reference"], 
+		displayConfig.AppConfig.AppName,  
+		displayConfig.TableIDNamePairs[orgID.member],
+		ignoreREF) 
+	
+	if err != nil {
+		
+		log.Println(err)
+
+		return nil
+	}
+
+	log.Println("attr: ", attrs)
+
+	if len(attrs) != 1 {
+		
+		log.Println(notOneAttributeFound)
+		
+		return nil
+
+	}
+
+	var attrsToUpdate, attrsToUpdateInFETCH []string
+
+	var err1, err2 error
+
+	ignoreREF = false
+
+	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesFromSchemaMappings(
+		displayConfig.AllMappings,
+		displayConfig.AppIDNamePairs[procRef["app"]], 
+		displayConfig.TableIDNamePairs[procRef["from_member"]], 
+		displayConfig.TableIDNamePairs[procRef["from_member"]] +
+			"." + procRef["from_reference"], 
+		displayConfig.AppConfig.AppName, 
+		displayConfig.TableIDNamePairs[refIdentityRow.member],
+		ignoreREF)
+	
+	if err1 != nil {
+		log.Println(err1)
+	}
+
+	// log.Println("attrsToUpdate:",attrsToUpdate)
+
+	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
+		displayConfig.AllMappings,
+		displayConfig.AppIDNamePairs[procRef["app"]], 
+		displayConfig.TableIDNamePairs[procRef["from_member"]] +
+			"." + procRef["from_reference"], 
+		displayConfig.AppConfig.AppName,
+		displayConfig.TableIDNamePairs[refIdentityRow.member])
+
+	if err2 != nil {
+
+		log.Println(err2)
+
+	}
+
+	attrsToUpdate = append(attrsToUpdate, attrsToUpdateInFETCH...)
+
+	log.Println("attrsToUpdate:",attrsToUpdate)
+	
+	for _, attrToUpdate := range attrsToUpdate {
+
+		log.Println("attr to be updated:", attrToUpdate)
+
+		updatedVal, err2 := updateReferences(
+			displayConfig,
+			procRef["pk"],
+			displayConfig.TableIDNamePairs[orgID.member], 
+			orgID.id, 
+			attrs[0], 
+			displayConfig.TableIDNamePairs[refIdentityRow.member], 
+			refIdentityRow.id, 
+			attrToUpdate)
+
+		if err2 != nil {
+			log.Println(err2)
+		} else {
+			updatedAttrs[refIdentityRow.id + ":" + attrToUpdate] = updatedVal
+		}
+
+	}
+
+	return updatedAttrs
+	
+}
+
+func updateRefOnRightNotUsingRefIDRow(displayConfig *config.DisplayConfig, 
+	procRef map[string]string, orgID *Identity) map[string]string {
+	
+	updatedAttrs := make(map[string]string)
+
+	attr := procRef["to_reference"]
+
+	log.Println("attr: ", attr)
+
+	var attrsToUpdate, attrsToUpdateInFETCH []string
+
+	var err1, err2 error
+
+	ignoreREF := false
+
+	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesFromSchemaMappings(
+		displayConfig.AllMappings,
+		displayConfig.AppIDNamePairs[procRef["app"]], 
+		displayConfig.TableIDNamePairs[procRef["from_member"]], 
+		displayConfig.TableIDNamePairs[procRef["from_member"]] + 
+			"." + procRef["from_reference"], 
+		displayConfig.AppConfig.AppName,
+		displayConfig.TableIDNamePairs[procRef["to_member"]], 
+		ignoreREF)
+
+	if err1 != nil {
+		log.Println(err1)
+	}
+
+	// log.Println("attrsToUpdate:",attrsToUpdate)
+
+	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
+		displayConfig.AllMappings,
+		displayConfig.AppIDNamePairs[procRef["app"]], 
+		displayConfig.TableIDNamePairs[procRef["from_member"]] +
+			"." + procRef["from_reference"], 
+		displayConfig.AppConfig.AppName,
+		displayConfig.TableIDNamePairs[procRef["to_member"]])
+
+	if err2 != nil {
+
+		log.Println(err2)
+
+	}
+
+	attrsToUpdate = append(attrsToUpdate, attrsToUpdateInFETCH...)
+
+	log.Println("attrsToUpdate:",attrsToUpdate)
+
+	for _, attrToUpdate := range attrsToUpdate {
+
+		log.Println("attr to be updated:", attrToUpdate)
+
+		updatedVal, err1 := updateReferences(
+			displayConfig,
+			procRef["pk"],
+			displayConfig.TableIDNamePairs[orgID.member],
+			orgID.id,
+			attr, 
+			displayConfig.TableIDNamePairs[procRef["from_member"]], 
+			procRef["from_id"], 
+			attrToUpdate)
+
+		if err1 != nil {
+			log.Println(err1)
+		} else {
+			updatedAttrs[procRef["from_id"] + ":" + attrToUpdate] = updatedVal
+		}
+
+	}
+
+	return updatedAttrs 
+	
 }

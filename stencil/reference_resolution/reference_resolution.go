@@ -2,7 +2,6 @@ package reference_resolution
 
 import (
 	"stencil/config"
-	"stencil/schema_mappings"
 	"log"
 )
 
@@ -114,118 +113,17 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 				log.Println("refIdentityRow: ", refIdentityRow)
 
-				ignoreREF := true
+				combineTwoMaps(updatedAttrs, updateRefOnRightUsingRefIDRow(displayConfig, 
+					refIdentityRow, procRef, orgID))
 
-				attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
-					displayConfig.AllMappings,
-					displayConfig.AppIDNamePairs[procRef["app"]], 
-					displayConfig.TableIDNamePairs[procRef["to_member"]], 
-					displayConfig.TableIDNamePairs[procRef["to_member"]] + 
-						"." + procRef["to_reference"], 
-					displayConfig.AppConfig.AppName,  
-					displayConfig.TableIDNamePairs[orgID.member],
-					ignoreREF) 
-				
-				if err != nil {
-					log.Println(err)
-				}
-
-				log.Println("attr: ", attrs)
-
-				if len(attrs) != 1 {
-					
-					log.Println(notOneAttributeFound)
-					
-					continue
-
-				}
-
-				ignoreREF = false
-
-				attrsToUpdate, err1 := schema_mappings.GetMappedAttributesFromSchemaMappings(
-					displayConfig.AllMappings,
-					displayConfig.AppIDNamePairs[procRef["app"]], 
-					displayConfig.TableIDNamePairs[procRef["from_member"]], 
-					displayConfig.TableIDNamePairs[procRef["from_member"]] +
-						"." + procRef["from_reference"], 
-					displayConfig.AppConfig.AppName, 
-					displayConfig.TableIDNamePairs[refIdentityRow.member],
-					ignoreREF)
-				
-				if err1 != nil {
-					log.Println(err1)
-				}
-
-				// log.Println(attrsToUpdate)
-				
-				for _, attrToUpdate := range attrsToUpdate {
-
-					log.Println("attr to be updated:", attrToUpdate)
-
-					updatedVal, err2 := updateReferences(
-						displayConfig,
-						procRef["pk"],
-						displayConfig.TableIDNamePairs[orgID.member], 
-						orgID.id, 
-						attrs[0], 
-						displayConfig.TableIDNamePairs[refIdentityRow.member], 
-						refIdentityRow.id, 
-						attrToUpdate)
-
-					if err2 != nil {
-						log.Println(err2)
-					} else {
-						updatedAttrs[refIdentityRow.id + ":" + attrToUpdate] = updatedVal
-					}
-
-				}
 			}
 
 		} else if procRef["app"] == displayConfig.AppConfig.AppID {
 
-			attr := procRef["to_reference"]
+			combineTwoMaps(updatedAttrs,
+				updateRefOnRightNotUsingRefIDRow(displayConfig, procRef, orgID))
 
-			log.Println("attr: ", attr)
-
-			ignoreREF := false
-
-			attrsToUpdate, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
-				displayConfig.AllMappings,
-				displayConfig.AppIDNamePairs[procRef["app"]], 
-				displayConfig.TableIDNamePairs[procRef["from_member"]], 
-				displayConfig.TableIDNamePairs[procRef["from_member"]] + 
-					"." + procRef["from_reference"], 
-				displayConfig.AppConfig.AppName,
-				displayConfig.TableIDNamePairs[procRef["to_member"]], 
-				ignoreREF)
-
-			if err != nil {
-				log.Println(err)
-			}
-
-			for _, attrToUpdate := range attrsToUpdate {
-
-				log.Println("attr to be updated:", attrToUpdate)
-
-				updatedVal, err1 := updateReferences(
-					displayConfig,
-					procRef["pk"],
-					displayConfig.TableIDNamePairs[orgID.member],
-					orgID.id,
-					attr, 
-					displayConfig.TableIDNamePairs[procRef["from_member"]], 
-					procRef["from_id"], 
-					attrToUpdate)
-
-				if err1 != nil {
-					log.Println(err1)
-				} else {
-					updatedAttrs[procRef["from_id"] + ":" + attrToUpdate] = updatedVal
-				}
-
-			}
 		}
-
 	}
 
 	return updatedAttrs 
