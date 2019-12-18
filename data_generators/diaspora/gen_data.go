@@ -109,7 +109,7 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 
 			for {
 
-				if len(haveTried) == USER_NUM - 1 {
+				if len(haveTried) == len(users) - 1 {
 
 					log.Println("Cannot find more users to follow this user!!")
 					log.Println("Total users to follow this user:", followedAssignment[seq1])
@@ -122,7 +122,7 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 
 				}
 
-				seq2 := data_generator.RandomNonnegativeIntWithUpperBound(USER_NUM)
+				seq2 := data_generator.RandomNonnegativeIntWithUpperBound(len(users))
 				if seq2 == seq1 {
 					continue
 				}
