@@ -59,7 +59,8 @@ type DisplayConfig struct {
 	MigrationID			int
 	SrcAppName			string
 	SrcAppID			string
-	MappingsToDst 		MappedApp
+	AllMappings			*SchemaMappings
+	MappingsToDst 		*MappedApp
 	ResolveReference	bool
 	UserID				string
 }

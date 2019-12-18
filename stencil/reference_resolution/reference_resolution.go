@@ -117,6 +117,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				ignoreREF := true
 
 				attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
+					displayConfig.AllMappings,
 					displayConfig.AppIDNamePairs[procRef["app"]], 
 					displayConfig.TableIDNamePairs[procRef["to_member"]], 
 					displayConfig.TableIDNamePairs[procRef["to_member"]] + 
@@ -142,6 +143,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				ignoreREF = false
 
 				attrsToUpdate, err1 := schema_mappings.GetMappedAttributesFromSchemaMappings(
+					displayConfig.AllMappings,
 					displayConfig.AppIDNamePairs[procRef["app"]], 
 					displayConfig.TableIDNamePairs[procRef["from_member"]], 
 					displayConfig.TableIDNamePairs[procRef["from_member"]] +
@@ -188,6 +190,7 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 			ignoreREF := false
 
 			attrsToUpdate, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
+				displayConfig.AllMappings,
 				displayConfig.AppIDNamePairs[procRef["app"]], 
 				displayConfig.TableIDNamePairs[procRef["from_member"]], 
 				displayConfig.TableIDNamePairs[procRef["from_member"]] + 

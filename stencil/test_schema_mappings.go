@@ -17,7 +17,7 @@ func test1(displayConfig *config.DisplayConfig) {
 	fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF := 
 		"diaspora", "posts", "posts.id", "mastodon", "status_stats", false
 	
-	attr, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(
+	attr, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(displayConfig.AllMappings,
 		fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF)
 
 	log.Println(attr)
@@ -30,7 +30,7 @@ func test2(displayConfig *config.DisplayConfig) {
 	// toTable, toAttr := "users", "account_id"
 	toTable, toAttr := "statuses", "in_reply_to_id"
 
-	exists, err := schema_mappings.REFExists(displayConfig, toTable, toAttr)
+	exists, err := schema_mappings.REFExists(displayConfig.MappingsToDst, toTable, toAttr)
 	if err != nil {
 		log.Println(err)
 	} else {
@@ -44,10 +44,28 @@ func test3(displayConfig *config.DisplayConfig) {
 	toTable := "statuses"
 
 	attrs := schema_mappings.GetAllMappedAttributesContainingREFInMappings(
-		displayConfig, toTable)
+		displayConfig.MappingsToDst, toTable)
 	
 	log.Println(attrs)
 
+}
+
+func test4(displayConfig *config.DisplayConfig) {
+
+	fromApp, fromAttr, toApp, toTable := 
+		"diaspora", "posts.id", "mastodon", "media_attachments"
+
+	attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
+		displayConfig.AllMappings, fromApp, fromAttr, toApp, toTable)
+	
+	if err != nil {
+
+		log.Println(err)
+
+	} else {
+
+		log.Println(attrs)
+	}
 }
 
 func main() {
@@ -65,6 +83,8 @@ func main() {
 
 	// test2(displayConfig)
 
-	test3(displayConfig)
-	
+	// test3(displayConfig)
+
+	test4(displayConfig)
+
 }
