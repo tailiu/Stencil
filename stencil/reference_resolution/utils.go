@@ -16,7 +16,7 @@ func transformInterfaceToString(data map[string]interface{}) map[string]string {
 	return res
 }
 
-func combineTwoMaps(m1 map[string]string, m2 map[string]string) map[string]string {
+func combineTwoMaps(m1 map[string]string, m2 map[string]string) {
 
 	for k, v := range m2 {
 
@@ -28,5 +28,4 @@ func combineTwoMaps(m1 map[string]string, m2 map[string]string) map[string]strin
 		
 	}
 
-	return m1
 }

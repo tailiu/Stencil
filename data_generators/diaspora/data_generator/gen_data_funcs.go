@@ -51,16 +51,21 @@ func shuffleSlices(s []float64) []float64 {
 
 }
 
-func Initialize(app string, userNum int) *GenConfig {
+func Initialize(app string) *GenConfig {
 
 	genConfig := new(GenConfig)
 	genConfig.DBConn = db.GetDBConn(app)
+
+	return genConfig
+
+}
+
+func InitializeWithUserNum(genConfig *GenConfig, userNum int) {
+
 	genConfig.UserPopularityScores = ParetoScores(ALPHA, XM, userNum)
 	genConfig.UserCommentScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
 	genConfig.UserLikeScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
 	genConfig.UserMessageScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
-
-	return genConfig
 
 }
 
