@@ -4,10 +4,9 @@ import (
 	"diaspora/datagen"
 	"diaspora/data_generator"
 	"diaspora/helper"
+	"time"
 	"log"
 )
-
-
 
 // const APP = "diaspora" 
 // const USER_NUM = 10000
@@ -40,7 +39,7 @@ const IMAGE_NUM = 369343
 // const IMAGE_NUM = 3693432
 
 
-
+// Function genUsers() tries to create USER_NUM users, but it cannot guarantee
 func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 
 	var users []data_generator.User
@@ -48,12 +47,23 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 	for i := 0; i < USER_NUM; i++ {
 
 		var user data_generator.User
-		
-		user.User_ID, user.Person_ID, user.Aspects = datagen.NewUser(genConfig.DBConn)
-		
-		users = append(users, user)
 
+		var err error
+		
+		user.User_ID, user.Person_ID, user.Aspects, err = datagen.NewUser(genConfig.DBConn)
+
+		if err != nil {
+
+			log.Println(err)
+
+		} else {
+			
+			users = append(users, user)
+			
+		}
 	}
+
+	log.Println("Total number of users:", len(users))
 
 	return users
 	
@@ -454,12 +464,18 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 }
 
 func main() {
-
-	genConfig := data_generator.Initialize(APP, USER_NUM)
 	
+	startTime := time.Now()
+
+	log.Println("--------- Start of Data Generation ---------")
+
 	// users, postScores := prepareTest(genConfig)
 
+	genConfig := data_generator.Initialize(APP)
+
 	users := genUsers(genConfig)
+
+	data_generator.InitializeWithUserNum(genConfig, len(users))
 	
 	postScores := genPosts(genConfig, users)
 	
@@ -470,5 +486,11 @@ func main() {
 	genLikes(genConfig, users, postScores)
 	
 	genConversationsAndMessages(genConfig, users)
+
+	log.Println("--------- End of Data Generation ---------")
+
+	endTime := time.Now()
+
+	log.Println("Time used: ", endTime.Sub(startTime))
 
 }
