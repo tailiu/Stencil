@@ -831,13 +831,29 @@
                                 {
                                     "table": "notifications",
                                     "conditions": {
+                                        "notifications.target_type": "Notifications::Liked"
                                     },
                                     "mapping":{ 
                                         "id":"notifications.id",
                                         "activity_type":"notifications.target_type",
                                         "account_id":"#REF(notifications.recipient_id,people.id)",
                                         "from_account_id":"#REF(notification_actors.person_id,people.id)",
-                                        "activity_id":"notifications.target_id",
+                                        "activity_id":"#REF(notifications.target_id,likes.id)",
+                                        "created_at":"notifications.created_at",
+                                        "updated_at":"notifications.updated_at"
+                                    }
+                                },
+                                {
+                                    "table": "notifications",
+                                    "conditions": {
+                                        "notifications.target_type": "Notifications::CommentOnPost"
+                                    },
+                                    "mapping":{ 
+                                        "id":"notifications.id",
+                                        "activity_type":"notifications.target_type",
+                                        "account_id":"#REF(notifications.recipient_id,people.id)",
+                                        "from_account_id":"#REF(notification_actors.person_id,people.id)",
+                                        "activity_id":"#REF(notifications.target_id,posts.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }
