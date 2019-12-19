@@ -46,6 +46,7 @@ import (
 // attr to be updated: 
 // GetMappedAttributeFromSchemaMappings(Diaspora, posts, id, Mastodon, media_attachments) -> status_id
 
+// We don't need to check dependencies because schema-mappings include all the references we need to check and resolve
 
 // You are on the left/from part
 func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, 
@@ -71,15 +72,15 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 				log.Println("refIdentityRow: ", refIdentityRow)
 
-				combineTwoMaps(updatedAttrs, updateRefOnLeftUsingRefIDRow(displayConfig, 
-					refIdentityRow, procRef, orgID))
+				combineTwoMaps(updatedAttrs, updateRefOnLeftBasedOnMappingsUsingRefIDRow(
+					displayConfig, refIdentityRow, procRef, orgID))
 
 			}
 
 		} else if procRef["app"] == displayConfig.AppConfig.AppID {
 
-			combineTwoMaps(updatedAttrs,
-				 updateRefOnLeftNotUsingRefIDRow(displayConfig, procRef, orgID))
+			combineTwoMaps(updatedAttrs, updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(
+				displayConfig, procRef, orgID))
 
 		}
 
@@ -113,15 +114,15 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 				log.Println("refIdentityRow: ", refIdentityRow)
 
-				combineTwoMaps(updatedAttrs, updateRefOnRightUsingRefIDRow(displayConfig, 
-					refIdentityRow, procRef, orgID))
-
+				combineTwoMaps(updatedAttrs, updateRefOnRightBasedOnMappingsUsingRefIDRow(
+					displayConfig, refIdentityRow, procRef, orgID))
+				
 			}
 
 		} else if procRef["app"] == displayConfig.AppConfig.AppID {
 
-			combineTwoMaps(updatedAttrs,
-				updateRefOnRightNotUsingRefIDRow(displayConfig, procRef, orgID))
+			combineTwoMaps(updatedAttrs, updateRefOnRightBasedOnMappingsNotUsingRefIDRow(
+				displayConfig, procRef, orgID))
 
 		}
 	}

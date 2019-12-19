@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig, 
+func updateRefOnLeftBasedOnMappingsUsingRefIDRow(displayConfig *config.DisplayConfig, 
 	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string)
@@ -129,7 +129,7 @@ func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig,
 
 }
 
-func updateRefOnLeftNotUsingRefIDRow(displayConfig *config.DisplayConfig, 
+func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(displayConfig *config.DisplayConfig, 
 	procRef map[string]string, orgID *Identity) map[string]string {
 
 	updatedAttrs := make(map[string]string)
@@ -207,7 +207,7 @@ func updateRefOnLeftNotUsingRefIDRow(displayConfig *config.DisplayConfig,
 	return updatedAttrs
 }
 
-func updateRefOnRightUsingRefIDRow(displayConfig *config.DisplayConfig, 
+func updateRefOnRightBasedOnMappingsUsingRefIDRow(displayConfig *config.DisplayConfig, 
 	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
 
 	updatedAttrs := make(map[string]string)
@@ -307,7 +307,7 @@ func updateRefOnRightUsingRefIDRow(displayConfig *config.DisplayConfig,
 	
 }
 
-func updateRefOnRightNotUsingRefIDRow(displayConfig *config.DisplayConfig, 
+func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(displayConfig *config.DisplayConfig, 
 	procRef map[string]string, orgID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string)
@@ -381,3 +381,4 @@ func updateRefOnRightNotUsingRefIDRow(displayConfig *config.DisplayConfig,
 	return updatedAttrs 
 	
 }
+
