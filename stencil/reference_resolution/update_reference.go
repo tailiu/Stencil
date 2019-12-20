@@ -6,6 +6,27 @@ import (
 	"log"
 )
 
+/**
+ *
+ * Actually, we can use two possible ways to update references: 
+ * by dependencies (inter and intra-node deps) and by schema mappings. 
+ * Simply updating refs by dependencies is not sufficient because when migrating to a new 
+ * app, the deps of the source app and the destination app are different, and inserting and 
+ * updating references based on the source app could be both incorrect and insufficient for the destination app,
+ * For example, a node (N1) depends on another node N2 in the source app, so we insert N1 -> N2
+ * in the reference table if we use deps in the source app. However, N1 deps on N3 in the destination app,
+ * and N1 and N2 happen to be migrated to the destination app. Then in this case, the reference will be updated
+ * incorrectly. (Although we cannot find a scenario in our test apps, this might happen)
+ * so actually we should not do that.
+ * Thus we use #REF in the schema mappings in which both the source and destination
+ * apps need to be involved to indicate how we change refs in the destination app.
+ * Specifying #REF needs to think in two steps:
+ * 1. How does the attr1 in a destination app depends on another attr2 in the destination app?
+ * 2. Where does attr1 and attr2 come from in the source app?
+ *
+ */
+
+
 func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig, 
 	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
 	

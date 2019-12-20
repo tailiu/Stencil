@@ -315,7 +315,7 @@
                                     "mapping": {
                                         "id": "#RANDINT",
                                         "email":"users.email",
-                                        "user_id":"accounts.id",
+                                        "user_id":"#REF(accounts.id,accounts.id)",
                                         "password":"users.encrypted_password",
                                         "created_at":"accounts.created_at",
                                         "updated_at":"accounts.updated_at"
@@ -334,11 +334,11 @@
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
-                                        "user_id":"statuses.account_id",
+                                        "user_id":"#REF(statuses.account_id,accounts.id)",
                                         "content":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "reply_to_id": "#CONJUGATE(statuses.in_reply_to_id,statuses.id)"
+                                        "reply_to_id": "#REF(statuses.in_reply_to_id,statuses.id)"
                                     }
                                 },
                                 {
@@ -349,10 +349,10 @@
                                     },
                                     "mapping":{
                                         "id":"statuses.id",
-                                        "user_id":"statuses.account_id",
+                                        "user_id":"#REF(statuses.account_id,accounts.id)",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "tweet_id":"statuses.reblog_of_id"
+                                        "tweet_id":"#REF(statuses.reblog_of_id,statuses.id)"
                                     }
                                 },
                                 {
@@ -362,8 +362,8 @@
                                     },
                                     "mapping":{    
                                         "id":"statuses.id",
-                                        "user_id":"statuses.account_id",
-                                        "conversation_id":"statuses.conversation_id",
+                                        "user_id":"#REF(statuses.account_id,accounts.id)",
+                                        "conversation_id":"#REF(statuses.conversation_id,conversations.id)",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "content": "statuses.text"
@@ -393,10 +393,10 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"favourites.id",
-                                        "tweet_id":"favourites.status_id",
+                                        "tweet_id":"#REF(favourites.status_id,statuses.id)",
                                         "created_at":"favourites.created_at",
                                         "updated_at":"favourites.updated_at",
-                                        "user_id":"favourites.account_id"                                    
+                                        "user_id":"#REF(favourites.account_id,accounts.id)"                                    
                                     }
                                 }
                             ]
@@ -411,8 +411,8 @@
                                         "id":"follows.id",
                                         "created_at":"follows.created_at",
                                         "updated_at":"follows.updated_at",
-                                        "from_user_id":"follows.account_id",
-                                        "to_user_id":"follows.target_account_id",
+                                        "from_user_id":"#REF(follows.account_id,accounts.id)",
+                                        "to_user_id":"#REF(follows.target_account_id,accounts.id)",
                                         "action_type": "$follow_action"
                                     }
                                 }
@@ -428,9 +428,9 @@
                                     "mapping":{ 
                                         "id":"notifications.id",
                                         "notification_type":"notifications.activity_type",
-                                        "user_id":"notifications.account_id",
+                                        "user_id":"#REF(notifications.account_id,accounts.id)",
                                         "tweet":"notifications.activity_id",
-                                        "from_user":"notifications.from_account_id",
+                                        "from_user":"#REF(notifications.from_account_id,accounts.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }
