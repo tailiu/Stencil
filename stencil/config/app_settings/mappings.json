@@ -1043,6 +1043,7 @@
                                 {
                                     "table": "profile",
                                     "mapping": {
+                                        "id":"people.id",
                                         "nickname": "users.username",
                                         "fullname":"profiles.full_name",
                                         "bio":"profiles.bio",
@@ -1062,8 +1063,8 @@
                                         "contacts.receiving": "true"
                                     },
                                     "mapping": {
-                                        "subscriber": "contacts.user_id",
-                                        "subscribed": "contacts.person_id",
+                                        "subscriber": "#REF(contacts.user_id,people.id)",
+                                        "subscribed": "#REF(contacts.person_id,people.id)",
                                         "created": "contacts.created_at",
                                         "modified": "contacts.updated_at"
                                     }
@@ -1081,7 +1082,7 @@
                                     "mapping": {
                                         "id": "posts.id",
                                         "content": "posts.text",
-                                        "profile_id": "posts.author_id",
+                                        "profile_id": "#REF(posts.author_id,people.id)",
                                         "created": "posts.created_at",
                                         "modified":"posts.updated_at"
                                     }
@@ -1105,15 +1106,15 @@
                                         "modified": "photos.updated_at",
                                         "width": "photos.width",
                                         "height": "photos.height",
-                                        "profile_id": "photos.author_id"
+                                        "profile_id": "#REF(photos.author_id,people.id)"
                                     }
                                 },
                                 {
                                     "table": "file_to_post",
                                     "conditions":{},
                                     "mapping": {
-                                        "file_id": "photos.id",
-                                        "post_id": "#FETCH(posts.id,posts.guid,photos.status_message_guid)",
+                                        "file_id": "#REF(photos.id,photos.id)",
+                                        "post_id": "#REF(#FETCH(posts.id,posts.guid,photos.status_message_guid),posts.id)",
                                         "modified": "photos.updated_at"
                                     }
                                 }
@@ -1126,8 +1127,8 @@
                                     "table": "notice",
                                     "mapping" : {
                                         "id": "comments.id",
-                                        "reply_to": "comments.commentable_id",
-                                        "profile_id": "comments.author_id",
+                                        "reply_to": "#REF(comments.commentable_id,posts.id)",
+                                        "profile_id": "#REF(comments.author_id,people.id)",
                                         "content": "comments.text",
                                         "created": "comments.created_at",
                                         "modified": "comments.updated_at"
@@ -1141,8 +1142,8 @@
                                 {
                                     "table": "fave",
                                     "mapping": {
-                                        "user_id": "likes.author_id",
-                                        "notice_id": "likes.target_id",
+                                        "user_id": "#REF(likes.author_id,people.id)",
+                                        "notice_id": "#REF(likes.target_id,posts.id)",
                                         "created": "likes.created_at",
                                         "modified": "likes.updated_at"
                                     }
