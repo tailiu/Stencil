@@ -27,7 +27,7 @@ import (
  */
 
 
-func updateRefOnLeftUsingRefIDRow(displayConfig *config.DisplayConfig, 
+func updateRefOnLeftBasedOnMappingsUsingRefIDRow(displayConfig *config.DisplayConfig, 
 	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string)
