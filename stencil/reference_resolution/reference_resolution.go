@@ -68,8 +68,7 @@ import (
  * GetMappedAttributeFromSchemaMappings(Diaspora, posts, id, Mastodon, media_attachments) -> status_id
  *
  */
-
-// We don't need to check dependencies because schema-mappings include all the references we need to check and resolve
+ 
 
 // You are on the left/from part
 func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, 

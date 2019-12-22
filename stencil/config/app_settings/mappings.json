@@ -429,7 +429,7 @@
                                         "id":"notifications.id",
                                         "notification_type":"notifications.activity_type",
                                         "user_id":"#REF(notifications.account_id,accounts.id)",
-                                        "tweet":"notifications.activity_id",
+                                        "tweet":"#REF(notifications.activity_id,statuses.id)",
                                         "from_user":"#REF(notifications.from_account_id,accounts.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
@@ -475,8 +475,8 @@
                                 {
                                     "table": "subscription",
                                     "mapping": {
-                                        "subscriber": "follows.account_id",
-                                        "subscribed": "follows.target_account_id",
+                                        "subscriber": "#REF(follows.account_id,accounts.id)",
+                                        "subscribed": "#REF(follows.target_account_id,accounts.id)",
                                         "created":"follows.created_at",
                                         "modified":"follows.updated_at",
                                         "uri":"follows.uri"
@@ -495,13 +495,13 @@
                                     "mapping": {
                                         "id": "statuses.id",
                                         "content": "statuses.text",
-                                        "profile_id": "statuses.account_id",
+                                        "profile_id": "#REF(statuses.account_id,accounts.id)",
                                         "created": "statuses.created_at",
                                         "modified":"statuses.updated_at",
                                         "is_local":"statuses.local",
-                                        "reply_to":"statuses.in_reply_to_id",
-                                        "conversation":"statuses.conversation_id",
-                                        "repeat_of":"statuses.reblog_of_id"
+                                        "reply_to":"#REF(statuses.in_reply_to_id,statuses.id)",
+                                        "conversation":"#REF(statuses.conversation_id,conversations.id)",
+                                        "repeat_of":"#REF(statuses.reblog_of_id,statuses.id)"
                                     }
                                 }
                             ]
@@ -523,15 +523,15 @@
                                         "date": "media_attachments.created_at",
                                         "filename": "media_attachments.file_file_name",
                                         "modified": "media_attachments.updated_at",
-                                        "profile_id": "media_attachments.account_id"
+                                        "profile_id": "#REF(media_attachments.account_id,accounts.id)"
                                     }
                                 },
                                 {
                                     "table": "file_to_post",
                                     "conditions": {},
                                     "mapping": {
-                                        "file_id": "media_attachments.id",
-                                        "post_id": "media_attachments.status_id",
+                                        "file_id": "#REF(media_attachments.id,media_attachments.id)",
+                                        "post_id": "#REF(media_attachments.status_id,statuses.id)",
                                         "modified": "media_attachments.updated_at"
                                     }
                                 }
@@ -558,8 +558,8 @@
                                 {
                                     "table": "fave",
                                     "mapping": {
-                                        "user_id": "favourites.account_id",
-                                        "notice_id": "favourites.status_id",
+                                        "user_id": "#REF(favourites.account_id,accounts.id)",
+                                        "notice_id": "#REF(favourites.status_id,statuses.id)",
                                         "created": "favourites.created_at",
                                         "modified": "favourites.updated_at"
                                     }
