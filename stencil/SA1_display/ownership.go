@@ -2,9 +2,10 @@ package SA1_display
 
 import (
 	"stencil/config"
+	"stencil/db"
 	"strings"
 	"log"
-	"errors"
+	"fmt"
 )
 
 
@@ -32,7 +33,7 @@ func getADataInOwner(displayConfig *config.DisplayConfig, hints []*HintStruct,
 	for _, hint := range hints {
 
 		if hint.Table == table {
-			val = fmt.Sprint(hint[attr])
+			val = fmt.Sprint(hint.Data[attr])
 		}
 
 	}

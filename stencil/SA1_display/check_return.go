@@ -136,7 +136,7 @@ func CheckCombinedDisplayConditions(displayConfig *config.DisplayConfig,
 func CheckOwnershipCondition(displaySettingInOwnership string, err error) bool {
 
 	if (displaySettingInOwnership == "" && err == nil) || 
-		displaySettingInOwnership == "parent_node_partially_displays" && err == NodeIncomplete)	{
+		(displaySettingInOwnership == "parent_node_partially_displays" && err == NodeIncomplete) {
 
 		return true
 

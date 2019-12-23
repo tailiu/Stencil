@@ -9,6 +9,7 @@ import (
 	"stencil/schema_mappings"
 	"stencil/reference_resolution"
 	"encoding/json"
+	"strings"
 )
 
 func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
