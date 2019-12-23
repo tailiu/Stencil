@@ -269,9 +269,13 @@ func (hint *HintStruct) GetCombinedDisplaySettings(
 		if dependency.Tag == hint.Tag {
 
 			if dependency.CombinedDisplaySetting == "" {
+
 				return "", errors.New("No combined display settings found!")
+
 			} else {
+
 				return dependency.CombinedDisplaySetting, nil
+
 			}
 
 		}
@@ -323,4 +327,34 @@ func (hint *HintStruct) GetDisplaySettingInDependencies(displayConfig *config.Di
 
 	}
 	
+}
+
+func (hint *HintStruct) GetDisplaySettingInOwnership(displayConfig *config.DisplayConfig) (string, error) {
+
+	for _, ownership := range displayConfig.Ownerships {
+
+		if ownership.Tag == hint.Tag {
+
+			return ownership.Display_setting, nil
+		}
+
+	}
+
+	return "", errors.New("Error: No Tag Found For the Provided TagName")
+
+}
+
+func (hint *HintStruct) GetOwnership(displayConfig *config.DisplayConfig) (*config.Ownership, error) {
+
+	for _, ownership := range displayConfig.Ownerships {
+
+		if ownership.Tag == hint.Tag {
+
+			return &ownership, nil
+		}
+
+	}
+
+	return nil, errors.New("Error: No Tag Found For the Provided Data")
+
 }

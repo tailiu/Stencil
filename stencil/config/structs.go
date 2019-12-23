@@ -79,9 +79,10 @@ type AppConfig struct {
 }
 
 type Ownership struct {
-	Tag        string       `json:"tag"`
-	OwnedBy    string       `json:"owned_by"`
-	Conditions []DCondition `json:"conditions"`
+	Tag        		  string       		  `json:"tag"`
+	OwnedBy    		  string       		  `json:"owned_by"`
+	Conditions 		  []DCondition 		  `json:"conditions"`
+	Display_setting   string              `json:"display_setting"`
 }
 
 type Tag struct {

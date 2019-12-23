@@ -132,3 +132,16 @@ func CheckCombinedDisplayConditions(displayConfig *config.DisplayConfig,
 	return combinedResults
 
 }
+
+func ReturnResultBasedOnOwnershipCondition(displaySettingInOwnership string) {
+
+	if displaySettingInOwnership != "parent_node_complete_displays" {
+
+		return true
+
+	} else {
+
+		return false
+	}
+
+}

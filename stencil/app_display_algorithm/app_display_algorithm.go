@@ -60,6 +60,7 @@ func checkDisplayOneMigratedData(
 
 	log.Println("Check Data:", *oneMigratedData)
 
+	// Get data in the node based on intra-node data dependencies
 	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(
 		displayConfig, oneMigratedData)
 
@@ -119,6 +120,44 @@ func checkDisplayOneMigratedData(
 
 		}
 
+
+		// If the tag of this node is the root, it should be other user's root node since
+		// the migrating user root node is connected with the migrated data with ownership
+		// In this case, we do not need to further check 
+		// the inter-node data dependencies, ownership, or sharing relationships
+		// of the current root node.
+		if oneMigratedData.Tag == "root" {
+
+			return app_display.ReturnResultBasedOnNodeCompleteness(err1)
+		
+		// If the tag of this node is not the root,
+		// we need to check the ownership and sharing relationship of this data.
+		// The check of sharing conditions for now is not implemented.
+		// Since we only migrate users' own data and migration threads migrate the root node
+		// at the beginning of migrations, checking data ownership
+		// should be always true given the current display settings in the ownership.	
+		} else {
+
+			dataOwnership, err12 := oneMigratedData.GetOwnership(displayConfig)
+			if err12 != nil {
+				log.Fatal(err12)
+			}
+
+			owner, getOwnerResult := app_display.GetOwner(displayConfig, oneMigratedData, dataOwnership)
+
+			displayResultBasedOnOwnership := app_display.ReturnResultBasedOnOwnershipCondition(
+				dataOwnership, getOwnerResult)
+
+		}
+		
+		
+		// Start to check inter-node data dependencies if this is required, and 
+		// inner-node data dependencies, ownership and sharing relationships are satified
+		// Basically, overall display settings = 
+		// 		intra-node check results AND 
+		// 		ownership relationship check results AND 
+		// 		sharing relationship check results AND
+		// 		inter-node check results 
 		pTags, err2 := oneMigratedData.GetParentTags(displayConfig)
 		if err2 != nil {
 
@@ -126,6 +165,8 @@ func checkDisplayOneMigratedData(
 
 		} else {
 
+			// When pTags is nil, it means that the tag of the data being checked
+			// does not depend on any other tag. 
 			if pTags == nil {
 
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
@@ -152,7 +193,7 @@ func checkDisplayOneMigratedData(
 						log.Println(*dataInParentNode)
 					}
 
-					displaySetting, err5 := oneMigratedData.GetDisplaySettingInDependencies(
+					displaySettingInDeps, err5 := oneMigratedData.GetDisplaySettingInDependencies(
 						displayConfig, pTag)
 
 					if err5 != nil {
@@ -163,29 +204,15 @@ func checkDisplayOneMigratedData(
 
 						switch err4 {
 
-							// If this data does not depend on any other data, we try to check
-							// the ownership of this data as well as the sharing conditions.
-							// The check of sharing conditions for now is not implemented.
-							// Since we only migrate users' own data, checking data ownership
-							// should be always true given the current display settings in the ownership.
 							case app_display.NotDependsOnAnyData:
-								
-								// displaySetting1, err12 := app_display.GetDisplaySettingInOwnership(
-								// 	displayConfig, oneMigratedData)
-								
-								// if err12 != nil {
-								// 	log.Fatal(err12)
-								// }
-
-
 
 								pTagConditions[pTag] = true
 
 							case app_display.CannotFindAnyDataInParent:
 
-								pTagConditions[pTag] = 
-									app_display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
-									displaySetting, secondRound)
+								pTagConditions[pTag] = app_display.
+									ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+										displaySettingInDeps, secondRound)
 							
 						}
 						
@@ -209,12 +236,13 @@ func checkDisplayOneMigratedData(
 
 								pTagConditions[pTag] = app_display.
 									ReturnDisplayConditionWhenCannotGetDataFromParentNode(
-										displaySetting, secondRound)
+										displaySettingInDeps, secondRound)
 
 							case app_display.PartiallyDisplayed:
 
 								pTagConditions[pTag] = app_display.
-									ReturnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
+									ReturnDisplayConditionWhenGetPartialDataFromParentNode(
+										displaySettingInDeps)
 
 							case app_display.CompletelyDisplayed:
 

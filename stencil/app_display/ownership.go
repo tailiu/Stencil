@@ -2,10 +2,12 @@ package app_display
 
 import (
 	"stencil/config"
+
 )
 
-func GetDisplaySettingInOwnership(displayConfig *config.DisplayConfig) {
-
-
-
+func GetOwner(displayConfig *config.DisplayConfig, 
+	hint *HintStruct, ownership *config.Ownership) {
+	
+	
+	
 }
