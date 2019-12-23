@@ -63,7 +63,7 @@ func checkDisplayOneMigratedData(
 	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(
 		displayConfig, oneMigratedData)
 
-	// Either this data is not in the destination application,
+	// If dataInNode is nil, either this data is not in the destination application,
 	// e.g., this data is displayed by other threads and deleted by application services, 
 	// or the data is not able to be displayed 
 	// because of missing some other data it depends on within the node,
@@ -152,8 +152,8 @@ func checkDisplayOneMigratedData(
 						log.Println(*dataInParentNode)
 					}
 
-					displaySetting, err5 := app_dependency_handler.GetDisplaySettingInDependencies(
-						displayConfig, oneMigratedData, pTag)
+					displaySetting, err5 := oneMigratedData.GetDisplaySettingInDependencies(
+						displayConfig, pTag)
 
 					if err5 != nil {
 						log.Fatal(err5)
@@ -163,8 +163,22 @@ func checkDisplayOneMigratedData(
 
 						switch err4 {
 
+							// If this data does not depend on any other data, we try to check
+							// the ownership of this data as well as the sharing conditions.
+							// The check of sharing conditions for now is not implemented.
+							// Since we only migrate users' own data, checking data ownership
+							// should be always true given the current display settings in the ownership.
 							case app_display.NotDependsOnAnyData:
 								
+								// displaySetting1, err12 := app_display.GetDisplaySettingInOwnership(
+								// 	displayConfig, oneMigratedData)
+								
+								// if err12 != nil {
+								// 	log.Fatal(err12)
+								// }
+
+
+
 								pTagConditions[pTag] = true
 
 							case app_display.CannotFindAnyDataInParent:
@@ -191,20 +205,20 @@ func checkDisplayOneMigratedData(
 
 						switch err7 {
 
-						case app_display.NoNodeCanBeDisplayed:
+							case app_display.NoNodeCanBeDisplayed:
 
-							pTagConditions[pTag] = app_display.
-								ReturnDisplayConditionWhenCannotGetDataFromParentNode(
-									displaySetting, secondRound)
+								pTagConditions[pTag] = app_display.
+									ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+										displaySetting, secondRound)
 
-						case app_display.PartiallyDisplayed:
+							case app_display.PartiallyDisplayed:
 
-							pTagConditions[pTag] = app_display.
-								ReturnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
+								pTagConditions[pTag] = app_display.
+									ReturnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting)
 
-						case app_display.CompletelyDisplayed:
+							case app_display.CompletelyDisplayed:
 
-							pTagConditions[pTag] = true
+								pTagConditions[pTag] = true
 
 						}
 					}

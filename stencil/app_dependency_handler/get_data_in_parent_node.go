@@ -82,7 +82,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayCon
 }
 
 func getHintsInParentNode(displayConfig *config.DisplayConfig, 
-	hints []*app_display.HintStruct, conditions []string) (*app_display.HintStruct, error) {
+	hints []*app_display.HintStruct, conditions []string, pTag string) (*app_display.HintStruct, error) {
 	
 	log.Println(hints[0])
 
@@ -221,12 +221,12 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 	log.Println(data)
 	log.Println("...........")
 
-	return app_display.TransformRowToHint(displayConfig, data, table), nil
+	return app_display.TransformRowToHint(displayConfig, data, table, pTag), nil
 
 }
 
 func oldGetHintsInParentNode(displayConfig *config.DisplayConfig, 
-	hints []*app_display.HintStruct, conditions []string) (*app_display.HintStruct, error) {
+	hints []*app_display.HintStruct, conditions []string, pTag string) (*app_display.HintStruct, error) {
 	
 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
 	from := ""
@@ -327,7 +327,7 @@ func oldGetHintsInParentNode(displayConfig *config.DisplayConfig,
 
 	} else {
 
-		return app_display.TransformRowToHint(displayConfig, data, table), nil
+		return app_display.TransformRowToHint(displayConfig, data, table, pTag), nil
 
 	}
 }
@@ -376,8 +376,7 @@ func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
 
 	} else {
 
-		tag, _ := hints[0].GetTagName(displayConfig)
-		tableCol := replaceKey(displayConfig, tag, displayExistenceSetting)
+		tableCol := replaceKey(displayConfig, hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 
 		for _, hint := range hints {
@@ -415,7 +414,7 @@ func GetdataFromParentNode(displayConfig *config.DisplayConfig,
 		return nil, err
 	}
 
-	tag, _ := hints[0].GetTagName(displayConfig)
+	tag := hints[0].Tag
 	conditions, _ := displayConfig.AppConfig.GetDependsOnConditions(tag, pTag)
 	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
 
@@ -460,6 +459,6 @@ func GetdataFromParentNode(displayConfig *config.DisplayConfig,
 	// fmt.Println(procConditions)
 	// fmt.Println(hints)
 
-	return getHintsInParentNode(displayConfig, hints, procConditions)
+	return getHintsInParentNode(displayConfig, hints, procConditions, pTag)
 
 }
