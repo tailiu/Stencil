@@ -29,3 +29,6 @@ var CannotResolveReferencesGetDataInNode =
 
 var NoMappingAndNoReferenceToResolve =
 	errors.New("There is no need to resolve reference and there is no mapping")
+
+// Ownership
+var CannotFindDataInOwnership = errors.New("Fail to get any Data by the ownership relationship")

@@ -332,37 +332,6 @@ func oldGetHintsInParentNode(displayConfig *config.DisplayConfig,
 	}
 }
 
-func replaceKey(displayConfig *config.DisplayConfig, tag string, key string) string {
-
-	for _, tag1 := range displayConfig.AppConfig.Tags {
-
-		if tag1.Name == tag {
-			// fmt.Println(tag)
-
-			for k, v := range tag1.Keys {
-
-				if k == key {
-
-					member := strings.Split(v, ".")[0]
-					
-					attr := strings.Split(v, ".")[1]
-					
-					for k1, table := range tag1.Members {
-
-						if k1 == member {
-
-							return table + "." + attr
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return ""
-
-}
-
 func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
 	hints []*app_display.HintStruct, pTag string) (bool, error) {
 	
@@ -376,7 +345,7 @@ func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
 
 	} else {
 
-		tableCol := replaceKey(displayConfig, hints[0].Tag, displayExistenceSetting)
+		tableCol := app_display.ReplaceKey(displayConfig, hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 
 		for _, hint := range hints {
@@ -424,8 +393,8 @@ func GetdataFromParentNode(displayConfig *config.DisplayConfig,
 	if len(conditions) == 1 {
 
 		condition := conditions[0]
-		from = replaceKey(displayConfig, tag, condition.TagAttr)
-		to = replaceKey(displayConfig, pTag, condition.DependsOnAttr)
+		from = app_display.ReplaceKey(displayConfig, tag, condition.TagAttr)
+		to = app_display.ReplaceKey(displayConfig, pTag, condition.DependsOnAttr)
 		procConditions = append(procConditions, from+":"+to)
 
 	} else {
@@ -434,19 +403,19 @@ func GetdataFromParentNode(displayConfig *config.DisplayConfig,
 
 			if i == 0 {
 
-				from = replaceKey(displayConfig, tag, condition.TagAttr)
+				from = app_display.ReplaceKey(displayConfig, tag, condition.TagAttr)
 
-				to = replaceKey(displayConfig,
+				to = app_display.ReplaceKey(displayConfig,
 					strings.Split(condition.DependsOnAttr, ".")[0], 
 					strings.Split(condition.DependsOnAttr, ".")[1])
 
 			} else if i == len(conditions)-1 {
 
-				from = replaceKey(displayConfig, 
+				from = app_display.ReplaceKey(displayConfig, 
 					strings.Split(condition.TagAttr, ".")[0], 
 					strings.Split(condition.TagAttr, ".")[1])
 				
-				to = replaceKey(displayConfig, pTag, condition.DependsOnAttr)
+				to = app_display.ReplaceKey(displayConfig, pTag, condition.DependsOnAttr)
 
 			}
 

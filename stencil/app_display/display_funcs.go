@@ -407,3 +407,34 @@ func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHints []*HintStruct
 		}
 	}
 }
+
+func ReplaceKey(displayConfig *config.DisplayConfig, tag string, key string) string {
+
+	for _, tag1 := range displayConfig.AppConfig.Tags {
+
+		if tag1.Name == tag {
+			// fmt.Println(tag)
+
+			for k, v := range tag1.Keys {
+
+				if k == key {
+
+					member := strings.Split(v, ".")[0]
+					
+					attr := strings.Split(v, ".")[1]
+					
+					for k1, table := range tag1.Members {
+
+						if k1 == member {
+
+							return table + "." + attr
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return ""
+
+}

@@ -143,7 +143,7 @@ func checkDisplayOneMigratedData(
 				log.Fatal(err12)
 			}
 
-			owner, getOwnerResult := app_display.GetOwner(displayConfig, oneMigratedData, dataOwnership)
+			owner, getOwnerResult := app_display.GetOwner(displayConfig, dataInNode, dataOwnership)
 
 			displayResultBasedOnOwnership := app_display.ReturnResultBasedOnOwnershipCondition(
 				dataOwnership, getOwnerResult)
@@ -153,7 +153,7 @@ func checkDisplayOneMigratedData(
 		
 		// Start to check inter-node data dependencies if this is required, and 
 		// inner-node data dependencies, ownership and sharing relationships are satified
-		// Basically, overall display settings = 
+		// Basically, overall display results = 
 		// 		intra-node check results AND 
 		// 		ownership relationship check results AND 
 		// 		sharing relationship check results AND
