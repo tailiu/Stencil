@@ -1,4 +1,4 @@
-package app_dependency_handler
+package SA1_display
 
 type DataInDependencyNode struct {
 	Table 	string

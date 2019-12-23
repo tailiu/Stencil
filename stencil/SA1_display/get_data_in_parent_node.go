@@ -1,11 +1,10 @@
-package app_dependency_handler
+package SA1_display
 
 import (
 	"fmt"
 	"log"
 	"stencil/config"
 	"stencil/db"
-	"stencil/app_display"
 	"stencil/reference_resolution"
 	"strconv"
 	"strings"
@@ -44,7 +43,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayCon
 		// Otherwise, we try to resolve the reference
 		} else {
 
-			hint := app_display.CreateHint(table, tableID, id)
+			hint := CreateHint(table, tableID, id)
 			log.Println("Parent Node: Before resolving reference: ", hint)
 
 			ID := hint.TransformHintToIdenity(displayConfig)
@@ -69,7 +68,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayCon
 			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
 
-				return "", app_display.CannotResolveReferencesGetDataInNode
+				return "", CannotResolveReferencesGetDataInNode
 			}
 		}
 	
@@ -82,7 +81,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayCon
 }
 
 func getHintsInParentNode(displayConfig *config.DisplayConfig, 
-	hints []*app_display.HintStruct, conditions []string, pTag string) (*app_display.HintStruct, error) {
+	hints []*HintStruct, conditions []string, pTag string) (*HintStruct, error) {
 	
 	log.Println(hints[0])
 
@@ -125,7 +124,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 
 				// In this case, since data may be incomplete, 
 				// we cannot get the data in the parent node
-				return nil, app_display.CannotFindAnyDataInParent
+				return nil, CannotFindAnyDataInParent
 			
 			} else {
 
@@ -135,7 +134,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 				// it does not have conversation_id,  
 				// which is actually necessary for each status in Mastodon.
 				if hints[hintID].Data[a1] == nil {
-					return nil, app_display.CannotFindAnyDataInParent
+					return nil, CannotFindAnyDataInParent
 				}
 
 				if displayConfig.ResolveReference {
@@ -168,7 +167,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 				// log.Println("...........")
 
 				if len(data) == 0 {
-					return nil, app_display.CannotFindAnyDataInParent
+					return nil, CannotFindAnyDataInParent
 				}
 
 				table = t2
@@ -209,7 +208,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 			}
 
 			if len(data) == 0 {
-				return nil, app_display.CannotFindAnyDataInParent
+				return nil, CannotFindAnyDataInParent
 			}
 
 			table = t2
@@ -221,12 +220,12 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 	log.Println(data)
 	log.Println("...........")
 
-	return app_display.TransformRowToHint(displayConfig, data, table, pTag), nil
+	return TransformRowToHint(displayConfig, data, table, pTag), nil
 
 }
 
 func oldGetHintsInParentNode(displayConfig *config.DisplayConfig, 
-	hints []*app_display.HintStruct, conditions []string, pTag string) (*app_display.HintStruct, error) {
+	hints []*HintStruct, conditions []string, pTag string) (*HintStruct, error) {
 	
 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
 	from := ""
@@ -264,7 +263,7 @@ func oldGetHintsInParentNode(displayConfig *config.DisplayConfig,
 			// we cannot get the data in the parent node
 			if hintID == -1 {
 
-				return nil, app_display.CannotFindAnyDataInParent
+				return nil, CannotFindAnyDataInParent
 
 			} else {
 				
@@ -323,17 +322,17 @@ func oldGetHintsInParentNode(displayConfig *config.DisplayConfig,
 	// fmt.Println(data)
 	if len(data) == 0 {
 
-		return nil, app_display.CannotFindAnyDataInParent
+		return nil, CannotFindAnyDataInParent
 
 	} else {
 
-		return app_display.TransformRowToHint(displayConfig, data, table, pTag), nil
+		return TransformRowToHint(displayConfig, data, table, pTag), nil
 
 	}
 }
 
 func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
-	hints []*app_display.HintStruct, pTag string) (bool, error) {
+	hints []*HintStruct, pTag string) (bool, error) {
 	
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(displayConfig, pTag)
 
@@ -345,7 +344,7 @@ func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
 
 	} else {
 
-		tableCol := app_display.ReplaceKey(displayConfig, hints[0].Tag, displayExistenceSetting)
+		tableCol := ReplaceKey(displayConfig, hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 
 		for _, hint := range hints {
@@ -354,7 +353,7 @@ func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
 
 				if hint.Data[tableCol] == nil {
 
-					return false, app_display.NotDependsOnAnyData
+					return false, NotDependsOnAnyData
 
 				} else {
 
@@ -369,13 +368,13 @@ func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
 	// In this case, since data may be incomplete, 
 	// we cannot find the existence of the data in a parent node
 	// This also implies that it cannot find any data in a parent node
-	return false, app_display.CannotFindAnyDataInParent
+	return false, CannotFindAnyDataInParent
 
 }
 
 // Note: this function may return multiple hints based on dependencies
 func GetdataFromParentNode(displayConfig *config.DisplayConfig,
-	hints []*app_display.HintStruct, pTag string) (*app_display.HintStruct, error) {
+	hints []*HintStruct, pTag string) (*HintStruct, error) {
 
 	// Before getting data from a parent node, 
 	// we check the existence of the data based on the cols of a child node
@@ -393,8 +392,8 @@ func GetdataFromParentNode(displayConfig *config.DisplayConfig,
 	if len(conditions) == 1 {
 
 		condition := conditions[0]
-		from = app_display.ReplaceKey(displayConfig, tag, condition.TagAttr)
-		to = app_display.ReplaceKey(displayConfig, pTag, condition.DependsOnAttr)
+		from = ReplaceKey(displayConfig, tag, condition.TagAttr)
+		to = ReplaceKey(displayConfig, pTag, condition.DependsOnAttr)
 		procConditions = append(procConditions, from+":"+to)
 
 	} else {
@@ -403,19 +402,19 @@ func GetdataFromParentNode(displayConfig *config.DisplayConfig,
 
 			if i == 0 {
 
-				from = app_display.ReplaceKey(displayConfig, tag, condition.TagAttr)
+				from = ReplaceKey(displayConfig, tag, condition.TagAttr)
 
-				to = app_display.ReplaceKey(displayConfig,
+				to = ReplaceKey(displayConfig,
 					strings.Split(condition.DependsOnAttr, ".")[0], 
 					strings.Split(condition.DependsOnAttr, ".")[1])
 
 			} else if i == len(conditions)-1 {
 
-				from = app_display.ReplaceKey(displayConfig, 
+				from = ReplaceKey(displayConfig, 
 					strings.Split(condition.TagAttr, ".")[0], 
 					strings.Split(condition.TagAttr, ".")[1])
 				
-				to = app_display.ReplaceKey(displayConfig, pTag, condition.DependsOnAttr)
+				to = ReplaceKey(displayConfig, pTag, condition.DependsOnAttr)
 
 			}
 

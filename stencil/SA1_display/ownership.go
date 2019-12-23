@@ -1,4 +1,4 @@
-package app_display
+package SA1_display
 
 import (
 	"stencil/config"
@@ -53,14 +53,14 @@ func getADataInOwner(displayConfig *config.DisplayConfig, hints []*HintStruct,
 
 }
 
-func GetOwner(displayConfig *config.DisplayConfig, hints []*HintStruct,
+func getOwner(displayConfig *config.DisplayConfig, hints []*HintStruct,
 	ownership *config.Ownership) ([]*HintStruct, error) {
 	
-	oneDataInOwnership, err := getADataInOwner(displayConfig, hints, ownership)
+	oneDataInOwnerNode, err := getADataInOwner(displayConfig, hints, ownership)
 	if err != nil {
 		return nil, err
 	}
 
-	
+	return GetDataInNodeBasedOnDisplaySetting(displayConfig, oneDataInOwnerNode)
 	
 }

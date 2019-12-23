@@ -1,8 +1,6 @@
 package main
 
 import (
-	"stencil/app_display"
-	"stencil/app_display_algorithm"
 	"fmt"
 )
 
@@ -18,11 +16,11 @@ func main() {
 	// If the display controller needs to resolve references, resolveReference is true
 	resolveReference := true
 
-	displayConfig := app_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
+	displayConfig := SA1_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 
 	for i := 0; i < threadNum; i++ {
 
-		go app_display_algorithm.DisplayThread(displayConfig)
+		go SA1_display.DisplayThread(displayConfig)
 
 	}
 

@@ -1,4 +1,4 @@
-package app_display
+package SA1_display
 
 import (
 	"errors"
@@ -32,3 +32,9 @@ var NoMappingAndNoReferenceToResolve =
 
 // Ownership
 var CannotFindDataInOwnership = errors.New("Fail to get any Data by the ownership relationship")
+
+var DataNotDisplayedDueToIncompleteOwnerNode = 
+	errors.New("Data is not displayed because the ownership node is not complete")
+
+var DataNotDisplayedDueToNoDataInOwnerNode = 
+	errors.New("Data is not displayed because no data can be displayed in the ownership node")

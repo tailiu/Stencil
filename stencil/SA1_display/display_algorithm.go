@@ -1,10 +1,8 @@
-package app_display_algorithm
+package SA1_display
 
 import (
 	"log"
 	"stencil/config"
-	"stencil/app_dependency_handler"
-	"stencil/app_display"
 	"time"
 )
 
@@ -20,9 +18,9 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 
 	secondRound := false
 
-	for migratedData := app_display.GetUndisplayedMigratedData(displayConfig); 
-		!app_display.CheckMigrationComplete(displayConfig); 
-		migratedData = app_display.GetUndisplayedMigratedData(displayConfig) {
+	for migratedData := GetUndisplayedMigratedData(displayConfig); 
+		!CheckMigrationComplete(displayConfig); 
+		migratedData = GetUndisplayedMigratedData(displayConfig) {
 
 		for _, oneMigratedData := range migratedData {
 
@@ -38,7 +36,7 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 	
 	secondRound = true
 
-	secondRoundMigratedData := app_display.GetUndisplayedMigratedData(displayConfig)
+	secondRoundMigratedData := GetUndisplayedMigratedData(displayConfig)
 	
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 
@@ -55,13 +53,13 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 
 func checkDisplayOneMigratedData(
 	displayConfig *config.DisplayConfig, 
-	oneMigratedData *app_display.HintStruct,
+	oneMigratedData *HintStruct,
 	secondRound bool) error {
 
 	log.Println("Check Data:", *oneMigratedData)
 
 	// Get data in the node based on intra-node data dependencies
-	dataInNode, err1 := app_dependency_handler.GetDataInNodeBasedOnDisplaySetting(
+	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(
 		displayConfig, oneMigratedData)
 
 	// If dataInNode is nil, either this data is not in the destination application,
@@ -75,48 +73,34 @@ func checkDisplayOneMigratedData(
 		
 		if secondRound {
 
-			err9 := app_display.PutIntoDataBag(displayConfig, []*app_display.HintStruct{oneMigratedData})
+			err9 := PutIntoDataBag(displayConfig, []*HintStruct{oneMigratedData})
 			if err9 != nil {
 				log.Fatal(err9)
 			}
 
-			return app_display.NoNodeCanBeDisplayed
+			return NoNodeCanBeDisplayed
 
 		} else {
 
-			return app_display.NoNodeCanBeDisplayed
+			return NoNodeCanBeDisplayed
 
 		}
 	} else {
 
+		
+		displayedData, notDisplayedData := checkDisplayConditionsInNode(displayConfig, dataInNode)
+
 		// This is to display data once there is any data already displayed in a node
-		var displayedData, notDisplayedData []*app_display.HintStruct
-
-		for _, oneDataInNode := range dataInNode {
-
-			displayed := app_display.CheckDisplay(displayConfig, oneDataInNode)
-
-			if !displayed {
-
-				notDisplayedData = append(notDisplayedData, oneDataInNode)
-
-			} else {
-
-				displayedData = append(displayedData, oneDataInNode)
-
-			}
-		}
-
 		// Note: This will be changed when considering ongoing application services
 		// and the existence of other app_display threads !!
 		if len(displayedData) != 0 {
 
-			err6 := app_display.Display(displayConfig, notDisplayedData)
+			err6 := Display(displayConfig, notDisplayedData)
 			if err6 != nil {
 				log.Fatal(err6)
 			}
 
-			return app_display.ReturnResultBasedOnNodeCompleteness(err1)
+			return ReturnResultBasedOnNodeCompleteness(err1)
 
 		}
 
@@ -128,7 +112,7 @@ func checkDisplayOneMigratedData(
 		// of the current root node.
 		if oneMigratedData.Tag == "root" {
 
-			return app_display.ReturnResultBasedOnNodeCompleteness(err1)
+			return ReturnResultBasedOnNodeCompleteness(err1)
 		
 		// If the tag of this node is not the root,
 		// we need to check the ownership and sharing relationship of this data.
@@ -143,10 +127,35 @@ func checkDisplayOneMigratedData(
 				log.Fatal(err12)
 			}
 
-			owner, getOwnerResult := app_display.GetOwner(displayConfig, dataInNode, dataOwnership)
+			dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnership)
 
-			displayResultBasedOnOwnership := app_display.ReturnResultBasedOnOwnershipCondition(
-				dataOwnership, getOwnerResult)
+			if len(dataInOwnerNode) == 0 {
+				
+				return 
+
+			}
+
+			displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
+				displayConfig, dataInOwnerNode)
+			
+			// Display the data not displayed in the root node
+			if len(notDisplayedDataInOwnerNode) != 0 {
+
+				err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
+				if err6 != nil {
+					log.Fatal(err6)
+				}
+
+			}
+
+			displayResultBasedOnOwnership := CheckOwnershipCondition(
+				dataOwnership.Display_setting, err13)
+			
+			if !displayResultBasedOnOwnership {
+
+				return ReturnResultBasedOnOwnershipCheck(err13)
+				
+			}
 
 		}
 		
@@ -171,12 +180,12 @@ func checkDisplayOneMigratedData(
 
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
 
-				err3 := app_display.Display(displayConfig, dataInNode)
+				err3 := Display(displayConfig, dataInNode)
 				if err3 != nil {
 					log.Fatal(err3)
 				}
 				
-				return app_display.ReturnResultBasedOnNodeCompleteness(err1)
+				return ReturnResultBasedOnNodeCompleteness(err1)
 
 			} else {
 
@@ -184,7 +193,7 @@ func checkDisplayOneMigratedData(
 
 				for _, pTag := range pTags {
 
-					dataInParentNode, err4 := app_dependency_handler.GetdataFromParentNode(
+					dataInParentNode, err4 := GetdataFromParentNode(
 						displayConfig, dataInNode, pTag)
 					
 					if err4 != nil {
@@ -204,13 +213,13 @@ func checkDisplayOneMigratedData(
 
 						switch err4 {
 
-							case app_display.NotDependsOnAnyData:
+							case NotDependsOnAnyData:
 
 								pTagConditions[pTag] = true
 
-							case app_display.CannotFindAnyDataInParent:
+							case CannotFindAnyDataInParent:
 
-								pTagConditions[pTag] = app_display.
+								pTagConditions[pTag] = 
 									ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 										displaySettingInDeps, secondRound)
 							
@@ -232,19 +241,19 @@ func checkDisplayOneMigratedData(
 
 						switch err7 {
 
-							case app_display.NoNodeCanBeDisplayed:
+							case NoNodeCanBeDisplayed:
 
-								pTagConditions[pTag] = app_display.
+								pTagConditions[pTag] = 
 									ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 										displaySettingInDeps, secondRound)
 
-							case app_display.PartiallyDisplayed:
+							case PartiallyDisplayed:
 
-								pTagConditions[pTag] = app_display.
+								pTagConditions[pTag] = 
 									ReturnDisplayConditionWhenGetPartialDataFromParentNode(
 										displaySettingInDeps)
 
-							case app_display.CompletelyDisplayed:
+							case CompletelyDisplayed:
 
 								pTagConditions[pTag] = true
 
@@ -255,28 +264,28 @@ func checkDisplayOneMigratedData(
 
 				// Check the combined_display_setting from all parent nodes
 				// to decide whether to display the current node
-				if checkResult := app_display.CheckCombinedDisplayConditions(
+				if checkResult := CheckCombinedDisplayConditions(
 					displayConfig, pTagConditions, oneMigratedData); checkResult {
 					
-					err8 := app_display.Display(displayConfig, dataInNode)
+					err8 := Display(displayConfig, dataInNode)
 					if err8 != nil {
 						log.Fatal(err8)
 					}
 
-					return app_display.ReturnResultBasedOnNodeCompleteness(err1)
+					return ReturnResultBasedOnNodeCompleteness(err1)
 
 				} else {
 
 					if secondRound {
 						
-						err10 := app_display.PutIntoDataBag(displayConfig, dataInNode)
+						err10 := PutIntoDataBag(displayConfig, dataInNode)
 						if err10 != nil {
 							log.Fatal(err10)
 						}
 						
 					}
 
-					return app_display.NoNodeCanBeDisplayed
+					return NoNodeCanBeDisplayed
 
 				}
 			}

@@ -1,4 +1,4 @@
-package app_dependency_handler
+package SA1_display
 
 import (
 	"errors"
@@ -6,7 +6,6 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
-	"stencil/app_display"
 	"stencil/reference_resolution"
 	"strconv"
 	"strings"
@@ -26,7 +25,7 @@ func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
 	// fmt.Println(data)
 	if len(data) == 0 {
 
-		return nil, app_display.CannotFindRemainingData
+		return nil, CannotFindRemainingData
 
 	} else {
 
@@ -69,7 +68,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 		// Otherwise, we try to resolve the reference
 		} else {
 
-			hint0 := app_display.CreateHint(table0, table0ID, id)
+			hint0 := CreateHint(table0, table0ID, id)
 			log.Println("Before resolving reference1: ", hint0)
 
 			ID0 := hint0.TransformHintToIdenity(displayConfig)
@@ -94,7 +93,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
 
-				return nil, app_display.CannotResolveReferencesGetDataInNode
+				return nil, CannotResolveReferencesGetDataInNode
 			}
 		}
 
@@ -107,7 +106,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 		// We assume that users.account_id has already been resolved and get its data
 		data, err := getOneRowBasedOnDependency(displayConfig, table1, col1, value)
 		if err != nil {
-			return nil, app_display.CannotFindRemainingData
+			return nil, CannotFindRemainingData
 		}
 
 		// Now we have the id of the data, we should check whether it has been resolved before, 
@@ -138,7 +137,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 
 		} else {
 			
-			hint1 := app_display.CreateHint(table1, table1ID, fmt.Sprint(data["id"]))
+			hint1 := CreateHint(table1, table1ID, fmt.Sprint(data["id"]))
 			log.Println("Before resolving reference2: ", hint1)
 
 			ID1 := hint1.TransformHintToIdenity(displayConfig)
@@ -182,16 +181,16 @@ func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 	// there is no mapping to stream_entries.activity_id.
 	} else {
 
-		return nil, app_display.NoMappingAndNoReferenceToResolve
+		return nil, NoMappingAndNoReferenceToResolve
 	}
 }
 
 func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 	dependencies []map[string]string, 
 	members map[string]string, 
-	hint *app_display.HintStruct) ([]*app_display.HintStruct, error) {
+	hint *HintStruct) ([]*HintStruct, error) {
 	
-	var result []*app_display.HintStruct
+	var result []*HintStruct
 
 	procDependencies := make(map[string][]string)
 
@@ -288,7 +287,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 						"id": intPK,
 					}
 
-					result = append(result, &app_display.HintStruct{
+					result = append(result, &HintStruct{
 						Table: table1,
 						TableID: displayConfig.AppConfig.TableNameIDPairs[table1],
 						KeyVal: keyVal,
@@ -328,14 +327,14 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 
 	} else {
 
-		return result, app_display.NodeIncomplete
+		return result, NodeIncomplete
 
 	}
 
 }
 
 func getOneRowBasedOnHint(displayConfig *config.DisplayConfig, 
-	hint *app_display.HintStruct) (map[string]interface{}, error) {
+	hint *HintStruct) (map[string]interface{}, error) {
 	
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %d", hint.Table, hint.KeyVal["id"])
 	
@@ -348,7 +347,7 @@ func getOneRowBasedOnHint(displayConfig *config.DisplayConfig,
 
 	if len(data) == 0 {
 
-		return nil, app_display.DataNotExists
+		return nil, DataNotExists
 
 	} else {
 
@@ -359,7 +358,7 @@ func getOneRowBasedOnHint(displayConfig *config.DisplayConfig,
 }
 
 func getDataInNode(displayConfig *config.DisplayConfig, 
-	hint *app_display.HintStruct) ([]*app_display.HintStruct, error) {
+	hint *HintStruct) ([]*HintStruct, error) {
 
 	if hint.Data == nil {
 
@@ -383,7 +382,7 @@ func getDataInNode(displayConfig *config.DisplayConfig,
 
 				if len(tag.Members) == 1 {
 
-					return []*app_display.HintStruct{hint}, nil
+					return []*HintStruct{hint}, nil
 
 				} else {
 
@@ -404,7 +403,7 @@ func getDataInNode(displayConfig *config.DisplayConfig,
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
 func checkDependsOnExists(displayConfig *config.DisplayConfig, 
-	allData []*app_display.HintStruct, data *app_display.HintStruct) bool {
+	allData []*HintStruct, data *HintStruct) bool {
 	
 	memberID, _ := data.GetMemberID(displayConfig)
 	// fmt.Println(memberID)
@@ -451,9 +450,9 @@ func checkDependsOnExists(displayConfig *config.DisplayConfig,
 }
 
 func trimDataBasedOnInnerDependencies(displayConfig *config.DisplayConfig,
-	 allData []*app_display.HintStruct) []*app_display.HintStruct {
+	 allData []*HintStruct) []*HintStruct {
 	
-	var trimmedData []*app_display.HintStruct
+	var trimmedData []*HintStruct
 
 	for _, data := range allData {
 
@@ -470,7 +469,7 @@ func trimDataBasedOnInnerDependencies(displayConfig *config.DisplayConfig,
 }
 
 func GetDataInNodeBasedOnDisplaySetting(displayConfig *config.DisplayConfig, 
-	hint *app_display.HintStruct) ([]*app_display.HintStruct, error) {
+	hint *HintStruct) ([]*HintStruct, error) {
 	
 	displaySetting, _ := hint.GetTagDisplaySetting(displayConfig)
 

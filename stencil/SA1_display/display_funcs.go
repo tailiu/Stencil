@@ -1,4 +1,4 @@
-package app_display
+package SA1_display
 
 import (
 	"database/sql"
@@ -436,5 +436,29 @@ func ReplaceKey(displayConfig *config.DisplayConfig, tag string, key string) str
 	}
 
 	return ""
+
+}
+
+func checkDisplayConditionsInNode(displayConfig *config.DisplayConfig, 
+	dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
+
+	var displayedData, notDisplayedData []*HintStruct
+
+	for _, oneDataInNode := range dataInNode {
+
+		displayed := CheckDisplay(displayConfig, oneDataInNode)
+
+		if !displayed {
+
+			notDisplayedData = append(notDisplayedData, oneDataInNode)
+
+		} else {
+
+			displayedData = append(displayedData, oneDataInNode)
+
+		}
+	}
+
+	return displayedData, notDisplayedData
 
 }

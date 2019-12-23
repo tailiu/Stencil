@@ -1,4 +1,4 @@
-package app_display
+package SA1_display
 
 import (
 	"stencil/config"
@@ -133,9 +133,10 @@ func CheckCombinedDisplayConditions(displayConfig *config.DisplayConfig,
 
 }
 
-func ReturnResultBasedOnOwnershipCondition(displaySettingInOwnership string) {
+func CheckOwnershipCondition(displaySettingInOwnership string, err error) bool {
 
-	if displaySettingInOwnership != "parent_node_complete_displays" {
+	if (displaySettingInOwnership == "" && err == nil) || 
+		displaySettingInOwnership == "parent_node_partially_displays" && err == NodeIncomplete)	{
 
 		return true
 
@@ -143,5 +144,17 @@ func ReturnResultBasedOnOwnershipCondition(displaySettingInOwnership string) {
 
 		return false
 	}
+
+}
+
+func ReturnResultBasedOnOwnershipCheck(err error) error {
+
+	if err == NodeIncomplete {
+		return DataNotDisplayedDueToIncompleteOwnerNode
+	} else if err == DataNotExists {
+		return DataNotDisplayedDueToNoDataInOwnerNode
+	}
+
+	panic("Should not happen given the current display settings in ownership!")
 
 }
