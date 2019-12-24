@@ -6,7 +6,10 @@ import (
 	"diaspora/helper"
 	"time"
 	"log"
+	"sync"
 )
+
+const THREAD_NUM = 50
 
 // const APP = "diaspora" 
 // const USER_NUM = 10000
@@ -40,11 +43,13 @@ const IMAGE_NUM = 369343
 
 
 // Function genUsers() tries to create USER_NUM users, but it cannot guarantee
-func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
+func genUsers(genConfig *data_generator.GenConfig, num int, wg *sync.WaitGroup, res chan<- []data_generator.User) {
+
+	defer wg.Done()
 
 	var users []data_generator.User
 
-	for i := 0; i < USER_NUM; i++ {
+	for i := 0; i < num; i++ {
 
 		var user data_generator.User
 
@@ -65,8 +70,38 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 
 	log.Println("Total number of users:", len(users))
 
-	return users
+	res <- users
 	
+}
+
+func genUsersHandler(genConfig *data_generator.GenConfig) {
+	
+	var users []data_generator.User
+
+	channel := make(chan []data_generator.User, THREAD_NUM)
+
+	var wg sync.WaitGroup
+
+	wg.Add(THREAD_NUM)
+
+	for i := 0; i < THREAD_NUM; i++ {
+		
+		go genUsers(genConfig, USER_NUM / THREAD_NUM, &wg, channel)
+		 
+	}
+
+	wg.Wait()
+
+	close(channel)
+
+	for res := range channel {
+
+		users = append(users, res...)
+
+	}
+
+	log.Println("Total number of users:", len(users))
+
 }
 
 // We use the user popularity score to generate how many followers a user has.
@@ -225,7 +260,9 @@ func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) 
 		for n := 0; n < postAssignment[userSeq]; n++ {
 
 			var postID int
+			
 			imageNum := imageNumsOfSeq[postSeq]
+
 			if imageNum == 0 {
 
 				postID = datagen.NewPost(genConfig.DBConn, 
@@ -473,19 +510,21 @@ func main() {
 
 	genConfig := data_generator.Initialize(APP)
 
-	users := genUsers(genConfig)
+	genUsersHandler(genConfig)
 
-	data_generator.InitializeWithUserNum(genConfig, len(users))
+	// users := genUsers(genConfig)
+
+	// data_generator.InitializeWithUserNum(genConfig, len(users))
 	
-	postScores := genPosts(genConfig, users)
+	// postScores := genPosts(genConfig, users)
 	
-	genFollows(genConfig, users)
+	// genFollows(genConfig, users)
 	
-	genComments(genConfig, users, postScores)
+	// genComments(genConfig, users, postScores)
 	
-	genLikes(genConfig, users, postScores)
+	// genLikes(genConfig, users, postScores)
 	
-	genConversationsAndMessages(genConfig, users)
+	// genConversationsAndMessages(genConfig, users)
 
 	log.Println("--------- End of Data Generation ---------")
 
