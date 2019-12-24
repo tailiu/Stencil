@@ -107,20 +107,12 @@ func genUsersController(genConfig *data_generator.GenConfig) []data_generator.Us
 
 }
 
-// We use the user popularity score to generate how many followers a user has.
-// For some of those followers, the user also follows back.
-// Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
-// this user can follow this percentage of followers,
-// because maybe most of those users have already fully followed by other users.
-func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User) {
+func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+	userSeqStart, userSeqEnd int, followedAssignment []int, users []data_generator.User) {
+	
+	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
-	followedAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserPopularityScores, FOLLOW_NUM)
-	
-	log.Println("Followed assignment to users:", followedAssignment)
-	log.Println("Total followed:", data_generator.GetSumOfIntSlice(followedAssignment))
-	
-	for seq1, user1 := range users {
+		user1 := users[seq1]
 
 		var toBeFollowedByPersons []int
 
@@ -236,6 +228,50 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 		// }
 
 	}
+}
+
+// We use the user popularity score to generate how many followers a user has.
+// For some of those followers, the user also follows back.
+// Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
+// this user can follow this percentage of followers,
+// because maybe most of those users have already fully followed by other users.
+func genFollowsController(genConfig *data_generator.GenConfig, users []data_generator.User) {
+
+	followedAssignment := data_generator.AssignDataToUsersByUserScores(
+		genConfig.UserPopularityScores, FOLLOW_NUM)
+	
+	log.Println("Followed assignment to users:", followedAssignment)
+	log.Println("Total followed:", data_generator.GetSumOfIntSlice(followedAssignment))
+	
+	var wg sync.WaitGroup
+
+	wg.Add(THREAD_NUM)
+
+	userSeqStart := 0
+	
+	userSeqStep := len(users) / THREAD_NUM
+
+	for i := 0; i < THREAD_NUM; i++ {
+		
+		if i != THREAD_NUM - 1 {
+
+			// Start included, end (start + step) not included
+			go genFollows(genConfig, &wg, userSeqStart, userSeqStart + userSeqStep, 
+				followedAssignment, users)
+
+		} else {
+
+			// Start included, end (start + step) not included
+			go genFollows(genConfig, &wg, userSeqStart, len(users), 
+				followedAssignment, users)
+		
+		}
+
+		userSeqStart += userSeqStep
+	}
+
+	wg.Wait()
+
 }
 
 func genPosts(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
@@ -588,13 +624,17 @@ func main() {
 
 	log.Println("--------- Start of Data Generation ---------")
 
-	// users, postScores := prepareTest(genConfig)
+	users, postScores := prepareTest(genConfig)
 
-	genConfig := data_generator.Initialize(APP)
+	// genConfig := data_generator.Initialize(APP)
 
-	users := genUsersController(genConfig)
+	// users := genUsersController(genConfig)
+
+	data_generator.InitializeWithUserNum(genConfig, len(users))
 
 	genPostsController(genConfig, users)
+
+	// genFollowsController(genConfig, users)
 
 	// users := genUsers(genConfig)
 
