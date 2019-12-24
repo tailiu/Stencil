@@ -280,3 +280,34 @@ func MakeRange(min, max int) []int {
 	
     return a
 }
+
+func CalculateNextPostSeqStart(lastPostSeqStart, userSeqStart, 
+	userSeqEnd int, postAssignment []int) int {
+
+	postSeq := lastPostSeqStart
+	
+	for i := userSeqStart; i < userSeqEnd; i++ {
+
+		postSeq += postAssignment[userSeqStart]
+
+	}
+
+	return postSeq
+
+}
+
+func MergeTwoMaps(m1, m2 map[int]float64) map[int]float64 {
+
+	res := make(map[int]float64)
+
+	for k1, v1 := range m1 {
+		res[k1] = v1
+	}
+
+	for k2, v2 := range m2 {
+		res[k2] = v2
+	}
+
+	return res
+
+}

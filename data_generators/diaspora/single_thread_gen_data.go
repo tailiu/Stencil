@@ -6,11 +6,7 @@ import (
 	"diaspora/helper"
 	"time"
 	"log"
-	"sync"
 )
-
-// Note that THREAD_NUM must be larger than 0
-const THREAD_NUM = 50
 
 // const APP = "diaspora" 
 // const USER_NUM = 10000
@@ -22,34 +18,33 @@ const THREAD_NUM = 50
 // const MESSAGE_NUM = 40146
 // const IMAGE_NUM = 36934
 
-const APP = "diaspora_100000" 
-const USER_NUM = 100500
-const FOLLOW_NUM = 323000
-const POST_NUM = 802920
-const COMMENT_NUM = 1397080
-const LIKE_NUM = 8567156
-const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-const MESSAGE_NUM = 401460
-const IMAGE_NUM = 369343
-
-// const APP = "diaspora_1000000" 
-// const USER_NUM = 1010000
-// const FOLLOW_NUM = 3230000
-// const POST_NUM = 8029200
-// const COMMENT_NUM = 13970800
-// const LIKE_NUM = 85671564
+// const APP = "diaspora_100000" 
+// const USER_NUM = 100500
+// const FOLLOW_NUM = 323000
+// const POST_NUM = 802920
+// const COMMENT_NUM = 1397080
+// const LIKE_NUM = 8567156
 // const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-// const MESSAGE_NUM = 4014600
-// const IMAGE_NUM = 3693432
+// const MESSAGE_NUM = 401460
+// const IMAGE_NUM = 369343
+
+const APP = "diaspora_1000000" 
+const USER_NUM = 1010000
+const FOLLOW_NUM = 3230000
+const POST_NUM = 8029200
+const COMMENT_NUM = 13970800
+const LIKE_NUM = 85671564
+const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
+const MESSAGE_NUM = 4014600
+const IMAGE_NUM = 3693432
 
 
-func genUsers(genConfig *data_generator.GenConfig, num int, wg *sync.WaitGroup, res chan<- []data_generator.User) {
-
-	defer wg.Done()
+// Function genUsers() tries to create USER_NUM users, but it cannot guarantee
+func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 
 	var users []data_generator.User
 
-	for i := 0; i < num; i++ {
+	for i := 0; i < USER_NUM; i++ {
 
 		var user data_generator.User
 
@@ -68,43 +63,10 @@ func genUsers(genConfig *data_generator.GenConfig, num int, wg *sync.WaitGroup, 
 		}
 	}
 
-	// log.Println("Total number of users:", len(users))
-
-	res <- users
-	
-}
-
-// Function genUsersController() tries to create USER_NUM users, but it cannot guarantee
-func genUsersController(genConfig *data_generator.GenConfig) []data_generator.User {
-	
-	var users []data_generator.User
-
-	channel := make(chan []data_generator.User, THREAD_NUM)
-
-	var wg sync.WaitGroup
-
-	wg.Add(THREAD_NUM)
-
-	for i := 0; i < THREAD_NUM; i++ {
-		
-		go genUsers(genConfig, USER_NUM / THREAD_NUM, &wg, channel)
-		 
-	}
-
-	wg.Wait()
-
-	close(channel)
-
-	for res := range channel {
-
-		users = append(users, res...)
-
-	}
-
 	log.Println("Total number of users:", len(users))
 
 	return users
-
+	
 }
 
 // We use the user popularity score to generate how many followers a user has.
@@ -238,30 +200,32 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 	}
 }
 
-func genPosts(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
-	res1 chan<- map[int]float64, res2 chan<- int, 
-	userSeqStart, userSeqEnd, postSeqStart int,
-	users []data_generator.User, postAssignment []int, 
-	imageNumsOfSeq map[int]int, seqScores []float64) {
+// The number of posts of users is proportional to the popularity of users.
+// We also randomly assign images to the posts proportionally to the popularity of posts.
+// The scores assigned to posts are in pareto distributiuon.
+// so it is more likely that popular users will have popular posts because they have more posts
+func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
 
-	defer wg.Done()
+	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
+	totalPosts := data_generator.GetSumOfIntSlice(postAssignment)
 	
+	log.Println("Posts assignments to users:", postAssignment)
+	log.Println("Total posts:", totalPosts)
+
+	seqNum := data_generator.MakeRange(0, totalPosts - 1)
+	seqScores := data_generator.AssignParetoDistributionScoresToDataReturnSlice(len(seqNum))
+	imageNumsOfSeq := data_generator.RandomNumWithProbGenerator(seqScores, IMAGE_NUM)
+
+	postSeq := 0
+	imageNums := 0
 	postScores := make(map[int]float64)
 	
-	postSeq := postSeqStart
+	for userSeq, user := range users {
 
-	imageNums := 0
-
-	for i := userSeqStart; i < userSeqEnd; i++ {
-		
-		user := users[i]
-		
-		for n := 0; n < postAssignment[i]; n++ {
+		for n := 0; n < postAssignment[userSeq]; n++ {
 
 			var postID int
-			
 			imageNum := imageNumsOfSeq[postSeq]
-
 			if imageNum == 0 {
 
 				postID = datagen.NewPost(genConfig.DBConn, 
@@ -279,91 +243,8 @@ func genPosts(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 			imageNums += imageNum
 
 		}
-
 	}
 	
-	res1 <- postScores
-
-	res2 <- imageNums
-
-}
-
-// The number of posts of users is proportional to the popularity of users.
-// We also randomly assign images to the posts proportionally to the popularity of posts.
-// The scores assigned to posts are in pareto distributiuon.
-// so it is more likely that popular users will have popular posts because they have more posts
-func genPostsController(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
-
-	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
-	totalPosts := data_generator.GetSumOfIntSlice(postAssignment)
-	
-	log.Println("Posts assignments to users:", postAssignment)
-	log.Println("Total posts:", totalPosts)
-
-	seqNum := data_generator.MakeRange(0, totalPosts - 1)
-	seqScores := data_generator.AssignParetoDistributionScoresToDataReturnSlice(len(seqNum))
-	imageNumsOfSeq := data_generator.RandomNumWithProbGenerator(seqScores, IMAGE_NUM)
-	
-	imageNums := 0
-	
-	postScores := make(map[int]float64)
-	
-	channel1 := make(chan map[int]float64, THREAD_NUM)
-
-	channel2 := make(chan int, THREAD_NUM)
-
-	var wg sync.WaitGroup
-
-	wg.Add(THREAD_NUM)
-
-	userSeqStart := 0
-	
-	userSeqStep := len(users) / THREAD_NUM
-
-	postSeqStart := 0
-
-	for i := 0; i < THREAD_NUM; i++ {
-		
-		if i != THREAD_NUM - 1 {
-
-			// Start included, end (start + step) not included
-			go genPosts(genConfig, &wg, channel1, channel2, 
-				userSeqStart, userSeqStart + userSeqStep, 
-				postSeqStart, users, postAssignment, imageNumsOfSeq, seqScores)
-
-		} else {
-
-			// Start included, end (start + step) not included
-			go genPosts(genConfig, &wg, channel1, channel2, 
-				userSeqStart, len(users), 
-				postSeqStart, users, postAssignment, imageNumsOfSeq, seqScores)
-		
-		}
-
-		postSeqStart = data_generator.CalculateNextPostSeqStart(
-			postSeqStart, userSeqStart, userSeqStart + userSeqStep, postAssignment)
-
-		userSeqStart += userSeqStep
-	}
-
-	wg.Wait()
-
-	close(channel1)
-
-	close(channel2)
-
-	for res1 := range channel1 {
-
-		postScores = data_generator.MergeTwoMaps(postScores, res1) 
-
-	}
-
-	for res2 := range channel2 {
-
-		imageNums += res2
-
-	}
-
 	log.Println("Total images:", imageNums)
 
 	return postScores
@@ -592,23 +473,19 @@ func main() {
 
 	genConfig := data_generator.Initialize(APP)
 
-	users := genUsersController(genConfig)
+	users := genUsers(genConfig)
 
-	genPostsController(genConfig, users)
-
-	// users := genUsers(genConfig)
-
-	// data_generator.InitializeWithUserNum(genConfig, len(users))
+	data_generator.InitializeWithUserNum(genConfig, len(users))
 	
-	// postScores := genPosts(genConfig, users)
+	postScores := genPosts(genConfig, users)
 	
-	// genFollows(genConfig, users)
+	genFollows(genConfig, users)
 	
-	// genComments(genConfig, users, postScores)
+	genComments(genConfig, users, postScores)
 	
-	// genLikes(genConfig, users, postScores)
+	genLikes(genConfig, users, postScores)
 	
-	// genConversationsAndMessages(genConfig, users)
+	genConversationsAndMessages(genConfig, users)
 
 	log.Println("--------- End of Data Generation ---------")
 
