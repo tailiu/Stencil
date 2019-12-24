@@ -196,6 +196,10 @@ func GetSeqsByPersonIDs(users []User, personIDs []int) []int {
 
 func RandomNumWithProbGenerator(scores []float64, sum int) map[int]int { 
 	
+	if len(scores) == 0 {
+		return nil
+	}
+
 	var cumScores []float64
 	
 	for i := 0; i < len(scores); i++ {

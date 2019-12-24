@@ -200,10 +200,10 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 	}
 }
 
-// The number of posts of users is proportional to the popularity of users, 
-// so it is more likely that popular users
-// will have popular posts.
-// We randomly assign images to the posts proportionally to the popularity of posts.
+// The number of posts of users is proportional to the popularity of users.
+// We also randomly assign images to the posts proportionally to the popularity of posts.
+// The scores assigned to posts are in pareto distributiuon.
+// so it is more likely that popular users will have popular posts because they have more posts
 func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
 
 	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
