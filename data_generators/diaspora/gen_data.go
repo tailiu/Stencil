@@ -123,7 +123,7 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 		alreadyFollowedByPersons := datagen.GetFollowedUsers(genConfig.DBConn, personID1)
 
 		toBeFollowed := followedAssignment[seq1] - len(alreadyFollowedByPersons)
-		
+
 		toBeFollowedByPersons = append(toBeFollowedByPersons, 
 			data_generator.GetSeqsByPersonIDs(users, alreadyFollowedByPersons)...)
 
@@ -138,11 +138,17 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 		haveTried := make(map[int]bool)
 
+		for _, alreadyFollowedByPersonsID := range alreadyFollowedByPersons {
+			
+			haveTried[alreadyFollowedByPersonsID] = true
+
+		}
+
 		for n := 0; n < toBeFollowed; n++ {
 
 			for {
 
-				if len(haveTried) == len(users) - 1 {
+				if len(haveTried) >= len(users) - 1 {
 
 					log.Println("Cannot find more users to follow this user!!")
 					log.Println("Total users to follow this user:", followedAssignment[seq1])
@@ -246,6 +252,8 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // this user can follow this percentage of followers,
 // because maybe most of those users have already fully followed by other users.
 // Use the query: "select count(*) from contacts where sharing = false;" to get the total number of follows
+// The exact number could be more than FOLLOW_NUM because a user could be followed by the same other user twice
+// due to multiple-thread data generation.
 func genFollowsController(genConfig *data_generator.GenConfig, users []data_generator.User) {
 
 	followedAssignment := data_generator.AssignDataToUsersByUserScores(
@@ -453,6 +461,10 @@ func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 		// log.Println("Comment number:", commentNum)
 		
 		personID := user1.Person_ID
+		
+		// Even if a user is followed by the same user (U1) twice, it does not influcence much
+		// This can result in the posts of U1 being added twice, so the posts of U1 will be
+		// commented twice more than expected.
 		totalUsers := datagen.GetFollowingUsers(genConfig.DBConn, personID)
 
 		// log.Println(user1)
@@ -491,6 +503,7 @@ func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 // We randomly assign comments to posts proportionally to the popularity of posts of friends, 
 // including posts by the commenter.
+// Mutiple threads do not cause much influence to comments generation
 func genCommentsController(genConfig *data_generator.GenConfig, 
 	users []data_generator.User, postScores map[int]float64) {
 	
@@ -595,6 +608,7 @@ func genLikes(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // including posts by the liker.
 // The difference between generating comments and likes is that
 // a user make several comments on the same post, but can only like once on that post.
+// Mutiple threads do not cause much influence to likes generation
 func genLikesController(genConfig *data_generator.GenConfig, 
 	users []data_generator.User, postScores map[int]float64) {
 
@@ -685,7 +699,9 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 				}
 
 			} else {
-
+				
+				// Given the multiple-thread data generator, there could be 
+				// two conversations between two same users
 				new_conv, _ := datagen.NewConversation(genConfig.DBConn, 
 					personID, friends[seq2])
 				
@@ -712,7 +728,8 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 // Friendships have pareto-distributed closeness indexes. 
 // We randomly assign messages to users (or conversations) proportionally 
 // to the closeness indexes.
-// Two users talk with each other sharing the same conversation.
+// Due to the multiple threads data generation, two users could 
+// talk with each other sharing the same conversation.
 func genConversationsAndMessagesController(genConfig *data_generator.GenConfig, 
 	users []data_generator.User) {
 
@@ -774,9 +791,9 @@ func main() {
 
 	genConfig := data_generator.Initialize(APP)
 
-	// users, postScores := prepareTest(genConfig)
+	users, _ := prepareTest(genConfig)
 
-	users := genUsersController(genConfig)
+	// users := genUsersController(genConfig)
 
 	data_generator.InitializeWithUserNum(genConfig, len(users))
 
