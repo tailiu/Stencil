@@ -624,9 +624,11 @@ func main() {
 
 	log.Println("--------- Start of Data Generation ---------")
 
-	users, postScores := prepareTest(genConfig)
+	genConfig := data_generator.Initialize(APP)
 
-	// genConfig := data_generator.Initialize(APP)
+	// users, postScores := prepareTest(genConfig)
+
+	users, _ := prepareTest(genConfig)
 
 	// users := genUsersController(genConfig)
 
