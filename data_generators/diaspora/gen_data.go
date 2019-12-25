@@ -116,11 +116,14 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 		var toBeFollowedByPersons []int
 
-		ableToBeFollowed := true
+		// ableToBeFollowed := true
+		
 		personID1 := user1.Person_ID
+
 		alreadyFollowedByPersons := datagen.GetFollowedUsers(genConfig.DBConn, personID1)
 
 		toBeFollowed := followedAssignment[seq1] - len(alreadyFollowedByPersons)
+		
 		toBeFollowedByPersons = append(toBeFollowedByPersons, 
 			data_generator.GetSeqsByPersonIDs(users, alreadyFollowedByPersons)...)
 
@@ -133,9 +136,9 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 			log.Fatal("cannot happend1!!!!")
 		}
 
-		for n := 0; n < toBeFollowed; n++ {
+		haveTried := make(map[int]bool)
 
-			haveTried := make(map[int]bool)
+		for n := 0; n < toBeFollowed; n++ {
 
 			for {
 
@@ -145,7 +148,7 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 					log.Println("Total users to follow this user:", followedAssignment[seq1])
 					log.Println("Have been followed by:", n + followedAssignment[seq1] - toBeFollowed)
 					
-					ableToBeFollowed = false
+					// ableToBeFollowed = false
 					
 					log.Fatal("cannot happend2!!!!")
 					break
@@ -153,12 +156,15 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 				}
 
 				seq2 := data_generator.RandomNonnegativeIntWithUpperBound(len(users))
+				
 				if seq2 == seq1 {
 					continue
 				}
+
 				if _, ok := haveTried[seq2]; ok {
 					continue
 				}
+
 				personID2 := users[seq2].Person_ID
 
 				if datagen.CheckFollowed(genConfig.DBConn, personID1, personID2) {
@@ -167,10 +173,16 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 				} else {
 
+					// Note: in the multiple-thread data generation, 
+					// person1 could be followed by person2 twice
 					aspect_idx := helper.RandomNumber(0, len(user1.Aspects) - 1)
+
 					datagen.FollowUser(genConfig.DBConn, 
 						personID2, personID1, user1.Aspects[aspect_idx])
+
 					toBeFollowedByPersons = append(toBeFollowedByPersons, seq2)
+					
+					haveTried[seq2] = true
 
 					break
 
@@ -178,11 +190,9 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 			}
 
-			if !ableToBeFollowed {
-
-				break
-
-			}
+			// if !ableToBeFollowed {
+			// 	break
+			// }
 		}
 
 		toFollowNum := int(float64(followedAssignment[seq1]) * RECIPROCAL_FOLLOW_PERCENTAGE)
@@ -770,15 +780,15 @@ func main() {
 
 	data_generator.InitializeWithUserNum(genConfig, len(users))
 
-	postScores := genPostsController(genConfig, users)
+	// postScores := genPostsController(genConfig, users)
 
 	genFollowsController(genConfig, users)
 
-	genCommentsController(genConfig, users, postScores)
+	// genCommentsController(genConfig, users, postScores)
 
-	genLikesController(genConfig, users, postScores)
+	// genLikesController(genConfig, users, postScores)
 	
-	genConversationsAndMessagesController(genConfig, users)
+	// genConversationsAndMessagesController(genConfig, users)
 
 	log.Println("--------- End of Data Generation ---------")
 
