@@ -110,6 +110,8 @@ func genUsersController(genConfig *data_generator.GenConfig) []data_generator.Us
 func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, followedAssignment []int, users []data_generator.User) {
 	
+	defer wg.Done()
+
 	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
 		user1 := users[seq1]
@@ -447,6 +449,8 @@ func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, ma
 func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, commentAssignment []int, 
 	users []data_generator.User, postScores map[int]float64) {
+	
+	defer wg.Done()
 
 	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
@@ -547,6 +551,8 @@ func genCommentsController(genConfig *data_generator.GenConfig,
 func genLikes(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, likeAssignment []int, 
 	users []data_generator.User, postScores map[int]float64, res chan<- int) {
+		
+	defer wg.Done()
 
 	totalLikeNum := 0
 
@@ -664,7 +670,9 @@ func genLikesController(genConfig *data_generator.GenConfig,
 func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, messageAssignment []int, 
 	users []data_generator.User, res chan<- int) {
-	
+		
+	defer wg.Done()
+
 	conversationNum := 0
 
 	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
@@ -771,6 +779,8 @@ func genConversationsAndMessagesController(genConfig *data_generator.GenConfig,
 	}
 
 	wg.Wait()
+
+	close(channel)
 
 	for res := range channel {
 
