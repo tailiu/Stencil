@@ -10,7 +10,7 @@ import (
 )
 
 // Note that THREAD_NUM must be larger than 0
-const THREAD_NUM = 50
+const THREAD_NUM = 100
 
 // const APP = "diaspora" 
 // const USER_NUM = 10000
@@ -235,6 +235,7 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
 // this user can follow this percentage of followers,
 // because maybe most of those users have already fully followed by other users.
+// Use the query: "select count(*) from contacts where sharing = false;" to get the total number of follows
 func genFollowsController(genConfig *data_generator.GenConfig, users []data_generator.User) {
 
 	followedAssignment := data_generator.AssignDataToUsersByUserScores(
@@ -425,18 +426,13 @@ func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, ma
 
 }
 
-// We randomly assign comments to posts proportionally to the popularity of posts of friends, 
-// including posts by the commenter.
-func genComments(genConfig *data_generator.GenConfig, 
+func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+	userSeqStart, userSeqEnd int, commentAssignment []int, 
 	users []data_generator.User, postScores map[int]float64) {
 
-	commentAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserCommentScores, COMMENT_NUM)
+	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
-	log.Println("Comments assignments to users:", commentAssignment)
-	log.Println("Total comments:", data_generator.GetSumOfIntSlice(commentAssignment))
-
-	for seq1, user1 := range users {
+		user1 := users[seq1]
 
 		// log.Println("Check user:", seq1)
 		
@@ -483,22 +479,57 @@ func genComments(genConfig *data_generator.GenConfig,
 	}
 }
 
-// We randomly assign likes to posts proportionally to the popularity of posts of friends, 
-// including posts by the liker.
-// The difference between generating comments and likes is that
-// a user make several comments on the same post, but can only like once on that post.
-func genLikes(genConfig *data_generator.GenConfig, 
+// We randomly assign comments to posts proportionally to the popularity of posts of friends, 
+// including posts by the commenter.
+func genCommentsController(genConfig *data_generator.GenConfig, 
 	users []data_generator.User, postScores map[int]float64) {
-
-	likeAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserLikeScores, LIKE_NUM)
-
-	log.Println("Likes assignments to users:", likeAssignment)
-	log.Println("Total likes based on assignments:", data_generator.GetSumOfIntSlice(likeAssignment))
 	
+	commentAssignment := data_generator.AssignDataToUsersByUserScores(
+		genConfig.UserCommentScores, COMMENT_NUM)
+
+	log.Println("Comments assignments to users:", commentAssignment)
+	log.Println("Total comments:", data_generator.GetSumOfIntSlice(commentAssignment))
+
+	var wg sync.WaitGroup
+
+	wg.Add(THREAD_NUM)
+
+	userSeqStart := 0
+	
+	userSeqStep := len(users) / THREAD_NUM
+
+	for i := 0; i < THREAD_NUM; i++ {
+		
+		if i != THREAD_NUM - 1 {
+
+			// Start included, end (start + step) not included
+			go genComments(genConfig, &wg, userSeqStart, userSeqStart + userSeqStep, 
+				commentAssignment, users, postScores)
+
+		} else {
+
+			// Start included, end (start + step) not included
+			go genComments(genConfig, &wg, userSeqStart, len(users), 
+				commentAssignment, users, postScores)
+		
+		}
+
+		userSeqStart += userSeqStep
+	}
+
+	wg.Wait()
+		
+}
+
+func genLikes(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+	userSeqStart, userSeqEnd int, likeAssignment []int, 
+	users []data_generator.User, postScores map[int]float64, res chan<- int) {
+
 	totalLikeNum := 0
 
-	for seq1, user1 := range users {
+	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
+
+		user1 := users[seq1]
 
 		// log.Println("Check user:", seq1)
 		
@@ -546,26 +577,75 @@ func genLikes(genConfig *data_generator.GenConfig,
 		}
 	}
 
+	res <- totalLikeNum
+
+}
+
+// We randomly assign likes to posts proportionally to the popularity of posts of friends, 
+// including posts by the liker.
+// The difference between generating comments and likes is that
+// a user make several comments on the same post, but can only like once on that post.
+func genLikesController(genConfig *data_generator.GenConfig, 
+	users []data_generator.User, postScores map[int]float64) {
+
+	likeAssignment := data_generator.AssignDataToUsersByUserScores(
+		genConfig.UserLikeScores, LIKE_NUM)
+
+	log.Println("Likes assignments to users:", likeAssignment)
+	log.Println("Total likes based on assignments:", data_generator.GetSumOfIntSlice(likeAssignment))
+
+	channel := make(chan int, THREAD_NUM)
+
+	totalLikeNum := 0
+
+	var wg sync.WaitGroup
+
+	wg.Add(THREAD_NUM)
+
+	userSeqStart := 0
+	
+	userSeqStep := len(users) / THREAD_NUM
+
+	for i := 0; i < THREAD_NUM; i++ {
+		
+		if i != THREAD_NUM - 1 {
+
+			// Start included, end (start + step) not included
+			go genLikes(genConfig, &wg, userSeqStart, userSeqStart + userSeqStep, 
+				likeAssignment, users, postScores, channel)
+
+		} else {
+
+			// Start included, end (start + step) not included
+			go genLikes(genConfig, &wg, userSeqStart, len(users), 
+				likeAssignment, users, postScores, channel)
+		
+		}
+
+		userSeqStart += userSeqStep
+	}
+
+	wg.Wait()
+
+	for res := range channel {
+
+		totalLikeNum += res
+
+	}
+
 	log.Println("In reality, the num of total likes is:", totalLikeNum)
 
 }
 
-// Pareto-distributed message scores determine the number of messages each user should have.
-// Friendships have pareto-distributed closeness indexes. 
-// We randomly assign messages to users (or conversations) proportionally 
-// to the closeness indexes.
-// Two users talk with each other sharing the same conversation.
-func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []data_generator.User) {
-
-	messageAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserMessageScores, MESSAGE_NUM)
-
-	log.Println("Messages assignments to users:", messageAssignment)
-	log.Println("Total messages:", data_generator.GetSumOfIntSlice(messageAssignment))
+func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+	userSeqStart, userSeqEnd int, messageAssignment []int, 
+	users []data_generator.User, res chan<- int) {
 	
 	conversationNum := 0
 
-	for seq1, user1 := range users {
+	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
+
+		user1 := users[seq1]
 
 		// oneUserConversationNum := 0
 		
@@ -614,9 +694,67 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 		// log.Println(oneUserConversationNum)
 	}
 
+	res <- conversationNum
+
+}
+
+// Pareto-distributed message scores determine the number of messages each user should have.
+// Friendships have pareto-distributed closeness indexes. 
+// We randomly assign messages to users (or conversations) proportionally 
+// to the closeness indexes.
+// Two users talk with each other sharing the same conversation.
+func genConversationsAndMessagesController(genConfig *data_generator.GenConfig, 
+	users []data_generator.User) {
+
+	messageAssignment := data_generator.AssignDataToUsersByUserScores(
+		genConfig.UserMessageScores, MESSAGE_NUM)
+
+	log.Println("Messages assignments to users:", messageAssignment)
+	log.Println("Total messages:", data_generator.GetSumOfIntSlice(messageAssignment))
+
+	channel := make(chan int, THREAD_NUM)
+
+	conversationNum := 0
+
+	var wg sync.WaitGroup
+
+	wg.Add(THREAD_NUM)
+
+	userSeqStart := 0
+	
+	userSeqStep := len(users) / THREAD_NUM
+
+	for i := 0; i < THREAD_NUM; i++ {
+		
+		if i != THREAD_NUM - 1 {
+
+			// Start included, end (start + step) not included
+			go genConversationsAndMessages(genConfig, &wg, userSeqStart, userSeqStart + userSeqStep, 
+				messageAssignment, users, channel)
+
+		} else {
+
+			// Start included, end (start + step) not included
+			go genConversationsAndMessages(genConfig, &wg, userSeqStart, len(users), 
+				messageAssignment, users, channel)
+		
+		}
+
+		userSeqStart += userSeqStep
+	}
+
+	wg.Wait()
+
+	for res := range channel {
+
+		conversationNum += res
+
+	}
+
 	log.Println("Total conversations:", conversationNum)
 
 }
+
 
 func main() {
 	
@@ -628,29 +766,19 @@ func main() {
 
 	// users, postScores := prepareTest(genConfig)
 
-	users, _ := prepareTest(genConfig)
-
-	// users := genUsersController(genConfig)
+	users := genUsersController(genConfig)
 
 	data_generator.InitializeWithUserNum(genConfig, len(users))
 
-	genPostsController(genConfig, users)
+	postScores := genPostsController(genConfig, users)
 
-	// genFollowsController(genConfig, users)
+	genFollowsController(genConfig, users)
 
-	// users := genUsers(genConfig)
+	genCommentsController(genConfig, users, postScores)
 
-	// data_generator.InitializeWithUserNum(genConfig, len(users))
+	genLikesController(genConfig, users, postScores)
 	
-	// postScores := genPosts(genConfig, users)
-	
-	// genFollows(genConfig, users)
-	
-	// genComments(genConfig, users, postScores)
-	
-	// genLikes(genConfig, users, postScores)
-	
-	// genConversationsAndMessages(genConfig, users)
+	genConversationsAndMessagesController(genConfig, users)
 
 	log.Println("--------- End of Data Generation ---------")
 
