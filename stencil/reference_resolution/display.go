@@ -4,13 +4,12 @@ import (
 	"log"
 	"fmt"
 	"stencil/db"
-	"stencil/config"
 	"stencil/schema_mappings"
 )
 
 func NeedToResolveReference(refResolutionConfig *RefResolutionConfig, toTable, toAttr string) bool {
 	
-	if exists, err := schema_mappings.REFExists(refResolutionConfig.MappingsFromSrcToDst, toTable, toAttr);
+	if exists, err := schema_mappings.REFExists(refResolutionConfig.mappingsFromSrcToDst, toTable, toAttr);
 		err != nil {
 
 		// This can happen when there is no mapping
@@ -37,9 +36,9 @@ func ReferenceResolved(refResolutionConfig *RefResolutionConfig, member, referen
 
 	query := fmt.Sprintf(`select value from resolved_references where app = %s 
 		and member = %s and reference = '%s' and id = %s`,
-		refResolutionConfig.AppID, member, reference, id)
+		refResolutionConfig.appID, member, reference, id)
 
-	data, err := db.DataCall1(refResolutionConfig.StencilDBConn, query)
+	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

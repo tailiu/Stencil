@@ -2,13 +2,12 @@ package SA1_display
 
 import (
 	"log"
-	"stencil/config"
 	"time"
 )
 
 const checkInterval = 200 * time.Millisecond
 
-func DisplayThread(displayConfig *config.DisplayConfig) {
+func DisplayThread(displayConfig *displayConfig) {
 
 	startTime := time.Now()
 
@@ -52,7 +51,7 @@ func DisplayThread(displayConfig *config.DisplayConfig) {
 }
 
 func checkDisplayOneMigratedData(
-	displayConfig *config.DisplayConfig, 
+	displayConfig *displayConfig, 
 	oneMigratedData *HintStruct,
 	secondRound bool) error {
 

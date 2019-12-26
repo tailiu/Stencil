@@ -9,7 +9,7 @@ import (
 )
 
 
-func getADataInOwner(displayConfig *config.DisplayConfig, hints []*HintStruct,
+func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 	ownership *config.Ownership) (*HintStruct, error) {
 	
 	// For now, there is no case in which there are more than one condition
@@ -57,7 +57,7 @@ func getADataInOwner(displayConfig *config.DisplayConfig, hints []*HintStruct,
 
 }
 
-func getOwner(displayConfig *config.DisplayConfig, hints []*HintStruct,
+func getOwner(displayConfig *displayConfig, hints []*HintStruct,
 	ownership *config.Ownership) ([]*HintStruct, error) {
 	
 	oneDataInOwnerNode, err := getADataInOwner(displayConfig, hints, ownership)

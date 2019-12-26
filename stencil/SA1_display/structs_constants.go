@@ -2,6 +2,7 @@ package SA1_display
 
 import (
 	"stencil/config"
+	"stencil/reference_resolution"
 	"database/sql"
 )
 
@@ -27,16 +28,16 @@ type dstAppConfig struct {
 }
 
 type displayConfig struct {
-	stencilDBConn 		*sql.DB
-	appIDNamePairs		map[string]string
-	tableIDNamePairs	map[string]string
-	attrIDNamePairs		map[string]string
-	migrationID			int
-	allMappings			*config.SchemaMappings
-	mappingsToDst 		*config.MappedApp
-	resolveReference	bool
-	srcAppConfig		*srcAppConfig
-	dstAppConfig		*dstAppConfig
+	stencilDBConn 			*sql.DB
+	appIDNamePairs			map[string]string
+	tableIDNamePairs		map[string]string
+	attrIDNamePairs			map[string]string
+	migrationID				int
+	refResolutionConfig		*reference_resolution.RefResolutionConfig
+	resolveReference		bool
+	srcAppConfig			*srcAppConfig
+	dstAppConfig			*dstAppConfig
+	mappingsFromSrcToDst	*config.MappedApp
 }
 
 type DataInDependencyNode struct {

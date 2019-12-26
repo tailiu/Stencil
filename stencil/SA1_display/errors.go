@@ -41,3 +41,7 @@ var DataNotDisplayedDueToNoDataInOwnerNode =
 
 // DAG specification
 var CannotFindRootMemberAttr = errors.New("Cannot find the root member and attribute")
+
+var CannotFindDependencyDisplaySetting = errors.New("No dependency display setting is found!")
+
+var NoTableFound = errors.New("Error: No Table Found For the Provided Member ID")

@@ -3,6 +3,7 @@ package reference_resolution
 import (
 	"log"
 	"stencil/config"
+	"database/sql"
 )
 
 /**
@@ -99,7 +100,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 			}
 
-		} else if procRef["app"] == refResolutionConfig.AppConfig.AppID {
+		} else if procRef["app"] == refResolutionConfig.appID {
 
 			combineTwoMaps(updatedAttrs, updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(
 				refResolutionConfig, procRef, orgID))
@@ -141,7 +142,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 				
 			}
 
-		} else if procRef["app"] == refResolutionConfig.AppConfig.AppID {
+		} else if procRef["app"] == refResolutionConfig.appID {
 
 			combineTwoMaps(updatedAttrs, updateRefOnRightBasedOnMappingsNotUsingRefIDRow(
 				refResolutionConfig, procRef, orgID))
@@ -204,16 +205,16 @@ func InitializeReferenceResolution(migrationID int,
 
 	var refResolutionConfig RefResolutionConfig
 
-	refResolutionConfig.StencilDBConn = StencilDBConn
-	refResolutionConfig.AppDBConn = appDBConn
-	refResolutionConfig.MigrationID = migrationID
-	refResolutionConfig.AppID = appID
-	refResolutionConfig.AppName = appName
-	refResolutionConfig.AllMappings = allMappings
-	refResolutionConfig.AppTableNameIDPairs = appTableNameIDPairs
-	refResolutionConfig.AppIDNamePairs = appIDNamePairs
-	refResolutionConfig.TableIDNamePairs = tableIDNamePairs
-	refResolutionConfig.MappingsFromSrcToDst = mappingsFromSrcToDst
+	refResolutionConfig.stencilDBConn = StencilDBConn
+	refResolutionConfig.appDBConn = appDBConn
+	refResolutionConfig.migrationID = migrationID
+	refResolutionConfig.appID = appID
+	refResolutionConfig.appName = appName
+	refResolutionConfig.allMappings = allMappings
+	refResolutionConfig.appTableNameIDPairs = appTableNameIDPairs
+	refResolutionConfig.appIDNamePairs = appIDNamePairs
+	refResolutionConfig.tableIDNamePairs = tableIDNamePairs
+	refResolutionConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
 	
 	return &refResolutionConfig
 }

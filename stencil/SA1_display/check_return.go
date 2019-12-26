@@ -1,7 +1,6 @@
 package SA1_display
 
 import (
-	"stencil/config"
 	"log"
 	"strconv"
 	"strings"
@@ -58,7 +57,7 @@ func ReturnDisplayConditionWhenGetPartialDataFromParentNode(displaySetting strin
 	}
 }
 
-func CheckDisplayConditions(displayConfig *config.DisplayConfig, 
+func CheckDisplayConditions(displayConfig *displayConfig, 
 	pTagConditions map[string]bool, oneMigratedData *HintStruct) bool {
 		
 	for _, result := range pTagConditions {
@@ -72,7 +71,7 @@ func CheckDisplayConditions(displayConfig *config.DisplayConfig,
 	return false
 }
 
-func CheckCombinedDisplayConditions(displayConfig *config.DisplayConfig, 
+func CheckCombinedDisplayConditions(displayConfig *displayConfig, 
 	pTagConditions map[string]bool, oneMigratedData *HintStruct) bool {	
 	
 	if len(pTagConditions) == 1 {

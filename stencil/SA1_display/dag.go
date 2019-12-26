@@ -1,9 +1,7 @@
 package SA1_display
 
 import (
-	// "database/sql"
 	"stencil/config"
-	// "stencil/db"
 	"os"
 	"strings"
 	"fmt"
@@ -72,6 +70,44 @@ func getRootMemberAttr(dag *DAG) (string, string, error) {
 	
 	return "", "", CannotFindRootMemberAttr
 
+}
+
+func GetTableByMemberID(dag *DAG, tagName string, checkedMemberID string) (string, error) {
+
+	for _, tag := range dag.Tags {
+		if tag.Name == tagName {
+			for memberID, memberTable := range tag.Members {
+				if memberID == checkedMemberID {
+					return memberTable, nil
+				}
+			}
+		}
+	}
+
+	return "", NoTableFound
+}
+
+func GetDepDisplaySetting(dag *DAG, tag string, pTag string) (string, error) {
+
+	for _, dependency := range dag.Dependencies {
+		if dependency.Tag == tag {
+			for _, dependsOn := range dependency.DependsOn {
+				if dependsOn.As != "" {
+					if dependsOn.As == pTag {
+						return dependsOn.DisplaySetting, nil
+					} else {
+						continue
+					}
+				} else {
+					if dependsOn.Tag == pTag {
+						return dependsOn.DisplaySetting, nil
+					}
+				}
+			}
+		}
+	}
+
+	return "", CannotFindDependencyDisplaySetting
 }
 
 func loadDAG(app string) (*DAG, error) {

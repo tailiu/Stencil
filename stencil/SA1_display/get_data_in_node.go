@@ -4,14 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"stencil/config"
 	"stencil/db"
 	"stencil/reference_resolution"
 	"strconv"
 	"strings"
 )
 
-func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
+func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	table, col, value string) (map[string]interface{}, error) {
 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", table, col, value)
@@ -34,7 +33,7 @@ func getOneRowBasedOnDependency(displayConfig *config.DisplayConfig,
 	}
 }
 
-func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
+func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
 	log.Println("+++++++++++++++++++")
@@ -185,7 +184,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *config.DisplayConfig,
 	}
 }
 
-func getRemainingDataInNode(displayConfig *config.DisplayConfig,
+func getRemainingDataInNode(displayConfig *displayConfig,
 	dependencies []map[string]string, 
 	members map[string]string, 
 	hint *HintStruct) ([]*HintStruct, error) {
@@ -333,7 +332,7 @@ func getRemainingDataInNode(displayConfig *config.DisplayConfig,
 
 }
 
-func getOneRowBasedOnHint(displayConfig *config.DisplayConfig, 
+func getOneRowBasedOnHint(displayConfig *displayConfig, 
 	hint *HintStruct) (map[string]interface{}, error) {
 	
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %d", hint.Table, hint.KeyVal["id"])
@@ -357,7 +356,7 @@ func getOneRowBasedOnHint(displayConfig *config.DisplayConfig,
 
 }
 
-func getDataInNode(displayConfig *config.DisplayConfig, 
+func getDataInNode(displayConfig *displayConfig, 
 	hint *HintStruct) ([]*HintStruct, error) {
 
 	if hint.Data == nil {
@@ -402,7 +401,7 @@ func getDataInNode(displayConfig *config.DisplayConfig,
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func checkDependsOnExists(displayConfig *config.DisplayConfig, 
+func checkDependsOnExists(displayConfig *displayConfig, 
 	allData []*HintStruct, data *HintStruct) bool {
 	
 	memberID, _ := data.GetMemberID(displayConfig)
@@ -449,7 +448,7 @@ func checkDependsOnExists(displayConfig *config.DisplayConfig,
 	
 }
 
-func trimDataBasedOnInnerDependencies(displayConfig *config.DisplayConfig,
+func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
 	 allData []*HintStruct) []*HintStruct {
 	
 	var trimmedData []*HintStruct
@@ -468,7 +467,7 @@ func trimDataBasedOnInnerDependencies(displayConfig *config.DisplayConfig,
 
 }
 
-func GetDataInNodeBasedOnDisplaySetting(displayConfig *config.DisplayConfig, 
+func GetDataInNodeBasedOnDisplaySetting(displayConfig *displayConfig, 
 	hint *HintStruct) ([]*HintStruct, error) {
 	
 	displaySetting, _ := hint.GetTagDisplaySetting(displayConfig)

@@ -13,14 +13,14 @@ type Identity struct {
 }
 
 type RefResolutionConfig struct {
-	StencilDBConn 			*sql.DB
-	AppDBConn				*sql.DB
-	AppID					string
-	AppName					string
-	MigrationID				int
-	AppTableNameIDPairs 	map[string]string
-	AppIDNamePairs			map[string]string
-	TableIDNamePairs		map[string]string
-	AllMappings				*config.SchemaMappings
-	MappingsFromSrcToDst	*config.MappedApp
+	stencilDBConn 			*sql.DB
+	appDBConn				*sql.DB
+	appID					string
+	appName					string
+	migrationID				int
+	appTableNameIDPairs 	map[string]string
+	appIDNamePairs			map[string]string
+	tableIDNamePairs		map[string]string
+	allMappings				*config.SchemaMappings
+	mappingsFromSrcToDst	*config.MappedApp
 }

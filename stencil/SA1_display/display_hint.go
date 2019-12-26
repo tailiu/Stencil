@@ -38,7 +38,7 @@ func CreateHint(tableName, tableID, id string) *HintStruct {
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
-func TransformRowToHint(displayConfig *config.DisplayConfig,
+func TransformRowToHint(displayConfig *displayConfig,
 	row map[string]interface{}, table, tag string) *HintStruct {
 	
 	hint := HintStruct{}
@@ -51,7 +51,7 @@ func TransformRowToHint(displayConfig *config.DisplayConfig,
 	}
 	hint.KeyVal = map[string]int{"id": intVal}
 
-	hint.TableID = displayConfig.AppConfig.TableNameIDPairs[table]
+	hint.TableID = displayConfig.dstAppConfig.tableNameIDPairs[table]
 	
 	hint.Data = row
 
@@ -61,7 +61,7 @@ func TransformRowToHint(displayConfig *config.DisplayConfig,
 
 }
 
-func TransformDisplayFlagDataToHint(displayConfig *config.DisplayConfig,
+func TransformDisplayFlagDataToHint(displayConfig *displayConfig,
 	data map[string]string) *HintStruct {
 	
 	hint := HintStruct{}
@@ -72,7 +72,7 @@ func TransformDisplayFlagDataToHint(displayConfig *config.DisplayConfig,
 	}
 	hint.KeyVal = map[string]int{"id": intVal}
 
-	hint.Table = displayConfig.AppConfig.TableIDNamePairs[data["table_id"]]
+	hint.Table = displayConfig.tableIDNamePairs[data["table_id"]]
 	hint.TableID = data["table_id"]
 
 	tag, err1 := getTagName(displayConfig, hint.Table)
@@ -101,16 +101,16 @@ func TransformDisplayFlagDataToHint(displayConfig *config.DisplayConfig,
 // }
 
 func (hint *HintStruct) TransformHintToIdenity(
-	displayConfig *config.DisplayConfig) *reference_resolution.Identity {
+	displayConfig *displayConfig) *reference_resolution.Identity {
 
-	return reference_resolution.CreateIdentity(displayConfig.AppConfig.AppID, 
+	return reference_resolution.CreateIdentity(displayConfig.dstAppConfig.appID, 
 		hint.TableID, strconv.Itoa(hint.KeyVal["id"]))
 
 }
 
-func getTagName(displayConfig *config.DisplayConfig, table string) (string, error) {
+func getTagName(displayConfig *displayConfig, table string) (string, error) {
 
-	for _, tag := range displayConfig.AppConfig.Tags {
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
 
 		for _, member := range tag.Members {
 
@@ -126,9 +126,9 @@ func getTagName(displayConfig *config.DisplayConfig, table string) (string, erro
 	return "", errors.New("No Corresponding Tag Found!")
 }
 
-func (hint *HintStruct) GetMemberID(displayConfig *config.DisplayConfig) (string, error) {
+func (hint *HintStruct) GetMemberID(displayConfig *displayConfig) (string, error) {
 	
-	for _, tag := range displayConfig.AppConfig.Tags {
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
 
 		if tag.Name == hint.Tag {
 
@@ -147,12 +147,12 @@ func (hint *HintStruct) GetMemberID(displayConfig *config.DisplayConfig) (string
 
 }
 
-func (hint *HintStruct) GetDependsOnTables(displayConfig *config.DisplayConfig, 
+func (hint *HintStruct) GetDependsOnTables(displayConfig *displayConfig, 
 	memberID string) []string {
 
 	var dependsOnTables []string
 
-	for _, tag := range displayConfig.AppConfig.Tags {
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
 
 		if tag.Name == hint.Tag {
 
@@ -162,7 +162,8 @@ func (hint *HintStruct) GetDependsOnTables(displayConfig *config.DisplayConfig,
 
 					if memberID == strings.Split(member, ".")[0] {
 
-						table, _ := displayConfig.AppConfig.GetTableByMemberID(hint.Tag, strings.Split(dependsOnMember, ".")[0])
+						table, _ := GetTableByMemberID(displayConfig.dstAppConfig.dag, 
+							hint.Tag, strings.Split(dependsOnMember, ".")[0])
 
 						dependsOnTables = append(dependsOnTables, table)
 
@@ -174,11 +175,11 @@ func (hint *HintStruct) GetDependsOnTables(displayConfig *config.DisplayConfig,
 	return dependsOnTables
 }
 
-func (hint *HintStruct) GetParentTags(displayConfig *config.DisplayConfig) ([]string, error) {
+func (hint *HintStruct) GetParentTags(displayConfig *displayConfig) ([]string, error) {
 
 	var parentTags []string
 	
-	for _, dependency := range displayConfig.AppConfig.Dependencies {
+	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
 
 		if dependency.Tag == hint.Tag {
 
@@ -203,9 +204,9 @@ func (hint *HintStruct) GetParentTags(displayConfig *config.DisplayConfig) ([]st
 }
 
 func (hint *HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(
-	displayConfig *config.DisplayConfig, alias string) (string, error) {
+	displayConfig *displayConfig, alias string) (string, error) {
 
-	for _, dependency := range displayConfig.AppConfig.Dependencies {
+	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
 
 		if dependency.Tag == hint.Tag {
 
@@ -225,9 +226,9 @@ func (hint *HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(
 }
 
 func (hint *HintStruct) GetDisplayExistenceSetting(
-	displayConfig *config.DisplayConfig, pTag string) (string, error) {
+	displayConfig *displayConfig, pTag string) (string, error) {
 
-	for _, dependency := range displayConfig.AppConfig.Dependencies {
+	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
 
 		if dependency.Tag == hint.Tag {
 			
@@ -262,9 +263,9 @@ func (hint *HintStruct) GetDisplayExistenceSetting(
 }
 
 func (hint *HintStruct) GetCombinedDisplaySettings(
-	displayConfig *config.DisplayConfig) (string, error) {
+	displayConfig *displayConfig) (string, error) {
 	
-	for _, dependency := range displayConfig.AppConfig.Dependencies {
+	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
 
 		if dependency.Tag == hint.Tag {
 
@@ -287,9 +288,9 @@ func (hint *HintStruct) GetCombinedDisplaySettings(
 }
 
 func (hint *HintStruct) GetTagDisplaySetting(
-	displayConfig *config.DisplayConfig) (string, error) {
+	displayConfig *displayConfig) (string, error) {
 	
-	for _, tag := range displayConfig.AppConfig.Tags {
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
 
 		if tag.Name == hint.Tag {
 
@@ -308,10 +309,10 @@ func (hint *HintStruct) GetTagDisplaySetting(
 
 }
 
-func (hint *HintStruct) GetDisplaySettingInDependencies(displayConfig *config.DisplayConfig, 
+func (hint *HintStruct) GetDisplaySettingInDependencies(displayConfig *displayConfig, 
 	pTag string) (string, error) {
 
-	setting, err := displayConfig.AppConfig.GetDepDisplaySetting(hint.Tag, pTag)
+	setting, err := GetDepDisplaySetting(displayConfig.dstAppConfig.dag, hint.Tag, pTag)
 
 	if err != nil {
 		return "", err
@@ -330,9 +331,9 @@ func (hint *HintStruct) GetDisplaySettingInDependencies(displayConfig *config.Di
 }
 
 func (hint *HintStruct) GetDisplaySettingInOwnership(
-	displayConfig *config.DisplayConfig) (string, error) {
+	displayConfig *displayConfig) (string, error) {
 
-	for _, ownership := range displayConfig.AppConfig.Ownerships {
+	for _, ownership := range displayConfig.dstAppConfig.dag.Ownerships {
 
 		if ownership.Tag == hint.Tag {
 
@@ -346,9 +347,9 @@ func (hint *HintStruct) GetDisplaySettingInOwnership(
 }
 
 func (hint *HintStruct) GetOwnershipSpec(
-	displayConfig *config.DisplayConfig) (*config.Ownership, error) {
+	displayConfig *displayConfig) (*config.Ownership, error) {
 
-	for _, ownership := range displayConfig.AppConfig.Ownerships {
+	for _, ownership := range displayConfig.dstAppConfig.dag.Ownerships {
 
 		if ownership.Tag == hint.Tag {
 

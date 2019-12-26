@@ -2,7 +2,6 @@ package reference_resolution
 
 import (
 	"stencil/db"
-	"stencil/config"
 	"fmt"
 	"log"
 )
@@ -24,11 +23,11 @@ func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig,
 
 	query := fmt.Sprintf(`SELECT * FROM identity_table 
 		WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d`,
-		ID.app, ID.member, ID.id, refResolutionConfig.MigrationID)
+		ID.app, ID.member, ID.id, refResolutionConfig.migrationID)
 	
 	log.Println(query)
 
-	data, err := db.DataCall(refResolutionConfig.StencilDBConn, query)
+	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,9 +44,9 @@ func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
 	
 	query := fmt.Sprintf(`SELECT * FROM identity_table 
 		WHERE from_app = %s and from_member = %s and from_id = %s and migration_id = %d`,
-		ID.app, ID.member, ID.id, refResolutionConfig.MigrationID)
+		ID.app, ID.member, ID.id, refResolutionConfig.migrationID)
 
-	data, err := db.DataCall(refResolutionConfig.StencilDBConn, query)
+	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,7 +90,7 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 		// Before changing:
 		// if ID.app == refResolutionConfig.AppConfig.AppID && 
 		// 	ID.member != orginalID.member && ID.id != orginalID.id {
-		if ID.app == refResolutionConfig.AppID && 
+		if ID.app == refResolutionConfig.appID && 
 			(ID.member != orginalID.member || ID.id != orginalID.id) {
 			
 			resData := CreateIdentity(ID.app, ID.member, ID.id)

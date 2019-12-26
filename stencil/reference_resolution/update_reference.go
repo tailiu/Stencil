@@ -1,7 +1,6 @@
 package reference_resolution
 
 import (
-	"stencil/config"
 	"stencil/schema_mappings"
 	"log"
 )
@@ -40,13 +39,13 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 	ignoreREF := true
 
 	attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["to_member"]],
-		refResolutionConfig.TableIDNamePairs[procRef["to_member"]] + 
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["to_member"]],
+		refResolutionConfig.tableIDNamePairs[procRef["to_member"]] + 
 			"." + procRef["to_reference"], 
-		refResolutionConfig.AppName,
-		refResolutionConfig.TableIDNamePairs[refIdentityRow.member],
+		refResolutionConfig.appName,
+		refResolutionConfig.tableIDNamePairs[refIdentityRow.member],
 		ignoreREF)
 
 	if err != nil {
@@ -81,13 +80,13 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 	ignoreREF = false 
 
 	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesFromSchemaMappings(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]] +
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
 			"." + procRef["from_reference"], 
-		refResolutionConfig.AppName,
-		refResolutionConfig.TableIDNamePairs[orgID.member],
+		refResolutionConfig.appName,
+		refResolutionConfig.tableIDNamePairs[orgID.member],
 		ignoreREF)
 
 	if err1 != nil {
@@ -103,12 +102,12 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 	// in this case, the mappings do not contain the posts table, and 
 	// the first argument (posts.id) of #FETCH is needed to be used to resolve photo.status_id
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]] +
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
 			"." + procRef["from_reference"], 
-		refResolutionConfig.AppName,
-		refResolutionConfig.TableIDNamePairs[orgID.member])
+		refResolutionConfig.appName,
+		refResolutionConfig.tableIDNamePairs[orgID.member])
 
 	if err2 != nil {
 
@@ -129,10 +128,10 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		updatedVal, err3 := updateReferences(
 			refResolutionConfig,
 			procRef["pk"], 
-			refResolutionConfig.TableIDNamePairs[refIdentityRow.member], 
+			refResolutionConfig.tableIDNamePairs[refIdentityRow.member], 
 			refIdentityRow.id, 
 			attrs[0], 
-			refResolutionConfig.TableIDNamePairs[orgID.member], 
+			refResolutionConfig.tableIDNamePairs[orgID.member], 
 			orgID.id, 
 			attrToUpdate)
 
@@ -166,13 +165,13 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 	ignoreREF := false 
 
 	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesFromSchemaMappings(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]],
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]],
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]] +
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]],
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]],
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
 			"." + procRef["from_reference"], 
-		refResolutionConfig.AppName, 
-		refResolutionConfig.TableIDNamePairs[orgID.member],
+		refResolutionConfig.appName, 
+		refResolutionConfig.tableIDNamePairs[orgID.member],
 		ignoreREF)
 	
 	if err1 != nil {
@@ -184,12 +183,12 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 	// log.Println("attrsToUpdate:",attrsToUpdate)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]] +
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
 			"." + procRef["from_reference"], 
-		refResolutionConfig.AppName,
-		refResolutionConfig.TableIDNamePairs[orgID.member])
+		refResolutionConfig.appName,
+		refResolutionConfig.tableIDNamePairs[orgID.member])
 
 	if err2 != nil {
 
@@ -210,10 +209,10 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 		updatedVal, err1 := updateReferences(
 			refResolutionConfig,
 			procRef["pk"],  
-			refResolutionConfig.TableIDNamePairs[procRef["to_member"]], 
+			refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
 			procRef["to_id"], 
 			attr, 
-			refResolutionConfig.TableIDNamePairs[orgID.member], 
+			refResolutionConfig.tableIDNamePairs[orgID.member], 
 			orgID.id, 
 			attrToUpdate)
 		
@@ -236,13 +235,13 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 	ignoreREF := true
 
 	attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappings(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["to_member"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["to_member"]] + 
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["to_member"]] + 
 			"." + procRef["to_reference"], 
-		refResolutionConfig.AppName,  
-		refResolutionConfig.TableIDNamePairs[orgID.member],
+		refResolutionConfig.appName,  
+		refResolutionConfig.tableIDNamePairs[orgID.member],
 		ignoreREF) 
 	
 	if err != nil {
@@ -269,13 +268,13 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 	ignoreREF = false
 
 	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesFromSchemaMappings(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]] +
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
 			"." + procRef["from_reference"], 
-		refResolutionConfig.AppName, 
-		refResolutionConfig.TableIDNamePairs[refIdentityRow.member],
+		refResolutionConfig.appName, 
+		refResolutionConfig.tableIDNamePairs[refIdentityRow.member],
 		ignoreREF)
 	
 	if err1 != nil {
@@ -285,12 +284,12 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 	// log.Println("attrsToUpdate:",attrsToUpdate)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]] +
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
 			"." + procRef["from_reference"], 
-		refResolutionConfig.AppName,
-		refResolutionConfig.TableIDNamePairs[refIdentityRow.member])
+		refResolutionConfig.appName,
+		refResolutionConfig.tableIDNamePairs[refIdentityRow.member])
 
 	if err2 != nil {
 
@@ -309,10 +308,10 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 		updatedVal, err2 := updateReferences(
 			refResolutionConfig,
 			procRef["pk"],
-			refResolutionConfig.TableIDNamePairs[orgID.member], 
+			refResolutionConfig.tableIDNamePairs[orgID.member], 
 			orgID.id, 
 			attrs[0], 
-			refResolutionConfig.TableIDNamePairs[refIdentityRow.member], 
+			refResolutionConfig.tableIDNamePairs[refIdentityRow.member], 
 			refIdentityRow.id, 
 			attrToUpdate)
 
@@ -344,13 +343,13 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 	ignoreREF := false
 
 	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesFromSchemaMappings(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]] + 
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] + 
 			"." + procRef["from_reference"], 
-		refResolutionConfig.AppName,
-		refResolutionConfig.TableIDNamePairs[procRef["to_member"]], 
+		refResolutionConfig.appName,
+		refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
 		ignoreREF)
 
 	if err1 != nil {
@@ -360,12 +359,12 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 	// log.Println("attrsToUpdate:",attrsToUpdate)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
-		refResolutionConfig.AllMappings,
-		refResolutionConfig.AppIDNamePairs[procRef["app"]], 
-		refResolutionConfig.TableIDNamePairs[procRef["from_member"]] +
+		refResolutionConfig.allMappings,
+		refResolutionConfig.appIDNamePairs[procRef["app"]], 
+		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
 			"." + procRef["from_reference"], 
-		refResolutionConfig.AppName,
-		refResolutionConfig.TableIDNamePairs[procRef["to_member"]])
+		refResolutionConfig.appName,
+		refResolutionConfig.tableIDNamePairs[procRef["to_member"]])
 
 	if err2 != nil {
 
@@ -384,10 +383,10 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 		updatedVal, err1 := updateReferences(
 			refResolutionConfig,
 			procRef["pk"],
-			refResolutionConfig.TableIDNamePairs[orgID.member],
+			refResolutionConfig.tableIDNamePairs[orgID.member],
 			orgID.id,
 			attr, 
-			refResolutionConfig.TableIDNamePairs[procRef["from_member"]], 
+			refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
 			procRef["from_id"], 
 			attrToUpdate)
 

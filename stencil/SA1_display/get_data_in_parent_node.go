@@ -3,7 +3,6 @@ package SA1_display
 import (
 	"fmt"
 	"log"
-	"stencil/config"
 	"stencil/db"
 	"stencil/reference_resolution"
 	"strconv"
@@ -12,7 +11,7 @@ import (
 
 // The only big difference between checkResolveReferenceInGetDataInParentNode 
 // and getOneRowBasedOnDependency is that it only needs to check one table and col
-func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayConfig,
+func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 	id, table, col string) (string, error) {
 
 	log.Println("+++++++++++++++++++")
@@ -80,7 +79,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *config.DisplayCon
 	}
 }
 
-func getHintsInParentNode(displayConfig *config.DisplayConfig, 
+func getHintsInParentNode(displayConfig *displayConfig, 
 	hints []*HintStruct, conditions []string, pTag string) (*HintStruct, error) {
 	
 	log.Println(hints[0])
@@ -224,7 +223,7 @@ func getHintsInParentNode(displayConfig *config.DisplayConfig,
 
 }
 
-func oldGetHintsInParentNode(displayConfig *config.DisplayConfig, 
+func oldGetHintsInParentNode(displayConfig *displayConfig, 
 	hints []*HintStruct, conditions []string, pTag string) (*HintStruct, error) {
 	
 	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
@@ -331,7 +330,7 @@ func oldGetHintsInParentNode(displayConfig *config.DisplayConfig,
 	}
 }
 
-func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
+func dataFromParentNodeExists(displayConfig *displayConfig,
 	hints []*HintStruct, pTag string) (bool, error) {
 	
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(displayConfig, pTag)
@@ -373,7 +372,7 @@ func dataFromParentNodeExists(displayConfig *config.DisplayConfig,
 }
 
 // Note: this function may return multiple hints based on dependencies
-func GetdataFromParentNode(displayConfig *config.DisplayConfig,
+func GetdataFromParentNode(displayConfig *displayConfig,
 	hints []*HintStruct, pTag string) (*HintStruct, error) {
 
 	// Before getting data from a parent node, 
