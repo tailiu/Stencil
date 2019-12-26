@@ -4,9 +4,7 @@ import (
 	"stencil/SA1_display"
 )
 
-func main() {
-
-	// threadNum := 1
+func test1() {
 	
 	migrationID := 955012936
 
@@ -18,5 +16,11 @@ func main() {
 
 	SA1_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 
+}
+
+
+func main() {
+
+	test1()
 	
 }

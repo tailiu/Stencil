@@ -7,16 +7,16 @@ import (
 	"log"
 )
 
-func getFromReferences(displayConfig *config.DisplayConfig, 
+func getFromReferences(refResolutionConfig *RefResolutionConfig, 
 	IDRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and from_member = %s 
 		and from_id = %s and migration_id = %d;`, IDRow["from_app"], 
-		IDRow["from_member"], IDRow["from_id"], displayConfig.MigrationID)
+		IDRow["from_member"], IDRow["from_id"], refResolutionConfig.MigrationID)
 	
 	log.Println(query)
 	
-	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	data, err := db.DataCall(refResolutionConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,14 +27,14 @@ func getFromReferences(displayConfig *config.DisplayConfig,
 
 }
 
-func getToReferences(displayConfig *config.DisplayConfig, 
+func getToReferences(refResolutionConfig *RefResolutionConfig, 
 	IDRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and to_member = %s 
 		and to_id = %s and migration_id = %d;`, IDRow["from_app"], 
-		IDRow["from_member"], IDRow["from_id"], displayConfig.MigrationID)
+		IDRow["from_member"], IDRow["from_id"], refResolutionConfig.MigrationID)
 	
-	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	data, err := db.DataCall(refResolutionConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,13 +45,13 @@ func getToReferences(displayConfig *config.DisplayConfig,
 
 }
 
-func getDataToUpdateRef(displayConfig *config.DisplayConfig, member, id, attr string) string {
+func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, attr string) string {
 	
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE id = %s",
 		attr, member, id)
 	
 	log.Println(query)
-	data, err := db.DataCall1(displayConfig.AppConfig.DBConn, query)
+	data, err := db.DataCall1(refResolutionConfig.AppDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func deleteRef(refID string) string {
 
 	return fmt.Sprintf("DELETE FROM reference_table WHERE pk = %s", refID)
 
-	// err := db.TxnExecute1(displayConfig.StencilDBConn, query)
+	// err := db.TxnExecute1(refResolutionConfig.StencilDBConn, query)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -80,30 +80,30 @@ func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, dat
 	return fmt.Sprintf("UPDATE %s SET %s = %s WHERE id = %s",
 		memberToBeUpdated, attrToBeUpdated, data, IDToBeUpdated)
 
-	// err := db.TxnExecute1(displayConfig.AppConfig.DBConn, query)
+	// err := db.TxnExecute1(refResolutionConfig.AppConfig.DBConn, query)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
 
 }
 
-func addToResolvedReferences(displayConfig *config.DisplayConfig, 
+func addToResolvedReferences(refResolutionConfig *RefResolutionConfig, 
 	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated, data string) string {
 	
 	return fmt.Sprintf(`INSERT INTO resolved_references 
 		(app, member, id, migration_id, reference, value)
 		VALUES (%s, %s, %s, %d, '%s', %s)`, 
-		displayConfig.AppConfig.AppID, 
+		refResolutionConfig.AppID, 
 		memberToBeUpdated,
 		IDToBeUpdated,
-		displayConfig.MigrationID,
+		refResolutionConfig.MigrationID,
 		attrToBeUpdated,
 		data)
 
 }
 
 
-func updateReferences(displayConfig *config.DisplayConfig, 
+func updateReferences(refResolutionConfig *RefResolutionConfig, 
 	refID, member, id, attr, memberToBeUpdated, 
 	IDToBeUpdated, attrToBeUpdated string) (string, error) {
 
@@ -113,7 +113,7 @@ func updateReferences(displayConfig *config.DisplayConfig,
 
 	} else if attr != "" && attrToBeUpdated != "" {
 		
-		data := getDataToUpdateRef(displayConfig, member, id, attr)
+		data := getDataToUpdateRef(refResolutionConfig, member, id, attr)
 		
 		log.Println(data)
 
@@ -127,7 +127,7 @@ func updateReferences(displayConfig *config.DisplayConfig,
 			q1 := updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data)
 			// log.Println(q1)
 
-			err := db.TxnExecute1(displayConfig.AppConfig.DBConn, q1)
+			err := db.TxnExecute1(refResolutionConfig.AppDBConn, q1)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -139,8 +139,8 @@ func updateReferences(displayConfig *config.DisplayConfig,
 			log.Println(q2)
 
 			q3 := addToResolvedReferences(
-				displayConfig, 
-				displayConfig.AppConfig.TableNameIDPairs[memberToBeUpdated],
+				refResolutionConfig, 
+				refResolutionConfig.AppTableNameIDPairs[memberToBeUpdated],
 				IDToBeUpdated, 
 				attrToBeUpdated, 
 				data)
@@ -148,7 +148,7 @@ func updateReferences(displayConfig *config.DisplayConfig,
 			log.Println(q3)
 
 			queries = append(queries, q2, q3)
-			err1 := db.TxnExecute(displayConfig.StencilDBConn, queries)
+			err1 := db.TxnExecute(refResolutionConfig.StencilDBConn, queries)
 
 			if err1 != nil {
 				log.Fatal(err1)
@@ -166,7 +166,7 @@ func updateReferences(displayConfig *config.DisplayConfig,
 		
 		q1 := deleteRef(refID)
 
-		err := db.TxnExecute1(displayConfig.StencilDBConn, q1)
+		err := db.TxnExecute1(refResolutionConfig.StencilDBConn, q1)
 		if err != nil {
 			log.Fatal(err)
 		}

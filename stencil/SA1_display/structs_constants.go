@@ -6,24 +6,24 @@ import (
 )
 
 type DAG struct {
-	tags         	[]config.Tag        `json:"tags"`
-	dependencies 	[]config.Dependency `json:"dependencies"`
-	ownerships   	[]config.Ownership  `json:"ownership"`
+	Tags         	[]config.Tag        `json:"tags"`
+	Dependencies 	[]config.Dependency `json:"dependencies"`
+	Ownerships   	[]config.Ownership  `json:"ownership"`
 }
 
 type srcAppConfig struct {
 	appID 			string
 	appName 		string
 	userID			string
-	dag				*DAG
 }
 
 type dstAppConfig struct {
-	appID 			string
-	appName 		string
-	userID			string
-	DBConn       	*sql.DB
-	dag				*DAG
+	appID 				string
+	appName 			string
+	userID				string
+	DBConn       		*sql.DB
+	dag					*DAG
+	tableNameIDPairs	map[string]string
 }
 
 type displayConfig struct {

@@ -80,12 +80,12 @@ func main() {
 	migrationID := 434969759
 
 	newDB := false
-
-	resolveReference := true
-
-	displayConfig := app_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 	
-	test1(displayConfig)
+	referenceResolutionConfig := reference_resolution.InitializeReferenceResolution()
+
+	
+
+	test1(referenceResolutionConfig)
 
 	// test2(displayConfig)
 	

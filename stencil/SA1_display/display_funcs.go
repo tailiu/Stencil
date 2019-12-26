@@ -36,11 +36,6 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 		log.Fatal(err2)
 	}
 
-	srcDAG, err3 := loadDAG(srcAppName)
-	if err3 != nil {
-		log.Fatal(err3)
-	}
-
 	dstDAG, err4 := loadDAG(dstAppName)
 	if err4 != nil {
 		log.Fatal(err4)
@@ -54,14 +49,24 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 		dstDBConn = db.GetDBConn2(dstAppName)
 	}
 
+	dstAppTableIDNamePair := make(map[string]string)
+
+	res := getTableIDNamePairsInApp(stencilDBConn, dstAppID)
+
+	for _, tableIDNamePair := range res {
+
+		dstAppTableIDNamePair[fmt.Sprint(res["pk"])] = fmt.Sprint(res["table_name"])
+
+	}
+
 	srcAppConfig.appID = srcAppID
 	srcAppConfig.appName = srcAppName
 	srcAppConfig.userID = srcUserID
-	srcAppConfig.dag = srcDAG
 
 	dstAppConfig.appID = dstAppID
 	dstAppConfig.appName = dstAppName
-	dstAppConfig.userID = getDstUserID(stencilDBConn, dstAppID, dstAppName, migrationID, dstDAG)
+	dstAppConfig.tableNameIDPairs = dstAppTableIDNamePair
+	dstAppConfig.userID = getDstUserID(stencilDBConn, dstAppID, migrationID, dstDAG)
 	dstAppConfig.dag = dstDAG
 	dstAppConfig.DBConn = dstDBConn
 
@@ -77,6 +82,33 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 	displayConfig.dstAppConfig = &dstAppConfig
 
 	return &displayConfig
+
+}
+
+func getDstUserID(stencilDBConn *sql.DB, appID string, migrationID int, dstDAG *DAG) string {
+
+	// log.Println(*dstDAG)
+
+	dstRootMember, _, err2 := getRootMemberAttr(dstDAG)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	tableID := getTableIDByTableName(stencilDBConn, appID, dstRootMember)
+
+	// Since the in current settings, there is only one row and the root attribute is always id,
+	// we only do in the following way. Note that this is not a generic way.
+	query := fmt.Sprintf(`SELECT id FROM display_flags WHERE app_id = %s 
+		and table_id = %s and migration_id = %d`, appID, tableID, migrationID)
+
+	// log.Println(query)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["id"])
 
 }
 
@@ -355,6 +387,17 @@ func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 
 }
 
+func getTableIDNamePairsInApp(stencilDBConn *sql.DB, app_id string) []map[string]interface{} {
+	query := fmt.Sprintf("select pk, table_name from app_tables where app_id = %s", app_id)
+
+	result, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	return result
+}
+
 func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	
 	tableIDNamePairs := make(map[string]string)
@@ -376,8 +419,8 @@ func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 
 func getTableIDByTableName(stencilDBConn *sql.DB, appID, tableName string) string {
 
-	query := fmt.Sprintf("select pk from app_tables where table_name = %s and app_id = %s",
-		tableName, appID)
+	query := fmt.Sprintf("select pk from app_tables where app_id = %s and table_name = '%s'",
+		appID, tableName)
 
 	data, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {

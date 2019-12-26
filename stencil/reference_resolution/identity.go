@@ -19,16 +19,16 @@ func CreateIdentity(app, member, id string) *Identity {
 	return ID
 }
 
-func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, 
+func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig, 
 	ID *Identity) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM identity_table 
 		WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d`,
-		ID.app, ID.member, ID.id, displayConfig.MigrationID)
+		ID.app, ID.member, ID.id, refResolutionConfig.MigrationID)
 	
 	log.Println(query)
 
-	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	data, err := db.DataCall(refResolutionConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,14 +40,14 @@ func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig,
 }
 
 
-func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig, 
+func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig, 
 	ID *Identity) []map[string]interface{} {
 	
 	query := fmt.Sprintf(`SELECT * FROM identity_table 
 		WHERE from_app = %s and from_member = %s and from_id = %s and migration_id = %d`,
-		ID.app, ID.member, ID.id, displayConfig.MigrationID)
+		ID.app, ID.member, ID.id, refResolutionConfig.MigrationID)
 
-	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	data, err := db.DataCall(refResolutionConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,12 +58,12 @@ func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig,
 
 }
 
-func forwardTraverseIDTable(displayConfig *config.DisplayConfig, 
+func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig, 
 	ID, orginalID *Identity) []*Identity {
 	
 	var res []*Identity
 
-	IDRows := getRowsFromIDTableByFrom(displayConfig, ID)
+	IDRows := getRowsFromIDTableByFrom(refResolutionConfig, ID)
 	// log.Println(IDRows)
 
 	for _, IDRow := range IDRows {
@@ -75,7 +75,7 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig,
 			procIDRow["to_member"], 
 			procIDRow["to_id"])
 
-		res = append(res, forwardTraverseIDTable(displayConfig, nextData, orginalID)...)
+		res = append(res, forwardTraverseIDTable(refResolutionConfig, nextData, orginalID)...)
 
 	}
 
@@ -89,9 +89,9 @@ func forwardTraverseIDTable(displayConfig *config.DisplayConfig,
 		// We don't find the cases in which ID.member == orginalID.member but 
 		// ID.id != orginalID.id, however this may happen..
 		// Before changing:
-		// if ID.app == displayConfig.AppConfig.AppID && 
+		// if ID.app == refResolutionConfig.AppConfig.AppID && 
 		// 	ID.member != orginalID.member && ID.id != orginalID.id {
-		if ID.app == displayConfig.AppConfig.AppID && 
+		if ID.app == refResolutionConfig.AppID && 
 			(ID.member != orginalID.member || ID.id != orginalID.id) {
 			
 			resData := CreateIdentity(ID.app, ID.member, ID.id)

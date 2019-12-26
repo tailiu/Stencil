@@ -1,9 +1,9 @@
 package SA1_display
 
 import (
-	"database/sql"
+	// "database/sql"
 	"stencil/config"
-	"stencil/db"
+	// "stencil/db"
 	"os"
 	"strings"
 	"fmt"
@@ -46,7 +46,7 @@ func ReplaceKey(displayConfig *config.DisplayConfig, tag string, key string) str
 
 func getRootMemberAttr(dag *DAG) (string, string, error) {
 
-	for _, tag1 := range dag.tags {
+	for _, tag1 := range dag.Tags {
 		
 		if tag1.Name == "root" {
 
@@ -71,29 +71,6 @@ func getRootMemberAttr(dag *DAG) (string, string, error) {
 	}
 	
 	return "", "", CannotFindRootMemberAttr
-
-}
-
-func getDstUserID(stencilDBConn *sql.DB, appID, appName string, migrationID int, dstDAG *DAG) string {
-
-	dstRootMember, _, err2 := getRootMemberAttr(dstDAG)
-	if err2 != nil {
-		log.Fatal(err2)
-	}
-
-	tableID := getTableIDByTableName(stencilDBConn, dstRootMember, appName)
-
-	// Since the in current settings, there is only one row and the root attribute is always id,
-	// we only do in the following way. Note that this is not a generic way.
-	query := fmt.Sprint(`SELECT id FROM display_flags WHERE app_id = %s 
-		and table_id = %s and migration_id = %d`, appID, tableID, migrationID)
-
-	data, err := db.DataCall1(stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return fmt.Sprint(data["id"])
 
 }
 

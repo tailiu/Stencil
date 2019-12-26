@@ -1,8 +1,8 @@
 package reference_resolution
 
 import (
-	"stencil/config"
 	"log"
+	"stencil/config"
 )
 
 /**
@@ -71,21 +71,21 @@ import (
  
 
 // You are on the left/from part
-func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig, 
+func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig, 
 	IDRow map[string]string, orgID *Identity) map[string]string {
 	
 	log.Println("You are on the left/from part")
 
 	updatedAttrs := make(map[string]string)
 
-	for _, ref := range getFromReferences(displayConfig, IDRow) {
+	for _, ref := range getFromReferences(refResolutionConfig, IDRow) {
 		
 		procRef := transformInterfaceToString(ref)
 		log.Println("ref_row: ", procRef)
 
 		data := CreateIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
 
-		refIdentityRows := forwardTraverseIDTable(displayConfig, data, orgID)
+		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID)
 		// log.Println("refIdentityRows: ", refIdentityRows)
 
 		if len(refIdentityRows) > 0 {
@@ -95,14 +95,14 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				log.Println("refIdentityRow: ", refIdentityRow)
 
 				combineTwoMaps(updatedAttrs, updateRefOnLeftBasedOnMappingsUsingRefIDRow(
-					displayConfig, refIdentityRow, procRef, orgID))
+					refResolutionConfig, refIdentityRow, procRef, orgID))
 
 			}
 
-		} else if procRef["app"] == displayConfig.AppConfig.AppID {
+		} else if procRef["app"] == refResolutionConfig.AppConfig.AppID {
 
 			combineTwoMaps(updatedAttrs, updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(
-				displayConfig, procRef, orgID))
+				refResolutionConfig, procRef, orgID))
 
 		}
 
@@ -113,21 +113,21 @@ func updateMyDataBasedOnReferences(displayConfig *config.DisplayConfig,
 }
 
 // You are on the right/to part
-func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig, 
+func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig, 
 	IDRow map[string]string, orgID *Identity) map[string]string {
 	
 	log.Println("You are on the right/to part")
 
 	updatedAttrs := make(map[string]string)
 
-	for _, ref := range getToReferences(displayConfig, IDRow) {
+	for _, ref := range getToReferences(refResolutionConfig, IDRow) {
 
 		procRef := transformInterfaceToString(ref)
 		log.Println(procRef)
 
 		data := CreateIdentity(procRef["app"], procRef["from_member"], procRef["from_id"])
 
-		refIdentityRows := forwardTraverseIDTable(displayConfig, data, orgID)
+		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID)
 		// log.Println(refIdentityRows[0])
 
 		if len(refIdentityRows) > 0 {
@@ -137,14 +137,14 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 				log.Println("refIdentityRow: ", refIdentityRow)
 
 				combineTwoMaps(updatedAttrs, updateRefOnRightBasedOnMappingsUsingRefIDRow(
-					displayConfig, refIdentityRow, procRef, orgID))
+					refResolutionConfig, refIdentityRow, procRef, orgID))
 				
 			}
 
-		} else if procRef["app"] == displayConfig.AppConfig.AppID {
+		} else if procRef["app"] == refResolutionConfig.AppConfig.AppID {
 
 			combineTwoMaps(updatedAttrs, updateRefOnRightBasedOnMappingsNotUsingRefIDRow(
-				displayConfig, procRef, orgID))
+				refResolutionConfig, procRef, orgID))
 
 		}
 	}
@@ -153,26 +153,26 @@ func updateOtherDataBasedOnReferences(displayConfig *config.DisplayConfig,
 
 }
 
-func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig, 
+func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig, 
 	ID *Identity, orgID *Identity) (map[string]string, map[string]string) {
 
 	myUpdatedAttrs := make(map[string]string)
 	
 	othersUpdatedAttrs := make(map[string]string)
 
-	for _, IDRow := range getRowsFromIDTableByTo(displayConfig, ID) {
+	for _, IDRow := range getRowsFromIDTableByTo(refResolutionConfig, ID) {
 
 		procIDRow := transformInterfaceToString(IDRow)
 		
 		log.Println("id_row: ", procIDRow)
 
 		// You are on the left/from part
-		currentMyupdatedAttrs := updateMyDataBasedOnReferences(displayConfig, procIDRow, orgID)
+		currentMyupdatedAttrs := updateMyDataBasedOnReferences(refResolutionConfig, procIDRow, orgID)
 
 		combineTwoMaps(myUpdatedAttrs, currentMyupdatedAttrs)
 
 		// You are on the right/to part
-		currentOthersUpdatedAttrs := updateOtherDataBasedOnReferences(displayConfig, 
+		currentOthersUpdatedAttrs := updateOtherDataBasedOnReferences(refResolutionConfig, 
 			procIDRow, orgID)
 		
 		combineTwoMaps(othersUpdatedAttrs, currentOthersUpdatedAttrs)
@@ -182,7 +182,7 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 			procIDRow["from_app"], procIDRow["from_member"], procIDRow["from_id"])
 
 		nextMyUpdatedAttrs, nextOthersUpdatedAttrs := 
-			resolveReferenceByBackTraversal(displayConfig, preID, orgID)
+			resolveReferenceByBackTraversal(refResolutionConfig, preID, orgID)
 		
 		combineTwoMaps(myUpdatedAttrs, nextMyUpdatedAttrs)
 		combineTwoMaps(othersUpdatedAttrs, nextOthersUpdatedAttrs)
@@ -193,15 +193,40 @@ func resolveReferenceByBackTraversal(displayConfig *config.DisplayConfig,
 
 }
 
+
+func InitializeReferenceResolution(migrationID int, 
+	appID, appName string, appDBConn, StencilDBConn *sql.DB, 
+	appTableNameIDPairs map[string]string,
+	appIDNamePairs map[string]string,
+	tableIDNamePairs map[string]string,
+	allMappings *config.SchemaMappings,
+	mappingsFromSrcToDst *config.MappedApp) *RefResolutionConfig {
+
+	var refResolutionConfig RefResolutionConfig
+
+	refResolutionConfig.StencilDBConn = StencilDBConn
+	refResolutionConfig.AppDBConn = appDBConn
+	refResolutionConfig.MigrationID = migrationID
+	refResolutionConfig.AppID = appID
+	refResolutionConfig.AppName = appName
+	refResolutionConfig.AllMappings = allMappings
+	refResolutionConfig.AppTableNameIDPairs = appTableNameIDPairs
+	refResolutionConfig.AppIDNamePairs = appIDNamePairs
+	refResolutionConfig.TableIDNamePairs = tableIDNamePairs
+	refResolutionConfig.MappingsFromSrcToDst = mappingsFromSrcToDst
+	
+	return &refResolutionConfig
+}
+
 // In terms of the argument *ID*, the first return value is my updated attributes, and 
 // the second return value is others' updated attributes.
 // Note that my updated attributes will not have collision because a table does not have
 // duplicate attributes, 
 // but others' updated attributes may have some collision, 
 // so we use *id:updatedAttr*, which is unique, as the key in the second return value.
-func ResolveReference(displayConfig *config.DisplayConfig, 
+func ResolveReference(refResolutionConfig *RefResolutionConfig, 
 	ID *Identity) (map[string]string, map[string]string) {
 	
-	return resolveReferenceByBackTraversal(displayConfig, ID, ID)
+	return resolveReferenceByBackTraversal(refResolutionConfig, ID, ID)
 
 }
