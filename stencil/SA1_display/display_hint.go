@@ -329,7 +329,8 @@ func (hint *HintStruct) GetDisplaySettingInDependencies(displayConfig *config.Di
 	
 }
 
-func (hint *HintStruct) GetDisplaySettingInOwnership(displayConfig *config.DisplayConfig) (string, error) {
+func (hint *HintStruct) GetDisplaySettingInOwnership(
+	displayConfig *config.DisplayConfig) (string, error) {
 
 	for _, ownership := range displayConfig.AppConfig.Ownerships {
 
@@ -344,7 +345,8 @@ func (hint *HintStruct) GetDisplaySettingInOwnership(displayConfig *config.Displ
 
 }
 
-func (hint *HintStruct) GetOwnership(displayConfig *config.DisplayConfig) (*config.Ownership, error) {
+func (hint *HintStruct) GetOwnershipSpec(
+	displayConfig *config.DisplayConfig) (*config.Ownership, error) {
 
 	for _, ownership := range displayConfig.AppConfig.Ownerships {
 

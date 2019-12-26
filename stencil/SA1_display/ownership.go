@@ -50,7 +50,10 @@ func getADataInOwner(displayConfig *config.DisplayConfig, hints []*HintStruct,
 		log.Fatal(err)
 	}
 
-	return data, nil
+	log.Println(data)
+	// return data, nil
+
+	return nil, nil
 
 }
 

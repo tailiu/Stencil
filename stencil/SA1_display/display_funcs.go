@@ -9,10 +9,78 @@ import (
 	"stencil/schema_mappings"
 	"stencil/reference_resolution"
 	"encoding/json"
-	"strings"
 )
 
-func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
+func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *displayConfig {
+
+	var displayConfig displayConfig
+
+	var srcAppConfig srcAppConfig
+
+	var dstAppConfig dstAppConfig
+
+	stencilDBConn := db.GetDBConn(config.StencilDBName)
+
+	srcAppID, dstAppID, srcUserID := getSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
+
+	srcAppName := getAppNameByAppID(stencilDBConn, srcAppID)
+	dstAppName := getAppNameByAppID(stencilDBConn, dstAppID)
+
+	allMappings, err1 := config.LoadSchemaMappings()
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	mappingsToDst, err2 := schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	srcDAG, err3 := loadDAG(srcAppName)
+	if err3 != nil {
+		log.Fatal(err3)
+	}
+
+	dstDAG, err4 := loadDAG(dstAppName)
+	if err4 != nil {
+		log.Fatal(err4)
+	}
+
+	var dstDBConn *sql.DB
+
+	if newDB {
+		dstDBConn = db.GetDBConn(dstAppName)
+	} else {
+		dstDBConn = db.GetDBConn2(dstAppName)
+	}
+
+	srcAppConfig.appID = srcAppID
+	srcAppConfig.appName = srcAppName
+	srcAppConfig.userID = srcUserID
+	srcAppConfig.dag = srcDAG
+
+	dstAppConfig.appID = dstAppID
+	dstAppConfig.appName = dstAppName
+	dstAppConfig.userID = getDstUserID(stencilDBConn, dstAppID, dstAppName, migrationID, dstDAG)
+	dstAppConfig.dag = dstDAG
+	dstAppConfig.DBConn = dstDBConn
+
+	displayConfig.stencilDBConn = stencilDBConn
+	displayConfig.appIDNamePairs = GetAppIDNamePairs(stencilDBConn)
+	displayConfig.tableIDNamePairs = GetTableIDNamePairs(stencilDBConn)
+	displayConfig.attrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)
+	displayConfig.migrationID = migrationID
+	displayConfig.allMappings = allMappings
+	displayConfig.mappingsToDst = mappingsToDst
+	displayConfig.resolveReference = resolveReference
+	displayConfig.srcAppConfig = &srcAppConfig
+	displayConfig.dstAppConfig = &dstAppConfig
+
+	return &displayConfig
+
+}
+
+func oldCreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
 
 	var displayConfig config.DisplayConfig
 
@@ -57,7 +125,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.
 
 }
 
-func Initialize(app string) (*sql.DB, *config.AppConfig) {
+func oldInitialize(app string) (*sql.DB, *config.AppConfig) {
 
 	stencilDBConn := db.GetDBConn(config.StencilDBName)
 
@@ -306,6 +374,19 @@ func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 
 }
 
+func getTableIDByTableName(stencilDBConn *sql.DB, appID, tableName string) string {
+
+	query := fmt.Sprintf("select pk from app_tables where table_name = %s and app_id = %s",
+		tableName, appID)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	return fmt.Sprint(data["pk"])
+
+}
 
 func getSrcDstAppIDsUserIDByMigrationID(stencilDBConn *sql.DB,
 	migrationID int) (string, string, string) {
@@ -409,37 +490,6 @@ func PutIntoDataBag(displayConfig *config.DisplayConfig, dataHints []*HintStruct
 	}
 }
 
-func ReplaceKey(displayConfig *config.DisplayConfig, tag string, key string) string {
-
-	for _, tag1 := range displayConfig.AppConfig.Tags {
-
-		if tag1.Name == tag {
-			// fmt.Println(tag)
-
-			for k, v := range tag1.Keys {
-
-				if k == key {
-
-					member := strings.Split(v, ".")[0]
-					
-					attr := strings.Split(v, ".")[1]
-					
-					for k1, table := range tag1.Members {
-
-						if k1 == member {
-
-							return table + "." + attr
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return ""
-
-}
-
 func checkDisplayConditionsInNode(displayConfig *config.DisplayConfig, 
 	dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
 
@@ -462,4 +512,11 @@ func checkDisplayConditionsInNode(displayConfig *config.DisplayConfig,
 
 	return displayedData, notDisplayedData
 
+}
+
+func isNodeMigratingUserRootNode(displayConfig *config.DisplayConfig, 
+	dataInNode []*HintStruct) (bool, error) {
+
+	
+	return true, nil
 }

@@ -105,41 +105,60 @@ func checkDisplayOneMigratedData(
 		}
 
 
-		// If the tag of this node is the root, it should be other user's root node since
-		// the migrating user root node is connected with the migrated data with ownership
-		// In this case, we do not need to further check 
-		// the inter-node data dependencies, ownership, or sharing relationships
-		// of the current root node.
-		// As the display thread only displays this migrating user's data, even if there is
-		// some data not displayed in the root node in this case, it will not display it, but
-		// just return results
+		// If the tag of this node is the root, the node could be the migrating user's or other users' root.
 		if oneMigratedData.Tag == "root" {
 
-			return ReturnResultBasedOnNodeCompleteness(err1)
+			// If it is the migrating user's root node, it must be got by being directly picked and
+			// checked by the display thread.
+			if res, err14 := isNodeMigratingUserRootNode(displayConfig, dataInNode); err14 != nil {
+
+			} else {
+
+				if res {
+
+				
+				// If it is other user's root node, it must be arrived through the dependency relationship
+				// since the migrating user root node is only connected with the migrated data with ownership
+				// In this case, we do not need to further check the inter-node data dependencies, 
+				// ownership, or sharing relationships of the current root node.
+				// As the display thread only displays this migrating user's data, even if there is
+				// some data not displayed in the root node in this case, it will not display it.
+				} else {
+	
+					// Actually, since just now the display thread already checked if
+					// there is any data displayed in the node and return, diplayed the undisplayed data if
+					// there exists some displayed data, and returned the result,
+					// here the node should have no data able to be displayed.
+					return NoNodeCanBeDisplayed
+	
+				}
+
+			}
 		
 		// If the tag of this node is not the root,
-		// we need to check the ownership and sharing relationship of this data.
+		// we need to check the ownership and sharing relationships of this data.
 		// The check of sharing conditions for now is not implemented.
-		// Since we only migrate users' own data and migration threads migrate the root node
+		// Since we only migrate users' own data and migration threads should migrate the root node
 		// at the beginning of migrations, checking data ownership
-		// should be always true given the current display settings in the ownership.	
+		// should always return true given the current display settings in the ownership.	
 		} else {
 
-			dataOwnership, err12 := oneMigratedData.GetOwnership(displayConfig)
+			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(displayConfig)
 			if err12 != nil {
 				log.Fatal(err12)
 			}
 
-			dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnership)
+			dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
 
-			// Display the data not displayed in the root node because this root node
+			// Display the data not displayed in the root node
+			// this root node must be 
 			// is the migrating user's root node
 			if len(dataInOwnerNode) != 0 {
 
 				displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
 					displayConfig, dataInOwnerNode)
 				
-				if len(notDisplayedDataInOwnerNode) != 0 {
+				if len(displayedDataInOwnerNode) != 0 {
 
 					err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
 					if err6 != nil {
@@ -149,11 +168,10 @@ func checkDisplayOneMigratedData(
 				}
 
 			}
-
-			displayResultBasedOnOwnership := CheckOwnershipCondition(
-				dataOwnership.Display_setting, err13)
-			
-			if !displayResultBasedOnOwnership {
+	
+			if displayResultBasedOnOwnership := CheckOwnershipCondition(
+				dataOwnershipSpec.Display_setting, err13); 
+				!displayResultBasedOnOwnership {
 
 				return ReturnResultBasedOnOwnershipCheck(err13)
 
