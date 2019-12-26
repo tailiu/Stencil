@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"diaspora/db"
 	"time"
-	"log"
+	// "log"
 	"sort"
 )
 
@@ -215,7 +215,7 @@ func RandomNumWithProbGenerator(scores []float64, sum int) map[int]int {
 	// log.Println(scores)
 	// log.Println(len(scores))
 	// log.Println("**********************************")
-	log.Println(cumScores)
+	// log.Println(cumScores)
 
 	results := make(map[int]int)
 	upperBound := cumScores[len(cumScores) - 1]

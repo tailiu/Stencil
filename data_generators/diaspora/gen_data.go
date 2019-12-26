@@ -43,7 +43,8 @@ const IMAGE_NUM = 369343
 // const IMAGE_NUM = 3693432
 
 
-func genUsers(genConfig *data_generator.GenConfig, num int, wg *sync.WaitGroup, res chan<- []data_generator.User) {
+func genUsers(genConfig *data_generator.GenConfig, num int, 
+	wg *sync.WaitGroup, res chan<- []data_generator.User) {
 
 	defer wg.Done()
 
@@ -253,8 +254,10 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
 // this user can follow this percentage of followers,
 // because maybe most of those users have already fully followed by other users.
-// Use the query: "select count(*) from contacts where sharing = false;" to get the total number of follows
-// The exact number could be more than FOLLOW_NUM because a user could be followed by the same other user twice
+// Use the query: "select count(*) from contacts where sharing = false;" 
+// to get the total number of follows
+// The exact number could be more than FOLLOW_NUM 
+// because a user could be followed by the same other user twice
 // due to multiple-thread data generation.
 func genFollowsController(genConfig *data_generator.GenConfig, users []data_generator.User) {
 
@@ -349,7 +352,8 @@ func genPosts(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // We also randomly assign images to the posts proportionally to the popularity of posts.
 // The scores assigned to posts are in pareto distributiuon.
 // so it is more likely that popular users will have popular posts because they have more posts
-func genPostsController(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
+func genPostsController(genConfig *data_generator.GenConfig, 
+	users []data_generator.User) map[int]float64 {
 
 	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
 	totalPosts := data_generator.GetSumOfIntSlice(postAssignment)
@@ -428,7 +432,7 @@ func genPostsController(genConfig *data_generator.GenConfig, users []data_genera
 }
 
 // Only for test
-func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, map[int]float64){
+func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, map[int]float64) {
 
 	var users []data_generator.User
 	users1 := datagen.GetAllUsersWithAspectsOrderByID(genConfig.DBConn)
@@ -657,6 +661,8 @@ func genLikesController(genConfig *data_generator.GenConfig,
 
 	wg.Wait()
 
+	close(channel)
+
 	for res := range channel {
 
 		totalLikeNum += res
@@ -801,21 +807,23 @@ func main() {
 
 	genConfig := data_generator.Initialize(APP)
 
-	users, _ := prepareTest(genConfig)
+	users, postScores := prepareTest(genConfig)
 
 	// users := genUsersController(genConfig)
 
+	// After getting the exact user number, the data generator needs
+	// to initialize UserPopularityScores, UserCommentScores, etc.
 	data_generator.InitializeWithUserNum(genConfig, len(users))
 
 	// postScores := genPostsController(genConfig, users)
 
-	genFollowsController(genConfig, users)
+	// genFollowsController(genConfig, users)
 
 	// genCommentsController(genConfig, users, postScores)
 
-	// genLikesController(genConfig, users, postScores)
+	genLikesController(genConfig, users, postScores)
 	
-	// genConversationsAndMessagesController(genConfig, users)
+	genConversationsAndMessagesController(genConfig, users)
 
 	log.Println("--------- End of Data Generation ---------")
 
