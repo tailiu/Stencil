@@ -689,14 +689,16 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 		
 		personID := user1.Person_ID
 		messageNum := messageAssignment[seq1]
+
+		// There could be cases in which the user has no friend
 		friends := datagen.GetRealFriendsOfUser(genConfig.DBConn, personID)
-		friendCI := data_generator.AssignParetoDistributionScoresToDataReturnSlice(len(friends))
+		friendCloseIndex := data_generator.AssignParetoDistributionScoresToDataReturnSlice(len(friends))
 		
 		// log.Println(friends)
-		// log.Println(friendCI)
+		// log.Println(friendCloseIndex)
 		// log.Println(messageNum)
 		
-		messageNumsOfConversations := data_generator.RandomNumWithProbGenerator(friendCI, messageNum)
+		messageNumsOfConversations := data_generator.RandomNumWithProbGenerator(friendCloseIndex, messageNum)
 		// log.Println(messageNumsOfConversations)
 
 		for seq2, messageNum := range messageNumsOfConversations {
@@ -744,6 +746,10 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 // to the closeness indexes.
 // Due to the multiple threads data generation, two users could 
 // talk with each other sharing the same conversation.
+// Also note that with number of users generated increasing, there could be cases
+// in which a user has no friend, so the messages allocated to this user cannot be sent.
+// Therefore the actual message number is lower than the calculated total number 
+// according to the messageAssignment
 func genConversationsAndMessagesController(genConfig *data_generator.GenConfig, 
 	users []data_generator.User) {
 
@@ -807,19 +813,19 @@ func main() {
 
 	genConfig := data_generator.Initialize(APP)
 
-	users, postScores := prepareTest(genConfig)
+	// users, postScores := prepareTest(genConfig)
 
-	// users := genUsersController(genConfig)
+	users := genUsersController(genConfig)
 
 	// After getting the exact user number, the data generator needs
 	// to initialize UserPopularityScores, UserCommentScores, etc.
 	data_generator.InitializeWithUserNum(genConfig, len(users))
 
-	// postScores := genPostsController(genConfig, users)
+	postScores := genPostsController(genConfig, users)
 
-	// genFollowsController(genConfig, users)
+	genFollowsController(genConfig, users)
 
-	// genCommentsController(genConfig, users, postScores)
+	genCommentsController(genConfig, users, postScores)
 
 	genLikesController(genConfig, users, postScores)
 	
