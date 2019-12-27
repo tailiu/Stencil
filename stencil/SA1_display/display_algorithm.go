@@ -115,7 +115,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 			// If it is the migrating user's root node, the display thread reached this node 
 			// by directly picking from migrated data.
-			isRootNode, err14 := isNodeMigratingUserRootNode(displayConfig, dataInNode)
+			isUserRootNode, err14 := isNodeMigratingUserRootNode(displayConfig, dataInNode)
 			if err14 != nil {
 				log.Println(err14)
 			}
@@ -125,7 +125,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 			// there is any data displayed in the node and return, diplayed the undisplayed data if
 			// there exists some displayed data, and returned the result,
 			// Therefore, we need to display the data in the node.
-			if isRootNode {
+			if isUserRootNode {
 
 				err15 := Display(displayConfig, dataInNode)
 				if err15 != nil {
@@ -154,45 +154,63 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 		// at the beginning of migrations, checking data ownership
 		// should always return true given the current display settings in the ownership.	
 		} else {
+			
+			// As an optimization, the display thread caches the display result according to
+			// ownership display settings.
+			// If the cached display result is false, it means that either the display thread has not checked,
+			// or the display settings are not satisfied, 
+			// so the display thread needs to perform the following checks.
+			// We can cache the result because normally after the root node is displayed, it should not be deleted.
+			// Users are allowed to do concurrent deletion migraitons and 
+			// even if users perform concurrent consistent or independent migrations, 
+			// users' root nodes are not affected.
+			// In the very rare case in which the migrating user quits the destination application,
+			// we can detect such case, and invalide the cache result.
+			if !displayConfig.dstAppConfig.ownershipDisplaySettingsSatisfied {
 
-			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(displayConfig)
-			if err12 != nil {
-				log.Fatal(err12)
-			}
+				dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(displayConfig)
+				if err12 != nil {
+					log.Fatal(err12)
+				}
 
-			dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
+				dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
 
-			// Display the data not displayed in the root node
-			// this root node should be the migrating user's root node
-			if len(dataInOwnerNode) != 0 {
+				// Display the data not displayed in the root node
+				// this root node should be the migrating user's root node
+				if len(dataInOwnerNode) != 0 {
 
-				displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
-					displayConfig, dataInOwnerNode)
-				
-				if len(displayedDataInOwnerNode) != 0 {
+					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
+						displayConfig, dataInOwnerNode)
+					
+					if len(displayedDataInOwnerNode) != 0 {
 
-					err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
-					if err6 != nil {
-						log.Fatal(err6)
+						err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
+						if err6 != nil {
+							log.Fatal(err6)
+						}
+
 					}
 
 				}
+				
+				// If based on the ownership display settings this node is allowed to be displayed,
+				// then continue to check dependencies.
+				// Otherwise, no data in the node can be displayed.
+				if displayResultBasedOnOwnership := CheckOwnershipCondition(
+					dataOwnershipSpec.Display_setting, err13); !displayResultBasedOnOwnership {
 
+					log.Println(`Ownership display settings are not satisfied, 
+						so this node cannot be displayed`)
+
+					return NoNodeCanBeDisplayed
+
+				} else {
+
+					// Cache the check result
+					displayConfig.dstAppConfig.ownershipDisplaySettingsSatisfied = true
+
+				}
 			}
-			
-			// If based on the ownership display settings this node is allowed to be displayed,
-			// then continue to check dependencies.
-			// Otherwise, no data in the node can be displayed.
-			if displayResultBasedOnOwnership := CheckOwnershipCondition(
-				dataOwnershipSpec.Display_setting, err13); !displayResultBasedOnOwnership {
-
-				log.Println(`Ownership display settings are not satisfied, 
-					so this node cannot be displayed`)
-
-				return NoNodeCanBeDisplayed
-
-			}
-
 		}
 		
 		// After intra-node data dependencies, and ownership and sharing relationships are satified,

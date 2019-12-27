@@ -82,6 +82,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 	dstAppConfig.userID = dstUserID
 	dstAppConfig.dag = dstDAG
 	dstAppConfig.DBConn = dstDBConn
+	dstAppConfig.ownershipDisplaySettingsSatisfied = false
 
 	displayConfig.stencilDBConn = stencilDBConn
 	displayConfig.appIDNamePairs = appIDNamePairs
