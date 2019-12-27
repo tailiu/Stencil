@@ -19,18 +19,19 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 	log.Println(col)
 	log.Println("+++++++++++++++++++")
 	
-	tableID := displayConfig.AppConfig.TableNameIDPairs[table]
+	tableID := displayConfig.dstAppConfig.tableNameIDPairs[table]
 
 	// First, we need to get the attribute that requires reference resolution
 	// For example, we have *favourites.status_id*, and we want to get *status*
 	// We check whether favourites.status_id needs to be resolved
-	if reference_resolution.NeedToResolveReference(displayConfig, table, col) {
+	if reference_resolution.NeedToResolveReference(displayConfig.refResolutionConfig, table, col) {
 
 		log.Println("Parent Node: before checking reference resolved or not")
 
 		// If favourites.status_id should be resolved (in this case, it should be),
 		// we check whether the reference has been resolved or not
-		newVal := reference_resolution.ReferenceResolved(displayConfig, tableID, col, id)
+		newVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, 
+			tableID, col, id)
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
@@ -47,7 +48,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 
 			ID := hint.TransformHintToIdenity(displayConfig)
 
-			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig, ID)
+			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID)
 
 			// We check whether the desired attr (col) has been resolved
 			foundResolvedAttr := false
@@ -136,7 +137,7 @@ func getHintsInParentNode(displayConfig *displayConfig,
 					return nil, CannotFindAnyDataInParent
 				}
 
-				if displayConfig.ResolveReference {
+				if displayConfig.resolveReference {
 
 					depVal, err0 = checkResolveReferenceInGetDataInParentNode(
 						displayConfig, 
@@ -156,7 +157,7 @@ func getHintsInParentNode(displayConfig *displayConfig,
 
 				query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", t2, a2, depVal)
 
-				data, err1 = db.DataCall1(displayConfig.AppConfig.DBConn, query)
+				data, err1 = db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 				if err1 != nil {
 					log.Fatal(err1)
 				}
@@ -179,7 +180,7 @@ func getHintsInParentNode(displayConfig *displayConfig,
 		// For now, there is always only one condition.
 		} else {
 
-			if displayConfig.ResolveReference {
+			if displayConfig.resolveReference {
 
 				depVal, err0 = checkResolveReferenceInGetDataInParentNode(
 					displayConfig, 
@@ -201,7 +202,7 @@ func getHintsInParentNode(displayConfig *displayConfig,
 			query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", 
 				t2, a2, depVal)
 
-			data, err1 = db.DataCall1(displayConfig.AppConfig.DBConn, query)
+			data, err1 = db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 			if err1 != nil {
 				log.Fatal(err1)
 			}
@@ -313,7 +314,7 @@ func oldGetHintsInParentNode(displayConfig *displayConfig,
 	}
 	// fmt.Println(query)
 
-	data, err := db.DataCall1(displayConfig.AppConfig.DBConn, query)
+	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -343,7 +344,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 
 	} else {
 
-		tableCol := ReplaceKey(displayConfig, hints[0].Tag, displayExistenceSetting)
+		tableCol := ReplaceKey(displayConfig.dstAppConfig.dag, hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 
 		for _, hint := range hints {
@@ -382,7 +383,7 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 	}
 
 	tag := hints[0].Tag
-	conditions, _ := displayConfig.AppConfig.GetDependsOnConditions(tag, pTag)
+	conditions, _ := GetDependsOnConditions(displayConfig.dstAppConfig.dag, tag, pTag)
 	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
 
 	var procConditions []string
@@ -391,8 +392,8 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 	if len(conditions) == 1 {
 
 		condition := conditions[0]
-		from = ReplaceKey(displayConfig, tag, condition.TagAttr)
-		to = ReplaceKey(displayConfig, pTag, condition.DependsOnAttr)
+		from = ReplaceKey(displayConfig.dstAppConfig.dag, tag, condition.TagAttr)
+		to = ReplaceKey(displayConfig.dstAppConfig.dag, pTag, condition.DependsOnAttr)
 		procConditions = append(procConditions, from+":"+to)
 
 	} else {
@@ -401,19 +402,19 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 
 			if i == 0 {
 
-				from = ReplaceKey(displayConfig, tag, condition.TagAttr)
+				from = ReplaceKey(displayConfig.dstAppConfig.dag, tag, condition.TagAttr)
 
-				to = ReplaceKey(displayConfig,
+				to = ReplaceKey(displayConfig.dstAppConfig.dag,
 					strings.Split(condition.DependsOnAttr, ".")[0], 
 					strings.Split(condition.DependsOnAttr, ".")[1])
 
 			} else if i == len(conditions)-1 {
 
-				from = ReplaceKey(displayConfig, 
+				from = ReplaceKey(displayConfig.dstAppConfig.dag, 
 					strings.Split(condition.TagAttr, ".")[0], 
 					strings.Split(condition.TagAttr, ".")[1])
 				
-				to = ReplaceKey(displayConfig, pTag, condition.DependsOnAttr)
+				to = ReplaceKey(displayConfig.dstAppConfig.dag, pTag, condition.DependsOnAttr)
 
 			}
 

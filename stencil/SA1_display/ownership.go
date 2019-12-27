@@ -16,10 +16,10 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 	// so we only need the first condition here
 	condition := ownership.Conditions[0]
 	
-	tableAttr := ReplaceKey(displayConfig, 
+	tableAttr := ReplaceKey(displayConfig.dstAppConfig.dag, 
 		ownership.Tag, condition.TagAttr)
 
-	dependsOnTableAttr := ReplaceKey(displayConfig, 
+	dependsOnTableAttr := ReplaceKey(displayConfig.dstAppConfig.dag, 
 		ownership.OwnedBy, condition.DependsOnAttr)
 
 	table := strings.Split(tableAttr, ".")[0]
@@ -45,7 +45,7 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s",
 		dependsOnTable, dependsOnAttr, val)
 	
-	data, err := db.DataCall1(displayConfig.StencilDBConn, query)
+	data, err := db.DataCall1(displayConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

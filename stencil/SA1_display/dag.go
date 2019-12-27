@@ -11,9 +11,9 @@ import (
 	"io/ioutil"
 )
 
-func ReplaceKey(displayConfig *config.DisplayConfig, tag string, key string) string {
+func ReplaceKey(dag *DAG, tag string, key string) string {
 
-	for _, tag1 := range displayConfig.AppConfig.Tags {
+	for _, tag1 := range dag.Tags {
 
 		if tag1.Name == tag {
 			// fmt.Println(tag)
@@ -90,16 +90,26 @@ func GetTableByMemberID(dag *DAG, tagName string, checkedMemberID string) (strin
 func GetDepDisplaySetting(dag *DAG, tag string, pTag string) (string, error) {
 
 	for _, dependency := range dag.Dependencies {
+
 		if dependency.Tag == tag {
+
 			for _, dependsOn := range dependency.DependsOn {
+
 				if dependsOn.As != "" {
+
 					if dependsOn.As == pTag {
+
 						return dependsOn.DisplaySetting, nil
+
 					} else {
+
 						continue
+
 					}
 				} else {
+
 					if dependsOn.Tag == pTag {
+
 						return dependsOn.DisplaySetting, nil
 					}
 				}
@@ -108,6 +118,29 @@ func GetDepDisplaySetting(dag *DAG, tag string, pTag string) (string, error) {
 	}
 
 	return "", CannotFindDependencyDisplaySetting
+}
+
+func GetDependsOnConditions(dag *DAG, tagName string, pTagName string) ([]config.DCondition, error) {
+	
+	for _, dp := range dag.Dependencies {
+
+		if dp.Tag == tagName {
+			
+			for _, dp1 := range dp.DependsOn {
+				
+				if dp1.As == pTagName {
+					
+					return dp1.Conditions, nil
+				
+				} else if dp1.Tag == pTagName {
+					
+					return dp1.Conditions, nil
+				}
+			}
+		}
+	}
+
+	return nil, errors.New("Error: No Conditions Found")
 }
 
 func loadDAG(app string) (*DAG, error) {
