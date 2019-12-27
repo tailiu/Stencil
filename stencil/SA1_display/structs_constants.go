@@ -21,6 +21,8 @@ type srcAppConfig struct {
 type dstAppConfig struct {
 	appID 				string
 	appName 			string
+	rootTable			string
+	rootAttr			string
 	userID				string
 	DBConn       		*sql.DB
 	dag					*DAG

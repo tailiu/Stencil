@@ -50,10 +50,11 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 		log.Fatal(err)
 	}
 
-	log.Println(data)
-	// return data, nil
+	// log.Println(data)
 
-	return nil, nil
+	hint := TransformRowToHint(displayConfig, data, dependsOnTable, "root")
+
+	return hint, nil
 
 }
 
@@ -67,4 +68,28 @@ func getOwner(displayConfig *displayConfig, hints []*HintStruct,
 
 	return GetDataInNodeBasedOnDisplaySetting(displayConfig, oneDataInOwnerNode)
 	
+}
+
+func isNodeMigratingUserRootNode(displayConfig *displayConfig, 
+	dataInRootNode []*HintStruct) (bool, error) {
+
+	for _, node := range dataInRootNode {
+
+		if node.Table == displayConfig.dstAppConfig.rootTable {
+
+			if node.Data[displayConfig.dstAppConfig.rootAttr] == 
+				displayConfig.dstAppConfig.userID {
+					
+				return true, nil
+				
+			} else {
+
+				return false, NotMigratingUserRootNode
+			}
+		}
+
+	}
+
+	return false, CannotFindRootTable
+
 }

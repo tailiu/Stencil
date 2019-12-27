@@ -49,6 +49,9 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 		dstDBConn = db.GetDBConn2(dstAppName)
 	}
 
+	dstRootMember, dstRootAttr, dstUserID := getDstRootMemberAttrID(
+		stencilDBConn, dstAppID, migrationID, dstDAG)
+
 	dstAppTableIDNamePair := make(map[string]string)
 
 	res := getTableIDNamePairsInApp(stencilDBConn, dstAppID)
@@ -74,7 +77,9 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 	dstAppConfig.appID = dstAppID
 	dstAppConfig.appName = dstAppName
 	dstAppConfig.tableNameIDPairs = dstAppTableIDNamePair
-	dstAppConfig.userID = getDstUserID(stencilDBConn, dstAppID, migrationID, dstDAG)
+	dstAppConfig.rootTable = dstRootMember
+	dstAppConfig.rootAttr = dstRootAttr
+	dstAppConfig.userID = dstUserID
 	dstAppConfig.dag = dstDAG
 	dstAppConfig.DBConn = dstDBConn
 
@@ -93,11 +98,12 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 
 }
 
-func getDstUserID(stencilDBConn *sql.DB, appID string, migrationID int, dstDAG *DAG) string {
+func getDstRootMemberAttrID(stencilDBConn *sql.DB, 
+	appID string, migrationID int, dstDAG *DAG) (string, string, string) {
 
 	// log.Println(*dstDAG)
 
-	dstRootMember, _, err2 := getRootMemberAttr(dstDAG)
+	dstRootMember, dstRootAttr, err2 := getRootMemberAttr(dstDAG)
 	if err2 != nil {
 		log.Fatal(err2)
 	}
@@ -116,7 +122,7 @@ func getDstUserID(stencilDBConn *sql.DB, appID string, migrationID int, dstDAG *
 		log.Fatal(err)
 	}
 
-	return fmt.Sprint(data["id"])
+	return dstRootMember, dstRootAttr, fmt.Sprint(data["id"])
 
 }
 
@@ -564,11 +570,4 @@ func checkDisplayConditionsInNode(displayConfig *displayConfig,
 
 	return displayedData, notDisplayedData
 
-}
-
-func isNodeMigratingUserRootNode(displayConfig *displayConfig, 
-	dataInNode []*HintStruct) (bool, error) {
-
-	
-	return true, nil
 }

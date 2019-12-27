@@ -39,6 +39,10 @@ var DataNotDisplayedDueToIncompleteOwnerNode =
 var DataNotDisplayedDueToNoDataInOwnerNode = 
 	errors.New("Data is not displayed because no data can be displayed in the ownership node")
 
+var NotMigratingUserRootNode = errors.New("Not migrating user root node")
+
+var CannotFindRootTable = errors.New("Cannot find root table")
+
 // DAG specification
 var CannotFindRootMemberAttr = errors.New("Cannot find the root member and attribute")
 
