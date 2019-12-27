@@ -1182,7 +1182,7 @@
                                     "mapping": {
                                         "id": "#RANDINT",
                                         "email":"credentials.email",
-                                        "account_id":"users.id",
+                                        "account_id":"#REF(users.id,users.id)",
                                         "encrypted_password":"credentials.password",
                                         "created_at":"users.created_at",
                                         "updated_at":"users.updated_at"
@@ -1202,8 +1202,8 @@
                                         "id":"user_actions.id",
                                         "created_at":"user_actions.created_at",
                                         "updated_at":"user_actions.updated_at",
-                                        "account_id":"user_actions.from_user_id",
-                                        "target_account_id":"user_actions.to_user_id"
+                                        "account_id":"#REF(user_actions.from_user_id,users.id)",
+                                        "target_account_id":"#REF(user_actions.to_user_id,users.id)"
                                     }
                                 }
                             ]
@@ -1216,10 +1216,10 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"likes.id",
-                                        "status_id":"likes.tweet_id",
+                                        "status_id":"#REF(likes.tweet_id,tweets.id)",
                                         "created_at":"likes.created_at",
                                         "updated_at":"likes.updated_at",
-                                        "account_id":"likes.user_id"                                    
+                                        "account_id":"#REF(likes.user_id,users.id)"                                    
                                     }
                                 }
                             ]
@@ -1235,8 +1235,8 @@
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
                                         "text":"tweets.content",
-                                        "in_reply_to_id":"tweets.reply_to_id",
-                                        "account_id":"tweets.user_id"
+                                        "in_reply_to_id":"#REF(tweets.reply_to_id,tweets.id)",
+                                        "account_id":"#REF(tweets.user_id,users.id)"
                                     }
                                 }
                             ]
@@ -1251,8 +1251,8 @@
                                         "id":"retweets.id",
                                         "created_at":"retweets.created_at",
                                         "updated_at":"retweets.updated_at",
-                                        "account_id":"retweets.user_id",
-                                        "reblog_of_id":"retweets.tweet_id"
+                                        "account_id":"#REF(retweets.user_id,users.id)",
+                                        "reblog_of_id":"#REF(retweets.tweet_id,tweets.id)"
                                     }
                                 }
                             ]
@@ -1282,8 +1282,8 @@
                                         "created_at":"messages.created_at",
                                         "updated_at":"messages.updated_at",
                                         "text":"messages.content",
-                                        "account_id":"messages.user_id",
-                                        "conversation_id":"messages.conversation_id"
+                                        "account_id":"#REF(messages.user_id,users.id)",
+                                        "conversation_id":"#REF(messages.conversation_id,conversations.id)"
                                     }
                                 }
                             ]
@@ -1298,9 +1298,9 @@
                                     "mapping":{ 
                                         "id":"notifications.id",
                                         "activity_type":"notifications.notification_type",
-                                        "account_id":"notifications.user_id",
-                                        "activity_id":"notifications.tweet",
-                                        "from_account_id":"notifications.from_user",
+                                        "activity_id":"#REF(notifications.tweet,tweets.id)",
+                                        "account_id":"#REF(notifications.user_id,users.id)",
+                                        "from_account_id":"#REF(notifications.from_user,users.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }
@@ -1348,7 +1348,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"users.id",
-                                        "owner_id":"credentials.id",
+                                        "owner_id":"#REF(credentials.id,credentials.id)",
                                         "diaspora_handle":"users.handle",
                                         "created_at":"users.created_at",
                                         "updated_at":"users.updated_at"
@@ -1359,7 +1359,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"#RANDINT",
-                                        "person_id":"users.id",
+                                        "person_id":"#REF(users.id,users.id)",
                                         "bio":"users.bio",
                                         "image_url":"users.avatar",
                                         "created_at":"users.created_at",
@@ -1378,7 +1378,7 @@
                                     },
                                     "mapping": {
                                         "id":"tweets.id",
-                                        "author_id":"tweets.user_id",
+                                        "author_id":"#REF(tweets.user_id,users.id)",
                                         "text":"tweets.content",
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
@@ -1397,11 +1397,11 @@
                                     },
                                     "mapping": {
                                         "id":"tweets.id",
-                                        "author_id":"tweets.user_id",
+                                        "author_id":"#REF(tweets.user_id,users.id)",
                                         "text":"tweets.content",
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
-                                        "commentable_id":"tweets.reply_to_id"
+                                        "commentable_id":"#REF(tweets.reply_to_id,tweets.id)"
                                     }
                                 }
                             ]
@@ -1415,8 +1415,8 @@
                                     },
                                     "mapping": {
                                         "id":"messages.id",
-                                        "author_id":"messages.user_id",
-                                        "conversation_id":"messages.conversation_id",
+                                        "author_id":"#REF(messages.user_id,users.id)",
+                                        "conversation_id":"#REF(messages.conversation_id,conversations.id)",
                                         "text":"messages.content",
                                         "created_at":"messages.created_at",
                                         "updated_at":"messages.updated_at"
@@ -1443,8 +1443,8 @@
                                     },
                                     "mapping":{
                                         "id":"conversation_participants.id",
-                                        "person_id":"conversation_participants.user_id",
-                                        "conversation_id":"conversation_participants.conversation_id",
+                                        "person_id":"#REF(conversation_participants.user_id,users.id)",
+                                        "conversation_id":"#REF(conversation_participants.conversation_id,conversations.id)",
                                         "created_at":"conversation_participants.created_at",
                                         "updated_at":"conversation_participants.updated_at"
                                     }
@@ -1459,10 +1459,10 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"likes.id",
-                                        "target_id":"likes.tweet_id",
+                                        "target_id":"#REF(likes.tweet_id,tweets.id)",
                                         "created_at":"likes.created_at",
                                         "updated_at":"likes.updated_at",
-                                        "author_id":"likes.user_id"
+                                        "author_id":"#REF(likes.user_id,users.id)"
                                     }
                                 }
                             ]
@@ -1479,8 +1479,8 @@
                                         "id":"user_actions.id",
                                         "created_at":"user_actions.created_at",
                                         "updated_at":"user_actions.updated_at",
-                                        "user_id":"user_actions.from_user_id",
-                                        "person_id":"user_actions.to_user_id",
+                                        "user_id":"#REF(user_actions.from_user_id,users.id)",
+                                        "person_id":"#REF(user_actions.to_user_id,users.id)",
                                         "receiving": "$T",
                                         "sharing":"$F"
                                     }
@@ -1497,8 +1497,8 @@
                                     "mapping": {
                                         "id":"notifications.id",
                                         "target_type":"notifications.notification_type",
-                                        "recipient_id":"notifications.user_id",
-                                        "target_id":"notifications.tweet",
+                                        "recipient_id":"#REF(notifications.user_id,users.id)",
+                                        "target_id":"#REF(notifications.tweet,tweets.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }
@@ -1509,7 +1509,7 @@
                                     },
                                     "mapping": {
                                         "notification_id":"notifications.id",
-                                        "person_id":"notifications.from_user",
+                                        "person_id":"#REF(notifications.from_user,users.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }
@@ -1557,8 +1557,8 @@
                                     "table": "subscription",
                                     "conditions":{},
                                     "mapping": {
-                                        "subscriber": "user_actions.from_user_id",
-                                        "subscribed": "user_actions.to_user_id",
+                                        "subscriber": "#REF(user_actions.from_user_id,users.id)",
+                                        "subscribed": "#REF(user_actions.to_user_id,users.id)",
                                         "created":"user_actions.created_at",
                                         "modified":"user_actions.updated_at"
                                     }
@@ -1574,10 +1574,10 @@
                                     "mapping": {
                                         "id": "tweets.id",
                                         "content": "tweets.content",
-                                        "profile_id": "tweets.user_id",
+                                        "profile_id": "#REF(tweets.user_id,users.id)",
                                         "created": "tweets.created_at",
                                         "modified":"tweets.updated_at",
-                                        "reply_to":"tweets.reply_to_id"
+                                        "reply_to":"#REF(tweets.reply_to_id,tweets.id)"
                                     }
                                 }
                             ]
@@ -1589,8 +1589,8 @@
                                     "table": "notice",
                                     "mapping" : {
                                         "id": "retweets.id",
-                                        "repeat_of": "retweets.tweet_id",
-                                        "profile_id": "retweets.user_id",
+                                        "repeat_of": "#REF(retweets.tweet_id,tweets.id)",
+                                        "profile_id": "#REF(retweets.user_id,users.id)",
                                         "created": "retweets.created_at",
                                         "modified":"retweets.updated_at"
                                     }            
@@ -1603,8 +1603,8 @@
                                 {
                                     "table": "fave",
                                     "mapping": {
-                                        "user_id": "likes.user_id",
-                                        "notice_id": "likes.tweet_id",
+                                        "user_id": "#REF(likes.user_id,users.id)",
+                                        "notice_id": "#REF(likes.tweet_id,tweets.id)",
                                         "created": "likes.created_at",
                                         "modified": "likes.updated_at"
                                     }
