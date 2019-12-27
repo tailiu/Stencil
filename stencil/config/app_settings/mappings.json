@@ -1661,7 +1661,7 @@
                                         "email":"user.email",
                                         "created_at":"user.created",
                                         "updated_at":"user.modified",
-                                        "account_id":"profile.id"
+                                        "account_id":"#REF(profile.id,profile.id)"
                                     }
                                 }
                             ]
@@ -1672,8 +1672,8 @@
                                 {
                                     "table": "follows",
                                     "mapping": {
-                                        "account_id": "subscription.subscriber",
-                                        "target_account_id": "subscription.subscribed",
+                                        "account_id": "#REF(subscription.subscriber,profile.id)",
+                                        "target_account_id": "#REF(subscription.subscribed,profile.id)",
                                         "created_at":"subscription.created",
                                         "updated_at":"subscription.modified",
                                         "uri":"subscription.uri"
@@ -1692,13 +1692,13 @@
                                     "mapping": {
                                         "id": "notice.id",
                                         "text": "notice.content",
-                                        "account_id": "notice.profile_id",
+                                        "account_id": "#REF(notice.profile_id,profile.id)",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
                                         "local":"notice.is_local",
-                                        "in_reply_to_id":"notice.reply_to",
-                                        "conversation_id":"notice.conversation",
-                                        "reblog_of_id":"notice.repeat_of",
+                                        "in_reply_to_id":"#REF(notice.reply_to,notice.id)",
+                                        "conversation_id":"#REF(notice.conversation,conversation.id)",
+                                        "reblog_of_id":"#REF(notice.repeat_of,notice.id)",
                                         "visibility": "$visibility0",
                                         "reply": "$f"
                                     }
@@ -1711,13 +1711,13 @@
                                     "mapping": {
                                         "id": "notice.id",
                                         "text": "notice.content",
-                                        "account_id": "notice.profile_id",
+                                        "account_id": "#REF(notice.profile_id,profile.id)",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
                                         "local":"notice.is_local",
-                                        "in_reply_to_id":"notice.reply_to",
-                                        "conversation_id":"notice.conversation",
-                                        "reblog_of_id":"notice.repeat_of",
+                                        "in_reply_to_id":"#REF(notice.reply_to,notice.id)",
+                                        "conversation_id":"#REF(notice.conversation,conversation.id)",
+                                        "reblog_of_id":"#REF(notice.repeat_of,notice.id)",
                                         "visibility": "$visibility0",
                                         "reply": "$t"
                                     }
@@ -1741,8 +1741,8 @@
                                         "created_at": "file.date",
                                         "updated_at": "file.modified",
                                         "file_file_name": "file.filename",
-                                        "status_id": "file_to_post.post_id",
-                                        "account_id": "file.profile_id"
+                                        "status_id": "#REF(file_to_post.post_id,notice.id)",
+                                        "account_id": "#REF(file.profile_id,profile.id)"
                                     }
                                 }
                             ]
@@ -1768,8 +1768,8 @@
                                 {
                                     "table": "favourites",
                                     "mapping": {
-                                        "account_id": "fave.user_id",
-                                        "status_id": "fave.notice_id",
+                                        "account_id": "#REF(fave.user_id,profile.id)",
+                                        "status_id": "#REF(fave.notice_id,notice.id)",
                                         "created_at": "fave.created",
                                         "updated_at": "fave.modified"
                                     }
@@ -1807,7 +1807,7 @@
                                         "id":"#RANDINT",
                                         "email":"user.email",
                                         "password":"user.password",
-                                        "user_id":"profile.id",
+                                        "user_id":"#REF(profile.id,profile.id)",
                                         "created_at":"user.created",
                                         "updated_at":"user.modified"
                                     }
@@ -1820,8 +1820,8 @@
                                 {
                                     "table": "user_actions",
                                     "mapping": {
-                                        "from_user_id": "subscription.subscriber",
-                                        "to_user_id": "subscription.subscribed",
+                                        "from_user_id": "#REF(subscription.subscriber,profile.id)",
+                                        "to_user_id": "#REF(subscription.subscribed,profile.id)",
                                         "created_at":"subscription.created",
                                         "updated_at":"subscription.modified",
                                         "action_type": "$follow_action"
@@ -1840,10 +1840,10 @@
                                     "mapping": {
                                         "id": "notice.id",
                                         "content": "notice.content",
-                                        "user_id": "notice.profile_id",
+                                        "user_id": "#REF(notice.profile_id,profile.id)",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
-                                        "reply_to_id":"notice.reply_to"
+                                        "reply_to_id":"#REF(notice.reply_to,notice.id)"
                                     }
                                 },
                                 {
@@ -1853,8 +1853,8 @@
                                     },
                                     "mapping" : {
                                         "id": "notice.id",
-                                        "tweet_id": "notice.repeat_of",
-                                        "user_id": "notice.profile_id",
+                                        "tweet_id": "#REF(notice.repeat_of,notice.id)",
+                                        "user_id": "#REF(notice.profile_id,profile.id)",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified"
                                     }            
@@ -1867,8 +1867,8 @@
                                 {
                                     "table": "likes",
                                     "mapping": {
-                                        "user_id": "fave.user_id",
-                                        "tweet_id": "fave.notice_id",
+                                        "user_id": "#REF(fave.user_id,profile.id)",
+                                        "tweet_id": "#REF(fave.notice_id,notice.id)",
                                         "created_at": "fave.created",
                                         "updated_at": "fave.modified"
                                     }
@@ -1900,7 +1900,7 @@
                                 {
                                     "table": "users",
                                     "mapping": {
-                                        "id": "#ASSIGN(profile.id)",
+                                        "id": "profile.id",
                                         "email":"user.email",
                                         "username":"user.nickname",
                                         "language":"user.language",
@@ -1912,7 +1912,7 @@
                                     "table": "people",
                                     "mapping": {
                                         "id":"profile.id",
-                                        "owner_id":"#ASSIGN(profile.id)",
+                                        "owner_id":"#REF(profile.id,profile.id)",
                                         "created_at":"profile.created",
                                         "updated_at":"profile.modified"
                                     }
@@ -1921,7 +1921,7 @@
                                     "table": "profiles",
                                     "mapping": {
                                         "id":"#RANDINT",
-                                        "person_id":"profile.id",
+                                        "person_id":"#REF(profile.id,profile.id)",
                                         "full_name":"profile.fullname",
                                         "bio":"profile.bio",
                                         "location":"profile.location",
@@ -1937,8 +1937,8 @@
                                 {
                                     "table": "contacts",
                                     "mapping": {
-                                        "user_id": "subscription.subscriber",
-                                        "person_id": "subscription.subscribed",
+                                        "user_id": "#REF(subscription.subscriber,profile.id)",
+                                        "person_id": "#REF(subscription.subscribed,profile.id)",
                                         "created_at":"subscription.created",
                                         "updated_at":"subscription.modified",
                                         "sharing":"$F",
@@ -1958,7 +1958,7 @@
                                     "mapping": {
                                         "id": "notice.id",
                                         "text": "notice.content",
-                                        "author_id": "notice.profile_id",
+                                        "author_id": "#REF(notice.profile_id,profile.id)",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
                                         "type":"$StatusMessage"
@@ -1971,8 +1971,8 @@
                                     },
                                     "mapping" : {
                                         "id": "notice.id",
-                                        "commentable_id": "notice.reply_to",
-                                        "author_id": "notice.profile_id",
+                                        "commentable_id": "#REF(notice.reply_to,notice.id)",
+                                        "author_id": "#REF(notice.profile_id,profile.id)",
                                         "text": "notice.content",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified"
@@ -1998,8 +1998,8 @@
                                         "updated_at": "file.modified",
                                         "width": "file.width",
                                         "height": "file.height",
-                                        "guid": "file_to_post.post_id",
-                                        "author_id": "file.profile_id"
+                                        "guid": "#REF(file_to_post.post_id,notice.id)",
+                                        "author_id": "#REF(file.profile_id,profile.id)"
                                     }
                                 }
                             ]
@@ -2010,8 +2010,8 @@
                                 {
                                     "table": "likes",
                                     "mapping": {
-                                        "author_id": "fave.user_id",
-                                        "target_id": "fave.notice_id",
+                                        "author_id": "#REF(fave.user_id,profile.id)",
+                                        "target_id": "#REF(fave.notice_id,notice.id)",
                                         "created_at": "fave.created",
                                         "updated_at": "fave.modified"
                                     }
