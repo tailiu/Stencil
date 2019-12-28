@@ -313,12 +313,12 @@
                                     "table": "credentials",
                                     "conditions":{},
                                     "mapping": {
-                                        "id": "#RANDINT",
+                                        "id": "users.id",
                                         "email":"users.email",
                                         "user_id":"#REF(accounts.id,accounts.id)",
                                         "password":"users.encrypted_password",
-                                        "created_at":"accounts.created_at",
-                                        "updated_at":"accounts.updated_at"
+                                        "created_at":"users.created_at",
+                                        "updated_at":"users.updated_at"
                                     }
                                 }
                             ]   
@@ -377,6 +377,7 @@
                                 {
                                     "table": "conversations",
                                     "conditions":{},
+                                    "usedInPSM": false,
                                     "mapping": {
                                         "id":"conversations.id",
                                         "created_at":"conversations.created_at",
@@ -1626,10 +1627,6 @@
                             "value": "0"
                         },
                         {
-                            "name": "visibility3",
-                            "value": "3"
-                        },
-                        {
                             "name": "f",
                             "value": "false"
                         },
@@ -1657,7 +1654,7 @@
                                     "table": "users",
                                     "conditions":{},
                                     "mapping": {
-                                        "id":"#RANDINT",
+                                        "id":"user.id",
                                         "email":"user.email",
                                         "created_at":"user.created",
                                         "updated_at":"user.modified",
@@ -1753,6 +1750,7 @@
                                 {
                                     "table": "conversations",
                                     "conditions":{},
+                                    "usedInPSM": false,
                                     "mapping": {
                                         "id": "conversation.id",
                                         "uri": "conversation.uri",
