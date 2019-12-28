@@ -306,7 +306,8 @@
                                         "created_at":"accounts.created_at",
                                         "updated_at":"accounts.updated_at",
                                         "avatar": "accounts.avatar_remote_url",
-                                        "handle": "accounts.display_name"
+                                        "handle": "accounts.display_name",
+                                        "bio":"accounts.note"
                                     }
                                 },
                                 {
@@ -453,8 +454,9 @@
                                         "id":"accounts.id",
                                         "email":"users.email",
                                         "nickname":"accounts.username",
-                                        "created":"accounts.created_at",
-                                        "modified":"accounts.updated_at"
+                                        "created":"users.created_at",
+                                        "modified":"users.updated_at",
+                                        "password":"users.encrypted_password"
                                     }
                                 },
                                 {
@@ -1174,7 +1176,8 @@
                                         "created_at":"users.created_at",
                                         "updated_at":"users.updated_at",
                                         "avatar_remote_url": "users.avatar",
-                                        "display_name": "users.handle"
+                                        "display_name": "users.handle",
+                                        "note":"users.bio"
                                     }
                                 },
                                 {
@@ -1185,8 +1188,8 @@
                                         "email":"credentials.email",
                                         "account_id":"#REF(users.id,users.id)",
                                         "encrypted_password":"credentials.password",
-                                        "created_at":"users.created_at",
-                                        "updated_at":"users.updated_at"
+                                        "created_at":"credentials.created_at",
+                                        "updated_at":"credentials.created_at"
                                     }
                                 }
                             ]
@@ -1556,7 +1559,9 @@
                             "toTables": [
                                 {
                                     "table": "subscription",
-                                    "conditions":{},
+                                    "conditions":{
+                                        "user_actions.action_type": "follows"
+                                    },
                                     "mapping": {
                                         "subscriber": "#REF(user_actions.from_user_id,users.id)",
                                         "subscribed": "#REF(user_actions.to_user_id,users.id)",
@@ -1658,6 +1663,7 @@
                                         "email":"user.email",
                                         "created_at":"user.created",
                                         "updated_at":"user.modified",
+                                        "encrypted_password":"user.password",
                                         "account_id":"#REF(profile.id,profile.id)"
                                     }
                                 }
