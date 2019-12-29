@@ -127,50 +127,50 @@ func getDstRootMemberAttrID(stencilDBConn *sql.DB,
 
 }
 
-// func oldCreateDisplayConfig(migrationID int, resolveReference, newDB bool) *displayConfig {
+func oldCreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
 
-// 	var displayConfig displayConfig
+	var displayConfig config.DisplayConfig
 
-// 	stencilDBConn := db.GetDBConn(config.StencilDBName)
+	stencilDBConn := db.GetDBConn(config.StencilDBName)
 
-// 	srcAppID, dstAppID, userID := getSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
+	srcAppID, dstAppID, userID := getSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
 
-// 	dstAppName := getAppNameByAppID(stencilDBConn, dstAppID)
-// 	srcAppName := getAppNameByAppID(stencilDBConn, srcAppID)
+	dstAppName := getAppNameByAppID(stencilDBConn, dstAppID)
+	srcAppName := getAppNameByAppID(stencilDBConn, srcAppID)
 
-// 	// app_id := db.GetAppIDByAppName(stencilDBConn, app)
+	// app_id := db.GetAppIDByAppName(stencilDBConn, app)
 
-// 	appConfig, err := config.CreateAppConfigDisplay(dstAppName, dstAppID, stencilDBConn, newDB)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+	appConfig, err := config.CreateAppConfigDisplay(dstAppName, dstAppID, stencilDBConn, newDB)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-// 	allMappings, err1 := config.LoadSchemaMappings()
-// 	if err1 != nil {
-// 		log.Fatal(err1)
-// 	}
+	allMappings, err1 := config.LoadSchemaMappings()
+	if err1 != nil {
+		log.Fatal(err1)
+	}
 
-// 	mappingsToDst, err2 := schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
-// 	if err2 != nil {
-// 		log.Fatal(err2)
-// 	}
+	mappingsToDst, err2 := schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
 
-// 	displayConfig.ResolveReference = resolveReference
-// 	displayConfig.AllMappings = allMappings
-// 	displayConfig.MappingsToDst = mappingsToDst
-// 	displayConfig.SrcAppID = srcAppID
-// 	displayConfig.SrcAppName = srcAppName
-// 	displayConfig.AppConfig = &appConfig
-// 	displayConfig.AttrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)
-// 	displayConfig.AppIDNamePairs = GetAppIDNamePairs(stencilDBConn)
-// 	displayConfig.TableIDNamePairs = GetTableIDNamePairs(stencilDBConn)
-// 	displayConfig.stencilDBConn = stencilDBConn
-// 	displayConfig.migrationID = migrationID
-// 	displayConfig.UserID = userID
+	displayConfig.ResolveReference = resolveReference
+	displayConfig.AllMappings = allMappings
+	displayConfig.MappingsToDst = mappingsToDst
+	displayConfig.SrcAppID = srcAppID
+	displayConfig.SrcAppName = srcAppName
+	displayConfig.AppConfig = &appConfig
+	displayConfig.AttrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)
+	displayConfig.AppIDNamePairs = GetAppIDNamePairs(stencilDBConn)
+	displayConfig.TableIDNamePairs = GetTableIDNamePairs(stencilDBConn)
+	displayConfig.StencilDBConn = stencilDBConn
+	displayConfig.MigrationID = migrationID
+	displayConfig.UserID = userID
 
-// 	return &displayConfig
+	return &displayConfig
 
-// }
+}
 
 func oldInitialize(app string) (*sql.DB, *config.AppConfig) {
 
