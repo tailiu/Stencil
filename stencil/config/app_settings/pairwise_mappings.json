@@ -97,7 +97,7 @@
                                 {
                                     "table": "conversations",
                                     "conditions":{},
-                                    "usedInPSM": false,
+                                    "notUsedInPSM": true,
                                     "mapping": {
                                         "id":"conversations.id",
                                         "created_at":"conversations.created_at",
@@ -427,7 +427,7 @@
                                 {
                                     "table": "conversations",
                                     "conditions":{},
-                                    "usedInPSM": false,
+                                    "notUsedInPSM": true,
                                     "mapping": {
                                         "id": "conversation.id",
                                         "uri": "conversation.uri",
@@ -646,7 +646,7 @@
                                 {
                                     "table": "conversations",
                                     "conditions":{},
-                                    "usedInPSM": false,
+                                    "notUsedInPSM": true,
                                     "mapping": {
                                         "id":"conversations.id",
                                         "created_at":"conversations.created_at",
