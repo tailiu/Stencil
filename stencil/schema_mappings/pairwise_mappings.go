@@ -222,7 +222,20 @@ func getConditions(toTable *config.ToTable) map[string]string {
 
 }
 
-func procMappings(toApp *config.MappedApp, skipToTablesWithConditions bool) map[string]string {
+func containFunction(data string) bool {
+
+	if strings.Contains(data, "#") {
+		
+		return true
+
+	} else {
+
+		return false
+	}
+
+}
+
+func procMappingsByRows(toApp *config.MappedApp, isSourceApp bool) map[string]string {
 
 	res := make(map[string]string)
 
@@ -241,7 +254,9 @@ func procMappings(toApp *config.MappedApp, skipToTablesWithConditions bool) map[
 
 			// log.Println(getConditions(&toTable))
 
-			if skipToTablesWithConditions && getConditions(&toTable) != nil {
+			// Conditions are very hard to cope with correctly through PSM
+			// In this version, PSM does not process conditions
+			if getConditions(&toTable) != nil {
 				continue
 			}
 
@@ -252,6 +267,10 @@ func procMappings(toApp *config.MappedApp, skipToTablesWithConditions bool) map[
 					// PSM does not process mappings containing #REF
 					// because the function #REF is very complex and must be defined by app developers
 					// and should not be got by PSM
+					if containREF(fromTableAttr) {
+						continue
+					}
+
 					// For other functions defined by #, if they are included in the source app,
 					// they could be included in the PSM result.
 					// If they are included in the intermediate apps, then they cannot be included in
@@ -261,7 +280,7 @@ func procMappings(toApp *config.MappedApp, skipToTablesWithConditions bool) map[
 					// 				accounts.id -> users.id, #RANDINT -> users.id, 
 					// 				/=> users.#RANDINT -> accounts.id
 					// #RANDINT can never be the same as table.attr
-					if containREF(fromTableAttr) {
+					if !isSourceApp && containFunction(fromTableAttr) {
 						continue
 					}
 
@@ -273,12 +292,15 @@ func procMappings(toApp *config.MappedApp, skipToTablesWithConditions bool) map[
 					// Further, these variables need to be replaced with real values first since the dst app
 					// may not define such kind of inputs
 					if containVar(fromTableAttr) {
-						fromTableAttr = replaceVar(fromTableAttr, toApp.Inputs)
+						if !isSourceApp {
+							continue
+						} else {
+							fromTableAttr = replaceVar(fromTableAttr, toApp.Inputs)
+						}
 					}
 
-					// Here I use toTableName.toAttr as the key because it is unique and
-					// fromTableAttr could be mapped to multiple different attributes, 
-					// which makes harder to cope with
+					// Note that toTableName.toAttr could be not unique. For example,
+					// Twitter.tweets and Twitter.retweets are both mapped to Mastodon.statuses.
 					res[toTableName  + "." + toAttr] = fromTableAttr
 				}
 
@@ -296,7 +318,8 @@ func procMappings(toApp *config.MappedApp, skipToTablesWithConditions bool) map[
 // For example: 
 // through a mapping path: Mastodon -> Twitter -> Gnusocial -> Diaspora,
 // we can get mappings from Mastodon to Diaspora.
-func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
+// This is an old design without considering how to handle conditions
+func OldAddMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
 	mappingsPath []string) {
 
 	for i := 0; i < len(mappingsPath) - 1; i++ {
@@ -315,21 +338,17 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 					// find the next app
 					if toApp.Name == nextApp {
 
-						skipToTablesWithConditions := false
+						isSourceApp := true
 
-						// Only when the app is the source app, will mappings with not null conditions 
-						// be processed. This is because when the app is the intermediate app 
-						// the conditions of the mappings in the intermediate apps are basically overwritten 
-						// and cannot be shown in the final results
 						if i == 0 {
 
-							// procRes := procMappings(currApp, &toApp)
-							procMappings(&toApp, skipToTablesWithConditions)
+							// procRes := procMappingsByRows(&toApp, isSourceApp)
+							procMappingsByRows(&toApp, isSourceApp)
 
 						} else {
 
-							// procRes := procMappings(currApp, &toApp)
-							procMappings(&toApp, !skipToTablesWithConditions)
+							// procRes := procMappingsByRows(&toApp, isSourceApp)
+							procMappingsByRows(&toApp, !isSourceApp)
 
 						}
 					}
@@ -339,6 +358,92 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 	}
 
 }
+
+func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) {
+
+	for _, firstMapping := range firstMappings.Mappings {
+
+		for _, firstToTable := range firstMapping.ToTables {
+
+			for _, secondMapping := range secondMappings.Mappings {
+
+				for _, secondFromTable := range secondMapping.FromTables {
+
+					// find matched tables
+					if secondFromTable == firstToTable {
+
+						for _, secondToTable := range secondMapping.ToTables {
+
+							conditions := secondToTable.Conditions
+							
+							// check conditions
+							if  
+
+						}
+
+					}
+
+				}
+
+			}
+
+		}
+
+	}
+
+}
+
+func findFromAppToAppMappings(pairwiseMappings *config.SchemaMappings, 
+	fromApp, toApp string) (*config.MappedApp, error) {
+
+	for _, mappings := range pairwiseMappings.AllMappings {
+
+		// find the from app
+		if mappings.FromApp == fromApp {	
+			
+			for _, toApp := range mappings.ToApps {
+
+				// find the to app
+				if toApp.Name == toApp {
+
+					return &toApp, nil
+				}
+			}
+		}
+	}
+
+	return nil, CannotFindPairwiseMappings
+
+}
+
+// This new design adds a condition handler
+func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
+	mappingsPath []string) {
+
+	for i := 0; i < len(mappingsPath) - 2; i++ {
+
+		currApp := mappingsPath[i]
+
+		nextApp := mappingsPath[i + 1]
+
+		nextNextApp := mappingsPath[i + 2]
+
+		firstMappings, err1 := findFromAppToAppMappings(pairwiseMappings, currApp, nextApp)
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+
+		secondMappings, err2 := findFromAppToAppMappings(pairwiseMappings, nextApp, nextNextApp)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+		
+		procMappingsByTables(firstMappings, secondMappings)
+
+	}
+	
+}
+
 
 func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 

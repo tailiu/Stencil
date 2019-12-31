@@ -1163,6 +1163,16 @@
                 {
                     "name": "mastodon",
                     "methods": [],
+                    "inputs": [
+                        {
+                            "name": "visibility0",
+                            "value": "0"
+                        },
+                        {
+                            "name": "visibility3",
+                            "value": "3"
+                        }
+                    ],
                     "mappings":[
                         {
                             "fromTables": ["credentials", "users"],
@@ -1175,8 +1185,8 @@
                                         "username":"users.name",
                                         "created_at":"users.created_at",
                                         "updated_at":"users.updated_at",
-                                        "avatar_remote_url": "users.avatar",
-                                        "display_name": "users.handle",
+                                        "avatar_remote_url":"users.avatar",
+                                        "display_name":"users.handle",
                                         "note":"users.bio"
                                     }
                                 },
@@ -1184,12 +1194,12 @@
                                     "table": "users",
                                     "conditions":{},
                                     "mapping": {
-                                        "id": "#RANDINT",
+                                        "id": "credentials.id",
                                         "email":"credentials.email",
                                         "account_id":"#REF(users.id,users.id)",
                                         "encrypted_password":"credentials.password",
                                         "created_at":"credentials.created_at",
-                                        "updated_at":"credentials.created_at"
+                                        "updated_at":"credentials.updated_at"
                                     }
                                 }
                             ]
@@ -1240,7 +1250,8 @@
                                         "updated_at":"tweets.updated_at",
                                         "text":"tweets.content",
                                         "in_reply_to_id":"#REF(tweets.reply_to_id,tweets.id)",
-                                        "account_id":"#REF(tweets.user_id,users.id)"
+                                        "account_id":"#REF(tweets.user_id,users.id)",
+                                        "visibility": "visibility0"
                                     }
                                 }
                             ]
@@ -1256,7 +1267,8 @@
                                         "created_at":"retweets.created_at",
                                         "updated_at":"retweets.updated_at",
                                         "account_id":"#REF(retweets.user_id,users.id)",
-                                        "reblog_of_id":"#REF(retweets.tweet_id,tweets.id)"
+                                        "reblog_of_id":"#REF(retweets.tweet_id,tweets.id)",
+                                        "visibility": "visibility0"
                                     }
                                 }
                             ]
@@ -1267,6 +1279,7 @@
                                 {
                                     "table": "conversations",
                                     "conditions":{},
+                                    "notUsedInPSM": true,
                                     "mapping": {
                                         "id":"conversations.id",
                                         "created_at":"conversations.created_at",
@@ -1287,7 +1300,8 @@
                                         "updated_at":"messages.updated_at",
                                         "text":"messages.content",
                                         "account_id":"#REF(messages.user_id,users.id)",
-                                        "conversation_id":"#REF(messages.conversation_id,conversations.id)"
+                                        "conversation_id":"#REF(messages.conversation_id,conversations.id)",
+                                        "visibility": "visibility3"
                                     }
                                 }
                             ]
