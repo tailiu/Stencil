@@ -38,7 +38,7 @@ type Mapping struct {
 type ToTable struct {
 	Table      		string            `json:"table"`
 	Conditions 		map[string]string `json:"conditions"`
-	NotUsedInPSM  	bool			  `json:"usedInPSM"`
+	NotUsedInPSM  	bool			  `json:"notUsedInPSM"`
 	Mapping    		map[string]string `json:"mapping"`
 	Media	   		map[string]string `json:"media"`
 	TableID    		string

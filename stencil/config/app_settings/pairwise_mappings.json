@@ -630,7 +630,7 @@
                                         "text":"tweets.content",
                                         "in_reply_to_id":"#REF(tweets.reply_to_id,tweets.id)",
                                         "account_id":"#REF(tweets.user_id,users.id)",
-                                        "visibility": "visibility0"
+                                        "visibility": "$visibility0"
                                     }
                                 }
                             ]
@@ -647,7 +647,7 @@
                                         "updated_at":"retweets.updated_at",
                                         "account_id":"#REF(retweets.user_id,users.id)",
                                         "reblog_of_id":"#REF(retweets.tweet_id,tweets.id)",
-                                        "visibility": "visibility0"
+                                        "visibility": "$visibility0"
                                     }
                                 }
                             ]
@@ -680,7 +680,7 @@
                                         "text":"messages.content",
                                         "account_id":"#REF(messages.user_id,users.id)",
                                         "conversation_id":"#REF(messages.conversation_id,conversations.id)",
-                                        "visibility": "visibility3"
+                                        "visibility": "$visibility3"
                                     }
                                 }
                             ]

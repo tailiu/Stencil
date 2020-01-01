@@ -433,6 +433,7 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 
 	mergedToTable := config.ToTable {
 		Table: secondToTable.Table,
+		Mapping: make(map[string]string),
 	}
 
 	firstTableName := firstToTable.Table
@@ -441,8 +442,10 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 
 		for k2, v2 := range secondToTable.Mapping {
 
-			// PSM does not process #REF 
-			// functions cannot be matched
+			// PSM does not process #REF this is because even though through PSM 
+			// mappings in #REF can be got, they generally have to be further processed and
+			// formatted in the #REF in the destination app.
+			// Functions cannot be matched
 			// For functions defined by #, if they are included in the source app,
 			// they could be included in the PSM result.
 			// If they are included in the intermediate apps, then they cannot be included in
@@ -482,6 +485,50 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 
 }
 
+
+func mergeTwoSameToTables(table1, table2 *config.ToTable) config.ToTable {
+
+	mergedToTable := config.ToTable {
+		Table: table1.Table,
+		Mapping: make(map[string]string),
+	}
+
+	m1 := table1.Mapping
+	m2 := table2.Mapping
+
+	for k1, v1 := range m1 {
+
+		if v2, ok := m2[k1]; ok {
+
+			// If we find duplicate (k, v), we simply merge them
+			// If we find the same key with different values, we cannot
+			// be sure which value to include, so we exclude such key
+			if v1 == v2 {
+				mergedToTable.Mapping[k1] = v1
+			}
+		
+		// If we do not find the key, we need to include this unique key in m1
+		} else {
+			mergedToTable.Mapping[k1] = v1
+		}
+
+	}
+
+	for k2, v2 := range m2 {
+
+		if _, ok := m1[k2]; !ok {
+			
+			// Since we alreay delt with the commone keys of the two mappings,
+			// we only need to add the unique keys in m2 to the result
+			mergedToTable.Mapping[k2] = v2
+		}
+
+	}
+
+	return mergedToTable
+
+}
+
 func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) config.Mapping {
 
 	var mergedMappings config.Mapping
@@ -489,6 +536,15 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) confi
 	firstInputs := firstMappings.Inputs
 
 	for _, firstMapping := range firstMappings.Mappings {
+
+		// We initialize mergedTableNameIndex and seq here
+		// because we only want to merge the mappings from same tables to the same table
+		// For example, in the path: twitter gnusocial mastodon, if we initialize these outside the for loop,
+		// we may also merge tweets -> notice -> statuses and retweets -> notice -> statuses,
+		// which should not be merged
+		mergedTableNameIndex := make(map[string]int)
+	
+		seq := 0
 
 		for _, firstToTable := range firstMapping.ToTables {
 
@@ -505,6 +561,8 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) confi
 
 					// find matched tables
 					if secondFromTable == firstToTable.Table {
+						
+						// log.Println(secondFromTable)
 
 						for _, secondToTable := range secondMapping.ToTables {
 
@@ -514,25 +572,52 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) confi
 							
 							conditions := getConditions(&secondToTable)
 							
+							// log.Println(secondToTable.Table)
+							// log.Println(satisfyConditions(conditions, &firstToTable, firstInputs))
+
 							// check conditions
 							if satisfyConditions(conditions, &firstToTable, firstInputs) {
 
 								mergedTable := mergeTwoMappings(&firstToTable, &secondToTable, firstInputs)
 
-								mergedMappings.ToTables = append(mergedMappings.ToTables, mergedTable) 
+								if index, ok := mergedTableNameIndex[mergedTable.Table]; ok {
 
+									// For example, in the path: gnusocial mastodon twitter,
+									// If there is no merging, there will be two almost the same toTables of 
+									// tweets and retweets because notice map to statuses in two different conditions. 
+									// In this case, we need to merge the two toTable results. 
+									// {tweets map[] false map[id:notice.id content:notice.content 
+									// 	updated_at:notice.modified created_at:notice.created] map[] } 
+									// {retweets map[] false map[created_at:notice.created 
+									//  updated_at:notice.modified id:notice.id] map[] } 
+									// {tweets map[] false map[content:notice.content created_at:notice.created 
+									//  updated_at:notice.modified id:notice.id] map[] } 
+									// {retweets map[] false map[id:notice.id created_at:notice.created 
+									//  updated_at:notice.modified] map[] }
+									mergedTable = mergeTwoSameToTables(&mergedMappings.ToTables[index], 
+										&mergedTable)	
+
+									mergedMappings.ToTables[index] = mergedTable
+
+								} else {
+
+									// Only add to merged mappings when there are combined mappings returned
+									if len(mergedTable.Mapping) != 0 {
+
+										mergedMappings.ToTables = append(mergedMappings.ToTables, 
+											mergedTable) 
+
+										mergedTableNameIndex[mergedTable.Table] = seq
+										seq += 1
+
+									}	
+								}	
 							}
-
 						}
-
 					}
-
 				}
-
 			}
-
 		}
-
 	}
 
 	return mergedMappings
@@ -550,6 +635,8 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 		nextApp := mappingsPath[i + 1]
 
 		nextNextApp := mappingsPath[i + 2]
+
+		log.Println(currApp, nextApp, nextNextApp)
 
 		firstMappings, err1 := findFromAppToAppMappings(pairwiseMappings, currApp, nextApp)
 		if err1 != nil {
