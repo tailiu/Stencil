@@ -1411,7 +1411,7 @@
                                 {
                                     "table": "comments",
                                     "conditions":{
-                                        "tweets.reply_to_id" : "$NOTNULL"
+                                        "tweets.reply_to_id" : "#NOTNULL"
                                     },
                                     "mapping": {
                                         "id":"tweets.id",

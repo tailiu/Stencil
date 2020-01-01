@@ -174,67 +174,6 @@ func loadPairwiseSchemaMappings() (*config.SchemaMappings, error) {
 
 }
 
-func containVar(data string) bool {
-
-	if strings.Contains(data, "$") {
-		
-		return true
-
-	} else {
-
-		return false
-	}
-
-}
-
-func getVarName(data string) string {
-
-	tmp := strings.Split(data, "$")
-
-	return tmp[1]
-
-}
-
-func replaceVar(fromTableAttr string, inputs []map[string]string) string {
-
-	varName := getVarName(fromTableAttr)
-
-	for _, input := range inputs {
-
-		for k, v := range input {
-
-			// log.Println("********")
-			// log.Println(name)
-			// log.Println(val)
-			// log.Println("********")
-			if k == "name" && v == varName {
-				return input["value"]
-			}
-		}
-	}
-
-	return ""
-}
-
-func getConditions(toTable *config.ToTable) map[string]string {
-
-	return toTable.Conditions
-
-}
-
-func containFunction(data string) bool {
-
-	if strings.Contains(data, "#") {
-		
-		return true
-
-	} else {
-
-		return false
-	}
-
-}
-
 func procMappingsByRows(toApp *config.MappedApp, isSourceApp bool) map[string]string {
 
 	res := make(map[string]string)
@@ -359,25 +298,230 @@ func OldAddMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 
 }
 
-func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) {
+func findFromAppToAppMappings(pairwiseMappings *config.SchemaMappings, 
+	fromAppName, toAppName string) (*config.MappedApp, error) {
+
+	for _, mappings := range pairwiseMappings.AllMappings {
+
+		// find the from app
+		if mappings.FromApp == fromAppName {	
+			
+			for _, toApp := range mappings.ToApps {
+
+				// find the to app
+				if toApp.Name == toAppName {
+
+					return &toApp, nil
+				}
+			}
+		}
+	}
+
+	return nil, CannotFindPairwiseMappings
+
+}
+
+func containVar(data string) bool {
+
+	if strings.Contains(data, "$") {
+		
+		return true
+
+	} else {
+
+		return false
+	}
+
+}
+
+func getVarName(data string) string {
+
+	tmp := strings.Split(data, "$")
+
+	return tmp[1]
+
+}
+
+func replaceVar(variable string, inputs []map[string]string) string {
+
+	varName := getVarName(variable)
+
+	for _, input := range inputs {
+
+		for k, v := range input {
+
+			// log.Println("********")
+			// log.Println(name)
+			// log.Println(val)
+			// log.Println("********")
+			if k == "name" && v == varName {
+				return input["value"]
+			}
+		}
+	}
+
+	return ""
+}
+
+func getConditions(toTable *config.ToTable) map[string]string {
+
+	return toTable.Conditions
+
+}
+
+func containFunction(data string) bool {
+
+	if strings.Contains(data, "#") {
+		
+		return true
+
+	} else {
+
+		return false
+	}
+
+}
+
+func satisfyConditions(conditions map[string]string, 
+	toTable *config.ToTable, inputs []map[string]string) bool {
+
+	tableName := toTable.Table
+
+	for k, v := range conditions {
+
+		satisfyThisCondition := false
+
+		// If conditions contain functions like #NOTNULL or #NULL,
+		// such conditions are used when migrating data and not used in PSM
+		if containFunction(v) {
+			continue
+		}
+
+		for k1, v1 := range toTable.Mapping {
+
+			// #REF is not involved in conditions
+			if containREF(v1) {
+				continue
+			}
+
+			if tableName + "." + k1 == k {
+
+				// v1 may contain variables like "$reshare"
+				if containVar(v1) {
+					v1 = replaceVar(v1, inputs)
+				}
+
+				if v1 == v {
+					satisfyThisCondition = true
+					break
+				}
+			}
+		}
+
+		if !satisfyThisCondition {
+			return false
+		}
+
+	}
+
+	return true
+
+}
+
+func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
+	firstInputs []map[string]string) config.ToTable {
+
+	mergedToTable := config.ToTable {
+		Table: secondToTable.Table,
+	}
+
+	firstTableName := firstToTable.Table
+
+	for k1, v1 := range firstToTable.Mapping {
+
+		for k2, v2 := range secondToTable.Mapping {
+
+			// PSM does not process #REF 
+			// functions cannot be matched
+			// For functions defined by #, if they are included in the source app,
+			// they could be included in the PSM result.
+			// If they are included in the intermediate apps, then they cannot be included in
+			// the PSM result
+			// For example, users.#RANDINT -> users.id, users.id -> accounts.id 
+			// 				=> users.#RANDINT -> accounts.id, but
+			// 				accounts.id -> users.id, #RANDINT -> users.id, 
+			// 				/=> users.#RANDINT -> accounts.id
+			// #RANDINT can never be the same as table.attr
+			// Similary, variables in the intermediate apps cannot be matched and included in the
+			// PSM result
+			if containREF(v2) || containFunction(v2) || containVar(v2) {
+				continue
+			} 
+
+			// PSM does not process #REF 
+			if containREF(v1) {
+				continue
+			}
+
+			// Find a match
+			if firstTableName + "." + k1 == v2 {
+
+				// The variable in v1 needs to be replaced with the real value
+				// because the variable is only defined in the first app
+				if containVar(v1) {
+					v1 = replaceVar(v1, firstInputs)
+				}
+
+				mergedToTable.Mapping[k2] = v1
+ 			}
+
+		}
+	}
+
+	return mergedToTable
+
+}
+
+func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) config.Mapping {
+
+	var mergedMappings config.Mapping
+
+	firstInputs := firstMappings.Inputs
 
 	for _, firstMapping := range firstMappings.Mappings {
 
 		for _, firstToTable := range firstMapping.ToTables {
+
+			// When mappings are not accurate, app developers can specify that
+			// this should not be used in PSM by setting NotUsedInPSM as true
+			// For example, 
+			if firstToTable.NotUsedInPSM {
+				continue
+			}
 
 			for _, secondMapping := range secondMappings.Mappings {
 
 				for _, secondFromTable := range secondMapping.FromTables {
 
 					// find matched tables
-					if secondFromTable == firstToTable {
+					if secondFromTable == firstToTable.Table {
 
 						for _, secondToTable := range secondMapping.ToTables {
 
-							conditions := secondToTable.Conditions
+							if secondToTable.NotUsedInPSM {
+								continue
+							}
+							
+							conditions := getConditions(&secondToTable)
 							
 							// check conditions
-							if  
+							if satisfyConditions(conditions, &firstToTable, firstInputs) {
+
+								mergedTable := mergeTwoMappings(&firstToTable, &secondToTable, firstInputs)
+
+								mergedMappings.ToTables = append(mergedMappings.ToTables, mergedTable) 
+
+							}
 
 						}
 
@@ -391,28 +535,7 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) {
 
 	}
 
-}
-
-func findFromAppToAppMappings(pairwiseMappings *config.SchemaMappings, 
-	fromApp, toApp string) (*config.MappedApp, error) {
-
-	for _, mappings := range pairwiseMappings.AllMappings {
-
-		// find the from app
-		if mappings.FromApp == fromApp {	
-			
-			for _, toApp := range mappings.ToApps {
-
-				// find the to app
-				if toApp.Name == toApp {
-
-					return &toApp, nil
-				}
-			}
-		}
-	}
-
-	return nil, CannotFindPairwiseMappings
+	return mergedMappings
 
 }
 
@@ -438,12 +561,13 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 			log.Fatal(err2)
 		}
 		
-		procMappingsByTables(firstMappings, secondMappings)
+		mergedMappings := procMappingsByTables(firstMappings, secondMappings)
+		
+		log.Println(mergedMappings)
 
 	}
 	
 }
-
 
 func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 
