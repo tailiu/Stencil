@@ -254,8 +254,10 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
 // this user can follow this percentage of followers,
 // because maybe most of those users have already fully followed by other users.
-// Use the query: "select count(*) from contacts where sharing = false;" 
+// Use the query: "select count(*) from contacts where sharing = true;" 
 // to get the total number of follows
+// Use the query: "select count(*) from contacts where sharing = true and receiving = true;" 
+// to get the a number and divide this number by 2 to get the total pairs of friends
 // The exact number could be more than FOLLOW_NUM 
 // because a user could be followed by the same other user twice
 // due to multiple-thread data generation.
