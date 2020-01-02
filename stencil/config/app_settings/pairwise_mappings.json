@@ -265,6 +265,7 @@
                                 {
                                     "table": "conversation",
                                     "conditions":{},
+                                    "notUsedInPSM": true,
                                     "mapping": {
                                         "id": "conversations.id",
                                         "created":"conversations.created_at",

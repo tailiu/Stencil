@@ -441,6 +441,8 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 	for k1, v1 := range firstToTable.Mapping {
 
 		for k2, v2 := range secondToTable.Mapping {
+			
+			// log.Println(k2, v2)
 
 			// PSM does not process #REF this is because even though through PSM 
 			// mappings in #REF can be got, they generally have to be further processed and
@@ -529,28 +531,55 @@ func mergeTwoSameToTables(table1, table2 *config.ToTable) config.ToTable {
 
 }
 
+// The most complex part in processing mappings is to handle conditions
+// We process mappings on the table level because conditions are defined on the table level,
+// in other words, either one table can be mapped or not depending on conditions.
+// There could be several special cases: 
+// 1. Same source table -> different intermediate tables -> same destination table
+// 	e.g., in the path: gnusocial twitter mastodon
+// 	notice -> tweets/retweets -> statuses
+// 2. Different source tables -> same intermediate table -> same destination table
+// 	e.g., in the path: twitter gnusocial mastodon
+//	tweets/retweets -> notice -> statuses
+// 3. Same source table -> same intermediate tables -> same destination table
+// 	e.g., in the path: gnusocial mastodon twitter
+//	notice -> statuses ("notice.reply_to": "#NULL") / statuses ("notice.reply_to": "#NOTNULL") 
+//	-> tweets
+// 4. Same source table -> same intermediate tables -> different destination table
+//	e.g., in the path: mastodon gnusocial twitter
+//  statuses -> notice -> tweets/retweets
+// The general rule to cope with those cases is to keep the path with unqiue (fromTable, toTable) pair
+// so different paths in 1, 3 will be merged and in 2, 4 will be kept
 func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) config.Mapping {
 
 	var mergedMappings config.Mapping
 
 	firstInputs := firstMappings.Inputs
 
+	// Since mergedMappings stores all merged tables, 
+	// we need to use a global sequence
+	seq := 0
+
 	for _, firstMapping := range firstMappings.Mappings {
 
-		// We initialize mergedTableNameIndex and seq here
+		// We initialize mergedTableNameIndex here
 		// because we only want to merge the mappings from same tables to the same table
 		// For example, in the path: twitter gnusocial mastodon, if we initialize these outside the for loop,
 		// we may also merge tweets -> notice -> statuses and retweets -> notice -> statuses,
 		// which should not be merged
 		mergedTableNameIndex := make(map[string]int)
-	
-		seq := 0
 
 		for _, firstToTable := range firstMapping.ToTables {
 
 			// When mappings are not accurate, app developers can specify that
-			// this should not be used in PSM by setting NotUsedInPSM as true
-			// For example, 
+			// those mappings should not be used in PSM by setting NotUsedInPSM as true
+			// For example, the mappings from twitter.conversations to mastodon.conversations
+			// (twitter.conversations are the conversations for messages while mastodon.conversations
+			// are the conversations for statuses including messages)
+			// and the mappings from mastodon.conversations to gnusocial.conversation are inaccurate. 
+			// (gnusocial.conversation are the conversations only for posts not messages)
+			// Then if these mappings are used in PSM, we will get twitter.conversations -> gnusocial.conversation,
+			// which is incorrect.
 			if firstToTable.NotUsedInPSM {
 				continue
 			}
@@ -596,7 +625,9 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) confi
 									//  updated_at:notice.modified] map[] }
 									mergedTable = mergeTwoSameToTables(&mergedMappings.ToTables[index], 
 										&mergedTable)	
-
+									
+									// log.Println("Merge two tables results:", mergedTable)
+									
 									mergedMappings.ToTables[index] = mergedTable
 
 								} else {
@@ -624,7 +655,6 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) confi
 
 }
 
-// This new design adds a condition handler
 func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
 	mappingsPath []string) {
 
@@ -651,6 +681,7 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 		mergedMappings := procMappingsByTables(firstMappings, secondMappings)
 		
 		log.Println(mergedMappings)
+		log.Println("**********************************")
 
 	}
 	
@@ -667,6 +698,8 @@ func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 
 	log.Println(apps)
 
+	// Get all eligible permutations and combinations from one app to another app
+	// One such permutation and combination is one path
 	mappingsPaths := getMappingsPaths(apps)
 
 	for _, mappingsPath := range mappingsPaths {
