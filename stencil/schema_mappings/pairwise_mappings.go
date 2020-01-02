@@ -2,7 +2,6 @@ package schema_mappings
 
 import (
 	"stencil/config"
-	// "stencil/db"
 	"os"
 	"log"
 	"io/ioutil"
@@ -300,11 +299,15 @@ func OldAddMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 
 func findFromAppToAppMappings(pairwiseMappings *config.SchemaMappings, 
 	fromAppName, toAppName string) (*config.MappedApp, error) {
+	
+	fromAppExists := false
 
 	for _, mappings := range pairwiseMappings.AllMappings {
 
 		// find the from app
 		if mappings.FromApp == fromAppName {	
+			
+			fromAppExists = true
 			
 			for _, toApp := range mappings.ToApps {
 
@@ -317,8 +320,12 @@ func findFromAppToAppMappings(pairwiseMappings *config.SchemaMappings,
 		}
 	}
 
-	return nil, CannotFindPairwiseMappings
-
+	if !fromAppExists {
+		return nil, CannotFindFromApp
+	} else {
+		return nil, CannotFindToApp
+	}
+	
 }
 
 func containVar(data string) bool {
@@ -372,11 +379,8 @@ func getConditions(toTable *config.ToTable) map[string]string {
 func containFunction(data string) bool {
 
 	if strings.Contains(data, "#") {
-		
 		return true
-
 	} else {
-
 		return false
 	}
 
@@ -548,11 +552,11 @@ func mergeTwoSameToTables(table1, table2 *config.ToTable) config.ToTable {
 // 4. Same source table -> same intermediate tables -> different destination table
 //	e.g., in the path: mastodon gnusocial twitter
 //  statuses -> notice -> tweets/retweets
-// The general rule to cope with those cases is to keep the path with unqiue (fromTable, toTable) pair
+// The general rule to cope with those cases is to keep the path with unqiue (fromTable, toTable) pair,
 // so different paths in 1, 3 will be merged and in 2, 4 will be kept
-func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) config.Mapping {
+func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []config.ToTable {
 
-	var mergedMappings config.Mapping
+	var mergedMappings []config.ToTable
 
 	firstInputs := firstMappings.Inputs
 
@@ -623,20 +627,18 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) confi
 									//  updated_at:notice.modified id:notice.id] map[] } 
 									// {retweets map[] false map[id:notice.id created_at:notice.created 
 									//  updated_at:notice.modified] map[] }
-									mergedTable = mergeTwoSameToTables(&mergedMappings.ToTables[index], 
-										&mergedTable)	
+									mergedTable = mergeTwoSameToTables(&mergedMappings[index], &mergedTable)	
 									
 									// log.Println("Merge two tables results:", mergedTable)
 									
-									mergedMappings.ToTables[index] = mergedTable
+									mergedMappings[index] = mergedTable
 
 								} else {
 
 									// Only add to merged mappings when there are combined mappings returned
 									if len(mergedTable.Mapping) != 0 {
 
-										mergedMappings.ToTables = append(mergedMappings.ToTables, 
-											mergedTable) 
+										mergedMappings = append(mergedMappings, mergedTable) 
 
 										mergedTableNameIndex[mergedTable.Table] = seq
 										seq += 1
@@ -655,9 +657,204 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) confi
 
 }
 
+func createMappingsWhenMissingFromApp(pairwiseMappings *config.SchemaMappings, 
+	fromAppName, toAppName string) *config.MappedApp {
+
+	toApp := config.MappedApp {
+		Name: toAppName,
+	}
+
+	mappings := config.SchemaMapping {
+		FromApp: fromAppName,
+		ToApps: []config.MappedApp {
+			toApp,
+		},
+	}
+
+	pairwiseMappings.AllMappings = append(pairwiseMappings.AllMappings, mappings)
+
+	mappingsLen := len(pairwiseMappings.AllMappings)
+
+	return &pairwiseMappings.AllMappings[mappingsLen - 1].ToApps[0]
+		
+
+}
+
+func createMappingsWhenMissingToApp(pairwiseMappings *config.SchemaMappings, 
+	fromAppName, toAppName string) (*config.MappedApp, error) {
+
+	for i, mappings := range pairwiseMappings.AllMappings {
+
+		// find the from app
+		if mappings.FromApp == fromAppName {	
+			
+			toApps := mappings.ToApps
+			
+			toApp := config.MappedApp {
+				Name: toAppName,
+			}
+
+			toApps = append(toApps, toApp)
+
+			pairwiseMappings.AllMappings[i].ToApps = toApps
+
+			return &pairwiseMappings.AllMappings[i].ToApps[len(toApps) - 1], nil
+		}
+	}
+
+	return nil, CannotCreateToApp
+
+}
+
+func getFromTablesVariablesFromToTable(toTable config.ToTable) (map[string]bool, map[string]bool) {
+
+	fromTables := make(map[string]bool) 
+	variables := make(map[string]bool)
+
+	for _, v := range toTable.Mapping {
+
+		tmp := strings.Split(v, ".")
+
+		if len(tmp) == 2 {
+			if _, ok := fromTables[tmp[0]]; !ok {
+				fromTables[tmp[0]] = true
+			}
+		} 
+
+		if len(tmp) == 1 {
+			if _, ok := variables[tmp[0]]; !ok {
+				variables[tmp[0]] = true
+			}
+		}
+
+		if len(tmp) > 2 {
+			panic("Should never happen here!")
+		}
+
+	}
+
+	return fromTables, variables
+	
+}
+
+func mergeSecondMapToFirstMap(m1, m2 map[string]bool) {
+
+	for k2, v2 := range m2 {
+		m1[k2] = v2
+	}
+
+}
+
+func getMappingsByFromTable(mappedApp *config.MappedApp, 
+	fromTableName string) (*config.Mapping, error) {
+
+	for _, mappings := range mappedApp.Mappings {
+
+		for _, fromTable := range mappings.FromTables {
+
+			if fromTable == fromTableName {
+				return mappings, nil
+			}
+		}
+	}
+
+	return nil, CannotGetMappingsByFromTable
+
+}
+
+func createMappingsWhenMissingFromTable(mappedApp *config.MappedApp, 
+	fromTableName string) {
+
+	for _, mappings := range mappedApp.Mappings {
+
+	}
+
+}
+
+func getToTableByName(mappings *config.Mapping, 
+	tableName string) (*config.ToTable, error) {
+
+	for i, toTable := range mappings.ToTables {
+
+		if toTable.Table == tableName {
+			return &mappings.ToTables[i], nil
+		}
+	}
+
+	return nil, CannotGetToTableByName
+
+}
+
+func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings, 
+	procMappings []config.ToTable, srcApp, dstApp string) {
+
+	mappedApp, err := findFromAppToAppMappings(pairwiseMappings, srcApp, dstApp)
+
+	if err != nil {
+
+		if err == CannotFindFromApp {
+
+			mappedApp = createMappingsWhenMissingFromApp(pairwiseMappings, srcApp, dstApp)
+
+		} else {
+
+			mappedApp, err = createMappingsWhenMissingToApp(pairwiseMappings, srcApp, dstApp)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+		}
+
+	}
+
+	log.Println(mappedApp)
+
+	totalVariables := make(map[string]bool)
+
+	for _, toTable := range procMappings {
+
+		fromTables, variables := getFromTablesVariablesFromToTable(toTable)
+
+		// log.Println(fromTables, variables)
+
+		mergeSecondMapToFirstMap(totalVariables, variables)
+
+		var missingFromTables []string
+
+		for fromTable, _ := range fromTables {
+
+			mappings, err1 := getMappingsByFromTable(mappedApp, fromTable)
+
+			if err1 != nil {
+				log.Println(err1)
+				missingFromTables = append(missingFromTables, fromTable)
+			}
+
+			toTable1, err2 := getToTableByName(mappings, toTable.Table)
+
+			if err2 != nil {
+				log.Println(err2)
+				
+			}
+			
+		}
+
+		if len(missingFromTables) != 0 {
+			createMappingsWhenMissingFromTable(mappedApp, missingFromTables)
+		}
+
+	}
+
+}
+
 func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
 	mappingsPath []string) {
+	
+	var procMappings []config.ToTable
 
+	srcApp := mappingsPath[0]
+	dstApp := mappingsPath[len(mappingsPath) - 1]
+	
 	for i := 0; i < len(mappingsPath) - 2; i++ {
 
 		currApp := mappingsPath[i]
@@ -678,12 +875,14 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 			log.Fatal(err2)
 		}
 		
-		mergedMappings := procMappingsByTables(firstMappings, secondMappings)
+		procMappings = procMappingsByTables(firstMappings, secondMappings)
 		
-		log.Println(mergedMappings)
+		log.Println(procMappings)
 		log.Println("**********************************")
 
 	}
+
+	constructMappingsUsingProcMappings(pairwiseMappings, procMappings, srcApp, dstApp)
 	
 }
 
