@@ -16,7 +16,6 @@ func getApplications(pairwiseMappings *config.SchemaMappings) []string {
 	var apps []string
 
 	for _, mapping := range pairwiseMappings.AllMappings {
-
 		apps = append(apps, mapping.FromApp)
 	}
 
@@ -36,9 +35,7 @@ func permutations(arr []string) [][]string {
         if n == 1 {
 
             tmp := make([]string, len(arr))
-			
 			copy(tmp, arr)
-			
 			res = append(res, tmp)
 			
         } else {
@@ -46,21 +43,19 @@ func permutations(arr []string) [][]string {
 			for i := 0; i < n; i++ {
 				
 				helper(arr, n - 1)
-				
+		
 				if n % 2 == 1 {
 
                     tmp := arr[i]
-					
 					arr[i] = arr[n - 1]
-					
 					arr[n - 1] = tmp
+
                 } else {
 
                     tmp := arr[0]
-					
 					arr[0] = arr[n - 1]
-					
 					arr[n - 1] = tmp
+
                 }
             }
         }
@@ -331,11 +326,8 @@ func findFromAppToAppMappings(pairwiseMappings *config.SchemaMappings,
 func containVar(data string) bool {
 
 	if strings.Contains(data, "$") {
-		
 		return true
-
 	} else {
-
 		return false
 	}
 
@@ -657,7 +649,7 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 
 }
 
-func createMappingsWhenMissingFromApp(pairwiseMappings *config.SchemaMappings, 
+func createFromAppWhenMissingFromApp(pairwiseMappings *config.SchemaMappings, 
 	fromAppName, toAppName string) *config.MappedApp {
 
 	toApp := config.MappedApp {
@@ -680,7 +672,7 @@ func createMappingsWhenMissingFromApp(pairwiseMappings *config.SchemaMappings,
 
 }
 
-func createMappingsWhenMissingToApp(pairwiseMappings *config.SchemaMappings, 
+func createToAppWhenMissingToApp(pairwiseMappings *config.SchemaMappings, 
 	fromAppName, toAppName string) (*config.MappedApp, error) {
 
 	for i, mappings := range pairwiseMappings.AllMappings {
@@ -762,7 +754,7 @@ func getMappingsByFromTable(mappedApp *config.MappedApp,
 
 }
 
-func createMappingsWhenMissingFromTable(mappedApp *config.MappedApp, 
+func createFromTablesWhenMissingFromTables(mappedApp *config.MappedApp, 
 	fromTableName string) {
 
 	for _, mappings := range mappedApp.Mappings {
@@ -785,6 +777,59 @@ func getToTableByName(mappings *config.Mapping,
 
 }
 
+func isInFromTables(data string, fromTables []string) bool {
+
+	for _, table := range fromTables {
+
+		if table == data {
+			return true
+		}
+	}
+
+	return false
+}
+
+func createToTableWhenMissingToTable(existingMappings *config.Mapping, 
+	toTable *config.ToTable, fromTables []string) {
+
+	newToTable := config.ToTable {
+		Table: toTable.Table,
+		Mapping: make(map[string]string),
+	}
+	
+	// We need to consider whether value contains variables or functions
+	// Note that variables do not contain "$" because we have already 
+	// it with real values, but they do not contain "."
+	// For functions and variables, we simply add them even though they do not 
+	// have from tables
+	for k, v := range toTable.Mapping {
+		
+		if containFunction(v) {
+			newToTable.Mapping[k] = v
+			continue
+		}
+
+		tmp := strings.Split(v, ".") 
+		
+		// This indicates that it is an variable
+		// The variable should be written as "$var"
+		if len(tmp) == 1 {
+			
+			newToTable.Mapping[k] = "$" + v
+
+		} else if len(tmp) == 2 {
+
+			if isInFromTables(tmp[0], fromTables) {
+				newToTable.Mapping[k] = v
+			}
+
+		}
+	}
+	
+	existingMappings.ToTables = append(existingMappings.ToTables, newToTable)
+
+}
+
 func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings, 
 	procMappings []config.ToTable, srcApp, dstApp string) {
 
@@ -794,17 +839,15 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 
 		if err == CannotFindFromApp {
 
-			mappedApp = createMappingsWhenMissingFromApp(pairwiseMappings, srcApp, dstApp)
+			mappedApp = createFromAppWhenMissingFromApp(pairwiseMappings, srcApp, dstApp)
 
 		} else {
 
-			mappedApp, err = createMappingsWhenMissingToApp(pairwiseMappings, srcApp, dstApp)
+			mappedApp, err = createToAppWhenMissingToApp(pairwiseMappings, srcApp, dstApp)
 			if err != nil {
 				log.Fatal(err)
 			}
-
 		}
-
 	}
 
 	log.Println(mappedApp)
@@ -821,28 +864,107 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 
 		var missingFromTables []string
 
+		var existingFromTableGroups [][]string
+
+		checkedFromTable := make(map[string]*config.Mapping)
+
 		for fromTable, _ := range fromTables {
+
+			if _, ok := checkedFromTable[fromTable]; ok {
+				continue
+			}
 
 			mappings, err1 := getMappingsByFromTable(mappedApp, fromTable)
 
 			if err1 != nil {
 				log.Println(err1)
 				missingFromTables = append(missingFromTables, fromTable)
+				checkedFromTable[fromTable] = nil
+				continue
 			}
 
-			toTable1, err2 := getToTableByName(mappings, toTable.Table)
+			checkedFromTable[fromTable] = mappings
 
-			if err2 != nil {
-				log.Println(err2)
+			fromTableGroup := []string {
+				fromTable,
+			}
+
+			for _, existingFromTable := range mappings.FromTables {
 				
+				if existingFromTable != fromTable {
+
+					if _, ok := fromTables[existingFromTable]; ok {
+
+						fromTableGroup = append(fromTableGroup, existingFromTable)
+
+						checkedFromTable[existingFromTable] = mappings
+					}
+				}
 			}
+
+			existingFromTableGroups = append(existingFromTableGroups, fromTableGroup)			
 			
 		}
 
-		if len(missingFromTables) != 0 {
-			createMappingsWhenMissingFromTable(mappedApp, missingFromTables)
+		for _, fromTableGroup := range existingFromTableGroups {
+
+			existingMappings := checkedFromTable[fromTableGroup[0]]
+
+			toTable1, err2 := getToTableByName(existingMappings, toTable.Table)
+
+			if err2 != nil {
+
+				log.Println(err2)
+				createToTableWhenMissingToTable(existingMappings, &toTable, fromTableGroup)
+
+			} else {
+
+				addMappingsIfNotExist(toTable1, &toTable, fromTableGroup)
+			}
+
 		}
 
+		if len(missingFromTables) != 0 {
+			createFromTablesWhenMissingFromTables(mappedApp, missingFromTables)
+		}
+
+	}
+
+	addVariablesIfNotExist(mappedApp, totalVariables)
+
+}
+
+func addMappingsIfNotExist(existingToTable, toTable *config.ToTable, fromTables []string) {
+
+	// Similarly, we need to cope with values containing variables or functions in the same ways
+	// If the existingToTable already has mappings from a key, we use the existing ones
+	// The only uncerntain thing is whether we need to check existing conditions 
+	// before adding new mappings
+	for k, v := range toTable.Mapping {
+
+		if _, ok := existingToTable.Mapping[k]; ok {
+			continue
+		}
+
+		if containFunction(v) {
+			existingToTable.Mapping[k] = v
+			continue
+		}
+
+		tmp := strings.Split(v, ".") 
+		
+		// This indicates that it is an variable
+		// The variable should be written as "$var"
+		if len(tmp) == 1 {
+			
+			existingToTable.Mapping[k] = "$" + v
+
+		} else if len(tmp) == 2 {
+
+			if isInFromTables(tmp[0], fromTables) {
+				existingToTable.Mapping[k] = v
+			}
+		}
 	}
 
 }
@@ -902,9 +1024,7 @@ func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 	mappingsPaths := getMappingsPaths(apps)
 
 	for _, mappingsPath := range mappingsPaths {
-
 		addMappingsByPSMThroughOnePath(pairwiseMappings, mappingsPath)
-
 	}
 
 	// return pairwiseMappings, nil
