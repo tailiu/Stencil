@@ -10,6 +10,8 @@ import (
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
+const FILEPATH = "PSM_mappings.json"
+
 // Get all unique applications in the pairwise schema mappings 
 func getApplications(pairwiseMappings *config.SchemaMappings) []string {
 
@@ -222,8 +224,8 @@ func procMappingsByRows(toApp *config.MappedApp, isSourceApp bool) map[string]st
 
 					// Similar to functions, for variables in the mappings, like $follow_action,
 					// only when they are included in the source app, will they be included in the results.
-					// Further, these variables need to be replaced with real values first since the dst app
-					// may not define such kind of inputs
+					// Further, these variables need to be replaced with real values first 
+					// since the dst app may not define such kind of inputs
 					if containVar(fromTableAttr) {
 						if !isSourceApp {
 							continue
@@ -560,7 +562,8 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 
 		// We initialize mergedTableNameIndex here
 		// because we only want to merge the mappings from same tables to the same table
-		// For example, in the path: twitter gnusocial mastodon, if we initialize these outside the for loop,
+		// For example, in the path: twitter gnusocial mastodon, 
+		// if we initialize these outside the for loop,
 		// we may also merge tweets -> notice -> statuses and retweets -> notice -> statuses,
 		// which should not be merged
 		mergedTableNameIndex := make(map[string]int)
@@ -574,7 +577,8 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 			// are the conversations for statuses including messages)
 			// and the mappings from mastodon.conversations to gnusocial.conversation are inaccurate. 
 			// (gnusocial.conversation are the conversations only for posts not messages)
-			// Then if these mappings are used in PSM, we will get twitter.conversations -> gnusocial.conversation,
+			// Then if these mappings are used in PSM, 
+			// we will get twitter.conversations -> gnusocial.conversation,
 			// which is incorrect.
 			if firstToTable.NotUsedInPSM {
 				continue
@@ -603,23 +607,27 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 							// check conditions
 							if satisfyConditions(conditions, &firstToTable, firstInputs) {
 
-								mergedTable := mergeTwoMappings(&firstToTable, &secondToTable, firstInputs)
+								mergedTable := mergeTwoMappings(&firstToTable, 
+									&secondToTable, firstInputs)
 
 								if index, ok := mergedTableNameIndex[mergedTable.Table]; ok {
 
 									// For example, in the path: gnusocial mastodon twitter,
-									// If there is no merging, there will be two almost the same toTables of 
-									// tweets and retweets because notice map to statuses in two different conditions. 
+									// If there is no merging, there will be two almost the 
+									// same toTables of tweets and retweets 
+									// because notice map to statuses in two different conditions. 
 									// In this case, we need to merge the two toTable results. 
 									// {tweets map[] false map[id:notice.id content:notice.content 
 									// 	updated_at:notice.modified created_at:notice.created] map[] } 
 									// {retweets map[] false map[created_at:notice.created 
 									//  updated_at:notice.modified id:notice.id] map[] } 
-									// {tweets map[] false map[content:notice.content created_at:notice.created 
-									//  updated_at:notice.modified id:notice.id] map[] } 
+									// {tweets map[] false map[content:notice.content 
+									// created_at:notice.created updated_at:notice.modified 
+									// id:notice.id] map[] } 
 									// {retweets map[] false map[id:notice.id created_at:notice.created 
 									//  updated_at:notice.modified] map[] }
-									mergedTable = mergeTwoSameToTables(&mergedMappings[index], &mergedTable)	
+									mergedTable = mergeTwoSameToTables(&mergedMappings[index], 
+										&mergedTable)	
 									
 									// log.Println("Merge two tables results:", mergedTable)
 									
@@ -627,7 +635,8 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 
 								} else {
 
-									// Only add to merged mappings when there are combined mappings returned
+									// Only add to merged mappings when 
+									// there are combined mappings returned
 									if len(mergedTable.Mapping) != 0 {
 
 										mergedMappings = append(mergedMappings, mergedTable) 
@@ -745,21 +754,12 @@ func getMappingsByFromTable(mappedApp *config.MappedApp,
 		for _, fromTable := range mappings.FromTables {
 
 			if fromTable == fromTableName {
-				return mappings, nil
+				return &mappings, nil
 			}
 		}
 	}
 
 	return nil, CannotGetMappingsByFromTable
-
-}
-
-func createFromTablesWhenMissingFromTables(mappedApp *config.MappedApp, 
-	fromTableName string) {
-
-	for _, mappings := range mappedApp.Mappings {
-
-	}
 
 }
 
@@ -850,12 +850,14 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 		}
 	}
 
-	log.Println(mappedApp)
+	// log.Println(mappedApp)
 
 	totalVariables := make(map[string]bool)
 
+	// For each toTable in processed mappings
 	for _, toTable := range procMappings {
 
+		// Get from tables and variables in this toTable
 		fromTables, variables := getFromTablesVariablesFromToTable(toTable)
 
 		// log.Println(fromTables, variables)
@@ -868,14 +870,17 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 
 		checkedFromTable := make(map[string]*config.Mapping)
 
+		// For each from table in the above toTable
 		for fromTable, _ := range fromTables {
 
 			if _, ok := checkedFromTable[fromTable]; ok {
 				continue
 			}
 
+			// Get existing mappings by the from table
 			mappings, err1 := getMappingsByFromTable(mappedApp, fromTable)
 
+			// If there is no from table in the existing mappings
 			if err1 != nil {
 				log.Println(err1)
 				missingFromTables = append(missingFromTables, fromTable)
@@ -889,6 +894,9 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 				fromTable,
 			}
 
+			// If there are any from tables already in the exsiting mappings,
+			// these from tables need to be grouped based on the structure of
+			// the existing mappings
 			for _, existingFromTable := range mappings.FromTables {
 				
 				if existingFromTable != fromTable {
@@ -925,12 +933,81 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 		}
 
 		if len(missingFromTables) != 0 {
-			createFromTablesWhenMissingFromTables(mappedApp, missingFromTables)
+			// all non-existing from tables will be combined and added
+			createFromTablesWhenMissingFromTables(mappedApp, missingFromTables, &toTable)
 		}
 
 	}
 
+	// all missing variables need to be defined
 	addVariablesIfNotExist(mappedApp, totalVariables)
+
+}
+
+func addVariablesIfNotExist(mappedApp *config.MappedApp, totalVariables map[string]bool) {
+
+	for variable, _ := range totalVariables {
+		
+		alreadyExisted := false
+		
+		// For simplicity, I use the variable as both the name and the value
+		// Also, even though there could be other variables with the same value,
+		// I just create new variables.
+		for _, input := range mappedApp.Inputs {
+			if input["name"] == variable && input["value"] == variable {
+				alreadyExisted = true
+				break
+			}
+		}
+
+		if !alreadyExisted {
+
+			newVar := map[string]string {
+				"name": variable,
+				"value": variable,
+			}
+			mappedApp.Inputs = append(mappedApp.Inputs, newVar)
+
+		}
+
+	}
+}
+
+func createFromTablesWhenMissingFromTables(mappedApp *config.MappedApp, 
+	missingFromTables []string, toTable *config.ToTable) {
+
+	newMappings := config.Mapping {
+		FromTables: missingFromTables,
+		ToTables:   []config.ToTable {
+			config.ToTable {
+				Table: toTable.Table,
+				Mapping: make(map[string]string),
+			}}}
+
+	for k, v := range toTable.Mapping {
+
+		if containFunction(v) {
+			newMappings.ToTables[0].Mapping[k] = v
+			continue
+		}
+
+		tmp := strings.Split(v, ".") 
+		
+		// This indicates that it is an variable
+		// The variable should be written as "$var"
+		if len(tmp) == 1 {
+			
+			newMappings.ToTables[0].Mapping[k] = "$" + v
+
+		} else if len(tmp) == 2 {
+
+			if isInFromTables(tmp[0], missingFromTables) {
+				newMappings.ToTables[0].Mapping[k] = v
+			}
+		}
+	}
+
+	mappedApp.Mappings = append(mappedApp.Mappings, newMappings)
 
 }
 
@@ -940,6 +1017,12 @@ func addMappingsIfNotExist(existingToTable, toTable *config.ToTable, fromTables 
 	// If the existingToTable already has mappings from a key, we use the existing ones
 	// The only uncerntain thing is whether we need to check existing conditions 
 	// before adding new mappings
+	// For now, the decision is not to consider conditions since we have considered
+	// conditions during PSM transitive transformation and if there are many multiple 
+	// mappings, e.g., in the path: gnusocial twitter mastodon
+	// notice -> tweets/retweets -> statuses
+	// notice -> statuses ("notice.reply_to": "#NULL") / statuses ("notice.reply_to": "#NOTNULL")
+	// we just add to each.
 	for k, v := range toTable.Mapping {
 
 		if _, ok := existingToTable.Mapping[k]; ok {
@@ -969,6 +1052,22 @@ func addMappingsIfNotExist(existingToTable, toTable *config.ToTable, fromTables 
 
 }
 
+func writeMappingsToFile(pairwiseMappings *config.SchemaMappings) {
+
+	bytes, err := json.MarshalIndent(pairwiseMappings, "", "	")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+ 
+	err1 := ioutil.WriteFile(FILEPATH, bytes, 0644)
+
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+}
+
 func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
 	mappingsPath []string) {
 	
@@ -984,7 +1083,8 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 		nextApp := mappingsPath[i + 1]
 
 		nextNextApp := mappingsPath[i + 2]
-
+		
+		log.Println("**********************************")
 		log.Println(currApp, nextApp, nextNextApp)
 
 		firstMappings, err1 := findFromAppToAppMappings(pairwiseMappings, currApp, nextApp)
@@ -1005,7 +1105,11 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 	}
 
 	constructMappingsUsingProcMappings(pairwiseMappings, procMappings, srcApp, dstApp)
-	
+
+	// if srcApp == "twitter" && dstApp == "gnusocial" {
+		log.Println(pairwiseMappings)
+	// }
+
 }
 
 func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
@@ -1026,6 +1130,8 @@ func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 	for _, mappingsPath := range mappingsPaths {
 		addMappingsByPSMThroughOnePath(pairwiseMappings, mappingsPath)
 	}
+
+	writeMappingsToFile(pairwiseMappings)
 
 	// return pairwiseMappings, nil
 
