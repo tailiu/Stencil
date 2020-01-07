@@ -826,121 +826,14 @@ func createToTableWhenMissingToTable(existingMappings *config.Mapping,
 		}
 	}
 	
+	// log.Println(newToTable)
+
+	// Note that existingMappings
 	existingMappings.ToTables = append(existingMappings.ToTables, newToTable)
 
-}
+	// return &existingMappings
 
-func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings, 
-	procMappings []config.ToTable, srcApp, dstApp string) {
-
-	mappedApp, err := findFromAppToAppMappings(pairwiseMappings, srcApp, dstApp)
-
-	if err != nil {
-
-		if err == CannotFindFromApp {
-
-			mappedApp = createFromAppWhenMissingFromApp(pairwiseMappings, srcApp, dstApp)
-
-		} else {
-
-			mappedApp, err = createToAppWhenMissingToApp(pairwiseMappings, srcApp, dstApp)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	}
-
-	// log.Println(mappedApp)
-
-	totalVariables := make(map[string]bool)
-
-	// For each toTable in processed mappings
-	for _, toTable := range procMappings {
-
-		// Get from tables and variables in this toTable
-		fromTables, variables := getFromTablesVariablesFromToTable(toTable)
-
-		// log.Println(fromTables, variables)
-
-		mergeSecondMapToFirstMap(totalVariables, variables)
-
-		var missingFromTables []string
-
-		var existingFromTableGroups [][]string
-
-		checkedFromTable := make(map[string]*config.Mapping)
-
-		// For each from table in the above toTable
-		for fromTable, _ := range fromTables {
-
-			if _, ok := checkedFromTable[fromTable]; ok {
-				continue
-			}
-
-			// Get existing mappings by the from table
-			mappings, err1 := getMappingsByFromTable(mappedApp, fromTable)
-
-			// If there is no from table in the existing mappings
-			if err1 != nil {
-				log.Println(err1)
-				missingFromTables = append(missingFromTables, fromTable)
-				checkedFromTable[fromTable] = nil
-				continue
-			}
-
-			checkedFromTable[fromTable] = mappings
-
-			fromTableGroup := []string {
-				fromTable,
-			}
-
-			// If there are any from tables already in the exsiting mappings,
-			// these from tables need to be grouped based on the structure of
-			// the existing mappings
-			for _, existingFromTable := range mappings.FromTables {
-				
-				if existingFromTable != fromTable {
-
-					if _, ok := fromTables[existingFromTable]; ok {
-
-						fromTableGroup = append(fromTableGroup, existingFromTable)
-
-						checkedFromTable[existingFromTable] = mappings
-					}
-				}
-			}
-
-			existingFromTableGroups = append(existingFromTableGroups, fromTableGroup)			
-			
-		}
-
-		for _, fromTableGroup := range existingFromTableGroups {
-
-			existingMappings := checkedFromTable[fromTableGroup[0]]
-
-			toTable1, err2 := getToTableByName(existingMappings, toTable.Table)
-
-			if err2 != nil {
-
-				log.Println(err2)
-				createToTableWhenMissingToTable(existingMappings, &toTable, fromTableGroup)
-
-			} else {
-
-				addMappingsIfNotExist(toTable1, &toTable, fromTableGroup)
-			}
-
-		}
-
-		if len(missingFromTables) != 0 {
-			// all non-existing from tables will be combined and added
-			createFromTablesWhenMissingFromTables(mappedApp, missingFromTables, &toTable)
-		}
-
-	}
-
-	// all missing variables need to be defined
-	addVariablesIfNotExist(mappedApp, totalVariables)
+	// log.Println(existingMappings)
 
 }
 
@@ -1068,6 +961,129 @@ func writeMappingsToFile(pairwiseMappings *config.SchemaMappings) {
 
 }
 
+func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings, 
+	procMappings []config.ToTable, srcApp, dstApp string) {
+
+	mappedApp, err := findFromAppToAppMappings(pairwiseMappings, srcApp, dstApp)
+
+	if err != nil {
+
+		if err == CannotFindFromApp {
+
+			mappedApp = createFromAppWhenMissingFromApp(pairwiseMappings, srcApp, dstApp)
+
+		} else {
+
+			mappedApp, err = createToAppWhenMissingToApp(pairwiseMappings, srcApp, dstApp)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
+	// log.Println(mappedApp)
+
+	totalVariables := make(map[string]bool)
+
+	// For each toTable in processed mappings
+	for _, toTable := range procMappings {
+
+		log.Println(toTable)
+
+		// Get from tables and variables in this toTable
+		fromTables, variables := getFromTablesVariablesFromToTable(toTable)
+
+		log.Println(fromTables, variables)
+
+		mergeSecondMapToFirstMap(totalVariables, variables)
+
+		var missingFromTables []string
+
+		var existingFromTableGroups [][]string
+
+		checkedFromTable := make(map[string]*config.Mapping)
+
+		// For each from table in the above toTable
+		for fromTable, _ := range fromTables {
+
+			if _, ok := checkedFromTable[fromTable]; ok {
+				continue
+			}
+
+			// Get existing mappings by the from table
+			mappings, err1 := getMappingsByFromTable(mappedApp, fromTable)
+
+			// If there is no from table in the existing mappings
+			if err1 != nil {
+				log.Println(err1)
+				missingFromTables = append(missingFromTables, fromTable)
+				checkedFromTable[fromTable] = nil
+				continue
+			}
+
+			checkedFromTable[fromTable] = mappings
+
+			fromTableGroup := []string {
+				fromTable,
+			}
+
+			// If there are any from tables already in the exsiting mappings,
+			// these from tables need to be grouped based on the structure of
+			// the existing mappings
+			for _, existingFromTable := range mappings.FromTables {
+				
+				if existingFromTable != fromTable {
+
+					if _, ok := fromTables[existingFromTable]; ok {
+
+						fromTableGroup = append(fromTableGroup, existingFromTable)
+
+						checkedFromTable[existingFromTable] = mappings
+					}
+				}
+			}
+
+			existingFromTableGroups = append(existingFromTableGroups, fromTableGroup)			
+			
+		}
+
+		log.Println(existingFromTableGroups)
+
+		for _, fromTableGroup := range existingFromTableGroups {
+
+			existingMappings := checkedFromTable[fromTableGroup[0]]
+
+			log.Println(existingMappings)
+
+			toTable1, err2 := getToTableByName(existingMappings, toTable.Table)
+
+			if err2 != nil {
+
+				log.Print(toTable.Table + ":")
+				log.Println(err2)
+				createToTableWhenMissingToTable(existingMappings, &toTable, fromTableGroup)
+				// log.Println(existingMappings)
+				// log.Println(mappedApp)
+
+			} else {
+
+				addMappingsIfNotExist(toTable1, &toTable, fromTableGroup)
+			}
+
+		}
+
+		if len(missingFromTables) != 0 {
+			// all non-existing from tables will be combined and added
+			createFromTablesWhenMissingFromTables(mappedApp, missingFromTables, &toTable)
+		}
+
+	}
+
+	// all missing variables need to be defined
+	addVariablesIfNotExist(mappedApp, totalVariables)
+
+}
+
 func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
 	mappingsPath []string) {
 	
@@ -1088,13 +1104,19 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 		log.Println(currApp, nextApp, nextNextApp)
 
 		firstMappings, err1 := findFromAppToAppMappings(pairwiseMappings, currApp, nextApp)
+		
+		// This could happen when there is no mapping defined from currApp to nextApp
 		if err1 != nil {
-			log.Fatal(err1)
+			log.Println(err1)
+			continue
 		}
 
 		secondMappings, err2 := findFromAppToAppMappings(pairwiseMappings, nextApp, nextNextApp)
+		
+		// This could happen when there is no mapping defined from nextApp to nextNextApp
 		if err2 != nil {
-			log.Fatal(err2)
+			log.Println(err2)
+			continue
 		}
 		
 		procMappings = procMappingsByTables(firstMappings, secondMappings)
@@ -1104,10 +1126,11 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 
 	}
 
+	if srcApp == "twitter" && dstApp == "gnusocial" {
 	constructMappingsUsingProcMappings(pairwiseMappings, procMappings, srcApp, dstApp)
-
+	}
 	// if srcApp == "twitter" && dstApp == "gnusocial" {
-		log.Println(pairwiseMappings)
+		// log.Println(pairwiseMappings)
 	// }
 
 }
