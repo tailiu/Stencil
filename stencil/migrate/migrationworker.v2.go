@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"stencil/app_display"
+	"stencil/SA1_display"
 	"stencil/config"
 	"stencil/db"
 	"stencil/helper"
@@ -461,7 +461,7 @@ func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk, o
 
 	undoActionSerialized, _ := json.Marshal(undoAction)
 	transaction.LogChange(string(undoActionSerialized), self.logTxn)
-	if err := app_display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppID, dtable.TableID, pk, fmt.Sprint(self.logTxn.Txn_id)); err != nil {
+	if err := SA1_display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppID, dtable.TableID, pk, fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 		fmt.Println(self.DstAppConfig.AppID, dtable.TableID, pk, fmt.Sprint(self.logTxn.Txn_id))
 		log.Fatal("## DISPLAY ERROR!", err)
 		return errors.New("0")
