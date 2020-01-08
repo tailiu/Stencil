@@ -10,7 +10,7 @@ import (
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
-const FILEPATH = "PSM_mappings.json"
+const FILEPATH = "./config/app_settings/PSM_mappings.json"
 
 // Get all unique applications in the pairwise schema mappings 
 func getApplications(pairwiseMappings *config.SchemaMappings) []string {
@@ -789,7 +789,7 @@ func isInFromTables(data string, fromTables []string) bool {
 	return false
 }
 
-func createToTableWhenMissingToTable(existingMappings *config.Mapping, 
+func oldCreateToTableWhenMissingToTable2(existingMappings *config.Mapping, 
 	toTable *config.ToTable, fromTables []string) {
 
 	newToTable := config.ToTable {
@@ -945,6 +945,79 @@ func addMappingsIfNotExist(existingToTable, toTable *config.ToTable, fromTables 
 
 }
 
+func oldCreateToTableWhenMissingToTable1(pairwiseMappings *config.SchemaMappings, 
+	fromAppName, toAppName string, toTable *config.ToTable, fromTables []string) {
+
+	newToTable := config.ToTable {
+		Table: toTable.Table,
+		Mapping: make(map[string]string),
+	}
+
+	for seq1, mappings := range pairwiseMappings.AllMappings {
+
+		// find the from app
+		if mappings.FromApp == fromAppName {
+			
+			for seq2, toApp := range mappings.ToApps {
+
+				// find the to app
+				if toApp.Name == toAppName {
+
+					for seq3, mappings := range toApp.Mappings {
+
+						for _, fromTable := range mappings.FromTables {
+				
+							if isInFromTables(fromTable, fromTables) {
+				
+								// We need to consider whether value contains variables or functions
+								// Note that variables do not contain "$" because we have already 
+								// it with real values, but they do not contain "."
+								// For functions and variables, we simply add them 
+								// even though they do not have from tables
+								for k, v := range toTable.Mapping {
+									
+									if containFunction(v) {
+										newToTable.Mapping[k] = v
+										continue
+									}
+				
+									tmp := strings.Split(v, ".") 
+									
+									// This indicates that it is an variable
+									// The variable should be written as "$var"
+									if len(tmp) == 1 {
+										
+										newToTable.Mapping[k] = "$" + v
+				
+									} else if len(tmp) == 2 {
+				
+										if isInFromTables(tmp[0], fromTables) {
+											newToTable.Mapping[k] = v
+										}
+				
+									}
+								}
+				
+								pairwiseMappings.AllMappings[seq1].
+									ToApps[seq2].Mappings[seq3].ToTables = 
+										append(
+											pairwiseMappings.AllMappings[seq1].
+												ToApps[seq2].Mappings[seq3].ToTables,
+											newToTable)
+								
+								return 
+							}
+							
+						}
+					}
+					
+				}
+			}
+		}
+	}
+
+}
+
 func writeMappingsToFile(pairwiseMappings *config.SchemaMappings) {
 
 	bytes, err := json.MarshalIndent(pairwiseMappings, "", "	")
@@ -1061,13 +1134,15 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 
 				log.Print(toTable.Table + ":")
 				log.Println(err2)
-				createToTableWhenMissingToTable(existingMappings, &toTable, fromTableGroup)
+				createToTableWhenMissingToTable(mappedApp, &toTable, fromTableGroup)
 				// log.Println(existingMappings)
-				// log.Println(mappedApp)
+				log.Println(mappedApp)
 
 			} else {
 
 				addMappingsIfNotExist(toTable1, &toTable, fromTableGroup)
+				// log.Println(existingMappings)
+				log.Println(mappedApp)
 			}
 
 		}
@@ -1082,6 +1157,59 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 	// all missing variables need to be defined
 	addVariablesIfNotExist(mappedApp, totalVariables)
 
+}
+
+func createToTableWhenMissingToTable(mappedApp *config.MappedApp, 
+	toTable *config.ToTable, fromTables []string) {
+
+	newToTable := config.ToTable {
+		Table: toTable.Table,
+		Mapping: make(map[string]string),
+	}
+	
+	for seq1, mappings := range mappedApp.Mappings {
+
+		for _, fromTable := range mappings.FromTables {
+
+			if isInFromTables(fromTable, fromTables) {
+
+				// We need to consider whether value contains variables or functions
+				// Note that variables do not contain "$" because we have already 
+				// it with real values, but they do not contain "."
+				// For functions and variables, we simply add them 
+				// even though they do not have from tables
+				for k, v := range toTable.Mapping {
+					
+					if containFunction(v) {
+						newToTable.Mapping[k] = v
+						continue
+					}
+
+					tmp := strings.Split(v, ".") 
+					
+					// This indicates that it is an variable
+					// The variable should be written as "$var"
+					if len(tmp) == 1 {
+						
+						newToTable.Mapping[k] = "$" + v
+
+					} else if len(tmp) == 2 {
+
+						if isInFromTables(tmp[0], fromTables) {
+							newToTable.Mapping[k] = v
+						}
+
+					}
+				}
+
+				mappedApp.Mappings[seq1].ToTables = append(
+							mappedApp.Mappings[seq1].ToTables,
+							newToTable)
+
+				return 
+			}
+		}
+	}
 }
 
 func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
@@ -1126,9 +1254,9 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 
 	}
 
-	if srcApp == "twitter" && dstApp == "gnusocial" {
+	// if srcApp == "twitter" && dstApp == "gnusocial" {
 	constructMappingsUsingProcMappings(pairwiseMappings, procMappings, srcApp, dstApp)
-	}
+	// }
 	// if srcApp == "twitter" && dstApp == "gnusocial" {
 		// log.Println(pairwiseMappings)
 	// }

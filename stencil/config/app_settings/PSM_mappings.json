@@ -568,6 +568,136 @@
 							]
 						}
 					]
+				},
+				{
+					"name": "twitter",
+					"methods": [],
+					"inputs": [
+						{
+							"name": "follow_action",
+							"value": "follow"
+						}
+					],
+					"mappings": [
+						{
+							"fromTables": [
+								"user",
+								"profile"
+							],
+							"toTables": [
+								{
+									"table": "credentials",
+									"conditions": {},
+									"notUsedInPSM": false,
+									"mapping": {
+										"created_at": "user.created",
+										"email": "user.email",
+										"id": "user.id",
+										"password": "user.password",
+										"updated_at": "user.modified",
+										"user_id": "#REF(profile.id,profile.id)"
+									},
+									"media": null,
+									"TableID": ""
+								},
+								{
+									"table": "users",
+									"conditions": null,
+									"notUsedInPSM": false,
+									"mapping": {
+										"bio": "profile.bio",
+										"created_at": "profile.created",
+										"id": "profile.id",
+										"name": "profile.nickname",
+										"updated_at": "profile.modified"
+									},
+									"media": null,
+									"TableID": ""
+								}
+							]
+						},
+						{
+							"fromTables": [
+								"subscription"
+							],
+							"toTables": [
+								{
+									"table": "user_actions",
+									"conditions": null,
+									"notUsedInPSM": false,
+									"mapping": {
+										"action_type": "$follow_action",
+										"created_at": "subscription.created",
+										"from_user_id": "#REF(subscription.subscriber,profile.id)",
+										"to_user_id": "#REF(subscription.subscribed,profile.id)",
+										"updated_at": "subscription.modified"
+									},
+									"media": null,
+									"TableID": ""
+								}
+							]
+						},
+						{
+							"fromTables": [
+								"notice"
+							],
+							"toTables": [
+								{
+									"table": "tweets",
+									"conditions": {
+										"notice.repeat_of": "#NULL"
+									},
+									"notUsedInPSM": false,
+									"mapping": {
+										"content": "notice.content",
+										"created_at": "notice.created",
+										"id": "notice.id",
+										"reply_to_id": "#REF(notice.reply_to,notice.id)",
+										"updated_at": "notice.modified",
+										"user_id": "#REF(notice.profile_id,profile.id)"
+									},
+									"media": null,
+									"TableID": ""
+								},
+								{
+									"table": "retweets",
+									"conditions": {
+										"notice.repeat_of": "#NOTNULL"
+									},
+									"notUsedInPSM": false,
+									"mapping": {
+										"created_at": "notice.created",
+										"id": "notice.id",
+										"tweet_id": "#REF(notice.repeat_of,notice.id)",
+										"updated_at": "notice.modified",
+										"user_id": "#REF(notice.profile_id,profile.id)"
+									},
+									"media": null,
+									"TableID": ""
+								}
+							]
+						},
+						{
+							"fromTables": [
+								"fave"
+							],
+							"toTables": [
+								{
+									"table": "likes",
+									"conditions": null,
+									"notUsedInPSM": false,
+									"mapping": {
+										"created_at": "fave.created",
+										"tweet_id": "#REF(fave.notice_id,notice.id)",
+										"updated_at": "fave.modified",
+										"user_id": "#REF(fave.user_id,profile.id)"
+									},
+									"media": null,
+									"TableID": ""
+								}
+							]
+						}
+					]
 				}
 			]
 		},
@@ -804,6 +934,21 @@
 										"id": "users.id",
 										"modified": "users.updated_at",
 										"nickname": "users.name"
+									},
+									"media": null,
+									"TableID": ""
+								},
+								{
+									"table": "user",
+									"conditions": null,
+									"notUsedInPSM": false,
+									"mapping": {
+										"created": "credentials.created_at",
+										"email": "credentials.email",
+										"id": "users.id",
+										"modified": "credentials.updated_at",
+										"nickname": "users.name",
+										"password": "credentials.password"
 									},
 									"media": null,
 									"TableID": ""
