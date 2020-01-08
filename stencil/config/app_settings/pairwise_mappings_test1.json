@@ -744,11 +744,7 @@
                                     "table": "notice",
                                     "conditions": {},
                                     "mapping": {
-                                        "id": "tweets.id",
-                                        "content": "tweets.content",
                                         "profile_id": "#REF(tweets.user_id,users.id)",
-                                        "created": "tweets.created_at",
-                                        "modified":"tweets.updated_at",
                                         "reply_to":"#REF(tweets.reply_to_id,tweets.id)"
                                     }
                                 }
@@ -760,11 +756,8 @@
                                 {
                                     "table": "notice",
                                     "mapping" : {
-                                        "id": "retweets.id",
                                         "repeat_of": "#REF(retweets.tweet_id,tweets.id)",
-                                        "profile_id": "#REF(retweets.user_id,users.id)",
-                                        "created": "retweets.created_at",
-                                        "modified":"retweets.updated_at"
+                                        "profile_id": "#REF(retweets.user_id,users.id)"
                                     }            
                                 }
                             ]

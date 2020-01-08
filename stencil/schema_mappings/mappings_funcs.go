@@ -2,9 +2,12 @@ package schema_mappings
 
 import (
 	"stencil/config"
-	// "database/sql"
 	"strings"
 	"log"
+	"os"
+	"io/ioutil"
+	"encoding/json"
+	combinations "github.com/mxschmitt/golang-combinations"
 )
 
 // Return the first argument of #REF
@@ -261,4 +264,180 @@ func GetMappedAttributesFromSchemaMappingsByFETCH(allMappings *config.SchemaMapp
 
 		return attributes, nil
 	}
+}
+
+
+func writeMappingsToFile(pairwiseMappings *config.SchemaMappings) {
+
+	bytes, err := json.MarshalIndent(pairwiseMappings, "", "	")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+ 
+	err1 := ioutil.WriteFile(FILEPATH, bytes, 0644)
+
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+}
+
+// Get all unique applications in the pairwise schema mappings 
+func getApplications(pairwiseMappings *config.SchemaMappings) []string {
+
+	var apps []string
+
+	for _, mapping := range pairwiseMappings.AllMappings {
+		apps = append(apps, mapping.FromApp)
+	}
+
+	return apps
+
+}
+
+// Get all the permutations of an array
+func permutations(arr []string) [][]string {
+
+    var helper func([]string, int)
+	
+	res := [][]string{}
+
+    helper = func(arr []string, n int) {
+
+        if n == 1 {
+
+            tmp := make([]string, len(arr))
+			copy(tmp, arr)
+			res = append(res, tmp)
+			
+        } else {
+			
+			for i := 0; i < n; i++ {
+				
+				helper(arr, n - 1)
+		
+				if n % 2 == 1 {
+
+                    tmp := arr[i]
+					arr[i] = arr[n - 1]
+					arr[n - 1] = tmp
+
+                } else {
+
+                    tmp := arr[0]
+					arr[0] = arr[n - 1]
+					arr[n - 1] = tmp
+
+                }
+            }
+        }
+	}
+	
+	helper(arr, len(arr))
+	
+	return res
+
+}
+
+// find all possible mappings through different paths from a source app to a destination app
+// This is equivalent to getting all permutations of an array
+func getMappingsPaths(apps []string) [][]string {
+
+	// // i is the index of the source app
+	// for i := 0; i < len(apps); i++ {
+		
+	// 	srcApp := apps[i]
+
+	// 	// j is the index of the destination app
+	// 	for j := 0; j < len(apps); j++ {
+			
+	// 		// If i == j, this means the source and destination apps are the same
+	// 		if i == j {
+	// 			continue
+	// 		}
+
+	// 		dstApp := apps[j]
+
+	// 	}
+	// }
+
+	var res [][]string 
+	
+	combs := combinations.All(apps)
+	
+	log.Println(combs)
+
+	for _, comb := range combs {
+		
+		if len(comb) <= 2 {
+			continue
+		}
+
+		res = append(res, permutations(comb)...)
+
+	}
+
+	log.Println(res)
+
+	return res
+
+}
+
+func loadPairwiseSchemaMappings() (*config.SchemaMappings, error) {
+
+	var SchemaMappingsObj config.SchemaMappings
+
+	// dir, err := os.Getwd()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// log.Println(dir)
+
+	pairwiseSchemaMappingFile := "./config/app_settings/pairwise_mappings_test.json"
+
+	jsonFile, err := os.Open(pairwiseSchemaMappingFile)
+	if err != nil {
+		log.Println(err)
+		return &SchemaMappingsObj, CannotOpenPSMFile
+	}
+
+	// defer the closing of our jsonFile so that we can parse it later on
+	defer jsonFile.Close()
+
+	jsonAsBytes, err1 := ioutil.ReadAll(jsonFile)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	json.Unmarshal(jsonAsBytes, &SchemaMappingsObj)
+
+	// dbConn := db.GetDBConn(db.STENCIL_DB)
+
+	// log.Println(SchemaMappingsObj)
+
+	// for i, mapping := range SchemaMappingsObj.AllMappings {
+	// 	for j, toApp := range mapping.ToApps {
+	// 		appID := db.GetAppIDByAppName(dbConn, toApp.Name)
+	// 		for k, toAppMapping := range toApp.Mappings {
+	// 			for l, toTable := range toAppMapping.ToTables {
+	// 				ToTableID, err := db.TableID(dbConn, toTable.Table, appID);
+	// 				if  err != nil{
+	// 					log.Println("LoadSchemaMappings: Unable to resolve ToTableID for table: ", 
+	// 						toTable.Table, toApp.Name, appID)
+	// 					log.Fatal(err)
+	// 				}
+	// 				SchemaMappingsObj.AllMappings[i].ToApps[j].Mappings[k].ToTables[l].TableID 
+	// 					= ToTableID
+	// 				// fmt.Println(toTable.Table, toApp.Name, appID, ToTableID)
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// fmt.Println(SchemaMappingsObj.AllMappings[0].ToApps[0].Mappings[0].ToTables)
+	// log.Fatal()
+
+	return &SchemaMappingsObj, nil
+
 }
