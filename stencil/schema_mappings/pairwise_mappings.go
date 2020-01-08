@@ -157,7 +157,8 @@ func loadPairwiseSchemaMappings() (*config.SchemaMappings, error) {
 	// 						toTable.Table, toApp.Name, appID)
 	// 					log.Fatal(err)
 	// 				}
-	// 				SchemaMappingsObj.AllMappings[i].ToApps[j].Mappings[k].ToTables[l].TableID = ToTableID
+	// 				SchemaMappingsObj.AllMappings[i].ToApps[j].Mappings[k].ToTables[l].TableID 
+	// 					= ToTableID
 	// 				// fmt.Println(toTable.Table, toApp.Name, appID, ToTableID)
 	// 			}
 	// 		}
@@ -223,7 +224,8 @@ func procMappingsByRows(toApp *config.MappedApp, isSourceApp bool) map[string]st
 					// log.Println("fromTableAttr:", fromTableAttr)
 
 					// Similar to functions, for variables in the mappings, like $follow_action,
-					// only when they are included in the source app, will they be included in the results.
+					// only when they are included in the source app, 
+					// will they be included in the results.
 					// Further, these variables need to be replaced with real values first 
 					// since the dst app may not define such kind of inputs
 					if containVar(fromTableAttr) {
@@ -789,6 +791,9 @@ func isInFromTables(data string, fromTables []string) bool {
 	return false
 }
 
+// Compared with createToTableWhenMissingToTable and oldCreateToTableWhenMissingToTable1,
+// This function does not work because it just changes the address pointed by existingMappings
+// but the mapping in the mappedApp still points to the old address
 func oldCreateToTableWhenMissingToTable2(existingMappings *config.Mapping, 
 	toTable *config.ToTable, fromTables []string) {
 

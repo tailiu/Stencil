@@ -37,11 +37,11 @@ type Mapping struct {
 
 type ToTable struct {
 	Table      		string            `json:"table"`
-	Conditions 		map[string]string `json:"conditions"`
-	NotUsedInPSM  	bool			  `json:"notUsedInPSM"`
+	Conditions 		map[string]string `json:"conditions,omitempty"`
+	NotUsedInPSM  	bool			  `json:"notUsedInPSM,omitempty"`
 	Mapping    		map[string]string `json:"mapping"`
-	Media	   		map[string]string `json:"media"`
-	TableID    		string
+	Media	   		map[string]string `json:"media,omitempty"`
+	TableID    		string			  `json:"-"`
 }
 
 /****************** App Config Structs ***********************/

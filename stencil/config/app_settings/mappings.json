@@ -1822,7 +1822,7 @@
                                 {
                                     "table": "credentials",
                                     "mapping": {
-                                        "id":"#RANDINT",
+                                        "id":"user.id",
                                         "email":"user.email",
                                         "password":"user.password",
                                         "user_id":"#REF(profile.id,profile.id)",

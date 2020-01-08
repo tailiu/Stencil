@@ -21,8 +21,6 @@
 							"toTables": [
 								{
 									"table": "users",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"avatar": "accounts.avatar_remote_url",
 										"bio": "accounts.note",
@@ -31,14 +29,10 @@
 										"id": "accounts.id",
 										"name": "accounts.username",
 										"updated_at": "accounts.updated_at"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "credentials",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created_at": "users.created_at",
 										"email": "users.email",
@@ -46,9 +40,7 @@
 										"password": "users.encrypted_password",
 										"updated_at": "users.updated_at",
 										"user_id": "#REF(accounts.id,accounts.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -63,7 +55,6 @@
 										"statuses.reblog_of_id": "#NULL",
 										"statuses.visibility": "0"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"content": "statuses.text",
 										"created_at": "statuses.created_at",
@@ -71,9 +62,7 @@
 										"reply_to_id": "#REF(statuses.in_reply_to_id,statuses.id)",
 										"updated_at": "statuses.updated_at",
 										"user_id": "#REF(statuses.account_id,accounts.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "retweets",
@@ -81,23 +70,19 @@
 										"statuses.reblog_of_id": "#NOTNULL",
 										"statuses.visibility": "0"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created_at": "statuses.created_at",
 										"id": "statuses.id",
 										"tweet_id": "#REF(statuses.reblog_of_id,statuses.id)",
 										"updated_at": "statuses.updated_at",
 										"user_id": "#REF(statuses.account_id,accounts.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "messages",
 									"conditions": {
 										"statuses.visibility": "3"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"content": "statuses.text",
 										"conversation_id": "#REF(statuses.conversation_id,conversations.id)",
@@ -105,9 +90,7 @@
 										"id": "statuses.id",
 										"updated_at": "statuses.updated_at",
 										"user_id": "#REF(statuses.account_id,accounts.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -118,15 +101,12 @@
 							"toTables": [
 								{
 									"table": "conversations",
-									"conditions": {},
 									"notUsedInPSM": true,
 									"mapping": {
 										"created_at": "conversations.created_at",
 										"id": "conversations.id",
 										"updated_at": "conversations.updated_at"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -137,17 +117,13 @@
 							"toTables": [
 								{
 									"table": "likes",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created_at": "favourites.created_at",
 										"id": "favourites.id",
 										"tweet_id": "#REF(favourites.status_id,statuses.id)",
 										"updated_at": "favourites.updated_at",
 										"user_id": "#REF(favourites.account_id,accounts.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -158,8 +134,6 @@
 							"toTables": [
 								{
 									"table": "user_actions",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"action_type": "$follow_action",
 										"created_at": "follows.created_at",
@@ -167,9 +141,7 @@
 										"id": "follows.id",
 										"to_user_id": "#REF(follows.target_account_id,accounts.id)",
 										"updated_at": "follows.updated_at"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -180,8 +152,6 @@
 							"toTables": [
 								{
 									"table": "notifications",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created_at": "notifications.created_at",
 										"from_user": "#REF(notifications.from_account_id,accounts.id)",
@@ -190,9 +160,7 @@
 										"tweet": "#REF(notifications.activity_id,statuses.id)",
 										"updated_at": "notifications.updated_at",
 										"user_id": "#REF(notifications.account_id,accounts.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						}
@@ -211,8 +179,6 @@
 							"toTables": [
 								{
 									"table": "user",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created": "users.created_at",
 										"email": "users.email",
@@ -220,23 +186,17 @@
 										"modified": "users.updated_at",
 										"nickname": "accounts.username",
 										"password": "users.encrypted_password"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "profile",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"bio": "accounts.note",
 										"created": "accounts.created_at",
 										"id": "accounts.id",
 										"modified": "accounts.updated_at",
 										"nickname": "accounts.username"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -247,17 +207,13 @@
 							"toTables": [
 								{
 									"table": "subscription",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"created": "follows.created_at",
 										"modified": "follows.updated_at",
 										"subscribed": "#REF(follows.target_account_id,accounts.id)",
 										"subscriber": "#REF(follows.account_id,accounts.id)",
 										"uri": "follows.uri"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -271,7 +227,6 @@
 									"conditions": {
 										"statuses.visibility": "0"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"content": "statuses.text",
 										"conversation": "#REF(statuses.conversation_id,conversations.id)",
@@ -282,9 +237,7 @@
 										"profile_id": "#REF(statuses.account_id,accounts.id)",
 										"repeat_of": "#REF(statuses.reblog_of_id,statuses.id)",
 										"reply_to": "#REF(statuses.in_reply_to_id,statuses.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -295,8 +248,6 @@
 							"toTables": [
 								{
 									"table": "file",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"date": "media_attachments.created_at",
 										"filename": "media_attachments.file_file_name",
@@ -309,20 +260,15 @@
 									},
 									"media": {
 										"path": "media_attachments.remote_url"
-									},
-									"TableID": ""
+									}
 								},
 								{
 									"table": "file_to_post",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"file_id": "#REF(media_attachments.id,media_attachments.id)",
 										"modified": "media_attachments.updated_at",
 										"post_id": "#REF(media_attachments.status_id,statuses.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -333,16 +279,13 @@
 							"toTables": [
 								{
 									"table": "conversation",
-									"conditions": {},
 									"notUsedInPSM": true,
 									"mapping": {
 										"created": "conversations.created_at",
 										"id": "conversations.id",
 										"modified": "conversations.updated_at",
 										"uri": "conversations.uri"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -353,16 +296,12 @@
 							"toTables": [
 								{
 									"table": "fave",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"created": "favourites.created_at",
 										"modified": "favourites.updated_at",
 										"notice_id": "#REF(favourites.status_id,statuses.id)",
 										"user_id": "#REF(favourites.account_id,accounts.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						}
@@ -399,22 +338,16 @@
 							"toTables": [
 								{
 									"table": "accounts",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created_at": "profile.created",
 										"id": "profile.id",
 										"note": "profile.bio",
 										"updated_at": "profile.modified",
 										"username": "profile.nickname"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "users",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(profile.id,profile.id)",
 										"created_at": "user.created",
@@ -422,9 +355,7 @@
 										"encrypted_password": "user.password",
 										"id": "user.id",
 										"updated_at": "user.modified"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -435,17 +366,13 @@
 							"toTables": [
 								{
 									"table": "follows",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(subscription.subscriber,profile.id)",
 										"created_at": "subscription.created",
 										"target_account_id": "#REF(subscription.subscribed,profile.id)",
 										"updated_at": "subscription.modified",
 										"uri": "subscription.uri"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -459,7 +386,6 @@
 									"conditions": {
 										"notice.reply_to": "#NULL"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(notice.profile_id,profile.id)",
 										"conversation_id": "#REF(notice.conversation,conversation.id)",
@@ -472,16 +398,13 @@
 										"text": "notice.content",
 										"updated_at": "notice.modified",
 										"visibility": "$visibility0"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "statuses",
 									"conditions": {
 										"notice.reply_to": "#NOTNULL"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(notice.profile_id,profile.id)",
 										"conversation_id": "#REF(notice.conversation,conversation.id)",
@@ -494,9 +417,7 @@
 										"text": "notice.content",
 										"updated_at": "notice.modified",
 										"visibility": "$visibility0"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -507,8 +428,6 @@
 							"toTables": [
 								{
 									"table": "media_attachments",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(file.profile_id,profile.id)",
 										"created_at": "file.date",
@@ -522,8 +441,7 @@
 									},
 									"media": {
 										"path": "file.url"
-									},
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -534,16 +452,13 @@
 							"toTables": [
 								{
 									"table": "conversations",
-									"conditions": {},
 									"notUsedInPSM": true,
 									"mapping": {
 										"created_at": "conversation.created",
 										"id": "conversation.id",
 										"updated_at": "conversation.modified",
 										"uri": "conversation.uri"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -554,16 +469,12 @@
 							"toTables": [
 								{
 									"table": "favourites",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(fave.user_id,profile.id)",
 										"created_at": "fave.created",
 										"status_id": "#REF(fave.notice_id,notice.id)",
 										"updated_at": "fave.modified"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						}
@@ -587,8 +498,6 @@
 							"toTables": [
 								{
 									"table": "credentials",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created_at": "user.created",
 										"email": "user.email",
@@ -596,23 +505,17 @@
 										"password": "user.password",
 										"updated_at": "user.modified",
 										"user_id": "#REF(profile.id,profile.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "users",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"bio": "profile.bio",
 										"created_at": "profile.created",
 										"id": "profile.id",
 										"name": "profile.nickname",
 										"updated_at": "profile.modified"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -623,17 +526,13 @@
 							"toTables": [
 								{
 									"table": "user_actions",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"action_type": "$follow_action",
 										"created_at": "subscription.created",
 										"from_user_id": "#REF(subscription.subscriber,profile.id)",
 										"to_user_id": "#REF(subscription.subscribed,profile.id)",
 										"updated_at": "subscription.modified"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -647,7 +546,6 @@
 									"conditions": {
 										"notice.repeat_of": "#NULL"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"content": "notice.content",
 										"created_at": "notice.created",
@@ -655,25 +553,20 @@
 										"reply_to_id": "#REF(notice.reply_to,notice.id)",
 										"updated_at": "notice.modified",
 										"user_id": "#REF(notice.profile_id,profile.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "retweets",
 									"conditions": {
 										"notice.repeat_of": "#NOTNULL"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created_at": "notice.created",
 										"id": "notice.id",
 										"tweet_id": "#REF(notice.repeat_of,notice.id)",
 										"updated_at": "notice.modified",
 										"user_id": "#REF(notice.profile_id,profile.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -684,16 +577,12 @@
 							"toTables": [
 								{
 									"table": "likes",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"created_at": "fave.created",
 										"tweet_id": "#REF(fave.notice_id,notice.id)",
 										"updated_at": "fave.modified",
 										"user_id": "#REF(fave.user_id,profile.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						}
@@ -726,8 +615,6 @@
 							"toTables": [
 								{
 									"table": "accounts",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"avatar_remote_url": "users.avatar",
 										"created_at": "users.created_at",
@@ -736,14 +623,10 @@
 										"note": "users.bio",
 										"updated_at": "users.updated_at",
 										"username": "users.name"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "users",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(users.id,users.id)",
 										"created_at": "credentials.created_at",
@@ -751,9 +634,7 @@
 										"encrypted_password": "credentials.password",
 										"id": "credentials.id",
 										"updated_at": "credentials.updated_at"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -767,16 +648,13 @@
 									"conditions": {
 										"user_actions.action_type": "follows"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(user_actions.from_user_id,users.id)",
 										"created_at": "user_actions.created_at",
 										"id": "user_actions.id",
 										"target_account_id": "#REF(user_actions.to_user_id,users.id)",
 										"updated_at": "user_actions.updated_at"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -787,17 +665,13 @@
 							"toTables": [
 								{
 									"table": "favourites",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(likes.user_id,users.id)",
 										"created_at": "likes.created_at",
 										"id": "likes.id",
 										"status_id": "#REF(likes.tweet_id,tweets.id)",
 										"updated_at": "likes.updated_at"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -808,8 +682,6 @@
 							"toTables": [
 								{
 									"table": "statuses",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(tweets.user_id,users.id)",
 										"created_at": "tweets.created_at",
@@ -818,9 +690,7 @@
 										"text": "tweets.content",
 										"updated_at": "tweets.updated_at",
 										"visibility": "$visibility0"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -831,8 +701,6 @@
 							"toTables": [
 								{
 									"table": "statuses",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(retweets.user_id,users.id)",
 										"created_at": "retweets.created_at",
@@ -840,9 +708,7 @@
 										"reblog_of_id": "#REF(retweets.tweet_id,tweets.id)",
 										"updated_at": "retweets.updated_at",
 										"visibility": "$visibility0"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -853,15 +719,12 @@
 							"toTables": [
 								{
 									"table": "conversations",
-									"conditions": {},
 									"notUsedInPSM": true,
 									"mapping": {
 										"created_at": "conversations.created_at",
 										"id": "conversations.id",
 										"updated_at": "conversations.updated_at"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -872,8 +735,6 @@
 							"toTables": [
 								{
 									"table": "statuses",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(messages.user_id,users.id)",
 										"conversation_id": "#REF(messages.conversation_id,conversations.id)",
@@ -882,9 +743,7 @@
 										"text": "messages.content",
 										"updated_at": "messages.updated_at",
 										"visibility": "$visibility3"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -895,8 +754,6 @@
 							"toTables": [
 								{
 									"table": "notifications",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"account_id": "#REF(notifications.user_id,users.id)",
 										"activity_id": "#REF(notifications.tweet,tweets.id)",
@@ -905,9 +762,7 @@
 										"from_account_id": "#REF(notifications.from_user,users.id)",
 										"id": "notifications.id",
 										"updated_at": "notifications.updated_at"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						}
@@ -926,22 +781,16 @@
 							"toTables": [
 								{
 									"table": "profile",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"bio": "users.bio",
 										"created": "users.created_at",
 										"id": "users.id",
 										"modified": "users.updated_at",
 										"nickname": "users.name"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								},
 								{
 									"table": "user",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"created": "credentials.created_at",
 										"email": "credentials.email",
@@ -949,9 +798,7 @@
 										"modified": "credentials.updated_at",
 										"nickname": "users.name",
 										"password": "credentials.password"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -965,15 +812,12 @@
 									"conditions": {
 										"user_actions.action_type": "follows"
 									},
-									"notUsedInPSM": false,
 									"mapping": {
 										"created": "user_actions.created_at",
 										"modified": "user_actions.updated_at",
 										"subscribed": "#REF(user_actions.to_user_id,users.id)",
 										"subscriber": "#REF(user_actions.from_user_id,users.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -984,8 +828,6 @@
 							"toTables": [
 								{
 									"table": "notice",
-									"conditions": {},
-									"notUsedInPSM": false,
 									"mapping": {
 										"content": "tweets.content",
 										"created": "tweets.created_at",
@@ -993,9 +835,7 @@
 										"modified": "tweets.updated_at",
 										"profile_id": "#REF(tweets.user_id,users.id)",
 										"reply_to": "#REF(tweets.reply_to_id,tweets.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -1006,17 +846,13 @@
 							"toTables": [
 								{
 									"table": "notice",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"created": "retweets.created_at",
 										"id": "retweets.id",
 										"modified": "retweets.updated_at",
 										"profile_id": "#REF(retweets.user_id,users.id)",
 										"repeat_of": "#REF(retweets.tweet_id,tweets.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						},
@@ -1027,16 +863,12 @@
 							"toTables": [
 								{
 									"table": "fave",
-									"conditions": null,
-									"notUsedInPSM": false,
 									"mapping": {
 										"created": "likes.created_at",
 										"modified": "likes.updated_at",
 										"notice_id": "#REF(likes.tweet_id,tweets.id)",
 										"user_id": "#REF(likes.user_id,users.id)"
-									},
-									"media": null,
-									"TableID": ""
+									}
 								}
 							]
 						}
