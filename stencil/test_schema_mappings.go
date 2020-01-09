@@ -76,12 +76,12 @@ func test5() {
 
 	// log.Println(pairwiseSchemaMappings)
 
-	schema_mappings, err := schema_mappings.DeriveMappingsByPSM()
+	_, err := schema_mappings.DeriveMappingsByPSM()
 	if err != nil {
 		log.Println(err)
 	}
 
-	log.Println(schema_mappings)
+	// log.Println(schema_mappings)
 
 }
 

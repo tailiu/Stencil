@@ -448,12 +448,12 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 	// For each toTable in processed mappings
 	for _, toTable := range procMappings {
 
-		log.Println(toTable)
+		// log.Println(toTable)
 
 		// Get from tables and variables in this toTable
 		fromTables, variables := getFromTablesVariablesFromToTable(toTable)
 
-		log.Println(fromTables, variables)
+		// log.Println(fromTables, variables)
 
 		mergeSecondMapToFirstMap(totalVariables, variables)
 
@@ -507,29 +507,29 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 			
 		}
 
-		log.Println(existingFromTableGroups)
+		// log.Println(existingFromTableGroups)
 
 		for _, fromTableGroup := range existingFromTableGroups {
 
 			existingMappings := checkedFromTable[fromTableGroup[0]]
 
-			log.Println(existingMappings)
+			// log.Println(existingMappings)
 
 			toTable1, err2 := getToTableByName(existingMappings, toTable.Table)
 
 			if err2 != nil {
 
-				log.Print(toTable.Table + ":")
+				// log.Print(toTable.Table + ":")
 				log.Println(err2)
 				createToTableWhenMissingToTable(mappedApp, &toTable, fromTableGroup)
 				// log.Println(existingMappings)
-				log.Println(mappedApp)
+				// log.Println(mappedApp)
 
 			} else {
 
 				addMappingsIfNotExist(toTable1, &toTable, fromTableGroup)
 				// log.Println(existingMappings)
-				log.Println(mappedApp)
+				// log.Println(mappedApp)
 			}
 
 		}

@@ -5,8 +5,6 @@ import (
 	"log"
 )
 
-const FILEPATH = "./config/app_settings/PSM_mappings.json"
-
 func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
 	mappingsPath []string) {
 	
@@ -23,7 +21,7 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 
 		nextNextApp := mappingsPath[i + 2]
 		
-		log.Println("**********************************")
+		log.Println("************* Process Mappings *********************")
 		log.Println(currApp, nextApp, nextNextApp)
 
 		firstMappings, err1 := findFromAppToAppMappings(pairwiseMappings, currApp, nextApp)
@@ -45,16 +43,18 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 		procMappings = procMappingsByTables(firstMappings, secondMappings)
 		
 		log.Println(procMappings)
-		log.Println("**********************************")
+		log.Println("*****************************************************")
 
 	}
 
+	log.Println("++++++++++++++ Construct Mappings +++++++++++++++++++")
 	// if srcApp == "twitter" && dstApp == "gnusocial" {
 	constructMappingsUsingProcMappings(pairwiseMappings, procMappings, srcApp, dstApp)
 	// }
 	// if srcApp == "twitter" && dstApp == "gnusocial" {
 		// log.Println(pairwiseMappings)
 	// }
+	log.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
 }
 
@@ -79,8 +79,6 @@ func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 
 	writeMappingsToFile(pairwiseMappings)
 
-	// return pairwiseMappings, nil
-
-	return nil, nil
+	return pairwiseMappings, nil
 
 }

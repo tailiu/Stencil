@@ -6,6 +6,39 @@ import (
 	"strings"
 )
 
+// A list of conditions not considered while processing mappings
+// I decided to add this list because sometimes conditions should not be
+// considered, for example, in the mapping path: Twitter Mastodon Diaspora
+// statuses.reply should not be considered in the mappings from statuses to
+// posts/comments while statuses.visibility should be
+var conditionsNotConsideredList = []conditionsNotConsidered {
+
+	conditionsNotConsidered {
+		fromApp:		"mastodon",
+		toApp:			"diaspora",
+		fromTables:		[]string {
+			"statuses", 
+			"status_stats",
+		},
+		toTable:		"posts",
+		condName:		"statuses.reply",
+		condVal:		"false",
+	},
+
+	conditionsNotConsidered {
+		fromApp:		"mastodon",
+		toApp:			"diaspora",
+		fromTables:		[]string {
+			"statuses", 
+			"status_stats",
+		},
+		toTable:		"comments",
+		condName:		"statuses.reply",
+		condVal:		"true",
+	},
+
+}
+
 func procMappingsByRows(toApp *config.MappedApp, isSourceApp bool) map[string]string {
 
 	res := make(map[string]string)
@@ -217,12 +250,64 @@ func containFunction(data string) bool {
 
 }
 
+func areTwoSlicesIdenticalWithoutOrder(s1, s2 []string) bool {
+
+	xMap := make(map[string]int)
+    yMap := make(map[string]int)
+
+    for _, xElem := range s1 {
+        xMap[xElem]++
+    }
+    for _, yElem := range s2 {
+        yMap[yElem]++
+    }
+
+    for xMapKey, xMapVal := range xMap {
+        if yMap[xMapKey] != xMapVal {
+            return false
+        }
+	}
+	
+    return true
+}
+
+func isInNotConsideredList(fromApp, toApp, toTable, condName, condVal string,
+	fromTables []string) bool {
+
+	// log.Println(conditionName)
+	// log.Println(conditionValue)
+
+	for _, conditionInList := range conditionsNotConsideredList {
+
+		if conditionInList.fromApp == fromApp &&
+			conditionInList.toApp == toApp &&
+			conditionInList.toTable == toTable &&
+			conditionInList.condName == condName &&
+			conditionInList.condVal == condVal && 
+			areTwoSlicesIdenticalWithoutOrder(conditionInList.fromTables, fromTables) {
+				return true
+		}
+	}
+	
+	return false
+}
+
 func satisfyConditions(conditions map[string]string, 
-	toTable *config.ToTable, inputs []map[string]string) bool {
+	toTable *config.ToTable, inputs []map[string]string, 
+	fromTables []string, toTableName, fromApp, toApp string) bool {
 
 	tableName := toTable.Table
 
+	log.Println(inputs)
+
 	for k, v := range conditions {
+
+		// log.Println(fromApp, toApp, toTableName, k, v, fromTables)
+		// log.Println(k, v, isInNotConsideredList(fromApp, toApp, toTableName, k, v, fromTables))
+
+		if isInNotConsideredList(fromApp, toApp, toTableName, k, v, fromTables) {
+			continue
+		}
 
 		satisfyThisCondition := false
 
@@ -240,20 +325,28 @@ func satisfyConditions(conditions map[string]string,
 			}
 
 			if tableName + "." + k1 == k {
+				
+				// log.Println(tableName + "." + k1)
+				// log.Println(v1)
 
 				// v1 may contain variables like "$reshare"
 				if containVar(v1) {
 					v1 = replaceVar(v1, inputs)
+					// log.Println(v1)
+					// log.Println(v)
 				}
 
 				if v1 == v {
 					satisfyThisCondition = true
 					break
 				}
+				// log.Println(v1, v)
 			}
 		}
 
 		if !satisfyThisCondition {
+			// log.Println("not satisfied:")
+			// log.Println(k, v)
 			return false
 		}
 
@@ -383,7 +476,8 @@ func mergeTwoSameToTables(table1, table2 *config.ToTable) config.ToTable {
 // 4. Same source table -> same intermediate tables -> different destination table
 //	e.g., in the path: mastodon gnusocial twitter
 //  statuses -> notice -> tweets/retweets
-// The general rule to cope with those cases is to keep the path with unqiue (fromTable, toTable) pair,
+// The general rule to cope with those cases is to 
+// keep the path with unqiue (fromTable, toTable) pair,
 // so different paths in 1, 3 will be merged and in 2, 4 will be kept
 func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []config.ToTable {
 
@@ -410,8 +504,8 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 			// When mappings are not accurate, app developers can specify that
 			// those mappings should not be used in PSM by setting NotUsedInPSM as true
 			// For example, the mappings from twitter.conversations to mastodon.conversations
-			// (twitter.conversations are the conversations for messages while mastodon.conversations
-			// are the conversations for statuses including messages)
+			// (twitter.conversations are the conversations for messages 
+			// while mastodon.conversations are the conversations for statuses including messages)
 			// and the mappings from mastodon.conversations to gnusocial.conversation are inaccurate. 
 			// (gnusocial.conversation are the conversations only for posts not messages)
 			// Then if these mappings are used in PSM, 
@@ -423,7 +517,9 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 
 			for _, secondMapping := range secondMappings.Mappings {
 
-				for _, secondFromTable := range secondMapping.FromTables {
+				secondMappingFromTables := secondMapping.FromTables
+
+				for _, secondFromTable := range secondMappingFromTables {
 
 					// find matched tables
 					if secondFromTable == firstToTable.Table {
@@ -442,7 +538,9 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 							// log.Println(satisfyConditions(conditions, &firstToTable, firstInputs))
 
 							// check conditions
-							if satisfyConditions(conditions, &firstToTable, firstInputs) {
+							if satisfyConditions(conditions, &firstToTable, firstInputs,
+								secondMappingFromTables, secondToTable.Table,
+								firstMappings.Name, secondMappings.Name) {
 
 								mergedTable := mergeTwoMappings(&firstToTable, 
 									&secondToTable, firstInputs)
