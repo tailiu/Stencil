@@ -240,16 +240,6 @@ func getConditions(toTable *config.ToTable) map[string]string {
 
 }
 
-func containFunction(data string) bool {
-
-	if strings.Contains(data, "#") {
-		return true
-	} else {
-		return false
-	}
-
-}
-
 func areTwoSlicesIdenticalWithoutOrder(s1, s2 []string) bool {
 
 	xMap := make(map[string]int)
@@ -298,7 +288,7 @@ func satisfyConditions(conditions map[string]string,
 
 	tableName := toTable.Table
 
-	log.Println(inputs)
+	// log.Println(inputs)
 
 	for k, v := range conditions {
 
@@ -356,6 +346,56 @@ func satisfyConditions(conditions map[string]string,
 
 }
 
+func getFirstArgInFETCH(data string) string {
+
+	tmp := strings.Split(data, "#FETCH(")
+	tmp1 := strings.Split(tmp[1], ",")
+	return tmp1[0]
+
+}
+
+func getFirstArgInREF(data string) string {
+
+	tmp := strings.Split(data, "#REF(")
+	tmp1 := strings.Split(tmp[1], ",")
+	return tmp1[0]
+
+}
+
+func handleREF(ref string) string {
+
+	if containFETCH(ref) {
+		return getFirstArgInFETCH(getFirstArgInREF(ref))
+	} else {
+		return getFirstArgInREF(ref)
+	}
+
+}
+
+func containFunction(data string) bool {
+
+	if strings.Contains(data, "#") {
+		return true
+	} else {
+		return false
+	}
+
+}
+
+func containFunctionExceptREF(data string) bool {
+
+	if strings.Contains(data, "#") {
+		if containREF(data) {
+			return false
+		} else {
+			return true
+		}
+	} else {
+		return false
+	}
+
+}
+
 func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 	firstInputs []map[string]string) config.ToTable {
 
@@ -368,14 +408,27 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 
 	for k1, v1 := range firstToTable.Mapping {
 
+		// PSM processes #REF by extracting the first argument and
+		// PSM does not process #REF further because the second argument is about
+		// reference resolution, which needs to be defined by app developers
+		// If there are #FETCH in #REF, PSM will extract the first argument in #FETCH
+		if containREF(v1) {
+			// log.Println(v1)
+			v1 = handleREF(v1)
+			// log.Println(v1)
+		}
+
+		// The variable in v1 needs to be replaced with the real value
+		// because the variable is only defined in the first app
+		if containVar(v1) {
+			v1 = replaceVar(v1, firstInputs)
+		}
+
 		for k2, v2 := range secondToTable.Mapping {
 			
 			// log.Println(k2, v2)
 
-			// PSM does not process #REF this is because even though through PSM 
-			// mappings in #REF can be got, they generally have to be further processed and
-			// formatted in the #REF in the destination app.
-			// Functions cannot be matched
+			// Functions excpet #REF cannot be matched
 			// For functions defined by #, if they are included in the source app,
 			// they could be included in the PSM result.
 			// If they are included in the intermediate apps, then they cannot be included in
@@ -387,24 +440,25 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 			// #RANDINT can never be the same as table.attr
 			// Similary, variables in the intermediate apps cannot be matched and included in the
 			// PSM result
-			if containREF(v2) || containFunction(v2) || containVar(v2) {
-				continue
-			} 
-
-			// PSM does not process #REF 
-			if containREF(v1) {
+			if containFunctionExceptREF(v2) || containVar(v2) {
 				continue
 			}
 
+			log.Println(v2)
+
+			if containREF(v2) {
+				log.Println("+++++S")
+				log.Println(v2)
+				v2 = handleREF(v2)
+				log.Println(v2)
+				log.Println(firstTableName + "." + k1, v2)
+				log.Println("+++++S")
+			}
+
+			// log.Println(firstTableName + "." + k1, v2)
+
 			// Find a match
 			if firstTableName + "." + k1 == v2 {
-
-				// The variable in v1 needs to be replaced with the real value
-				// because the variable is only defined in the first app
-				if containVar(v1) {
-					v1 = replaceVar(v1, firstInputs)
-				}
-
 				mergedToTable.Mapping[k2] = v1
  			}
 
