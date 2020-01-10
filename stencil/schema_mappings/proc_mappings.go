@@ -408,10 +408,18 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 
 	for k1, v1 := range firstToTable.Mapping {
 
-		// PSM processes #REF by extracting the first argument and
+		// PSM processes #REF by extracting the first argument 
+		// For example, in the mapping path: twitter mastodon diaspora
+		// users.id: credentials.id, people.owner_id:"#REF(users.id,users.id)" 
+		// -> people.owner_id: credentials.id
 		// PSM does not process #REF further because the second argument is about
 		// reference resolution, which needs to be defined by app developers
+		// app developers can use the result to add the second argument for reference resolution.
 		// If there are #FETCH in #REF, PSM will extract the first argument in #FETCH
+		// For example, in the mapping path: diaspora mastodon gnusocial
+		// media_attachments.status_id:#REF(#FETCH(posts.id,posts.guid,photos.status_message_guid),posts.id),
+		// file_to_post.post_id: #REF(media_attachments.status_id,statuses.id)",
+		// -> file_to_post.post_id: posts.id
 		if containREF(v1) {
 			// log.Println(v1)
 			v1 = handleREF(v1)
@@ -444,15 +452,15 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 				continue
 			}
 
-			log.Println(v2)
+			// log.Println(v2)
 
 			if containREF(v2) {
-				log.Println("+++++S")
-				log.Println(v2)
+				// log.Println("+++++S")
+				// log.Println(v2)
 				v2 = handleREF(v2)
-				log.Println(v2)
-				log.Println(firstTableName + "." + k1, v2)
-				log.Println("+++++S")
+				// log.Println(v2)
+				// log.Println(firstTableName + "." + k1, v2)
+				// log.Println("+++++S")
 			}
 
 			// log.Println(firstTableName + "." + k1, v2)

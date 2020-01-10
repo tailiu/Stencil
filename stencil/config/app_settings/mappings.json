@@ -78,7 +78,7 @@
                                     "table": "profiles",
                                     "conditions":{},
                                     "mapping": {
-                                        "id":"#RANDINT",
+                                        "id":"users.id",
                                         "person_id":"#REF(accounts.id,accounts.id)",
                                         "bio":"accounts.note",
                                         "image_url":"accounts.avatar_remote_url",
@@ -135,7 +135,8 @@
                                     "table": "comments",
                                     "conditions": {
                                             "statuses.visibility": "0",
-                                            "statuses.reply": "true"
+                                            "statuses.reply": "true",
+                                            "statuses.reblog_of_id": "#NULL"
                                     },
                                     "mapping":{
                                         "id":"statuses.id",
@@ -1280,7 +1281,6 @@
                                 {
                                     "table": "conversations",
                                     "conditions":{},
-                                    "notUsedInPSM": true,
                                     "mapping": {
                                         "id":"conversations.id",
                                         "created_at":"conversations.created_at",
@@ -1337,6 +1337,10 @@
                             "value": "StatusMessage"
                         },
                         {
+                            "name": "reshare",
+                            "value": "Reshare"
+                        },
+                        {
                             "name":"T",
                             "value":"true"
                         },
@@ -1377,7 +1381,7 @@
                                     "table": "profiles",
                                     "conditions":{},
                                     "mapping": {
-                                        "id":"#RANDINT",
+                                        "id":"credentials.id",
                                         "person_id":"#REF(users.id,users.id)",
                                         "bio":"users.bio",
                                         "image_url":"users.avatar",
@@ -1401,14 +1405,10 @@
                                         "text":"tweets.content",
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
-                                        "type":"$post_type_status"
+                                        "type":"$post_type_status",
+                                        "guid":"#REF(tweets.id,tweets.id)"
                                     }
-                                }
-                            ]
-                        },
-                        {
-                            "fromTables": ["tweets"],
-                            "toTables": [
+                                },
                                 {
                                     "table": "comments",
                                     "conditions":{
@@ -1420,7 +1420,25 @@
                                         "text":"tweets.content",
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
-                                        "commentable_id":"#REF(tweets.reply_to_id,tweets.id)"
+                                        "commentable_id":"#REF(tweets.reply_to_id,tweets.id)",
+                                        "guid":"#REF(tweets.id,tweets.id)"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "fromTables": ["retweets"],
+                            "toTables": [
+                                {
+                                    "table": "posts",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id":"retweets.id",
+                                        "author_id":"#REF(retweets.user_id,users.id)",
+                                        "created_at":"retweets.created_at",
+                                        "updated_at":"retweets.updated_at",
+                                        "type":"$reshare",
+                                        "guid":"#REF(retweets.id,retweets.id)"
                                     }
                                 }
                             ]
@@ -1438,7 +1456,8 @@
                                         "conversation_id":"#REF(messages.conversation_id,conversations.id)",
                                         "text":"messages.content",
                                         "created_at":"messages.created_at",
-                                        "updated_at":"messages.updated_at"
+                                        "updated_at":"messages.updated_at",
+                                        "guid":"#REF(messages.id,messages.id)"
                                     }
                                 }
                             ]
