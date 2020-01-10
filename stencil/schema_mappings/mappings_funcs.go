@@ -275,7 +275,7 @@ func writeMappingsToFile(pairwiseMappings *config.SchemaMappings) {
 		log.Fatal(err)
 	}
  
-	err1 := ioutil.WriteFile(FILEPATH, bytes, 0644)
+	err1 := ioutil.WriteFile(OUTPUTFILEPATH, bytes, 0644)
 
 	if err1 != nil {
 		log.Fatal(err1)
@@ -395,9 +395,7 @@ func loadPairwiseSchemaMappings() (*config.SchemaMappings, error) {
 
 	// log.Println(dir)
 
-	pairwiseSchemaMappingFile := "./config/app_settings/pairwise_mappings_test.json"
-
-	jsonFile, err := os.Open(pairwiseSchemaMappingFile)
+	jsonFile, err := os.Open(INPUTFILEPATH)
 	if err != nil {
 		log.Println(err)
 		return &SchemaMappingsObj, CannotOpenPSMFile

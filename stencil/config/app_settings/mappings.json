@@ -105,7 +105,8 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type": "$reshare",
-                                        "guid":"#REF(statuses.id,statuses.id)",
+                                        "guid": "#REF(statuses.id,statuses.id)",
+                                        "root_guid": "statuses.reblog_of_id",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -379,7 +380,6 @@
                                 {
                                     "table": "conversations",
                                     "conditions":{},
-                                    "notUsedInPSM": true,
                                     "mapping": {
                                         "id":"conversations.id",
                                         "created_at":"conversations.created_at",
@@ -660,6 +660,23 @@
                                         "conversation_id": "#REF(posts.id,posts.id)"
                                     }
                                 },
+                                {
+                                    "table": "statuses",
+                                    "conditions":{
+                                        "posts.type": "Reshare"
+                                    },
+                                    "mapping": {
+                                        "id": "posts.id",
+                                        "account_id": "#REF(posts.author_id,people.id)",
+                                        "text":"posts.text",
+                                        "created_at":"posts.created_at",
+                                        "updated_at":"posts.updated_at",
+                                        "visibility": "$visibility0",
+                                        "reply": "$reply1",
+                                        "conversation_id": "#REF(posts.id,posts.id)",
+                                        "reblog_of_id": "root_guid"
+                                    }
+                                },
                                 { 
                                     "table": "status_stats",
                                     "conditions": {
@@ -908,6 +925,19 @@
                                         "content":"posts.text",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at"
+                                    }
+                                },
+                                {
+                                    "table": "retweets",
+                                    "conditions":{
+                                        "posts.type": "StatusMessage"
+                                    },
+                                    "mapping": {
+                                        "id":"posts.id",
+                                        "user_id": "#REF(posts.author_id,people.id)",
+                                        "created_at":"posts.created_at",
+                                        "updated_at":"posts.updated_at",
+                                        "tweet_id":"#REF(posts.root_guid,posts.id)"
                                     }
                                 }
                             ]

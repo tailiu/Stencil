@@ -37,6 +37,30 @@ var conditionsNotConsideredList = []conditionsNotConsidered {
 		condVal:		"true",
 	},
 
+	conditionsNotConsidered {
+		fromApp:		"mastodon",
+		toApp:			"diaspora",
+		fromTables:		[]string {
+			"statuses", 
+			"status_stats",
+		},
+		toTable:		"posts",
+		condName:		"statuses.reblog_of_id",
+		condVal:		"#NOTNULL",
+	},
+
+	conditionsNotConsidered {
+		fromApp:		"mastodon",
+		toApp:			"diaspora",
+		fromTables:		[]string {
+			"statuses", 
+			"status_stats",
+		},
+		toTable:		"posts",
+		condName:		"statuses.reblog_of_id",
+		condVal:		"#NULL",
+	},
+
 }
 
 func procMappingsByRows(toApp *config.MappedApp, isSourceApp bool) map[string]string {
@@ -282,6 +306,26 @@ func isInNotConsideredList(fromApp, toApp, toTable, condName, condVal string,
 	return false
 }
 
+func containNULLFunc(data string) bool {
+
+	if strings.Contains(data, "#NULL") {
+		return true
+	} else {
+		return false
+	}
+
+}
+
+func containNotNULLFunc(data string) bool {
+
+	if strings.Contains(data, "#NOTNULL") {
+		return true
+	} else {
+		return false
+	}
+
+}
+
 func satisfyConditions(conditions map[string]string, 
 	toTable *config.ToTable, inputs []map[string]string, 
 	fromTables []string, toTableName, fromApp, toApp string) bool {
@@ -303,18 +347,46 @@ func satisfyConditions(conditions map[string]string,
 
 		// If conditions contain functions like #NOTNULL or #NULL,
 		// such conditions are used when migrating data and not used in PSM
-		if containFunction(v) {
-			continue
+		// if containFunction(v) {
+		// 	continue
+		// }
+		
+		testNULL := false
+		notNULL := false
+
+		testNotNULL := false
+
+		// For now there are only two kinds of functions in conditions: #NOTNULL and #NULL
+		if containNULLFunc(v) {
+			testNULL = true
+		} else if containNotNULLFunc(v) {
+			testNotNULL = true
 		}
 
 		for k1, v1 := range toTable.Mapping {
 
-			// #REF is not involved in conditions
+			// #REF could be used in conditions
+			// For example, retweets."reblog_of_id":"#REF(retweets.tweet_id,tweets.id)"
+			// indicate that retweets."reblog_of_id" is not NULL
 			if containREF(v1) {
-				continue
+				v1 = handleREF(v1)
 			}
 
 			if tableName + "." + k1 == k {
+
+				// In the case of #NOTNULL, as long as there is one k1,
+				// the condition is satisfied regardless of v1
+				if testNotNULL {
+					satisfyThisCondition = true
+					break
+				}
+
+				// In the case of #NULL, this means that there is one k1,
+				// so it is not null and the condition is not satisfied
+				if testNULL {
+					notNULL = true
+					break
+				}
 				
 				// log.Println(tableName + "." + k1)
 				// log.Println(v1)
@@ -330,8 +402,17 @@ func satisfyConditions(conditions map[string]string,
 					satisfyThisCondition = true
 					break
 				}
+
 				// log.Println(v1, v)
 			}
+		}
+
+		// In the case of #NULL, this means that ,
+		// it satisfies the condition regardless of v1
+		if testNULL && notNULL {
+			return false
+		} else if testNULL && !notNULL {
+			return true
 		}
 
 		if !satisfyThisCondition {
@@ -599,6 +680,12 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 							// log.Println(secondToTable.Table)
 							// log.Println(satisfyConditions(conditions, &firstToTable, firstInputs))
 
+							log.Println(secondMappingFromTables)
+							log.Println(secondToTable.Table)
+							log.Println(satisfyConditions(conditions, &firstToTable, firstInputs,
+								secondMappingFromTables, secondToTable.Table,
+								firstMappings.Name, secondMappings.Name))
+							
 							// check conditions
 							if satisfyConditions(conditions, &firstToTable, firstInputs,
 								secondMappingFromTables, secondToTable.Table,
