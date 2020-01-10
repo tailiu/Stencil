@@ -116,9 +116,17 @@ def addSchemaMappings(app_name):
                     for mappedTable in mappedTables:
                         mappedTableName = mappedTable["table"]
                         for mappedCol, mappedFromAttr in mappedTable["mapping"].items():
-                            if "$" in mappedFromAttr or "#" in mappedFromAttr:
-                                pass
-                            else:
+                            if "$" not in mappedFromAttr:
+                                if "#" in mappedFromAttr:
+                                    if "#REF" in mappedFromAttr:
+                                        mappedFromAttr = mappedFromAttr.replace("#REF","")
+                                        mappedFromAttr = mappedFromAttr.strip("()")
+                                        if "#FETCH" in mappedFromAttr:
+                                            mappedFromAttr = mappedFromAttr.replace("#FETCH","")
+                                            mappedFromAttr = mappedFromAttr.strip("()")
+                                        mappedFromAttr = mappedFromAttr.split(",")[0]
+                                    else:
+                                        continue
                                 mappedFromAttr = mappedFromAttr.split(".")
                                 mapperTable = mappedFromAttr[0]
                                 mapperCol = mappedFromAttr[1]
