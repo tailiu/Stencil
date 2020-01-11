@@ -448,89 +448,6 @@
 							]
 						}
 					]
-				},
-				{
-					"name": "gnusocial",
-					"mappings": [
-						{
-							"fromTables": [
-								"accounts",
-								"users"
-							],
-							"toTables": [
-								{
-									"table": "user",
-									"mapping": {
-										"created": "accounts.created_at",
-										"email": "users.email",
-										"id": "accounts.id",
-										"modified": "accounts.updated_at",
-										"nickname": "accounts.username"
-									}
-								},
-								{
-									"table": "profile",
-									"mapping": {
-										"bio": "accounts.note",
-										"created": "accounts.created_at",
-										"id": "accounts.id",
-										"modified": "accounts.updated_at",
-										"nickname": "accounts.username"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"statuses"
-							],
-							"toTables": [
-								{
-									"table": "notice",
-									"mapping": {
-										"content": "statuses.text",
-										"created": "statuses.created_at",
-										"id": "statuses.id",
-										"modified": "statuses.updated_at",
-										"profile_id": "statuses.account_id",
-										"reply_to": "statuses.in_reply_to_id"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"favourites"
-							],
-							"toTables": [
-								{
-									"table": "fave",
-									"mapping": {
-										"created": "favourites.created_at",
-										"modified": "favourites.updated_at",
-										"notice_id": "favourites.status_id",
-										"user_id": "favourites.account_id"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"follows"
-							],
-							"toTables": [
-								{
-									"table": "subscription",
-									"mapping": {
-										"created": "follows.created_at",
-										"modified": "follows.updated_at",
-										"subscribed": "follows.target_account_id",
-										"subscriber": "follows.account_id"
-									}
-								}
-							]
-						}
-					]
 				}
 			]
 		},
@@ -616,7 +533,6 @@
 										"conversation_id": "#REF(posts.id,posts.id)",
 										"created_at": "posts.created_at",
 										"id": "posts.id",
-										"reblog_of_id": "posts.root_guid",
 										"reply": "$reply1",
 										"text": "posts.text",
 										"updated_at": "posts.updated_at",
@@ -698,14 +614,6 @@
 										"created_at": "comments.created_at",
 										"id": "comments.id",
 										"status_id": "#REF(comments.id,comments.id)",
-										"updated_at": "comments.updated_at"
-									}
-								},
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "comments.created_at",
-										"id": "comments.id",
 										"updated_at": "comments.updated_at"
 									}
 								}
@@ -831,15 +739,15 @@
 				{
 					"name": "twitter",
 					"inputs": [
-						{
-							"name": "follow_action",
-							"value": "follow"
-						},
-						{
-							"name": "creator",
-							"value": "creator"
-						}
-					],
+                        {
+                            "name": "follow_action",
+                            "value": "follow"
+                        },
+                        {
+                            "name": "creator",
+                            "value": "creator"
+                        }
+                    ],
 					"mappings": [
 						{
 							"fromTables": [
@@ -880,9 +788,9 @@
 							"toTables": [
 								{
 									"table": "tweets",
-									"conditions": {
-										"posts.type": "StatusMessage"
-									},
+									"conditions":{
+                                        "posts.type": "StatusMessage"
+                                    },
 									"mapping": {
 										"content": "posts.text",
 										"created_at": "posts.created_at",
@@ -893,9 +801,9 @@
 								},
 								{
 									"table": "retweets",
-									"conditions": {
-										"posts.type": "Reshare"
-									},
+									"conditions":{
+                                        "posts.type": "Reshare"
+                                    },
 									"mapping": {
 										"created_at": "posts.created_at",
 										"id": "posts.id",
@@ -967,12 +875,12 @@
 								{
 									"table": "user_actions",
 									"mapping": {
-										"action_type": "$follow_action",
 										"created_at": "contacts.created_at",
 										"from_user_id": "contacts.user_id",
 										"id": "contacts.id",
 										"to_user_id": "contacts.person_id",
-										"updated_at": "contacts.updated_at"
+										"updated_at": "contacts.updated_at",
+										"action_type": "$follow_action"
 									}
 								}
 							]
@@ -998,173 +906,31 @@
 							]
 						},
 						{
-							"fromTables": [
-								"conversations",
-								"conversation_visibilities"
-							],
-							"toTables": [
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "conversations.created_at",
-										"id": "conversations.id",
-										"updated_at": "conversations.updated_at"
-									}
-								},
-								{
-									"table": "conversation_participants",
-									"mapping": {
-										"conversation_id": "#REF(conversation_visibilities.conversation_id,conversations.id)",
-										"created_at": "conversation_visibilities.created_at",
-										"id": "conversation_visibilities.id",
-										"role": "$creator",
-										"updated_at": "conversation_visibilities.updated_at",
-										"user_id": "#REF(conversation_visibilities.person_id,people.id)"
-									}
-								}
-							]
-						}
-					]
-				},
-				{
-					"name": "gnusocial",
-					"mappings": [
-						{
-							"fromTables": [
-								"users",
-								"people",
-								"profiles"
-							],
-							"toTables": [
-								{
-									"table": "user",
-									"mapping": {
-										"created": "people.created_at",
-										"email": "users.email",
-										"id": "people.id",
-										"language": "users.language",
-										"modified": "people.updated_at",
-										"nickname": "users.username"
-									}
-								},
-								{
-									"table": "profile",
-									"mapping": {
-										"bio": "profiles.bio",
-										"created": "profiles.created_at",
-										"fullname": "profiles.full_name",
-										"id": "people.id",
-										"location": "profiles.location",
-										"modified": "profiles.updated_at",
-										"nickname": "users.username"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"contacts"
-							],
-							"toTables": [
-								{
-									"table": "subscription",
-									"conditions": {
-										"contacts.receiving": "true"
-									},
-									"mapping": {
-										"created": "contacts.created_at",
-										"modified": "contacts.updated_at",
-										"subscribed": "#REF(contacts.person_id,people.id)",
-										"subscriber": "#REF(contacts.user_id,people.id)"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"posts"
-							],
-							"toTables": [
-								{
-									"table": "notice",
-									"conditions": {
-										"posts.type": "StatusMessage"
-									},
-									"mapping": {
-										"content": "posts.text",
-										"created": "posts.created_at",
-										"id": "posts.id",
-										"modified": "posts.updated_at",
-										"profile_id": "#REF(posts.author_id,people.id)"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"photos"
-							],
-							"toTables": [
-								{
-									"table": "file",
-									"mapping": {
-										"date": "photos.created_at",
-										"filename": "photos.remote_photo_name",
-										"height": "photos.height",
-										"id": "photos.id",
-										"modified": "photos.updated_at",
-										"profile_id": "#REF(photos.author_id,people.id)",
-										"url": "photos.remote_photo_path",
-										"width": "photos.width"
-									},
-									"media": {
-										"path": "photos.remote_photo_path"
-									}
-								},
-								{
-									"table": "file_to_post",
-									"mapping": {
-										"file_id": "#REF(photos.id,photos.id)",
-										"modified": "photos.updated_at",
-										"post_id": "#REF(#FETCH(posts.id,posts.guid,photos.status_message_guid),posts.id)"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"comments"
-							],
-							"toTables": [
-								{
-									"table": "notice",
-									"mapping": {
-										"content": "comments.text",
-										"created": "comments.created_at",
-										"id": "comments.id",
-										"modified": "comments.updated_at",
-										"profile_id": "#REF(comments.author_id,people.id)",
-										"reply_to": "#REF(comments.commentable_id,posts.id)"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"likes"
-							],
-							"toTables": [
-								{
-									"table": "fave",
-									"mapping": {
-										"created": "likes.created_at",
-										"modified": "likes.updated_at",
-										"notice_id": "#REF(likes.target_id,posts.id)",
-										"user_id": "#REF(likes.author_id,people.id)"
-									}
-								}
-							]
-						}
+                            "fromTables": ["conversations", "conversation_visibilities"],
+                            "toTables": [
+                                {
+                                    "table": "conversations",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id":"conversations.id",
+                                        "created_at":"conversations.created_at",
+                                        "updated_at":"conversations.updated_at"
+                                    }
+                                },
+                                {
+                                    "table": "conversation_participants",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id":"conversation_visibilities.id",
+                                        "user_id":"#REF(conversation_visibilities.person_id,people.id)",
+                                        "conversation_id":"#REF(conversation_visibilities.conversation_id,conversations.id)",
+                                        "created_at":"conversation_visibilities.created_at",
+                                        "updated_at":"conversation_visibilities.updated_at",
+                                        "role": "$creator"
+                                    }
+                                }
+                            ]
+                        }
 					]
 				}
 			]
@@ -1269,23 +1035,6 @@
 										"updated_at": "tweets.updated_at",
 										"visibility": "$visibility0"
 									}
-								},
-								{
-									"table": "status_stats",
-									"mapping": {
-										"created_at": "tweets.created_at",
-										"id": "tweets.id",
-										"status_id": "tweets.id",
-										"updated_at": "tweets.updated_at"
-									}
-								},
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "tweets.created_at",
-										"id": "tweets.id",
-										"updated_at": "tweets.updated_at"
-									}
 								}
 							]
 						},
@@ -1303,23 +1052,6 @@
 										"reblog_of_id": "#REF(retweets.tweet_id,tweets.id)",
 										"updated_at": "retweets.updated_at",
 										"visibility": "$visibility0"
-									}
-								},
-								{
-									"table": "status_stats",
-									"mapping": {
-										"created_at": "retweets.created_at",
-										"id": "retweets.id",
-										"status_id": "retweets.id",
-										"updated_at": "retweets.updated_at"
-									}
-								},
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "retweets.created_at",
-										"id": "retweets.id",
-										"updated_at": "retweets.updated_at"
 									}
 								}
 							]
@@ -1355,15 +1087,6 @@
 										"updated_at": "messages.updated_at",
 										"visibility": "$visibility3"
 									}
-								},
-								{
-									"table": "status_stats",
-									"mapping": {
-										"created_at": "messages.created_at",
-										"id": "messages.id",
-										"status_id": "messages.id",
-										"updated_at": "messages.updated_at"
-									}
 								}
 							]
 						},
@@ -1391,23 +1114,23 @@
 				{
 					"name": "diaspora",
 					"inputs": [
-						{
-							"name": "post_type_status",
-							"value": "StatusMessage"
-						},
-						{
-							"name": "reshare",
-							"value": "Reshare"
-						},
-						{
-							"name": "T",
-							"value": "true"
-						},
-						{
-							"name": "F",
-							"value": "false"
-						}
-					],
+                        {
+                            "name": "post_type_status",
+                            "value": "StatusMessage"
+                        },
+                        {
+                            "name": "reshare",
+                            "value": "Reshare"
+                        },
+                        {
+                            "name":"T",
+                            "value":"true"
+                        },
+                        {
+                            "name":"F",
+                            "value":"false"
+                        }
+                    ],
 					"mappings": [
 						{
 							"fromTables": [
@@ -1460,10 +1183,10 @@
 										"created_at": "user_actions.created_at",
 										"id": "user_actions.id",
 										"person_id": "user_actions.to_user_id",
-										"receiving": "$T",
-										"sharing": "$F",
 										"updated_at": "user_actions.updated_at",
-										"user_id": "user_actions.from_user_id"
+										"user_id": "user_actions.from_user_id",
+										"receiving": "$T",
+                                        "sharing":"$F"
 									}
 								}
 							]
@@ -1492,24 +1215,24 @@
 							"toTables": [
 								{
 									"table": "posts",
-									"conditions": {
-										"tweets.reply_to_id": "#NULL"
-									},
+									"conditions":{
+                                        "tweets.reply_to_id" : "#NULL"
+                                    },
 									"mapping": {
 										"author_id": "tweets.user_id",
 										"created_at": "tweets.created_at",
 										"guid": "tweets.id",
 										"id": "tweets.id",
 										"text": "tweets.content",
-										"type": "$post_type_status",
-										"updated_at": "tweets.updated_at"
+										"updated_at": "tweets.updated_at",
+										"type":"$post_type_status"
 									}
 								},
 								{
 									"table": "comments",
-									"conditions": {
-										"tweets.reply_to_id": "#NOTNULL"
-									},
+									"conditions":{
+                                        "tweets.reply_to_id" : "#NOTNULL"
+                                    },
 									"mapping": {
 										"author_id": "tweets.user_id",
 										"commentable_id": "tweets.reply_to_id",
@@ -1517,14 +1240,6 @@
 										"guid": "tweets.id",
 										"id": "tweets.id",
 										"text": "tweets.content",
-										"updated_at": "tweets.updated_at"
-									}
-								},
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "tweets.created_at",
-										"id": "tweets.id",
 										"updated_at": "tweets.updated_at"
 									}
 								}
@@ -1542,18 +1257,8 @@
 										"created_at": "retweets.created_at",
 										"guid": "retweets.id",
 										"id": "retweets.id",
-										"type": "$reshare",
-										"updated_at": "retweets.updated_at"
-									}
-								},
-								{
-									"table": "comments",
-									"mapping": {
-										"author_id": "retweets.user_id",
-										"created_at": "retweets.created_at",
-										"guid": "retweets.id",
-										"id": "retweets.id",
-										"updated_at": "retweets.updated_at"
+										"updated_at": "retweets.updated_at",
+										"type":"$reshare"
 									}
 								}
 							]
@@ -1573,15 +1278,17 @@
 									}
 								},
 								{
-									"table": "conversation_visibilities",
-									"mapping": {
-										"conversation_id": "#REF(conversation_participants.conversation_id,conversations.id)",
-										"created_at": "conversation_participants.created_at",
-										"id": "conversation_participants.id",
-										"person_id": "#REF(conversation_participants.user_id,users.id)",
-										"updated_at": "conversation_participants.updated_at"
-									}
-								}
+                                    "table": "conversation_visibilities",
+                                    "conditions":{
+                                    },
+                                    "mapping":{
+                                        "id":"conversation_participants.id",
+                                        "person_id":"#REF(conversation_participants.user_id,users.id)",
+                                        "conversation_id":"#REF(conversation_participants.conversation_id,conversations.id)",
+                                        "created_at":"conversation_participants.created_at",
+                                        "updated_at":"conversation_participants.updated_at"
+                                    }
+                                }
 							]
 						},
 						{
@@ -1626,423 +1333,6 @@
 										"notification_id": "notifications.id",
 										"person_id": "notifications.from_user",
 										"updated_at": "notifications.updated_at"
-									}
-								}
-							]
-						}
-					]
-				},
-				{
-					"name": "gnusocial",
-					"mappings": [
-						{
-							"fromTables": [
-								"users",
-								"credentials"
-							],
-							"toTables": [
-								{
-									"table": "user",
-									"mapping": {
-										"created": "users.created_at",
-										"email": "credentials.email",
-										"id": "users.id",
-										"modified": "users.updated_at",
-										"nickname": "users.name"
-									}
-								},
-								{
-									"table": "profile",
-									"mapping": {
-										"bio": "users.bio",
-										"created": "users.created_at",
-										"id": "users.id",
-										"modified": "users.updated_at",
-										"nickname": "users.name"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"user_actions"
-							],
-							"toTables": [
-								{
-									"table": "subscription",
-									"mapping": {
-										"created": "user_actions.created_at",
-										"modified": "user_actions.updated_at",
-										"subscribed": "user_actions.to_user_id",
-										"subscriber": "user_actions.from_user_id"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"likes"
-							],
-							"toTables": [
-								{
-									"table": "fave",
-									"mapping": {
-										"created": "likes.created_at",
-										"modified": "likes.updated_at",
-										"notice_id": "likes.tweet_id",
-										"user_id": "likes.user_id"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"tweets"
-							],
-							"toTables": [
-								{
-									"table": "notice",
-									"mapping": {
-										"content": "tweets.content",
-										"created": "tweets.created_at",
-										"id": "tweets.id",
-										"modified": "tweets.updated_at",
-										"profile_id": "tweets.user_id",
-										"reply_to": "tweets.reply_to_id"
-									}
-								}
-							]
-						}
-					]
-				}
-			]
-		},
-		{
-			"fromApp": "gnusocial",
-			"toApps": [
-				{
-					"name": "diaspora",
-					"inputs": [
-						{
-							"name": "F",
-							"value": "false"
-						},
-						{
-							"name": "T",
-							"value": "true"
-						},
-						{
-							"name": "StatusMessage",
-							"value": "StatusMessage"
-						}
-					],
-					"mappings": [
-						{
-							"fromTables": [
-								"user",
-								"profile"
-							],
-							"toTables": [
-								{
-									"table": "users",
-									"mapping": {
-										"created_at": "user.created",
-										"email": "user.email",
-										"id": "profile.id",
-										"language": "user.language",
-										"updated_at": "user.modified",
-										"username": "user.nickname"
-									}
-								},
-								{
-									"table": "people",
-									"mapping": {
-										"created_at": "profile.created",
-										"id": "profile.id",
-										"owner_id": "#REF(profile.id,profile.id)",
-										"updated_at": "profile.modified"
-									}
-								},
-								{
-									"table": "profiles",
-									"mapping": {
-										"bio": "profile.bio",
-										"created_at": "profile.created",
-										"full_name": "profile.fullname",
-										"id": "#RANDINT",
-										"location": "profile.location",
-										"person_id": "#REF(profile.id,profile.id)",
-										"updated_at": "profile.modified"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"subscription"
-							],
-							"toTables": [
-								{
-									"table": "contacts",
-									"mapping": {
-										"created_at": "subscription.created",
-										"person_id": "#REF(subscription.subscribed,profile.id)",
-										"receiving": "$T",
-										"sharing": "$F",
-										"updated_at": "subscription.modified",
-										"user_id": "#REF(subscription.subscriber,profile.id)"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"notice"
-							],
-							"toTables": [
-								{
-									"table": "posts",
-									"conditions": {
-										"notice.reply_to": "#NULL"
-									},
-									"mapping": {
-										"author_id": "#REF(notice.profile_id,profile.id)",
-										"created_at": "notice.created",
-										"id": "notice.id",
-										"text": "notice.content",
-										"type": "$StatusMessage",
-										"updated_at": "notice.modified"
-									}
-								},
-								{
-									"table": "comments",
-									"conditions": {
-										"notice.reply_to": "#NOTNULL"
-									},
-									"mapping": {
-										"author_id": "#REF(notice.profile_id,profile.id)",
-										"commentable_id": "#REF(notice.reply_to,notice.id)",
-										"created_at": "notice.created",
-										"guid": "notice.id",
-										"id": "notice.id",
-										"text": "notice.content",
-										"updated_at": "notice.modified"
-									}
-								},
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "notice.created",
-										"id": "notice.id",
-										"updated_at": "notice.modified"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"file",
-								"file_to_post"
-							],
-							"toTables": [
-								{
-									"table": "photos",
-									"mapping": {
-										"author_id": "#REF(file.profile_id,profile.id)",
-										"created_at": "file.date",
-										"guid": "#REF(file_to_post.post_id,notice.id)",
-										"height": "file.height",
-										"id": "file.id",
-										"remote_photo_name": "file.filename",
-										"remote_photo_path": "file.url",
-										"updated_at": "file.modified",
-										"width": "file.width"
-									},
-									"media": {
-										"path": "file.url"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"fave"
-							],
-							"toTables": [
-								{
-									"table": "likes",
-									"mapping": {
-										"author_id": "#REF(fave.user_id,profile.id)",
-										"created_at": "fave.created",
-										"target_id": "#REF(fave.notice_id,notice.id)",
-										"updated_at": "fave.modified"
-									}
-								}
-							]
-						}
-					]
-				},
-				{
-					"name": "twitter",
-					"mappings": [
-						{
-							"fromTables": [
-								"user",
-								"profile"
-							],
-							"toTables": [
-								{
-									"table": "users",
-									"mapping": {
-										"bio": "profile.bio",
-										"created_at": "user.created",
-										"id": "profile.id",
-										"name": "user.nickname",
-										"updated_at": "user.modified"
-									}
-								},
-								{
-									"table": "credentials",
-									"mapping": {
-										"created_at": "user.created",
-										"email": "user.email",
-										"id": "profile.id",
-										"updated_at": "user.modified",
-										"user_id": "profile.id"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"subscription"
-							],
-							"toTables": [
-								{
-									"table": "user_actions",
-									"mapping": {
-										"created_at": "subscription.created",
-										"from_user_id": "subscription.subscriber",
-										"to_user_id": "subscription.subscribed",
-										"updated_at": "subscription.modified"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"notice"
-							],
-							"toTables": [
-								{
-									"table": "tweets",
-									"mapping": {
-										"content": "notice.content",
-										"created_at": "notice.created",
-										"id": "notice.id",
-										"reply_to_id": "notice.reply_to",
-										"updated_at": "notice.modified",
-										"user_id": "notice.profile_id"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"fave"
-							],
-							"toTables": [
-								{
-									"table": "likes",
-									"mapping": {
-										"created_at": "fave.created",
-										"tweet_id": "fave.notice_id",
-										"updated_at": "fave.modified",
-										"user_id": "fave.user_id"
-									}
-								}
-							]
-						}
-					]
-				},
-				{
-					"name": "mastodon",
-					"mappings": [
-						{
-							"fromTables": [
-								"profile",
-								"user"
-							],
-							"toTables": [
-								{
-									"table": "accounts",
-									"mapping": {
-										"created_at": "user.created",
-										"id": "profile.id",
-										"note": "profile.bio",
-										"updated_at": "user.modified",
-										"username": "user.nickname"
-									}
-								},
-								{
-									"table": "users",
-									"mapping": {
-										"account_id": "profile.id",
-										"created_at": "user.created",
-										"email": "user.email",
-										"id": "profile.id",
-										"updated_at": "user.modified"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"notice"
-							],
-							"toTables": [
-								{
-									"table": "statuses",
-									"mapping": {
-										"account_id": "notice.profile_id",
-										"created_at": "notice.created",
-										"id": "notice.id",
-										"in_reply_to_id": "notice.reply_to",
-										"text": "notice.content",
-										"updated_at": "notice.modified"
-									}
-								},
-								{
-									"table": "status_stats",
-									"mapping": {
-										"created_at": "notice.created",
-										"id": "notice.id",
-										"status_id": "notice.id",
-										"updated_at": "notice.modified"
-									}
-								},
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "notice.created",
-										"id": "notice.id",
-										"updated_at": "notice.modified"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"fave"
-							],
-							"toTables": [
-								{
-									"table": "favourites",
-									"mapping": {
-										"account_id": "fave.user_id",
-										"created_at": "fave.created",
-										"status_id": "fave.notice_id",
-										"updated_at": "fave.modified"
 									}
 								}
 							]

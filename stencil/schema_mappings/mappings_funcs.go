@@ -439,3 +439,29 @@ func loadPairwiseSchemaMappings() (*config.SchemaMappings, error) {
 	return &SchemaMappingsObj, nil
 
 }
+
+func isAlreadyChecked(mappingsPathToBeChecked []string, checkedMappingsPaths [][]string) bool {
+
+	for _, checkedMappingsPath := range checkedMappingsPaths {
+
+		if len(checkedMappingsPath) == len(mappingsPathToBeChecked) {
+
+			matched := true
+			
+			for i, app := range checkedMappingsPath {
+
+				if app != mappingsPathToBeChecked[i] {
+					matched = false
+					break
+				}
+			}
+
+			if matched {
+				return true
+			}
+		}
+	}
+
+	return false
+
+}

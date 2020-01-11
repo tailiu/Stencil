@@ -545,3 +545,19 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 	addVariablesIfNotExist(mappedApp, totalVariables)
 
 }
+
+func constructMappingsByToTables(pairwiseMappings *config.SchemaMappings, 
+	ToTables []config.ToTable, srcApp, dstApp string) *config.MappedApp {
+
+	constructMappingsUsingProcMappings(pairwiseMappings, 
+		ToTables, srcApp, dstApp)
+	
+	mappedApp, err := findFromAppToAppMappings(pairwiseMappings, srcApp, dstApp)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return mappedApp
+
+}

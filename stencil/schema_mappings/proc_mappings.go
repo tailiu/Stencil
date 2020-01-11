@@ -680,11 +680,11 @@ func procMappingsByTables(firstMappings, secondMappings *config.MappedApp) []con
 							// log.Println(secondToTable.Table)
 							// log.Println(satisfyConditions(conditions, &firstToTable, firstInputs))
 
-							log.Println(secondMappingFromTables)
-							log.Println(secondToTable.Table)
-							log.Println(satisfyConditions(conditions, &firstToTable, firstInputs,
-								secondMappingFromTables, secondToTable.Table,
-								firstMappings.Name, secondMappings.Name))
+							// log.Println(secondMappingFromTables)
+							// log.Println(secondToTable.Table)
+							// log.Println(satisfyConditions(conditions, &firstToTable, firstInputs,
+							// 	secondMappingFromTables, secondToTable.Table,
+							// 	firstMappings.Name, secondMappings.Name))
 							
 							// check conditions
 							if satisfyConditions(conditions, &firstToTable, firstInputs,
