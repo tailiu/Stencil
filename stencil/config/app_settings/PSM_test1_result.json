@@ -738,18 +738,22 @@
 				},
 				{
 					"name": "twitter",
-					"inputs": [
-						{
-							"name": "root_guid",
-							"value": "root_guid"
-						}
-					],
+					// "inputs": [
+                    //     {
+                    //         "name": "follow_action",
+                    //         "value": "follow"
+                    //     },
+                    //     {
+                    //         "name": "creator",
+                    //         "value": "creator"
+                    //     }
+                    // ],
 					"mappings": [
 						{
 							"fromTables": [
 								"people",
-								"users",
-								"profiles"
+								"profiles",
+								"users"
 							],
 							"toTables": [
 								{
@@ -784,6 +788,9 @@
 							"toTables": [
 								{
 									"table": "tweets",
+									// "conditions":{
+                                    //     "posts.type": "StatusMessage"
+                                    // },
 									"mapping": {
 										"content": "posts.text",
 										"created_at": "posts.created_at",
@@ -794,20 +801,15 @@
 								},
 								{
 									"table": "retweets",
+									// "conditions":{
+                                    //     "posts.type": "Reshare"
+                                    // },
 									"mapping": {
 										"created_at": "posts.created_at",
 										"id": "posts.id",
-										"tweet_id": "$root_guid",
+										"tweet_id": "posts.root_guid",
 										"updated_at": "posts.updated_at",
 										"user_id": "posts.author_id"
-									}
-								},
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "posts.created_at",
-										"id": "posts.id",
-										"updated_at": "posts.updated_at"
 									}
 								}
 							]
@@ -850,21 +852,6 @@
 						},
 						{
 							"fromTables": [
-								"conversations"
-							],
-							"toTables": [
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "conversations.created_at",
-										"id": "conversations.id",
-										"updated_at": "conversations.updated_at"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
 								"likes"
 							],
 							"toTables": [
@@ -892,7 +879,8 @@
 										"from_user_id": "contacts.user_id",
 										"id": "contacts.id",
 										"to_user_id": "contacts.person_id",
-										"updated_at": "contacts.updated_at"
+										"updated_at": "contacts.updated_at",
+										// "action_type": "$follow_action"
 									}
 								}
 							]
@@ -916,7 +904,33 @@
 									}
 								}
 							]
-						}
+						},
+						// {
+                        //     "fromTables": ["conversations", "conversation_visibilities"],
+                        //     "toTables": [
+                        //         {
+                        //             "table": "conversations",
+                        //             "conditions":{},
+                        //             "mapping": {
+                        //                 "id":"conversations.id",
+                        //                 "created_at":"conversations.created_at",
+                        //                 "updated_at":"conversations.updated_at"
+                        //             }
+                        //         },
+                        //         {
+                        //             "table": "conversation_participants",
+                        //             "conditions":{},
+                        //             "mapping": {
+                        //                 "id":"conversation_visibilities.id",
+                        //                 "user_id":"#REF(conversation_visibilities.person_id,people.id)",
+                        //                 "conversation_id":"#REF(conversation_visibilities.conversation_id,conversations.id)",
+                        //                 "created_at":"conversation_visibilities.created_at",
+                        //                 "updated_at":"conversation_visibilities.updated_at",
+                        //                 "role": "$creator"
+                        //             }
+                        //         }
+                        //     ]
+                        // },
 					]
 				}
 			]

@@ -379,6 +379,7 @@
                             "toTables": [
                                 {
                                     "table": "conversations",
+                                    "notUsedInPSM": true,
                                     "conditions":{},
                                     "mapping": {
                                         "id":"conversations.id",
@@ -543,7 +544,7 @@
                                         "visibility": "$visibility0",
                                         "reply": "$reply1",
                                         "conversation_id": "#REF(posts.id,posts.id)",
-                                        "reblog_of_id": "root_guid"
+                                        "reblog_of_id": "#REF(posts.root_guid,posts.id)"
                                     }
                                 },
                                 { 
@@ -563,9 +564,6 @@
                                 },
                                 {
                                     "table": "conversations",
-                                    "conditions":{
-                                        "posts.type": "StatusMessage"
-                                    },
                                     "mapping": {
                                         "id":"posts.id",
                                         "created_at":"posts.created_at",
