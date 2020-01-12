@@ -482,7 +482,8 @@
 										"email": "users.email",
 										"id": "accounts.id",
 										"modified": "accounts.updated_at",
-										"nickname": "accounts.username"
+										"nickname": "accounts.username",
+										// "password":"users.encrypted_password"
 									}
 								},
 								{
@@ -504,6 +505,9 @@
 							"toTables": [
 								{
 									"table": "notice",
+									// "conditions": {
+                                    //     "statuses.visibility": "0"
+                                    // },
 									"mapping": {
 										"content": "statuses.text",
 										"created": "statuses.created_at",
@@ -511,7 +515,9 @@
 										"modified": "statuses.updated_at",
 										"profile_id": "statuses.account_id",
 										"repeat_of": "statuses.reblog_of_id",
-										"reply_to": "statuses.in_reply_to_id"
+										"reply_to": "statuses.in_reply_to_id",
+										// "conversation":"#REF(statuses.conversation_id,conversations.id)",
+										// "is_local":"statuses.local",
 									}
 								}
 							]
@@ -523,19 +529,26 @@
 							"toTables": [
 								{
 									"table": "file",
+									// "media": {
+                                    //     "path": "media_attachments.remote_url"
+                                    // },
 									"mapping": {
 										"date": "media_attachments.created_at",
 										"id": "media_attachments.id",
 										"modified": "media_attachments.updated_at",
 										"profile_id": "media_attachments.account_id",
-										"url": "media_attachments.remote_url"
+										"url": "media_attachments.remote_url",
+										// "filename": "media_attachments.file_file_name",
+										// "mimetype": "media_attachments.type",
+                                        // "size": "media_attachments.file_file_size",
 									}
 								},
 								{
 									"table": "file_to_post",
 									"mapping": {
 										"file_id": "media_attachments.id",
-										"modified": "media_attachments.updated_at"
+										"modified": "media_attachments.updated_at",
+										// "post_id": "#REF(media_attachments.status_id,statuses.id)",
 									}
 								}
 							]
@@ -567,11 +580,28 @@
 										"created": "follows.created_at",
 										"modified": "follows.updated_at",
 										"subscribed": "follows.target_account_id",
-										"subscriber": "follows.account_id"
+										"subscriber": "follows.account_id",
+										// "uri":"follows.uri"
 									}
 								}
 							]
-						}
+						},
+						// {
+                        //     "fromTables": ["conversations"],
+                        //     "toTables": [
+                        //         {
+                        //             "table": "conversation",
+                        //             "conditions":{},
+                        //             "notUsedInPSM": true,
+                        //             "mapping": {
+                        //                 "id": "conversations.id",
+                        //                 "created":"conversations.created_at",
+                        //                 "modified":"conversations.updated_at",
+                        //                 "uri":"conversations.uri"
+                        //             }
+                        //         }
+                        //     ]
+                        // },
 					]
 				}
 			]
@@ -1797,7 +1827,8 @@
 										"email": "credentials.email",
 										"id": "users.id",
 										"modified": "users.updated_at",
-										"nickname": "users.name"
+										"nickname": "users.name",
+										// "password":"credentials.password"
 									}
 								},
 								{
@@ -1875,23 +1906,6 @@
 										"modified": "retweets.updated_at",
 										"profile_id": "retweets.user_id",
 										"repeat_of": "retweets.tweet_id"
-									}
-								}
-							]
-						},
-						{
-							"fromTables": [
-								"messages"
-							],
-							"toTables": [
-								{
-									"table": "notice",
-									"mapping": {
-										"content": "messages.content",
-										"created": "messages.created_at",
-										"id": "messages.id",
-										"modified": "messages.updated_at",
-										"profile_id": "messages.user_id"
 									}
 								}
 							]
@@ -2090,6 +2104,20 @@
 				},
 				{
 					"name": "mastodon",
+					// "inputs": [
+                    //     {
+                    //         "name": "visibility0",
+                    //         "value": "0"
+                    //     },
+                    //     {
+                    //         "name": "f",
+                    //         "value": "false"
+                    //     },
+                    //     {
+                    //         "name": "t",
+                    //         "value": "true"
+                    //     }
+                    // ],
 					"mappings": [
 						{
 							"fromTables": [
@@ -2114,7 +2142,8 @@
 										"created_at": "user.created",
 										"email": "user.email",
 										"id": "user.id",
-										"updated_at": "user.modified"
+										"updated_at": "user.modified",
+										// "encrypted_password":"user.password",
 									}
 								}
 							]
@@ -2130,7 +2159,8 @@
 										"account_id": "subscription.subscriber",
 										"created_at": "subscription.created",
 										"target_account_id": "subscription.subscribed",
-										"updated_at": "subscription.modified"
+										"updated_at": "subscription.modified",
+										// "uri":"subscription.uri"
 									}
 								}
 							]
@@ -2142,6 +2172,9 @@
 							"toTables": [
 								{
 									"table": "statuses",
+									// "conditions":{
+                                    //     "notice.reply_to": "#NULL"
+                                    // },
 									"mapping": {
 										"account_id": "notice.profile_id",
 										"conversation_id": "notice.id",
@@ -2150,7 +2183,29 @@
 										"in_reply_to_id": "notice.reply_to",
 										"reblog_of_id": "notice.repeat_of",
 										"text": "notice.content",
-										"updated_at": "notice.modified"
+										"updated_at": "notice.modified",
+										// "reply": "$f",
+										// "visibility": "$visibility0",
+										// "local":"notice.is_local"
+									}
+								},
+								{
+									"table": "statuses",
+									// "conditions":{
+                                    //     "notice.reply_to": "#NOTNULL"
+                                    // },
+									"mapping": {
+										"account_id": "notice.profile_id",
+										"conversation_id": "notice.id",
+										"created_at": "notice.created",
+										"id": "notice.id",
+										"in_reply_to_id": "notice.reply_to",
+										"reblog_of_id": "notice.repeat_of",
+										"text": "notice.content",
+										"updated_at": "notice.modified",
+										// "reply": "$f",
+										// "visibility": "$visibility0",
+										// "local":"notice.is_local"
 									}
 								},
 								{
@@ -2174,7 +2229,8 @@
 						},
 						{
 							"fromTables": [
-								"file"
+								"file",
+								// "file_to_post"
 							],
 							"toTables": [
 								{
@@ -2184,7 +2240,11 @@
 										"created_at": "file.date",
 										"id": "file.id",
 										"remote_url": "file.url",
-										"updated_at": "file.modified"
+										"updated_at": "file.modified",
+										// "status_id": "#REF(file_to_post.post_id,notice.id)",
+										// "file_file_name": "file.filename",
+										// "type": "file.mimetype",
+                                        // "file_file_size": "file.size",
 									}
 								}
 							]
@@ -2204,11 +2264,33 @@
 									}
 								}
 							]
-						}
+						},
+						// {
+                        //     "fromTables": ["conversation"],
+                        //     "toTables": [
+                        //         {
+                        //             "table": "conversations",
+                        //             "conditions":{},
+                        //             "notUsedInPSM": true,
+                        //             "mapping": {
+                        //                 "id": "conversation.id",
+                        //                 "uri": "conversation.uri",
+                        //                 "created_at":"conversation.created",
+                        //                 "updated_at":"conversation.modified"
+                        //             }
+                        //         }
+                        //     ]
+                        // }
 					]
 				},
 				{
 					"name": "twitter",
+					// "inputs": [
+                    //     {
+                    //         "name": "follow_action",
+                    //         "value": "follow"
+                    //     }
+                    // ],
 					"mappings": [
 						{
 							"fromTables": [
@@ -2233,7 +2315,8 @@
 										"email": "user.email",
 										"id": "user.id",
 										"updated_at": "user.modified",
-										"user_id": "profile.id"
+										"user_id": "profile.id",
+										// "password":"user.password"
 									}
 								}
 							]
@@ -2249,7 +2332,8 @@
 										"created_at": "subscription.created",
 										"from_user_id": "subscription.subscriber",
 										"to_user_id": "subscription.subscribed",
-										"updated_at": "subscription.modified"
+										"updated_at": "subscription.modified",
+										// "action_type": "$follow_action"
 									}
 								}
 							]
@@ -2261,6 +2345,9 @@
 							"toTables": [
 								{
 									"table": "tweets",
+									// "conditions":{
+                                    //     "notice.repeat_of": "#NULL"
+                                    // },
 									"mapping": {
 										"content": "notice.content",
 										"created_at": "notice.created",
@@ -2272,20 +2359,15 @@
 								},
 								{
 									"table": "retweets",
+									// "conditions":{
+                                    //     "notice.repeat_of": "#NOTNULL"
+                                    // },
 									"mapping": {
 										"created_at": "notice.created",
 										"id": "notice.id",
 										"tweet_id": "notice.repeat_of",
 										"updated_at": "notice.modified",
 										"user_id": "notice.profile_id"
-									}
-								},
-								{
-									"table": "conversations",
-									"mapping": {
-										"created_at": "notice.created",
-										"id": "notice.id",
-										"updated_at": "notice.modified"
 									}
 								}
 							]
