@@ -3,6 +3,7 @@ package schema_mappings
 import (
 	"stencil/config"
 	"log"
+	"fmt"
 )
 
 func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings, 
@@ -25,7 +26,7 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 		mappingsPath[2],
 	}
 
-	// havePath := true
+	srcApp := mappingsPath[0]
 
 	for i := 0; i < len(mappingsPath) - 2; i++ {
 
@@ -38,6 +39,10 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 		log.Println("^^^^^^^^^^ One Round ^^^^^^^^^^")
 		log.Println(currApp, nextApp, nextNextApp)
 
+		if i != 0 {
+			mappingsSeq = append(mappingsSeq, nextNextApp)
+		}
+
 		if !isAlreadyChecked(mappingsSeq, checkedMappingsPaths) {
 
 			if i == 0 {
@@ -46,6 +51,7 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 				// This could happen when there is no mapping defined from currApp to nextApp
 				if err1 != nil {
 					log.Println(err1)
+					log.Println(currApp, nextApp)
 					break
 				}
 	
@@ -56,23 +62,25 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 			// This could happen when there is no mapping defined from nextApp to nextNextApp
 			if err2 != nil {
 				log.Println(err2)
+				log.Println(nextApp, nextNextApp)
 				break
 			}
+
+			log.Println(secondMappings)
 			
 			procMappings = procMappingsByTables(firstMappings, secondMappings)
-			
-			if i != 0 {
-				mappingsSeq = append(mappingsSeq, nextNextApp)
-			}
 			
 			checkedMappingsPaths = append(checkedMappingsPaths, mappingsSeq)
 	
 			log.Println(procMappings)
 	
 			log.Println("++++++++ Construct Mappings +++++++++++")
-	
+			
+			// Note that construct mappings from the source app to the next next app
 			firstMappings = constructMappingsByToTables(pairwiseMappings, 
-				procMappings, currApp, nextNextApp)
+				procMappings, srcApp, nextNextApp)
+			
+			log.Println(firstMappings)
 			
 			log.Println("+++++++++++++++++++++++++++++++++++++++")
 
@@ -94,7 +102,7 @@ func addMappingsByPSMThroughOnePath(pairwiseMappings *config.SchemaMappings,
 
 	}
 
-	log.Println("******************************************************************")
+	log.Println("******************************************************************\n")
 
 	// log.Println("++++++++++++++ Construct Mappings +++++++++++++++++++")
 	// if srcApp == "twitter" && dstApp == "gnusocial" {
@@ -118,17 +126,28 @@ func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 	apps := getApplications(pairwiseMappings)
 
 	log.Println(apps)
+	fmt.Println()
 
 	// Get all eligible permutations and combinations from one app to another app
 	// One such permutation and combination is one path
 	mappingsPaths := getMappingsPaths(apps)
+
+	log.Println(mappingsPaths)
+	fmt.Println()
 
 	// checkedMappingsPaths contains checked and constructed paths
 	// it does not contain checked but not constructed paths
 	// due to missing mappings from one app to another app
 	var checkedMappingsPaths [][]string
 
-	for i := len(mappingsPaths) - 1; i > -1; i-- {
+
+	// Checking paths from short to long seems to be better than the other way around
+	// because longer paths probably lead to fewer results and using the fewer results
+	// to further get more results will lead to even fewer results.
+	// Actually checking order matters!!!
+	// This can be researched in the future
+	// for i := len(mappingsPaths) - 1; i > -1; i-- {
+	for i := 0; i < len(mappingsPaths); i++ {
 
 		mappingsPath := mappingsPaths[i]
 

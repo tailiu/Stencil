@@ -218,7 +218,7 @@ func addVariablesIfNotExist(mappedApp *config.MappedApp, totalVariables map[stri
 }
 
 func createFromTablesWhenMissingFromTables(mappedApp *config.MappedApp, 
-	missingFromTables []string, toTable *config.ToTable) {
+	missingFromTables []string, toTable *config.ToTable, existingFromTableGroups [][]string) {
 
 	newMappings := config.Mapping {
 		FromTables: missingFromTables,
@@ -507,8 +507,19 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 			
 		}
 
-		// log.Println(existingFromTableGroups)
+		log.Println("existing from table groups")
+		log.Println(existingFromTableGroups)
 
+		// The basic rule here is to add mappings based on existing from groups to respect existing structures,
+		// For the from tables not in those groups, group those tables together and add them
+		// This design decision works in most cases, but may cause app developers 
+		// to restructure in the case of one from table in a from table group maps to an entire toTable
+		// for example, user, profile -> users, credentials, among the mappings, 
+		// profile -> users and user, profile -> credentials
+		// so in the result, profile and user are separated because profile already becomes a from group
+		// and user, as a missing group, becomes a separate from group
+		// profile -> users, credentials
+		// user -> users, credentials
 		for _, fromTableGroup := range existingFromTableGroups {
 
 			existingMappings := checkedFromTable[fromTableGroup[0]]
@@ -534,9 +545,14 @@ func constructMappingsUsingProcMappings(pairwiseMappings *config.SchemaMappings,
 
 		}
 
+		log.Println("missing from tables:")
+		log.Println(missingFromTables)
+
 		if len(missingFromTables) != 0 {
 			// all non-existing from tables will be combined and added
-			createFromTablesWhenMissingFromTables(mappedApp, missingFromTables, &toTable)
+			// If 
+			createFromTablesWhenMissingFromTables(mappedApp, missingFromTables, 
+				&toTable, existingFromTableGroups)
 		}
 
 	}

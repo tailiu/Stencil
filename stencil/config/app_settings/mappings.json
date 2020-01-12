@@ -888,8 +888,8 @@
                                     "mapping": {
                                         "id":"people.id",
                                         "name":"users.username",
-                                        "created_at":"users.created_at",
-                                        "updated_at":"users.updated_at",
+                                        "created_at":"people.created_at",
+                                        "updated_at":"people.updated_at",
                                         "handle":"people.diaspora_handle",
                                         "bio":"profiles.bio",
                                         "avatar":"profiles.image_url"
@@ -1119,6 +1119,20 @@
                                         "created": "posts.created_at",
                                         "modified":"posts.updated_at"
                                     }
+                                },
+                                {
+                                    "table": "notice",
+                                    "conditions":{
+                                        "posts.type": "Reshare"
+                                    },
+                                    "mapping": {
+                                        "id": "posts.id",
+                                        "content": "posts.text",
+                                        "repeat_of": "#REF(posts.root_guid,posts.id)",
+                                        "profile_id": "#REF(posts.author_id,people.id)",
+                                        "created": "posts.created_at",
+                                        "modified":"posts.updated_at"
+                                    }
                                 }
                             ]
                         },
@@ -1281,9 +1295,27 @@
                                         "text":"tweets.content",
                                         "in_reply_to_id":"#REF(tweets.reply_to_id,tweets.id)",
                                         "account_id":"#REF(tweets.user_id,users.id)",
-                                        "visibility": "$visibility0"
+                                        "visibility": "$visibility0",
+                                        "conversation_id": "#REF(tweets.id,tweets.id)"
                                     }
-                                }
+                                },
+                                {
+									"table": "status_stats",
+									"mapping": {
+                                        "id": "tweets.id",
+										"created_at": "tweets.created",
+										"status_id": "#REF(tweets.id,tweets.id)",
+										"updated_at": "tweets.modified"
+									}
+                                },
+                                {
+									"table": "conversations",
+									"mapping": {
+                                        "id": "tweets.id",
+										"created_at": "tweets.created",
+										"updated_at": "tweets.modified"
+									}
+								}
                             ]
                         },
                         {
@@ -1298,9 +1330,27 @@
                                         "updated_at":"retweets.updated_at",
                                         "account_id":"#REF(retweets.user_id,users.id)",
                                         "reblog_of_id":"#REF(retweets.tweet_id,tweets.id)",
-                                        "visibility": "$visibility0"
+                                        "visibility": "$visibility0",
+                                        "conversation_id": "#REF(retweets.id,retweets.id)"
                                     }
-                                }
+                                },
+                                {
+									"table": "status_stats",
+									"mapping": {
+                                        "id": "retweets.id",
+										"created_at": "retweets.created",
+										"status_id": "#REF(retweets.id,retweets.id)",
+										"updated_at": "retweets.modified"
+									}
+                                },
+                                {
+									"table": "conversations",
+									"mapping": {
+                                        "id": "retweets.id",
+										"created_at": "retweets.created",
+										"updated_at": "retweets.modified"
+									}
+								}
                             ]
                         },
                         {
@@ -1466,7 +1516,8 @@
                                         "created_at":"retweets.created_at",
                                         "updated_at":"retweets.updated_at",
                                         "type":"$reshare",
-                                        "guid":"#REF(retweets.id,retweets.id)"
+                                        "guid":"#REF(retweets.id,retweets.id)",
+                                        "root_guid": "#REF(retweets.tweet_id,tweets.id)"
                                     }
                                 }
                             ]
@@ -1711,7 +1762,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id": "profile.id",
-                                        "username":"profile.nickname",
+                                        "username":"user.nickname",
                                         "note":"profile.bio",
                                         "created_at":"profile.created",
                                         "updated_at":"profile.modified"
@@ -1786,7 +1837,24 @@
                                         "visibility": "$visibility0",
                                         "reply": "$t"
                                     }
-                                }
+                                },
+                                {
+									"table": "status_stats",
+									"mapping": {
+                                        "id": "notice.id",
+										"created_at": "notice.created",
+										"status_id": "#REF(notice.id,notice.id)",
+										"updated_at": "notice.modified"
+									}
+                                },
+                                {
+									"table": "conversations",
+									"mapping": {
+                                        "id": "notice.id",
+										"created_at": "notice.created",
+										"updated_at": "notice.modified"
+									}
+								}
                             ]
                         },
                         {
@@ -1861,7 +1929,7 @@
                                     "table": "users",
                                     "mapping": {
                                         "id": "profile.id",
-                                        "name":"profile.nickname",
+                                        "name":"user.nickname",
                                         "created_at":"profile.created",
                                         "updated_at":"profile.modified",
                                         "bio":"profile.bio"
@@ -1957,6 +2025,10 @@
                         {
                             "name": "StatusMessage",
                             "value": "StatusMessage"
+                        },
+                        {
+                            "name": "Reshare",
+                            "value": "Reshare"
                         }
                     ],
                     "mappings": [
@@ -1966,7 +2038,7 @@
                                 {
                                     "table": "users",
                                     "mapping": {
-                                        "id": "profile.id",
+                                        "id": "user.id",
                                         "email":"user.email",
                                         "username":"user.nickname",
                                         "language":"user.language",
@@ -1986,7 +2058,7 @@
                                 {
                                     "table": "profiles",
                                     "mapping": {
-                                        "id":"#RANDINT",
+                                        "id":"user.id",
                                         "person_id":"#REF(profile.id,profile.id)",
                                         "full_name":"profile.fullname",
                                         "bio":"profile.bio",
@@ -2019,7 +2091,8 @@
                                 {
                                     "table": "posts",
                                     "conditions":{
-                                        "notice.reply_to": "#NULL"
+                                        "notice.reply_to": "#NULL",
+                                        "notice.repeat_of": "#NULL"
                                     },
                                     "mapping": {
                                         "id": "notice.id",
@@ -2028,6 +2101,22 @@
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
                                         "type":"$StatusMessage"
+                                    }
+                                },
+                                {
+                                    "table": "posts",
+                                    "conditions":{
+                                        "notice.reply_to": "#NULL",
+                                        "notice.repeat_of": "#NOTNULL"
+                                    },
+                                    "mapping": {
+                                        "id": "notice.id",
+                                        "text": "notice.content",
+                                        "author_id": "#REF(notice.profile_id,profile.id)",
+                                        "created_at": "notice.created",
+                                        "updated_at":"notice.modified",
+                                        "type":"$Reshare",
+                                        "root_guid": "#REF(notice.repeat_of,notice.id)"
                                     }
                                 },
                                 {

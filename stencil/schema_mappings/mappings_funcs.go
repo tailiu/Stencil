@@ -378,8 +378,6 @@ func getMappingsPaths(apps []string) [][]string {
 
 	}
 
-	log.Println(res)
-
 	return res
 
 }
