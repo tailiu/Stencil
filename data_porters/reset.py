@@ -146,7 +146,7 @@ def DropAndRecreateDB(app):
     q = "DROP DATABASE %s;"%app
     print q
     cur.execute(q)
-    q = "CREATE DATABASE %s WITH TEMPLATE %s_backup OWNER cow;"%(app,app)
+    q = "CREATE DATABASE %s WITH TEMPLATE %s_1000000 OWNER cow;"%(app,app)
     print q
     cur.execute(q)
 
@@ -165,8 +165,9 @@ if __name__ == "__main__":
             truncateTableFromStencil("reference_table")
             truncateTableFromStencil("identity_table")
             truncateTableFromStencil("data_bags")
+            truncateTableFromStencil("migration_table")
             if arg in ["log", "all", "both"]:
-                DropAndRecreateDB("diaspora")
+                # DropAndRecreateDB("diaspora")
                 truncate("mastodon", blade=True)
                 dropFK("mastodon", blade=True)
             if arg in ["row", "all", "both"]:
