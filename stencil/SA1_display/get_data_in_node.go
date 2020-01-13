@@ -49,13 +49,15 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	// First, we need to get the attribute that requires reference resolution
 	// For example, we have *account.id*, and we want to get *users.account_id*
 	// We check whether account.id needs to be resolved
-	if reference_resolution.NeedToResolveReference(displayConfig.refResolutionConfig, table0, col0) {
+	if reference_resolution.NeedToResolveReference(displayConfig.refResolutionConfig, 
+		table0, col0) {
 
 		log.Println("Before checking reference1 resolved or not")
 
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
-		newVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, table0ID, col0, id)
+		newVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, 
+			table0ID, col0, id)
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
@@ -72,7 +74,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 			ID0 := hint0.TransformHintToIdenity(displayConfig)
 
-			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID0)
+			updatedAttrs, _ := reference_resolution.ResolveReference(
+				displayConfig.refResolutionConfig, ID0)
 
 			// We check whether the desired attr (col0) has been resolved
 			foundResolvedAttr := false
@@ -98,7 +101,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 	// We check if users.account_id needs be resolved (of course, in this case, it should be)
 	// However we don't know its id. 
-	} else if reference_resolution.NeedToResolveReference(displayConfig.refResolutionConfig, table1, col1) {
+	} else if reference_resolution.NeedToResolveReference(displayConfig.refResolutionConfig, 
+		table1, col1) {
 
 		log.Println("Before checking reference2 resolved or not")
 
@@ -141,7 +145,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 			ID1 := hint1.TransformHintToIdenity(displayConfig)
 
-			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID1)
+			updatedAttrs, _ := reference_resolution.ResolveReference(
+				displayConfig.refResolutionConfig, ID1)
 
 			// We check whether the desired attr (col1) has been resolved 
 			// (until this point, it should be resolved)

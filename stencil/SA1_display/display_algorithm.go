@@ -65,6 +65,11 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(
 		displayConfig, oneMigratedData)
 
+	log.Println("Data in Node:")
+	for _, oneDataInNode := range dataInNode {
+		log.Println(*oneDataInNode)
+	}
+
 	// If dataInNode is nil, either this data is not in the destination application,
 	// e.g., this data is displayed by other threads and deleted by application services, 
 	// or the data is not able to be displayed 
