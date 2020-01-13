@@ -43,27 +43,51 @@ func GenDisplayFlag(dbConn *sql.DB, app_id, table_id, id, migration_id string) e
 
 func AddDisplayFlagToAllTables(dbConn *sql.DB) {
 
-	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE
+	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
 		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
 
-	data, err := db.DataCall(dbConn, query1)
-	if err != nil {
-		log.Fatal(err)
-	}
+	data := db.GetAllColsOfRows(dbConn, query1)
+	
+	// log.Println(data)
 
 	for _, data1 := range data {
 		
-		query2 := fmt.Sprintf(`ALTER TABLE %s ADD display_flag bool NOT NULL SET DEFAULT true;`, 
-			fmt.Sprint(data1["tablename"]))
+		query2 := fmt.Sprintf(`ALTER TABLE %s ADD display_flag BOOLEAN DEFAULT FALSE;`, 
+			data1["tablename"])
 
-		if _, err := dbConn.Exec(query2); err != nil {
-			log.Fatal(err)
+		log.Println(query2)
+
+		if _, err1 := dbConn.Exec(query2); err1 != nil {
+			log.Fatal(err1)
 		}
 		
 	}
 
 }
 
+func RemoveDisplayFlagInAllTables(dbConn *sql.DB) {
+
+	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
+		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
+
+	data := db.GetAllColsOfRows(dbConn, query1)
+	
+	// log.Println(data)
+
+	for _, data1 := range data {
+		
+		query2 := fmt.Sprintf(`ALTER TABLE %s DROP COLUMN display_flag;;`, 
+			data1["tablename"])
+
+		log.Println(query2)
+
+		if _, err1 := dbConn.Exec(query2); err1 != nil {
+			log.Fatal(err1)
+		}
+		
+	}
+
+}
 
 func oldGetDisplayFlag(dbConn *sql.DB, app, table string, id int) (bool, error) {
 	

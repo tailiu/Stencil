@@ -105,7 +105,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type": "$reshare",
-                                        "guid": "#ASSIGN(statuses.id)",
+                                        "guid": "#REF(statuses.id,statuses.id)",
                                         "root_guid": "statuses.reblog_of_id",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
@@ -126,7 +126,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type":"$mentions_type1",
-                                        "guid":"#ASSIGN(statuses.id)",
+                                        "guid":"#REF(statuses.id,statuses.id)",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -147,7 +147,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "commentable_type":"$commentable_type",
-                                        "guid":"#ASSIGN(statuses.id)"
+                                        "guid":"#REF(statuses.id,statuses.id)"
             
                                     }
                                 },
@@ -163,7 +163,7 @@
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "guid":"#ASSIGN(statuses.id)"
+                                        "guid":"#REF(statuses.id,statuses.id)"
                                     }
                                 }
                             ]
@@ -658,7 +658,7 @@
                                         "updated_at":"posts.updated_at",
                                         "visibility": "$visibility0",
                                         "reply": "$reply1",
-                                        "conversation_id": "#ASSIGN(posts.id)"
+                                        "conversation_id": "#REF(posts.id,posts.id)"
                                     }
                                 },
                                 {
@@ -674,7 +674,7 @@
                                         "updated_at":"posts.updated_at",
                                         "visibility": "$visibility0",
                                         "reply": "$reply1",
-                                        "conversation_id": "#ASSIGN(posts.id)",
+                                        "conversation_id": "#REF(posts.id,posts.id)",
                                         "reblog_of_id": "#REF(posts.root_guid,posts.id)"
                                     }
                                 },
@@ -684,7 +684,7 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping":{
-                                        "id": "#ASSIGN(posts.id)",
+                                        "id": "posts.id",
                                         "status_id":"#REF(posts.id,posts.id)",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at",
@@ -733,7 +733,7 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"comments.id",
-                                        "conversation_id": "#ASSIGN(comments.commentable_id)",
+                                        "conversation_id": "#REF(comments.commentable_id,posts.id)",
                                         "account_id": "#REF(comments.author_id,people.id)",
                                         "text":"comments.text",
                                         "created_at":"comments.created_at",
@@ -747,7 +747,7 @@
                                     "table": "status_stats",
                                     "conditions":{},
                                     "mapping":{
-                                        "id":"#ASSIGN(comments.id)",
+                                        "id":"comments.id",
                                         "status_id":"#REF(comments.id,comments.id)",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at"
@@ -2049,7 +2049,7 @@
                                 {
                                     "table": "people",
                                     "mapping": {
-                                        "id":"#ASSIGN(profile.id)",
+                                        "id":"profile.id",
                                         "owner_id":"#REF(profile.id,profile.id)",
                                         "created_at":"profile.created",
                                         "updated_at":"profile.modified"
