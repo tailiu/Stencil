@@ -114,9 +114,11 @@ func updateReferences(refResolutionConfig *RefResolutionConfig,
 		
 		data := getDataToUpdateRef(refResolutionConfig, member, id, attr)
 		
-		log.Println(data)
+		log.Println("data to update other data:", data)
 
 		if data != "" {
+
+			log.Println("---------------------------------------------")
 
 			// Even if the thread crashes after executing q1, the crash
 			// does not influence the algorithm because the reference record is still there, 
@@ -124,7 +126,8 @@ func updateReferences(refResolutionConfig *RefResolutionConfig,
 			// As long as q2 and q3 can be executed together, which are in the same transaction,
 			// the algorithm is still correct. 
 			q1 := updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data)
-			// log.Println(q1)
+			
+			log.Println(q1)
 
 			err := db.TxnExecute1(refResolutionConfig.appDBConn, q1)
 			if err != nil {
@@ -153,6 +156,8 @@ func updateReferences(refResolutionConfig *RefResolutionConfig,
 				log.Fatal(err1)
 			}
 
+			log.Println("---------------------------------------------")
+			
 			return data, nil
 
 		} else {

@@ -13,9 +13,10 @@ type DAG struct {
 }
 
 type srcAppConfig struct {
-	appID 			string
-	appName 		string
-	userID			string
+	appID 								string
+	appName 							string
+	userID								string
+	tableNameIDPairs					map[string]string
 }
 
 type dstAppConfig struct {

@@ -55,6 +55,20 @@ func GetToAppMappings(allMappings *config.SchemaMappings,
 	return &config.MappedApp{}, MappingsToAppNotFound
 }
 
+func removeASSIGNIfExists(data string) string {
+
+	if strings.Contains(data, "#ASSIGN(") {
+
+		tmp := strings.Split(data, "#ASSIGN(")
+
+		return tmp[0][:len(tmp)-1]
+	} else {
+
+		return data
+	}
+
+}
+
 func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
 		fromApp, fromTable, fromAttr, toApp, toTable string, ignoreREF bool) ([]string, error) {
 
@@ -79,6 +93,8 @@ func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
 						// log.Println(tTable)
 						for tAttr, fAttr := range tTable.Mapping {
 							// fromAttr
+
+							fAttr = removeASSIGNIfExists(fAttr)
 
 							// If not ignore #REF
 							if !ignoreREF {
@@ -160,6 +176,38 @@ func REFExists(mappings *config.MappedApp, toTable, toAttr string) (bool, error)
 
 	return false, NoMappedAttrFound
 
+}
+
+func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp, 
+	toTable, toAttr string) map[string]bool {
+
+	// log.Println(toTable, toAttr)
+	
+	firstArgs := make(map[string]bool) 
+
+	for _, mapping := range mappings.Mappings {
+		
+		// toTable
+		for _, tTable := range mapping.ToTables {
+			if tTable.Table == toTable {
+				
+				// toAttr
+				if mappedAttr, ok := tTable.Mapping[toAttr]; ok {
+					// log.Println(mappedAttr)
+
+					// If there exists #REF
+					if containREF(mappedAttr) {	
+
+						firstArg := getFirstArgFromREF(mappedAttr)
+						firstArgs[firstArg] = true
+
+					} 
+				} 
+			}
+		}
+	}
+
+	return firstArgs
 }
 
 func GetAllMappedAttributesContainingREFInMappings(mappings *config.MappedApp,

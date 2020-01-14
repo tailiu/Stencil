@@ -6,6 +6,8 @@ import (
 
 var NoMappedAttrFound = errors.New("No mapped attribute found")
 
+var NoREFFound = errors.New("The mapped attribute does not contain #REF")
+
 var MappingsToAppNotFound = errors.New("No mappings to this app are found")
 
 var CannotOpenPSMFile = errors.New("Can't open the pairwise schema mapping json file")

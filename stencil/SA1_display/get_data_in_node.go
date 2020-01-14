@@ -6,6 +6,7 @@ import (
 	"log"
 	"stencil/db"
 	"stencil/reference_resolution"
+	"stencil/schema_mappings"
 	"strconv"
 	"strings"
 )
@@ -14,7 +15,7 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	table, col, value string) (map[string]interface{}, error) {
 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", table, col, value)
-	// fmt.Println(query)
+	log.Println(query)
 
 	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 	if err != nil {
@@ -36,9 +37,12 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
+	// We use table0 and col0 to get table1 and col1
 	log.Println("+++++++++++++++++++")
+	log.Println(id)
 	log.Println(table0)
 	log.Println(col0)
+	log.Println(value)
 	log.Println(table1)
 	log.Println(col1)
 	log.Println("+++++++++++++++++++")
@@ -101,15 +105,60 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 	// We check if users.account_id needs be resolved (of course, in this case, it should be)
 	// However we don't know its id. 
-	} else if reference_resolution.NeedToResolveReference(displayConfig.refResolutionConfig, 
-		table1, col1) {
+	} else if firstArgs := schema_mappings.GetFirstArgsInREFByToTableToAttr(
+		displayConfig.mappingsFromSrcToDst, table1, col1); len(firstArgs) != 0 {
 
 		log.Println("Before checking reference2 resolved or not")
+
+		// log.Println(firstArg)
+
+		// Because we only use toTable and toAttr to get the first argument in fromAttrs,
+		// there could be multiple results. For example, toTable = status_stats and
+		// toAttr = status_id, then fromAttr could be posts.id, comments.id, or messages.id
+		for firstArg, _ := range firstArgs {
+
+			// If the first argument contains "id", then we need to get the original id
+			// as the value to get the data (the current id is the newly generated one)
+			if doesArgAttributeContainID(firstArg) {
+
+				// log.Println(displayConfig.dstAppConfig.tableNameIDPairs)
+				// log.Println(table0)
+				// log.Println(table0ID)
+				tableInFirstArg := getTableInArg(firstArg)
+	
+				dataID := reference_resolution.CreateIdentity(
+					displayConfig.dstAppConfig.appID,
+					table0ID,
+					id,
+				)
+	
+				srcTableID := displayConfig.srcAppConfig.tableNameIDPairs[tableInFirstArg]
+	
+				prevID := reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
+					dataID, displayConfig.srcAppConfig.appID, srcTableID)
+				
+				// log.Println(prevID)
+
+				// since there is only one mapping to this toAttr, as long as we find one, 
+				// we can set the value as the prevID
+				if prevID == "" {
+					continue
+				} else {
+					value = prevID
+					break
+				}
+	
+			// Otherwise, we can directly use the data to get the data
+			} else {
+				
+				log.Println("i should not be here")
+			}
+		} 
 
 		// We assume that users.account_id has already been resolved and get its data
 		data, err := getOneRowBasedOnDependency(displayConfig, table1, col1, value)
 		if err != nil {
-			return nil, CannotFindRemainingData
+			return nil, err
 		}
 
 		// Now we have the id of the data, we should check whether it has been resolved before, 
@@ -179,13 +228,17 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		}
 	
 	// Normally, there must exist one that needs to be resolved. 
-	// Howver, the following can happen when there is no mapping
-	// For example: 
-	// When migrating from Diaspora to Mastodon:
-	// there is no mapping to stream_entries.activity_id.
+	// However, up to now there are two cases the following can happen 
+	// 1. When there is no mapping
+	// 	For example: 
+	// 		When migrating from Diaspora to Mastodon:
+	// 		there is no mapping to stream_entries.activity_id.
+	// 2. When #assign is used in mappings
+	// 	For example, table0, col0, table1 and col1 can be
+	// 		statuses, conversation_id, conversations, id
 	} else {
 
-		return nil, NoMappingAndNoReferenceToResolve
+		return nil, NoReferenceToResolve
 	}
 }
 

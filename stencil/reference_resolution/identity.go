@@ -103,3 +103,29 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 
 	return res
 }
+
+func GetPreviousID(refResolutionConfig *RefResolutionConfig, 
+	ID *Identity, from_app, fromMember string) string {
+
+	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
+		WHERE from_app = %s and from_member = %s and to_app = %s and 
+		to_member = %s and to_id = %s and migration_id = %d`,
+		from_app, fromMember, ID.app, ID.member, ID.id, 
+		refResolutionConfig.migrationID)
+	
+	// log.Println(query)
+
+	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(data)
+
+	if data["from_id"] == nil {
+		return ""
+	} else {
+		return fmt.Sprint(data["from_id"])
+	}
+	
+}

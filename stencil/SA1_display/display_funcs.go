@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"stencil/config"
 	"stencil/db"
 	"stencil/schema_mappings"
@@ -52,13 +53,25 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 	dstRootMember, dstRootAttr, dstUserID := getDstRootMemberAttrID(
 		stencilDBConn, dstAppID, migrationID, dstDAG)
 
-	dstAppTableIDNamePair := make(map[string]string)
+	dstAppTableIDNamePairs := make(map[string]string)
+	dstAppTableNameIDPairs := make(map[string]string)
 
-	res := getTableIDNamePairsInApp(stencilDBConn, dstAppID)
+	dstRes := getTableIDNamePairsInApp(stencilDBConn, dstAppID)
 
-	for _, res1 := range res {
+	for _, dstRes1 := range dstRes {
 
-		dstAppTableIDNamePair[fmt.Sprint(res1["pk"])] = fmt.Sprint(res1["table_name"])
+		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] = fmt.Sprint(dstRes1["table_name"])
+
+		dstAppTableNameIDPairs[fmt.Sprint(dstRes1["table_name"])] = fmt.Sprint(dstRes1["pk"])
+	}
+
+	srcAppTableNameIDPairs := make(map[string]string)
+
+	srcRes := getTableIDNamePairsInApp(stencilDBConn, srcAppID)
+
+	for _, srcRes1 := range srcRes {
+
+		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = fmt.Sprint(srcRes1["pk"])
 
 	}
 
@@ -67,16 +80,17 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 
 	refResolutionConfig := reference_resolution.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn, 
-		dstAppTableIDNamePair, appIDNamePairs, tableIDNamePairs,
+		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
 		allMappings, mappingsFromSrcToDst)
 
 	srcAppConfig.appID = srcAppID
 	srcAppConfig.appName = srcAppName
 	srcAppConfig.userID = srcUserID
+	srcAppConfig.tableNameIDPairs = srcAppTableNameIDPairs
 
 	dstAppConfig.appID = dstAppID
 	dstAppConfig.appName = dstAppName
-	dstAppConfig.tableNameIDPairs = dstAppTableIDNamePair
+	dstAppConfig.tableNameIDPairs = dstAppTableNameIDPairs
 	dstAppConfig.rootTable = dstRootMember
 	dstAppConfig.rootAttr = dstRootAttr
 	dstAppConfig.userID = dstUserID
@@ -571,4 +585,22 @@ func checkDisplayConditionsInNode(displayConfig *displayConfig,
 
 	return displayedData, notDisplayedData
 
+}
+
+func doesArgAttributeContainID(data string) bool {
+	
+	tmp := strings.Split(data, ".")
+
+	if tmp[1] == "id" {
+		return true
+	} else {
+		return false
+	}
+}
+
+func getTableInArg(data string) string {
+	
+	tmp := strings.Split(data, ".")
+
+	return tmp[0]
 }
