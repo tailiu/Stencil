@@ -105,7 +105,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type": "$reshare",
-                                        "guid": "#REF(#ASSIGN(statuses.id),statuses.id)",
+                                        "guid": "#ASSIGN(statuses.id)",
                                         "root_guid": "statuses.reblog_of_id",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
@@ -126,7 +126,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type":"$mentions_type1",
-                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id)",
+                                        "guid":"#ASSIGN(statuses.id)",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -147,7 +147,8 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "commentable_type":"$commentable_type",
-                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id)"
+                                        "guid":"#ASSIGN(statuses.id)"
+            
                                     }
                                 },
                                 {
@@ -162,7 +163,7 @@
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id)"
+                                        "guid":"#ASSIGN(statuses.id)"
                                     }
                                 }
                             ]
@@ -657,7 +658,7 @@
                                         "updated_at":"posts.updated_at",
                                         "visibility": "$visibility0",
                                         "reply": "$reply1",
-                                        "conversation_id": "#REF(#ASSIGN(posts.id),posts.id)"
+                                        "conversation_id": "#ASSIGN(posts.id)"
                                     }
                                 },
                                 {
@@ -673,7 +674,7 @@
                                         "updated_at":"posts.updated_at",
                                         "visibility": "$visibility0",
                                         "reply": "$reply1",
-                                        "conversation_id": "#REF(#ASSIGN(posts.id),posts.id)",
+                                        "conversation_id": "#ASSIGN(posts.id)",
                                         "reblog_of_id": "#REF(posts.root_guid,posts.id)"
                                     }
                                 },
@@ -683,8 +684,8 @@
                                         "posts.type": "StatusMessage"
                                     },
                                     "mapping":{
-                                        "id": "posts.id",
-                                        "status_id":"#REF(#ASSIGN(posts.id),posts.id)",
+                                        "id": "#ASSIGN(posts.id)",
+                                        "status_id":"#REF(posts.id,posts.id)",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at",
                                         "replies_count": "posts.comments_count",
@@ -732,7 +733,7 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"comments.id",
-                                        "conversation_id": "#REF(#ASSIGN(comments.commentable_id),posts.id)",
+                                        "conversation_id": "#ASSIGN(comments.commentable_id)",
                                         "account_id": "#REF(comments.author_id,people.id)",
                                         "text":"comments.text",
                                         "created_at":"comments.created_at",
@@ -746,8 +747,8 @@
                                     "table": "status_stats",
                                     "conditions":{},
                                     "mapping":{
-                                        "id":"comments.id",
-                                        "status_id":"#REF(#ASSIGN(comments.id),comments.id)",
+                                        "id":"#ASSIGN(comments.id)",
+                                        "status_id":"#REF(comments.id,comments.id)",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at"
                                     }
@@ -2048,8 +2049,8 @@
                                 {
                                     "table": "people",
                                     "mapping": {
-                                        "id":"profile.id",
-                                        "owner_id":"#REF(#ASSIGN(profile.id),profile.id)",
+                                        "id":"#ASSIGN(profile.id)",
+                                        "owner_id":"#REF(profile.id,profile.id)",
                                         "created_at":"profile.created",
                                         "updated_at":"profile.modified"
                                     }
