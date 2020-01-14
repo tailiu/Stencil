@@ -64,36 +64,34 @@ func runTx(dbConn *sql.DB, QIs []*qr.QI) bool {
 	return success
 }
 
+func _transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset int64) {
+	q := fmt.Sprintf("SELECT * FROM \"%s\" ORDER BY id LIMIT %d OFFSET %d", table, limit, offset)
+	if ldata, err := db.DataCall(appDB, q); err != nil {
+		fmt.Println(q)
+		log.Fatal("Some problem with logical data query:", err)
+	} else {
+		for _, ldatum := range ldata {
+			var cols []string
+			var vals []interface{}
+			for col, val := range ldatum {
+				cols, vals = append(cols, col), append(vals, val)
+			}
+			qi := qr.CreateQI(table, cols, vals, qr.QTInsert)
+			rowid := db.GetNewRowID(stencilDB)
+			qis := QR.ResolveInsert(qi, rowid)
+			runTx(stencilDB, qis)
+		}
+	}
+}
+
 func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, wg *sync.WaitGroup) {
 
 	log.Println("Populating ", table)
 	if totalRows, err := db.GetRowCount(appDB, table); err == nil {
-
-		limit, offset := 25000, 0
-		for {
-			fmt.Println(fmt.Sprintf(">> %s: %d - %d of %d", table, offset, limit, totalRows))
-			if int64(offset) >= totalRows {
-				break
-			}
-			q := fmt.Sprintf("SELECT * FROM \"%s\" ORDER BY id LIMIT %d OFFSET %d", table, limit, offset)
-			if ldata, err := db.DataCall(appDB, q); err != nil {
-				fmt.Println(q)
-				log.Fatal("Some problem with logical data query:", err)
-			} else {
-				for _, ldatum := range ldata {
-					var cols []string
-					var vals []interface{}
-					for col, val := range ldatum {
-						cols, vals = append(cols, col), append(vals, val)
-					}
-					qi := qr.CreateQI(table, cols, vals, qr.QTInsert)
-					rowid := db.GetNewRowID(stencilDB)
-					qis := QR.ResolveInsert(qi, rowid)
-					runTx(stencilDB, qis)
-				}
-			}
-			offset = limit
-			limit += limit
+		limit := int64(25000)
+		for offset := int64(0); offset < totalRows; offset += limit {
+			log.Println(fmt.Sprintf(">> %s: %d - %d of %d | Remaining: %d", table, offset, offset+limit, totalRows, totalRows-offset))
+			_transfer(QR, appDB, stencilDB, table, limit, offset)
 		}
 	} else {
 		log.Fatal("Error while fetching total rows", err)
@@ -119,7 +117,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	appName, appID := "diaspora", "1"
-	stencilDB := db.GetDBConn(db.STENCIL_DB)
+	// stencilDB := db.GetDBConn(db.STENCIL_DB)
 	appDB := db.GetDBConn(appName)
 	QR := qr.NewQR(appName, appID)
 	tables := db.GetTablesOfDB(appDB, appName)
@@ -135,8 +133,8 @@ func main() {
 		// transfer(QR, appDB, stencilDB, table, nil)
 		wg.Add(1)
 		current_threads++
-		go transfer(QR, appDB, stencilDB, table, &wg)
-		if current_threads > 3 {
+		go transfer(QR, db.GetDBConn(appName), db.GetDBConn(db.STENCIL_DB), table, &wg)
+		if current_threads > 2 {
 			wg.Wait()
 			current_threads = 0
 		}
