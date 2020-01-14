@@ -1302,17 +1302,17 @@
 									"table": "status_stats",
 									"mapping": {
                                         "id": "tweets.id",
-										"created_at": "tweets.created",
+										"created_at": "tweets.created_at",
 										"status_id": "#REF(tweets.id,tweets.id)",
-										"updated_at": "tweets.modified"
+										"updated_at": "tweets.updated_at"
 									}
                                 },
                                 {
 									"table": "conversations",
 									"mapping": {
                                         "id": "tweets.id",
-										"created_at": "tweets.created",
-										"updated_at": "tweets.modified"
+										"created_at": "tweets.created_at",
+										"updated_at": "tweets.updated_at"
 									}
 								}
                             ]
@@ -1337,17 +1337,17 @@
 									"table": "status_stats",
 									"mapping": {
                                         "id": "retweets.id",
-										"created_at": "retweets.created",
+										"created_at": "retweets.created_at",
 										"status_id": "#REF(retweets.id,retweets.id)",
-										"updated_at": "retweets.modified"
+										"updated_at": "retweets.updated_at"
 									}
                                 },
                                 {
 									"table": "conversations",
 									"mapping": {
                                         "id": "retweets.id",
-										"created_at": "retweets.created",
-										"updated_at": "retweets.modified"
+										"created_at": "retweets.created_at",
+										"updated_at": "retweets.updated_at"
 									}
 								}
                             ]

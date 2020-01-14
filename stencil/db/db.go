@@ -75,6 +75,20 @@ func CloseDBConn(app string) {
 	}
 }
 
+func GetRowCount(dbConn *sql.DB, table string) (int64, error) {
+	sql := fmt.Sprintf("SELECT COUNT(*) as total_rows from %s", table)
+	if result, err := DataCall1(dbConn, sql); err == nil {
+		if val, ok := result["total_rows"]; ok {
+			return val.(int64), nil
+		}
+		log.Fatal("db.GetRowCount: Can't find total row count for table: ", table)
+		return -1, err
+	} else {
+		log.Fatal("db.GetRowCount:  ", err)
+		return -1, err
+	}
+}
+
 func GetAppIDByAppName(dbConn *sql.DB, app string) string {
 	sql := fmt.Sprintf("SELECT pk from apps WHERE app_name = '%s'", app)
 	if result, err := DataCall1(dbConn, sql); err == nil {
@@ -128,7 +142,7 @@ func UpdateTx(tx *sql.Tx, query string, args ...interface{}) error {
 }
 
 func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...interface{}) (int, error) {
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id;", table, cols, placeholders)
+	query := fmt.Sprintf("INSERT INTO %s (%s, display_flag) VALUES (%s, true) RETURNING id;", table, cols, placeholders)
 	lastInsertId := -1
 	err := tx.QueryRow(query, args...).Scan(&lastInsertId)
 	if err != nil || lastInsertId == -1 {
