@@ -36,7 +36,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
 
-			log.Println("Parent Node: reference has been resolve")
+			log.Println("Parent Node: reference has been resolved")
 
 			return newVal, nil
 		

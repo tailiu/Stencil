@@ -178,7 +178,12 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 					log.Fatal(err12)
 				}
 
+				log.Println(dataOwnershipSpec)
+
 				dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
+				if err13 != nil {
+					log.Fatal(err13)
+				}
 
 				// Display the data not displayed in the root node
 				// this root node should be the migrating user's root node

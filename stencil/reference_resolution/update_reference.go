@@ -95,7 +95,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 	}
 
-	// log.Println("total attrs to be update:",attrsToUpdate)
+	// log.Println("total attrs to be updated:",attrsToUpdate)
 
 	// #FETCH case is different from the normal cases.
 	// For example: diaspora posts posts.id mastodon media_attachments, 
@@ -119,7 +119,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 	attrsToUpdate = append(attrsToUpdate, attrsToUpdateInFETCH...)
 
-	log.Println("total attrs to be update:",attrsToUpdate)
+	log.Println("total attrs to be updated:",attrsToUpdate)
 
 	for _, attrToUpdate := range attrsToUpdate {
 		
@@ -180,7 +180,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 
 	}
 
-	// log.Println("total attrs to be update:",attrsToUpdate)
+	// log.Println("total attrs to be updated:",attrsToUpdate)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
 		refResolutionConfig.allMappings,
@@ -200,7 +200,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 
 	attrsToUpdate = append(attrsToUpdate, attrsToUpdateInFETCH...)
 
-	log.Println("total attrs to be update:",attrsToUpdate)
+	log.Println("total attrs to be updatedd:",attrsToUpdate)
 
 	for _, attrToUpdate := range attrsToUpdate {
 
@@ -281,7 +281,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 		log.Println(err1)
 	}
 
-	// log.Println("total attrs to be update:",attrsToUpdate)
+	// log.Println("total attrs to be updated:",attrsToUpdate)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
 		refResolutionConfig.allMappings,
@@ -299,7 +299,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 
 	attrsToUpdate = append(attrsToUpdate, attrsToUpdateInFETCH...)
 
-	log.Println("total attrs to be update:",attrsToUpdate)
+	log.Println("total attrs to be updated:",attrsToUpdate)
 	
 	for _, attrToUpdate := range attrsToUpdate {
 
@@ -356,7 +356,7 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 		log.Println(err1)
 	}
 
-	// log.Println("total attrs to be update:",attrsToUpdate)
+	// log.Println("total attrs to be updated:",attrsToUpdate)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
 		refResolutionConfig.allMappings,
@@ -374,7 +374,7 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 
 	attrsToUpdate = append(attrsToUpdate, attrsToUpdateInFETCH...)
 
-	log.Println("total attrs to be update:",attrsToUpdate)
+	log.Println("total attrs to be updated:",attrsToUpdate)
 
 	for _, attrToUpdate := range attrsToUpdate {
 

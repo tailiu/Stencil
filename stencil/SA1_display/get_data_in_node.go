@@ -39,10 +39,10 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 	// We use table0 and col0 to get table1 and col1
 	log.Println("+++++++++++++++++++")
-	log.Println(id)
+	log.Println("id:", id)
 	log.Println(table0)
 	log.Println(col0)
-	log.Println(value)
+	log.Println("value:", value)
 	log.Println(table1)
 	log.Println(col1)
 	log.Println("+++++++++++++++++++")
@@ -149,7 +149,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				prevID := reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
 					dataID, displayConfig.srcAppConfig.appID, srcTableID)
 				
-				// log.Println(prevID)
+				log.Println("Previous id:", prevID)
 
 				// since there is only one mapping to this toAttr, as long as we find one, 
 				// we can set the value as the prevID
@@ -236,7 +236,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		} else {
 			
 			hint1 := CreateHint(table1, table1ID, fmt.Sprint(data["id"]))
-			log.Println("Before resolving reference2: ", hint1)
+			log.Println("Before resolving reference2:", hint1)
 
 			ID1 := hint1.TransformHintToIdenity(displayConfig)
 
