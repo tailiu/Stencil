@@ -775,7 +775,7 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"messages.id",
-                                        "status_id":"#REF(messages.id,messages.id)",
+                                        "status_id":"#REF(#ASSIGN(messages.id),messages.id)",
                                         "created_at":"messages.created_at",
                                         "updated_at":"messages.updated_at"
                                     }

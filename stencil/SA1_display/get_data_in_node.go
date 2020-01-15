@@ -66,7 +66,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
 
-			log.Println("reference has been resolve1")
+			log.Println("reference has been resolved")
 
 			return getOneRowBasedOnDependency(displayConfig, table1, col1, newVal)
 		
@@ -104,27 +104,39 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		}
 
 	// We check if users.account_id needs be resolved (of course, in this case, it should be)
-	// However we don't know its id. 
-	} else if firstArgs := schema_mappings.GetFirstArgsInREFByToTableToAttr(
-		displayConfig.mappingsFromSrcToDst, table1, col1); len(firstArgs) != 0 {
+	// However we don't know its id (this is the differece from the above case!!). 
+	// Also if the value is the value of "id", this could not be used directly 
+	} else if fromAttrsfirstArg := schema_mappings.GetFirstArgsInREFByToTableToAttr(
+		displayConfig.mappingsFromSrcToDst, table1, col1); len(fromAttrsfirstArg) != 0 {
 
 		log.Println("Before checking reference2 resolved or not")
+		
+		log.Println("From attributes:")
+		log.Println(fromAttrsfirstArg)
+		
+		data := make(map[string]interface{})
+		var err error
 
-		// log.Println(firstArg)
+		fromAttrfirstArgContainID := false
 
 		// Because we only use toTable and toAttr to get the first argument in fromAttrs,
 		// there could be multiple results. For example, toTable = status_stats and
 		// toAttr = status_id, then fromAttr could be posts.id, comments.id, or messages.id
-		for firstArg, _ := range firstArgs {
+		for fromAttrfirstArg, _ := range fromAttrsfirstArg {
 
-			// If the first argument contains "id", then we need to get the original id
-			// as the value to get the data (the current id is the newly generated one)
-			if doesArgAttributeContainID(firstArg) {
+			log.Println("Check a from attribute:", fromAttrfirstArg)
+
+			// If the first argument of the from attribute contains "id", this indicates 
+			// we need to get the original id as the value to get the data
+			// (the current id is the newly generated one)
+			if doesArgAttributeContainID(fromAttrfirstArg) {
+
+				fromAttrfirstArgContainID = true
 
 				// log.Println(displayConfig.dstAppConfig.tableNameIDPairs)
 				// log.Println(table0)
 				// log.Println(table0ID)
-				tableInFirstArg := getTableInArg(firstArg)
+				tableInFirstArg := getTableInArg(fromAttrfirstArg)
 	
 				dataID := reference_resolution.CreateIdentity(
 					displayConfig.dstAppConfig.appID,
@@ -144,21 +156,55 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				if prevID == "" {
 					continue
 				} else {
-					value = prevID
-					break
+					// value = prevID
+					// break
+
+					data, err = getOneRowBasedOnDependency(displayConfig, table1, col1, prevID)
+					if err != nil {
+						log.Println("The first argument of the from attribute contains id, but")
+						log.Println(err)
+						break
+					}
 				}
-	
-			// Otherwise, we can directly use the data to get the data
-			} else {
-				
-				log.Println("i should not be here")
 			}
 		} 
 
-		// We assume that users.account_id has already been resolved and get its data
-		data, err := getOneRowBasedOnDependency(displayConfig, table1, col1, value)
-		if err != nil {
-			return nil, err
+		// If the first argument of the from attribute does not contain "id", 
+		// this indicates we can use the current data and the relationship indicated
+		// by table0, col0, table1, col1, value to get data
+		if !fromAttrfirstArgContainID {
+
+			log.Println(`The from attributes don't contain id`)
+
+			data, err = getOneRowBasedOnDependency(displayConfig, table1, col1, value)
+			// This could happen when no data is migrated or there is no mappings.
+			// For example, statuses, id, mentions, status_id
+			if err != nil {
+				return nil, err
+			}
+
+		}
+
+		// If the first argument of the from attribute contains id and
+		// we cannot get data, there could be two cases:
+		// 1. The reference has been resolved, so the data contains the up-to-date value
+		// 2. The reference has been resolved, but reference resolution crashes before
+		// inserting the reference into the resolution resolved table
+		// In both cases, try to get data with the new value 
+		// For 1, it will be checked afterwards
+		// For 2, do the reference resolution again since it does not matter and in the
+		// second time, we can remove the reference and add it to the resolved resolution table
+		if fromAttrfirstArgContainID && data == nil {
+
+			log.Println(`The from attributes contain id but we cannot get data,
+				so we try to get data with the current id value`)
+
+			data, err = getOneRowBasedOnDependency(displayConfig, table1, col1, value)
+			// This could happen when the resolved and displayed data is deleted
+			if err != nil {
+				return nil, err
+			}
+			
 		}
 
 		// Now we have the id of the data, we should check whether it has been resolved before, 
@@ -170,13 +216,14 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		newVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, 
 			table1ID, col1, fmt.Sprint(data["id"]))
 
+		// The reference has been resolved
 		if newVal != "" {
 
 			// Theoretically, if it has been resolved, then it should be the value we have 
 			// given that one member corresponds to one row
 			if newVal == value {
 
-				log.Println("reference has been resolve2")
+				log.Println("reference has been resolved")
 				log.Println(data)
 
 				return data, nil
@@ -186,7 +233,6 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				panic("Should not happen given one member corresponds to one row for now!")
 			
 			}
-
 		} else {
 			
 			hint1 := CreateHint(table1, table1ID, fmt.Sprint(data["id"]))
@@ -228,14 +274,11 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		}
 	
 	// Normally, there must exist one that needs to be resolved. 
-	// However, up to now there are two cases the following can happen 
-	// 1. When there is no mapping
-	// 	For example: 
-	// 		When migrating from Diaspora to Mastodon:
-	// 		there is no mapping to stream_entries.activity_id.
-	// 2. When #assign is used in mappings
-	// 	For example, table0, col0, table1 and col1 can be
-	// 		statuses, conversation_id, conversations, id
+	// However, up to now there is a case breaking the above rule. 
+	// When there is no mapping
+	// For example: 
+	// When migrating from Diaspora to Mastodon, 
+	// there is no mapping to stream_entries.activity_id.
 	} else {
 
 		return nil, NoReferenceToResolve

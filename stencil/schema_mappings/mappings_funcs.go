@@ -59,9 +59,14 @@ func removeASSIGNIfExists(data string) string {
 
 	if strings.Contains(data, "#ASSIGN(") {
 
-		tmp := strings.Split(data, "#ASSIGN(")
+		tmp := strings.Replace(data, "#ASSIGN(", "", -1)
 
-		return tmp[0][:len(tmp)-1]
+		tmp = strings.Replace(tmp, ")", "", -1)
+
+		// log.Println(tmp)
+
+		return tmp
+
 	} else {
 
 		return data
@@ -199,6 +204,9 @@ func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp,
 					if containREF(mappedAttr) {	
 
 						firstArg := getFirstArgFromREF(mappedAttr)
+
+						firstArg = removeASSIGNIfExists(firstArg)
+						
 						firstArgs[firstArg] = true
 
 					} 
@@ -286,6 +294,7 @@ func GetMappedAttributesFromSchemaMappingsByFETCH(allMappings *config.SchemaMapp
 					// fromAttr
 
 					// If there exists #REF
+					// #FETCH and #ASSIGN don't coexist, so we don't check #ASSIGN
 					if containREF(fAttr) {
 
 						if containFETCH(fAttr) {
