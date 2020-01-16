@@ -38,6 +38,9 @@ var CannotResolveReferencesGetDataInNode =
 var NoReferenceToResolve =
 	errors.New("There is no need to resolve reference")
 
+var CannotFindResolvedAttributes = errors.New(`Does not find resolved attributes. 
+	Should not happen given one member corresponds to one row for now!`)
+
 // Ownership
 var CannotFindDataInOwnership = 
 	errors.New("Fail to get any Data by the ownership relationship")

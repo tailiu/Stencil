@@ -274,8 +274,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// This should not happen
 			} else {
 				
-				panic(`Does not find resolved attributes. Should not happen 
-					given one member corresponds to one row for now!`)
+				return nil, CannotFindResolvedAttributes
+				// panic(`Does not find resolved attributes. Should not happen 
+				// 	given one member corresponds to one row for now!`)
 			}
 		}
 	

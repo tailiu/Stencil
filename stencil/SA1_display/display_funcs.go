@@ -261,7 +261,14 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 	for _, dataHint := range dataHints {
 		
-		// we try to display data in the unit of a node 
+		// we try to display data in the UNIT of a node 
+		// Even if in the case where some data belonging to other migration should not be
+		// displayed, that data is displayed as a unit of data
+		// e.g., some data in a tweet is migrated in another migration which is still in the first phase,
+		// and according to the rule, it can only be displayed in the first phase
+		// if the parent tweet is there, but the parent tweet is not there for now.
+		// other data in the tweet is going to be displayed in the migration in the second phase. 
+		// In this case, all the data will be displayed
 		if !isNodeInCurrentMigration(displayConfig, dataHint) {
 
 			log.Println(`This data is not migrated by the currently checked user,
