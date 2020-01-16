@@ -6,14 +6,8 @@ import (
 	"log"
 )
 
-/*
- * This new identity file aims to generalize reference resolution to different migrations
- * The functions here DO NOT consider migration id and GetPreviousID DOES NOT restrict
- * from app and from member
- */
-
 // app, member, id are all integer corresponding to names
-func CreateIdentity(app, member, id string) *Identity {
+func oldCreateIdentity(app, member, id string) *Identity {
 	
 	ID := &Identity{
 		app: 	app,
@@ -24,12 +18,12 @@ func CreateIdentity(app, member, id string) *Identity {
 	return ID
 }
 
-func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig, 
+func oldGetRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig, 
 	ID *Identity) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM identity_table 
-		WHERE to_app = %s and to_member = %s and to_id = %s`,
-		ID.app, ID.member, ID.id)
+		WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d`,
+		ID.app, ID.member, ID.id, refResolutionConfig.migrationID)
 	
 	log.Println(query)
 
@@ -44,12 +38,13 @@ func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig, 
+
+func oldGetRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig, 
 	ID *Identity) []map[string]interface{} {
 	
 	query := fmt.Sprintf(`SELECT * FROM identity_table 
-		WHERE from_app = %s and from_member = %s and from_id = %s`,
-		ID.app, ID.member, ID.id)
+		WHERE from_app = %s and from_member = %s and from_id = %s and migration_id = %d`,
+		ID.app, ID.member, ID.id, refResolutionConfig.migrationID)
 
 	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
@@ -62,7 +57,33 @@ func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig, 
+func oldGetPreviousID(refResolutionConfig *RefResolutionConfig, 
+	ID *Identity, from_app, fromMember string) string {
+
+	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
+		WHERE from_app = %s and from_member = %s and to_app = %s and 
+		to_member = %s and to_id = %s and migration_id = %d`,
+		from_app, fromMember, ID.app, ID.member, ID.id, 
+		refResolutionConfig.migrationID)
+	
+	// log.Println(query)
+
+	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(data)
+
+	if data["from_id"] == nil {
+		return ""
+	} else {
+		return fmt.Sprint(data["from_id"])
+	}
+	
+}
+
+func oldForwardTraverseIDTable(refResolutionConfig *RefResolutionConfig, 
 	ID, orginalID *Identity) []*Identity {
 	
 	var res []*Identity
@@ -107,28 +128,4 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 	}
 
 	return res
-}
-
-func GetPreviousID(refResolutionConfig *RefResolutionConfig, 
-	ID *Identity) string {
-
-	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
-		WHERE to_app = %s and to_member = %s and to_id = %s`,
-		ID.app, ID.member, ID.id)
-	
-	// log.Println(query)
-
-	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// log.Println(data)
-
-	if data["from_id"] == nil {
-		return ""
-	} else {
-		return fmt.Sprint(data["from_id"])
-	}
-	
 }

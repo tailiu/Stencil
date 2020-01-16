@@ -12,11 +12,11 @@ import (
 
 // The Key should be the primay key of the Table
 type HintStruct struct {
-	Table 	string
-	TableID string
-	KeyVal 	map[string]int
-	Data   	map[string]interface{}
-	Tag		string
+	Table 							string
+	TableID 						string
+	KeyVal 							map[string]int
+	Data   							map[string]interface{}
+	Tag								string
 }
 
 func CreateHint(tableName, tableID, id string) *HintStruct {

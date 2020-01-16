@@ -604,3 +604,14 @@ func getTableInArg(data string) string {
 
 	return tmp[0]
 }
+
+// func isNodeInCurrentMigration(displayConfig *displayConfig, 
+// 	oneMigratedData *HintStruct) bool {
+
+// 	query := fmt.Sprintf("select pk from app_tables where app_id = %s and table_name = '%s'",
+// 		appID, tableName)
+	
+// 	isInCurrentMigration := isNodeInCurrentMigration(displayConfig, hint)
+
+	
+// }

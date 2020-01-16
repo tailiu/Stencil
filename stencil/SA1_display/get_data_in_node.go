@@ -136,18 +136,18 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				// log.Println(displayConfig.dstAppConfig.tableNameIDPairs)
 				// log.Println(table0)
 				// log.Println(table0ID)
-				tableInFirstArg := getTableInArg(fromAttrfirstArg)
-	
+				
 				dataID := reference_resolution.CreateIdentity(
 					displayConfig.dstAppConfig.appID,
 					table0ID,
 					id,
 				)
-	
-				srcTableID := displayConfig.srcAppConfig.tableNameIDPairs[tableInFirstArg]
+				
+				// tableInFirstArg := getTableInArg(fromAttrfirstArg)
+				// srcTableID := displayConfig.srcAppConfig.tableNameIDPairs[tableInFirstArg]
 	
 				prevID := reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
-					dataID, displayConfig.srcAppConfig.appID, srcTableID)
+					dataID)
 				
 				log.Println("Previous id:", prevID)
 
@@ -230,7 +230,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 			} else {
 
-				panic("Should not happen given one member corresponds to one row for now!")
+				panic(`The reference has been resolved, but the value is not what we want. 
+					Should not happen given one member corresponds to one row for now!`)
 			
 			}
 		} else {
@@ -242,6 +243,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 			updatedAttrs, _ := reference_resolution.ResolveReference(
 				displayConfig.refResolutionConfig, ID1)
+			
+			log.Println("Updated attributes:")
+			log.Println(updatedAttrs)
 
 			// We check whether the desired attr (col1) has been resolved 
 			// (until this point, it should be resolved)
@@ -263,13 +267,15 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	
 				} else {
 	
-					panic("Should not happen given one member corresponds to one row for now!")
+					panic(`Find the resolved attribute, but the value is not what we want. 
+						Should not happen given one member corresponds to one row for now!`)
 				}
 			
 			// This should not happen
 			} else {
-
-				panic("Should not happen given one member corresponds to one row for now!")
+				
+				panic(`Does not find resolved attributes. Should not happen 
+					given one member corresponds to one row for now!`)
 			}
 		}
 	

@@ -6,16 +6,12 @@ import (
 	"log"
 )
 
-/*
- * Similary, this new reference file aims to generalize reference resolution to different migrations
- * The functions here DO NOT consider migration id.
- */
-
-func getFromReferences(refResolutionConfig *RefResolutionConfig, 
+func oldGetFromReferences(refResolutionConfig *RefResolutionConfig, 
 	IDRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and from_member = %s 
-		and from_id = %s;`, IDRow["from_app"], IDRow["from_member"], IDRow["from_id"])
+		and from_id = %s and migration_id = %d;`, IDRow["from_app"], 
+		IDRow["from_member"], IDRow["from_id"], refResolutionConfig.migrationID)
 	
 	log.Println(query)
 	
@@ -30,11 +26,12 @@ func getFromReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getToReferences(refResolutionConfig *RefResolutionConfig, 
+func oldGetToReferences(refResolutionConfig *RefResolutionConfig, 
 	IDRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and to_member = %s 
-		and to_id = %s;`, IDRow["from_app"], IDRow["from_member"], IDRow["from_id"])
+		and to_id = %s and migration_id = %d;`, IDRow["from_app"], 
+		IDRow["from_member"], IDRow["from_id"], refResolutionConfig.migrationID)
 	
 	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
@@ -47,7 +44,7 @@ func getToReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, attr string) string {
+func oldGetDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, attr string) string {
 	
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE id = %s",
 		attr, member, id)
@@ -66,7 +63,7 @@ func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, at
 	
 }
 
-func deleteRef(refID string) string {
+func oldDeleteRef(refID string) string {
 
 	return fmt.Sprintf("DELETE FROM reference_table WHERE pk = %s", refID)
 
@@ -77,7 +74,7 @@ func deleteRef(refID string) string {
 
 }
 
-func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data string) string {
+func oldUpdateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data string) string {
 	
 	return fmt.Sprintf("UPDATE %s SET %s = %s WHERE id = %s",
 		memberToBeUpdated, attrToBeUpdated, data, IDToBeUpdated)
@@ -89,7 +86,7 @@ func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, dat
 
 }
 
-func addToResolvedReferences(refResolutionConfig *RefResolutionConfig, 
+func oldAddToResolvedReferences(refResolutionConfig *RefResolutionConfig, 
 	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated, data string) string {
 	
 	return fmt.Sprintf(`INSERT INTO resolved_references 
@@ -105,7 +102,7 @@ func addToResolvedReferences(refResolutionConfig *RefResolutionConfig,
 }
 
 
-func updateReferences(refResolutionConfig *RefResolutionConfig, 
+func oldUpdateReferences(refResolutionConfig *RefResolutionConfig, 
 	refID, member, id, attr, memberToBeUpdated, 
 	IDToBeUpdated, attrToBeUpdated string) (string, error) {
 

@@ -35,6 +35,8 @@ func NeedToResolveReference(refResolutionConfig *RefResolutionConfig,
 	}
 }
 
+// we don't check migration_id here based on the assumption that
+// application database does not reuse id in a table
 func ReferenceResolved(refResolutionConfig *RefResolutionConfig, 
 	member, reference, id string) string {
 

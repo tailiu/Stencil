@@ -56,9 +56,11 @@ func DisplayThread(displayConfig *displayConfig) {
 // 		ownership relationship check results AND 
 // 		sharing relationship check results AND
 // 		inter-node check results 
+// Display should only display the migrating user's data
+// but can check other users' migrating and migrated data
 func checkDisplayOneMigratedData(displayConfig *displayConfig, 
 	oneMigratedData *HintStruct, secondRound bool) error {
-
+	
 	log.Println("Check Data:", *oneMigratedData)
 
 	// Get data in the node based on intra-node data dependencies
@@ -113,14 +115,17 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 		}
 
+		log.Println("Start Checking Ownership")
 
 		// If the tag of this node is the root, the node could be the migrating user's 
 		// or other users' root.
 		if oneMigratedData.Tag == "root" {
 
 			// If it is the migrating user's root node, the display thread reached this node 
-			// by directly picking from migrated data.
-			isUserRootNode, err14 := isNodeMigratingUserRootNode(displayConfig, dataInNode)
+			// by directly picking from migrated data since there are already ownership relationships
+			// between normal nodes with the migrating user's root node 
+			// and there are no dependencies defined there
+			isMigratingUserRootNode, err14 := isNodeMigratingUserRootNode(displayConfig, dataInNode)
 			if err14 != nil {
 				log.Println(err14)
 			}
@@ -130,7 +135,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 			// there is any data displayed in the node and return, diplayed the undisplayed data if
 			// there exists some displayed data, and returned the result,
 			// Therefore, we need to display the data in the node.
-			if isUserRootNode {
+			if isMigratingUserRootNode {
 
 				err15 := Display(displayConfig, dataInNode)
 				if err15 != nil {
@@ -147,7 +152,9 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 			// some data not displayed in the root node in this case, it will not display it.
 			} else {
 
-				// here the node should have no data able to be displayed.
+				// here the node should have no data able to be displayed
+				// since if there is some data already displayed in the checkDisplayConditionsInNode
+				// the function returns
 				return NoNodeCanBeDisplayed
 
 			}
