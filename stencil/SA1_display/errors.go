@@ -32,8 +32,11 @@ var NotDependsOnAnyData =
 	errors.New("This Data Does not Depend on Any Data in the Parent Node")
 
 // Resolve reference when getting data in node
+var CannotResolveReferencesGetDataInParentNode =
+	errors.New("Fail to resolve references when getting data in a parent node")
+
 var CannotResolveReferencesGetDataInNode = 
-	errors.New("Fail to resolve references when remaining data in node")
+	errors.New("Fail to resolve references when getting remaining data in a node")
 
 var NoReferenceToResolve =
 	errors.New("There is no need to resolve reference")

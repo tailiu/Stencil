@@ -64,6 +64,8 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 	
 	log.Println("Check Data:", *oneMigratedData)
 
+	log.Println("==================== Check Intra-node dependencies ====================")
+
 	// Get data in the node based on intra-node data dependencies
 	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(
 		displayConfig, oneMigratedData)
@@ -107,6 +109,8 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 		// and the existence of other app_display threads !!
 		if len(displayedData) != 0 {
 
+			log.Println("There is already some displayed data in the node")
+
 			err6 := Display(displayConfig, notDisplayedData)
 			if err6 != nil {
 				log.Fatal(err6)
@@ -116,7 +120,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 		}
 
-		log.Println("Start Checking Ownership")
+		log.Println("==================== Check Ownership ====================")
 
 		// If the tag of this node is the root, the node could be the migrating user's 
 		// or other users' root. Regardless of that, this node will be displayed
@@ -156,13 +160,13 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				log.Fatal(err12)
 			}
 
-			log.Println(dataOwnershipSpec)
+			// log.Println(dataOwnershipSpec)
 
 			dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
 
 			// The root node could be incomplete
 			if err13 != nil {
-				log.Println("Get a root node error:")
+				log.Println("An error in getting the checked node's owner:")
 				log.Println(err13)
 			}
 
@@ -183,7 +187,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				}
 
 			}
-			
+
 			// If based on the ownership display settings this node is allowed to be displayed,
 			// then continue to check dependencies.
 			// Otherwise, no data in the node can be displayed.
@@ -196,9 +200,15 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 				return NoNodeCanBeDisplayed
 
+			} else {
+
+				log.Println("Ownership display settings are satisfied")
+
 			}
 		}
 		
+		log.Println("==================== Check Inter-node dependencies ====================")
+
 		// After intra-node data dependencies, and ownership and sharing relationships are satified,
 		// start to check inter-node data dependencies if this is required.
 		pTags, err2 := oneMigratedData.GetParentTags(displayConfig)
@@ -226,10 +236,15 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				pTagConditions := make(map[string]bool)
 
 				for _, pTag := range pTags {
+					
+					log.Println("Check a Parent Tag:", pTag)
 
 					dataInParentNode, err4 := GetdataFromParentNode(
 						displayConfig, dataInNode, pTag)
 					
+					// There could be cases where the display thread cannot get the data
+					// For example, follows require both migrating user's root node (ownership)
+					// and also the user followed who might be not in the dest app
 					if err4 != nil {
 						log.Println(err4)
 					} else {

@@ -44,7 +44,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 		} else {
 
 			hint := CreateHint(table, tableID, id)
-			log.Println("Parent Node: Before resolving reference: ", hint)
+			log.Println("Parent Node: before resolving reference: ", hint)
 
 			ID := hint.TransformHintToIdenity(displayConfig)
 
@@ -68,7 +68,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
 
-				return "", CannotResolveReferencesGetDataInNode
+				return "", CannotResolveReferencesGetDataInParentNode
 			}
 		}
 	
@@ -146,7 +146,8 @@ func getHintsInParentNode(displayConfig *displayConfig,
 					
 					// If there is an error, it means that the reference has not been resolved
 					if err0 != nil {
-						return nil, err0
+						log.Println(err0)
+						return nil, CannotFindAnyDataInParent
 					}
 
 				} else {
@@ -190,7 +191,8 @@ func getHintsInParentNode(displayConfig *displayConfig,
 				// If there is an error, it means that the reference has not been resolved
 				// so it cannot be used to get data in the parent node
 				if err0 != nil {
-					return nil, err0
+					log.Println(err0)
+					return nil, CannotFindAnyDataInParent
 				}
 
 			} else {
