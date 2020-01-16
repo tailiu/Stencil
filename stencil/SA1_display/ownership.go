@@ -128,3 +128,46 @@ func isNodeMigratingUserRootNode(displayConfig *displayConfig,
 	return false, CannotFindRootTable
 
 }
+
+func oldHandleRootNode(displayConfig *displayConfig,
+	dataInRootNode []*HintStruct) error {
+
+	// If it is the migrating user's root node, the display thread reached this node 
+	// by directly picking from migrated data since there are already ownership relationships
+	// between normal nodes with the migrating user's root node 
+	// and there are no dependencies defined there
+	isMigratingUserRootNode, err14 := isNodeMigratingUserRootNode(displayConfig, dataInRootNode)
+	if err14 != nil {
+		log.Println(err14)
+	}
+
+	// If the checked node is the migrating user's root node, then it is not diplayed yet.
+	// Since just now the display thread already checked if
+	// there is any data displayed in the node and return, diplayed the undisplayed data if
+	// there exists some displayed data, and returned the result,
+	// Therefore, we need to display the data in the node.
+	if isMigratingUserRootNode {
+
+		err15 := Display(displayConfig, dataInRootNode)
+		if err15 != nil {
+			log.Fatal(err15)
+		}
+		
+		return ReturnResultBasedOnNodeCompleteness(err15)
+
+	// If it is other user's root node, it must be arrived through the dependency relationship
+	// since the migrating user root node is only connected with the migrated data with ownership
+	// In this case, we do not need to further check the inter-node data dependencies, 
+	// ownership, or sharing relationships of the current root node.
+	// As the display thread only displays this migrating user's data, even if there is
+	// some data not displayed in the root node in this case, it will not display it.
+	} else {
+
+		// here the node should have no data able to be displayed
+		// since if there is some data already displayed in the checkDisplayConditionsInNode
+		// the function returns
+		return NoNodeCanBeDisplayed
+
+	}
+			
+}

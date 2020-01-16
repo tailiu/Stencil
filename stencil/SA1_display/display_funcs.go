@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"strconv"
 	"stencil/config"
 	"stencil/db"
 	"stencil/schema_mappings"
@@ -260,6 +261,14 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 	for _, dataHint := range dataHints {
 		
+		// we try to display data in the unit of a node 
+		if !isNodeInCurrentMigration(displayConfig, dataHint) {
+
+			log.Println(`This data is not migrated by the currently checked user,
+				but this display thread will also display this data`)
+
+		}
+
 		ID := dataHint.TransformHintToIdenity(displayConfig)
 
 		myUpdatedAttrs, _ := reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID)
@@ -497,6 +506,16 @@ func PutIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 
 	for _, dataHint := range dataHints {
 		
+		// we try to avoid putting data into data bags if it is not in the 
+		// currently checked user's migration
+		if !isNodeInCurrentMigration(displayConfig, dataHint) {
+
+			log.Println(`This data is not migrated by the currently checked user,
+				so it will not be put into data bags by this display thread`)
+			
+			continue
+		}
+
 		// dataHint.Data could be nil, which means there is no data,
 		// if a thread crashes before executing queries3
 		// and after executing queries1 and queries2, or data is deleted by services.
@@ -605,13 +624,24 @@ func getTableInArg(data string) string {
 	return tmp[0]
 }
 
-// func isNodeInCurrentMigration(displayConfig *displayConfig, 
-// 	oneMigratedData *HintStruct) bool {
+func isNodeInCurrentMigration(displayConfig *displayConfig, 
+	oneMigratedData *HintStruct) bool {
 
-// 	query := fmt.Sprintf("select pk from app_tables where app_id = %s and table_name = '%s'",
-// 		appID, tableName)
+	query := fmt.Sprintf(`select migration_id from display_flags 
+		where app_id = %s and table_id = %s and id = %d and display_flag = true`,
+		displayConfig.dstAppConfig.appID, oneMigratedData.TableID, 
+		oneMigratedData.KeyVal["id"])
 	
-// 	isInCurrentMigration := isNodeInCurrentMigration(displayConfig, hint)
 
+	data, err := db.DataCall1(displayConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if fmt.Sprint(data["migration_id"]) == strconv.Itoa(displayConfig.migrationID) {
+		return true
+	} else {
+		return false
+	}
 	
-// }
+}
