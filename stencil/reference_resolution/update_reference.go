@@ -90,6 +90,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		ignoreREF)
 
 	if err1 != nil {
+
 		log.Println("Error in Getting attributes to be updated from schema mappings")
 		log.Println(err1)
 
@@ -123,7 +124,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 	for _, attrToUpdate := range attrsToUpdate {
 		
-		log.Println("one attr to be checkd and updated:", attrToUpdate)
+		log.Println("one attr to be checked and updated:", attrToUpdate)
 
 		updatedVal, err3 := updateReferences(
 			refResolutionConfig,
@@ -142,6 +143,10 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		} else {
 
 			updatedAttrs[attrToUpdate] = updatedVal
+			
+			// This is an important break because one reference can only
+			// update one value
+			break
 		}
 	}
 
@@ -204,7 +209,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 
 	for _, attrToUpdate := range attrsToUpdate {
 
-		log.Println("one attr to be checkd and updated:", attrToUpdate)
+		log.Println("one attr to be checked and updated:", attrToUpdate)
 
 		updatedVal, err1 := updateReferences(
 			refResolutionConfig,
@@ -217,9 +222,16 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 			attrToUpdate)
 		
 		if err1 != nil {
+			
 			log.Println(err1)
+		
 		} else {
+			
 			updatedAttrs[attrToUpdate] = updatedVal
+
+			// This is an important break because one reference can only
+			// update one value
+			break
 		}
 
 	}
@@ -304,7 +316,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 	
 	for _, attrToUpdate := range attrsToUpdate {
 
-		log.Println("one attr to be checkd and updated:", attrToUpdate)
+		log.Println("one attr to be checked and updated:", attrToUpdate)
 
 		updatedVal, err2 := updateReferences(
 			refResolutionConfig,
@@ -317,9 +329,16 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 			attrToUpdate)
 
 		if err2 != nil {
+			
 			log.Println(err2)
+		
 		} else {
+
 			updatedAttrs[refIdentityRow.id + ":" + attrToUpdate] = updatedVal
+
+			// This is an important break because one reference can only
+			// update one value
+			break
 		}
 
 	}
@@ -380,7 +399,7 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 
 	for _, attrToUpdate := range attrsToUpdate {
 
-		log.Println("one attr to be checkd and updated:", attrToUpdate)
+		log.Println("one attr to be checked and updated:", attrToUpdate)
 
 		updatedVal, err1 := updateReferences(
 			refResolutionConfig,
@@ -393,9 +412,16 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 			attrToUpdate)
 
 		if err1 != nil {
+			
 			log.Println(err1)
+		
 		} else {
+			
 			updatedAttrs[procRef["from_id"] + ":" + attrToUpdate] = updatedVal
+
+			// This is an important break because one reference can only
+			// update one value
+			break
 		}
 
 	}

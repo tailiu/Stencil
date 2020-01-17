@@ -361,7 +361,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 
 			if hint.Table == table {
 				
-				log.Println(*hint)
+				log.Println(hint.Data)
 				log.Println(tableCol)
 				log.Println(hint.Data[tableCol])
 

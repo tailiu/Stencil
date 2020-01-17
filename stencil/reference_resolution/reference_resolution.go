@@ -105,15 +105,23 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 				log.Println("refIdentityRow: ", refIdentityRow)
 
-				combineTwoMaps(updatedAttrs, updateRefOnLeftBasedOnMappingsUsingRefIDRow(
-					refResolutionConfig, refIdentityRow, procRef, orgID))
+				oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow(
+					refResolutionConfig, refIdentityRow, procRef, orgID)
+
+				combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+
+				if len(oneUpdatedAttr) > 0 {
+					break
+				}
 
 			}
 
 		} else if procRef["app"] == refResolutionConfig.appID {
 
-			combineTwoMaps(updatedAttrs, updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(
-				refResolutionConfig, procRef, orgID))
+			oneUpdatedAttr := updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(
+				refResolutionConfig, procRef, orgID)
+
+			combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
 		}
 
@@ -157,15 +165,22 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 				log.Println("refIdentityRow: ", refIdentityRow)
 
-				combineTwoMaps(updatedAttrs, updateRefOnRightBasedOnMappingsUsingRefIDRow(
-					refResolutionConfig, refIdentityRow, procRef, orgID))
+				oneUpdatedAttr := updateRefOnRightBasedOnMappingsUsingRefIDRow(
+					refResolutionConfig, refIdentityRow, procRef, orgID)
+
+				combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 				
+				if len(oneUpdatedAttr) > 0 {
+					break
+				}
 			}
 
 		} else if procRef["app"] == refResolutionConfig.appID {
 
-			combineTwoMaps(updatedAttrs, updateRefOnRightBasedOnMappingsNotUsingRefIDRow(
-				refResolutionConfig, procRef, orgID))
+			oneUpdatedAttr := updateRefOnRightBasedOnMappingsNotUsingRefIDRow(
+				refResolutionConfig, procRef, orgID)
+
+			combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
 		}
 	}

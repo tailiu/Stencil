@@ -124,7 +124,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		// toAttr = status_id, then fromAttr could be posts.id, comments.id, or messages.id
 		for fromAttrfirstArg, _ := range fromAttrsfirstArg {
 
-			log.Println("Check a from attribute:", fromAttrfirstArg)
+			// log.Println("Check a from attribute:", fromAttrfirstArg)
+
+			log.Println("Check a from attribute:")
 
 			// If the first argument of the from attribute contains "id", this indicates 
 			// we need to get the original id as the value to get the data
