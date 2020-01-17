@@ -1,11 +1,10 @@
-package dependency_handler
+package SA2_display
 
 import (
 	"stencil/config"
-	"stencil/display"
 )
 
-func GetDisplaySettingInDependencies(appConfig *config.AppConfig, hint display.HintStruct, pTag string) (string, error) {
+func GetDisplaySettingInDependencies(appConfig *config.AppConfig, hint HintStruct, pTag string) (string, error) {
 	tag, _ := hint.GetTagName(appConfig)
 	setting, err := appConfig.GetDepDisplaySetting(tag, pTag)
 

@@ -1,4 +1,4 @@
-package display
+package SA2_display
 
 import (
 	"log"

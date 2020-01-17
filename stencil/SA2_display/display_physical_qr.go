@@ -1,4 +1,4 @@
-package display
+package SA2_display
 
 import (
 	"stencil/db"
@@ -10,7 +10,8 @@ import (
 )
 
 func GetData1FromPhysicalSchema(stencilDBConn *sql.DB, 
-	QR *qr.QR, appID, cols, from, col, op, val string) map[string]interface{}  {	
+	QR *qr.QR, appID, cols, from, 
+	col, op, val string) map[string]interface{}  {	
 	
 	qs := qr.CreateQS(QR)
 
@@ -33,8 +34,8 @@ func GetData1FromPhysicalSchema(stencilDBConn *sql.DB,
 }
 
 func GetData1FromPhysicalSchemaByRowID(stencilDBConn *sql.DB, 
-	QR *qr.QR, appID, cols, from string, rowIDs []int, restrictions []map[string]string) 
-	map[string]interface{} {	
+	QR *qr.QR, appID, cols, from string, rowIDs []int, 
+	restrictions []map[string]string) map[string]interface{} {	
 
 	qs := qr.CreateQS(QR)
 

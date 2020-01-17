@@ -1,11 +1,10 @@
-package dependency_handler
+package SA2_display
 
 import (
 	"database/sql"
 	"errors"
 	"log"
 	"stencil/config"
-	"stencil/display"
 	// "strconv"
 	"strings"
 	"fmt"
@@ -17,7 +16,7 @@ func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.
 	// log.Println(table)
 	// log.Println(key)
 	// log.Println(val)
-	data := display.GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, table + ".*", 
+	data := GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, table + ".*", 
 		table, table + "." + key, "=", val)
 
 	if len(data) == 0 {
@@ -27,8 +26,8 @@ func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.
 	}
 }
 
-func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, dependencies []map[string]string, members map[string]string, hint display.HintStruct) ([]display.HintStruct, error) {
-	var result []display.HintStruct
+func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, dependencies []map[string]string, members map[string]string, hint HintStruct) ([]HintStruct, error) {
+	var result []HintStruct
 
 	procDependencies := make(map[string][]string)
 	for _, dependency := range dependencies {
@@ -84,10 +83,10 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 						Data:  data1,
 					})
 
-					result = append(result, display.HintStruct{
+					result = append(result, HintStruct{
 						TableName: table1,
 						TableID: appConfig.TableNameIDPairs[table1],
-						RowIDs: display.GetRowIDsFromData(data1),
+						RowIDs: GetRowIDsFromData(data1),
 						Data: data1,
 					})
 
@@ -121,13 +120,13 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 	}
 }
 
-func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hint display.HintStruct) (map[string]interface{}, error) {
+func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hint HintStruct) (map[string]interface{}, error) {
 	restrictions, err := hint.GetRestrictionsInTag(appConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := display.GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.TableName + ".*", hint.TableName, hint.RowIDs, restrictions)
+	data := GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.TableName + ".*", hint.TableName, hint.RowIDs, restrictions)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
@@ -136,7 +135,7 @@ func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hi
 	}
 }
 
-func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct, stencilDBConn *sql.DB) ([]display.HintStruct, error) {
+func getDataInNode(appConfig *config.AppConfig, hint HintStruct, stencilDBConn *sql.DB) ([]HintStruct, error) {
 	// Get and cache hint.Data if it is not there
 	if len(hint.Data) == 0 {
 		data, err := getOneRowBasedOnHint(appConfig, stencilDBConn, hint)
@@ -150,7 +149,7 @@ func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct, stencil
 		for _, member := range tag.Members {
 			if hint.TableName == member {
 				if len(tag.Members) == 1 {
-					return []display.HintStruct{hint}, nil
+					return []HintStruct{hint}, nil
 				} else {
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
@@ -164,7 +163,7 @@ func getDataInNode(appConfig *config.AppConfig, hint display.HintStruct, stencil
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func checkDependsOnExists(appConfig *config.AppConfig, allData []display.HintStruct, tagName string, data display.HintStruct) bool {
+func checkDependsOnExists(appConfig *config.AppConfig, allData []HintStruct, tagName string, data HintStruct) bool {
 	memberID, _ := data.GetMemberID(appConfig, tagName)
 	// fmt.Println(memberID)
 	dependsOnTables := appConfig.GetDependsOnTables(tagName, memberID)
@@ -192,8 +191,8 @@ func checkDependsOnExists(appConfig *config.AppConfig, allData []display.HintStr
 	return true
 }
 
-func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []display.HintStruct, tagName string) []display.HintStruct {
-	var trimmedData []display.HintStruct
+func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []HintStruct, tagName string) []HintStruct {
+	var trimmedData []HintStruct
 
 	for _, data := range allData {
 		if checkDependsOnExists(appConfig, allData, tagName, data) {
@@ -204,8 +203,8 @@ func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []dis
 	return trimmedData
 }
 
-func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint display.HintStruct, stencilDBConn *sql.DB) ([]display.HintStruct, error) {
-	var data []display.HintStruct
+func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint HintStruct, stencilDBConn *sql.DB) ([]HintStruct, error) {
+	var data []HintStruct
 	
 	tagName, err := hint.GetTagName(appConfig)
 	if err != nil {

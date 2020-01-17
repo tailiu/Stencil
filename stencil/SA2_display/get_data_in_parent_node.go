@@ -1,24 +1,23 @@
-package dependency_handler
+package SA2_display
 
 import (
 	"errors"
 	"log"
 	"fmt"
 	"stencil/config"
-	"stencil/display"
 	"database/sql"
 	// "strconv"
 	"strings"
 )
 
 func getHintsInParentNode(stencilDBConn *sql.DB, 
-	appConfig *config.AppConfig, hints []display.HintStruct, conditions []string) 
-	(display.HintStruct, error) {	
+	appConfig *config.AppConfig, hints []HintStruct, 
+	conditions []string) (HintStruct, error) {	
 	
 	// log.Println(".....Second check......")
-	// log.Println(display.GetData1FromPhysicalSchemaByRowID(
+	// log.Println(GetData1FromPhysicalSchemaByRowID(
 		//stencilDBConn, appConfig.QR, "statuses.*", "statuses", "734487949"))
-	// log.Println(display.GetData1FromPhysicalSchema(stencilDBConn, 
+	// log.Println(GetData1FromPhysicalSchema(stencilDBConn, 
 		// appConfig.QR, "statuses.*", "statuses", "statuses.conversation_id", "=", "1563"))
 	// log.Println("...........")
 	
@@ -56,7 +55,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB,
 
 				// In this case, since data may be incomplete, 
 				// we cannot get the data in the parent node
-				return display.HintStruct{}, 
+				return HintStruct{}, 
 					errors.New("Fail To Get Any Data in the Parent Node")
 			
 			} else {
@@ -69,12 +68,12 @@ func getHintsInParentNode(stencilDBConn *sql.DB,
 				// status in Mastodon.
 				if hints[hintID].Data[t1 + "." + a1] == nil {
 
-					return display.HintStruct{}, 
+					return HintStruct{}, 
 						errors.New("Fail To Get Any Data in the Parent Node")
 
 				}
 
-				data = display.GetData1FromPhysicalSchema(
+				data = GetData1FromPhysicalSchema(
 					stencilDBConn, appConfig.QR, appConfig.AppID, 
 					t2 + ".*", t2, t2 + "." + a2, "=", fmt.Sprint(hints[hintID].Data[t1 + "." + a1]))
 				
@@ -83,18 +82,18 @@ func getHintsInParentNode(stencilDBConn *sql.DB,
 				// log.Println("...........")
 
 				if len(data) == 0 {
-					return display.HintStruct{}, 
+					return HintStruct{}, 
 						errors.New("Fail To Get Any Data in the Parent Node")
 				}
 			}
 		} else {
 
-			data = display.GetData1FromPhysicalSchema(
+			data = GetData1FromPhysicalSchema(
 				stencilDBConn, appConfig.QR, appConfig.AppID, 
 				t2 + ".*", t2, t2 + "." + a2, "=", fmt.Sprint(data[t1 + "." + a1]) )
 
 			if len(data) == 0 {
-				return display.HintStruct{}, 
+				return HintStruct{}, 
 					errors.New("Fail To Get Any Data in the Parent Node")
 			}
 
@@ -106,7 +105,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB,
 	// log.Println(data)
 	// log.Println("...........")
 
-	return display.TransformRowToHint1(appConfig, data), nil
+	return TransformRowToHint1(appConfig, data), nil
 
 }
 
@@ -131,7 +130,7 @@ func replaceKey(appConfig *config.AppConfig, tag string, key string) string {
 }
 
 func dataFromParentNodeExists(stencilDBConn *sql.DB, 
-	appConfig *config.AppConfig, hints []display.HintStruct, pTag string) (bool, error) {
+	appConfig *config.AppConfig, hints []HintStruct, pTag string) (bool, error) {
 
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(appConfig, pTag)
 
@@ -173,14 +172,13 @@ func dataFromParentNodeExists(stencilDBConn *sql.DB,
 }
 
 // Note: this function may return multiple hints based on dependencies
-func GetdataFromParentNode(stencilDBConn *sql.DB, 
-	appConfig *config.AppConfig, hints []display.HintStruct, pTag string) 
-	(display.HintStruct, error) {
+func GetdataFromParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, 
+	hints []HintStruct, pTag string) (HintStruct, error) {
 
 	// Before getting data from a parent node, 
 	// we check the existence of the data based on the cols of a child node
 	if exists, err := dataFromParentNodeExists(stencilDBConn, appConfig, hints, pTag); !exists {
-		return display.HintStruct{}, err
+		return HintStruct{}, err
 	}
 
 	tag, _ := hints[0].GetTagName(appConfig)

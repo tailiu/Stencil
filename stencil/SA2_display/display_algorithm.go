@@ -1,4 +1,4 @@
-package display_algorithm
+package SA2_display
 
 import (
 	"database/sql"
@@ -6,8 +6,6 @@ import (
 	"log"
 	"time"
 	"stencil/config"
-	"stencil/dependency_handler"
-	"stencil/display"
 )
 
 const checkInterval = 200 * time.Millisecond
@@ -17,9 +15,9 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appConfig, threadID, userID := display.Initialize(migrationID, app)
+	stencilDBConn, appConfig, threadID, userID := Initialize(migrationID, app)
 
-	// display.CreateDeletionHoldTable(stencilDBConn)
+	// CreateDeletionHoldTable(stencilDBConn)
 
 	log.Println("Thread ID:", threadID)
 
@@ -27,9 +25,9 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 
 	secondRound := false
 
-	for migratedData := display.GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig); 
-		!display.CheckMigrationComplete(stencilDBConn, migrationID); 
-		migratedData = display.GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig) {
+	for migratedData := GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig); 
+		!CheckMigrationComplete(stencilDBConn, migrationID); 
+		migratedData = GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig) {
 		
 		var dhStack [][]int
 		for _, oneMigratedData := range migratedData {
@@ -38,7 +36,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 				secondRound, deletionHoldEnable, dhStack, threadID, userID)
 
 			if deletionHoldEnable {
-				display.RemoveDeletionHold(stencilDBConn, dhStack, threadID)
+				RemoveDeletionHold(stencilDBConn, dhStack, threadID)
 			}
 
 		}
@@ -49,7 +47,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 
 	secondRound = true
 
-	secondRoundMigratedData := display.GetUndisplayedMigratedData(
+	secondRoundMigratedData := GetUndisplayedMigratedData(
 		stencilDBConn, migrationID, appConfig)
 
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
@@ -59,7 +57,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 			secondRound, deletionHoldEnable, dhStack, threadID, userID)
 
 		if deletionHoldEnable {
-			display.RemoveDeletionHold(stencilDBConn, dhStack, threadID)
+			RemoveDeletionHold(stencilDBConn, dhStack, threadID)
 		}
 
 	}
@@ -75,14 +73,14 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 // Two-way display check
 func checkDisplayOneMigratedData(
 	stencilDBConn *sql.DB, appConfig *config.AppConfig, 
-	oneMigratedData display.HintStruct, 
+	oneMigratedData HintStruct, 
 	secondRound bool, deletionHoldEnable bool, 
 	dhStack [][]int, threadID int, userID string) (string, [][]int, error) {
 
-	// display.CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
+	// CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
 	log.Println("Check Data ", oneMigratedData)
 
-	dataInNode, err1 := dependency_handler.GetDataInNodeBasedOnDisplaySetting(appConfig, 
+	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(appConfig, 
 		oneMigratedData, stencilDBConn)
 
 	log.Println("-----------")
@@ -100,8 +98,8 @@ func checkDisplayOneMigratedData(
 
 		if secondRound {
 
-			err10 := display.PutIntoDataBag(stencilDBConn, 
-				appConfig.AppID, []display.HintStruct{oneMigratedData}, userID)
+			err10 := PutIntoDataBag(stencilDBConn, 
+				appConfig.AppID, []HintStruct{oneMigratedData}, userID)
 
 			// Found path conflicts
 			if err10 != nil {
@@ -120,10 +118,10 @@ func checkDisplayOneMigratedData(
 		}
 	} else {
 
-		var displayedData, notDisplayedData []display.HintStruct
+		var displayedData, notDisplayedData []HintStruct
 		for _, dataInNode1 := range dataInNode {
 
-			displayed := display.CheckDisplay(stencilDBConn, appConfig.AppID, dataInNode1)
+			displayed := CheckDisplay(stencilDBConn, appConfig.AppID, dataInNode1)
 
 			if displayed == 1 {
 
@@ -141,7 +139,7 @@ func checkDisplayOneMigratedData(
 
 			var err6 error
 
-			err6, dhStack = display.Display(stencilDBConn, 
+			err6, dhStack = Display(stencilDBConn, 
 				appConfig.AppID, notDisplayedData, deletionHoldEnable, dhStack, threadID)
 
 			if err6 != nil {
@@ -150,7 +148,7 @@ func checkDisplayOneMigratedData(
 
 			}
 
-			return display.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+			return ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 		}
 
 		pTags, err2 := oneMigratedData.GetParentTags(appConfig)
@@ -162,9 +160,9 @@ func checkDisplayOneMigratedData(
 
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
 
-				// Need to change this display.Display function
+				// Need to change this Display function
 				var err3 error
-				err3, dhStack = display.Display(stencilDBConn, 
+				err3, dhStack = Display(stencilDBConn, 
 					appConfig.AppID, dataInNode, deletionHoldEnable, dhStack, threadID)
 
 				// Found path conflicts
@@ -172,7 +170,7 @@ func checkDisplayOneMigratedData(
 					return "", dhStack, err3
 				}
 
-				return display.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+				return ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 
 			} else {
 				
@@ -181,12 +179,12 @@ func checkDisplayOneMigratedData(
 				for _, pTag := range pTags {
 					log.Println(pTag)
 					
-					dataInParentNode, err4 := dependency_handler.GetdataFromParentNode(
+					dataInParentNode, err4 := GetdataFromParentNode(
 						stencilDBConn, appConfig, dataInNode, pTag)
 
 					log.Println(dataInParentNode, err4)
 
-					displaySetting, err5 := dependency_handler.GetDisplaySettingInDependencies(
+					displaySetting, err5 := GetDisplaySettingInDependencies(
 						appConfig, oneMigratedData, pTag)
 
 					if err5 != nil {
@@ -202,7 +200,7 @@ func checkDisplayOneMigratedData(
 
 						case "Fail To Get Any Data in the Parent Node":
 
-							pTagConditions[pTag] = display.ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+							pTagConditions[pTag] = ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
 						}
 					} else {
 
@@ -235,12 +233,12 @@ func checkDisplayOneMigratedData(
 						switch result {
 
 						case "No Data In a Node Can be Displayed":
-							pTagConditions[pTag] = display.
+							pTagConditions[pTag] = 
 							ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 								displaySetting, secondRound)
 
 						case "Data In a Node Can be partially Displayed":
-							pTagConditions[pTag] = display.
+							pTagConditions[pTag] = 
 							ReturnDisplayConditionWhenGetPartialDataFromParentNode(
 								displaySetting)
 
@@ -251,13 +249,13 @@ func checkDisplayOneMigratedData(
 				}
 				// log.Println(pTagConditions)
 
-				if checkResult := display.CheckCombinedDisplayConditions(
+				if checkResult := CheckCombinedDisplayConditions(
 					appConfig, pTagConditions, oneMigratedData); 
 					checkResult {
 
 					var err8 error
 
-					err8, dhStack = display.Display(
+					err8, dhStack = Display(
 						stencilDBConn, appConfig.AppID, 
 						dataInNode, deletionHoldEnable, dhStack, threadID)
 
@@ -265,13 +263,13 @@ func checkDisplayOneMigratedData(
 					if err8 != nil {
 						return "", dhStack, err8
 					}
-					return display.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+					return ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 
 				} else {
 
 					if secondRound {
 						
-						err9 := display.PutIntoDataBag(stencilDBConn, appConfig.AppID, dataInNode, userID)
+						err9 := PutIntoDataBag(stencilDBConn, appConfig.AppID, dataInNode, userID)
 						
 						// Found path conflicts
 
