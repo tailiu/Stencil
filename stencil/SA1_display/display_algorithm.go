@@ -85,20 +85,9 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 		log.Println(err1)
 		
-		if secondRound {
+		return chechPutIntoDataBag(displayConfig, 
+			secondRound, []*HintStruct{oneMigratedData})
 
-			err9 := PutIntoDataBag(displayConfig, []*HintStruct{oneMigratedData})
-			if err9 != nil {
-				log.Fatal(err9)
-			}
-
-			return NoNodeCanBeDisplayed
-
-		} else {
-
-			return NoNodeCanBeDisplayed
-
-		}
 	} else {
 
 		displayedData, notDisplayedData := checkDisplayConditionsInNode(
@@ -198,7 +187,8 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				log.Println(`Ownership display settings are not satisfied, 
 					so this node cannot be displayed`)
 
-				return NoNodeCanBeDisplayed
+				return chechPutIntoDataBag(displayConfig, 
+					secondRound, dataInNode)
 
 			} else {
 
@@ -325,16 +315,8 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 				} else {
 
-					if secondRound {
-						
-						err10 := PutIntoDataBag(displayConfig, dataInNode)
-						if err10 != nil {
-							log.Fatal(err10)
-						}
-						
-					}
-
-					return NoNodeCanBeDisplayed
+					return chechPutIntoDataBag(displayConfig, 
+						secondRound, dataInNode)
 
 				}
 			}

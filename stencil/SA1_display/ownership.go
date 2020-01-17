@@ -73,6 +73,10 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 
 		// log.Println(depVal)
 		// log.Println(err0)
+		
+		// Refresh the cached results which could have changed due to
+		// reference resolution 
+		refreshCachedDataHints(displayConfig, hints)
 
 		if err0 != nil {
 			return nil, err0

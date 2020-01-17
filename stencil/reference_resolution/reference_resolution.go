@@ -93,7 +93,8 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID)
 		// log.Println("refIdentityRows: ", refIdentityRows)
 
-		log.Println("Get", len(refIdentityRows), "refIdentity rows")
+		log.Println("After traversing forward the ID table:")
+		log.Println("Get", len(refIdentityRows), "refIdentity row(s)")
 
 		log.Println("procRef['app']:", procRef["app"], 
 			"refResolutionConfig.appID:", refResolutionConfig.appID)
@@ -144,11 +145,12 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID)
 		// log.Println(refIdentityRows[0])
 
-		log.Println("Get", len(refIdentityRows), "refIdentity rows")
+		log.Println("After traversing forward the ID table:")
+		log.Println("Get", len(refIdentityRows), "refIdentity row(s)")
 
 		log.Println("procRef['app']:", procRef["app"], 
 			"refResolutionConfig.appID:", refResolutionConfig.appID)
-			
+
 		if len(refIdentityRows) > 0 {
 
 			for _, refIdentityRow := range refIdentityRows {
@@ -178,8 +180,12 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 	myUpdatedAttrs := make(map[string]string)
 	
 	othersUpdatedAttrs := make(map[string]string)
+	
+	idRows := getRowsFromIDTableByTo(refResolutionConfig, ID)
 
-	for _, IDRow := range getRowsFromIDTableByTo(refResolutionConfig, ID) {
+	log.Println("Get", len(idRows), "id row(s)")
+
+	for _, IDRow := range idRows {
 
 		procIDRow := transformInterfaceToString(IDRow)
 		

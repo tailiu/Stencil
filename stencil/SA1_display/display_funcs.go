@@ -278,7 +278,14 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 		ID := dataHint.TransformHintToIdenity(displayConfig)
 
-		myUpdatedAttrs, _ := reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID)
+		// Even though references have been updated in checking dependencies and ownership,
+		// update reference the last time before displaying the data
+		reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID)
+
+		updatedAttrs := reference_resolution.GetUpdatedAttributes(
+			displayConfig.refResolutionConfig,
+			ID,
+		)
 
 		attrsToBeUpdated := schema_mappings.GetAllMappedAttributesContainingREFInMappings(
 			displayConfig.mappingsFromSrcToDst,
@@ -288,7 +295,7 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 		for attr := range attrsToBeUpdated {
 			
-			if _, ok := myUpdatedAttrs[attr]; !ok {
+			if _, ok := updatedAttrs[attr]; !ok {
 				attrsToBeSetToNULLs = append(attrsToBeSetToNULLs, attr)
 			}
 
@@ -502,10 +509,27 @@ func ConvertMapToJSONString(data map[string]interface{}) string {
 	
 }
 
+func chechPutIntoDataBag(displayConfig *displayConfig, 
+	secondRound bool, dataHints []*HintStruct) error {
+
+	if secondRound {
+
+		err9 := putIntoDataBag(displayConfig, dataHints)
+		if err9 != nil {
+			log.Fatal(err9)
+		}
+
+		return NoNodeCanBeDisplayed
+
+	} else {
+
+		return NoNodeCanBeDisplayed
+	}
+}
 
 // When putting data to dag bags, it does not matter whether we set unresolved references
 // to NULLs or not, so we don't set those as NULLs. 
-func PutIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error {
+func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error {
 	
 	var queries1, queries2, queries3 []string
 
@@ -651,4 +675,20 @@ func isNodeInCurrentMigration(displayConfig *displayConfig,
 		return false
 	}
 	
+}
+
+func refreshCachedDataHints(displayConfig *displayConfig, 
+	hints []*HintStruct) {
+
+	var err2 error
+
+	for i, hint1 := range hints {	
+	
+		hints[i].Data, err2 = getOneRowBasedOnHint(displayConfig, hint1)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+	
+	}
+
 }

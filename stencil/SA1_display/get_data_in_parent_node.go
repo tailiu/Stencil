@@ -144,6 +144,8 @@ func getHintsInParentNode(displayConfig *displayConfig,
 						fmt.Sprint(hints[hintID].Data["id"]),
 						t1, a1)
 					
+					refreshCachedDataHints(displayConfig, hints)
+
 					// If there is an error, it means that the reference has not been resolved
 					if err0 != nil {
 						log.Println(err0)
@@ -188,6 +190,8 @@ func getHintsInParentNode(displayConfig *displayConfig,
 					fmt.Sprint(data["id"]),
 					t1, a1)
 				
+				refreshCachedDataHints(displayConfig, hints)
+
 				// If there is an error, it means that the reference has not been resolved
 				// so it cannot be used to get data in the parent node
 				if err0 != nil {
@@ -336,6 +340,8 @@ func oldGetHintsInParentNode(displayConfig *displayConfig,
 func dataFromParentNodeExists(displayConfig *displayConfig,
 	hints []*HintStruct, pTag string) (bool, error) {
 	
+	log.Println("check dataFromParentNodeExists")
+
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(displayConfig, pTag)
 
 	// If display existence setting is not set, 
@@ -349,9 +355,15 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 		tableCol := ReplaceKey(displayConfig.dstAppConfig.dag, hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 
+		log.Println(tableCol)
+
 		for _, hint := range hints {
 
 			if hint.Table == table {
+				
+				log.Println(*hint)
+				log.Println(tableCol)
+				log.Println(hint.Data[tableCol])
 
 				if hint.Data[tableCol] == nil {
 

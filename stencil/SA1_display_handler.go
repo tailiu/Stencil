@@ -3,13 +3,14 @@ package main
 import (
 	"stencil/SA1_display"
 	"fmt"
+	"log"
 )
 
 func main() {
 	
 	threadNum := 1
 	
-	migrationID := 1249902251
+	migrationID := 1576419908
 
 	// If the destination app database is not in the new server, newDB is false
 	newDB := false
@@ -18,6 +19,8 @@ func main() {
 	resolveReference := true
 
 	displayConfig := SA1_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
+
+	log.Println("Migration ID:",migrationID)
 
 	for i := 0; i < threadNum; i++ {
 

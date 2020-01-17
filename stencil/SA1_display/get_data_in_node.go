@@ -162,9 +162,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					data, err = getOneRowBasedOnDependency(displayConfig, table1, col1, prevID)
 					if err != nil {
 						log.Println("The first argument of the from attribute contains id, but")
-						log.Println(err)
-						break
-					}
+						log.Println(err)	
+					} 
+					break
 				}
 			}
 		} 
@@ -495,9 +495,14 @@ func getDataInNode(displayConfig *displayConfig,
 
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					return getRemainingDataInNode(displayConfig,
+					hints, err1 := getRemainingDataInNode(displayConfig,
 						 tag.InnerDependencies, tag.Members, hint)
+					
+					// Refresh the cached results which could have changed due to
+					// reference resolution 
+					refreshCachedDataHints(displayConfig, hints)
 
+					return hints, err1
 				}
 			}
 		}

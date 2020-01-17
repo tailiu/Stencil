@@ -60,3 +60,27 @@ func ReferenceResolved(refResolutionConfig *RefResolutionConfig,
 
 	}
 }
+
+func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig, 
+	ID *Identity) map[string]bool {
+	
+	updatedAttrs := make(map[string]bool) 
+
+	query := fmt.Sprintf(`select reference from resolved_references where app = %s 
+		and member = %s and id = %s`,
+		refResolutionConfig.appID, ID.member, ID.id)
+	
+	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+
+		updatedAttrs[fmt.Sprint(data1["reference"])] = true
+
+	}
+
+	return updatedAttrs
+	
+}

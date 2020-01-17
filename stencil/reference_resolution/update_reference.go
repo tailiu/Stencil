@@ -49,7 +49,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		ignoreREF)
 
 	if err != nil {
-		
+		log.Println("Error in Getting attributes to update other attributes from schema mappings:")
 		log.Println(err)
 
 		return nil
@@ -90,7 +90,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		ignoreREF)
 
 	if err1 != nil {
-
+		log.Println("Error in Getting attributes to be updated from schema mappings")
 		log.Println(err1)
 
 	}
@@ -110,7 +110,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		refResolutionConfig.tableIDNamePairs[orgID.member])
 
 	if err2 != nil {
-
+		log.Println("Error in Getting attributes to be updated from schema mappings by #FETCH:")
 		log.Println(err2)
 
 	}
@@ -175,7 +175,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 		ignoreREF)
 	
 	if err1 != nil {
-
+		log.Println("Error in Getting attributes to update other attributes from schema mappings:")
 		log.Println(err1)
 
 	}
@@ -191,7 +191,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 		refResolutionConfig.tableIDNamePairs[orgID.member])
 
 	if err2 != nil {
-
+		log.Println("Error in Getting attributes to be updated from schema mappings by #FETCH:")
 		log.Println(err2)
 
 	}
@@ -245,7 +245,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 		ignoreREF) 
 	
 	if err != nil {
-		
+		log.Println("Error in Getting attributes to update other attributesa:")
 		log.Println(err)
 
 		return nil
@@ -278,6 +278,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 		ignoreREF)
 	
 	if err1 != nil {
+		log.Println("Error in Getting mapped attributes from schema mappings:")
 		log.Println(err1)
 	}
 
@@ -292,7 +293,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 		refResolutionConfig.tableIDNamePairs[refIdentityRow.member])
 
 	if err2 != nil {
-
+		log.Println("Error in Getting mapped attributes from schema mappings by #FETCH:")
 		log.Println(err2)
 
 	}
@@ -353,6 +354,7 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 		ignoreREF)
 
 	if err1 != nil {
+		log.Println("Error in Getting mapped attributes from schema mappings:")
 		log.Println(err1)
 	}
 
@@ -367,7 +369,7 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 		refResolutionConfig.tableIDNamePairs[procRef["to_member"]])
 
 	if err2 != nil {
-
+		log.Println("Error in Getting mapped attributes from schema mappings by #FETCH:")
 		log.Println(err2)
 
 	}
