@@ -354,6 +354,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 
 		tableCol := ReplaceKey(displayConfig.dstAppConfig.dag, hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
+		col := strings.Split(tableCol, ".")[1]
 
 		log.Println(tableCol)
 
@@ -365,7 +366,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 				log.Println(tableCol)
 				log.Println(hint.Data[tableCol])
 
-				if hint.Data[tableCol] == nil {
+				if hint.Data[col] == nil {
 
 					return false, NotDependsOnAnyData
 
