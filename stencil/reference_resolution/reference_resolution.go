@@ -86,7 +86,8 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 	for _, ref := range fromRefs {
 		
 		procRef := transformInterfaceToString(ref)
-		log.Println("ref_row: ", procRef)
+		
+		logRefRow(refResolutionConfig, procRef)
 
 		data := CreateIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
 
@@ -103,8 +104,8 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 			
 			for _, refIdentityRow := range refIdentityRows {
 
-				log.Println("refIdentityRow: ", refIdentityRow)
-
+				logRefIDRow(refResolutionConfig, refIdentityRow)
+				
 				oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow(
 					refResolutionConfig, refIdentityRow, procRef, orgID)
 
@@ -146,7 +147,8 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 	for _, ref := range toRefs {
 
 		procRef := transformInterfaceToString(ref)
-		log.Println(procRef)
+		
+		logRefRow(refResolutionConfig, procRef)
 
 		data := CreateIdentity(procRef["app"], procRef["from_member"], procRef["from_id"])
 
@@ -154,8 +156,8 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		// log.Println(refIdentityRows[0])
 
 		log.Println("After traversing forward the ID table:")
-		log.Println("Get", len(refIdentityRows), "refIdentity row(s)")
 
+		log.Println("Get", len(refIdentityRows), "refIdentity row(s)")
 		log.Println("procRef['app']:", procRef["app"], 
 			"refResolutionConfig.appID:", refResolutionConfig.appID)
 
@@ -163,7 +165,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 			for _, refIdentityRow := range refIdentityRows {
 
-				log.Println("refIdentityRow: ", refIdentityRow)
+				logRefIDRow(refResolutionConfig, refIdentityRow)
 
 				oneUpdatedAttr := updateRefOnRightBasedOnMappingsUsingRefIDRow(
 					refResolutionConfig, refIdentityRow, procRef, orgID)
@@ -204,7 +206,7 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 
 		procIDRow := transformInterfaceToString(IDRow)
 		
-		log.Println("id_row: ", procIDRow)
+		logIDRow(refResolutionConfig, procIDRow)
 
 		// You are on the left/from part
 		currentMyupdatedAttrs := updateMyDataBasedOnReferences(refResolutionConfig, procIDRow, orgID)
