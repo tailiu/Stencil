@@ -75,9 +75,16 @@ func removeASSIGNIfExists(data string) string {
 }
 
 func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
-		fromApp, fromTable, fromAttr, toApp, toTable string, ignoreREF bool) ([]string, error) {
+		fromApp, fromTable, fromAttr,
+		toApp, toTable string, ignoreREF bool) ([]string, error) {
 
 	var attributes []string
+
+	// In the case: diaspora posts posts.id mastodon statuses
+	// there are two ids in the result if we don't use uniqueAttrs
+	// because posts are mapped to statuses in two different conditions: 
+	// "posts.type": "StatusMessage" and "posts.type": "Reshare"
+	uniqueAttrs := make(map[string]bool)
 
 	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
 
@@ -109,7 +116,7 @@ func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
 									fAttr = getFirstArgFromREF(fAttr)
 
 									if fAttr == fromAttr {
-										attributes = append(attributes, tAttr)
+										uniqueAttrs[tAttr] = true
 									}
 								}
 
@@ -119,7 +126,7 @@ func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
 								if !containREF(fAttr) {
 
 									if fAttr == fromAttr {
-										attributes = append(attributes, tAttr)
+										uniqueAttrs[tAttr] = true
 									}
 								}
 							}									
@@ -129,6 +136,10 @@ func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
 				}
 			}
 		}
+	}
+
+	for attr := range uniqueAttrs {
+		attributes = append(attributes, attr)
 	}
 
 	if len(attributes) == 0 {
@@ -146,7 +157,8 @@ func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
 // from Diaspora.Posts to Mastodon.Statuses, while there are three #REFs in 
 // the mappings from Diaspora.Comments to Mastodon.Statuses.
 // REFExists will check all these possiblities
-func REFExists(mappings *config.MappedApp, toTable, toAttr string) (bool, error) {
+func REFExists(mappings *config.MappedApp, 
+	toTable, toAttr string) (bool, error) {
 
 	// log.Println(toTable, toAttr)
 
@@ -275,6 +287,8 @@ func GetMappedAttributesFromSchemaMappingsByFETCH(allMappings *config.SchemaMapp
 	fromApp, fromAttr, toApp, toTable string) ([]string, error) {
 	
 	var attributes []string
+	
+	uniqueAttrs := make(map[string]bool)
 
 	log.Println(fromApp, fromAttr, toApp, toTable)
 
@@ -302,7 +316,8 @@ func GetMappedAttributesFromSchemaMappingsByFETCH(allMappings *config.SchemaMapp
 							fAttr = getFirstArgFromFETCH(fAttr)
 
 							if fAttr == fromAttr {
-								attributes = append(attributes, tAttr)
+								
+								uniqueAttrs[tAttr] = true
 							}
 
 						}
@@ -311,6 +326,10 @@ func GetMappedAttributesFromSchemaMappingsByFETCH(allMappings *config.SchemaMapp
 				}
 			}
 		}
+	}
+
+	for atrr := range  uniqueAttrs {
+		attributes = append(attributes, atrr)
 	}
 
 	if len(attributes) == 0 {

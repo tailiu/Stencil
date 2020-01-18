@@ -8,7 +8,6 @@ import (
 	"fmt"
 )
 
-
 func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 	ownership *config.Ownership) (*HintStruct, error) {
 	

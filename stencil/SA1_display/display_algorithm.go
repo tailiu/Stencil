@@ -17,6 +17,10 @@ func DisplayThread(displayConfig *displayConfig) {
 
 	secondRound := false
 
+	// Since we get all undisplayed data seen so far, during check, there could be cases
+	// where some data has already been displayed either by the current display thread or other threads 
+	// (this is difficult to know).
+	// For that data, we will continue to check it. This does not violate correctness
 	for migratedData := GetUndisplayedMigratedData(displayConfig); 
 		!CheckMigrationComplete(displayConfig); 
 		migratedData = GetUndisplayedMigratedData(displayConfig) {
@@ -126,23 +130,8 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 		
 		// If the tag of this node is not the root,
 		// we need to check the ownership and sharing relationships of this data.
-		// The check of sharing conditions for now is not implemented.
-		// Since we only migrate users' own data and migration threads should migrate the root node
-		// at the beginning of migrations, checking data ownership
-		// should always return true given the current display settings in the ownership.	
+		// The check of sharing conditions for now is not implemented for now.
 		} else {
-
-			// As an optimization, the display thread caches the display result according to
-			// ownership display settings.
-			// If the cached display result is false, it means that either the display thread has not checked,
-			// or the display settings are not satisfied, 
-			// so the display thread needs to perform the following checks.
-			// We can cache the result because normally after the root node is displayed, it should not be deleted.
-			// Users are allowed to do concurrent deletion migraitons and 
-			// even if users perform concurrent consistent or independent migrations, 
-			// users' root nodes are not affected.
-			// In the very rare case in which the migrating user quits the destination application,
-			// we can detect such case, and invalide the cache result.
 
 			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(displayConfig)
 			if err12 != nil {
@@ -160,7 +149,8 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 			}
 
 			// Display the data not displayed in the root node
-			// this root node should be the migrating user's root node
+			// this root node should be could be the migrating user's root node
+			// or other users' root nodes
 			if len(dataInOwnerNode) != 0 {
 
 				displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(

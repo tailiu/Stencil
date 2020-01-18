@@ -13,7 +13,7 @@ import (
 // and getOneRowBasedOnDependency is that it only needs to check one table and col
 func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 	id, table, col string) (string, error) {
-
+	
 	log.Println("+++++++++++++++++++")
 	log.Println(table)
 	log.Println(col)
@@ -144,6 +144,9 @@ func getHintsInParentNode(displayConfig *displayConfig,
 						fmt.Sprint(hints[hintID].Data["id"]),
 						t1, a1)
 					
+					// no matter whether this attribute has been resolved before
+					// we need to refresh the cached data because this attribute might be
+					// resolved by other thread checking other data
 					refreshCachedDataHints(displayConfig, hints)
 
 					// If there is an error, it means that the reference has not been resolved
@@ -190,6 +193,9 @@ func getHintsInParentNode(displayConfig *displayConfig,
 					fmt.Sprint(data["id"]),
 					t1, a1)
 				
+				// no matter whether this attribute has been resolved before
+				// we need to refresh the cached data because this attribute might be
+				// resolved by other thread checking other data
 				refreshCachedDataHints(displayConfig, hints)
 
 				// If there is an error, it means that the reference has not been resolved
@@ -356,7 +362,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 		table := strings.Split(tableCol, ".")[0]
 		col := strings.Split(tableCol, ".")[1]
 
-		log.Println(tableCol)
+		// log.Println(tableCol)
 
 		for _, hint := range hints {
 
@@ -364,7 +370,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 				
 				log.Println(hint.Data)
 				log.Println(tableCol)
-				log.Println(hint.Data[tableCol])
+				log.Println(hint.Data[col])
 
 				if hint.Data[col] == nil {
 
