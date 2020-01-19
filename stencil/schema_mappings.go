@@ -85,6 +85,16 @@ func test5() {
 
 }
 
+func test6() {
+
+	fromAttr := "#REF(#ASSIGN(messages.id),messages.id)"
+
+	procAttr := schema_mappings.RemoveASSIGNAllRightParenthesesIfExists(fromAttr)
+
+	log.Println(procAttr)
+
+}
+
 func main() {
 
 	// migrationID := 955012936
@@ -106,4 +116,5 @@ func main() {
 
 	test5()
 
+	// test6()
 }

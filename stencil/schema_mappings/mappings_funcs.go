@@ -10,12 +10,40 @@ import (
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
+func removeREF(data string) string {
+
+	tmp := strings.Replace(data, "#ASSIGN(", "", -1)
+
+	return tmp
+}
+
 // Return the first argument of #REF
-func getFirstArgFromREF(ref string) string {
+func oldGetFirstArgFromREF(ref string) string {
 
 	tmp := strings.Split(ref, "#REF(")
 	
 	return strings.Split(tmp[1], ",")[0]
+
+}
+
+// Return the first argument of #REF
+func getFirstArgFromREF(ref string) string {
+
+	tmp := strings.Split(ref, ",")
+	
+	return tmp[0]
+
+}
+
+func getThirdArgFromREFIfExists(ref string) string {
+
+	tmp := strings.Split(ref, ",")
+
+	if len(tmp) == 3 {
+		return tmp[2]
+	} else {
+		return ""
+	}
 
 }
 
@@ -55,7 +83,9 @@ func GetToAppMappings(allMappings *config.SchemaMappings,
 	return &config.MappedApp{}, MappingsToAppNotFound
 }
 
-func removeASSIGNIfExists(data string) string {
+// For example: #REF(#ASSIGN(messages.id),messages.id)
+// will become #REF(messages.id,messages.id
+func RemoveASSIGNAllRightParenthesesIfExists(data string) string {
 
 	if strings.Contains(data, "#ASSIGN(") {
 
@@ -72,6 +102,84 @@ func removeASSIGNIfExists(data string) string {
 		return data
 	}
 
+}
+
+func oldGetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
+		fromApp, fromTable, fromAttr,
+		toApp, toTable string, ignoreREF bool) ([]string, error) {
+
+	var attributes []string
+
+	// In the case: diaspora posts posts.id mastodon statuses
+	// there are two ids in the result if we don't use uniqueAttrs
+	// because posts are mapped to statuses in two different conditions: 
+	// "posts.type": "StatusMessage" and "posts.type": "Reshare"
+	uniqueAttrs := make(map[string]bool)
+
+	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
+
+	toAppMappings, err := GetToAppMappings(allMappings, fromApp, toApp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	for _, mapping := range toAppMappings.Mappings {
+		for _, fTable := range mapping.FromTables {
+			
+			// fromTable
+			if fTable == fromTable {
+				for _, tTable := range mapping.ToTables {
+					
+					// toTable
+					if tTable.Table == toTable {
+						// log.Println(tTable)
+						for tAttr, fAttr := range tTable.Mapping {
+							// fromAttr
+
+							fAttr = RemoveASSIGNAllRightParenthesesIfExists(fAttr)
+
+							// If not ignore #REF
+							if !ignoreREF {
+
+								// If there exists #REF
+								if containREF(fAttr) {
+									fAttr = getFirstArgFromREF(fAttr)
+
+									if fAttr == fromAttr {
+										uniqueAttrs[tAttr] = true
+									}
+								}
+
+							} else {
+
+								// If there does not exist #REF
+								if !containREF(fAttr) {
+
+									if fAttr == fromAttr {
+										uniqueAttrs[tAttr] = true
+									}
+								}
+							}									
+							
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for attr := range uniqueAttrs {
+		attributes = append(attributes, attr)
+	}
+
+	if len(attributes) == 0 {
+
+		return nil, NoMappedAttrFound
+	
+	} else {
+
+		return attributes, nil
+	}
 }
 
 func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
@@ -106,17 +214,28 @@ func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
 						for tAttr, fAttr := range tTable.Mapping {
 							// fromAttr
 
-							fAttr = removeASSIGNIfExists(fAttr)
+							fAttr = RemoveASSIGNAllRightParenthesesIfExists(fAttr)
 
 							// If not ignore #REF
 							if !ignoreREF {
 
 								// If there exists #REF
 								if containREF(fAttr) {
-									fAttr = getFirstArgFromREF(fAttr)
 
-									if fAttr == fromAttr {
-										uniqueAttrs[tAttr] = true
+									fAttr = removeREF(fAttr)
+
+									firstArg := getFirstArgFromREF(fAttr)
+
+									if firstArg == fromAttr {
+										
+										thirdArg := getThirdArgFromREFIfExists(fAttr)
+
+										if thirdArg != "" {
+											uniqueAttrs[tAttr] = true
+										} else {
+											
+										}
+										
 									}
 								}
 
@@ -217,7 +336,7 @@ func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp,
 
 						firstArg := getFirstArgFromREF(mappedAttr)
 
-						firstArg = removeASSIGNIfExists(firstArg)
+						firstArg = RemoveASSIGNAllRightParenthesesIfExists(firstArg)
 						
 						firstArgs[firstArg] = true
 
