@@ -1,17 +1,17 @@
 {
     "tags": [
         {
-            "name" : "root",
-            "members" : {
+            "name":"root",
+            "members": {
                 "member1":"accounts",
                 "member2":"users",
                 "member3":"account_stats"
             },
-            "keys":{
+            "keys": {
                 "root_id":"member1.id",
                 "id":"member1.id"
             },
-            "inner_dependencies" : [
+            "inner_dependencies": [
                 {
                     "member1.id":"member2.account_id"
                 },
@@ -19,11 +19,11 @@
                     "member1.id":"member3.account_id"
                 }
             ],
-            "display_setting": "display_based_on_inner_dependencies"
+            "display_setting":"display_based_on_inner_dependencies"
         },
         {
-            "name" : "statuses",
-            "members" : {
+            "name":"statuses",
+            "members": {
                 "member1":"statuses",
                 "member2":"status_stats",
                 "member3":"mentions",
@@ -71,7 +71,8 @@
             },
             "keys": {
                 "id": "member1.id", 
-                "account_id": "member1.account_id" 
+                "account_id": "member1.account_id",
+                "target_account_id": "member1.target_account_id" 
             }
         },
         {
@@ -117,7 +118,6 @@
                         {   "tag_attr": "reply",
                             "depends_on_attr": "id"
                         }
-                    
                     ],
                     "display_existence": "reply",
                     "display_setting": "parent_node_not_displays_with_check"
@@ -154,6 +154,47 @@
                     "display_setting": "parent_node_partially_displays"
                 }
             ]
+        },
+        {
+            "tag": "follows",
+            "depends_on": [
+                {
+                    "tag": "root",
+                    "conditions": [
+                        {   
+                            "tag_attr": "target_account_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
+                }
+            ]
+        },
+        {
+            "tag": "notifications",
+            "depends_on" : [
+                {
+                    "tag": "statuses",
+                    "conditions": [
+                        {
+                            "tag_attr": "activity_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
+                },
+                {
+                    "tag": "root",
+                    "conditions": [
+                        {
+                            "tag_attr": "from_account_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
+                }
+            ],
+            "combined_display_setting":"statuses and root"
         }
     ],
     "ownership": [
@@ -165,7 +206,8 @@
                     "tag_attr":"account",
                     "depends_on_attr":"id"
                 }
-            ]
+            ],
+            "display_setting": "parent_node_partially_displays"
         },
         {
             "tag": "media_attachments",
@@ -175,7 +217,8 @@
                     "tag_attr":"account_id",
                     "depends_on_attr":"id"
                 }
-            ]
+            ],
+            "display_setting": "parent_node_partially_displays"
         },
         {
             "tag":"follows",
@@ -185,7 +228,8 @@
                     "tag_attr":"account_id",
                     "depends_on_attr":"id"
                 }
-            ]
+            ],
+            "display_setting": "parent_node_partially_displays"
         },
         {
             "tag":"notifications",
@@ -195,7 +239,8 @@
                     "tag_attr":"from_account_id",
                     "depends_on_attr":"id"
                 }
-            ]
+            ],
+            "display_setting": "parent_node_partially_displays"
         },
         {
             "tag":"favourites",
@@ -205,7 +250,8 @@
                     "tag_attr":"account_id",
                     "depends_on_attr":"id"
                 }
-            ]
+            ],
+            "display_setting": "parent_node_partially_displays"
         }
     ]
 }

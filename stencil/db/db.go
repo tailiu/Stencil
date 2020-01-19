@@ -75,6 +75,20 @@ func CloseDBConn(app string) {
 	}
 }
 
+func GetRowCount(dbConn *sql.DB, table string) (int64, error) {
+	sql := fmt.Sprintf("SELECT COUNT(*) as total_rows from %s", table)
+	if result, err := DataCall1(dbConn, sql); err == nil {
+		if val, ok := result["total_rows"]; ok {
+			return val.(int64), nil
+		}
+		log.Fatal("db.GetRowCount: Can't find total row count for table: ", table)
+		return -1, err
+	} else {
+		log.Fatal("db.GetRowCount:  ", err)
+		return -1, err
+	}
+}
+
 func GetAppIDByAppName(dbConn *sql.DB, app string) string {
 	sql := fmt.Sprintf("SELECT pk from apps WHERE app_name = '%s'", app)
 	if result, err := DataCall1(dbConn, sql); err == nil {
@@ -128,7 +142,7 @@ func UpdateTx(tx *sql.Tx, query string, args ...interface{}) error {
 }
 
 func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...interface{}) (int, error) {
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id;", table, cols, placeholders)
+	query := fmt.Sprintf("INSERT INTO %s (%s, display_flag) VALUES (%s, true) RETURNING id;", table, cols, placeholders)
 	lastInsertId := -1
 	err := tx.QueryRow(query, args...).Scan(&lastInsertId)
 	if err != nil || lastInsertId == -1 {
@@ -187,9 +201,24 @@ func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id string, dat
 	return err
 }
 
+func GetRowsFromIDTableByTo(dbConn *sql.DB, app, member, id string) ([]map[string]interface{}, error) {
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
+	return DataCall(dbConn, query, app, member, id)
+}
+
+func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id string) ([]map[string]interface{}, error) {
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
+	return DataCall(dbConn, query, app, member, id)
+}
+
 func GetBagsV2(dbConn *sql.DB, user_id string, migration_id int) ([]map[string]interface{}, error) {
 	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND migration_id != $2"
 	return DataCall(dbConn, query, user_id, migration_id)
+}
+
+func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id string, migration_id int) (map[string]interface{}, error) {
+	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND app = $2 AND member = $3 and id = $4 AND migration_id != $5"
+	return DataCall1(dbConn, query, user_id, app, member, id, migration_id)
 }
 
 func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference string) error {
@@ -817,6 +846,21 @@ func GetTablesOfDB(dbConn *sql.DB, app string) []string {
 	return tables
 }
 
+func TxnExecute1(dbConn *sql.DB, query string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(query); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func TxnExecute(dbConn *sql.DB, queries []string) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -833,7 +877,6 @@ func TxnExecute(dbConn *sql.DB, queries []string) error {
 
 	tx.Commit()
 	return nil
-
 }
 
 func SaveForEvaluation(dbConn *sql.DB, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID string) error {

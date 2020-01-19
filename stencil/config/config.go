@@ -59,7 +59,8 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 	return appConfig, nil
 }
 
-func CreateAppConfigDisplay(app, app_id string, stencilDBConn *sql.DB, newDB bool) (AppConfig, error) {
+func CreateAppConfigDisplay(
+	app, app_id string, stencilDBConn *sql.DB, newDB bool) (AppConfig, error) {
 
 	var appConfig AppConfig
 	var dconfig string
@@ -69,10 +70,17 @@ func CreateAppConfigDisplay(app, app_id string, stencilDBConn *sql.DB, newDB boo
 		log.Fatal(err)
 	}
 
+	// if strings.Contains(dir, "/stencil/") {
+	// 	dconfig = "../config/dependencies/" + app + "_display.json"
+	// } else {
+	// 	dconfig = "./config/dependencies/" + app + "_display.json"
+	// }
+
+	// Use the combined display and migration dependency files
 	if strings.Contains(dir, "/stencil/") {
-		dconfig = "../config/dependencies/" + app + "_display.json"
+		dconfig = "../config/dependencies/" + app + ".json"
 	} else {
-		dconfig = "./config/dependencies/" + app + "_display.json"
+		dconfig = "./config/dependencies/" + app + ".json"
 	}
 
 	jsonFile, err := os.Open(dconfig)

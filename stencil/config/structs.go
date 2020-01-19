@@ -25,8 +25,8 @@ type SchemaMapping struct {
 
 type MappedApp struct {
 	Name     string              `json:"name"`
-	Methods  []map[string]string `json:"methods"`
-	Inputs   []map[string]string `json:"inputs"`
+	Methods  []map[string]string `json:"methods,omitempty"`
+	Inputs   []map[string]string `json:"inputs,omitempty"`
 	Mappings []Mapping           `json:"mappings"`
 }
 
@@ -36,11 +36,12 @@ type Mapping struct {
 }
 
 type ToTable struct {
-	Table      string            `json:"table"`
-	Conditions map[string]string `json:"conditions"`
-	Mapping    map[string]string `json:"mapping"`
-	Media	   map[string]string `json:"media"`
-	TableID    string
+	Table      		string            `json:"table"`
+	Conditions 		map[string]string `json:"conditions,omitempty"`
+	NotUsedInPSM  	bool			  `json:"notUsedInPSM,omitempty"`
+	Mapping    		map[string]string `json:"mapping"`
+	Media	   		map[string]string `json:"media,omitempty"`
+	TableID    		string			  `json:"-"`
 }
 
 /****************** App Config Structs ***********************/
@@ -52,9 +53,17 @@ type App struct {
 type DisplayConfig struct {
 	AppConfig			*AppConfig
 	StencilDBConn 		*sql.DB
-	AttrIDNamePairs		map[string]string
 	AppIDNamePairs		map[string]string
+	TableIDNamePairs	map[string]string
+	AttrIDNamePairs		map[string]string
+	DstAttrNameIDPairs	map[string]string
 	MigrationID			int
+	SrcAppName			string
+	SrcAppID			string
+	AllMappings			*SchemaMappings
+	MappingsToDst 		*MappedApp
+	ResolveReference	bool
+	UserID				string
 }
 
 type AppConfig struct {
@@ -71,9 +80,10 @@ type AppConfig struct {
 }
 
 type Ownership struct {
-	Tag        string       `json:"tag"`
-	OwnedBy    string       `json:"owned_by"`
-	Conditions []DCondition `json:"conditions"`
+	Tag        		  string       		  `json:"tag"`
+	OwnedBy    		  string       		  `json:"owned_by"`
+	Conditions 		  []DCondition 		  `json:"conditions"`
+	Display_setting   string              `json:"display_setting"`
 }
 
 type Tag struct {

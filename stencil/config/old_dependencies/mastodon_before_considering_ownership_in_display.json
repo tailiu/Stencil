@@ -1,0 +1,211 @@
+{
+    "tags": [
+        {
+            "name" : "root",
+            "members" : {
+                "member1":"accounts",
+                "member2":"users",
+                "member3":"account_stats"
+            },
+            "keys":{
+                "root_id":"member1.id",
+                "id":"member1.id"
+            },
+            "inner_dependencies" : [
+                {
+                    "member1.id":"member2.account_id"
+                },
+                {
+                    "member1.id":"member3.account_id"
+                }
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
+        },
+        {
+            "name" : "statuses",
+            "members" : {
+                "member1":"statuses",
+                "member2":"status_stats",
+                "member3":"mentions",
+                "member5":"stream_entries",
+                "member6":"conversations"
+            },
+            "keys": {
+                "conversation_id":"member1.conversation_id",
+                "id":"member1.id",
+                "reply":"member1.in_reply_to_id",
+                "reblog":"member1.reblog_of_id",
+                "account":"member1.account_id",
+                "activity_id": "member5.activity_id"
+            },
+            "inner_dependencies":[
+                {
+                    "member1.id":"member2.status_id"
+                },
+                {
+                    "member1.id":"member3.status_id"
+                },
+                {
+                    "member1.id":"member5.activity_id"
+                },
+                {
+                    "member1.conversation_id":"member6.id"
+                }
+            ],
+            "display_setting": "display_based_on_inner_dependencies"
+        },
+        {
+            "name": "media_attachments",
+            "members": {
+                "member1":"media_attachments"
+            },
+            "keys":{
+                "status_id": "member1.status_id",
+                "account_id":"member1.account_id"
+            }
+        },
+        {
+            "name" : "follows",
+            "members" : {
+                "member1": "follows"
+            },
+            "keys": {
+                "id": "member1.id", 
+                "account_id": "member1.account_id" 
+            }
+        },
+        {
+            "name" : "favourites",
+            "members" : {
+                "member1": "favourites"
+            },
+            "keys": {
+                "status_id": "member1.status_id",
+                "account_id":"member1.account_id"
+            }
+        },
+        {
+            "name": "notifications",
+            "members" : {
+                "member1": "notifications"
+            },
+            "keys": {
+                "account_id": "member1.account_id",
+                "from_account_id": "member1.from_account_id"
+            }
+        }
+    ],
+	"dependencies": [
+        {
+            "tag": "statuses",
+            "depends_on": [
+                {
+                    "tag":"statuses",
+                    "as": "S1",
+                    "conditions":[
+                        {   "tag_attr": "reblog",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_existence": "reblog",
+                    "display_setting": "parent_node_not_displays_with_check"
+                },
+                {
+                    "tag":"statuses",
+                    "as": "S2",
+                    "conditions":[
+                        {   "tag_attr": "reply",
+                            "depends_on_attr": "id"
+                        }
+                    
+                    ],
+                    "display_existence": "reply",
+                    "display_setting": "parent_node_not_displays_with_check"
+                }
+            ],
+            "combined_display_setting":"S1 or S2"
+        },
+        {
+            "tag": "media_attachments",
+            "depends_on": [
+                {
+                    "tag": "statuses",
+                    "conditions": [
+                        {   
+                            "tag_attr": "status_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
+                }
+            ]
+        },
+        {
+            "tag": "favourites",
+            "depends_on": [
+                {
+                    "tag": "statuses",
+                    "conditions": [
+                        {
+                            "tag_attr": "status_id",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
+                }
+            ]
+        }
+    ],
+    "ownership": [
+        {
+            "tag":"statuses",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag": "media_attachments",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"follows",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"notifications",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"from_account_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"favourites",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"account_id",
+                    "depends_on_attr":"id"
+                }
+            ]
+        }
+    ]
+}

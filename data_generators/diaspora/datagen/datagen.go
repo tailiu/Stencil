@@ -41,7 +41,7 @@ func FindIndexInUserListByPersonID(users []*User, Person_ID int) int {
 	return -1
 }
 
-func NewUser(dbConn *sql.DB) (int, int, []int) {
+func NewUser(dbConn *sql.DB) (int, int, []int, error) {
 
 	// log.Println("Creating new user!")
 
@@ -99,11 +99,14 @@ func NewUser(dbConn *sql.DB) (int, int, []int) {
 	// sql = "UPDATE users SET updated_at = $1, last_seen = $2 WHERE users.id = $3 "
 	// db.RunTxWQnArgs(tx, sql, time.Now(), time.Now(), user_id)
 
-	tx.Commit()
-
 	// log.Println("New user created with id", user_id)
 
-	return user_id, person_id, aspect_ids
+	if err1 := tx.Commit(); err1 != nil {
+		return -1, -1, nil, err1 
+	} else {
+		return user_id, person_id, aspect_ids, nil
+	}
+ 
 }
 
 func NewPost(dbConn *sql.DB, user_id, person_id int, aspect_ids []int) int {

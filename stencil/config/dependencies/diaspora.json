@@ -246,8 +246,18 @@
                       ]
                    }
                 ]
-             }
-          ]
+			},
+			{
+				"tag": "root",
+				"conditions": [
+					{
+						"tag_attr": "recipient_id",
+						"depends_on_attr": "person_id"
+					}
+				]
+			}
+		],
+		"combined_display_setting":"post and root"
        },
        {
           "tag":"like",

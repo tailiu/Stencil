@@ -2,16 +2,20 @@ package reference_resolution
 
 import (
 	"stencil/db"
-	"stencil/config"
-	"stencil/app_display"
-	"strconv"
 	"fmt"
 	"log"
 )
 
-func createIdentity(app, member, id string) *identity {
+/*
+ * This new identity file aims to generalize reference resolution to different migrations
+ * The functions here DO NOT consider migration id and GetPreviousID DOES NOT restrict
+ * from app and from member
+ */
+
+// app, member, id are all integer corresponding to names
+func CreateIdentity(app, member, id string) *Identity {
 	
-	ID := &identity{
+	ID := &Identity{
 		app: 	app,
 		member:	member,
 		id:		id,
@@ -20,18 +24,16 @@ func createIdentity(app, member, id string) *identity {
 	return ID
 }
 
-func transformHintToIdenity(displayConfig *config.DisplayConfig, hint *app_display.HintStruct) *identity {
+func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig, 
+	ID *Identity) []map[string]interface{} {
 
-	return createIdentity(displayConfig.AppConfig.AppID, hint.TableID, strconv.Itoa(hint.KeyVal["id"]))
-
-}
-
-func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, ID *identity) []map[string]interface{} {
-
-	query := fmt.Sprintf("SELECT * FROM identity_table WHERE to_app = %s and to_member = %s and to_id = %s and migration_id = %d",
-		ID.app, ID.member, ID.id, displayConfig.MigrationID)
+	query := fmt.Sprintf(`SELECT * FROM identity_table 
+		WHERE to_app = %s and to_member = %s and to_id = %s`,
+		ID.app, ID.member, ID.id)
 	
-	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	log.Println(query)
+
+	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,13 +44,14 @@ func getRowsFromIDTableByTo(displayConfig *config.DisplayConfig, ID *identity) [
 
 }
 
-
-func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig, ID *identity) []map[string]interface{} {
+func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig, 
+	ID *Identity) []map[string]interface{} {
 	
-	query := fmt.Sprintf("SELECT * FROM identity_table WHERE from_app = %s and from_member = %s and from_id = %s and migration_id = %d",
-		ID.app, ID.member, ID.id, displayConfig.MigrationID)
+	query := fmt.Sprintf(`SELECT * FROM identity_table 
+		WHERE from_app = %s and from_member = %s and from_id = %s`,
+		ID.app, ID.member, ID.id)
 
-	data, err := db.DataCall(displayConfig.StencilDBConn, query)
+	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,35 +62,73 @@ func getRowsFromIDTableByFrom(displayConfig *config.DisplayConfig, ID *identity)
 
 }
 
-func forwardTraverseIDTable(displayConfig *config.DisplayConfig, ID, orginalID *identity, dstAppID string) []*identity {
+func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig, 
+	ID, orginalID *Identity) []*Identity {
 	
-	var res []*identity
+	var res []*Identity
 
-	IDRows := getRowsFromIDTableByFrom(displayConfig, ID)
+	IDRows := getRowsFromIDTableByFrom(refResolutionConfig, ID)
 	// log.Println(IDRows)
 
 	for _, IDRow := range IDRows {
 		
 		procIDRow := transformInterfaceToString(IDRow)
 
-		nextData := createIdentity(procIDRow["to_app"], procIDRow["to_member"], procIDRow["to_id"],)
+		nextData := CreateIdentity(
+			procIDRow["to_app"], 
+			procIDRow["to_member"], 
+			procIDRow["to_id"])
 
-		res = append(res, forwardTraverseIDTable(displayConfig, nextData, orginalID, dstAppID)...)
+		res = append(res, forwardTraverseIDTable(refResolutionConfig, nextData, orginalID)...)
 
 	}
 
 	if len(IDRows) == 0 {
 
-		if ID.app == dstAppID && ID.member != orginalID.member && ID.id != orginalID.id {
+		// We don't need to test ID.id != orginalID.id becaseu as long as
+		// ID.member != orginalID.member, this means that 
+		// this is different from the original row. 
+		// ID.id may be the same as orginalID.id in the scenario in which
+		// migration does not change ids.
+		// We don't find the cases in which ID.member == orginalID.member but 
+		// ID.id != orginalID.id, however this may happen..
+		// Before changing:
+		// if ID.app == refResolutionConfig.AppConfig.AppID && 
+		// 	ID.member != orginalID.member && ID.id != orginalID.id {
+		if ID.app == refResolutionConfig.appID && 
+			(ID.member != orginalID.member || ID.id != orginalID.id) {
 			
-			resData := createIdentity(ID.app, ID.member, ID.id)
+			resData := CreateIdentity(ID.app, ID.member, ID.id)
 
 			res = append(res, resData)
-			
+
 		}
 
 	}
 
 	return res
+}
 
+func GetPreviousID(refResolutionConfig *RefResolutionConfig, 
+	ID *Identity) string {
+
+	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
+		WHERE to_app = %s and to_member = %s and to_id = %s`,
+		ID.app, ID.member, ID.id)
+	
+	// log.Println(query)
+
+	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(data)
+
+	if data["from_id"] == nil {
+		return ""
+	} else {
+		return fmt.Sprint(data["from_id"])
+	}
+	
 }

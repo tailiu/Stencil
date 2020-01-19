@@ -11,6 +11,41 @@ def getDB(dbname, blade=False, autocommit=False):
     cursor = conn.cursor()
     return conn, cursor
 
+def dropFK(dbname, blade):
+    conn, cur = getDB(dbname, blade)
+    fkq = '''
+                select kcu.table_schema || '.' || kcu.table_name as foreign_table,
+                    '>-' as rel,
+                    rel_kcu.table_schema || '.' || rel_kcu.table_name as primary_table,
+                    kcu.ordinal_position as no,
+                    kcu.column_name as fk_column,
+                    '=' as join,
+                    rel_kcu.column_name as pk_column,
+                    kcu.constraint_name
+                from information_schema.table_constraints tco
+                join information_schema.key_column_usage kcu
+                        on tco.constraint_schema = kcu.constraint_schema
+                        and tco.constraint_name = kcu.constraint_name
+                join information_schema.referential_constraints rco
+                        on tco.constraint_schema = rco.constraint_schema
+                        and tco.constraint_name = rco.constraint_name
+                join information_schema.key_column_usage rel_kcu
+                        on rco.unique_constraint_schema = rel_kcu.constraint_schema
+                        and rco.unique_constraint_name = rel_kcu.constraint_name
+                        and kcu.ordinal_position = rel_kcu.ordinal_position
+                where tco.constraint_type = 'FOREIGN KEY'
+                order by kcu.table_schema,
+                        kcu.table_name,
+                        kcu.ordinal_position;
+        '''
+    cur.execute(fkq)
+    
+    for row in cur.fetchall():
+        q = 'ALTER TABLE %s DROP CONSTRAINT %s;'%(row[0], row[-1])
+        # print q
+        cur.execute(q)
+    conn.commit()
+
 def truncatePhysicalTables():
     conn, cur = getDB("stencil", blade=False)
     tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
@@ -111,7 +146,7 @@ def DropAndRecreateDB(app):
     q = "DROP DATABASE %s;"%app
     print q
     cur.execute(q)
-    q = "CREATE DATABASE %s WITH TEMPLATE %s_backup OWNER cow;"%(app,app)
+    q = "CREATE DATABASE %s WITH TEMPLATE %s_1000000 OWNER cow;"%(app,app)
     print q
     cur.execute(q)
 
@@ -120,18 +155,19 @@ if __name__ == "__main__":
         print "provide an argument (phy, log, row, all, both), exiting."
     else:
         arg = sys.argv[1]
-        if arg in ["phy", "all"]:
+        if arg in ["phy", "all", "trunc_phy"]:
             truncatePhysicalTables()
         if arg in ["log", "row", "all", "both"]:
-            truncateTableFromStencil("migration_registration")
-            truncateTableFromStencil("evaluation")
-            truncateTableFromStencil("display_flags")
-            truncateTableFromStencil("txn_logs")
-            truncateTableFromStencil("reference_table")
-            truncateTableFromStencil("identity_table")
-            truncateTableFromStencil("data_bags")
+            # truncateTableFromStencil("migration_registration")
+            # truncateTableFromStencil("evaluation")
+            # truncateTableFromStencil("display_flags")
+            # truncateTableFromStencil("txn_logs")
+            # truncateTableFromStencil("reference_table")
+            # truncateTableFromStencil("identity_table")
+            # truncateTableFromStencil("data_bags")
             if arg in ["log", "all", "both"]:
                 DropAndRecreateDB("diaspora")
                 truncate("mastodon", blade=True)
+                dropFK("mastodon", blade=True)
             if arg in ["row", "all", "both"]:
                 resetRowDesc()

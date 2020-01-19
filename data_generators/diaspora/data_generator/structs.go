@@ -4,6 +4,11 @@ import (
 	"database/sql"
 )
 
+// If ALPHA >= 1.0, the bigger ALPHA is, the flat the distribution is
+// If 0 < ALPHA < 1.0, the bigger ALPHA is, the flat the distribution is 
+
+// const ALPHA = 2.0 (old)
+// const XM = 0.2 (old)
 const ALPHA = 2.0
 const XM = 0.2
 
