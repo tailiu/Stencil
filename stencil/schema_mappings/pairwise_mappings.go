@@ -132,14 +132,9 @@ func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 	// One such permutation and combination is one path
 	mappingsPaths := getMappingsPaths(apps)
 
-	log.Println(mappingsPaths)
-	fmt.Println()
-
 	// checkedMappingsPaths contains checked and constructed paths
 	// it does not contain checked but not constructed paths
 	// due to missing mappings from one app to another app
-	var checkedMappingsPaths [][]string
-
 
 	// Checking paths from short to long seems to be better than the other way around
 	// because longer paths probably lead to fewer results and using the fewer results
@@ -147,21 +142,35 @@ func DeriveMappingsByPSM() (*config.SchemaMappings, error) {
 	// Actually checking order matters!!!
 	// This can be researched in the future
 	// for i := len(mappingsPaths) - 1; i > -1; i-- {
-	for i := 0; i < len(mappingsPaths); i++ {
+	
+	times := 500
+	
+	for j := 0; j < times; j++ {
 
-		mappingsPath := mappingsPaths[i]
+		shuffleSlice(mappingsPaths)
+		
+		log.Println("Shuffle", j + 1, "time(s)")
+		log.Println(mappingsPaths)
+		fmt.Println()
+		
+		var checkedMappingsPaths [][]string
 
-		if !isAlreadyChecked(mappingsPath, checkedMappingsPaths) {
+		for i := 0; i < len(mappingsPaths); i++ {
 
-			checkedMappingsPaths = addMappingsByPSMThroughOnePath(pairwiseMappings, 
-				mappingsPath, checkedMappingsPaths)
+			mappingsPath := mappingsPaths[i]
 
-		} else {
+			if !isAlreadyChecked(mappingsPath, checkedMappingsPaths) {
 
-			log.Println("Already checked:")
-			log.Println(mappingsPath)
+				checkedMappingsPaths = addMappingsByPSMThroughOnePath(pairwiseMappings, 
+					mappingsPath, checkedMappingsPaths)
+
+			} else {
+
+				log.Println("Already checked:")
+				log.Println(mappingsPath)
+			}
+
 		}
-
 	}
 
 	writeMappingsToFile(pairwiseMappings)

@@ -1,8 +1,8 @@
 package schema_mappings
 
-const INPUTFILEPATH = "./config/app_settings/PSM_test.json"
+const INPUTFILEPATH = "./schema_mappings/PSM_tests/PSM_test.json"
 
-const OUTPUTFILEPATH = "./config/app_settings/PSM_mappings.json"
+const OUTPUTFILEPATH = "./schema_mappings/PSM_tests/PSM_mappings.json"
 
 type conditionsNotConsidered struct {
 	fromApp			string

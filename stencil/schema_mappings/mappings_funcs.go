@@ -7,6 +7,8 @@ import (
 	"os"
 	"io/ioutil"
 	"encoding/json"
+	"math/rand"
+	"time"
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
@@ -656,5 +658,15 @@ func isAlreadyChecked(mappingsPathToBeChecked []string, checkedMappingsPaths [][
 	}
 
 	return false
+
+}
+
+func shuffleSlice(s [][]string) {
+	
+	rand.Seed(time.Now().UnixNano())
+	
+	rand.Shuffle(len(s), func(i, j int) { 
+		s[i], s[j] = s[j], s[i] 
+	})
 
 }
