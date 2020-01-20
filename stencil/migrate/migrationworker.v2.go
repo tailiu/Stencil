@@ -17,7 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateMigrationWorkerV2WithAppsConfig(uid string, logTxn *transaction.Log_txn, mtype string, srcAppConfig, dstAppConfig config.AppConfig) MigrationWorkerV2 {
+func CreateMigrationWorkerV2WithAppsConfig(uid string, logTxn *transaction.Log_txn, mtype string, srcAppConfig, dstAppConfig config.AppConfig, threadID int) MigrationWorkerV2 {
 	mappings := config.GetSchemaMappingsFor(srcAppConfig.AppName, dstAppConfig.AppName)
 	if mappings == nil {
 		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcAppConfig.AppName, dstAppConfig.AppName))
@@ -37,7 +37,7 @@ func CreateMigrationWorkerV2WithAppsConfig(uid string, logTxn *transaction.Log_t
 		mtype:        mtype,
 		FTPClient:    GetFTPClient(),
 		visitedNodes: make(map[string]map[string]bool)}
-	if err := mWorker.FetchRoot(); err != nil {
+	if err := mWorker.FetchRoot(threadID); err != nil {
 		log.Fatal(err)
 	}
 	return mWorker
@@ -311,10 +311,6 @@ func (self *MigrationWorkerV2) FetchRoot(threadID int) error {
 		sql += self.ResolveRestrictions(root)
 		if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
 			self.root = &DependencyNode{Tag: root, SQL: sql, Data: data}
-			if err := self.CallHandleMigration(self.root, threadID); err != nil {
-				log.Fatal("Can't migrate root:", err)
-				return err
-			}
 		} else {
 			if err == nil {
 				err = errors.New("no data returned for root node, doesn't exist?")
@@ -728,7 +724,8 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 				} else {
 					args := strings.Split(assignedTabCol, ",")
 					if nodeVal, ok := node.Data[args[0]]; ok {
-						data.UpdateData(toAttr, assignedTabCol, "", nodeVal)
+						argsTokens := strings.Split(args[0], ".")
+						data.UpdateData(toAttr, assignedTabCol, argsTokens[0], nodeVal)
 					}
 					var toID, fromID string
 
@@ -1530,7 +1527,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int) error {
 				log.Fatal(err)
 			}
 		}
-		bagWorker := CreateMigrationWorkerV2WithAppsConfig(self.uid, self.logTxn, self.mtype, self.SrcAppConfig, bagAppConfig)
+		bagWorker := CreateMigrationWorkerV2WithAppsConfig(self.uid, self.logTxn, self.mtype, self.SrcAppConfig, bagAppConfig, threadID)
 		bagTag, err := bagAppConfig.GetTagByMember(srcMember)
 		if err != nil {
 			log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO GET BAG TAG BY MEMBER : %s | %s", threadID, srcMember, err))
@@ -1602,30 +1599,68 @@ func (self *MigrationWorkerV2) CommitTransactions() error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) CallHandleMigration(node *DependencyNode, threadID int) error {
-	if err := self.HandleMigration(node, false); err == nil {
-		log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-	} else {
-		if strings.EqualFold(err.Error(), "3") {
-			log.Println(fmt.Sprintf("x%2dx UNMAPPED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-		} else if strings.EqualFold(err.Error(), "2") {
-			log.Println(fmt.Sprintf("x%2dx Sent2Bag  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-		} else {
-			log.Println(fmt.Sprintf("x%2dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
-			if strings.EqualFold(err.Error(), "0") {
-				log.Println(err)
-				return err
-			}
+func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int) error {
+
+	if ownerID, isRoot := self.GetNodeOwner(node); isRoot && len(ownerID) > 0 {
+		if err := self.InitTransactions(); err != nil {
 			return err
-			// if strings.Contains(err.Error(), "deadlock") {
-			// 	return err
-			// }
+		} else {
+			defer self.tx.SrcTx.Rollback()
+			defer self.tx.DstTx.Rollback()
+			defer self.tx.StencilTx.Rollback()
 		}
+
+		if err := self.CheckNextNode(node); err != nil {
+			return err
+		}
+
+		if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
+			for _, previousNode := range previousNodes {
+				self.AddToReferences(node, previousNode)
+			}
+		} else {
+			return err
+		}
+
+		if err := self.HandleMigration(node, false); err == nil {
+			log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+		} else {
+			if strings.EqualFold(err.Error(), "3") {
+				log.Println(fmt.Sprintf("x%2dx UNMAPPED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+			} else if strings.EqualFold(err.Error(), "2") {
+				log.Println(fmt.Sprintf("x%2dx Sent2Bag  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+			} else {
+				log.Println(fmt.Sprintf("x%2dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				if strings.EqualFold(err.Error(), "0") {
+					log.Println(err)
+					return err
+				}
+				return err
+				// if strings.Contains(err.Error(), "deadlock") {
+				// 	return err
+				// }
+			}
+		}
+
+		if err := self.CommitTransactions(); err != nil {
+			return err
+		} else {
+			log.Println(fmt.Sprintf("x%2dx COMMITTED node { %s } ", threadID, node.Tag.Name))
+		}
+	} else {
+		log.Println(fmt.Sprintf("x%2dx VISITED   node { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
+		self.MarkAsVisited(node)
 	}
 	return nil
 }
 
 func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID int) error {
+
+	if strings.EqualFold(node.Tag.Name, "root") {
+		if err := self.CallMigration(node, threadID); err != nil {
+			return err
+		}
+	}
 
 	for {
 		if adjNode, err := self.GetAdjNode(node, threadID); err != nil {
@@ -1650,42 +1685,11 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 	if strings.EqualFold(node.Tag.Name, "root") {
 		return self.DeleteRoot()
 	} else {
-
-		if ownerID, isRoot := self.GetNodeOwner(node); isRoot && len(ownerID) > 0 {
-			if err := self.InitTransactions(); err != nil {
-				return err
-			} else {
-				defer self.tx.SrcTx.Rollback()
-				defer self.tx.DstTx.Rollback()
-				defer self.tx.StencilTx.Rollback()
-			}
-
-			if err := self.CheckNextNode(node); err != nil {
-				return err
-			}
-
-			if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
-				for _, previousNode := range previousNodes {
-					self.AddToReferences(node, previousNode)
-				}
-			} else {
-				return err
-			}
-
-			if err := self.CallHandleMigration(node, threadID); err != nil {
-				return err
-			}
-
-			if err := self.CommitTransactions(); err != nil {
-				return err
-			} else {
-				log.Println(fmt.Sprintf("x%2dx COMMITTED node { %s } ", threadID, node.Tag.Name))
-			}
-		} else {
-			log.Println(fmt.Sprintf("x%2dx VISITED   node { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
-			self.MarkAsVisited(node)
+		if err := self.CallMigration(node, threadID); err != nil {
+			return err
 		}
 	}
+
 	fmt.Println("------------------------------------------------------------------------")
 
 	return nil

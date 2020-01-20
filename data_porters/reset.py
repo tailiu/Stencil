@@ -155,19 +155,19 @@ if __name__ == "__main__":
         print "provide an argument (phy, log, row, all, both), exiting."
     else:
         arg = sys.argv[1]
-        if arg in ["phy", "all", "trunc_phy"]:
+        if arg in ["phy", "all"]:
             truncatePhysicalTables()
         if arg in ["log", "row", "all", "both"]:
-            # truncateTableFromStencil("migration_registration")
-            # truncateTableFromStencil("evaluation")
-            # truncateTableFromStencil("display_flags")
-            # truncateTableFromStencil("txn_logs")
-            # truncateTableFromStencil("reference_table")
-            # truncateTableFromStencil("identity_table")
-            # truncateTableFromStencil("data_bags")
+            truncateTableFromStencil("migration_registration")
+            truncateTableFromStencil("evaluation")
+            truncateTableFromStencil("display_flags")
+            truncateTableFromStencil("txn_logs")
+            truncateTableFromStencil("reference_table")
+            truncateTableFromStencil("identity_table")
+            truncateTableFromStencil("data_bags")
             if arg in ["log", "all", "both"]:
-                DropAndRecreateDB("diaspora")
+                DropAndRecreateDB("diaspora_test")
                 truncate("mastodon", blade=True)
                 dropFK("mastodon", blade=True)
-            if arg in ["row", "all", "both"]:
-                resetRowDesc()
+            # if arg in ["row", "all", "both"]:
+            #     resetRowDesc()
