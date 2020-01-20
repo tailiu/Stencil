@@ -255,7 +255,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 		wg.Add(1)
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
-			mWorker := migrate.CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings)
+			mWorker := migrate.CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threadID)
 			switch mWorker.MType() {
 			case migrate.DELETION:
 				{
