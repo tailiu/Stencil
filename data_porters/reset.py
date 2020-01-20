@@ -166,7 +166,7 @@ if __name__ == "__main__":
             truncateTableFromStencil("identity_table")
             truncateTableFromStencil("data_bags")
             if arg in ["log", "all", "both"]:
-                DropAndRecreateDB("diaspora_test")
+                # DropAndRecreateDB("diaspora")
                 truncate("mastodon", blade=True)
                 dropFK("mastodon", blade=True)
             # if arg in ["row", "all", "both"]:
