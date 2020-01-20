@@ -12,20 +12,13 @@ import (
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
-func removeREF(data string) string {
+func removeREFAndParatheses(data string) string {
 
-	tmp := strings.Replace(data, "#ASSIGN(", "", -1)
+	tmp := strings.Replace(data, "#REF(", "", -1)
 
-	return tmp
-}
+	tmp1 := strings.Replace(tmp, ")", "", -1)
 
-// Return the first argument of #REF
-func oldGetFirstArgFromREF(ref string) string {
-
-	tmp := strings.Split(ref, "#REF(")
-	
-	return strings.Split(tmp[1], ",")[0]
-
+	return tmp1
 }
 
 // Return the first argument of #REF
@@ -45,6 +38,25 @@ func getThirdArgFromREFIfExists(ref string) string {
 		return tmp[2]
 	} else {
 		return ""
+	}
+
+}
+
+// For example, we have 
+// "#REF(#FETCH(posts.id,posts.guid,photos.status_message_guid),posts.id,statuses)"
+// to get "statuses"
+func getThirdArgFromREFContainingFETCHIfExists(ref string) string {
+
+	tmp1 := strings.Replace(ref, "#REF(#FETCH(", "", -1)
+
+	tmp2 := strings.Replace(tmp1, ")", "", -1)
+	
+	tmp3 := strings.Split(tmp2, ",")
+
+	if len(tmp3) != 5 {
+		return ""
+	} else {
+		return tmp3[4]
 	}
 
 }
@@ -106,16 +118,17 @@ func RemoveASSIGNAllRightParenthesesIfExists(data string) string {
 
 }
 
-func oldGetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
-		fromApp, fromTable, fromAttr,
-		toApp, toTable string, ignoreREF bool) ([]string, error) {
+func GetMappedAttributesToUpdateOthers(
+	allMappings *config.SchemaMappings,
+	fromApp, fromTable, fromAttr,
+	toApp, toTable string) ([]string, error) {
 
 	var attributes []string
 
 	// In the case: diaspora posts posts.id mastodon statuses
-	// there are two ids in the result if we don't use uniqueAttrs
-	// because posts are mapped to statuses in two different conditions: 
+	// since posts are mapped to statuses in two different conditions: 
 	// "posts.type": "StatusMessage" and "posts.type": "Reshare"
+	// there are two ids in the result if we don't use uniqueAttrs
 	uniqueAttrs := make(map[string]bool)
 
 	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
@@ -140,28 +153,13 @@ func oldGetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings
 
 							fAttr = RemoveASSIGNAllRightParenthesesIfExists(fAttr)
 
-							// If not ignore #REF
-							if !ignoreREF {
+							// If there does not exist #REF
+							if !containREF(fAttr) {
 
-								// If there exists #REF
-								if containREF(fAttr) {
-									fAttr = getFirstArgFromREF(fAttr)
-
-									if fAttr == fromAttr {
-										uniqueAttrs[tAttr] = true
-									}
+								if fAttr == fromAttr {
+									uniqueAttrs[tAttr] = true
 								}
-
-							} else {
-
-								// If there does not exist #REF
-								if !containREF(fAttr) {
-
-									if fAttr == fromAttr {
-										uniqueAttrs[tAttr] = true
-									}
-								}
-							}									
+							}
 							
 						}
 					}
@@ -171,7 +169,83 @@ func oldGetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings
 	}
 
 	for attr := range uniqueAttrs {
+
 		attributes = append(attributes, attr)
+
+	}
+
+	if len(attributes) == 0 {
+
+		return nil, NoMappedAttrFound
+	
+	} else {
+
+		return attributes, nil
+	}
+
+}
+
+func GetMappedAttributesToBeUpdated(
+	allMappings *config.SchemaMappings,
+	fromApp, fromTable, fromAttr,
+	toApp, toTable string) (map[string]string, error) {
+
+	attributes := make(map[string]string)
+
+	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
+
+	toAppMappings, err := GetToAppMappings(allMappings, fromApp, toApp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	for _, mapping := range toAppMappings.Mappings {
+		for _, fTable := range mapping.FromTables {
+			
+			// fromTable
+			if fTable == fromTable {
+				for _, tTable := range mapping.ToTables {
+					
+					// toTable
+					if tTable.Table == toTable {
+						// log.Println(tTable)
+						for tAttr, fAttr := range tTable.Mapping {
+							// fromAttr
+
+							fAttr = RemoveASSIGNAllRightParenthesesIfExists(fAttr)
+
+							// If there exists #REF
+							if containREF(fAttr) {
+
+								fAttr = removeREFAndParatheses(fAttr)
+
+								firstArg := getFirstArgFromREF(fAttr)
+
+								if firstArg == fromAttr {
+									
+									thirdArg := getThirdArgFromREFIfExists(fAttr)
+
+									if thirdArg != "" {
+										if _, ok := attributes[tAttr]; ok {
+											log.Fatal(duplicateToAttrWithThirdArg)
+										} else {
+											attributes[tAttr] = thirdArg
+										}
+									} else {
+										if _, ok := attributes[tAttr]; ok {
+											log.Fatal(duplicateToAttrWithoutThirdArg)
+										} else {
+											attributes[tAttr] = ""
+										}
+									}
+									
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if len(attributes) == 0 {
@@ -184,89 +258,68 @@ func oldGetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings
 	}
 }
 
-func GetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings,
-		fromApp, fromTable, fromAttr,
-		toApp, toTable string, ignoreREF bool) ([]string, error) {
+func GetMappedAttributesToBeUpdatedByFETCH(
+	allMappings *config.SchemaMappings,
+	fromApp, fromAttr, 
+	toApp, toTable string) (map[string]string, error) {
+	
+	attributes := make(map[string]string)
 
-	var attributes []string
-
-	// In the case: diaspora posts posts.id mastodon statuses
-	// there are two ids in the result if we don't use uniqueAttrs
-	// because posts are mapped to statuses in two different conditions: 
-	// "posts.type": "StatusMessage" and "posts.type": "Reshare"
-	uniqueAttrs := make(map[string]bool)
-
-	log.Println(fromApp, fromTable, fromAttr, toApp, toTable)
+	log.Println(fromApp, fromAttr, toApp, toTable)
 
 	toAppMappings, err := GetToAppMappings(allMappings, fromApp, toApp)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	for _, mapping := range toAppMappings.Mappings {
-		for _, fTable := range mapping.FromTables {
+
+		for _, tTable := range mapping.ToTables {
 			
-			// fromTable
-			if fTable == fromTable {
-				for _, tTable := range mapping.ToTables {
-					
-					// toTable
-					if tTable.Table == toTable {
-						// log.Println(tTable)
-						for tAttr, fAttr := range tTable.Mapping {
-							// fromAttr
+			// toTable
+			if tTable.Table == toTable {
+				// log.Println(tTable)
+				for tAttr, fAttr := range tTable.Mapping {
+					// fromAttr
 
-							fAttr = RemoveASSIGNAllRightParenthesesIfExists(fAttr)
+					// If there exists #REF
+					// #FETCH and #ASSIGN don't coexist, so we don't check #ASSIGN
+					if containREF(fAttr) {
 
-							// If not ignore #REF
-							if !ignoreREF {
+						if containFETCH(fAttr) {
 
-								// If there exists #REF
-								if containREF(fAttr) {
+							firstArgInFETCH := getFirstArgFromFETCH(fAttr)
 
-									fAttr = removeREF(fAttr)
+							if firstArgInFETCH == fromAttr {
+								
+								thirdArgInREF := getThirdArgFromREFContainingFETCHIfExists(fAttr)
 
-									firstArg := getFirstArgFromREF(fAttr)
-
-									if firstArg == fromAttr {
-										
-										thirdArg := getThirdArgFromREFIfExists(fAttr)
-
-										if thirdArg != "" {
-											uniqueAttrs[tAttr] = true
-										} else {
-											
-										}
-										
+								if thirdArgInREF != "" {
+									if _, ok := attributes[tAttr]; ok {
+										log.Fatal(duplicateToAttrWithThirdArg)
+									} else {
+										attributes[tAttr] = thirdArgInREF
+									}
+								} else {
+									if _, ok := attributes[tAttr]; ok {
+										log.Fatal(duplicateToAttrWithoutThirdArg)
+									} else {
+										attributes[tAttr] = ""
 									}
 								}
+							}
 
-							} else {
-
-								// If there does not exist #REF
-								if !containREF(fAttr) {
-
-									if fAttr == fromAttr {
-										uniqueAttrs[tAttr] = true
-									}
-								}
-							}									
-							
-						}
+						}	
 					}
 				}
 			}
 		}
 	}
 
-	for attr := range uniqueAttrs {
-		attributes = append(attributes, attr)
-	}
-
 	if len(attributes) == 0 {
 
 		return nil, NoMappedAttrFound
-	
+
 	} else {
 
 		return attributes, nil
@@ -336,7 +389,21 @@ func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp,
 					// If there exists #REF
 					if containREF(mappedAttr) {	
 
-						firstArg := getFirstArgFromREF(mappedAttr)
+						var firstArg string
+
+						mappedAttr = removeREFAndParatheses(mappedAttr)
+
+						// For example,
+						// "status_id":"#REF(#FETCH(posts.id,posts.guid,
+						//	photos.status_message_guid),posts.id,statuses)",
+						if containFETCH(mappedAttr) {
+							
+							firstArg = getFirstArgFromFETCH(mappedAttr)
+
+						} else {
+							
+							firstArg = getFirstArgFromREF(mappedAttr)
+						}
 
 						firstArg = RemoveASSIGNAllRightParenthesesIfExists(firstArg)
 						
@@ -395,72 +462,23 @@ func containFETCH(data string) bool {
 }
 
 func getFirstArgFromFETCH(data string) string {
-	
-	tmp1 := strings.Split(data, "#REF(")
 
-	tmp2 := strings.Split(tmp1[1], "#FETCH(")
+	var tmp1, tmp2 []string
 
-	return strings.Split(tmp2[1], ",")[0]
+	if containREF(data) {
 
-}
+		tmp1 = strings.Split(data, "#REF(")
 
-func GetMappedAttributesFromSchemaMappingsByFETCH(allMappings *config.SchemaMappings,
-	fromApp, fromAttr, toApp, toTable string) ([]string, error) {
-	
-	var attributes []string
-	
-	uniqueAttrs := make(map[string]bool)
-
-	log.Println(fromApp, fromAttr, toApp, toTable)
-
-	toAppMappings, err := GetToAppMappings(allMappings, fromApp, toApp)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, mapping := range toAppMappings.Mappings {
-
-		for _, tTable := range mapping.ToTables {
-			
-			// toTable
-			if tTable.Table == toTable {
-				// log.Println(tTable)
-				for tAttr, fAttr := range tTable.Mapping {
-					// fromAttr
-
-					// If there exists #REF
-					// #FETCH and #ASSIGN don't coexist, so we don't check #ASSIGN
-					if containREF(fAttr) {
-
-						if containFETCH(fAttr) {
-
-							fAttr = getFirstArgFromFETCH(fAttr)
-
-							if fAttr == fromAttr {
-								
-								uniqueAttrs[tAttr] = true
-							}
-
-						}
-						
-					}
-				}
-			}
-		}
-	}
-
-	for atrr := range  uniqueAttrs {
-		attributes = append(attributes, atrr)
-	}
-
-	if len(attributes) == 0 {
-
-		return nil, NoMappedAttrFound
+		tmp2 = strings.Split(tmp1[1], "#FETCH(")
 
 	} else {
 
-		return attributes, nil
+		tmp2 = strings.Split(tmp1[1], "#FETCH(")
+
 	}
+
+	return strings.Split(tmp2[1], ",")[0]
+
 }
 
 

@@ -21,3 +21,7 @@ var CannotCreateToApp = errors.New("Cannot create a to app in the mappings")
 var CannotGetMappingsByFromTable = errors.New("Cannot get mappings by the from table")
 
 var CannotGetToTableByName = errors.New("Cannot get to table by the table name")
+
+var duplicateToAttrWithThirdArg = errors.New("Found a duplicate toAttr also with third Arg")
+
+var duplicateToAttrWithoutThirdArg = errors.New("Found a duplicate toAttr also without third Arg")
