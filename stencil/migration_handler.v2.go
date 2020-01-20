@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"stencil/apis"
-	"strconv"
 )
 
 func main() {
@@ -17,10 +16,10 @@ func main() {
 	srcApp, srcAppID := os.Args[4], os.Args[5]
 	dstApp, dstAppID := os.Args[6], os.Args[7]
 
-	threads, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		log.Fatal(err)
-	}
+	// threads, err := strconv.Atoi(os.Args[1])
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 	uid := os.Args[2]
 
 	mtype := os.Args[3]
@@ -29,7 +28,7 @@ func main() {
 		log.Fatal("can't read migration type")
 	}
 
-	apis.StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype, threads)
+	apis.StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype)
 
 }
 
