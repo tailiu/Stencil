@@ -718,9 +718,9 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 							return data, errors.New("Unable to find ref value in node data")
 						}
 						data.refs = append(data.refs, MappingRef{fromID: fromID, fromMember: assignedTabColTokens[0], fromAttr: assignedTabColTokens[1], toID: fmt.Sprint(nodeVal), toAttr: referredTabColTokens[1], toMember: referredTabColTokens[0]})
-						fmt.Println(data.refs)
+						// fmt.Println(data.refs)
 					}
-					log.Fatal("FOUND #REF#ASSIGN MAPPING")
+					// log.Fatal("FOUND #REF#ASSIGN MAPPING")
 				} else {
 					args := strings.Split(assignedTabCol, ",")
 					if nodeVal, ok := node.Data[args[0]]; ok {
@@ -995,7 +995,15 @@ func (self *MigrationWorkerV2) DeleteNode(mapping config.Mapping, node *Dependen
 	return nil
 }
 
-func (self *MigrationWorkerV2) DeleteRoot() error {
+func (self *MigrationWorkerV2) DeleteRoot(threadID int) error {
+	if err := self.InitTransactions(); err != nil {
+		log.Fatal("@DeleteRoot > InitTransactions", err)
+		return err
+	} else {
+		defer self.tx.SrcTx.Rollback()
+		defer self.tx.DstTx.Rollback()
+		defer self.tx.StencilTx.Rollback()
+	}
 	if mapping, found := self.FetchMappingsForNode(self.root); found {
 		if err := self.DeleteNode(mapping, self.root); err != nil {
 			log.Fatal("@DeleteRoot:", err)
@@ -1004,6 +1012,11 @@ func (self *MigrationWorkerV2) DeleteRoot() error {
 	} else {
 		fmt.Println(self.root)
 		log.Fatal("@DeleteRoot: Can't find mappings for root | ", mapping, found)
+	}
+	if err := self.CommitTransactions(); err != nil {
+		return err
+	} else {
+		log.Println(fmt.Sprintf("x%2dx COMMITTED node { %s } ", threadID, self.root.Tag.Name))
 	}
 	return nil
 }
@@ -1683,7 +1696,7 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 	log.Println(fmt.Sprintf("#%2d# Process   Node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 
 	if strings.EqualFold(node.Tag.Name, "root") {
-		return self.DeleteRoot()
+		return self.DeleteRoot(threadID)
 	} else {
 		if err := self.CallMigration(node, threadID); err != nil {
 			return err
