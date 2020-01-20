@@ -1396,7 +1396,7 @@ func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
 }
 
 func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode, member string) error {
-
+	return nil
 	for _, innerDependency := range node.Tag.InnerDependencies {
 		for dependee, dependsOn := range innerDependency {
 
@@ -1448,7 +1448,7 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode, member s
 }
 
 func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, referencedNode *DependencyNode) error {
-
+	return nil
 	if dep, err := self.SrcAppConfig.CheckDependency(currentNode.Tag.Name, referencedNode.Tag.Name); err != nil {
 		fmt.Println(err)
 		log.Fatal("@AddToReferences: CheckDependency can't find dependency!")
