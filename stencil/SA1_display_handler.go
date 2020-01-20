@@ -10,7 +10,7 @@ func main() {
 	
 	threadNum := 1
 	
-	migrationID := 1608439858
+	migrationID := 1160463
 
 	// If the destination app database is not in the new server, newDB is false
 	newDB := false

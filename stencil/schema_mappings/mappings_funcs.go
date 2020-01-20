@@ -226,14 +226,17 @@ func GetMappedAttributesToBeUpdated(
 									thirdArg := getThirdArgFromREFIfExists(fAttr)
 
 									if thirdArg != "" {
+										// There could be cases where duplicate tAttrs are found
+										// For example, diaspora posts posts.author_id mastodon statuses
+										// duplicate tAttr does not influence results
 										if _, ok := attributes[tAttr]; ok {
-											log.Fatal(duplicateToAttrWithThirdArg)
+											log.Println(duplicateToAttrWithThirdArg)
 										} else {
 											attributes[tAttr] = thirdArg
 										}
 									} else {
 										if _, ok := attributes[tAttr]; ok {
-											log.Fatal(duplicateToAttrWithoutThirdArg)
+											log.Println(duplicateToAttrWithoutThirdArg)
 										} else {
 											attributes[tAttr] = ""
 										}
@@ -296,13 +299,13 @@ func GetMappedAttributesToBeUpdatedByFETCH(
 
 								if thirdArgInREF != "" {
 									if _, ok := attributes[tAttr]; ok {
-										log.Fatal(duplicateToAttrWithThirdArg)
+										log.Println(duplicateToAttrWithThirdArg)
 									} else {
 										attributes[tAttr] = thirdArgInREF
 									}
 								} else {
 									if _, ok := attributes[tAttr]; ok {
-										log.Fatal(duplicateToAttrWithoutThirdArg)
+										log.Println(duplicateToAttrWithoutThirdArg)
 									} else {
 										attributes[tAttr] = ""
 									}

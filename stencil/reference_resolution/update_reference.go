@@ -132,8 +132,10 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		// diaspora likes likes.target_id mastodon favourites
 		// total attrs to be updated: [status_id]
 		// Obviously, if there is no the third argument (statuses in this example) indicating that
-		// it is the statuses table not the conversations table should update status_id,
-		// then there will be errors
+		// it is the statuses table not the conversations table that should update status_id,
+		// then there will be an error
+		// This error is caused by the one-to-multiple mappings like mappings from posts 
+		// to statuses, conversations, and status_stats
 		if thirdArgInREF != "" && thirdArgInREF != 
 			refResolutionConfig.tableIDNamePairs[refIdentityRow.member] {
 			
@@ -293,7 +295,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 		refResolutionConfig.tableIDNamePairs[orgID.member]) 
 	
 	if err != nil {
-		log.Println("Error in Getting attributes to update other attributesa:")
+		log.Println("Error in Getting attributes to update other attributes:")
 		log.Println(err)
 
 		return nil

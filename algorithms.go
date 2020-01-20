@@ -1,4 +1,5 @@
-/*
+/**
+ *
  * Assumptions:
  * 1. Threads don't communicate with each other. Reasons: Simplicity, performance.
  * 2. If threads die, they just restart
@@ -47,7 +48,8 @@
  *    must wait for the previous migration to finish using the bag before starting to process the bag for itself. This applies to all concurrent migrations for a user.
  *    Migration registration may be used to indicate which migration is using the bag. Probably assign priority numbers and the migration having the lowest number gets to use the bag.
  * 7. If there is a deletion migration following a consistent migration, Stencil needs to ask user whether to delete consistent data in other applications.
- */
+ *
+ **/
 
  func (t Thread) OwnershipMigration(uid int, srcApp, dstApp string, root *DependencyNode) {
 	 for {
@@ -85,9 +87,12 @@
 	if node.Owner == uid || node.SharedWith(uid) {
 		checkNextNode(node);
 		// acquireWriteLock(node)
-		for _, precedingNode := range GetAllPrecedingNodes(node) {
-			addToReferences(precedingNode, node);
-		}
+
+		// This is not needed because we already add references based on mappings
+		// for _, precedingNode := range GetAllPrecedingNodes(node) {
+		// 	addToReferences(precedingNode, node);
+		// }
+
 		migrateNode(uid, srcApp, dstApp, node);
 		// releaseWriteLock(node);
 	} else {
@@ -109,7 +114,10 @@
 func (t Thread) checkNextNode(node) {
 	// Only through data dependencies
 	for _, nextNode := range GetAllNextNodes(node) {
-		addToReferences(node, nextNode);
+
+		// This is not needed because we already add references based on mappings
+		// addToReferences(node, nextNode);
+		
 		if precedingNodes := GetAllPrecedingNodes(nextNode); len(precedingNodes) <= 1 && nextNode.Rules.DisplayOnlyIfPrecedingNodeExists {
 			acquirePredicateLock(nextNode);
 			checkNextNode(nextNode)

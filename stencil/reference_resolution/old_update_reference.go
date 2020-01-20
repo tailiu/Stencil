@@ -257,7 +257,7 @@ func oldUpdateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefRes
 		ignoreREF) 
 	
 	if err != nil {
-		log.Println("Error in Getting attributes to update other attributesa:")
+		log.Println("Error in Getting attributes to update other attributes:")
 		log.Println(err)
 
 		return nil
