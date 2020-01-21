@@ -109,7 +109,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 				oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow(
 					refResolutionConfig, refIdentityRow, procRef, orgID)
 
-				combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+				updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
 				if len(oneUpdatedAttr) > 0 {
 					break
@@ -122,7 +122,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 			oneUpdatedAttr := updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(
 				refResolutionConfig, procRef, orgID)
 
-			combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+			updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
 		}
 
@@ -170,7 +170,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 				oneUpdatedAttr := updateRefOnRightBasedOnMappingsUsingRefIDRow(
 					refResolutionConfig, refIdentityRow, procRef, orgID)
 
-				combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+				updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 				
 				if len(oneUpdatedAttr) > 0 {
 					break
@@ -182,7 +182,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 			oneUpdatedAttr := updateRefOnRightBasedOnMappingsNotUsingRefIDRow(
 				refResolutionConfig, procRef, orgID)
 
-			combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+			updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
 		}
 	}
@@ -213,13 +213,13 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 		// You are on the left/from part
 		currentMyupdatedAttrs := updateMyDataBasedOnReferences(refResolutionConfig, procIDRow, orgID)
 
-		combineTwoMaps(myUpdatedAttrs, currentMyupdatedAttrs)
+		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, currentMyupdatedAttrs)
 
 		// You are on the right/to part
 		currentOthersUpdatedAttrs := updateOtherDataBasedOnReferences(refResolutionConfig, 
 			procIDRow, orgID)
 		
-		combineTwoMaps(othersUpdatedAttrs, currentOthersUpdatedAttrs)
+		othersUpdatedAttrs = combineTwoMaps(othersUpdatedAttrs, currentOthersUpdatedAttrs)
 
 		// Traverse back
 		preID := CreateIdentity(
@@ -228,8 +228,8 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 		nextMyUpdatedAttrs, nextOthersUpdatedAttrs := 
 			resolveReferenceByBackTraversal(refResolutionConfig, preID, orgID)
 		
-		combineTwoMaps(myUpdatedAttrs, nextMyUpdatedAttrs)
-		combineTwoMaps(othersUpdatedAttrs, nextOthersUpdatedAttrs)
+		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, nextMyUpdatedAttrs)
+		othersUpdatedAttrs = combineTwoMaps(othersUpdatedAttrs, nextOthersUpdatedAttrs)
 
 	}
 

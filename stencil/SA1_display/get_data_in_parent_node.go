@@ -90,7 +90,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 func getHintsInParentNode(displayConfig *displayConfig, 
 	hints []*HintStruct, conditions []string, pTag string) (*HintStruct, error) {
 	
-	log.Println(hints[0])
+	// log.Println(hints[0])
 
 	var data map[string]interface{}
 	var err0, err1 error

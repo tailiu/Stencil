@@ -16,16 +16,24 @@ func transformInterfaceToString(data map[string]interface{}) map[string]string {
 	return res
 }
 
-func combineTwoMaps(m1 map[string]string, m2 map[string]string) {
+func combineTwoMaps(m1 map[string]string, m2 map[string]string) map[string]string {
 
-	for k, v := range m2 {
+	m3 := make(map[string]string)
 
-		if _, ok := m1[k]; ok {
+	for k1, v1 := range m1 {
+		m3[k1] = v1
+	}
+
+	for k2, v2 := range m2 {
+
+		if _, ok := m3[k2]; ok {
 			log.Println("Found an overlapped key when combing two maps!")
 		} else {
-			m1[k] = v
+			m3[k2] = v2
 		}
 		
 	}
+
+	return m3
 
 }

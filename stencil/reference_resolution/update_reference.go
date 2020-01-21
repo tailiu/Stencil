@@ -68,7 +68,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 	}
 
-	attrsToUpdate := make(map[string]string)
+	attrsToUpdateNotInFETCH := make(map[string]string)
 	attrsToUpdateInFETCH := make(map[string]string)
 
 	var err1, err2 error
@@ -79,7 +79,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 	// will return both status_id and id which should not be contained
 	// ignoreREF = false 
 
-	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
+	attrsToUpdateNotInFETCH, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
 		refResolutionConfig.allMappings,
 		refResolutionConfig.appIDNamePairs[procRef["app"]], 
 		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
@@ -95,7 +95,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 	}
 
-	// log.Println("total attrs to be updated:",attrsToUpdate)
+	// log.Println("total attrs to be updated:",attrsToUpdateNotInFETCH)
 
 	// #FETCH case is different from the normal cases.
 	// For example: diaspora posts posts.id mastodon media_attachments, 
@@ -117,7 +117,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 	// log.Println("attrsToUpdateInFETCH:", attrsToUpdateInFETCH)
 
-	combineTwoMaps(attrsToUpdate, attrsToUpdateInFETCH)
+	attrsToUpdate := combineTwoMaps(attrsToUpdateNotInFETCH, attrsToUpdateInFETCH)
 
 	log.Println("total attrs to be updated:",attrsToUpdate)
 
@@ -183,14 +183,14 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 
 	log.Println("attr: ", attr)
 
-	attrsToUpdate := make(map[string]string)
+	attrsToUpdateNotInFETCH := make(map[string]string)
 	attrsToUpdateInFETCH := make(map[string]string)
 
 	var err1, err2 error
 
 	// ignoreREF := false 
 
-	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
+	attrsToUpdateNotInFETCH, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
 		refResolutionConfig.allMappings,
 		refResolutionConfig.appIDNamePairs[procRef["app"]],
 		refResolutionConfig.tableIDNamePairs[procRef["from_member"]],
@@ -205,7 +205,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 
 	}
 
-	// log.Println("total attrs to be updated:",attrsToUpdate)
+	// log.Println("total attrs to be updated:",attrsToUpdateNotInFETCH)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesToBeUpdatedByFETCH(
 		refResolutionConfig.allMappings,
@@ -223,7 +223,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 
 	// log.Println("attrsToUpdateInFETCH:", attrsToUpdateInFETCH)
 
-	combineTwoMaps(attrsToUpdate, attrsToUpdateInFETCH)
+	attrsToUpdate := combineTwoMaps(attrsToUpdateNotInFETCH, attrsToUpdateInFETCH)
 
 	log.Println("total attrs to be updatedd:", attrsToUpdate)
 
@@ -311,14 +311,14 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 
 	}
 
-	attrsToUpdate := make(map[string]string)
+	attrsToUpdateNotInFETCH := make(map[string]string)
 	attrsToUpdateInFETCH := make(map[string]string)
 
 	var err1, err2 error
 
 	// ignoreREF = false
 
-	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
+	attrsToUpdateNotInFETCH, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
 		refResolutionConfig.allMappings,
 		refResolutionConfig.appIDNamePairs[procRef["app"]], 
 		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
@@ -332,7 +332,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 		log.Println(err1)
 	}
 
-	// log.Println("total attrs to be updated:",attrsToUpdate)
+	// log.Println("total attrs to be updated:", attrsToUpdateNotInFETCH)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesToBeUpdatedByFETCH(
 		refResolutionConfig.allMappings,
@@ -348,7 +348,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 
 	}
 
-	combineTwoMaps(attrsToUpdate, attrsToUpdateInFETCH)
+	attrsToUpdate := combineTwoMaps(attrsToUpdateNotInFETCH, attrsToUpdateInFETCH)
 
 	log.Println("total attrs to be updated:",attrsToUpdate)
 	
@@ -413,14 +413,14 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 
 	log.Println("attr: ", attr)
 
-	attrsToUpdate := make(map[string]string)
+	attrsToUpdateNotInFETCH := make(map[string]string)
 	attrsToUpdateInFETCH := make(map[string]string)
 
 	var err1, err2 error
 
 	// ignoreREF := false
 
-	attrsToUpdate, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
+	attrsToUpdateNotInFETCH, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
 		refResolutionConfig.allMappings,
 		refResolutionConfig.appIDNamePairs[procRef["app"]], 
 		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
@@ -434,7 +434,7 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 		log.Println(err1)
 	}
 
-	// log.Println("total attrs to be updated:",attrsToUpdate)
+	// log.Println("total attrs to be updated:", attrsToUpdateNotInFETCH)
 
 	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesToBeUpdatedByFETCH(
 		refResolutionConfig.allMappings,
@@ -450,7 +450,7 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 
 	}
 
-	combineTwoMaps(attrsToUpdate, attrsToUpdateInFETCH)
+	attrsToUpdate := combineTwoMaps(attrsToUpdateNotInFETCH, attrsToUpdateInFETCH)
 
 	log.Println("total attrs to be updated:",attrsToUpdate)
 
