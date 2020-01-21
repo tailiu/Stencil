@@ -130,8 +130,10 @@ func updateReferences(refResolutionConfig *RefResolutionConfig,
 		// due to the same id and reference rows, we may try to resolve and
 		// update status_id again. Therefore, we check ReferenceResolved here
 		newVal := ReferenceResolved(refResolutionConfig, 
-			refResolutionConfig.appTableNameIDPairs[member], 
-			attr, id)
+			refResolutionConfig.appTableNameIDPairs[memberToBeUpdated], 
+			attrToBeUpdated, IDToBeUpdated)
+		
+		log.Println("resolved value:", newVal)
 
 		if newVal != "" {
 			return "", alreadySolved

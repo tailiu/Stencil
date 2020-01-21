@@ -91,6 +91,7 @@
                 "member1": "notifications"
             },
             "keys": {
+                "activity_id": "member1.activity_id",
                 "account_id": "member1.account_id",
                 "from_account_id": "member1.from_account_id"
             }

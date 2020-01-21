@@ -43,7 +43,9 @@ func ReferenceResolved(refResolutionConfig *RefResolutionConfig,
 	query := fmt.Sprintf(`select value from resolved_references where app = %s 
 		and member = %s and reference = '%s' and id = %s`,
 		refResolutionConfig.appID, member, reference, id)
-
+	
+	log.Println(query)
+	
 	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)

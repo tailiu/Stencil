@@ -106,6 +106,10 @@ func getHintsInParentNode(displayConfig *displayConfig,
 		tableAttr1 := strings.Split(condition, ":")[0]
 		tableAttr2 := strings.Split(condition, ":")[1]
 
+		// log.Println("processing conditions")
+		// log.Println(tableAttr1)
+		// log.Println(tableAttr2)
+
 		t1 := strings.Split(tableAttr1, ".")[0]
 		a1 := strings.Split(tableAttr1, ".")[1]
 
@@ -306,6 +310,9 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 	tag := hints[0].Tag
 	conditions, _ := GetDependsOnConditions(displayConfig.dstAppConfig.dag, tag, pTag)
 	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
+
+	// log.Println("conditions")
+	// log.Println(conditions)
 
 	var procConditions []string
 	var from, to string
