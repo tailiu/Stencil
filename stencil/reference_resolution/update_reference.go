@@ -124,7 +124,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 	for attrToUpdate, thirdArgInREF := range attrsToUpdate {
 		
 		log.Println("one attr to be checked and updated:", attrToUpdate)
-		log.Println("Third argument in #REF", thirdArgInREF)
+		log.Println("Third argument in #REF:", thirdArgInREF)
 
 		// For example,
 		// diaspora posts posts.id mastodon conversations
@@ -230,7 +230,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 	for attrToUpdate, thirdArgInREF := range attrsToUpdate {
 
 		log.Println("one attr to be checked and updated:", attrToUpdate)
-		log.Println("Third argument in #REF", thirdArgInREF)
+		log.Println("Third argument in #REF:", thirdArgInREF)
 
 		// For example,
 		// diaspora posts posts.id mastodon conversations
@@ -355,7 +355,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 	for attrToUpdate, thirdArgInREF := range attrsToUpdate {
 
 		log.Println("one attr to be checked and updated:", attrToUpdate)
-		log.Println("Third argument in #REF", thirdArgInREF)
+		log.Println("Third argument in #REF:", thirdArgInREF)
 
 		// For example,
 		// diaspora posts posts.id mastodon conversations
@@ -457,7 +457,7 @@ func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefRes
 	for attrToUpdate, thirdArgInREF := range attrsToUpdate {
 
 		log.Println("one attr to be checked and updated:", attrToUpdate)
-		log.Println("Third argument in #REF", thirdArgInREF)
+		log.Println("Third argument in #REF:", thirdArgInREF)
 
 		// For example,
 		// diaspora posts posts.id mastodon conversations

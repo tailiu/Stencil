@@ -115,6 +115,26 @@ func updateReferences(refResolutionConfig *RefResolutionConfig,
 
 	} else if attr != "" && attrToBeUpdated != "" {
 		
+		// Checking ReferenceResolved is avoid updating references again 
+		// in the case of non-unique references
+		// For example, 
+		// id_row - from_app: diaspora | from_member: posts | 
+		// from_id: 374593 | to_app: mastodon | to_member: statuses | 
+		// to_id: 103515700915521351 | migration_id: 1741805562 | pk: 301
+		// There are two same reference rows because of 
+		// the mappings to status_id and conversation_id.
+		// ref_row - from_member: posts | from_reference: id | 
+		// from_id: 374593 | to_member: posts | to_reference: id | 
+		// to_id: 374593 | app: diaspora | migration_id: 1741805562 | pk: 468
+		// After resolving and updating one reference like status_id,
+		// due to the same id and reference rows, we may try to resolve and
+		// update status_id again. Therefore, we check ReferenceResolved here
+		newVal := ReferenceResolved(refResolutionConfig, member, attr, id)
+
+		if newVal != "" {
+			return "", alreadySolved
+		}
+
 		data := getDataToUpdateRef(refResolutionConfig, member, id, attr)
 		
 		log.Println("data to update other data:", data)

@@ -5,7 +5,6 @@ import (
 	"log"
 	"stencil/db"
 	"stencil/reference_resolution"
-	"strconv"
 	"strings"
 )
 
@@ -48,7 +47,15 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 
 			ID := hint.TransformHintToIdenity(displayConfig)
 
-			updatedAttrs, _ := reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID)
+			reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID)
+
+			updatedAttrs := reference_resolution.GetUpdatedAttributes(
+				displayConfig.refResolutionConfig,
+				ID,
+			)
+
+			log.Println("Updated attributes and values:")
+			log.Println(updatedAttrs)
 
 			// We check whether the desired attr (col) has been resolved
 			foundResolvedAttr := false
@@ -227,120 +234,13 @@ func getHintsInParentNode(displayConfig *displayConfig,
 		}
 	}
 
-	log.Println("...........")
-	log.Println(table)
-	log.Println(data)
-	log.Println("...........")
+	// log.Println("...........")
+	// log.Println(table)
+	// log.Println(data)
+	// log.Println("...........")
 
 	return TransformRowToHint(displayConfig, data, table, pTag), nil
 
-}
-
-func oldGetHintsInParentNode(displayConfig *displayConfig, 
-	hints []*HintStruct, conditions []string, pTag string) (*HintStruct, error) {
-	
-	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
-	from := ""
-	table := ""
-	hintID := -1
-
-	for i, condition := range conditions {
-
-		tableAttr1 := strings.Split(condition, ":")[0]
-		tableAttr2 := strings.Split(condition, ":")[1]
-
-		t1 := strings.Split(tableAttr1, ".")[0]
-		a1 := strings.Split(tableAttr1, ".")[1]
-
-		t2 := strings.Split(tableAttr2, ".")[0]
-		a2 := strings.Split(tableAttr2, ".")[1]
-
-		seq1 := "t" + strconv.Itoa(i)
-		seq2 := "t" + strconv.Itoa(i+1)
-
-		if i == 0 {
-
-			// There could be mutliple pieces of data in nodes
-			// For example:
-			// A statuses node contains status, conversation, and status_stats
-			for j, hint := range hints {
-
-				if hint.Table == t1 {
-					hintID = j
-				}
-
-			}
-
-			// In this case, since data may be incomplete, 
-			// we cannot get the data in the parent node
-			if hintID == -1 {
-
-				return nil, CannotFindAnyDataInParent
-
-			} else {
-				
-				// For example:
-				// if a condition is [favourites.status_id:statuses.id], 
-				// from will be "favourites t0 JOIN statuses t1 ON t0.status_id = t1.id"
-				from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
-					t1, seq1, t2, seq2, seq1, a1, seq2, a2)
-
-			}
-
-		// This is mainly to solve the case in which
-		// conversation cannot directly depend on root
-		// conversation depends on statuses, which in turn depends on root. 
-		// This is now obsolete because there is no dependency between other nodes with root
-		// For now, there is always only one condition.
-		} else {
-
-			from += fmt.Sprintf("JOIN %s %s on %s.%s = %s.%s ",
-				t2, seq2, seq1, a1, seq2, a2)
-			
-
-		}
-
-		//The last condition
-		if i == len(conditions)-1 {
-
-			var depDataKey string
-			var depDataValue int
-
-			for k, v := range hints[hintID].KeyVal {
-
-				depDataKey = k
-				depDataValue = v
-
-			}
-
-			// Following the above example,
-			// the whole query will be:
-			// SELECT t1.* 
-			// FROM favourites t0 JOIN statuses t1 ON t0.status_id = t1.id
-			// WHERE t0.status_id = 80
-			where := fmt.Sprintf("WHERE %s.%s = %d", "t0", depDataKey, depDataValue)
-			table = t2
-			query += from + where
-
-		}
-	}
-	// fmt.Println(query)
-
-	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// fmt.Println(data)
-	if len(data) == 0 {
-
-		return nil, CannotFindAnyDataInParent
-
-	} else {
-
-		return TransformRowToHint(displayConfig, data, table, pTag), nil
-
-	}
 }
 
 func dataFromParentNodeExists(displayConfig *displayConfig,

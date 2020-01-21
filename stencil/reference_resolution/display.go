@@ -62,12 +62,12 @@ func ReferenceResolved(refResolutionConfig *RefResolutionConfig,
 }
 
 func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig, 
-	ID *Identity) map[string]bool {
+	ID *Identity) map[string]string {
 	
-	updatedAttrs := make(map[string]bool) 
+	updatedAttrs := make(map[string]string) 
 
-	query := fmt.Sprintf(`select reference from resolved_references where app = %s 
-		and member = %s and id = %s`,
+	query := fmt.Sprintf(`select reference, value from resolved_references where app = %s 
+		and member = %s and id = %s ORDER BY pk`,
 		refResolutionConfig.appID, ID.member, ID.id)
 	
 	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
@@ -75,9 +75,13 @@ func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig,
 		log.Fatal(err)
 	}
 
+	// Even though there could be some duplicate keys here since 
+	// we don't consider migration_id here,
+	// the ORDER BY in the query will give us the latest resolved values
 	for _, data1 := range data {
 
-		updatedAttrs[fmt.Sprint(data1["reference"])] = true
+		updatedAttrs[fmt.Sprint(data1["reference"])] = 
+			updatedAttrs[fmt.Sprint(data1["value"])]
 
 	}
 

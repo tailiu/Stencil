@@ -193,6 +193,8 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig, 
 	ID *Identity, orgID *Identity) (map[string]string, map[string]string) {
+	
+	log.Println("Resolve references by back traversal")
 
 	myUpdatedAttrs := make(map[string]string)
 	

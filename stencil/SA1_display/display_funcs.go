@@ -276,6 +276,8 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 		}
 
+		log.Println("Check attributes to be set as NULLs before displaying the data")
+
 		ID := dataHint.TransformHintToIdenity(displayConfig)
 
 		// Even though references have been updated in checking dependencies and ownership,
@@ -346,6 +348,7 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 		} else {
 
 			return nil
+			
 		}
 	}
 

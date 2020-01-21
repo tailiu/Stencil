@@ -1,40 +1,16 @@
 package SA1_display
 
 import (
-	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"stencil/db"
 	"stencil/reference_resolution"
 	"stencil/schema_mappings"
-	"strconv"
 	"strings"
 )
 
-func getOneRowBasedOnDependency(displayConfig *displayConfig,
-	table, col, value string) (map[string]interface{}, error) {
-
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", table, col, value)
-	log.Println(query)
-
-	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// fmt.Println(data)
-	if len(data) == 0 {
-
-		return nil, CannotFindRemainingData
-
-	} else {
-
-		return data, nil
-
-	}
-}
-
-func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
+func oldCheckResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
 	// We use table0 and col0 to get table1 and col1
@@ -78,24 +54,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 			ID0 := hint0.TransformHintToIdenity(displayConfig)
 
-			reference_resolution.ResolveReference(
+			updatedAttrs, _ := reference_resolution.ResolveReference(
 				displayConfig.refResolutionConfig, ID0)
-			
-			// Here we check again to get updated attributes and values
-			// instead of using the returned values from the ResolveReference
-			// because ResolveReference only returns the updated values in that
-			// function call. Values could be updated by other threads and in this
-			// case, ResolveReference does not return the updated attribute and value
-			// Therefore, we check all updated attributes again here by calling 
-			// GetUpdatedAttributes
-			updatedAttrs := reference_resolution.GetUpdatedAttributes(
-				displayConfig.refResolutionConfig,
-				ID0,
-			)
 
-			log.Println("Updated attributes and values:")
-			log.Println(updatedAttrs)
-			
 			// We check whether the desired attr (col0) has been resolved
 			foundResolvedAttr := false
 			for attr, val := range updatedAttrs {
@@ -258,15 +219,10 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 			ID1 := hint1.TransformHintToIdenity(displayConfig)
 
-			reference_resolution.ResolveReference(
+			updatedAttrs, _ := reference_resolution.ResolveReference(
 				displayConfig.refResolutionConfig, ID1)
 			
-			updatedAttrs := reference_resolution.GetUpdatedAttributes(
-				displayConfig.refResolutionConfig,
-				ID1,
-			)
-
-			log.Println("Updated attributes and values:")
+			log.Println("Updated attributes:")
 			log.Println(updatedAttrs)
 
 			// We check whether the desired attr (col1) has been resolved 
@@ -316,327 +272,109 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	}
 }
 
-func getRemainingDataInNode(displayConfig *displayConfig,
-	dependencies []map[string]string, 
-	members map[string]string, 
-	hint *HintStruct) ([]*HintStruct, error) {
+func oldGetHintsInParentNode(displayConfig *displayConfig, 
+	hints []*HintStruct, conditions []string, pTag string) (*HintStruct, error) {
 	
-	var result []*HintStruct
+	query := fmt.Sprintf("SELECT %s.* FROM ", "t"+strconv.Itoa(len(conditions)))
+	from := ""
+	table := ""
+	hintID := -1
 
-	procDependencies := make(map[string][]string)
+	for i, condition := range conditions {
 
-	for _, dependency := range dependencies {
+		tableAttr1 := strings.Split(condition, ":")[0]
+		tableAttr2 := strings.Split(condition, ":")[1]
 
-		for k, v := range dependency {
+		t1 := strings.Split(tableAttr1, ".")[0]
+		a1 := strings.Split(tableAttr1, ".")[1]
 
-			memberSeqInKey := strings.Split(k, ".")[0]
-			memberSeqInVal := strings.Split(v, ".")[0]
+		t2 := strings.Split(tableAttr2, ".")[0]
+		a2 := strings.Split(tableAttr2, ".")[1]
 
-			memberTableInKey := members[memberSeqInKey]
-			memberTableInVal := members[memberSeqInVal]
+		seq1 := "t" + strconv.Itoa(i)
+		seq2 := "t" + strconv.Itoa(i+1)
 
-			newKey := strings.Replace(k, memberSeqInKey, memberTableInKey, 1)
-			newVal := strings.Replace(v, memberSeqInVal, memberTableInVal, 1)
+		if i == 0 {
 
-			procDependencies[newKey] = append(procDependencies[newKey], newVal)
-			procDependencies[newVal] = append(procDependencies[newVal], newKey)
+			// There could be mutliple pieces of data in nodes
+			// For example:
+			// A statuses node contains status, conversation, and status_stats
+			for j, hint := range hints {
 
-		}
-	}
-
-	// fmt.Println(procDependencies)
-
-	tag := hint.Tag
-
-	result = append(result, hint)
-
-	queue := []DataInDependencyNode{DataInDependencyNode{
-		Table: hint.Table,
-		Data:  hint.Data,
-	}}
-
-	for len(queue) != 0 && len(procDependencies) != 0 {
-		
-		// fmt.Println(queue)
-		// fmt.Println(procDependencies)
-
-		dataInDependencyNode := queue[0]
-
-		queue = queue[1:]
-
-		table := dataInDependencyNode.Table
-
-		for col, val := range dataInDependencyNode.Data {
-
-			if deps, ok := procDependencies[table+"."+col]; ok {
-
-				for _, dep := range deps {
-
-					// fmt.Println(dep)
-
-					table1 := strings.Split(dep, ".")[0]
-					key1 := strings.Split(dep, ".")[1]
-
-					var data map[string]interface{} 
-					var err1 error
-
-					// If resolving reference is required
-					if displayConfig.resolveReference {
-
-						// We assume that val is an integer value 
-						// otherwise we have to define it in dependency config
-						data, err1 = checkResolveReferenceInGetDataInNode(displayConfig, 
-							fmt.Sprint(dataInDependencyNode.Data["id"]),
-							table, col, table1, key1, fmt.Sprint(val))
-
-					} else {
-
-						data, err1 = getOneRowBasedOnDependency(
-							displayConfig, table1, key1, fmt.Sprint(val))
-						
-					}
-
-					// fmt.Println(data)
-
-					if err1 != nil {
-						log.Println(err1)
-						// fmt.Println(result)
-						continue
-					}
-
-					queue = append(queue, DataInDependencyNode{
-						Table: table1,
-						Data:  data,
-					})
-					// fmt.Println(queue)
-
-					intPK, err2 := strconv.Atoi(fmt.Sprint(data["id"]))
-					if err2 != nil {
-						log.Fatal(err2)
-					}
-					keyVal := map[string]int{
-						"id": intPK,
-					}
-
-					result = append(result, &HintStruct{
-						Table: table1,
-						TableID: displayConfig.dstAppConfig.tableNameIDPairs[table1],
-						KeyVal: keyVal,
-						Data: data,
-						Tag: tag,
-					})
-
-					deps1 := procDependencies[table1+"."+key1]
-					for i, val2 := range deps1 {
-						if val2 == table+"."+col {
-							deps1 = append(deps1[:i], deps1[i+1:]...)
-							break
-						}
-					}
-					if len(deps1) == 0 {
-
-						delete(procDependencies, table1+"."+key1)
-
-					} else {
-
-						procDependencies[table1+"."+key1] = deps1
-
-					}
+				if hint.Table == t1 {
+					hintID = j
 				}
 
-				delete(procDependencies, table+"."+col)
+			}
+
+			// In this case, since data may be incomplete, 
+			// we cannot get the data in the parent node
+			if hintID == -1 {
+
+				return nil, CannotFindAnyDataInParent
+
+			} else {
+				
+				// For example:
+				// if a condition is [favourites.status_id:statuses.id], 
+				// from will be "favourites t0 JOIN statuses t1 ON t0.status_id = t1.id"
+				from += fmt.Sprintf("%s %s JOIN %s %s ON %s.%s = %s.%s ",
+					t1, seq1, t2, seq2, seq1, a1, seq2, a2)
 
 			}
+
+		// This is mainly to solve the case in which
+		// conversation cannot directly depend on root
+		// conversation depends on statuses, which in turn depends on root. 
+		// This is now obsolete because there is no dependency between other nodes with root
+		// For now, there is always only one condition.
+		} else {
+
+			from += fmt.Sprintf("JOIN %s %s on %s.%s = %s.%s ",
+				t2, seq2, seq1, a1, seq2, a2)
+			
+
+		}
+
+		//The last condition
+		if i == len(conditions)-1 {
+
+			var depDataKey string
+			var depDataValue int
+
+			for k, v := range hints[hintID].KeyVal {
+
+				depDataKey = k
+				depDataValue = v
+
+			}
+
+			// Following the above example,
+			// the whole query will be:
+			// SELECT t1.* 
+			// FROM favourites t0 JOIN statuses t1 ON t0.status_id = t1.id
+			// WHERE t0.status_id = 80
+			where := fmt.Sprintf("WHERE %s.%s = %d", "t0", depDataKey, depDataValue)
+			table = t2
+			query += from + where
+
 		}
 	}
+	// fmt.Println(query)
 
-	// fmt.Println(procDependencies)
-	// fmt.Println(result)
-	if len(procDependencies) == 0 {
-
-		return result, nil
-
-	} else {
-
-		return result, NodeIncomplete
-
-	}
-
-}
-
-func getOneRowBasedOnHint(displayConfig *displayConfig, 
-	hint *HintStruct) (map[string]interface{}, error) {
-	
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %d", hint.Table, hint.KeyVal["id"])
-	
-	// log.Println(query)
-	
 	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// fmt.Println(data)
 	if len(data) == 0 {
 
-		return nil, DataNotExists
+		return nil, CannotFindAnyDataInParent
 
 	} else {
 
-		return data, nil
+		return TransformRowToHint(displayConfig, data, table, pTag), nil
 
 	}
-
-}
-
-func getDataInNode(displayConfig *displayConfig, 
-	hint *HintStruct) ([]*HintStruct, error) {
-
-	if hint.Data == nil {
-
-		data, err := getOneRowBasedOnHint(displayConfig, hint)
-		if err != nil {
-
-			return nil, err
-
-		} else {
-
-			hint.Data = data
-
-		}
-	}
-	
-	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
-
-		for _, member := range tag.Members {
-
-			if hint.Table == member {
-
-				if len(tag.Members) == 1 {
-
-					return []*HintStruct{hint}, nil
-
-				} else {
-
-					// Note: we assume that one dependency represents that one row
-					// 		in one table depends on another row in another table
-					hints, err1 := getRemainingDataInNode(displayConfig,
-						 tag.InnerDependencies, tag.Members, hint)
-					
-					// Refresh the cached results which could have changed due to
-					// reference resolution 
-					refreshCachedDataHints(displayConfig, hints)
-
-					return hints, err1
-				}
-			}
-		}
-	}
-
-	return nil, errors.New("Error: the hint does not match any tags")
-
-}
-
-// A recursive function checks whether all the data one data recursively depends on exists
-// We only checks whether the table depended on exists, which is sufficient for now
-func checkDependsOnExists(displayConfig *displayConfig, 
-	allData []*HintStruct, data *HintStruct) bool {
-	
-	memberID, _ := data.GetMemberID(displayConfig)
-	// fmt.Println(memberID)
-
-	dependsOnTables := data.GetDependsOnTables(displayConfig, memberID)
-	// fmt.Println(dependsOnTables)
-	
-	if len(dependsOnTables) == 0 {
-
-		return true
-
-	} else {
-
-		for _, dependsOnTable := range dependsOnTables {
-
-			exists := false
-
-			for _, oneData := range allData {
-
-				if oneData.Table == dependsOnTable {
-
-					if !checkDependsOnExists(displayConfig, allData, oneData) {
-
-						return false
-
-					} else {
-
-						exists = true
-						break
-
-					}
-				}
-			}
-			if !exists {
-
-				return false
-
-			}
-		}
-	}
-
-	return true
-	
-}
-
-func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
-	 allData []*HintStruct) []*HintStruct {
-	
-	var trimmedData []*HintStruct
-
-	for _, data := range allData {
-
-		if checkDependsOnExists(displayConfig, allData, data) {
-
-			trimmedData = append(trimmedData, data)
-			
-		}
-
-	}
-
-	return trimmedData
-
-}
-
-func GetDataInNodeBasedOnDisplaySetting(displayConfig *displayConfig, 
-	hint *HintStruct) ([]*HintStruct, error) {
-	
-	displaySetting, _ := hint.GetTagDisplaySetting(displayConfig)
-
-	// Whether a node is complete or not, get all the data in a node.
-	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err := getDataInNode(displayConfig, hint); err != nil {
-
-		// The setting "default_display_setting" means only display a node 
-		// when the node is complete.
-		// Therefore, return nil and error message when node is not complete.
-		if displaySetting == "default_display_setting" {
-			return nil, err
-
-		// The setting "display_based_on_inner_dependencies" means 
-		// display as much data in a node as possible based on inner dependencies.
-		// Note: if a piece of data in a node depends on some data not existing in the node,
-		// it needs to be deleted from the data set and cannot be displayed.
-		} else if displaySetting == "display_based_on_inner_dependencies" {
-
-			// fmt.Println(data)
-			return trimDataBasedOnInnerDependencies(displayConfig, data), err
-
-		}
-	
-		// If a node is complete, return all the data in the node regardless of the setting.
-	} else {
-
-		return data, nil
-
-	}
-
-	panic("Should never happen")
-
 }

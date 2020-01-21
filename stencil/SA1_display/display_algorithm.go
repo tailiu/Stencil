@@ -121,12 +121,16 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 		// depend on other nodes
 		if oneMigratedData.Tag == "root" {
 
+			log.Println("The checked data is a root node")
+
 			err15 := Display(displayConfig, dataInNode)
 			if err15 != nil {
 				log.Fatal(err15)
+			} else {
+				log.Println("Display a root node when checking ownership")
 			}
 			
-			return ReturnResultBasedOnNodeCompleteness(err15)
+			return ReturnResultBasedOnNodeCompleteness(err1)
 		
 		// If the tag of this node is not the root,
 		// we need to check the ownership and sharing relationships of this data.
