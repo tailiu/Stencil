@@ -70,6 +70,8 @@ func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig,
 		and member = %s and id = %s ORDER BY pk`,
 		refResolutionConfig.appID, ID.member, ID.id)
 	
+	log.Println(query)
+
 	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
@@ -81,7 +83,7 @@ func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig,
 	for _, data1 := range data {
 
 		updatedAttrs[fmt.Sprint(data1["reference"])] = 
-			updatedAttrs[fmt.Sprint(data1["value"])]
+			fmt.Sprint(data1["value"])
 
 	}
 

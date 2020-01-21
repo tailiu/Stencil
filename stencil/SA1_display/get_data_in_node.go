@@ -288,7 +288,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					return data, nil
 	
 				} else {
-
+					
+					log.Println(ID1)
 					log.Println("newVal", newVal)
 					log.Println("value", value)
 					panic(`Find the resolved attribute, but the value is not what we want. 
