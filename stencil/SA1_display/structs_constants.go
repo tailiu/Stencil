@@ -4,7 +4,6 @@ import (
 	"stencil/config"
 	"stencil/reference_resolution"
 	"database/sql"
-	"sync"
 )
 
 type DAG struct {
@@ -43,7 +42,6 @@ type displayConfig struct {
 	srcAppConfig			*srcAppConfig
 	dstAppConfig			*dstAppConfig
 	mappingsFromSrcToDst	*config.MappedApp
-	wg 						*sync.WaitGroup
 }
 
 type DataInDependencyNode struct {

@@ -1,15 +1,16 @@
 package SA1_display
 
 import (
+	"stencil/config"
+	"stencil/db"
 	"log"
 	"sync"
+	"time"
 )
 
-func displayController(migrationID, threadNum int) {
+const WAIT_FOR_MIGRATION_START_INTERVAL = 100 * time.Millisecond
 
-	var wg sync.WaitGroup
-
-	wg.Add(threadNum)
+func displayController(migrationID, threadNum int, wg *sync.WaitGroup) {
 
 	// If the destination app database is not in the new server, newDB is false
 	newDB := false
@@ -17,7 +18,7 @@ func displayController(migrationID, threadNum int) {
 	// If the display controller needs to resolve references, resolveReference is true
 	resolveReference := true
 
-	displayConfig := CreateDisplayConfig(migrationID, resolveReference, newDB, &wg)
+	dConfig := CreateDisplayConfig(migrationID, resolveReference, newDB)
 
 	log.Println("############### Start Display Controller ###############")
 
@@ -29,24 +30,45 @@ func displayController(migrationID, threadNum int) {
 
 		log.Println("Start thread:", i + 1)
 
-		go DisplayThread(displayConfig)
+		go func(dConfig *displayConfig) {
+
+			defer wg.Done()
+			
+			DisplayThread(dConfig)
+		
+		} (dConfig)
 
 	}
-
-	wg.Wait()
 
 	log.Println("############### End Display Controller ###############")
 
 }
 
-func StartDisplay(uid, srcAppID, dstAppID, migrationType string, threadNum int) {
+func StartDisplay(uid, srcAppID, dstAppID, migrationType string, 
+	threadNum int, wg *sync.WaitGroup) {
 
-	migrationIDs := getMigrationIDs(uid, srcAppID, dstAppID, migrationType)
+	var migrationIDs []int
 
-	if len(migrationIDs) != 1 {
-		log.Fatal("There are more than one migration")
+	stencilDBConn := db.GetDBConn(config.StencilDBName)
+
+	for {
+
+		migrationIDs = getMigrationIDs(stencilDBConn, 
+			uid, srcAppID, dstAppID, migrationType)
+		
+		// log.Println("*******")
+		// log.Println(migrationIDs)
+
+		if migrationNum := len(migrationIDs); migrationNum == 0 {
+			time.Sleep(WAIT_FOR_MIGRATION_START_INTERVAL)
+		} else if migrationNum == 1 {
+			break
+		} else {
+			log.Fatal("There are more than one migration")
+		}
+
 	}
 
-	displayController(migrationIDs[0], threadNum)
+	displayController(migrationIDs[0], threadNum, wg)
 
 }
