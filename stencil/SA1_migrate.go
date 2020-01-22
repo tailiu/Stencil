@@ -1,17 +1,15 @@
 package main
 
 import (
-	"stencil/apis"
-	"stencil/SA1_display"
+	"stencil/SA1_migrate"
 )
 
 func main() {
 	
-	uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType := 
-		"44781", "diaspora", "1", "mastodon", "2", "d"
+	uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+		"447932", "diaspora", "1", "mastodon", "2", "d", 1
 
-	apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType)
-
-	SA1_display.StartDisplay()
+	SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+		dstAppName, dstAppID, migrationType, threadNum)
 
 }

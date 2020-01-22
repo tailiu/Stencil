@@ -11,11 +11,10 @@ import (
 	"stencil/schema_mappings"
 	"stencil/reference_resolution"
 	"encoding/json"
-	"sync"
 )
 
 func CreateDisplayConfig(migrationID int, 
-	resolveReference, newDB bool, wg *sync.WaitGroup) *displayConfig {
+	resolveReference, newDB bool) *displayConfig {
 
 	var displayConfig displayConfig
 
@@ -111,7 +110,6 @@ func CreateDisplayConfig(migrationID int,
 	displayConfig.dstAppConfig = &dstAppConfig
 	displayConfig.refResolutionConfig = refResolutionConfig
 	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
-	displayConfig.wg = wg
 
 	return &displayConfig
 
@@ -699,9 +697,8 @@ func refreshCachedDataHints(displayConfig *displayConfig,
 
 }
 
-func getMigrationIDs(uid, srcAppID, dstAppID, migrationType string) []int {
-
-	stencilDBConn := db.GetDBConn(config.StencilDBName)
+func getMigrationIDs(stencilDBConn *sql.DB,
+	uid, srcAppID, dstAppID, migrationType string) []int {
 
 	var mType string
 	var migrationIDs []int

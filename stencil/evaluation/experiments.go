@@ -1,8 +1,11 @@
 package evaluation
 
 import (
-	"log"
-	"strconv"
+
 )
 
-func 
+func exp1() {
+
+	
+
+}

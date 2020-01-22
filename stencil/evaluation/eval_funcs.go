@@ -24,7 +24,9 @@ var mediaSize = map[string]int64 {
 	"5.jpg": 1033414,
 }
 
-func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
+func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, 
+	appID string, extraConditions string) []map[string]interface{} {
+	
 	query := fmt.Sprintf("select * from migration_registration where dst_app = '%s' %s;", 
 		appID, extraConditions)
 	// log.Println(query)
@@ -37,8 +39,12 @@ func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, appID string, extra
 	return migrationIDs
 }
 
-func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID string, extraConditions string) []map[string]interface{} {
-	query := fmt.Sprintf("select migration_id, is_logical from migration_registration where dst_app = '%s' %s;", 
+func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID string, 
+	extraConditions string) []map[string]interface{} {
+	
+	query := fmt.Sprintf(
+		`select migration_id, is_logical from migration_registration 
+		where dst_app = '%s' %s;`, 
 		appID, extraConditions)
 	// log.Println(query)
 
@@ -101,6 +107,7 @@ func ConvertMapInt64ToJSONString(data map[string]int64) string {
 }
 
 func WriteStrToLog(fileName string, data string) {
+
 	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -119,7 +126,10 @@ func ConvertInt64ToString(data int64) string {
 }
 
 func WriteStrArrToLog(fileName string, data []string) {
-	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	f, err := os.OpenFile(logDir + fileName, 
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -181,7 +191,9 @@ func calculateFileSize(AppDBConn *sql.DB, table string, pKey int, AppID string) 
 }
 
 func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int, AppID string) int64 {
+
 	selectQuery := "select"
+	
 	for i, col := range cols {
 		selectQuery += " pg_column_size(" + col + ") "
 		if i != len(cols) - 1 {
@@ -191,9 +203,11 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int, 
 			selectQuery += " as cols_size "
 		}
 	}
+	
 	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
 	// log.Println(table)
 	// log.Println(query)
+	
 	row, err2 := db.DataCall1(AppDBConn, query)
 	if err2 != nil {
 		log.Fatal(err2)
@@ -240,8 +254,12 @@ func getLogicalRow(AppDBConn *sql.DB, table string, pKey int) map[string]interfa
 	return row
 }
 
-func getTableKeyInLogicalSchemaOfMigrationWithConditions(stencilDBConn *sql.DB, migrationID string, side string, conditions string) []map[string]interface{} {
-	query := fmt.Sprintf("select %s_table, %s_id from evaluation where migration_id = '%s' and %s;", 
+func getTableKeyInLogicalSchemaOfMigrationWithConditions(
+	stencilDBConn *sql.DB, migrationID string, 
+	side string, conditions string) []map[string]interface{} {
+
+	query := fmt.Sprintf(`select %s_table, %s_id from evaluation 
+		where migration_id = '%s' and %s;`, 
 		side, side, migrationID, conditions)
 	
 	data, err := db.DataCall(stencilDBConn, query)
@@ -252,8 +270,11 @@ func getTableKeyInLogicalSchemaOfMigrationWithConditions(stencilDBConn *sql.DB, 
 	return data
 }
 
-func getDependsOnTableKeys(evalConfig *EvalConfig, app, table string) []string {
+func getDependsOnTableKeys(evalConfig *EvalConfig, 
+	app, table string) []string {
+	
 	return evalConfig.Dependencies[app][table]
+
 }
 
 func IncreaseMapValByMap(m1 map[string]int, m2 map[string]int) {
@@ -284,10 +305,14 @@ func increaseMapValOneByKey(m1 map[string]int, key string) {
 	}
 }
 
-func getMigratedColsOfApp(stencilDBConn *sql.DB, appID string, migration_id string) map[string][]string {
+func getMigratedColsOfApp(stencilDBConn *sql.DB, 
+	appID string, migration_id string) map[string][]string {
+	
 	mCols := make(map[string][]string)
 
-	query := fmt.Sprintf("select src_table, src_cols from evaluation where src_app = '%s' and migration_id = '%s'",
+	query := fmt.Sprintf(
+		`select src_table, src_cols from evaluation
+		 where src_app = '%s' and migration_id = '%s'`,
 		appID, migration_id)
 
 	tableCols, err := db.DataCall(stencilDBConn, query)
@@ -331,16 +356,25 @@ func getCountsSystem(dbConn *sql.DB, query string) int64 {
 }
 
 func getAllDisplayedData(evalConfig *EvalConfig, migrationID, appID string) []DisplayedData {
-	query := fmt.Sprintf("select table_id, array_agg(row_id) as row_ids from migration_table where bag = false and app_id = %s and migration_id = %s and mark_as_delete = false group by group_id, table_id;",
+
+	query := fmt.Sprintf(
+		`select table_id, array_agg(row_id) as row_ids from migration_table 
+		where bag = false and app_id = %s and migration_id = %s and mark_as_delete = false 
+		group by group_id, table_id;`,
 		appID, migrationID)
 	
 	data := db.GetAllColsOfRows(evalConfig.StencilDBConn, query)
 
 	var displayedData []DisplayedData
+
 	for _, data1 := range data {
+
 		var rowIDs []string
+
 		s := data1["row_ids"][1:len(data1["row_ids"]) - 1]
+
 		s1 := strings.Split(s, ",")
+		
 		for _, rowID := range s1 {
 			rowIDs = append(rowIDs, rowID)
 		}
@@ -348,6 +382,7 @@ func getAllDisplayedData(evalConfig *EvalConfig, migrationID, appID string) []Di
 		data2 := DisplayedData{}
 		data2.TableID = data1["table_id"]
 		data2.RowIDs = rowIDs
+		
 		displayedData = append(displayedData, data2)
 	}
 
@@ -356,55 +391,79 @@ func getAllDisplayedData(evalConfig *EvalConfig, migrationID, appID string) []Di
 }
 
 func getAppConfig(evalConfig *EvalConfig, app string) *config.AppConfig {
+
 	app_id := db.GetAppIDByAppName(evalConfig.StencilDBConn, app)
+	
 	appConfig, err := config.CreateAppConfigDisplay(app, app_id, evalConfig.StencilDBConn, true)
+	
 	if err != nil {
 		log.Fatal(err)
 	}
+	
 	return &appConfig
 }
 
 func GetTableNameByTableID(evalConfig *EvalConfig, tableID string) string {
+	
 	query := fmt.Sprintf("select table_name from app_tables where pk = %s", tableID)
+	
 	data1, err1 := db.DataCall1(evalConfig.StencilDBConn, query)
+	
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+	
 	return data1["table_name"].(string)
 }
 
 func getMigrationEndTime(stencilDBConn *sql.DB, migrationID int) time.Time {
+	
 	log_txn := new(transaction.Log_txn)
+	
 	log_txn.DBconn = stencilDBConn
+	
 	log_txn.Txn_id = migrationID
+	
 	if endTime := log_txn.GetCreatedAt("COMMIT"); len(endTime) == 1 {
 		return endTime[0]
 	} else {
 		panic("Should never happen here!")
 	}
+
 }
 
-// func getAllDataInDataBag(evalConfig *EvalConfig, migrationID string, appConfig *config.AppConfig) []DataBagData {
-// 	query := fmt.Sprintf("select table_id, array_agg(row_id) as row_ids from migration_table where bag = true and app_id = %s and migration_id = %s group by group_id, table_id;",
-// 		appConfig.AppID, migrationID)
+func oldGetAllDataInDataBag(evalConfig *EvalConfig, 
+	migrationID string, appConfig *config.AppConfig) []DataBagData {
 	
-// 	data := db.GetAllColsOfRows(evalConfig.StencilDBConn, query)
+	query := fmt.Sprintf(
+		`select table_id, array_agg(row_id) as row_ids from migration_table 
+		where bag = true and app_id = %s and migration_id = %s 
+		group by group_id, table_id;`,
+		appConfig.AppID, migrationID)
+	
+	data := db.GetAllColsOfRows(evalConfig.StencilDBConn, query)
 
-// 	var dataBag []DataBagData
-// 	for _, data1 := range data {
-// 		var rowIDs []string
-// 		s := data1["row_ids"][1:len(data1["row_ids"]) - 1]
-// 		s1 := strings.Split(s, ",")
-// 		for _, rowID := range s1 {
-// 			rowIDs = append(rowIDs, rowID)
-// 		}
+	var dataBag []DataBagData
+	
+	for _, data1 := range data {
+		
+		var rowIDs []string
+		
+		s := data1["row_ids"][1:len(data1["row_ids"]) - 1]
+		s1 := strings.Split(s, ",")
+		
+		for _, rowID := range s1 {
+			rowIDs = append(rowIDs, rowID)
+		}
 
-// 		dataBagData := DataBagData{}
-// 		dataBagData.TableID = data1["table_id"]
-// 		dataBagData.RowIDs = rowIDs
-// 		dataBag = append(dataBag, dataBagData)
-// 	}
+		dataBagData := DataBagData{}
+		dataBagData.TableID = data1["table_id"]
+		dataBagData.RowIDs = rowIDs
+		
+		dataBag = append(dataBag, dataBagData)
+	}
 
-// 	log.Println(dataBag)
-// 	return dataBag
-// }
+	log.Println(dataBag)
+	
+	return dataBag
+}

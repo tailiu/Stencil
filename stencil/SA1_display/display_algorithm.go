@@ -5,13 +5,9 @@ import (
 	"time"
 )
 
-const checkInterval = 200 * time.Millisecond
+const CHECK_INTERVAL = 200 * time.Millisecond
 
 func DisplayThread(displayConfig *displayConfig) {
-
-	if displayConfig.wg != nil {
-		defer displayConfig.wg.Done()
-	}
 
 	startTime := time.Now()
 
@@ -35,7 +31,7 @@ func DisplayThread(displayConfig *displayConfig) {
 
 		}
 
-		time.Sleep(checkInterval)
+		time.Sleep(CHECK_INTERVAL)
 	}
 
 
