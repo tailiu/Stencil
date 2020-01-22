@@ -3,7 +3,6 @@ package apis
 import (
 	"fmt"
 	"log"
-	"os"
 	"stencil/config"
 	"stencil/db"
 	"stencil/migrate"
@@ -15,7 +14,7 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string) {
 
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 
-		switch os.Args[3] {
+		switch mtype {
 		case "d":
 			{
 				mtype = migrate.DELETION
