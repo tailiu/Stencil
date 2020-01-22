@@ -9,9 +9,13 @@ const checkInterval = 200 * time.Millisecond
 
 func DisplayThread(displayConfig *displayConfig) {
 
+	if displayConfig.wg != nil {
+		defer displayConfig.wg.Done()
+	}
+
 	startTime := time.Now()
 
-	log.Println("--------- Start of Display Check ---------")
+	log.Println("--------- Start of Display Check In One Thread ---------")
 
 	log.Println("--------- First Phase --------")
 
@@ -47,10 +51,10 @@ func DisplayThread(displayConfig *displayConfig) {
 
 	}
 
-	log.Println("--------- End of Display Check ---------")
+	log.Println("--------- End of Display Check In One Thread ---------")
 	
 	endTime := time.Now()
-	log.Println("Time used: ", endTime.Sub(startTime))
+	log.Println("Time used in this display thread: ", endTime.Sub(startTime))
 
 }
 

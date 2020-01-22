@@ -11,9 +11,11 @@ import (
 	"stencil/schema_mappings"
 	"stencil/reference_resolution"
 	"encoding/json"
+	"sync"
 )
 
-func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *displayConfig {
+func CreateDisplayConfig(migrationID int, 
+	resolveReference, newDB bool, wg *sync.WaitGroup) *displayConfig {
 
 	var displayConfig displayConfig
 
@@ -109,6 +111,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, newDB bool) *display
 	displayConfig.dstAppConfig = &dstAppConfig
 	displayConfig.refResolutionConfig = refResolutionConfig
 	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
+	displayConfig.wg = wg
 
 	return &displayConfig
 
@@ -694,4 +697,43 @@ func refreshCachedDataHints(displayConfig *displayConfig,
 	
 	}
 
+}
+
+func getMigrationIDs(uid, srcAppID, dstAppID, migrationType string) []int {
+
+	stencilDBConn := db.GetDBConn(config.StencilDBName)
+
+	var mType string
+	var migrationIDs []int
+
+	switch migrationType {
+	case "d":
+		mType = "3"
+	default:
+		log.Fatal("Cannot find a corresponding migration type")
+	}
+	
+	query := fmt.Sprintf(`select migration_id from migration_registration 
+		where user_id = %s and src_app = %s and dst_app = %s and migration_type = %s`,
+		uid, srcAppID, dstAppID, mType)
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	// log.Println(data)
+
+	for _, data1 := range data {
+
+		migrationID, ok := data1["migration_id"].(int64)
+		if !ok {
+			log.Fatal("Transform an interface type migrationID to an int64 fails")
+		}
+
+		migrationIDs = append(migrationIDs, int(migrationID))
+	}
+
+	return migrationIDs
+		
 }
