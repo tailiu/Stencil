@@ -2,6 +2,8 @@ package reference_resolution
 
 import (
 	"stencil/db"
+	"stencil/config"
+	"database/sql"
 	"fmt"
 	"log"
 )
@@ -128,4 +130,28 @@ func oldForwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 	}
 
 	return res
+}
+
+func oldGetAllAppsConnections() {
+
+	appsConnections := make(map[string]*sql.DB)
+
+	stencilDBConn := db.GetDBConn(config.StencilDBName)
+
+	query1 := fmt.Sprintf(`SELECT pk, app_name from apps`)
+	
+	data, err := db.DataCall(stencilDBConn, query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+
+		appName := fmt.Sprint(data1["app_name"])
+
+		appID := fmt.Sprint(data1["pk"])
+
+		appsConnections[appID] = db.GetDBConn(appName)
+	}
+
 }

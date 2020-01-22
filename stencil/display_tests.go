@@ -2,6 +2,8 @@ package main
 
 import (
 	"stencil/SA1_display"
+	"stencil/reference_resolution"
+	"log"
 )
 
 func test1() {
@@ -18,9 +20,19 @@ func test1() {
 
 }
 
+func test2() {
+
+	prevUserIDs := reference_resolution.GetPrevUserIDs("2", "13")
+
+	// preUserIDs := reference_resolution.GetPreUserIDs("1", "44778")
+
+	log.Println(prevUserIDs)
+}
 
 func main() {
 
-	test1()
+	// test1()
+
+	test2()
 	
 }

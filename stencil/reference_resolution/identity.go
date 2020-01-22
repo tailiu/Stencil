@@ -1,7 +1,9 @@
 package reference_resolution
 
 import (
+	"stencil/config"
 	"stencil/db"
+	"database/sql"
 	"fmt"
 	"log"
 )
@@ -131,4 +133,85 @@ func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 		return fmt.Sprint(data["from_id"])
 	}
 	
+}
+
+func getAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
+
+	query := fmt.Sprintf(`SELECT root_member_id from app_root_member 
+		where app_id = %s`, appID)
+	
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(data)
+
+	return fmt.Sprint(data["root_member_id"])
+
+}
+
+func getPrevUserIDsByBackTraversal(stencilDBConn *sql.DB,
+	appID, rootMemberID, userID string) [][]string {
+
+	query := fmt.Sprintf(`SELECT * FROM identity_table 
+		WHERE to_app = %s and to_member = %s and to_id = %s`,
+		appID, rootMemberID, userID)
+	
+	log.Println(query)
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(data)
+
+	if len(data) == 0 {
+
+		return nil
+	
+	} else {
+
+		prevAppID := fmt.Sprint(data[0]["from_app"])
+
+		prevRootMemberID := getAppRootMemberID(stencilDBConn, prevAppID)
+
+		var prevUserID string
+
+		for _, data1 := range data {
+			if fmt.Sprint(data1["from_member"]) == prevRootMemberID {
+				prevUserID = fmt.Sprint(data1["from_id"])
+			}
+		}
+
+		preUserData := [][]string {
+			[]string {
+				prevAppID, prevUserID,
+		}}
+
+		prevPrevUserData := getPrevUserIDsByBackTraversal(stencilDBConn, 
+			prevAppID, prevRootMemberID, prevUserID)
+
+		return append(preUserData, prevPrevUserData...)
+		
+	}
+
+}
+
+// This function gets all previous user ids in previous applications
+// Note that for now it can only get previous user ids 
+// when user has a line migration history, for example,
+// A -> B -> C and we have the appID and userID in C, it can get A and B
+// For the case A -> B and A -> C concurrently (not a line history)
+// and we have the appID and userID in C, it can only get A not B
+func GetPrevUserIDs(appID, userID string) [][]string {
+
+	stencilDBConn := db.GetDBConn(config.StencilDBName)
+
+	rootMemberID := getAppRootMemberID(stencilDBConn, appID)
+
+	return getPrevUserIDsByBackTraversal(stencilDBConn, 
+		appID, rootMemberID, userID)
+
 }

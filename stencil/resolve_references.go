@@ -75,6 +75,12 @@ func test2(displayConfig *config.DisplayConfig) {
 
 }
 
+func test3() {
+
+	
+
+}
+
 func main() { 
 
 	migrationID := 434969759
@@ -82,8 +88,6 @@ func main() {
 	newDB := false
 	
 	referenceResolutionConfig := reference_resolution.InitializeReferenceResolution()
-
-	
 
 	test1(referenceResolutionConfig)
 

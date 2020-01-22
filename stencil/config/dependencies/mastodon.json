@@ -188,7 +188,7 @@
                     "tag": "root",
                     "conditions": [
                         {
-                            "tag_attr": "from_account_id",
+                            "tag_attr": "account_id",
                             "depends_on_attr": "id"
                         }
                     ],
