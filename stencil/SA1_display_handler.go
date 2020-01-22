@@ -49,7 +49,7 @@ func test1() {
 func test3() {
 
 	uid, srcAppID, dstAppID, migrationType, threadNum := 
-		"44773", "1", "2", "d", 1
+		"44772", "1", "2", "d", 1
 
 	SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType, threadNum)
 

@@ -12,6 +12,6 @@ func main() {
 
 	apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType)
 
-	SA1_display.StartDisplay()
+	// SA1_display.StartDisplay()
 
 }
