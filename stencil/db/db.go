@@ -922,3 +922,15 @@ func GetUserListFromAppDB(appName, userTable, userCol string) []string {
 	}
 	return nil
 }
+
+func GetNextUserFromAppDB(appName, userTable, userCol string, offset int) (string, error) {
+	dbConn := GetDBConn(appName)
+	query := fmt.Sprintf("SELECT %s FROM %s ORDER BY %s ASC", userCol, userTable, userCol)
+	if res, err := DataCall1(dbConn, query); err == nil {
+		return fmt.Sprint(res[userCol]), nil
+	} else {
+		fmt.Println(query, userTable, userCol, appName)
+		log.Fatal(err)
+		return "", err
+	}
+}
