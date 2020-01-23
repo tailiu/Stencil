@@ -257,9 +257,7 @@ func (self *Counter) Traverse(node *migrate.DependencyNode) error {
 
 	self.NodeCount += 1
 	if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
-		for _, previousNode := range previousNodes {
-			self.EdgeCount += 1
-		}
+		self.EdgeCount += len(previousNodes)
 	} else {
 		log.Fatal("Error while getting previous nodes for the leaf!")
 	}
