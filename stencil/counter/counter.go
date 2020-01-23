@@ -8,6 +8,7 @@ import (
 	"stencil/db"
 	"stencil/migrate"
 	"strings"
+	"time"
 )
 
 func CreateCounter(appName, appID string) Counter {
@@ -18,9 +19,7 @@ func CreateCounter(appName, appID string) Counter {
 	AppConfig.QR.Migration = true
 	counter := Counter{
 		AppConfig:     AppConfig,
-		AppDBConn:     db.GetDBConn("diaspora_count"),
 		StencilDBConn: db.GetDBConn(db.STENCIL_DB),
-		visitedNodes:  make(map[string]map[string]bool),
 		NodeCount:     0,
 		EdgeCount:     0}
 
@@ -147,19 +146,37 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 	return sql
 }
 
-func (self *Counter) RunCounter() error {
+func RunCounter(ctr *Counter) error {
 
 	offset := 0
-
+	dbName := "diaspora_count"
 	for {
-		if person_id, err := db.GetNextUserFromAppDB("diaspora", "people", "id", offset); err == nil {
+		log.Println("Resetting DB:", dbName)
+		if err := db.DropAndRecreateDB(ctr.StencilDBConn, dbName); err != nil {
+			log.Fatal("Unable to recreate DB: ", dbName)
+		} else {
+			log.Println("Resetting DB Done!")
+			ctr.AppDBConn = db.GetDBConn(dbName)
+		}
+		if person_id, err := db.GetNextUserFromAppDB(dbName, "people", "id", offset); err == nil {
 			if len(person_id) < 1 {
 				break
 			}
 			log.Println("Current User:", person_id)
-			if personNode, err := self.FetchUserNode(person_id); err == nil {
-				if err := self.Traverse(personNode); err == nil {
+			if personNode, err := ctr.FetchUserNode(person_id); err == nil {
+				ctr.root = personNode
+				ctr.EdgeCount = 0
+				ctr.NodeCount = 0
+				if err := ctr.Traverse(personNode); err == nil {
 					offset += 1
+					fmt.Println("Counter Finished for user: ", person_id)
+					fmt.Println("Offset: ", offset)
+					fmt.Println("Nodes: ", ctr.NodeCount)
+					fmt.Println("Edges: ", ctr.EdgeCount)
+					if err := db.InsertIntoDAGCounter(ctr.StencilDBConn, person_id, ctr.EdgeCount, ctr.NodeCount); err != nil {
+						log.Fatal("Insertion Failed into DAGCOUNTER!", err)
+					}
+					time.Sleep(5 * time.Second)
 				} else {
 					fmt.Println("User - Offset: ", person_id, offset)
 					log.Fatal("Error while traversing: ", err)
@@ -167,15 +184,13 @@ func (self *Counter) RunCounter() error {
 			} else {
 				log.Fatal("User Node Not Created: ", err)
 			}
+			ctr.AppDBConn.Close()
 		} else {
 			fmt.Println("User offset: ", offset)
 			log.Fatal("Crashed while running counter: ", err)
 		}
 	}
 	fmt.Println("Counter Finished!")
-	fmt.Println("Offset: ", offset)
-	fmt.Println("Nodes: ", self.NodeCount)
-	fmt.Println("Edges: ", self.EdgeCount)
 	return nil
 }
 

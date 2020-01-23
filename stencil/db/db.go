@@ -160,6 +160,34 @@ func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, src
 	return err
 }
 
+func DropAndRecreateDB(dbConn *sql.DB, dbname string) error {
+	q := fmt.Sprintf("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname in ('%s') AND pid <> pg_backend_pid();", dbname)
+	if _, err := dbConn.Exec(q); err != nil {
+		fmt.Println(q)
+		log.Fatal(err)
+	}
+
+	q = fmt.Sprintf("DROP DATABASE %s;", dbname)
+	if _, err := dbConn.Exec(q); err != nil {
+		fmt.Println(q)
+		log.Fatal(err)
+	}
+
+	q = fmt.Sprintf("CREATE DATABASE %s WITH TEMPLATE diaspora_1000000 OWNER cow;", dbname)
+	if _, err := dbConn.Exec(q); err != nil {
+		fmt.Println(q)
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+func InsertIntoDAGCounter(dbConn *sql.DB, person_id string, edges, nodes int) error {
+	query := "INSERT INTO dag_counter (person_id, edges, nodes) VALUES ($1, $2, $3);"
+	_, err := dbConn.Exec(query, person_id, edges, nodes)
+	return err
+}
+
 func ReallyDeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", table)
 	if _, err := tx.Exec(query, id); err != nil {
