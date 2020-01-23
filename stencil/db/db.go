@@ -909,6 +909,7 @@ func LogError(dbConn *sql.DB, dbquery, args, migration_id, dst_app, qerr string)
 
 func GetUserListFromAppDB(appName, userTable, userCol string) []string {
 	dbConn := GetDBConn(appName)
+	defer dbConn.Close()
 	query := fmt.Sprintf("SELECT %s FROM %s ORDER BY random()", userCol, userTable)
 	if res, err := DataCall(dbConn, query); err == nil {
 		var users []string
@@ -925,7 +926,8 @@ func GetUserListFromAppDB(appName, userTable, userCol string) []string {
 
 func GetNextUserFromAppDB(appName, userTable, userCol string, offset int) (string, error) {
 	dbConn := GetDBConn(appName)
-	query := fmt.Sprintf("SELECT %s FROM %s ORDER BY %s ASC", userCol, userTable, userCol)
+	defer dbConn.Close()
+	query := fmt.Sprintf("SELECT %s FROM %s ORDER BY %s ASC OFFSET %d", userCol, userTable, userCol, offset)
 	if res, err := DataCall1(dbConn, query); err == nil {
 		return fmt.Sprint(res[userCol]), nil
 	} else {

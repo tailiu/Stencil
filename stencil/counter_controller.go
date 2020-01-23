@@ -1,10 +1,14 @@
 package main
 
-import "stencil/counter"
+import (
+	"log"
+	"stencil/counter"
+)
 
 func main() {
-
-	ctr = counter.CreateCounter()
+	appName, appID := "diaspora", "1"
+	ctr := counter.CreateCounter(appName, appID)
+	log.Println("Counter Created for app: ", appName, appID)
 	ctr.RunCounter()
 
 }
