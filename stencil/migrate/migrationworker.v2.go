@@ -105,7 +105,7 @@ func (self *MigrationWorkerV2) MigrationID() int {
 	return self.logTxn.Txn_id
 }
 
-func (self *MigrationWorkerV2) ResolveParentDependencyConditions(node *DependencyNode, dconditions []config.DCondition, parentTag config.Tag) string {
+func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []config.DCondition, parentTag config.Tag) string {
 
 	conditionStr := ""
 	for _, condition := range dconditions {
@@ -155,11 +155,11 @@ func (self *MigrationWorkerV2) ResolveParentDependencyConditions(node *Dependenc
 	return conditionStr
 }
 
-func (self *MigrationWorkerV2) ResolveDependencyConditions(node *DependencyNode, dep config.Dependency, tag config.Tag) string {
+func (node *DependencyNode) ResolveDependencyConditions(SrcAppConfig config.AppConfig, dep config.Dependency, tag config.Tag) string {
 
 	where := ""
 	for _, depOn := range dep.DependsOn {
-		if depOnTag, err := self.SrcAppConfig.GetTag(depOn.Tag); err == nil {
+		if depOnTag, err := SrcAppConfig.GetTag(depOn.Tag); err == nil {
 			if strings.EqualFold(depOnTag.Name, node.Tag.Name) {
 				for _, condition := range depOn.Conditions {
 					conditionStr := ""
@@ -206,30 +206,30 @@ func (self *MigrationWorkerV2) ResolveDependencyConditions(node *DependencyNode,
 	return where
 }
 
-func (self *MigrationWorkerV2) ResolveOwnershipConditions(own config.Ownership, tag config.Tag) string {
+func (root *DependencyNode) ResolveOwnershipConditions(own config.Ownership, tag config.Tag) string {
 
 	where := ""
 	for _, condition := range own.Conditions {
 		conditionStr := ""
 		tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
 		if err != nil {
-			fmt.Println("data1", self.root.Data)
+			fmt.Println("data1", root.Data)
 			log.Fatal(err, tag.Name, condition.TagAttr)
 			break
 		}
-		depOnAttr, err := self.root.Tag.ResolveTagAttr(condition.DependsOnAttr)
+		depOnAttr, err := root.Tag.ResolveTagAttr(condition.DependsOnAttr)
 		if err != nil {
-			fmt.Println("data2", self.root.Data)
+			fmt.Println("data2", root.Data)
 			log.Fatal(err, tag.Name, condition.DependsOnAttr)
 			break
 		}
-		if _, ok := self.root.Data[depOnAttr]; ok {
+		if _, ok := root.Data[depOnAttr]; ok {
 			if conditionStr != "" || where != "" {
 				conditionStr += " AND "
 			}
-			conditionStr += fmt.Sprintf("%s = '%v'", tagAttr, self.root.Data[depOnAttr])
+			conditionStr += fmt.Sprintf("%s = '%v'", tagAttr, root.Data[depOnAttr])
 		} else {
-			fmt.Println("data3", self.root.Data)
+			fmt.Println("data3", root.Data)
 			log.Fatal("ResolveOwnershipConditions:", depOnAttr, " doesn't exist in ", tag.Name)
 		}
 		where += conditionStr
@@ -250,17 +250,6 @@ func (self *MigrationWorkerV2) ExcludeVisited(tag config.Tag) string {
 		}
 	}
 	return visited
-}
-
-func (self *MigrationWorkerV2) ResolveRestrictions(tag config.Tag) string {
-	restrictions := ""
-	for _, restriction := range tag.Restrictions {
-		if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
-			restrictions += fmt.Sprintf(" AND %s = '%s' ", restrictionAttr, restriction["val"])
-		}
-
-	}
-	return restrictions
 }
 
 func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
@@ -308,7 +297,7 @@ func (self *MigrationWorkerV2) FetchRoot(threadID int) error {
 		where := fmt.Sprintf("%s.%s = '%s'", rootTable, rootCol, self.uid)
 		ql := self.GetTagQL(root)
 		sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-		sql += self.ResolveRestrictions(root)
+		sql += root.ResolveRestrictions()
 		if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
 			self.root = &DependencyNode{Tag: root, SQL: sql, Data: data}
 		} else {
@@ -329,10 +318,10 @@ func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode) ([]*Depende
 	var nodes []*DependencyNode
 	for _, dep := range self.SrcAppConfig.GetSubDependencies(node.Tag.Name) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
-			where := self.ResolveDependencyConditions(node, dep, child)
+			where := node.ResolveDependencyConditions(self.SrcAppConfig, dep, child)
 			ql := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-			sql += self.ResolveRestrictions(child)
+			sql += child.ResolveRestrictions()
 			// log.Println("@GetAllNextNodes | ", sql)
 			if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
 				for _, datum := range data {
@@ -362,10 +351,10 @@ func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*Dep
 	for _, dep := range self.SrcAppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
-				where := self.ResolveParentDependencyConditions(node, pdep.Conditions, parent)
+				where := node.ResolveParentDependencyConditions(pdep.Conditions, parent)
 				ql := self.GetTagQL(parent)
 				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-				sql += self.ResolveRestrictions(parent)
+				sql += parent.ResolveRestrictions()
 				// fmt.Println(node.SQL)
 				// log.Fatal("@GetAllPreviousNodes | ", sql)
 				if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
@@ -401,10 +390,10 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
 			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag for dependency { %s > %s } ", threadID, node.Tag.Name, dep.Tag))
-			where := self.ResolveDependencyConditions(node, dep, child)
+			where := node.ResolveDependencyConditions(self.SrcAppConfig, dep, child)
 			ql := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-			sql += self.ResolveRestrictions(child)
+			sql += child.ResolveRestrictions()
 			sql += self.ExcludeVisited(child)
 			sql += " ORDER BY random()"
 			// log.Fatal(sql)
@@ -434,10 +423,10 @@ func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, erro
 		// 	continue
 		// }
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
-			where := self.ResolveOwnershipConditions(own, child)
+			where := self.root.ResolveOwnershipConditions(own, child)
 			ql := self.GetTagQL(child)
 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-			sql += self.ResolveRestrictions(child)
+			sql += child.ResolveRestrictions()
 			sql += " ORDER BY random() "
 			// log.Fatal(sql)
 			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {

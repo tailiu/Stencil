@@ -399,3 +399,14 @@ func (self *AppConfig) GetTagQS(tag Tag, params map[string]string) *qr.QS {
 	// log.Fatal(qs.GenSQL())
 	return qs
 }
+
+func (tag Tag) ResolveRestrictions() string {
+	restrictions := ""
+	for _, restriction := range tag.Restrictions {
+		if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
+			restrictions += fmt.Sprintf(" AND %s = '%s' ", restrictionAttr, restriction["val"])
+		}
+
+	}
+	return restrictions
+}
