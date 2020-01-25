@@ -149,25 +149,25 @@ func SystemLevelDanglingData(migrationID string, evalConfig *EvalConfig) {
 	)
 }
 
-func oldGetDataBagOfUser(migrationID, srcApp, dstApp string, 
-	evalConfig *EvalConfig) {
+// func oldGetDataBagOfUser(migrationID, srcApp, dstApp string, 
+// 	evalConfig *EvalConfig) {
 	
-	migratedNodeSize := getTotalMigratedNodeSize(evalConfig, dstApp, migrationID)
-	log.Println(migratedNodeSize)
+// 	migratedNodeSize := getTotalMigratedNodeSize(evalConfig, dstApp, migrationID)
+// 	log.Println(migratedNodeSize)
 	
-	displayedDataSize := getDisplayedDataSize(evalConfig, srcApp, dstApp, migrationID)
-	log.Println(displayedDataSize)
+// 	displayedDataSize := getDisplayedDataSize(evalConfig, srcApp, dstApp, migrationID)
+// 	log.Println(displayedDataSize)
 
-	dataBags := make(map[string]int64)
-	dataBags["migratedNodeSize"] = migratedNodeSize
-	dataBags["displayedDataSize"] = displayedDataSize
+// 	dataBags := make(map[string]int64)
+// 	dataBags["migratedNodeSize"] = migratedNodeSize
+// 	dataBags["displayedDataSize"] = displayedDataSize
 	
-	WriteStrToLog(
-		evalConfig.DataBags, 
-		ConvertMapInt64ToJSONString(dataBags),
-	)
+// 	WriteStrToLog(
+// 		evalConfig.DataBags, 
+// 		ConvertMapInt64ToJSONString(dataBags),
+// 	)
 
-}
+// }
 
 func oldGetDataBagOfUserBasedOnApp(migrationID, sourceApp, dstApp string, 
 	evalConfig *EvalConfig) {

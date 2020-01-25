@@ -44,6 +44,9 @@ func GetDBConn(app string) *sql.DB {
 	if strings.EqualFold("diaspora", app) {
 		app = app + "_test"
 	}
+	// if strings.EqualFold("diaspora", app) {
+	// 	app = app + "_1000"
+	// }
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable", DB_ADDR, DB_PORT, DB_USER, DB_PASSWORD, app)
 	// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
