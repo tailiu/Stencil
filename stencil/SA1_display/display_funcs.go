@@ -52,6 +52,8 @@ func CreateDisplayConfig(migrationID int,
 		dstDBConn = db.GetDBConn2(dstAppName)
 	}
 
+	// Note that when the display thread is initializing, dstUserID could be nil
+	// because the data has not been migrated yet
 	dstRootMember, dstRootAttr, dstUserID := getDstRootMemberAttrID(
 		stencilDBConn, dstAppID, migrationID, dstDAG)
 
@@ -129,8 +131,10 @@ func getDstRootMemberAttrID(stencilDBConn *sql.DB,
 
 	// Since the in current settings, there is only one row and the root attribute is always id,
 	// we only do in the following way. Note that this is not a generic way.
-	query := fmt.Sprintf(`SELECT id FROM display_flags WHERE app_id = %s 
-		and table_id = %s and migration_id = %d`, appID, tableID, migrationID)
+	query := fmt.Sprintf(
+		`SELECT id FROM display_flags WHERE app_id = %s 
+		and table_id = %s and migration_id = %d`,
+		appID, tableID, migrationID)
 
 	// log.Println(query)
 
@@ -139,8 +143,12 @@ func getDstRootMemberAttrID(stencilDBConn *sql.DB,
 		log.Fatal(err)
 	}
 
-	return dstRootMember, dstRootAttr, fmt.Sprint(data["id"])
-
+	if data["id"] == nil {
+		return dstRootMember, dstRootAttr, ""
+	} else {
+		return dstRootMember, dstRootAttr, fmt.Sprint(data["id"])
+	}
+	
 }
 
 func oldCreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
@@ -531,10 +539,42 @@ func chechPutIntoDataBag(displayConfig *displayConfig,
 	}
 }
 
+func setDstUserIDIfNotSet(displayConfig *displayConfig) {
+
+	if displayConfig.dstAppConfig.userID != "" {
+		return
+	}
+
+	// Since the in current settings, there is only one row and the root attribute is always id,
+	// we only do in the following way. Note that this is not a generic way.
+	query := fmt.Sprintf(
+		`SELECT id FROM display_flags WHERE app_id = %s 
+		and table_id = %s and migration_id = %d`, 
+		displayConfig.dstAppConfig.appID, 
+		displayConfig.dstAppConfig.tableNameIDPairs[displayConfig.dstAppConfig.rootTable], 
+		displayConfig.migrationID)
+
+	log.Println(query)
+
+	data, err := db.DataCall1(displayConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if data["id"] == nil {
+		log.Fatal("This is the second phase, so the user id should not be nil!")
+	} else {
+		displayConfig.dstAppConfig.userID = fmt.Sprint(data["id"])
+	}
+
+}
+
 // When putting data to dag bags, it does not matter whether we set unresolved references
 // to NULLs or not, so we don't set those as NULLs. 
 func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error {
 	
+	setDstUserIDIfNotSet(displayConfig)
+
 	var queries1, queries2, queries3 []string
 
 	var q1, q2, q3 string

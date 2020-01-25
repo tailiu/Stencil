@@ -11,7 +11,7 @@ func Controller(uid, srcAppName, srcAppID,
 	
 	var wg sync.WaitGroup
 	
-	// Instead of waiting for all display threads,
+	// Instead of waiting for all display threads to finish,
 	// we only need to wait for one display thread to finish
 	wg.Add(1)
 

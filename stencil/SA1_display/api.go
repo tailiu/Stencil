@@ -40,7 +40,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup) {
 
 	}
 
-	log.Println("############### End Display Controller ###############")
+	// log.Println("############### End Display Controller ###############")
 
 }
 
