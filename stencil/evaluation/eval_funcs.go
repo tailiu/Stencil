@@ -125,6 +125,18 @@ func ConvertInt64ToString(data int64) string {
 	return strconv.FormatInt(data, 10)
 }
 
+func ConvertInt64ArrToStringArr(data []int64) []string {
+
+	var res []string
+	
+	for _, data1 := range data {
+		res = append(res, ConvertInt64ToString(data1))
+	}
+
+	return res
+
+}
+
 func WriteStrArrToLog(fileName string, data []string) {
 
 	f, err := os.OpenFile(logDir + fileName, 

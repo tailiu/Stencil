@@ -20,8 +20,6 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup) {
 
 	dConfig := CreateDisplayConfig(migrationID, resolveReference, newDB)
 
-	log.Println("############### Start Display Controller ###############")
-
 	log.Println("Migration ID:", migrationID)
 
 	log.Println("Total Display Thread(s):", threadNum)
@@ -40,7 +38,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup) {
 
 	}
 
-	log.Println("############### End Display Controller ###############")
+	// log.Println("############### End Display Controller ###############")
 
 }
 

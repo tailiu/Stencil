@@ -118,14 +118,14 @@ func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 		WHERE to_app = %s and to_member = %s and to_id = %s`,
 		ID.app, ID.member, ID.id)
 	
-	// log.Println(query)
+	log.Println(query)
 
 	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// log.Println(data)
+	log.Println(data)
 
 	if data["from_id"] == nil {
 		return ""
