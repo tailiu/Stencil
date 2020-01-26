@@ -44,6 +44,9 @@ var NoReferenceToResolve =
 var CannotFindResolvedAttributes = errors.New(`Does not find resolved attributes. 
 	Should not happen given one member corresponds to one row for now!`)
 
+var CannotGetPrevID = errors.New(`Cannot get previous ids because of the row has 
+	not been inserted into the identity table`)
+
 // Ownership
 var CannotFindDataInOwnership = 
 	errors.New("Fail to get any Data by the ownership relationship")

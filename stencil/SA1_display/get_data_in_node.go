@@ -132,6 +132,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		data := make(map[string]interface{})
 		var err error
 
+		var prevID string
+
 		fromAttrfirstArgContainID := false
 
 		// Because we only use toTable and toAttr to get the first argument in fromAttrs,
@@ -160,10 +162,13 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					id,
 				)
 				
+				log.Println("dataID:")
+				log.Println(dataID)
+
 				// tableInFirstArg := getTableInArg(fromAttrfirstArg)
 				// srcTableID := displayConfig.srcAppConfig.tableNameIDPairs[tableInFirstArg]
 	
-				prevID := reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
+				prevID = reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
 					dataID)
 				
 				log.Println("Previous id:", prevID)
@@ -202,6 +207,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 		}
 
+		// log.Println("fromAttrfirstArgContainID:", fromAttrfirstArgContainID)
+		// log.Println("data:", data)
+
 		// If the first argument of the from attribute contains id and
 		// we cannot get data, there could be two cases:
 		// 1. The reference has been resolved, so the data contains the up-to-date value
@@ -211,15 +219,28 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		// For 1, it will be checked afterwards
 		// For 2, do the reference resolution again since it does not matter and in the
 		// second time, we can remove the reference and add it to the resolved resolution table
-		if fromAttrfirstArgContainID && data == nil {
+		// There is another case when prevID is "" mentioned below
+		if fromAttrfirstArgContainID {
+			
+			// This is the one of the most strange cases found in tests
+			// I guess this is because the row is first inserted into display_flags table, 
+			// but not inserted into the identity table yet, the display thread can get and check
+			// the row in the display_flags table, but cannot find the previous id. 
+			if prevID == "" {
 
-			log.Println(`The from attributes contain id but we cannot get data,
-				so we try to get data with the current id value`)
+				return nil, CannotGetPrevID
+			}
+			
+			if data == nil {
 
-			data, err = getOneRowBasedOnDependency(displayConfig, table1, col1, value)
-			// This could happen when the resolved and displayed data is deleted
-			if err != nil {
-				return nil, err
+				log.Println(`The from attributes contain id but we cannot get data,
+					so we try to get data with the current id value`)
+
+				data, err = getOneRowBasedOnDependency(displayConfig, table1, col1, value)
+				// This could happen when the resolved and displayed data is deleted
+				if err != nil {
+					return nil, err
+				}
 			}
 			
 		}
