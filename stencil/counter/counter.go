@@ -147,7 +147,7 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 
 func RunCounter(ctr *Counter) error {
 
-	offset := 0
+	offset := 0 // 93400
 	dbName := "diaspora_count"
 
 	for {
@@ -166,7 +166,7 @@ func RunCounter(ctr *Counter) error {
 					ctr.EdgeCount = 0
 					ctr.NodeCount = 0
 					if err := ctr.Traverse(personNode); err == nil {
-						offset += 1
+						offset += 100
 						fmt.Println("Counter Finished for user: ", person_id)
 						fmt.Println("Offset: ", offset)
 						fmt.Println("Nodes: ", ctr.NodeCount)
