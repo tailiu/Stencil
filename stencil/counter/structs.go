@@ -14,4 +14,5 @@ type Counter struct {
 	root          *migrate.DependencyNode
 	NodeCount     int
 	EdgeCount     int
+	visitedNodes  map[string]map[string]bool
 }
