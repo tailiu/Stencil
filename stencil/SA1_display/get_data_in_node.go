@@ -118,7 +118,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			}
 		}
 
-	// We check if users.account_id needs be resolved (of course, in this case, it should be)
+	// We check if users.account_id needs to be resolved (of course, in this case, it should be)
 	// However we don't know its id (this is the differece from the above case!!). 
 	// Also if the value is the value of "id", this could not be used directly 
 	} else if fromAttrsfirstArg := schema_mappings.GetFirstArgsInREFByToTableToAttr(
@@ -126,11 +126,25 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 		log.Println("Before checking reference2 resolved or not")
 		
+		data := make(map[string]interface{})
+		
+		var err error
+
+		// First we must assume that it has already been resolved. If it has not been resolved,
+		// then we cannot get data. Otherwise we just return the obtained data
+		// Note that if we first assume that it has not been resolved and get data using 
+		// prevID, then we could get wrong results
+		data, err = getOneRowBasedOnDependency(displayConfig, table1, col1, value)
+		
+		// This could happen when table1 and col1 have not been resolved
+		if err == nil {
+			log.Println("Before checking reference2, the reference has already been resolved")
+			return data, nil 
+		}
+		
+		// When we reach here, we have to resolve the reference
 		log.Println("From attributes:")
 		log.Println(fromAttrsfirstArg)
-		
-		data := make(map[string]interface{})
-		var err error
 
 		var prevID string
 
