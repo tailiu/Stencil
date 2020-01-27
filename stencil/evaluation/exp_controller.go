@@ -8,7 +8,8 @@ import (
 
 func preExp(evalConfig *EvalConfig) {
 
-	query1 := "TRUNCATE identity_table, migration_registration, reference_table, resolved_references"
+	query1 := `TRUNCATE identity_table, migration_registration, 
+		reference_table, resolved_references, txn_logs, evaluation`
 
 	query2 := "SELECT truncate_tables('cow')"
 
@@ -24,13 +25,18 @@ func preExp(evalConfig *EvalConfig) {
 
 }
 
+// Note that in this exp the migration thread should not migrate data from data bags
 func Exp1() {
 
 	evalConfig := InitializeEvalConfig()
 
+	defer closeDBConns(evalConfig)
+
 	preExp(evalConfig)
 
 	userIDs := getAllUserIDsInDiaspora(evalConfig)
+
+	shuffleSlice(userIDs)
 
 	for _, userID := range userIDs {
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
@@ -52,5 +58,11 @@ func Exp1() {
 	log.Println(sizes)
 	
 	WriteStrArrToLog("exp1", ConvertInt64ArrToStringArr(sizes))
+
+}
+
+func Exp2() {
+
+	
 
 }

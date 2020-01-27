@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"stencil/db"
+	"math/rand"
+	"time"
 )
 
 func getMigrationIDBySrcUserID(evalConfig *EvalConfig, userID string) string {
@@ -63,5 +65,15 @@ func getDanglingDataSizeOfMigration(evalConfig *EvalConfig, migrationID string) 
 	}
 
 	return size
+
+}
+
+func shuffleSlice(s []string) {
+	
+	rand.Seed(time.Now().UnixNano())
+	
+	rand.Shuffle(len(s), func(i, j int) { 
+		s[i], s[j] = s[j], s[i] 
+	})
 
 }

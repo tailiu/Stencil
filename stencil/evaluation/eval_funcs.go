@@ -479,3 +479,11 @@ func oldGetAllDataInDataBag(evalConfig *EvalConfig,
 	
 	return dataBag
 }
+
+func closeDBConns(evalConfig *EvalConfig) {
+
+	evalConfig.StencilDBConn.Close()
+	evalConfig.MastodonDBConn.Close()
+	evalConfig.DiasporaDBConn.Close()
+
+}
