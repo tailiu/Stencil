@@ -117,6 +117,13 @@ func CreateDisplayConfig(migrationID int,
 
 }
 
+func closeDBConns(displayConfig *displayConfig) {
+
+	displayConfig.stencilDBConn.Close()
+	displayConfig.dstAppConfig.DBConn.Close()
+
+}
+
 func getDstRootMemberAttrID(stencilDBConn *sql.DB, 
 	appID string, migrationID int, dstDAG *DAG) (string, string, string) {
 

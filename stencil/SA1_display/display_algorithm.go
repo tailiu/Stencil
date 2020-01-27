@@ -9,6 +9,10 @@ const CHECK_INTERVAL = 200 * time.Millisecond
 
 func DisplayThread(displayConfig *displayConfig) {
 
+	// After one thread is done, it is enough to say the display process is done,
+	// so it is safe to close database connections shared by all display threads
+	defer closeDBConns(displayConfig)
+
 	startTime := time.Now()
 
 	log.Println("--------- Start of Display Check In One Thread ---------")
@@ -24,7 +28,7 @@ func DisplayThread(displayConfig *displayConfig) {
 	for migratedData := GetUndisplayedMigratedData(displayConfig); 
 		!CheckMigrationComplete(displayConfig); 
 		migratedData = GetUndisplayedMigratedData(displayConfig) {
-
+		
 		for _, oneMigratedData := range migratedData {
 
 			checkDisplayOneMigratedData(displayConfig, oneMigratedData, secondRound)

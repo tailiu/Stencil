@@ -26,7 +26,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup) {
 
 	for i := 0; i < threadNum; i++ {
 
-		log.Println("Start thread:", i + 1)
+		log.Println("Start Display Thread:", i + 1)
 
 		go func(dConfig *displayConfig) {
 
@@ -42,8 +42,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup) {
 
 }
 
-func StartDisplay(uid, srcAppID, dstAppID, migrationType string, 
-	threadNum int, wg *sync.WaitGroup) {
+func waitGetMigrationID(uid, srcAppID, dstAppID, migrationType string) int {
 
 	var migrationIDs []int
 
@@ -67,6 +66,18 @@ func StartDisplay(uid, srcAppID, dstAppID, migrationType string,
 
 	}
 
-	displayController(migrationIDs[0], threadNum, wg)
+	stencilDBConn.Close()
+
+	return migrationIDs[0]
+
+}
+
+
+func StartDisplay(uid, srcAppID, dstAppID, migrationType string, 
+	threadNum int, wg *sync.WaitGroup) {
+
+	migrationID := waitGetMigrationID(uid, srcAppID, dstAppID, migrationType)
+
+	displayController(migrationID, threadNum, wg)
 
 }
