@@ -8,7 +8,6 @@ import (
 	"stencil/db"
 	"stencil/migrate"
 	"strings"
-	"time"
 )
 
 func CreateCounter(appName, appID string) Counter {
@@ -68,7 +67,7 @@ func (self *Counter) GetDependentNode(node *migrate.DependencyNode) (*migrate.De
 			sql += " ORDER BY random()"
 			if data, err := db.DataCall1(self.AppDBConn, sql); err == nil {
 				if len(data) > 0 {
-					log.Println(fmt.Sprintf("FETCHING  tag for dependency { %s > %s } ", node.Tag.Name, dep.Tag))
+					// log.Println(fmt.Sprintf("FETCHING  tag for dependency { %s > %s } ", node.Tag.Name, dep.Tag))
 					return &migrate.DependencyNode{Tag: child, SQL: sql, Data: data}, nil
 				}
 			} else {
@@ -95,7 +94,7 @@ func (self *Counter) GetOwnedNode(root *migrate.DependencyNode) (*migrate.Depend
 			// log.Fatal(sql)
 			if data, err := db.DataCall1(self.AppDBConn, sql); err == nil {
 				if len(data) > 0 {
-					log.Println(fmt.Sprintf("FETCHING  tag  for ownership { %s } ", own.Tag))
+					// log.Println(fmt.Sprintf("FETCHING  tag  for ownership { %s } ", own.Tag))
 					return &migrate.DependencyNode{Tag: child, SQL: sql, Data: data}, nil
 				}
 			} else {
@@ -148,48 +147,50 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 
 func RunCounter(ctr *Counter) error {
 
-	offset := 0
+	offset := 0 // 93400
 	dbName := "diaspora_count"
+
 	for {
 		log.Println("Resetting DB:", dbName)
 		if err := db.DropAndRecreateDB(ctr.StencilDBConn, dbName); err != nil {
 			log.Fatal("Unable to recreate DB: ", dbName)
-		} else {
-			log.Println("Resetting DB Done!")
-			ctr.AppDBConn = db.GetDBConn(dbName)
 		}
+		log.Println("Resetting DB Done!")
+		ctr.AppDBConn = db.GetDBConn(dbName)
 		if person_id, err := db.GetNextUserFromAppDB(dbName, "people", "id", offset); err == nil {
-			if len(person_id) < 1 {
-				break
-			}
-			log.Println("Current User:", person_id)
-			if personNode, err := ctr.FetchUserNode(person_id); err == nil {
-				ctr.root = personNode
-				ctr.EdgeCount = 0
-				ctr.NodeCount = 0
-				if err := ctr.Traverse(personNode); err == nil {
-					offset += 1
-					fmt.Println("Counter Finished for user: ", person_id)
-					fmt.Println("Offset: ", offset)
-					fmt.Println("Nodes: ", ctr.NodeCount)
-					fmt.Println("Edges: ", ctr.EdgeCount)
-					if err := db.InsertIntoDAGCounter(ctr.StencilDBConn, person_id, ctr.EdgeCount, ctr.NodeCount); err != nil {
-						log.Fatal("Insertion Failed into DAGCOUNTER!", err)
+			if len(person_id) > 0 {
+				log.Println(">>>>> Current User:", person_id)
+				ctr.uid = person_id
+				if personNode, err := ctr.FetchUserNode(person_id); err == nil {
+					ctr.root = personNode
+					ctr.EdgeCount = 0
+					ctr.NodeCount = 0
+					if err := ctr.Traverse(personNode); err == nil {
+						offset += 100
+						fmt.Println("Counter Finished for user: ", person_id)
+						fmt.Println("Offset: ", offset)
+						fmt.Println("Nodes: ", ctr.NodeCount)
+						fmt.Println("Edges: ", ctr.EdgeCount)
+						if err := db.InsertIntoDAGCounter(ctr.StencilDBConn, person_id, ctr.EdgeCount, ctr.NodeCount); err != nil {
+							log.Fatal("Insertion Failed into DAGCOUNTER!", err)
+						}
+					} else {
+						fmt.Println("User - Offset: ", person_id, offset)
+						log.Fatal("Error while traversing: ", err)
 					}
-					time.Sleep(5 * time.Second)
 				} else {
-					fmt.Println("User - Offset: ", person_id, offset)
-					log.Fatal("Error while traversing: ", err)
+					log.Fatal("User Node Not Created: ", err)
 				}
 			} else {
-				log.Fatal("User Node Not Created: ", err)
+				break
 			}
-			ctr.AppDBConn.Close()
 		} else {
 			fmt.Println("User offset: ", offset)
 			log.Fatal("Crashed while running counter: ", err)
 		}
+		ctr.AppDBConn.Close()
 	}
+
 	fmt.Println("Counter Finished!")
 	return nil
 }
@@ -261,8 +262,8 @@ func (self *Counter) Traverse(node *migrate.DependencyNode) error {
 			break
 		} else {
 			adjNodeIDAttr, _ := adjNode.Tag.ResolveTagAttr("id")
-			log.Println(fmt.Sprintf("Current   Node: { %s } | ID: %v ", node.Tag.Name, node.Data[nodeIDAttr]))
-			log.Println(fmt.Sprintf("Adjacent  Node: { %s } | ID: %v ", adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr]))
+			// log.Println(fmt.Sprintf("Current   Node: { %s } | ID: %v ", node.Tag.Name, node.Data[nodeIDAttr]))
+			// log.Println(fmt.Sprintf("Adjacent  Node: { %s } | ID: %v ", adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr]))
 			if err := self.Traverse(adjNode); err != nil {
 				log.Fatal(fmt.Sprintf("ERROR! NODE : { %s } | ID: %v, ADJ_NODE : { %s } | ID: %v | err: [ %s ]", node.Tag.Name, node.Data[nodeIDAttr], adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr], err))
 				return err
@@ -280,7 +281,6 @@ func (self *Counter) Traverse(node *migrate.DependencyNode) error {
 		fmt.Println(node.Data)
 		log.Fatal("Error while deleting node ", node.Tag.Name, node.Data[nodeIDAttr])
 	}
-	fmt.Println("CURRENT NODES:", self.NodeCount)
-	fmt.Println("CURRENT EDGES:", self.EdgeCount)
+	log.Println(fmt.Sprintf("User: %s, CURRENT NODES: %d, CURRENT EDGES: %d", self.uid, self.NodeCount, self.EdgeCount))
 	return nil
 }

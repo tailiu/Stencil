@@ -7,6 +7,7 @@ import (
 )
 
 type Counter struct {
+	uid           string
 	AppConfig     config.AppConfig
 	StencilDBConn *sql.DB
 	AppDBConn     *sql.DB

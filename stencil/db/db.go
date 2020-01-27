@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os/exec"
 	"reflect"
 	"strings"
 
@@ -163,8 +164,37 @@ func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, src
 	return err
 }
 
+func _DropAndRecreateDB(dbConn *sql.DB, dbname string) error {
+	q := fmt.Sprintf("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname in ('%s', 'diaspora_1000000') AND pid <> pg_backend_pid();", dbname)
+
+	if _, err := dbConn.Exec(q); err != nil {
+		fmt.Println(q)
+		log.Fatal(err)
+	}
+
+	var cmd *exec.Cmd
+
+	q = fmt.Sprintf("DROP DATABASE %s;", dbname)
+	cmd = exec.Command(fmt.Sprintf("PGPASSWORD=123456 psql -h 10.230.12.86 -U cow -d stencil -c '%s'", q))
+
+	if err := cmd.Run(); err != nil {
+		fmt.Println(q)
+		log.Fatal(err)
+	}
+
+	q = fmt.Sprintf("CREATE DATABASE %s WITH TEMPLATE diaspora_1000000 OWNER cow;", dbname)
+	cmd = exec.Command(fmt.Sprintf("PGPASSWORD=123456 psql -h 10.230.12.86 -U cow -d stencil -c '%s'", q))
+
+	if err := cmd.Run(); err != nil {
+		fmt.Println(q)
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
 func DropAndRecreateDB(dbConn *sql.DB, dbname string) error {
-	q := fmt.Sprintf("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname in ('%s') AND pid <> pg_backend_pid();", dbname)
+	q := fmt.Sprintf("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname in ('%s', 'diaspora_1000000') AND pid <> pg_backend_pid();", dbname)
 	if _, err := dbConn.Exec(q); err != nil {
 		fmt.Println(q)
 		log.Fatal(err)
