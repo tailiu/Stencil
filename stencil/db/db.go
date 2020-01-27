@@ -40,7 +40,7 @@ import (
 // }
 
 func GetDBConn(app string) *sql.DB {
-	// log.Println("Creating new db conn for:", app)
+	log.Println("Creating new db conn for:", app)
 	if strings.EqualFold("diaspora", app) {
 		app = app + "_test"
 	}
