@@ -25,6 +25,19 @@ func preExp(evalConfig *EvalConfig) {
 
 }
 
+func Exp1GetMediaSize() {
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	mediaSize := getAllMediaSize(evalConfig)
+
+	log.Println("Total Media Size:", mediaSize, "bytes")
+	
+}
+
+
 // Note that in this exp the migration thread should not migrate data from data bags
 func Exp1() {
 
