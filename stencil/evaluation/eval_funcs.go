@@ -296,6 +296,8 @@ func getTableKeyInLogicalSchemaOfMigrationWithConditions(
 		where migration_id = '%s' and %s;`, 
 		side, side, migrationID, conditions)
 	
+	log.Println(query)
+	
 	data, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)

@@ -28,6 +28,7 @@ func preExp(evalConfig *EvalConfig) {
 
 // In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
+// The source database needs to be changed to diaspora_1000
 func Exp1() {
 
 	evalConfig := InitializeEvalConfig()
@@ -75,9 +76,56 @@ func Exp1GetMediaSize() {
 	
 }
 
-func Exp2() {
+// The source database needs to be changed to diaspora_1000000_exp
+// func Exp2() {
 
+// 	migrationNum := 100
+
+// 	evalConfig := InitializeEvalConfig()
+
+// 	defer closeDBConns(evalConfig)
+
+// 	preExp(evalConfig)
+
+// 	userIDs := getAllUserIDsInDiaspora(evalConfig)
+
+// 	shuffleSlice(userIDs)
+
+// 	res := make(map[string]string)
+
+// 	for i := 0; i < migrationNum; i ++ {
+
+// 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+// 			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
+
+// 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+// 			dstAppName, dstAppID, migrationType, threadNum)
+
+		
+		
+// 		res[userIDs[i]] = 
+		
+// 	}
+
+// 	log.Println(res)
 	
+// 	WriteStrArrToLog("exp2", ConvertMapStringToJSONString(res))
+
+// }
+
+func Exp3() {
 	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	migrationID := "935193000"
+
+	GetMigratedDataSize(
+		evalConfig.StencilDBConn, 
+		evalConfig.DiasporaDBConn, 
+		"1",
+		migrationID,
+	)
 
 }

@@ -7,7 +7,7 @@ import (
 func main() {
 	
 	uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
-		"101", "diaspora", "1", "mastodon", "2", "d", 1
+		"10189", "diaspora", "1", "mastodon", "2", "d", 1
 
 	SA1_migrate.Controller(uid, srcAppName, srcAppID, 
 		dstAppName, dstAppID, migrationType, threadNum)

@@ -3,7 +3,7 @@ package evaluation
 import (
 	"database/sql"
 	"strconv"
-	// "log"
+	"log"
 )
 
 func getMigratedDataInRowSize(AppDBConn *sql.DB, 
@@ -50,7 +50,7 @@ func GetMigratedDataSize(stencilDBConn *sql.DB, AppDBConn *sql.DB,
 		conditions,
 	)
 
-	// log.Println(data)
+	log.Println(data)
 
 	mCols := getMigratedColsOfApp(stencilDBConn, AppID, migrationID)
 	
