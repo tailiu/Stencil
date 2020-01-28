@@ -103,7 +103,7 @@ func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, wg *sync.WaitGr
 }
 
 func checkIfFuzool(table string) bool {
-	fuzoolTables := []string{"blocks", "schema_migrations", "ar_internal_metadata", "pods", "mentions", "o_embed_caches", "user_preferences", "chat_offline_messages", "simple_captcha_data", "comment_signatures", "o_auth_applications", "signature_orders", "o_auth_access_tokens", "account_deletions", "account_migrations", "authorizations", "poll_participations", "services", "open_graph_caches", "participations", "invitation_codes", "polls", "ppid", "references", "reports", "aspect_memberships", "poll_answers", "roles", "chat_contacts", "like_signatures", "poll_participation_signatures", "tag_followings", "tags", "taggings", "chat_fragments", "locations"}
+	fuzoolTables := []string{"blocks", "schema_migrations", "ar_internal_metadata", "pods", "mentions", "o_embed_caches", "user_preferences", "chat_offline_messages", "simple_captcha_data", "comment_signatures", "o_auth_applications", "signature_orders", "o_auth_access_tokens", "account_deletions", "account_migrations", "authorizations", "poll_participations", "services", "open_graph_caches", "participations", "invitation_codes", "polls", "ppid", "references", "reports", "aspect_memberships", "poll_answers", "roles", "chat_contacts", "like_signatures", "poll_participation_signatures", "tag_followings", "tags", "taggings", "chat_fragments", "locations", "aspects", "contacts", "comments", "conversations", "messages", "notifications", "notification_actors"}
 	for _, fTable := range fuzoolTables {
 		if strings.EqualFold(fTable, table) {
 			return true
@@ -134,7 +134,7 @@ func main() {
 		wg.Add(1)
 		current_threads++
 		go transfer(QR, db.GetDBConn(appName), db.GetDBConn(db.STENCIL_DB), table, &wg)
-		if current_threads > 2 {
+		if current_threads > 3 {
 			wg.Wait()
 			current_threads = 0
 		}

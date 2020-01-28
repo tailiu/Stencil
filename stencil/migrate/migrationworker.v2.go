@@ -1207,7 +1207,7 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 						log.Fatal("@SendMemberToBag: error in creating bag! ", err)
 						return err
 					}
-					if serr := db.SaveForEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppName, self.DstAppConfig.AppName, member, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
+					if serr := db.SaveForEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, memberID, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
 						log.Fatal("@SendMemberToBag > SaveForEvaluation =>", serr)
 					}
 					if derr := db.ReallyDeleteRowFromAppDB(self.tx.SrcTx, member, fmt.Sprint(id)); derr != nil {
