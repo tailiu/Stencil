@@ -121,11 +121,11 @@ func oldCheckResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					id,
 				)
 				
-				// tableInFirstArg := getTableInArg(fromAttrfirstArg)
-				// srcTableID := displayConfig.srcAppConfig.tableNameIDPairs[tableInFirstArg]
+				tableInFirstArg := getTableInArg(fromAttrfirstArg)
+				srcTableID := displayConfig.srcAppConfig.tableNameIDPairs[tableInFirstArg]
 	
 				prevID := reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
-					dataID)
+					dataID, srcTableID)
 				
 				log.Println("Previous id:", prevID)
 
