@@ -42,9 +42,12 @@ import (
 
 func GetDBConn(app string) *sql.DB {
 	log.Println("Creating new db conn for:", app)
-	if strings.EqualFold("diaspora", app) {
-		app = app + "_test"
+	if DB_TEST {
+		app += "_test"
 	}
+	// if strings.EqualFold("diaspora", app) {
+	// 	app += "_test"
+	// }
 	// if strings.EqualFold("diaspora", app) {
 	// 	app = app + "_1000"
 	// }
@@ -61,6 +64,9 @@ func GetDBConn(app string) *sql.DB {
 }
 
 func GetDBConn2(app string) *sql.DB {
+	if DB_TEST {
+		app += "_test"
+	}
 	// log.Println("Creating new db conn for:", app)
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable", DB_ADDR_old, DB_PORT, DB_USER, DB_PASSWORD, app)
@@ -275,9 +281,9 @@ func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id string) ([]map[str
 	return DataCall(dbConn, query, app, member, id)
 }
 
-func GetBagsV2(dbConn *sql.DB, user_id string, migration_id int) ([]map[string]interface{}, error) {
-	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND migration_id != $2"
-	return DataCall(dbConn, query, user_id, migration_id)
+func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[string]interface{}, error) {
+	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND app = $2 AND migration_id != $3"
+	return DataCall(dbConn, query, user_id, app_id, migration_id)
 }
 
 func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id string, migration_id int) (map[string]interface{}, error) {

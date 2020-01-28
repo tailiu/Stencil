@@ -5,7 +5,7 @@ import "database/sql"
 var dbConns map[string]*sql.DB
 
 const STENCIL_DB = "stencil"
-const DB_TEST = false
+const DB_TEST = true
 const DB_ADDR = "10.230.12.86"
 const DB_ADDR_old = "10.230.12.75"
 const DB_PORT = "5432"
