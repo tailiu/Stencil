@@ -26,19 +26,7 @@ func preExp(evalConfig *EvalConfig) {
 
 }
 
-func Exp1GetMediaSize() {
-
-	evalConfig := InitializeEvalConfig()
-
-	defer closeDBConns(evalConfig)
-
-	mediaSize := getAllMediaSize(evalConfig)
-
-	log.Println("Total Media Size:", mediaSize, "bytes")
-	
-}
-
-
+// In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
 func Exp1() {
 
@@ -75,8 +63,21 @@ func Exp1() {
 
 }
 
+func Exp1GetMediaSize() {
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	mediaSize := getAllMediaSize(evalConfig)
+
+	log.Println("Total Media Size:", mediaSize, "bytes")
+	
+}
+
 func Exp2() {
 
+	
 	
 
 }

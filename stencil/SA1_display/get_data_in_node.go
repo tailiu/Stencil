@@ -144,6 +144,11 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	// We check if users.account_id needs to be resolved (of course, in this case, it should be)
 	// However we don't know its id (this is the differece from the above case!!). 
 	// Also if the value is the value of "id", this could not be used directly 
+	// We decide to make so much efforts to resolve "backwards" because inner-dependencies like
+	// "statuses.id":"statuses.status_id"
+	// "statuses.id":"mentions.status_id"
+	// "statuses.id":"stream_entries.activity_id"
+	// force us to do in this way. Otherwise, we cannot get other data in a node through statuses.id
 	} else if fromAttrsfirstArg := schema_mappings.GetFirstArgsInREFByToTableToAttr(
 		displayConfig.mappingsFromSrcToDst, table1, col1); len(fromAttrsfirstArg) != 0 {
 
@@ -294,6 +299,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				return nil, CannotGetPrevID
 			}
 			
+			// This could happen when another display thread had resolved the ref
+			// before we tried to get the data using prevID
 			if data2 == nil {
 
 				log.Println(`The from attributes contain id but we cannot get data,
@@ -308,20 +315,16 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			
 		}
 
+		// Now we have the id of the data, we should check whether it has been resolved before, 
+		// but actually if we can get one, it is highly likely that this is the one we want to get because
+		// otherwise there will be multiple rows corresponding to one member.
+		// There could be the case where ids are not changed. Even if references are not resolved, 
+		// we can still get the rows we want, but we need to resolve it.
+		// There could be a case where the data we got is from some other unrelated migrations because
+		// we use old value (in source app) to get data. In this case, this old value 
+		// can be used to get more than one piece of data including the one we want to get
 		for _, data3 := range data2 {
-
-			// Now we have the id of the data, we should check whether it has been resolved before, 
-			// but actually if we can get one, it is highly likely that this is the one we want to get because
-			// otherwise there will be multiple rows corresponding to one member.
-			// There could be the case where ids are not changed, 
-			// so even if references are not resolved, 
-			// we can still get the rows we want, but we need to resolve it further.
-			// There could be a case where the data we got is from some other unrelated migrations because
-			// we use old value (in source app) to get data. This old value can be used to get more than 
-			// one piece of data including the one we want to get, but we use getOneRowBasedOnDependency()
-			// returning only one piece of data. That piece of data happens to be unrelated to the current migration
-			// Then that piece of data will not be resolved. To identity the unrelated data, we take
-			// the current migration id into consideration when checking ReferenceResolved. 
+ 
 			newVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, 
 				table1ID, col1, fmt.Sprint(data3["id"]))
 
