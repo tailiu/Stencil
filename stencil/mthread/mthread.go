@@ -10,6 +10,7 @@ import (
 	"stencil/transaction"
 	"strings"
 	"sync"
+	"time"
 )
 
 func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, MaD string) (int, error) {
@@ -256,10 +257,22 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
 			mWorker := migrate.CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threadID)
+			// return
 			switch mWorker.MType() {
 			case migrate.DELETION:
 				{
 					for {
+						if err := mWorker.MigrateBags(thread_id); err != nil {
+							log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
+							time.Sleep(time.Second * 5)
+							continue
+						}
+						break
+					}
+
+					for {
+						// log.Println("@ThreadControllerV2 > DeletionMigration skipped")
+						// break
 						if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
 							if !strings.Contains(err.Error(), "deadlock") {
 								mWorker.RenewDBConn()
