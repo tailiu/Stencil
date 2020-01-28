@@ -9,7 +9,8 @@ import (
 func preExp(evalConfig *EvalConfig) {
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
-		reference_table, resolved_references, txn_logs, evaluation`
+		reference_table, resolved_references, txn_logs, 
+		evaluation, data_bags, display_flags`
 
 	query2 := "SELECT truncate_tables('cow')"
 

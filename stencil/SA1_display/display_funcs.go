@@ -22,7 +22,7 @@ func CreateDisplayConfig(migrationID int,
 
 	var dstAppConfig dstAppConfig
 
-	stencilDBConn := db.GetDBConn(config.StencilDBName)
+	stencilDBConn := db.GetDBConn(db.STENCIL_DB)
 
 	srcAppID, dstAppID, srcUserID := getSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
 

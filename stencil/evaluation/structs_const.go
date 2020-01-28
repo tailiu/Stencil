@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	stencilDB = "stencil"
+	stencilDB = db.STENCIL_DB
 	mastodon = "mastodon"
 	diaspora = "diaspora"
 
