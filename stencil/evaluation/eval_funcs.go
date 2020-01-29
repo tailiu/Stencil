@@ -158,45 +158,67 @@ func WriteStrArrToLog(fileName string, data []string) {
 	fmt.Fprintln(f)
 }
 
-func calculateFileSize(AppDBConn *sql.DB, table string, pKey int, AppID string) int64 {
+func calculateMediaSize(AppDBConn *sql.DB, table string, 
+	pKey int, AppID string) int64 {
+	
 	if AppID == "1" && table == "photos" {
-		query := fmt.Sprintf("select remote_photo_name from %s where id = %d",
-				table, pKey)
+
+		query := fmt.Sprintf(
+			`select remote_photo_name from %s where id = %d`,
+			table, pKey)
+		
 		res, err2 := db.DataCall1(AppDBConn, query)
 		if err2 != nil {
 			log.Fatal(err2)
 		}
+
 		return mediaSize[fmt.Sprint(res["remote_photo_name"])]
+
 	} else if AppID == "2" && table == "media_attachments" {
-		query := fmt.Sprintf("select remote_url from %s where id = %d",
-				table, pKey)
+
+		query := fmt.Sprintf(
+			`select remote_url from %s where id = %d`,
+			table, pKey)
+		
 		res, err2 := db.DataCall1(AppDBConn, query)
 		if err2 != nil {
 			log.Fatal(err2)
 		}
+
 		parts := strings.Split(fmt.Sprint(res["remote_url"]), "/")
 		mediaName := parts[len(parts) - 1]
 		return mediaSize[mediaName]
+
 	} else if AppID == "3" && table == "tweets" {
-		query := fmt.Sprintf("select tweet_media from %s where id = %d",
-				table, pKey)
+
+		query := fmt.Sprintf(
+			`select tweet_media from %s where id = %d`,
+			table, pKey)
+		
 		res, err2 := db.DataCall1(AppDBConn, query)
 		if err2 != nil {
 			log.Fatal(err2)
 		}
+
 		parts := strings.Split(fmt.Sprint(res["tweet_media"]), "/")
 		mediaName := parts[len(parts) - 1]
 		return mediaSize[mediaName]
+
 	} else if AppID == "4" && table == "file" {
-		query := fmt.Sprintf("select url from %s where id = %d",
-				table, pKey)
+
+		query := fmt.Sprintf(
+			`select url from %s where id = %d`,
+			table, pKey)
+		
 		res, err2 := db.DataCall1(AppDBConn, query)
 		if err2 != nil {
 			log.Fatal(err2)
 		}
+
 		parts := strings.Split(fmt.Sprint(res["url"]), "/")
 		mediaName := parts[len(parts) - 1]
 		return mediaSize[mediaName]
+	
 	} else {
 		return 0
 	}
@@ -226,10 +248,10 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int, 
 	}
 	// log.Println(row["cols_size"].(int64))
 	// if table == "photos" {
-	// 	fmt.Print(fmt.Sprint(pKey) + ":" + fmt.Sprint(calculateFileSize(AppDBConn, table, pKey, AppID)) + ",")
+	// 	fmt.Print(fmt.Sprint(pKey) + ":" + fmt.Sprint(calculateMediaSize(AppDBConn, table, pKey, AppID)) + ",")
 	// }
 	
-	return row["cols_size"].(int64) + calculateFileSize(AppDBConn, table, pKey, AppID)
+	return row["cols_size"].(int64) + calculateMediaSize(AppDBConn, table, pKey, AppID)
 }
 
 func transformTableKeyToNormalType(tableKey map[string]interface{}) (string, int) {
@@ -273,6 +295,8 @@ func getTableKeyInLogicalSchemaOfMigrationWithConditions(
 	query := fmt.Sprintf(`select %s_table, %s_id from evaluation 
 		where migration_id = '%s' and %s;`, 
 		side, side, migrationID, conditions)
+	
+	log.Println(query)
 	
 	data, err := db.DataCall(stencilDBConn, query)
 	if err != nil {

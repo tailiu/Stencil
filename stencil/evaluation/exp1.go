@@ -5,6 +5,7 @@ import (
 	"log"
 	"stencil/db"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -75,5 +76,36 @@ func shuffleSlice(s []string) {
 	rand.Shuffle(len(s), func(i, j int) { 
 		s[i], s[j] = s[j], s[i] 
 	})
+
+}
+
+func getAllMediaSize(evalConfig *EvalConfig) int64 {
+
+	query := fmt.Sprintf(`SELECT id FROM photos`)
+	
+	result, err := db.DataCall(evalConfig.DiasporaDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var size int64
+
+	for _, data1 := range result {
+		
+		tmp := fmt.Sprint(data1["id"])
+		id, err1 := strconv.Atoi(tmp)
+		if err1 != nil {
+			log.Fatal(err)
+		}
+
+		size += calculateMediaSize(
+				evalConfig.DiasporaDBConn, 
+				"photos",
+				id,
+				"1",
+			)
+	}
+
+	return size
 
 }

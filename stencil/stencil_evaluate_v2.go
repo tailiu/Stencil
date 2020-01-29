@@ -6,7 +6,13 @@ import (
 )
 
 func main() {
+	
+	// evaluation.Exp1GetMediaSize()
 
-	evaluation.Exp1()
+	// evaluation.Exp1()
+
+	// evaluation.Exp2()
+
+	evaluation.Exp3()
 
 }

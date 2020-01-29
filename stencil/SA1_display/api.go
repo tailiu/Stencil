@@ -1,7 +1,7 @@
 package SA1_display
 
 import (
-	"stencil/config"
+	// "stencil/config"
 	"stencil/db"
 	"log"
 	"sync"
@@ -46,7 +46,7 @@ func waitGetMigrationID(uid, srcAppID, dstAppID, migrationType string) int {
 
 	var migrationIDs []int
 
-	stencilDBConn := db.GetDBConn(config.StencilDBName)
+	stencilDBConn := db.GetDBConn(db.STENCIL_DB)
 
 	for {
 

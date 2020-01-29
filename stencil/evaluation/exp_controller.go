@@ -9,7 +9,8 @@ import (
 func preExp(evalConfig *EvalConfig) {
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
-		reference_table, resolved_references, txn_logs, evaluation`
+		reference_table, resolved_references, txn_logs, 
+		evaluation, data_bags, display_flags`
 
 	query2 := "SELECT truncate_tables('cow')"
 
@@ -25,7 +26,9 @@ func preExp(evalConfig *EvalConfig) {
 
 }
 
+// In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
+// The source database needs to be changed to diaspora_1000
 func Exp1() {
 
 	evalConfig := InitializeEvalConfig()
@@ -61,8 +64,68 @@ func Exp1() {
 
 }
 
-func Exp2() {
+func Exp1GetMediaSize() {
 
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	mediaSize := getAllMediaSize(evalConfig)
+
+	log.Println("Total Media Size:", mediaSize, "bytes")
 	
+}
+
+// The source database needs to be changed to diaspora_1000000_exp
+// func Exp2() {
+
+// 	migrationNum := 100
+
+// 	evalConfig := InitializeEvalConfig()
+
+// 	defer closeDBConns(evalConfig)
+
+// 	preExp(evalConfig)
+
+// 	userIDs := getAllUserIDsInDiaspora(evalConfig)
+
+// 	shuffleSlice(userIDs)
+
+// 	res := make(map[string]string)
+
+// 	for i := 0; i < migrationNum; i ++ {
+
+// 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+// 			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
+
+// 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+// 			dstAppName, dstAppID, migrationType, threadNum)
+
+		
+		
+// 		res[userIDs[i]] = 
+		
+// 	}
+
+// 	log.Println(res)
+	
+// 	WriteStrArrToLog("exp2", ConvertMapStringToJSONString(res))
+
+// }
+
+func Exp3() {
+	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	migrationID := "935193000"
+
+	GetMigratedDataSize(
+		evalConfig.StencilDBConn, 
+		evalConfig.DiasporaDBConn, 
+		"1",
+		migrationID,
+	)
 
 }
