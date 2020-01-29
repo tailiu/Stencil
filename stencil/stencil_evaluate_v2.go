@@ -11,8 +11,10 @@ func main() {
 
 	// evaluation.Exp1()
 
-	// evaluation.Exp2()
+	evaluation.Exp2()
 
-	evaluation.Exp3()
+	// evaluation.Exp2GetMigratedDataRate()
+
+	// evaluation.Exp3()
 
 }

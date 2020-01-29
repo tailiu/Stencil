@@ -46,7 +46,7 @@ func GetDBConn(app string) *sql.DB {
 		app += "_test"
 	}
 	// if strings.EqualFold("diaspora", app) {
-	// 	app += "_test"
+	// 	app += "_10000_exp"
 	// }
 	// if strings.EqualFold("diaspora", app) {
 	// 	app = app + "_1000"
