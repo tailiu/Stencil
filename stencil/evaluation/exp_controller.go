@@ -60,7 +60,10 @@ func Exp1() {
 
 	log.Println(sizes)
 	
-	WriteStrArrToLog("exp1", ConvertInt64ArrToStringArr(sizes))
+	WriteStrArrToLog(
+		"exp1", 
+		ConvertInt64ArrToStringArr(sizes),
+	)
 
 }
 
@@ -76,42 +79,45 @@ func Exp1GetMediaSize() {
 	
 }
 
-// The source database needs to be changed to diaspora_1000000_exp
-// func Exp2() {
+// The source database needs to be changed to diaspora_1000000_exp1
+// Data will be migrated from diaspora_1000000_exp1
+// We can get data size by diaspora_1000000_exp
+func Exp2() {
 
-// 	migrationNum := 100
+	migrationNum := 100
 
-// 	evalConfig := InitializeEvalConfig()
+	evalConfig := InitializeEvalConfig()
 
-// 	defer closeDBConns(evalConfig)
+	defer closeDBConns(evalConfig)
 
-// 	preExp(evalConfig)
+	preExp(evalConfig)
 
-// 	userIDs := getAllUserIDsInDiaspora(evalConfig)
+	userIDs := getAllUserIDsInDiaspora(evalConfig)
 
-// 	shuffleSlice(userIDs)
+	shuffleSlice(userIDs)
 
-// 	res := make(map[string]string)
+	res := make(map[string]string)
 
-// 	for i := 0; i < migrationNum; i ++ {
+	for i := 0; i < migrationNum; i ++ {
 
-// 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
-// 			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
 
-// 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-// 			dstAppName, dstAppID, migrationType, threadNum)
-
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum)
 		
-		
-// 		res[userIDs[i]] = 
-		
-// 	}
+		res[userIDs[i]] = "true"
 
-// 	log.Println(res)
+	}
+
+	log.Println(res)
 	
-// 	WriteStrArrToLog("exp2", ConvertMapStringToJSONString(res))
+	WriteStrToLog(
+		"exp2",
+		ConvertMapStringToJSONString(res),
+	)
 
-// }
+}
 
 func Exp3() {
 	
@@ -119,12 +125,17 @@ func Exp3() {
 
 	defer closeDBConns(evalConfig)
 
-	migrationID := "935193000"
+	migrationID := "1111158775"
 
-	GetMigratedDataSize(
-		evalConfig.StencilDBConn, 
-		evalConfig.DiasporaDBConn, 
-		"1",
+	// GetMigratedDataSize(
+	// 	evalConfig.StencilDBConn, 
+	// 	evalConfig.DiasporaDBConn, 
+	// 	"1",
+	// 	migrationID,
+	// )
+
+	GetMigratedDataSizeV2(
+		evalConfig,
 		migrationID,
 	)
 

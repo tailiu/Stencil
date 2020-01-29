@@ -14,14 +14,86 @@ import (
 	"strings"
 )
 
-const logDir = "./evaluation/logs/"
+func InitializeEvalConfig() *EvalConfig {
 
-var mediaSize = map[string]int64 {
-	"1.jpg": 512017,
-	"2.jpg": 206993,
-	"3.jpg": 102796,
-	"4.jpg": 51085,
-	"5.jpg": 1033414,
+	evalConfig := new(EvalConfig)
+	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
+	evalConfig.MastodonDBConn = db.GetDBConn2(mastodon)
+	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
+	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, mastodon)
+	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)
+	evalConfig.Dependencies = dependencies
+	evalConfig.TableIDNamePairs = GetTableIDNamePairs(evalConfig.StencilDBConn)
+	
+	mastodonTableNameIDPairs := make(map[string]string)
+
+	res := getTableIDNamePairsInApp(evalConfig.StencilDBConn,
+		 evalConfig.MastodonAppID)
+
+	for _, res1 := range res {
+
+		mastodonTableNameIDPairs[fmt.Sprint(res1["table_name"])] = 
+			fmt.Sprint(res1["pk"])
+	}
+
+	evalConfig.MastodonTableNameIDPairs = mastodonTableNameIDPairs
+
+	// t := time.Now()
+	evalConfig.SrcAnomaliesVsMigrationSizeFile, 
+	evalConfig.DstAnomaliesVsMigrationSizeFile, 
+	evalConfig.InterruptionDurationFile,
+	evalConfig.MigrationRateFile,
+	evalConfig.MigratedDataSizeFile,
+	evalConfig.MigrationTimeFile,
+	evalConfig.SrcDanglingDataInSystemFile,
+	evalConfig.DstDanglingDataInSystemFile,
+	evalConfig.DataDowntimeInStencilFile,
+	evalConfig.DataDowntimeInNaiveFile,
+	evalConfig.DataBags = 
+		"srcAnomaliesVsMigrationSize",
+		"dstAnomaliesVsMigrationSize",
+		"interruptionDuration",
+		"migrationRate",
+		"migratedDataSize",
+		"migrationTime",
+		"srcSystemDanglingData",
+		"dstSystemDanglingData",
+		"dataDowntimeInStencil",
+		"dataDowntimeInNaive",
+		"dataBags"
+
+	return evalConfig
+}
+
+func getTableIDNamePairsInApp(stencilDBConn *sql.DB, app_id string) []map[string]interface{} {
+
+	query := fmt.Sprintf("select pk, table_name from app_tables where app_id = %s", app_id)
+
+	result, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	return result
+}
+
+func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
+	
+	tableIDNamePairs := make(map[string]string)
+
+	query := fmt.Sprintf("select pk, table_name from app_tables;")
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+		tableIDNamePairs[fmt.Sprint(data1["pk"])] = fmt.Sprint(data1["table_name"])
+	}
+	
+	return tableIDNamePairs
+
 }
 
 func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, 
@@ -224,7 +296,8 @@ func calculateMediaSize(AppDBConn *sql.DB, table string,
 	}
 }
 
-func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int, AppID string) int64 {
+func calculateRowSize(AppDBConn *sql.DB, 
+	cols []string, table string, pKey int, AppID string) int64 {
 
 	selectQuery := "select"
 	
@@ -251,7 +324,16 @@ func calculateRowSize(AppDBConn *sql.DB, cols []string, table string, pKey int, 
 	// 	fmt.Print(fmt.Sprint(pKey) + ":" + fmt.Sprint(calculateMediaSize(AppDBConn, table, pKey, AppID)) + ",")
 	// }
 	
-	return row["cols_size"].(int64) + calculateMediaSize(AppDBConn, table, pKey, AppID)
+	if row["cols_size"] == nil {
+
+		return calculateMediaSize(AppDBConn, table, pKey, AppID)
+
+	} else {
+		
+		return row["cols_size"].(int64) + 
+			calculateMediaSize(AppDBConn, table, pKey, AppID)
+	}
+	
 }
 
 func transformTableKeyToNormalType(tableKey map[string]interface{}) (string, int) {
