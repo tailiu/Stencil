@@ -33,7 +33,7 @@ func CreateMigrationWorkerV2WithAppsConfig(uid string, logTxn *transaction.Log_t
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
 		SrcDBConn:    db.GetDBConn(srcAppConfig.AppName),
-		DstDBConn:    db.GetDBConn2(dstAppConfig.AppName),
+		DstDBConn:    db.GetDBConn(dstAppConfig.AppName),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		visitedNodes: make(map[string]map[string]bool)}
@@ -55,7 +55,7 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 	}
 	dstAppConfig.QR.Migration = true
 	srcAppConfig.QR.Migration = true
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+
 	mWorker := MigrationWorkerV2{
 		uid:          uid,
 		SrcAppConfig: srcAppConfig,
@@ -64,11 +64,11 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
 		SrcDBConn:    db.GetDBConn(srcApp),
-		DstDBConn:    db.GetDBConn2(dstApp),
+		DstDBConn:    db.GetDBConn(dstApp),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		visitedNodes: make(map[string]map[string]bool)}
-	fmt.Println("------------------------------------------------------------------------")
+
 	if err := mWorker.FetchRoot(threadID); err != nil {
 		log.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 					if joinMap[toTable][fromTable] != nil {
 						joinMap[toTable][fromTable] = nil
 					}
-					joinStr += fmt.Sprintf(" JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
+					joinStr += fmt.Sprintf(" FULL JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
 					_, colStr := db.GetColumnsForTable(self.SrcDBConn, toTable)
 					cols += colStr + ","
 					seenMap[toTable] = true
@@ -308,7 +308,10 @@ func (self *MigrationWorkerV2) FetchRoot(threadID int) error {
 		} else {
 			if err == nil {
 				err = errors.New("no data returned for root node, doesn't exist?")
+			} else {
+				fmt.Println("@FetchRoot > DataCall1 | ", err)
 			}
+			fmt.Println(sql)
 			return err
 		}
 	} else {
@@ -409,7 +412,7 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 					}
 				}
 			} else {
-				fmt.Println(err)
+				fmt.Println("@GetDependentNode > DataCall1 | ", err)
 				log.Fatal(sql)
 				return nil, err
 			}
@@ -441,7 +444,7 @@ func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, erro
 					}
 				}
 			} else {
-				fmt.Println(err)
+				fmt.Println("@GetOwnedNode > DataCall1 | ", err)
 				log.Fatal(sql)
 				return nil, err
 			}
@@ -450,9 +453,9 @@ func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, erro
 	return nil, nil
 }
 
-func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk, orgCols, cols string, undoAction *transaction.UndoAction, node *DependencyNode) error {
+func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk string, mappedData MappedData, node *DependencyNode) error {
 
-	undoActionSerialized, _ := json.Marshal(undoAction)
+	undoActionSerialized, _ := json.Marshal(mappedData.undoAction)
 	transaction.LogChange(string(undoActionSerialized), self.logTxn)
 	if err := SA1_display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppID, dtable.TableID, pk, fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 		fmt.Println(self.DstAppConfig.AppID, dtable.TableID, pk, fmt.Sprint(self.logTxn.Txn_id))
@@ -460,7 +463,7 @@ func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk, o
 		return errors.New("0")
 	}
 
-	for _, fromTable := range undoAction.OrgTables {
+	for fromTable, fromCols := range mappedData.srcTables {
 		if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
 			srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", fromTable)])
 			if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
@@ -469,8 +472,8 @@ func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk, o
 				// 	log.Fatal(err)
 				// 	return errors.New("0")
 				// }
-				if serr := db.SaveForLEvaluation(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
-					log.Println("@PushData:db.SaveForLEvaluation: ", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, orgCols, cols, fmt.Sprint(self.logTxn.Txn_id))
+				if serr := db.SaveForLEvaluation(tx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, strings.Join(fromCols, ","), mappedData.cols, fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
+					log.Println("@PushData:db.SaveForLEvaluation: ", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, strings.Join(fromCols, ","), mappedData.cols, fmt.Sprint(self.logTxn.Txn_id))
 					log.Fatal(serr)
 					return errors.New("0")
 				}
@@ -602,7 +605,11 @@ func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface
 	self.cols += fmt.Sprintf("%s,", col)
 	self.orgCols += fmt.Sprintf("%s,", orgCol)
 	if fromTable != "" {
-		self.srcTables[fromTable] = true
+		if _, ok := self.srcTables[fromTable]; !ok {
+			self.srcTables[fromTable] = []string{strings.Split(orgCol, ".")[1]}
+		} else {
+			self.srcTables[fromTable] = append(self.srcTables[fromTable], strings.Split(orgCol, ".")[1])
+		}
 	}
 }
 
@@ -672,7 +679,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 		vals:        "",
 		orgCols:     "",
 		orgColsLeft: "",
-		srcTables:   make(map[string]bool),
+		srcTables:   make(map[string][]string),
 		undoAction:  new(transaction.UndoAction)}
 
 	for toAttr, fromAttr := range toTable.Mapping {
@@ -681,7 +688,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 		}
 		if val, ok := node.Data[fromAttr]; ok {
 			fromTokens := strings.Split(fromAttr, ".")
-			data.UpdateData(toAttr, fromTokens[1], fromTokens[0], val)
+			data.UpdateData(toAttr, fromAttr, fromTokens[0], val)
 			data.undoAction.AddData(fromAttr, val)
 			data.undoAction.AddOrgTable(fromTokens[0])
 		} else if strings.Contains(fromAttr, "$") {
@@ -700,7 +707,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					if nodeVal, ok := node.Data[assignedTabCol]; ok {
 						assignedTabColTokens := strings.Split(assignedTabCol, ".")
 						referredTabColTokens := strings.Split(referredTabCol, ".")
-						data.UpdateData(toAttr, assignedTabColTokens[1], assignedTabColTokens[0], nodeVal)
+						data.UpdateData(toAttr, assignedTabCol, assignedTabColTokens[0], nodeVal)
 						var fromID string
 						if val, ok := node.Data[assignedTabColTokens[0]+".id"]; ok {
 							fromID = fmt.Sprint(val)
@@ -749,7 +756,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 			} else if strings.Contains(fromAttr, "#ASSIGN") {
 				if nodeVal, ok := node.Data[assignedTabCol]; ok {
 					assignedTabColTokens := strings.Split(assignedTabCol, ".")
-					data.UpdateData(toAttr, assignedTabColTokens[1], assignedTabColTokens[0], nodeVal)
+					data.UpdateData(toAttr, assignedTabCol, assignedTabColTokens[0], nodeVal)
 				}
 			} else if strings.Contains(fromAttr, "#FETCH") {
 				// #FETCH(targetSrcTable.targetSrcCol, targetSrcTable.srcColToCompare, currentSrcTable.currentSrcColForComparison)
@@ -760,8 +767,6 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					log.Fatal("@GetMappedData > #FETCH > FetchFromMapping: Unable to fetch")
 					return data, err
 				}
-				// fmt.Println(strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft)
-				// log.Fatal("check")
 			} else {
 				switch fromAttr {
 				case "#GUID":
@@ -781,10 +786,9 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 			}
 			// log.Fatal(fromAttr)
 		} else {
-			data.orgColsLeft += fmt.Sprintf("%s,", strings.Split(fromAttr, ".")[1])
+			data.orgColsLeft += fmt.Sprintf("%s,", fromAttr)
 		}
 	}
-	// fmt.Println(strings.Trim(cols, ","), strings.Trim(vals, ","), ivals, strings.Trim(orgCols, ","), orgColsLeft, undoAction)
 	data.Trim(",")
 	return data, nil
 }
@@ -804,7 +808,7 @@ func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
 				if derr := db.UpdateLEvaluation(self.logTxn.DBconn, tagMemberID, srcID, self.logTxn.Txn_id); derr != nil {
 					fmt.Println("@ERROR_UpdateLEvaluation", derr)
 					fmt.Println("@QARGS:", tagMember, srcID, self.logTxn.Txn_id)
-					// log.Fatal(derr)
+					log.Fatal(derr)
 					return derr
 				}
 			} else {
@@ -1050,12 +1054,14 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 							return err
 						}
 					}
-					if err := self.PushData(self.tx.StencilTx, toTable, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node); err != nil {
+
+					if err := self.PushData(self.tx.StencilTx, toTable, fmt.Sprint(id), mappedData, node); err != nil {
 						fmt.Println("@MigrateNode")
 						fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
 						log.Fatal(err)
 						return err
 					}
+
 					if len(toTable.Media) > 0 {
 						if filePathCol, ok := toTable.Media["path"]; ok {
 							if filePath, ok := node.Data[filePathCol]; ok {
@@ -1090,6 +1096,8 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 	for _, mappedData := range allMappedData {
 		self.RemoveMappedDataFromNodeData(mappedData, node)
 	}
+
+	// log.Fatal("Check here!")
 
 	if !isBag && !strings.EqualFold(node.Tag.Name, "root") {
 		if err := self.DeleteNode(mapping, node); err != nil {
@@ -1138,7 +1146,7 @@ func (self *MigrationWorkerV2) HandleWaitingList(appMapping config.Mapping, tagM
 func (self *MigrationWorkerV2) HandleUnmappedTags(node *DependencyNode) error {
 	log.Println("!! Couldn't find mappings for the tag [", node.Tag.Name, "]")
 	self.unmappedTags.Add(node.Tag.Name)
-	// save for evaluation
+
 	for _, tagMember := range node.Tag.Members {
 		if _, ok := node.Data[fmt.Sprintf("%s.id", tagMember)]; ok {
 			srcID := fmt.Sprint(node.Data[fmt.Sprintf("%s.id", tagMember)])
@@ -1220,9 +1228,9 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 						log.Fatal("@SendMemberToBag: error in creating bag! ", err)
 						return err
 					}
-					if serr := db.SaveForEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, memberID, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
-						log.Fatal("@SendMemberToBag > SaveForEvaluation =>", serr)
-					}
+					// if serr := db.SaveForEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, memberID, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
+					// 	log.Fatal("@SendMemberToBag > SaveForEvaluation =>", serr)
+					// }
 					if derr := db.ReallyDeleteRowFromAppDB(self.tx.SrcTx, member, fmt.Sprint(id)); derr != nil {
 						fmt.Println("@SendMemberToBag > DeleteRowFromAppDB")
 						log.Fatal(derr)
@@ -1514,7 +1522,6 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int) error {
 
 	prevIDs := reference_resolution.GetPrevUserIDs(self.SrcAppConfig.AppID, self.uid)
 	prevIDs = append(prevIDs, []string{self.SrcAppConfig.AppID, self.uid})
-	// log.Fatal(prevIDs)
 
 	for _, prevID := range prevIDs {
 
@@ -1528,59 +1535,63 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int) error {
 		for _, bag := range bags {
 			bagAppID := fmt.Sprint(bag["app"])
 			srcMember := fmt.Sprint(bag["member"])
+			srcMemberName, err := db.TableName(self.logTxn.DBconn, srcMember, bagAppID)
+			if err != nil {
+				log.Fatal("@MigrateBags > Table Name: ", err)
+			}
 			bagID := fmt.Sprint(bag["id"])
-			log.Println(fmt.Sprintf("~%2d~ Current    Bag: { %s } | ID: %s, App: %s ", threadID, srcMember, bagID, bagAppID))
+			log.Println(fmt.Sprintf("~%2d~ Current    Bag: { %s } | ID: %s, App: %s ", threadID, srcMemberName, bagID, bagAppID))
 			bagData := make(map[string]interface{})
-			if err := json.Unmarshal([]byte(fmt.Sprint(bag["data"])), &bagData); err != nil {
-				fmt.Println(bag["data"])
-				fmt.Println(bag)
+			if err := json.Unmarshal(bag["data"].([]byte), &bagData); err != nil {
+				fmt.Println("BAG >> ", bag)
 				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO CONVERT BAG TO MAP: %s | %s", threadID, self.uid, err))
 				return err
 			}
-			bagAppName, err := db.GetAppNameByAppID(self.logTxn.DBconn, bagAppID)
-			if err != nil {
-				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO GET BAG APP NAME BY ID : %s | %s", threadID, bagAppID, err))
-				return err
-			}
-			bagAppConfig := self.DstAppConfig
-			if !strings.EqualFold(bagAppID, self.DstAppConfig.AppID) {
-				bagAppConfig, err = config.CreateAppConfig(bagAppName, bagAppID)
-				if err != nil {
-					log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO CREATE BAG APP CONFIG : %s, %s | %s", threadID, bagAppID, bagAppName, err))
-					log.Fatal(err)
-				}
-			}
-			bagWorker := CreateMigrationWorkerV2WithAppsConfig(self.uid, self.logTxn, self.mtype, self.SrcAppConfig, bagAppConfig, threadID)
-			bagTag, err := bagAppConfig.GetTagByMember(srcMember)
-			if err != nil {
-				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO GET BAG TAG BY MEMBER : %s | %s", threadID, srcMember, err))
-				return err
-			}
-			bagNode := DependencyNode{Tag: *bagTag, Data: bagData}
-			if err := bagWorker.HandleMigration(&bagNode, true); err != nil {
-				fmt.Println(bag)
-				log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO MIGRATE BAG : %s | %s ", threadID, bagID, err))
-				return err
-			}
-			if self.IsNodeDataEmpty(&bagNode) {
-				if err := db.DeleteBagV2(self.tx.StencilTx, bagID); err != nil {
-					fmt.Println(bag)
-					log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO DELETE BAG : %s | %s ", threadID, bagID, err))
-					return err
-				}
-			} else {
-				if jsonData, err := json.Marshal(bagNode.Data); err == nil {
-					if err := db.UpdateBag(self.tx.StencilTx, bagID, self.logTxn.Txn_id, jsonData); err != nil {
-						fmt.Println(bag)
-						log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO UPDATE BAG : %s | %s ", threadID, bagID, err))
-						return err
-					}
-				} else {
-					fmt.Println(bagNode.Data)
-					log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO MARSHALL BAG DATA : %s | %s ", threadID, bagID, err))
-					return err
-				}
-			}
+
+			// bagAppName, err := db.GetAppNameByAppID(self.logTxn.DBconn, bagAppID)
+			// if err != nil {
+			// 	log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO GET BAG APP NAME BY ID : %s | %s", threadID, bagAppID, err))
+			// 	return err
+			// }
+			// bagAppConfig := self.DstAppConfig
+			// if !strings.EqualFold(bagAppID, self.DstAppConfig.AppID) {
+			// 	bagAppConfig, err = config.CreateAppConfig(bagAppName, bagAppID)
+			// 	if err != nil {
+			// 		log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO CREATE BAG APP CONFIG : %s, %s | %s", threadID, bagAppID, bagAppName, err))
+			// 		log.Fatal(err)
+			// 	}
+			// }
+			// bagWorker := CreateMigrationWorkerV2WithAppsConfig(self.uid, self.logTxn, self.mtype, self.SrcAppConfig, bagAppConfig, threadID)
+			// bagTag, err := bagAppConfig.GetTagByMember(srcMember)
+			// if err != nil {
+			// 	log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO GET BAG TAG BY MEMBER : %s | %s", threadID, srcMember, err))
+			// 	return err
+			// }
+			// bagNode := DependencyNode{Tag: *bagTag, Data: bagData}
+			// if err := bagWorker.HandleMigration(&bagNode, true); err != nil {
+			// 	fmt.Println(bag)
+			// 	log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO MIGRATE BAG : %s | %s ", threadID, bagID, err))
+			// 	return err
+			// }
+			// if self.IsNodeDataEmpty(&bagNode) {
+			// 	if err := db.DeleteBagV2(self.tx.StencilTx, bagID); err != nil {
+			// 		fmt.Println(bag)
+			// 		log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO DELETE BAG : %s | %s ", threadID, bagID, err))
+			// 		return err
+			// 	}
+			// } else {
+			// 	if jsonData, err := json.Marshal(bagNode.Data); err == nil {
+			// 		if err := db.UpdateBag(self.tx.StencilTx, bagID, self.logTxn.Txn_id, jsonData); err != nil {
+			// 			fmt.Println(bag)
+			// 			log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO UPDATE BAG : %s | %s ", threadID, bagID, err))
+			// 			return err
+			// 		}
+			// 	} else {
+			// 		fmt.Println(bagNode.Data)
+			// 		log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO MARSHALL BAG DATA : %s | %s ", threadID, bagID, err))
+			// 		return err
+			// 	}
+			// }
 		}
 	}
 
