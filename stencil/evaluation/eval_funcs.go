@@ -111,6 +111,25 @@ func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB,
 	return migrationIDs
 }
 
+func GetAllMigrationIDs(evalConfig *EvalConfig) []string {
+
+	query := fmt.Sprintf("select migration_id from migration_registration")
+	// log.Println(query)
+
+	data, err := db.DataCall(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var migrationIDs []string
+	for _, data1 := range data {
+		migrationIDs = append(migrationIDs, fmt.Sprint(data1["migration_id"]))
+	} 
+
+	return migrationIDs
+
+}
+
 func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID string, 
 	extraConditions string) []map[string]interface{} {
 	
@@ -329,7 +348,7 @@ func calculateRowSize(AppDBConn *sql.DB,
 		return calculateMediaSize(AppDBConn, table, pKey, AppID)
 
 	} else {
-		
+
 		return row["cols_size"].(int64) + 
 			calculateMediaSize(AppDBConn, table, pKey, AppID)
 	}

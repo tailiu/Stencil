@@ -4,6 +4,7 @@ import (
 	"stencil/SA1_migrate"
 	"stencil/db"
 	"log"
+	"strconv"
 )
 
 func preExp(evalConfig *EvalConfig) {
@@ -119,24 +120,41 @@ func Exp2() {
 
 }
 
-func Exp3() {
+func Exp2GetMigratedDataRate() {
 	
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	migrationID := "1111158775"
+	migrationIDs := GetAllMigrationIDs(evalConfig)
 
-	// GetMigratedDataSize(
-	// 	evalConfig.StencilDBConn, 
-	// 	evalConfig.DiasporaDBConn, 
-	// 	"1",
-	// 	migrationID,
-	// )
+	for _, migrationID := range migrationIDs {
 
-	GetMigratedDataSizeV2(
-		evalConfig,
-		migrationID,
-	)
+		size := GetMigratedDataSizeV2(
+			evalConfig,
+			migrationID,
+		)
+
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		WriteStrToLog(
+			evalConfig.MigratedDataSizeFile, 
+			ConvertInt64ToString(size),
+		)
+
+		WriteStrToLog(
+			evalConfig.MigrationTimeFile,
+			ConvertSingleDurationToString(time),
+		)
+
+	}
 
 }
