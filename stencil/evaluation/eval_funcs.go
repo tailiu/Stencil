@@ -130,6 +130,20 @@ func GetAllMigrationIDs(evalConfig *EvalConfig) []string {
 
 }
 
+func GetMigrationData(evalConfig *EvalConfig) []map[string]interface{} {
+
+	query := fmt.Sprintf("select user_id, migration_id from migration_registration")
+	// log.Println(query)
+
+	data, err := db.DataCall(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data
+
+}
+
 func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID string, 
 	extraConditions string) []map[string]interface{} {
 	

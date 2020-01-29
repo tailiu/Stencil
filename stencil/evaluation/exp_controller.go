@@ -4,7 +4,9 @@ import (
 	"stencil/SA1_migrate"
 	"stencil/db"
 	"log"
+	"fmt"
 	"strconv"
+	"time"
 )
 
 func preExp(evalConfig *EvalConfig) {
@@ -80,9 +82,9 @@ func Exp1GetMediaSize() {
 	
 }
 
-// The source database needs to be changed to diaspora_1000000_exp1
-// Data will be migrated from diaspora_1000000_exp1
-// We can get data size by diaspora_1000000_exp
+// The diaspora database needs to be changed to diaspora_1xxxx_exp1
+// Data will be migrated from:
+// diaspora_1000000_exp, diaspora_100000_exp, diaspora_10000_exp, diaspora_1000_exp
 func Exp2() {
 
 	migrationNum := 100
@@ -120,15 +122,26 @@ func Exp2() {
 
 }
 
+// The diaspora database needs to be changed to diaspora_1xxxx which has complete data
+// We can get data size by the following complete dbs:
+// diaspora_1000000, diaspora_100000, diaspora_10000, diaspora_1000
 func Exp2GetMigratedDataRate() {
 	
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	migrationIDs := GetAllMigrationIDs(evalConfig)
+	migrationData := GetMigrationData(evalConfig)
 
-	for _, migrationID := range migrationIDs {
+	for _, migrationData1 := range migrationData {
+
+		sizeLog := make(map[string]string)
+		timeLog := make(map[string]string)
+
+		sizeLog["userID"] = fmt.Sprint(migrationData1["user_id"])
+		timeLog["userID"] = fmt.Sprint(migrationData1["user_id"])
+
+		migrationID := fmt.Sprint(migrationData1["migration_id"])
 
 		size := GetMigratedDataSizeV2(
 			evalConfig,
@@ -145,16 +158,43 @@ func Exp2GetMigratedDataRate() {
 			migrationIDInt,
 		)
 
+		sizeLog["size"] = ConvertInt64ToString(size)
+		timeLog["time"] = ConvertSingleDurationToString(time)
+
 		WriteStrToLog(
 			evalConfig.MigratedDataSizeFile, 
-			ConvertInt64ToString(size),
+			ConvertMapStringToJSONString(sizeLog),
 		)
 
 		WriteStrToLog(
 			evalConfig.MigrationTimeFile,
-			ConvertSingleDurationToString(time),
+			ConvertMapStringToJSONString(timeLog),
 		)
 
 	}
+
+}
+
+func Exp3() {
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	migrationData := GetMigrationData(evalConfig)
+
+	var tDowntime []time.Duration
+
+	for _, migrationData1 := range migrationData {
+
+		migrationID := fmt.Sprint(migrationData1["migration_id"])
+
+		downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+
+		tDowntime = append(tDowntime, downtime...)
+
+	}
+
+	log.Println(tDowntime)
 
 }
