@@ -265,37 +265,10 @@ def dataDownTime():
     ]
     g.cumulativeGraph(data, labels, "Data Downtime (s)", "Cumulative probability")
 
-def getTimeGroups(data, groupNum):
-    times = []
-    for i in range(groupNum):
-        times.append([])
-    for i, data1 in enumerate(data):
-        group = i % groupNum
-        times[group].append(data1["time"])
-    return times
-
 def convertBytesToMB(data):
     for i, data1 in enumerate(data):
         data[i] = float(data1) / 1000000.0
     return data
-
-def migrationRate(groupNum, labels):
-    times = readFile3(logDir + migrationTime)
-    sizes = readFile3(logDir + migratedDataSize)
-
-    times = getTimeGroups(times, groupNum)
-
-    x = []
-    for i, data in enumerate(sizes):
-        if i % 4 == 0:
-            x.append(data["size"])
-    
-    x = convertBytesToMB(x)
-    sizes = [x] * groupNum
-    xlabel = 'Migration Time (s)'
-    ylabel = 'Migration size (MB)'
-
-    g.mulPoints(times, sizes, labels, xlabel, ylabel)
 
 def randomWalk():
     data = readFile3(logDir + dataBags)
@@ -338,6 +311,33 @@ def danglingDataSystemCombined():
 
     g.danglingDataSystemCombined(x, data, xlabel, ylabel, labels)
 
+def getTimeGroups(data, groupNum):
+    times = []
+    for i in range(groupNum):
+        times.append([])
+    for i, data1 in enumerate(data):
+        group = i % groupNum
+        times[group].append(data1["time"])
+    return times
+    
+def migrationRate(groupNum, labels):
+    times = readFile3(logDir + migrationTime)
+    sizes = readFile3(logDir + migratedDataSize)
+
+    times = getTimeGroups(times, groupNum)
+
+    x = []
+    for i, data in enumerate(sizes):
+        if i % groupNum == 0:
+            x.append(data["size"])
+    
+    x = convertBytesToMB(x)
+    sizes = [x] * groupNum
+    xlabel = 'Migration Time (s)'
+    ylabel = 'Migration size (MB)'
+
+    g.mulPoints(times, sizes, labels, xlabel, ylabel)
+
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
@@ -349,6 +349,8 @@ def danglingDataSystemCombined():
 # migrationRateDifferentNumOfThreads('Consistent/independent migration', migrationRate)
 # migrationRateDifferentNumOfThreads('Deletion migration', migrationRate)
 # dataDownTime()
-migrationRate(4, ["App with DAG and display", "App without DAG but with display", "App with DAG but without display", "App without DAG or display"])
+# migrationRate(4, ["App with DAG and display", "App without DAG but with display", "App with DAG but without display", "App without DAG or display"])
 # randomWalk()
 # danglingDataSystemCombined()
+
+migrationRate(1, ["SA1"])

@@ -6,7 +6,7 @@ colors = ['g', 'b', 'c', 'r', 'y', 'm', 'w', 'k']
 lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center']
-markers = ["<", "o", "v", "^", ".", ">"]
+markers = ["o", "v", "^", ".", ">", "<"]
 
 def line(x, y, xlabel, ylabel, title):
     xs, ys = _sortX(x, y)
@@ -156,9 +156,11 @@ def mulPointsDanglingData(x, data, labelName):
     plt.show()
 
 def mulPoints(x, y, labels, xlabel, ylabel):
+
     fig, ax = plt.subplots()
+    
     for i, x1 in enumerate(x):
-        ax.plot(x1, y[i], colors[i], label=labels[i], markersize=7, marker=markers[i])
+        ax.plot(x1, y[i], colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle="")
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
