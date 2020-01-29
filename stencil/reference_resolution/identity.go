@@ -110,11 +110,7 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 	return res
 }
 
-<<<<<<< HEAD
-func GetPreviousID(refResolutionConfig *RefResolutionConfig,
-=======
-func GetPreviousIDWithoutFromMember(refResolutionConfig *RefResolutionConfig, 
->>>>>>> 6fb56b3be78fe88a12728a33aab7b3bf9c293209
+func GetPreviousIDWithoutFromMember(refResolutionConfig *RefResolutionConfig,
 	ID *Identity) string {
 
 	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
@@ -138,14 +134,14 @@ func GetPreviousIDWithoutFromMember(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func GetPreviousID(refResolutionConfig *RefResolutionConfig, 
+func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 	ID *Identity, fromMember string) string {
 
 	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
 		WHERE from_member = %s and to_app = %s 
 		and to_member = %s and to_id = %s`,
 		fromMember, ID.app, ID.member, ID.id)
-	
+
 	log.Println(query)
 
 	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
@@ -160,7 +156,7 @@ func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 	} else {
 		return fmt.Sprint(data["from_id"])
 	}
-	
+
 }
 
 func getAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
