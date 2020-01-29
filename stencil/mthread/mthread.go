@@ -257,11 +257,12 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
 			mWorker := migrate.CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threadID)
-			// return
+
 			switch mWorker.MType() {
 			case migrate.DELETION:
 				{
 					for {
+						break
 						if err := mWorker.MigrateBags(thread_id); err != nil {
 							log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
 							time.Sleep(time.Second * 5)
@@ -271,7 +272,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 					}
 
 					for {
-						// log.Println("@ThreadControllerV2 > DeletionMigration skipped")
+						// log.Println("@ThreadControllerV2 > DeletionMigration skipped !!!!!!!!!")
 						// break
 						if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
 							if !strings.Contains(err.Error(), "deadlock") {

@@ -72,7 +72,7 @@ type MappedData struct {
 	vals        string
 	orgCols     string
 	orgColsLeft string
-	srcTables   map[string]bool
+	srcTables   map[string][]string
 	ivals       []interface{}
 	undoAction  *transaction.UndoAction
 	refs        []MappingRef

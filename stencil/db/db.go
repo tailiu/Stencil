@@ -461,6 +461,19 @@ func TableID(dbConn *sql.DB, table, app string) (string, error) {
 	}
 }
 
+func TableName(dbConn *sql.DB, table, app string) (string, error) {
+	sql := fmt.Sprintf("SELECT table_name FROM app_tables WHERE app_id = '%s' and pk = '%s'", app, table)
+	if res, err := DataCall1(dbConn, sql); err == nil {
+		if pk, ok := res["table_name"]; ok {
+			return fmt.Sprint(pk), nil
+		} else {
+			return "", errors.New("Something bad with the returned result!")
+		}
+	} else {
+		return "", err
+	}
+}
+
 func CheckPhyRowExists(ptab, rowid string, dbConn *sql.DB) bool {
 	sql := fmt.Sprintf("SELECT * FROM %s WHERE pk = $1", ptab)
 	if res, err := DataCall1(dbConn, sql, rowid); err == nil {
@@ -714,9 +727,9 @@ func DataCall1(db *sql.DB, SQL string, args ...interface{}) (map[string]interfac
 	// db := GetDBConn(app)
 	// log.Println(SQL, args)
 	if rows, err := db.Query(SQL+" LIMIT 1", args...); err != nil {
-		log.Println(SQL, args)
-		log.Println("## DB ERROR: ", err)
-		log.Fatal("check datacall1 in stencil.db")
+		// log.Println(SQL, args)
+		// log.Println("## DB ERROR: ", err)
+		// log.Fatal("check datacall1 in stencil.db")
 		return nil, err
 	} else {
 		defer rows.Close()
