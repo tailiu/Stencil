@@ -159,8 +159,8 @@ def mulPoints(x, y, labels, xlabel, ylabel):
 
     fig, ax = plt.subplots()
     
-    for i, x1 in enumerate(x):
-        ax.plot(x1, y[i], colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle="")
+    for i in range(len(x)):
+        ax.plot(x[i], y[i], colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle="")
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
