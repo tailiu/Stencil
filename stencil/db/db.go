@@ -41,10 +41,12 @@ import (
 // }
 
 func GetDBConn(app string) *sql.DB {
-	log.Println("Creating new db conn for:", app)
+
 	if DB_TEST {
 		app += "_test"
 	}
+
+	log.Println("Creating new db conn for:", app)
 	// if strings.EqualFold("diaspora", app) {
 	// 	app += "_test"
 	// }
@@ -67,7 +69,7 @@ func GetDBConn2(app string) *sql.DB {
 	if DB_TEST {
 		app += "_test"
 	}
-	// log.Println("Creating new db conn for:", app)
+	log.Println("Creating new db conn for:", app)
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable", DB_ADDR_old, DB_PORT, DB_USER, DB_PASSWORD, app)
 	// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
