@@ -46,7 +46,7 @@ func waitGetMigrationID(uid, srcAppID, dstAppID, migrationType string) int {
 
 	var migrationIDs []int
 
-	stencilDBConn := db.GetDBConn(db.STENCIL_DB)
+	stencilDBConn := db.GetDBConn("stencil")
 
 	for {
 

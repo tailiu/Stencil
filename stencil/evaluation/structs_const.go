@@ -2,12 +2,22 @@ package evaluation
 
 import (
 	"database/sql"
-	"stencil/db"
+	// "stencil/db"
 	// "time"
 )
 
+var mediaSize = map[string]int64 {
+	"1.jpg": 512017,
+	"2.jpg": 206993,
+	"3.jpg": 102796,
+	"4.jpg": 51085,
+	"5.jpg": 1033414,
+}
+
+const logDir = "./evaluation/logs/"
+
 const (
-	stencilDB = db.STENCIL_DB
+	stencilDB = "stencil"
 	mastodon = "mastodon"
 	diaspora = "diaspora"
 
@@ -15,31 +25,6 @@ const (
 	CONSISTENT = "1"
 	DELETION = "3"
 )
-
-// Messages will be handled in special ways
-// var dependencies = map[string]map[string][]string {
-// 	"diaspora" : map[string][]string {
-// 		"posts": []string {
-// 			"root_guid:posts.guid"},
-// 		"comments": []string {
-// 			"commentable_id:posts.id"},
-// 		"likes": []string {
-// 			"target_id:posts.id"},
-// 		"messages": []string {
-// 			"conversation_id:conversations.id"}},
-// 	"mastodon" : map[string][]string {
-// 		"statuses": []string {
-// 			"reblog_of_id:statuses.id",
-// 			"conversation_id:conversations.id"},
-// 		"comments": []string {
-// 			"conversation_id:conversations.id",
-// 			"in_reply_to_id:statuses.id"},
-// 		"messages": []string {
-// 			"conversation_id:conversations.id",
-// 			"in_reply_to_id:messages.id"},
-// 		"favourites": []string {
-// 			"status_id:statuses.id",
-// 			"status_id:comments.id"}}}
 
 var dependencies = map[string]map[string][]string {
 	"diaspora" : map[string][]string {
@@ -64,6 +49,9 @@ type EvalConfig struct {
 	StencilDBConn *sql.DB
 	MastodonDBConn *sql.DB
 	DiasporaDBConn *sql.DB
+	TableIDNamePairs map[string]string
+	MastodonTableNameIDPairs map[string]string
+	DiasporaTableNameIDPairs map[string]string
 	MastodonAppID string
 	DiasporaAppID string
 	SrcAnomaliesVsMigrationSizeFile string
@@ -89,38 +77,27 @@ type DisplayedData struct {
 	RowIDs 		[]string
 }
 
-func InitializeEvalConfig() *EvalConfig {
-	evalConfig := new(EvalConfig)
-	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
-	evalConfig.MastodonDBConn = db.GetDBConn2(mastodon)
-	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
-	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, mastodon)
-	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)
-	evalConfig.Dependencies = dependencies
-
-	// t := time.Now()
-	evalConfig.SrcAnomaliesVsMigrationSizeFile, 
-	evalConfig.DstAnomaliesVsMigrationSizeFile, 
-	evalConfig.InterruptionDurationFile,
-	evalConfig.MigrationRateFile,
-	evalConfig.MigratedDataSizeFile,
-	evalConfig.MigrationTimeFile,
-	evalConfig.SrcDanglingDataInSystemFile,
-	evalConfig.DstDanglingDataInSystemFile,
-	evalConfig.DataDowntimeInStencilFile,
-	evalConfig.DataDowntimeInNaiveFile,
-	evalConfig.DataBags = 
-		"srcAnomaliesVsMigrationSize",
-		"dstAnomaliesVsMigrationSize",
-		"interruptionDuration",
-		"migrationRate",
-		"migratedDataSize",
-		"migrationTime",
-		"srcSystemDanglingData",
-		"dstSystemDanglingData",
-		"dataDowntimeInStencil",
-		"dataDowntimeInNaive",
-		"dataBags"
-
-	return evalConfig
-}
+// Messages will be handled in special ways
+// var dependencies = map[string]map[string][]string {
+// 	"diaspora" : map[string][]string {
+// 		"posts": []string {
+// 			"root_guid:posts.guid"},
+// 		"comments": []string {
+// 			"commentable_id:posts.id"},
+// 		"likes": []string {
+// 			"target_id:posts.id"},
+// 		"messages": []string {
+// 			"conversation_id:conversations.id"}},
+// 	"mastodon" : map[string][]string {
+// 		"statuses": []string {
+// 			"reblog_of_id:statuses.id",
+// 			"conversation_id:conversations.id"},
+// 		"comments": []string {
+// 			"conversation_id:conversations.id",
+// 			"in_reply_to_id:statuses.id"},
+// 		"messages": []string {
+// 			"conversation_id:conversations.id",
+// 			"in_reply_to_id:messages.id"},
+// 		"favourites": []string {
+// 			"status_id:statuses.id",
+// 			"status_id:comments.id"}}}

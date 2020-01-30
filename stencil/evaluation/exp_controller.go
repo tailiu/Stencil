@@ -4,6 +4,9 @@ import (
 	"stencil/SA1_migrate"
 	"stencil/db"
 	"log"
+	"fmt"
+	"strconv"
+	"time"
 )
 
 func preExp(evalConfig *EvalConfig) {
@@ -60,7 +63,10 @@ func Exp1() {
 
 	log.Println(sizes)
 	
-	WriteStrArrToLog("exp1", ConvertInt64ArrToStringArr(sizes))
+	WriteStrArrToLog(
+		"exp1", 
+		ConvertInt64ArrToStringArr(sizes),
+	)
 
 }
 
@@ -76,56 +82,230 @@ func Exp1GetMediaSize() {
 	
 }
 
-// The source database needs to be changed to diaspora_1000000_exp
-// func Exp2() {
+// The diaspora database needs to be changed to diaspora_1xxxx_exp1
+// Data will be migrated from:
+// diaspora_1000000_exp, diaspora_100000_exp, diaspora_10000_exp, diaspora_1000_exp
+func Exp2() {
 
-// 	migrationNum := 100
+	migrationNum := 100
 
-// 	evalConfig := InitializeEvalConfig()
+	evalConfig := InitializeEvalConfig()
 
-// 	defer closeDBConns(evalConfig)
+	defer closeDBConns(evalConfig)
 
-// 	preExp(evalConfig)
+	preExp(evalConfig)
 
-// 	userIDs := getAllUserIDsInDiaspora(evalConfig)
+	userIDs := getAllUserIDsInDiaspora(evalConfig)
 
-// 	shuffleSlice(userIDs)
+	shuffleSlice(userIDs)
 
-// 	res := make(map[string]string)
+	res := make(map[string]string)
 
-// 	for i := 0; i < migrationNum; i ++ {
+	for i := 0; i < migrationNum; i ++ {
 
-// 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
-// 			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
 
-// 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-// 			dstAppName, dstAppID, migrationType, threadNum)
-
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum)
 		
-		
-// 		res[userIDs[i]] = 
-		
-// 	}
+		res[userIDs[i]] = "true"
 
-// 	log.Println(res)
+	}
+
+	log.Println(res)
 	
-// 	WriteStrArrToLog("exp2", ConvertMapStringToJSONString(res))
+	WriteStrToLog(
+		"exp2",
+		ConvertMapStringToJSONString(res),
+	)
 
-// }
+}
 
-func Exp3() {
+// The diaspora database needs to be changed to diaspora_1xxxx which has complete data
+// We can get data size by the following complete dbs:
+// diaspora_1000000, diaspora_100000, diaspora_10000, diaspora_1000
+func Exp2GetMigratedDataRate() {
 	
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	migrationID := "935193000"
+	migrationData := GetMigrationData(evalConfig)
 
-	GetMigratedDataSize(
-		evalConfig.StencilDBConn, 
-		evalConfig.DiasporaDBConn, 
-		"1",
-		migrationID,
+	for _, migrationData1 := range migrationData {
+
+		sizeLog := make(map[string]string)
+		timeLog := make(map[string]string)
+
+		sizeLog["userID"] = fmt.Sprint(migrationData1["user_id"])
+		timeLog["userID"] = fmt.Sprint(migrationData1["user_id"])
+
+		migrationID := fmt.Sprint(migrationData1["migration_id"])
+
+		log.Println("Migration ID:", migrationID)
+
+		size := GetMigratedDataSizeV2(
+			evalConfig,
+			migrationID,
+		)
+
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		sizeLog["size"] = ConvertInt64ToString(size)
+		timeLog["time"] = ConvertSingleDurationToString(time)
+
+		WriteStrToLog(
+			evalConfig.MigratedDataSizeFile, 
+			ConvertMapStringToJSONString(sizeLog),
+		)
+
+		WriteStrToLog(
+			evalConfig.MigrationTimeFile,
+			ConvertMapStringToJSONString(timeLog),
+		)
+
+	}
+
+}
+
+func Exp3GetDatadowntime() {
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	migrationData := GetMigrationData(evalConfig)
+
+	var tDowntime []time.Duration
+
+	for _, migrationData1 := range migrationData {
+
+		migrationID := fmt.Sprint(migrationData1["migration_id"])
+
+		downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+
+		tDowntime = append(tDowntime, downtime...)
+
+	}
+
+	log.Println(tDowntime)
+
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInStencilFile, 
+		ConvertDurationToString(tDowntime),
 	)
+
+}
+
+// The diaspora database needs to be changed to diaspora_1000000_exp
+func Exp4() {
+	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	preExp(evalConfig)
+
+	counterStart := 0
+	counterNum := 100
+	counterInterval := 10
+
+	userIDWithEdges := getEdgesCounter(evalConfig, 
+		counterStart, counterNum, counterInterval)
+
+	// log.Println(userIDWithEdges)
+
+	for i := 0; i < len(userIDWithEdges); i ++ {
+		
+		userID := userIDWithEdges[i]["person_id"]
+
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+			userID, "diaspora", "1", "mastodon", "2", "d", 1
+
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum)
+		
+		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
+		
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		userIDWithEdges[i]["time"] = ConvertSingleDurationToString(time)
+
+		WriteStrToLog(
+			"migrationScalabilityEdges",
+			ConvertMapStringToJSONString(userIDWithEdges[i]),
+		)
+	}
+
+	log.Println(userIDWithEdges)
+
+}
+
+// The diaspora database needs to be changed to diaspora_1000000_exp
+func Exp5() {
+	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	preExp(evalConfig)
+
+	counterStart := 0
+	counterNum := 100
+	counterInterval := 10
+
+	userIDWithNodes := getNodesCounter(evalConfig, 
+		counterStart, counterNum, counterInterval)
+
+	// log.Println(userIDWithNodes)
+
+	for i := 0; i < len(userIDWithNodes); i ++ {
+		
+		userID := userIDWithNodes[i]["person_id"]
+
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+			userID, "diaspora", "1", "mastodon", "2", "d", 1
+
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum)
+		
+		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
+		
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		userIDWithNodes[i]["time"] = ConvertSingleDurationToString(time)
+
+		WriteStrToLog(
+			"migrationScalabilityNodes",
+			ConvertMapStringToJSONString(userIDWithNodes[i]),
+		)
+	}
+
+	log.Println(userIDWithNodes)
 
 }

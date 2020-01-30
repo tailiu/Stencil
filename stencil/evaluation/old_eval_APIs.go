@@ -231,3 +231,42 @@ func GetDataDowntimeInNaiveMigration(stencilMigrationID string, naiveMigrationID
 		ConvertDurationToString(dataDowntimeInNaive),
 	)
 }
+
+func oldExp2GetMigratedDataRate() {
+	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	migrationIDs := GetAllMigrationIDs(evalConfig)
+
+	for _, migrationID := range migrationIDs {
+
+		size := GetMigratedDataSizeV2(
+			evalConfig,
+			migrationID,
+		)
+
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		WriteStrToLog(
+			evalConfig.MigratedDataSizeFile, 
+			ConvertInt64ToString(size),
+		)
+
+		WriteStrToLog(
+			evalConfig.MigrationTimeFile,
+			ConvertSingleDurationToString(time),
+		)
+
+	}
+
+}

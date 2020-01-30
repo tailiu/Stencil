@@ -231,7 +231,7 @@ func getPrevUserIDsByBackTraversal(stencilDBConn *sql.DB,
 // and we have the appID and userID in C, it can only get A not B
 func GetPrevUserIDs(appID, userID string) [][]string {
 
-	stencilDBConn := db.GetDBConn(db.STENCIL_DB)
+	stencilDBConn := db.GetDBConn("stencil")
 
 	rootMemberID := getAppRootMemberID(stencilDBConn, appID)
 

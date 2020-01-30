@@ -22,7 +22,7 @@ func CreateDisplayConfig(migrationID int,
 
 	var dstAppConfig dstAppConfig
 
-	stencilDBConn := db.GetDBConn(db.STENCIL_DB)
+	stencilDBConn := db.GetDBConn("stencil")
 
 	srcAppID, dstAppID, srcUserID := getSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
 
@@ -273,7 +273,7 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 	var queries1, queries2 []string
 
-	var query1, query2 string
+	var query1, query2, query3 string
 
 	for _, dataHint := range dataHints {
 
@@ -338,16 +338,24 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
 			displayConfig.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
+		
+		query3 = fmt.Sprintf(`UPDATE evaluation SET
+			displayed_at = now() WHERE migration_id = '%d' and
+			src_app = '%s' and dst_app = '%s' and
+			dst_table = '%s' and dst_id = '%d'`,
+			displayConfig.migrationID, displayConfig.srcAppConfig.appID,
+			displayConfig.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
 
 		log.Println("**************************************")
 		log.Println(query1)
 		log.Println(query2)
+		log.Println(query3)
 		log.Println("**************************************")
 
 		queries1 = append(queries1, query1)
 
-		queries2 = append(queries2, query2)
-
+		queries2 = append(queries2, query2, query3)
+		
 	}
 
 	if err1 := db.TxnExecute(displayConfig.dstAppConfig.DBConn, queries1); err1 != nil {

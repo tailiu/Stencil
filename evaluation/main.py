@@ -4,6 +4,7 @@ import numpy as np
 import copy
 
 logDir = "../stencil/evaluation/logs/"
+evalDir = "../stencil/evaluation/"
 leftoverVsMigratedFile = "leftoverVsMigrated"
 interruptionTimeFile = "interruptionDuration"
 dstAnomalies = "dstAnomaliesVsMigrationSize"
@@ -256,48 +257,26 @@ def migrationRateDifferentNumOfThreads(title, fileName):
     g.mulPoints(time, size, labels, xlabel, ylabel, title)
 
 def dataDownTime():
+    
     data = []
     data.append(readFile2(logDir + dataDownTimeInStencil))
     data.append(readFile2(logDir + dataDownTimeInNaive))
+    
     labels = [
         "Stencil",
         "Naive"
     ]
     g.cumulativeGraph(data, labels, "Data Downtime (s)", "Cumulative probability")
 
-def getTimeGroups(data, groupNum):
-    times = []
-    for i in range(groupNum):
-        times.append([])
-    for i, data1 in enumerate(data):
-        group = i % groupNum
-        times[group].append(data1["time"])
-    return times
-
 def convertBytesToMB(data):
+    
     for i, data1 in enumerate(data):
         data[i] = float(data1) / 1000000.0
+    
     return data
 
-def migrationRate(groupNum, labels):
-    times = readFile3(logDir + migrationTime)
-    sizes = readFile3(logDir + migratedDataSize)
-
-    times = getTimeGroups(times, groupNum)
-
-    x = []
-    for i, data in enumerate(sizes):
-        if i % 4 == 0:
-            x.append(data["size"])
-    
-    x = convertBytesToMB(x)
-    sizes = [x] * groupNum
-    xlabel = 'Migration Time (s)'
-    ylabel = 'Migration size (MB)'
-
-    g.mulPoints(times, sizes, labels, xlabel, ylabel)
-
 def randomWalk():
+    
     data = readFile3(logDir + dataBags)
 
     # size = 0
@@ -308,6 +287,7 @@ def randomWalk():
     #         bags.append(size)
     #     size = size + data1["srcDataBagSize"]
     #     bags.append(size)
+    
     data2 = [0] * (len(apps) - 1)
 
     for i, data1 in enumerate(data):
@@ -316,11 +296,14 @@ def randomWalk():
     # print data2
     for i, data3 in enumerate(data2):
         data2[i] = float(data3) / float(len(data)/4)
+    
     data2.insert(0, 0.0)
+    
     g.dataBag(data2, apps, "Data bag size (bytes)")
 
 
 def danglingDataSystemCombined():
+    
     srcData = readFile3(logDir + srcSystemDanglingData)
     danglingLikes, danglingComments, danglingMessages = getDanglingDataInSrcSystem(srcData)
 
@@ -328,7 +311,9 @@ def danglingDataSystemCombined():
 
     print len(x)
     print len(danglingLikes)
+    
     data = [danglingLikes, danglingComments]
+    
     xlabel = 'Percentage of migrated users'
     ylabel = 'Dangling data size'
     labels = [
@@ -337,6 +322,86 @@ def danglingDataSystemCombined():
     ]
 
     g.danglingDataSystemCombined(x, data, xlabel, ylabel, labels)
+
+def getTimeGroups(data, groupNum):
+
+    times = []
+    
+    for i in range(groupNum):
+        times.append([])
+    
+    for i, data1 in enumerate(data):
+        group = i % groupNum
+        times[group].append(data1["time"])
+    
+    return times
+    
+def migrationRate(labels):
+
+    times = readFile3(logDir + migrationTime)
+    sizes = readFile3(logDir + migratedDataSize)
+
+    groupNum = len(labels)
+
+    times = getTimeGroups(times, groupNum)
+
+    x = []
+    for i, data in enumerate(sizes):
+        if i % groupNum == 0:
+            x.append(data["size"])
+    
+    x = convertBytesToMB(x)
+    sizes = [x] * groupNum
+
+    xlabel = 'Migration size (MB)'
+    ylabel = 'Migration Time (s)'
+
+    g.mulPoints(sizes, times, labels, xlabel, ylabel)
+
+def getTimeFromData(data):
+
+    times = []
+    
+    for i in range(len(data)):
+        times.append([])
+
+    for i, data1 in enumerate(data):
+        for data2 in data1:
+            times[i].append(data2["time"])
+    
+    return times
+
+def getSizeFromData(data):
+
+    sizes = []
+    
+    for i in range(len(data)):
+        sizes.append([])
+
+    for i, data1 in enumerate(data):
+        for data2 in data1:
+            sizes[i].append(data2["size"])
+    
+    return sizes
+
+def migrationRateDatasets(folders, labels):
+    
+    data1 = []
+    data2 = []
+
+    groupNum = len(labels)
+
+    for folder in folders:
+        data1.append(readFile3(evalDir + folder + migratedDataSize))
+        data2.append(readFile3(evalDir + folder + migrationTime))
+
+    sizes = getSizeFromData(data1)
+    times = getTimeFromData(data2)
+
+    xlabel = 'Migration size (MB)'
+    ylabel = 'Migration Time (s)'
+
+    g.mulPoints(sizes, times, labels, xlabel, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -349,6 +414,9 @@ def danglingDataSystemCombined():
 # migrationRateDifferentNumOfThreads('Consistent/independent migration', migrationRate)
 # migrationRateDifferentNumOfThreads('Deletion migration', migrationRate)
 # dataDownTime()
-migrationRate(4, ["App with DAG and display", "App without DAG but with display", "App with DAG but without display", "App without DAG or display"])
+# migrationRate(["App with DAG and display", "App without DAG but with display", "App with DAG but without display", "App without DAG or display"])
 # randomWalk()
 # danglingDataSystemCombined()
+
+# migrationRate(["SA1"])
+migrationRateDatasets(["logs_1M/", "logs_100K/"], ["1M", "100K"])

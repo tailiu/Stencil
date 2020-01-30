@@ -9,7 +9,7 @@ func test1() {
 
 	dbName := "mastodon"
 
-	dbConn := db.GetDBConn2(dbName)
+	dbConn := db.GetDBConn(dbName, true)
 
 	SA1_display.AddDisplayFlagToAllTables(dbConn)
 
@@ -19,7 +19,7 @@ func test2() {
 
 	dbName := "mastodon"
 
-	dbConn := db.GetDBConn2(dbName)
+	dbConn := db.GetDBConn(dbName, true)
 
 	SA1_display.RemoveDisplayFlagInAllTables(dbConn)
 }
