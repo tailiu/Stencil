@@ -2,18 +2,18 @@ package SA1_display
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
-	"strconv"
 	"stencil/config"
 	"stencil/db"
-	"stencil/schema_mappings"
 	"stencil/reference_resolution"
-	"encoding/json"
+	"stencil/schema_mappings"
+	"strconv"
+	"strings"
 )
 
-func CreateDisplayConfig(migrationID int, 
+func CreateDisplayConfig(migrationID int,
 	resolveReference, newDB bool) *displayConfig {
 
 	var displayConfig displayConfig
@@ -49,7 +49,7 @@ func CreateDisplayConfig(migrationID int,
 	if newDB {
 		dstDBConn = db.GetDBConn(dstAppName)
 	} else {
-		dstDBConn = db.GetDBConn2(dstAppName)
+		dstDBConn = db.GetDBConn(dstAppName, true)
 	}
 
 	// Note that when the display thread is initializing, dstUserID could be nil
@@ -83,7 +83,7 @@ func CreateDisplayConfig(migrationID int,
 	tableIDNamePairs := GetTableIDNamePairs(stencilDBConn)
 
 	refResolutionConfig := reference_resolution.InitializeReferenceResolution(
-		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn, 
+		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
 		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
 		allMappings, mappingsFromSrcToDst)
 
@@ -124,7 +124,7 @@ func closeDBConns(displayConfig *displayConfig) {
 
 }
 
-func getDstRootMemberAttrID(stencilDBConn *sql.DB, 
+func getDstRootMemberAttrID(stencilDBConn *sql.DB,
 	appID string, migrationID int, dstDAG *DAG) (string, string, string) {
 
 	// log.Println(*dstDAG)
@@ -155,7 +155,7 @@ func getDstRootMemberAttrID(stencilDBConn *sql.DB,
 	} else {
 		return dstRootMember, dstRootAttr, fmt.Sprint(data["id"])
 	}
-	
+
 }
 
 func oldCreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
@@ -223,9 +223,9 @@ func GetUndisplayedMigratedData(displayConfig *displayConfig) []*HintStruct {
 	var displayHints []*HintStruct
 
 	query := fmt.Sprintf(`SELECT table_id, id FROM display_flags
-		 WHERE app_id = %s and migration_id = %d and display_flag = true`, 
+		 WHERE app_id = %s and migration_id = %d and display_flag = true`,
 		displayConfig.dstAppConfig.appID, displayConfig.migrationID)
-	
+
 	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
 	// fmt.Println(data)
 
@@ -235,18 +235,18 @@ func GetUndisplayedMigratedData(displayConfig *displayConfig) []*HintStruct {
 
 	}
 	// fmt.Println(displayHints)
-	
+
 	return displayHints
 
 }
 
 func CheckMigrationComplete(displayConfig *displayConfig) bool {
-	
-	query := fmt.Sprintf("SELECT 1 FROM txn_logs WHERE action_id = %d and action_type='COMMIT' LIMIT 1", 
+
+	query := fmt.Sprintf("SELECT 1 FROM txn_logs WHERE action_id = %d and action_type='COMMIT' LIMIT 1",
 		displayConfig.migrationID)
-	
+
 	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
-	
+
 	if len(data) == 0 {
 
 		return false
@@ -256,19 +256,19 @@ func CheckMigrationComplete(displayConfig *displayConfig) bool {
 		return true
 
 	}
-	
+
 }
 
 // Before displaying a piece of data, the unresolved references should be set to be NULLs
-// Setting those references to be NULLs does not influence how data behaves in the application, 
+// Setting those references to be NULLs does not influence how data behaves in the application,
 // but in the next migration it may influence how Stencil migrates data
-// For example, 
+// For example,
 // If the reply field of  a status which was a comment in Diaspora is set to be NULLs because
 // the corresponding post is not migrated, then in the next migration due the reply field is NULL,
 // it may be migrated as a post. We might use a special field indicating that this field has been
 // set to NULLs before and both applications and Stencil should be aware of that
-// to solve this problem, but since setting unresolved references to be NULLs is enough 
-// in our current testing applications, we just use this simple method. 
+// to solve this problem, but since setting unresolved references to be NULLs is enough
+// in our current testing applications, we just use this simple method.
 func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 	var queries1, queries2 []string
@@ -276,14 +276,14 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 	var query1, query2, query3 string
 
 	for _, dataHint := range dataHints {
-		
-		// we try to display data in the UNIT of a node 
+
+		// we try to display data in the UNIT of a node
 		// Even if in the case where some data belonging to other migration should not be
 		// displayed, that data is displayed as a unit of data
 		// e.g., some data in a tweet is migrated in another migration which is still in the first phase,
 		// and according to the rule, it can only be displayed in the first phase
 		// if the parent tweet is there, but the parent tweet is not there for now.
-		// other data in the tweet is going to be displayed in the migration in the second phase. 
+		// other data in the tweet is going to be displayed in the migration in the second phase.
 		// In this case, all the data will be displayed
 		if !isNodeInCurrentMigration(displayConfig, dataHint) {
 
@@ -312,7 +312,7 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 		var attrsToBeSetToNULLs []string
 
 		for attr := range attrsToBeUpdated {
-			
+
 			if _, ok := updatedAttrs[attr]; !ok {
 				attrsToBeSetToNULLs = append(attrsToBeSetToNULLs, attr)
 			}
@@ -321,12 +321,12 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 		// query1 = fmt.Sprintf("UPDATE %s SET display_flag = false WHERE id = %d;",
 		// 	dataHint.Table, dataHint.KeyVal["id"])
-		
+
 		query1 = fmt.Sprintf("UPDATE %s SET display_flag = false", dataHint.Table)
 
 		for _, attr := range attrsToBeSetToNULLs {
 
-			query1 += ", "  + attr + " = NULL"
+			query1 += ", " + attr + " = NULL"
 
 		}
 
@@ -351,7 +351,7 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 		log.Println(query2)
 		log.Println(query3)
 		log.Println("**************************************")
-		
+
 		queries1 = append(queries1, query1)
 
 		queries2 = append(queries2, query2, query3)
@@ -365,13 +365,13 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 	} else {
 
 		if err2 := db.TxnExecute(displayConfig.stencilDBConn, queries2); err2 != nil {
-			
+
 			return err2
-		
+
 		} else {
 
 			return nil
-			
+
 		}
 	}
 
@@ -381,23 +381,22 @@ func CheckDisplay(displayConfig *displayConfig, dataHint *HintStruct) bool {
 
 	query := fmt.Sprintf("SELECT display_flag from %s where id = %d",
 		dataHint.Table, dataHint.KeyVal["id"])
-	
+
 	data1, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// log.Println(data1)
-	
+
 	return !data1["display_flag"].(bool)
 
 }
 
-
 func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
 
 	query := fmt.Sprintf("select app_name from apps where pk = %s", appID)
-	
+
 	// log.Println(query)
 
 	data, err := db.DataCall1(stencilDBConn, query)
@@ -412,7 +411,7 @@ func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
 func getAttrNameByAttrID(stencilDBConn *sql.DB, attrID string) string {
 	//Need to change
 	query := fmt.Sprintf("select column_name from app_schemas where pk = %s", attrID)
-	
+
 	// log.Println(query)
 
 	data, err := db.DataCall1(stencilDBConn, query)
@@ -424,7 +423,7 @@ func getAttrNameByAttrID(stencilDBConn *sql.DB, attrID string) string {
 }
 
 func GetAppIDNamePairs(stencilDBConn *sql.DB) map[string]string {
-	
+
 	appIDNamePairs := make(map[string]string)
 
 	query := fmt.Sprintf("select app_name, pk from apps")
@@ -445,11 +444,11 @@ func GetAppIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 }
 
 func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
-	
+
 	attrIDNamePairs := make(map[string]string)
 
 	query := fmt.Sprintf("select column_name, pk from app_schemas")
-	
+
 	// log.Println(query)
 
 	data, err := db.DataCall(stencilDBConn, query)
@@ -473,12 +472,12 @@ func getTableIDNamePairsInApp(stencilDBConn *sql.DB, app_id string) []map[string
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	return result
 }
 
 func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
-	
+
 	tableIDNamePairs := make(map[string]string)
 
 	query := fmt.Sprintf("select pk, table_name from app_tables;")
@@ -491,7 +490,7 @@ func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	for _, data1 := range data {
 		tableIDNamePairs[fmt.Sprint(data1["pk"])] = fmt.Sprint(data1["table_name"])
 	}
-	
+
 	return tableIDNamePairs
 
 }
@@ -505,7 +504,7 @@ func getTableIDByTableName(stencilDBConn *sql.DB, appID, tableName string) strin
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	return fmt.Sprint(data["pk"])
 
 }
@@ -525,17 +524,17 @@ func getSrcDstAppIDsUserIDByMigrationID(stencilDBConn *sql.DB,
 }
 
 func ConvertMapToJSONString(data map[string]interface{}) string {
-	
-	convertedData, err := json.Marshal(data)   
+
+	convertedData, err := json.Marshal(data)
 	if err != nil {
-        log.Fatal(err)
-    }
-     
+		log.Fatal(err)
+	}
+
 	return string(convertedData)
-	
+
 }
 
-func chechPutIntoDataBag(displayConfig *displayConfig, 
+func chechPutIntoDataBag(displayConfig *displayConfig,
 	secondRound bool, dataHints []*HintStruct) error {
 
 	if secondRound {
@@ -563,9 +562,9 @@ func setDstUserIDIfNotSet(displayConfig *displayConfig) {
 	// we only do in the following way. Note that this is not a generic way.
 	query := fmt.Sprintf(
 		`SELECT id FROM display_flags WHERE app_id = %s 
-		and table_id = %s and migration_id = %d`, 
-		displayConfig.dstAppConfig.appID, 
-		displayConfig.dstAppConfig.tableNameIDPairs[displayConfig.dstAppConfig.rootTable], 
+		and table_id = %s and migration_id = %d`,
+		displayConfig.dstAppConfig.appID,
+		displayConfig.dstAppConfig.tableNameIDPairs[displayConfig.dstAppConfig.rootTable],
 		displayConfig.migrationID)
 
 	log.Println(query)
@@ -584,9 +583,9 @@ func setDstUserIDIfNotSet(displayConfig *displayConfig) {
 }
 
 // When putting data to dag bags, it does not matter whether we set unresolved references
-// to NULLs or not, so we don't set those as NULLs. 
+// to NULLs or not, so we don't set those as NULLs.
 func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error {
-	
+
 	setDstUserIDIfNotSet(displayConfig)
 
 	var queries1, queries2, queries3 []string
@@ -594,14 +593,14 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 	var q1, q2, q3 string
 
 	for _, dataHint := range dataHints {
-		
-		// we try to avoid putting data into data bags if it is not in the 
+
+		// we try to avoid putting data into data bags if it is not in the
 		// currently checked user's migration
 		if !isNodeInCurrentMigration(displayConfig, dataHint) {
 
 			log.Println(`This data is not migrated by the currently checked user,
 				so it will not be put into data bags by this display thread`)
-			
+
 			continue
 		}
 
@@ -613,7 +612,7 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 
 			q1 = fmt.Sprintf(`INSERT INTO data_bags 
 				(app, member, id, data, user_id, migration_id) VALUES 
-				(%s, %s, %d, '%s', %s, %d)`, 
+				(%s, %s, %d, '%s', %s, %d)`,
 				displayConfig.dstAppConfig.appID,
 				dataHint.TableID,
 				dataHint.KeyVal["id"],
@@ -621,11 +620,11 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 				displayConfig.dstAppConfig.userID,
 				displayConfig.migrationID)
 
-			q2 = fmt.Sprintf("DELETE FROM %s WHERE id = %d", 
+			q2 = fmt.Sprintf("DELETE FROM %s WHERE id = %d",
 				dataHint.Table, dataHint.KeyVal["id"])
-			
+
 		}
-		
+
 		q3 = fmt.Sprintf(`UPDATE display_flags SET 
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
@@ -636,14 +635,14 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 		log.Println("DELETE FROM the application:", q2)
 		log.Println("UPDATE display_flags:", q3)
 		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-		
+
 		queries1 = append(queries1, q1)
 		queries2 = append(queries2, q2)
 		queries3 = append(queries3, q3)
 
 	}
 
-	// Since queries1 and queries3 need to be executed in Stencil, while queries2 
+	// Since queries1 and queries3 need to be executed in Stencil, while queries2
 	// need to be executed in the application database.
 	// The sequence of executing the three queries ensure that
 	// there is no anomaly.
@@ -660,18 +659,18 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 		} else {
 
 			if err2 := db.TxnExecute(displayConfig.stencilDBConn, queries3); err2 != nil {
-				
+
 				return err2
 
 			} else {
 
-				return nil				
+				return nil
 			}
 		}
 	}
 }
 
-func checkDisplayConditionsInNode(displayConfig *displayConfig, 
+func checkDisplayConditionsInNode(displayConfig *displayConfig,
 	dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
 
 	var displayedData, notDisplayedData []*HintStruct
@@ -696,7 +695,7 @@ func checkDisplayConditionsInNode(displayConfig *displayConfig,
 }
 
 func doesArgAttributeContainID(data string) bool {
-	
+
 	tmp := strings.Split(data, ".")
 
 	if tmp[1] == "id" {
@@ -707,20 +706,19 @@ func doesArgAttributeContainID(data string) bool {
 }
 
 func getTableInArg(data string) string {
-	
+
 	tmp := strings.Split(data, ".")
 
 	return tmp[0]
 }
 
-func isNodeInCurrentMigration(displayConfig *displayConfig, 
+func isNodeInCurrentMigration(displayConfig *displayConfig,
 	oneMigratedData *HintStruct) bool {
 
 	query := fmt.Sprintf(`select migration_id from display_flags 
 		where app_id = %s and table_id = %s and id = %d and display_flag = true`,
-		displayConfig.dstAppConfig.appID, oneMigratedData.TableID, 
+		displayConfig.dstAppConfig.appID, oneMigratedData.TableID,
 		oneMigratedData.KeyVal["id"])
-	
 
 	data, err := db.DataCall1(displayConfig.stencilDBConn, query)
 	if err != nil {
@@ -732,21 +730,21 @@ func isNodeInCurrentMigration(displayConfig *displayConfig,
 	} else {
 		return false
 	}
-	
+
 }
 
-func refreshCachedDataHints(displayConfig *displayConfig, 
+func refreshCachedDataHints(displayConfig *displayConfig,
 	hints []*HintStruct) {
 
 	var err2 error
 
-	for i, hint1 := range hints {	
-	
+	for i, hint1 := range hints {
+
 		hints[i].Data, err2 = getOneRowBasedOnHint(displayConfig, hint1)
 		if err2 != nil {
 			log.Fatal(err2)
 		}
-	
+
 	}
 
 }
@@ -763,7 +761,7 @@ func getMigrationIDs(stencilDBConn *sql.DB,
 	default:
 		log.Fatal("Cannot find a corresponding migration type")
 	}
-	
+
 	query := fmt.Sprintf(`select migration_id from migration_registration 
 		where user_id = %s and src_app = %s and dst_app = %s and migration_type = %s`,
 		uid, srcAppID, dstAppID, mType)
@@ -772,7 +770,7 @@ func getMigrationIDs(stencilDBConn *sql.DB,
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	// log.Println(data)
 
 	for _, data1 := range data {
@@ -786,5 +784,5 @@ func getMigrationIDs(stencilDBConn *sql.DB,
 	}
 
 	return migrationIDs
-		
+
 }
