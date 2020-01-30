@@ -129,6 +129,7 @@ func GetMigratedDataSizeV2(evalConfig *EvalConfig, migrationID string) int64 {
 		}
 
 		log.Println(mID)
+		log.Println(fmt.Sprint(data1["dst_id"]))
 
 		whetherCheckMediaSize := true
 
@@ -150,7 +151,7 @@ func GetMigratedDataSizeV2(evalConfig *EvalConfig, migrationID string) int64 {
 			whetherCheckMediaSize,
 		)
 
-		log.Println(size)
+		log.Println("size:", size)
 
 		tSize += size
 
