@@ -4,3 +4,4 @@ github.com/
 evaluation/*.pyc
 stencil/evaluation/logs*
 stencil/evaluation/_*
+stencil/db/config.go

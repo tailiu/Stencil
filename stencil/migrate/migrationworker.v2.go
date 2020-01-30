@@ -314,7 +314,7 @@ func (self *MigrationWorkerV2) FetchRoot(threadID int) error {
 			} else {
 				fmt.Println("@FetchRoot > DataCall1 | ", err)
 			}
-			fmt.Println(sql)
+			// fmt.Println(sql)
 			return err
 		}
 	} else {
@@ -645,7 +645,7 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 			log.Fatal("@FetchFromMapping: FetchForMapping | ", err)
 			return err
 		} else {
-			data.UpdateData(toAttr, assignedTabCol, targetTabCol[0], res[targetTabCol[1]])
+			data.UpdateData(toAttr, args[0], targetTabCol[0], res[targetTabCol[1]])
 			node.Data[args[0]] = res[targetTabCol[1]]
 			if len(args) > 3 {
 				toMemberTokens := strings.Split(args[3], ".")
@@ -738,7 +738,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					args := strings.Split(assignedTabCol, ",")
 					if nodeVal, ok := node.Data[args[0]]; ok {
 						argsTokens := strings.Split(args[0], ".")
-						data.UpdateData(toAttr, assignedTabCol, argsTokens[0], nodeVal)
+						data.UpdateData(toAttr, args[0], argsTokens[0], nodeVal)
 					}
 					var toID, fromID string
 
