@@ -175,7 +175,7 @@ func Exp2GetMigratedDataRate() {
 
 }
 
-func Exp3() {
+func Exp3GetDatadowntime() {
 
 	evalConfig := InitializeEvalConfig()
 
@@ -196,5 +196,103 @@ func Exp3() {
 	}
 
 	log.Println(tDowntime)
+
+}
+
+func Exp4() {
+	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	counterStart := 0
+	counterNum := 100
+	counterInterval := 10
+
+	userIDWithEdges := getEdgesCounter(evalConfig, 
+		counterStart, counterNum, counterInterval)
+
+	// log.Println(userIDWithEdges)
+
+	for i := 0; i < len(userIDWithEdges); i ++ {
+		
+		userID := userIDWithEdges[i]["person_id"]
+
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+			userID, "diaspora", "1", "mastodon", "2", "d", 1
+
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum)
+		
+		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
+		
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		userIDWithEdges[i]["time"] = ConvertSingleDurationToString(time)
+	}
+
+	log.Println(userIDWithEdges)
+	
+	WriteStrToLog(
+		"migrationScalabilityEdges",
+		ConvertMapStringToJSONString(userIDWithEdges),
+	)
+
+}
+
+func Exp5() {
+	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	counterStart := 0
+	counterNum := 100
+	counterInterval := 10
+
+	userIDWithNodes := getNodesCounter(evalConfig, 
+		counterStart, counterNum, counterInterval)
+
+	// log.Println(userIDWithNodes)
+
+	for i := 0; i < len(userIDWithNodes); i ++ {
+		
+		userID := userIDWithNodes[i]["person_id"]
+
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+			userID, "diaspora", "1", "mastodon", "2", "d", 1
+
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum)
+		
+		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
+		
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		userIDWithNodes[i]["time"] = ConvertSingleDurationToString(time)
+	}
+
+	log.Println(userIDWithNodes)
+	
+	WriteStrToLog(
+		"migrationScalabilityNodes",
+		ConvertMapStringToJSONString(userIDWithNodes),
+	)
 
 }
