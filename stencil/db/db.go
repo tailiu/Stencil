@@ -41,13 +41,13 @@ import (
 // }
 
 func GetDBConn(app string) *sql.DB {
-	log.Println("Creating new db conn for:", app)
-	if DB_TEST {
-		app += "_test"
-	}
-	// if strings.EqualFold("diaspora", app) {
-	// 	app += "_10000_exp"
+	// log.Println("Creating new db conn for:", app)
+	// if DB_TEST {
+	// 	app += "_test"
 	// }
+	if strings.EqualFold("diaspora", app) {
+		app += "_1000000_exp"
+	}
 	// if strings.EqualFold("diaspora", app) {
 	// 	app = app + "_1000"
 	// }

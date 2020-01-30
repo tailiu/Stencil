@@ -199,6 +199,7 @@ func Exp3GetDatadowntime() {
 
 }
 
+// The diaspora database needs to be changed to diaspora_1000000_exp
 func Exp4() {
 	
 	evalConfig := InitializeEvalConfig()
@@ -248,6 +249,7 @@ func Exp4() {
 
 }
 
+// The diaspora database needs to be changed to diaspora_1000000_exp
 func Exp5() {
 	
 	evalConfig := InitializeEvalConfig()
