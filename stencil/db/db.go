@@ -40,45 +40,47 @@ import (
 // 	return dbConns[app]
 // }
 
-func GetDBConn(app string) *sql.DB {
+func GetDBConn(app string, isBlade ...bool) *sql.DB {
 
-	if DB_TEST {
-		app += "_test"
+	var dbName string
+
+	switch app {
+	case "diaspora":
+		{
+			dbName = DIASPORA_DB
+		}
+	case "mastodon":
+		{
+			dbName = MASTODON_DB
+		}
+	case "stencil":
+		{
+			dbName = STENCIL_DB
+		}
+	default:
+		{
+			dbName = app
+		}
 	}
 
-	log.Println("Creating new db conn for:", app)
-	// if strings.EqualFold("diaspora", app) {
-	// 	app += "_test"
-	// }
-	// if strings.EqualFold("diaspora", app) {
-	// 	app = app + "_1000"
-	// }
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
-		"password=%s dbname=%s sslmode=disable", DB_ADDR, DB_PORT, DB_USER, DB_PASSWORD, app)
-	// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
-	// fmt.Println(psqlInfo)
+	dbAddr := DB_ADDR
+
+	if len(isBlade) > 0 {
+		if isBlade[0] {
+			dbAddr = DB_ADDR_old
+		}
+	}
+
+	log.Println(fmt.Sprintf("Connecting to DB \"%s\" @ [%s] for App {%s} ...", dbName, dbAddr, app))
+
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbAddr, DB_PORT, DB_USER, DB_PASSWORD, dbName)
+
 	dbConn, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		fmt.Println("error connecting to the db app:", app)
 		log.Fatal(err)
 	}
-	return dbConn
-}
 
-func GetDBConn2(app string) *sql.DB {
-	if DB_TEST {
-		app += "_test"
-	}
-	log.Println("Creating new db conn for:", app)
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
-		"password=%s dbname=%s sslmode=disable", DB_ADDR_old, DB_PORT, DB_USER, DB_PASSWORD, app)
-	// dbConnAddr := "postgresql://root@10.230.12.75:26257/%s?sslmode=disable"
-	// fmt.Println(psqlInfo)
-	dbConn, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		fmt.Println("error connecting to the db app:", app)
-		log.Fatal(err)
-	}
 	return dbConn
 }
 

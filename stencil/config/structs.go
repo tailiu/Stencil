@@ -36,12 +36,12 @@ type Mapping struct {
 }
 
 type ToTable struct {
-	Table      		string            `json:"table"`
-	Conditions 		map[string]string `json:"conditions,omitempty"`
-	NotUsedInPSM  	bool			  `json:"notUsedInPSM,omitempty"`
-	Mapping    		map[string]string `json:"mapping"`
-	Media	   		map[string]string `json:"media,omitempty"`
-	TableID    		string			  `json:"-"`
+	Table        string            `json:"table"`
+	Conditions   map[string]string `json:"conditions,omitempty"`
+	NotUsedInPSM bool              `json:"notUsedInPSM,omitempty"`
+	Mapping      map[string]string `json:"mapping"`
+	Media        map[string]string `json:"media,omitempty"`
+	TableID      string            `json:"-"`
 }
 
 /****************** App Config Structs ***********************/
@@ -51,39 +51,39 @@ type App struct {
 }
 
 type DisplayConfig struct {
-	AppConfig			*AppConfig
-	StencilDBConn 		*sql.DB
-	AppIDNamePairs		map[string]string
-	TableIDNamePairs	map[string]string
-	AttrIDNamePairs		map[string]string
-	DstAttrNameIDPairs	map[string]string
-	MigrationID			int
-	SrcAppName			string
-	SrcAppID			string
-	AllMappings			*SchemaMappings
-	MappingsToDst 		*MappedApp
-	ResolveReference	bool
-	UserID				string
+	AppConfig          *AppConfig
+	StencilDBConn      *sql.DB
+	AppIDNamePairs     map[string]string
+	TableIDNamePairs   map[string]string
+	AttrIDNamePairs    map[string]string
+	DstAttrNameIDPairs map[string]string
+	MigrationID        int
+	SrcAppName         string
+	SrcAppID           string
+	AllMappings        *SchemaMappings
+	MappingsToDst      *MappedApp
+	ResolveReference   bool
+	UserID             string
 }
 
 type AppConfig struct {
-	AppName      string
-	AppID        string
+	AppName          string
+	AppID            string
 	TableIDNamePairs map[string]string
 	TableNameIDPairs map[string]string
-	Tags         []Tag        `json:"tags"`
-	Dependencies []Dependency `json:"dependencies"`
-	Ownerships   []Ownership  `json:"ownership"`
-	DBConn       *sql.DB
-	QR           *qr.QR
-	Rand         *rand.Rand
+	Tags             []Tag        `json:"tags"`
+	Dependencies     []Dependency `json:"dependencies"`
+	Ownerships       []Ownership  `json:"ownership"`
+	DBConn           *sql.DB
+	QR               *qr.QR
+	Rand             *rand.Rand
 }
 
 type Ownership struct {
-	Tag        		  string       		  `json:"tag"`
-	OwnedBy    		  string       		  `json:"owned_by"`
-	Conditions 		  []DCondition 		  `json:"conditions"`
-	Display_setting   string              `json:"display_setting"`
+	Tag             string       `json:"tag"`
+	OwnedBy         string       `json:"owned_by"`
+	Conditions      []DCondition `json:"conditions"`
+	Display_setting string       `json:"display_setting"`
 }
 
 type Tag struct {

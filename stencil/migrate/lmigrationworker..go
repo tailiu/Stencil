@@ -32,7 +32,7 @@ func CreateLMigrationWorkerWithAppsConfig(uid, srcApp, srcAppID, dstApp, dstAppI
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
 		SrcDBConn:    db.GetDBConn(srcApp),
-		DstDBConn:    db.GetDBConn2(dstApp),
+		DstDBConn:    db.GetDBConn(dstApp, true),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		FTPClient:    GetFTPClient(),
@@ -62,7 +62,7 @@ func CreateLMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logT
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
 		SrcDBConn:    db.GetDBConn(srcApp),
-		DstDBConn:    db.GetDBConn2(dstApp),
+		DstDBConn:    db.GetDBConn(dstApp, true),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		FTPClient:    GetFTPClient(),
@@ -81,7 +81,7 @@ func (self *LMigrationWorker) RenewDBConn() {
 		self.DstDBConn.Close()
 	}
 	self.SrcDBConn = db.GetDBConn(self.SrcAppConfig.AppName)
-	self.DstDBConn = db.GetDBConn2(self.DstAppConfig.AppName)
+	self.DstDBConn = db.GetDBConn(self.DstAppConfig.AppName, true)
 }
 
 func (self *LMigrationWorker) Finish() {

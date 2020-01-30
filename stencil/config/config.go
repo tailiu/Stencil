@@ -1,8 +1,8 @@
 package config
 
 import (
-	"encoding/json"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go/build"
@@ -18,7 +18,7 @@ import (
 
 var SchemaMappingsObj *SchemaMappings
 
-func CreateAppConfig(app, app_id string) (AppConfig, error) {
+func CreateAppConfig(app, app_id string, isBlade ...bool) (AppConfig, error) {
 
 	var appConfig AppConfig
 	var dconfig string
@@ -48,7 +48,7 @@ func CreateAppConfig(app, app_id string) (AppConfig, error) {
 
 	appConfig.AppName = app
 	appConfig.AppID = app_id
-	appConfig.DBConn = db.GetDBConn(app)
+	appConfig.DBConn = db.GetDBConn(app, isBlade...)
 
 	if app_id != "" {
 		appConfig.QR = qr.NewQR(app, app_id)
@@ -98,11 +98,11 @@ func CreateAppConfigDisplay(
 	appConfig.AppName = app
 
 	appConfig.AppID = app_id
-	
+
 	if newDB {
 		appConfig.DBConn = db.GetDBConn(app)
 	} else {
-		appConfig.DBConn = db.GetDBConn2(app)
+		appConfig.DBConn = db.GetDBConn(app, true)
 	}
 
 	if app_id != "" {
@@ -113,9 +113,9 @@ func CreateAppConfigDisplay(
 	appConfig.Rand = rand.New(rand.NewSource(time.Now().Unix()))
 
 	tableIDNamePairs := getTableIDNamePairsInApp(stencilDBConn, app_id)
-	
+
 	appConfig.TableIDNamePairs = make(map[string]string)
-	
+
 	appConfig.TableNameIDPairs = make(map[string]string)
 
 	for _, tableIDNamePair := range tableIDNamePairs {
@@ -136,7 +136,7 @@ func getTableIDNamePairsInApp(stencilDBConn *sql.DB, app_id string) []map[string
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	return result
 }
 
@@ -164,8 +164,8 @@ func LoadSchemaMappings() (*SchemaMappings, error) {
 				appID := db.GetAppIDByAppName(dbConn, toApp.Name)
 				for k, toAppMapping := range toApp.Mappings {
 					for l, toTable := range toAppMapping.ToTables {
-						ToTableID, err := db.TableID(dbConn, toTable.Table, appID);
-						if  err != nil{
+						ToTableID, err := db.TableID(dbConn, toTable.Table, appID)
+						if err != nil {
 							fmt.Println("LoadSchemaMappings: Unable to resolve ToTableID for table: ", toTable.Table, toApp.Name, appID)
 							log.Fatal(err)
 						}
