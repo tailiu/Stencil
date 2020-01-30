@@ -33,7 +33,7 @@ func CreateMigrationWorkerV2WithAppsConfig(uid string, logTxn *transaction.Log_t
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
 		SrcDBConn:    db.GetDBConn(srcAppConfig.AppName),
-		DstDBConn:    db.GetDBConn(dstAppConfig.AppName),
+		DstDBConn:    db.GetDBConn2(dstAppConfig.AppName),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		visitedNodes: make(map[string]map[string]bool)}
@@ -64,7 +64,7 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 		wList:        WaitingList{},
 		unmappedTags: CreateUnmappedTags(),
 		SrcDBConn:    db.GetDBConn(srcApp),
-		DstDBConn:    db.GetDBConn(dstApp),
+		DstDBConn:    db.GetDBConn2(dstApp),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		visitedNodes: make(map[string]map[string]bool)}
