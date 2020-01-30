@@ -15,7 +15,7 @@ func getMigrationIDBySrcUserID(evalConfig *EvalConfig, userID string) string {
 		`SELECT migration_id FROM migration_registration 
 		WHERE user_id = %s`, userID)
 	
-	result, err := db.DataCall(evalConfig.DiasporaDBConn, query)
+	result, err := db.DataCall(evalConfig.StencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

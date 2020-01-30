@@ -67,7 +67,10 @@ func getEdgesCounter(evalConfig *EvalConfig,
 	
 }
 
-func getNodesCounter(evalConfig *EvalConfig) {
+
+func getNodesCounter(evalConfig *EvalConfig,
+	counterStart, counterNum, 
+	counterInterval int) []map[string]string {
 
 	query1 := fmt.Sprintf(
 		`SELECT person_id, nodes FROM dag_counter 

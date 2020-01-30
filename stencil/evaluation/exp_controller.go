@@ -197,6 +197,11 @@ func Exp3GetDatadowntime() {
 
 	log.Println(tDowntime)
 
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInStencilFile, 
+		ConvertDurationToString(tDowntime),
+	)
+
 }
 
 // The diaspora database needs to be changed to diaspora_1000000_exp
@@ -206,7 +211,9 @@ func Exp4() {
 
 	defer closeDBConns(evalConfig)
 
-	counterStart := 0
+	// preExp(evalConfig)
+
+	counterStart := 1
 	counterNum := 100
 	counterInterval := 10
 
@@ -238,14 +245,14 @@ func Exp4() {
 		)
 
 		userIDWithEdges[i]["time"] = ConvertSingleDurationToString(time)
+
+		WriteStrToLog(
+			"migrationScalabilityEdges",
+			ConvertMapStringToJSONString(userIDWithEdges[i]),
+		)
 	}
 
 	log.Println(userIDWithEdges)
-	
-	WriteStrToLog(
-		"migrationScalabilityEdges",
-		ConvertMapStringToJSONString(userIDWithEdges),
-	)
 
 }
 
@@ -256,7 +263,9 @@ func Exp5() {
 
 	defer closeDBConns(evalConfig)
 
-	counterStart := 0
+	preExp(evalConfig)
+
+	counterStart := 1
 	counterNum := 100
 	counterInterval := 10
 
@@ -288,13 +297,13 @@ func Exp5() {
 		)
 
 		userIDWithNodes[i]["time"] = ConvertSingleDurationToString(time)
+
+		WriteStrToLog(
+			"migrationScalabilityNodes",
+			ConvertMapStringToJSONString(userIDWithNodes[i]),
+		)
 	}
 
 	log.Println(userIDWithNodes)
-	
-	WriteStrToLog(
-		"migrationScalabilityNodes",
-		ConvertMapStringToJSONString(userIDWithNodes),
-	)
 
 }
