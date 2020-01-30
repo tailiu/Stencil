@@ -18,7 +18,7 @@ func InitializeEvalConfig() *EvalConfig {
 
 	evalConfig := new(EvalConfig)
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
-	evalConfig.MastodonDBConn = db.GetDBConn2(mastodon)
+	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, true)
 	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
 	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, mastodon)
 	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)

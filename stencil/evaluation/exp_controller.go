@@ -213,9 +213,9 @@ func Exp4() {
 
 	defer closeDBConns(evalConfig)
 
-	// preExp(evalConfig)
+	preExp(evalConfig)
 
-	counterStart := 1
+	counterStart := 0
 	counterNum := 100
 	counterInterval := 10
 
@@ -267,7 +267,7 @@ func Exp5() {
 
 	preExp(evalConfig)
 
-	counterStart := 1
+	counterStart := 0
 	counterNum := 100
 	counterInterval := 10
 

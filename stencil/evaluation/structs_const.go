@@ -2,7 +2,7 @@ package evaluation
 
 import (
 	"database/sql"
-	"stencil/db"
+	// "stencil/db"
 	// "time"
 )
 
@@ -17,7 +17,7 @@ var mediaSize = map[string]int64 {
 const logDir = "./evaluation/logs/"
 
 const (
-	stencilDB = db.STENCIL_DB
+	stencilDB = "stencil"
 	mastodon = "mastodon"
 	diaspora = "diaspora"
 

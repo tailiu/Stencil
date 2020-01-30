@@ -13,9 +13,9 @@ func main() {
 
 	// evaluation.Exp2()
 
-	evaluation.Exp2GetMigratedDataRate()
+	// evaluation.Exp2GetMigratedDataRate()
 
 	// evaluation.Exp3GetDatadowntime()
 
-	// evaluation.Exp4()
+	evaluation.Exp4()
 }
