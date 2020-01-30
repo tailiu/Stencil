@@ -16,6 +16,8 @@ dataDownTimeInStencil = "dataDowntimeInStencil"
 dataDownTimeInNaive = "dataDowntimeInNaive"
 migrationTime = "migrationTime"
 migratedDataSize = "migratedDataSize"
+migrationScalabilityEdgeFile = "migrationScalabilityEdges"
+
 dataBags = "dataBags"
 cumNum = 1000
 apps = ['Diaspora','Mastodon', 'Twitter', 'GNU Social', 'Diaspora']
@@ -260,13 +262,13 @@ def dataDownTime():
     
     data = []
     data.append(readFile2(logDir + dataDownTimeInStencil))
-    data.append(readFile2(logDir + dataDownTimeInNaive))
+    # data.append(readFile2(logDir + dataDownTimeInNaive))
     
     labels = [
         "Stencil",
-        "Naive"
+        # "Naive"
     ]
-    g.cumulativeGraph(data, labels, "Data Downtime (s)", "Cumulative probability")
+    g.cumulativeGraph(data, labels, "Data downtime (s)", "Cumulative probability")
 
 def convertBytesToMB(data):
     
@@ -398,10 +400,29 @@ def migrationRateDatasets(folders, labels):
     sizes = getSizeFromData(data1)
     times = getTimeFromData(data2)
 
+    for i, size in enumerate(sizes):
+        sizes[i] = convertBytesToMB(size)
+
     xlabel = 'Migration size (MB)'
     ylabel = 'Migration Time (s)'
 
     g.mulPoints(sizes, times, labels, xlabel, ylabel)
+
+def scalabilityEdge(labels):
+
+    data = readFile3(logDir + migrationScalabilityEdgeFile)
+    
+    edges = []
+    times = []
+
+    for data1 in data:
+        edges.append(data1["edges"])
+        times.append(data1["time"])
+ 
+    xlabel = 'Edges'
+    ylabel = 'Migration Time (s)'
+
+    g.mulPoints1(edges, times, labels, xlabel, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -419,4 +440,6 @@ def migrationRateDatasets(folders, labels):
 # danglingDataSystemCombined()
 
 # migrationRate(["SA1"])
-migrationRateDatasets(["logs_1M/", "logs_100K/"], ["1M", "100K"])
+# migrationRateDatasets(["logs_1M/", "logs_100K/"], ["1M", "100K"])
+# dataDownTime()
+scalabilityEdge(["SA1"])
