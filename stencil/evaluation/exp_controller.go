@@ -143,6 +143,8 @@ func Exp2GetMigratedDataRate() {
 
 		migrationID := fmt.Sprint(migrationData1["migration_id"])
 
+		log.Println("Migration ID:", migrationID)
+
 		size := GetMigratedDataSizeV2(
 			evalConfig,
 			migrationID,

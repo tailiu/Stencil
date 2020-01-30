@@ -8,7 +8,9 @@ import (
 )
 
 func getCounts(dbConn *sql.DB, query string) int64 {
+
 	data, err := db.DataCall1(dbConn, query)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -16,21 +18,34 @@ func getCounts(dbConn *sql.DB, query string) int64 {
 	return data["count"].(int64)
 }
 
-func getDanglingLikesNum(evalConfig *EvalConfig, danglingDataStats map[string]int64, pKey int) {
+func getDanglingLikesNum(evalConfig *EvalConfig, 
+	danglingDataStats map[string]int64, pKey int) {
+
 	key := "likes:posts"
-	query := fmt.Sprintf("SELECT count(*) from likes where target_id = %d and mark_as_delete = false",
-	pKey)
+
+	query := fmt.Sprintf(
+		`SELECT count(*) from likes 
+		where target_id = %d and mark_as_delete = false`,
+		pKey)
+
 	data := getCounts(evalConfig.DiasporaDBConn, query)
+
 	if data != 0 {
 		danglingDataStats[key] = data
 		log.Println("Got Dangling Data!")
 	}	
 }
 
-func getDanglingCommentsNum(evalConfig *EvalConfig, danglingDataStats map[string]int64, pKey int) {
+func getDanglingCommentsNum(evalConfig *EvalConfig, 
+	danglingDataStats map[string]int64, pKey int) {
+	
 	key := "comments:posts"
-	query := fmt.Sprintf("SELECT count(*) from comments where commentable_id = %d and mark_as_delete = false",
-	pKey)
+	
+	query := fmt.Sprintf(
+		`SELECT count(*) from comments 
+		where commentable_id = %d and mark_as_delete = false`,
+		pKey)
+	
 	data := getCounts(evalConfig.DiasporaDBConn, query)
 	if data != 0 {
 		danglingDataStats[key] = data
@@ -38,18 +53,27 @@ func getDanglingCommentsNum(evalConfig *EvalConfig, danglingDataStats map[string
 	}	
 }
 
-func getDanglingMessagesNum(evalConfig *EvalConfig, danglingDataStats map[string]int64, pKey int) {
+func getDanglingMessagesNum(evalConfig *EvalConfig, 
+	danglingDataStats map[string]int64, pKey int) {
+	
 	key := "messages:conversations"
-	query := fmt.Sprintf("SELECT count(*) from messages where conversation_id = %d and mark_as_delete = false",
-	pKey)
+
+	query := fmt.Sprintf(
+		`SELECT count(*) from messages 
+		where conversation_id = %d and mark_as_delete = false`,
+		pKey)
+	
 	data := getCounts(evalConfig.DiasporaDBConn, query)
+
 	if data != 0 {
 		danglingDataStats[key] = data
 		log.Println("Got Dangling Data!")
 	}
 }
 
-func srcDanglingDataNonSystem(evalConfig *EvalConfig, migrationID string, table string, pKey int) map[string]int64 {
+func srcDanglingDataNonSystem(evalConfig *EvalConfig, 
+	migrationID string, table string, pKey int) map[string]int64 {
+	
 	danglingDataStats := make(map[string]int64)
 
 	log.Println("Dangling data to check:", table, pKey)

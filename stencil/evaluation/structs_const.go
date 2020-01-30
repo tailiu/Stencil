@@ -51,6 +51,7 @@ type EvalConfig struct {
 	DiasporaDBConn *sql.DB
 	TableIDNamePairs map[string]string
 	MastodonTableNameIDPairs map[string]string
+	DiasporaTableNameIDPairs map[string]string
 	MastodonAppID string
 	DiasporaAppID string
 	SrcAnomaliesVsMigrationSizeFile string

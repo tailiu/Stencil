@@ -26,17 +26,29 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.TableIDNamePairs = GetTableIDNamePairs(evalConfig.StencilDBConn)
 	
 	mastodonTableNameIDPairs := make(map[string]string)
+	diasporaTableNameIDPairs := make(map[string]string)
 
-	res := getTableIDNamePairsInApp(evalConfig.StencilDBConn,
+	mastodonRes := getTableIDNamePairsInApp(evalConfig.StencilDBConn,
 		 evalConfig.MastodonAppID)
 
-	for _, res1 := range res {
+	for _, res1 := range mastodonRes {
 
 		mastodonTableNameIDPairs[fmt.Sprint(res1["table_name"])] = 
 			fmt.Sprint(res1["pk"])
 	}
 
 	evalConfig.MastodonTableNameIDPairs = mastodonTableNameIDPairs
+
+	diasporaRes := getTableIDNamePairsInApp(evalConfig.StencilDBConn,
+		evalConfig.DiasporaAppID)
+
+	for _, res1 := range diasporaRes {
+
+		diasporaTableNameIDPairs[fmt.Sprint(res1["table_name"])] = 
+			fmt.Sprint(res1["pk"])
+	}
+
+   	evalConfig.DiasporaTableNameIDPairs = diasporaTableNameIDPairs
 
 	// t := time.Now()
 	evalConfig.SrcAnomaliesVsMigrationSizeFile, 
@@ -330,7 +342,8 @@ func calculateMediaSize(AppDBConn *sql.DB, table string,
 }
 
 func calculateRowSize(AppDBConn *sql.DB, 
-	cols []string, table string, pKey int, AppID string) int64 {
+	cols []string, table string, pKey int, 
+	AppID string, checkMediaSize bool) int64 {
 
 	selectQuery := "select"
 	
@@ -357,14 +370,20 @@ func calculateRowSize(AppDBConn *sql.DB,
 	// 	fmt.Print(fmt.Sprint(pKey) + ":" + fmt.Sprint(calculateMediaSize(AppDBConn, table, pKey, AppID)) + ",")
 	// }
 	
+	var mediaSize int64
+
+	if checkMediaSize {
+		mediaSize = calculateMediaSize(AppDBConn, table, pKey, AppID)
+	}
+
 	if row["cols_size"] == nil {
 
-		return calculateMediaSize(AppDBConn, table, pKey, AppID)
-
+		return mediaSize
+		
 	} else {
 
-		return row["cols_size"].(int64) + 
-			calculateMediaSize(AppDBConn, table, pKey, AppID)
+		return row["cols_size"].(int64) + mediaSize
+		
 	}
 	
 }

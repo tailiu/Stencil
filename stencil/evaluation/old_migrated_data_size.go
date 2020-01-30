@@ -35,7 +35,7 @@ func getMigratedDataInRowSize(AppDBConn *sql.DB,
 	// log.Println(keys)
 	
 	return calculateRowSize(AppDBConn, 
-		keys, table, pKey, AppID)
+		keys, table, pKey, AppID, true)
 
 }
 

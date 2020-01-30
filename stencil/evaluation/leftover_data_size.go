@@ -40,7 +40,7 @@ func getLeftoverDataInRowSize(AppDBConn *sql.DB,
 		}
 	}
 
-	return calculateRowSize(AppDBConn, keys, table, pKey, AppID)
+	return calculateRowSize(AppDBConn, keys, table, pKey, AppID, true)
 
 }
 
@@ -118,7 +118,7 @@ func getEntireUnmappedRowSize(stencilDBConn *sql.DB, AppDBConn *sql.DB,
 		}
 
 		entireUnmappedRowSize += calculateRowSize(AppDBConn, 
-			keys, table, pKey, AppID)
+			keys, table, pKey, AppID, true)
 	}
 
 	return entireUnmappedRowSize
