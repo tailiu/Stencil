@@ -88,12 +88,14 @@ func procMigratedCols(evalConfig *EvalConfig,
 	
 }
 
-func GetMigratedDataSizeV2(evalConfig *EvalConfig, migrationID string) int64 {
+func GetMigratedDataSizeV2(evalConfig *EvalConfig, 
+	migrationID string) int64 {
 
 	query1 := fmt.Sprintf(
-		`SELECT src_table, src_id, src_cols, dst_table, dst_id 
-		FROM evaluation WHERE migration_id = '%s' and 
-		dst_table != 'n/a'`, migrationID)
+		`SELECT src_table, src_id, src_cols, 
+		dst_table, dst_id, dst_cols  
+		FROM evaluation WHERE migration_id = '%s'`,
+		migrationID)
 
 	// log.Println(query1)
 	
@@ -106,7 +108,7 @@ func GetMigratedDataSizeV2(evalConfig *EvalConfig, migrationID string) int64 {
 
 	var tSize int64
 
-	checkedMedia := make(map[string]bool)
+	// checkedMedia := make(map[string]bool)
 
 	for _, data1 := range result {
 		
@@ -114,33 +116,37 @@ func GetMigratedDataSizeV2(evalConfig *EvalConfig, migrationID string) int64 {
 
 		dTable := evalConfig.TableIDNamePairs[fmt.Sprint(data1["dst_table"])]
 
-		log.Println(mTable)
-		log.Println(dTable)
+		log.Println("src table:", mTable)
+		log.Println("dst table:", dTable)
 
 		mCols := procMigratedCols(evalConfig, 
 			fmt.Sprint(data1["src_cols"]), mTable)
 
-		log.Println(data1["src_cols"])
-		log.Println(mCols)
+		log.Println("src cols:", data1["src_cols"])
+		log.Println("processed src cols:", mCols)
 
 		mID, err := strconv.Atoi(fmt.Sprint(data1["src_id"]))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		log.Println(mID)
-		log.Println(fmt.Sprint(data1["dst_id"]))
+		log.Println("dst cols:", fmt.Sprint(data1["dst_cols"]))
+		
+		// log.Println(mID)
+		// log.Println(fmt.Sprint(data1["dst_id"]))
 
-		whetherCheckMediaSize := true
+		// whetherCheckMediaSize := true
 
-		if dTable == "media_attachments" {
-			key := dTable + ":" + fmt.Sprint(data1["dst_id"])
-			if _, ok :=	checkedMedia[key]; ok {
-				whetherCheckMediaSize = false
-			} else {
-				checkedMedia[key] = true
-			}
-		}
+		// if dTable == "media_attachments" {
+		// 	key := dTable + ":" + fmt.Sprint(data1["dst_id"])
+		// 	if _, ok :=	checkedMedia[key]; ok {
+		// 		whetherCheckMediaSize = false
+		// 	} else {
+		// 		checkedMedia[key] = true
+		// 	}
+		// }
+
+		// log.Println(whetherCheckMediaSize)
 
 		size := calculateRowSize(
 			evalConfig.DiasporaDBConn, 
@@ -148,7 +154,152 @@ func GetMigratedDataSizeV2(evalConfig *EvalConfig, migrationID string) int64 {
 			mTable,
 			mID,
 			evalConfig.DiasporaAppID,
-			whetherCheckMediaSize,
+			true,
+		)
+
+		log.Println("size:", size)
+
+		tSize += size
+
+	}
+
+	return tSize
+
+}
+
+// The dst cols don't contain id
+func procDstCols(dstCols string) []string {
+
+	tmp := strings.Split(dstCols, ",")
+
+	return append(tmp, "id")
+
+}
+
+func GetMigratedDataSizeFromDst(evalConfig *EvalConfig, 
+	migrationID string) int64 {
+
+	query1 := fmt.Sprintf(
+		`SELECT dst_table, dst_id, dst_cols  
+		FROM evaluation WHERE migration_id = '%s'`,
+		migrationID)
+
+	// log.Println(query1)
+	
+	result, err := db.DataCall(evalConfig.StencilDBConn, query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(result)
+
+	var tSize int64
+
+	checkedData := make(map[string]bool)
+
+	for _, data1 := range result {
+
+		dstTable := evalConfig.TableIDNamePairs[fmt.Sprint(data1["dst_table"])]
+
+		dstCols := fmt.Sprint(data1["dst_cols"])
+
+		log.Println("dst table:", dstTable)
+		log.Println("dst cols:", dstCols)
+		
+		strDstID := fmt.Sprint(data1["dst_id"])
+
+		dstID, err := strconv.Atoi(strDstID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		key := dstCols + ":" + strDstID
+		if _, ok := checkedData[key]; ok {
+			log.Println("duplicate")
+			continue
+		} else {
+			checkedData[key] = true
+		}
+
+		procDstCols := procDstCols(dstCols)
+		log.Println("processed dst cols:", procDstCols)
+
+		log.Println("dst id:", dstID)
+
+		size := calculateRowSize(
+			evalConfig.MastodonDBConn, 
+			procDstCols,
+			dstTable,
+			dstID,
+			evalConfig.MastodonAppID,
+			true,
+		)
+
+		log.Println("size:", size)
+
+		tSize += size
+
+	}
+
+	return tSize
+
+}
+
+func procSrcCols(srcCols string) []string {
+
+	tmp := strings.Split(srcCols, ",")
+
+	return tmp
+
+}
+
+func GetMigratedDataSizeFromSrc(evalConfig *EvalConfig, 
+	migrationID string) int64 {
+
+	query1 := fmt.Sprintf(
+		`SELECT src_table, src_id, src_cols  
+		FROM evaluation WHERE migration_id = '%s'`,
+		migrationID)
+
+	// log.Println(query1)
+	
+	result, err := db.DataCall(evalConfig.StencilDBConn, query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(result)
+
+	var tSize int64
+
+	for _, data1 := range result {
+
+		srcTable := evalConfig.TableIDNamePairs[fmt.Sprint(data1["src_table"])]
+
+		srcCols := fmt.Sprint(data1["src_cols"])
+
+		log.Println("src table:", srcTable)
+		log.Println("src cols:", srcCols)
+		
+		strSrcID := fmt.Sprint(data1["src_id"])
+
+		srcID, err := strconv.Atoi(strSrcID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		procSrcCols := procSrcCols(srcCols)
+		log.Println("processed src cols:", procSrcCols)
+
+		log.Println("src id:", srcID)
+
+		size := calculateRowSize(
+			evalConfig.DiasporaDBConn, 
+			procSrcCols,
+			srcTable,
+			srcID,
+			evalConfig.DiasporaAppID,
+			true,
 		)
 
 		log.Println("size:", size)

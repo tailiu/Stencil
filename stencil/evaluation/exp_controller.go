@@ -82,7 +82,7 @@ func Exp1GetMediaSize() {
 	
 }
 
-// The diaspora database needs to be changed to diaspora_1xxxx_exp1
+// The diaspora database needs to be changed to diaspora_1xxxx_exp
 // Data will be migrated from:
 // diaspora_1000000_exp, diaspora_100000_exp, diaspora_10000_exp, diaspora_1000_exp
 func Exp2() {
@@ -145,7 +145,7 @@ func Exp2GetMigratedDataRate() {
 
 		log.Println("Migration ID:", migrationID)
 
-		size := GetMigratedDataSizeV2(
+		size := GetMigratedDataSizeFromSrc(
 			evalConfig,
 			migrationID,
 		)
