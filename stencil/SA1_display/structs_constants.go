@@ -42,6 +42,7 @@ type displayConfig struct {
 	srcAppConfig			*srcAppConfig
 	dstAppConfig			*dstAppConfig
 	mappingsFromSrcToDst	*config.MappedApp
+	displayInFirstPhase		bool
 }
 
 type DataInDependencyNode struct {

@@ -17,27 +17,36 @@ func DisplayThread(displayConfig *displayConfig) {
 
 	log.Println("--------- Start of Display Check In One Thread ---------")
 
-	log.Println("--------- First Phase --------")
-
 	secondRound := false
 
-	// Since we get all undisplayed data seen so far, during check, there could be cases
-	// where some data has already been displayed either by the current display thread or other threads 
-	// (this is difficult to know).
-	// For that data, we will continue to check it. This does not violate correctness
-	for migratedData := GetUndisplayedMigratedData(displayConfig); 
-		!CheckMigrationComplete(displayConfig); 
-		migratedData = GetUndisplayedMigratedData(displayConfig) {
-		
-		for _, oneMigratedData := range migratedData {
+	if displayConfig.displayInFirstPhase {
 
-			checkDisplayOneMigratedData(displayConfig, oneMigratedData, secondRound)
+		log.Println("--------- First Phase --------")
 
+		// Since we get all undisplayed data seen so far, during check, there could be cases
+		// where some data has already been displayed either by the current display thread or other threads 
+		// (this is difficult to know).
+		// For that data, we will continue to check it. This does not violate correctness
+		for migratedData := GetUndisplayedMigratedData(displayConfig); 
+			!CheckMigrationComplete(displayConfig); 
+			migratedData = GetUndisplayedMigratedData(displayConfig) {
+			
+			for _, oneMigratedData := range migratedData {
+
+				checkDisplayOneMigratedData(displayConfig, oneMigratedData, secondRound)
+
+			}
+
+			time.Sleep(CHECK_INTERVAL)
 		}
 
-		time.Sleep(CHECK_INTERVAL)
-	}
+	} else {
 
+		for !CheckMigrationComplete(displayConfig) {
+			time.Sleep(CHECK_INTERVAL)
+		}
+
+	}
 
 	log.Println("--------- Second Phase ---------")
 	

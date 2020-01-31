@@ -19,7 +19,10 @@ func test1() {
 	// If the display controller needs to resolve references, resolveReference is true
 	resolveReference := true
 
-	displayConfig := SA1_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
+	displayInFirstPhase := true
+
+	displayConfig := SA1_display.CreateDisplayConfig(migrationID, 
+		resolveReference, newDB, displayInFirstPhase)
 
 	log.Println("Migration ID:",migrationID)
 
@@ -60,9 +63,12 @@ func test3() {
 	uid, srcAppID, dstAppID, migrationType, threadNum := 
 		"24214", "1", "2", "d", 1
 
-	SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType, threadNum, nil)
+	enableDisplay, displayInFirstPhase := true, true
 
-	go SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType, threadNum, &wg)
+	// SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType, threadNum, nil)
+
+	go SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType, 
+		threadNum, &wg, enableDisplay, displayInFirstPhase)
 
 	wg.Wait()
 

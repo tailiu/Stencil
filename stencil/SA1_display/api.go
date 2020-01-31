@@ -9,8 +9,10 @@ import (
 )
 
 const WAIT_FOR_MIGRATION_START_INTERVAL = 100 * time.Millisecond
+const CHECK_MIGRATION_COMPLETE_INTERVAL = time.Second
 
-func displayController(migrationID, threadNum int, wg *sync.WaitGroup) {
+func displayController(migrationID, threadNum int, 
+	wg *sync.WaitGroup, displayInFirstPhase bool) {
 
 	// If the destination app database is not in the new server, newDB is false
 	newDB := false
@@ -18,7 +20,8 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup) {
 	// If the display controller needs to resolve references, resolveReference is true
 	resolveReference := true
 
-	dConfig := CreateDisplayConfig(migrationID, resolveReference, newDB)
+	dConfig := CreateDisplayConfig(migrationID, resolveReference, 
+		newDB, displayInFirstPhase)
 
 	log.Println("Migration ID:", migrationID)
 
@@ -72,12 +75,30 @@ func waitGetMigrationID(uid, srcAppID, dstAppID, migrationType string) int {
 
 }
 
+func waitForMigrationComplete(migrationID int, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+	
+	stencilDBConn := db.GetDBConn("stencil")
+
+	for !CheckMigrationComplete1(stencilDBConn, migrationID) {
+		time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL)
+	}
+
+	stencilDBConn.Close()
+
+}
 
 func StartDisplay(uid, srcAppID, dstAppID, migrationType string, 
-	threadNum int, wg *sync.WaitGroup) {
+	threadNum int, wg *sync.WaitGroup, 
+	enableDisplay, displayInFirstPhase bool) {
 
 	migrationID := waitGetMigrationID(uid, srcAppID, dstAppID, migrationType)
 
-	displayController(migrationID, threadNum, wg)
+	if enableDisplay {
+		displayController(migrationID, threadNum, wg, displayInFirstPhase)
+	} else {
+		waitForMigrationComplete(migrationID, wg)
+	}
 
 }

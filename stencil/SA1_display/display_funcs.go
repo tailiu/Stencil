@@ -14,7 +14,7 @@ import (
 )
 
 func CreateDisplayConfig(migrationID int,
-	resolveReference, newDB bool) *displayConfig {
+	resolveReference, newDB, displayInFirstPhase bool) *displayConfig {
 
 	var displayConfig displayConfig
 
@@ -24,7 +24,8 @@ func CreateDisplayConfig(migrationID int,
 
 	stencilDBConn := db.GetDBConn("stencil")
 
-	srcAppID, dstAppID, srcUserID := getSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
+	srcAppID, dstAppID, srcUserID := 
+		getSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
 
 	srcAppName := getAppNameByAppID(stencilDBConn, srcAppID)
 	dstAppName := getAppNameByAppID(stencilDBConn, dstAppID)
@@ -34,7 +35,9 @@ func CreateDisplayConfig(migrationID int,
 		log.Fatal(err1)
 	}
 
-	mappingsFromSrcToDst, err2 := schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
+	mappingsFromSrcToDst, err2 := 
+		schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
+	
 	if err2 != nil {
 		log.Fatal(err2)
 	}
@@ -64,9 +67,11 @@ func CreateDisplayConfig(migrationID int,
 
 	for _, dstRes1 := range dstRes {
 
-		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] = fmt.Sprint(dstRes1["table_name"])
+		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] = 
+			fmt.Sprint(dstRes1["table_name"])
 
-		dstAppTableNameIDPairs[fmt.Sprint(dstRes1["table_name"])] = fmt.Sprint(dstRes1["pk"])
+		dstAppTableNameIDPairs[fmt.Sprint(dstRes1["table_name"])] = 
+			fmt.Sprint(dstRes1["pk"])
 	}
 
 	srcAppTableNameIDPairs := make(map[string]string)
@@ -75,7 +80,8 @@ func CreateDisplayConfig(migrationID int,
 
 	for _, srcRes1 := range srcRes {
 
-		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = fmt.Sprint(srcRes1["pk"])
+		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = 
+			fmt.Sprint(srcRes1["pk"])
 
 	}
 
@@ -112,6 +118,7 @@ func CreateDisplayConfig(migrationID int,
 	displayConfig.dstAppConfig = &dstAppConfig
 	displayConfig.refResolutionConfig = refResolutionConfig
 	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
+	displayConfig.displayInFirstPhase = displayInFirstPhase
 
 	return &displayConfig
 
@@ -242,10 +249,33 @@ func GetUndisplayedMigratedData(displayConfig *displayConfig) []*HintStruct {
 
 func CheckMigrationComplete(displayConfig *displayConfig) bool {
 
-	query := fmt.Sprintf("SELECT 1 FROM txn_logs WHERE action_id = %d and action_type='COMMIT' LIMIT 1",
+	query := fmt.Sprintf(
+		`SELECT 1 FROM txn_logs 
+		WHERE action_id = %d and action_type='COMMIT' LIMIT 1`,
 		displayConfig.migrationID)
 
 	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
+
+	if len(data) == 0 {
+
+		return false
+
+	} else {
+
+		return true
+
+	}
+
+}
+
+func CheckMigrationComplete1(stencilDBConn *sql.DB, migrationID int) bool {
+
+	query := fmt.Sprintf(
+		`SELECT 1 FROM txn_logs 
+		WHERE action_id = %d and action_type='COMMIT' LIMIT 1`,
+		migrationID)
+
+	data := db.GetAllColsOfRows(stencilDBConn, query)
 
 	if len(data) == 0 {
 
