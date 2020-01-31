@@ -17,6 +17,8 @@ dataDownTimeInNaive = "dataDowntimeInNaive"
 migrationTime = "migrationTime"
 migratedDataSize = "migratedDataSize"
 migrationScalabilityEdgeFile = "migrationScalabilityEdges"
+migrationScalabilityNodeFile = "migrationScalabilityNodes"
+counterFile = "counter"
 
 dataBags = "dataBags"
 cumNum = 1000
@@ -404,7 +406,7 @@ def migrationRateDatasets(folders, labels):
         sizes[i] = convertBytesToMB(size)
 
     xlabel = 'Migration size (MB)'
-    ylabel = 'Migration Time (s)'
+    ylabel = 'Migration time (s)'
 
     g.mulPoints(sizes, times, labels, xlabel, ylabel)
 
@@ -416,13 +418,45 @@ def scalabilityEdge(labels):
     times = []
 
     for data1 in data:
-        edges.append(data1["edges"])
-        times.append(data1["time"])
+        edges.append(float(data1["edges"]))
+        times.append(float(data1["time"]))
  
     xlabel = 'Edges'
-    ylabel = 'Migration Time (s)'
+    ylabel = 'Migration time (s)'
 
     g.mulPoints1(edges, times, labels, xlabel, ylabel)
+
+def scalabilityNode(labels):
+
+    data = readFile3(logDir + migrationScalabilityNodeFile)
+    
+    nodes = []
+    times = []
+
+    for data1 in data:
+        nodes.append(float(data1["nodes"]))
+        times.append(float(data1["time"]))
+ 
+    xlabel = 'Nodes'
+    ylabel = 'Migration time (s)'
+
+    g.mulPoints1(nodes, times, labels, xlabel, ylabel)
+
+def counter(labels):
+
+    data = readFile3(logDir + counterFile)
+    
+    edges = []
+    nodes = []
+
+    for data1 in data:
+        edges.append(float(data1["edges"]))
+        nodes.append(float(data1["nodes"]))
+ 
+    xlabel = 'Edges'
+    ylabel = 'Nodes'
+
+    g.mulPoints2(edges, nodes, labels, xlabel, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -442,4 +476,6 @@ def scalabilityEdge(labels):
 # migrationRate(["SA1"])
 # migrationRateDatasets(["logs_1M/", "logs_100K/"], ["1M", "100K"])
 # dataDownTime()
-scalabilityEdge(["SA1"])
+# scalabilityEdge("SA1")
+# scalabilityNode("SA1")
+counter("")

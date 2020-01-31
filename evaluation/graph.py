@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.polynomial.polynomial import polyfit
 
 plt.rcParams.update({'font.size': 15})
-colors = ['g', 'b', 'c', 'r', 'y', 'm', 'w', 'k']
+colors = ['g', 'k', 'b', 'c', 'r', 'y', 'm', 'w']
 lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center']
@@ -160,7 +161,7 @@ def mulPoints(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
     
     for i in range(len(x)):
-        ax.plot(x[i], y[i], colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle="")
+        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle="")
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
@@ -173,8 +174,29 @@ def mulPoints(x, y, labels, xlabel, ylabel):
 def mulPoints1(x, y, labels, xlabel, ylabel):
 
     fig, ax = plt.subplots()
+
+    x = np.array(x)
+    y = np.array(y)
+    b, m = polyfit(x, y, 1)
+
+    # ax.plot(x, y, 'yo', x, m * x + b, '--k', markersize=7)
+
+    ax.plot(x, y, marker='o', color=colors[0], markersize=7, label=labels, linestyle="")
+    ax.plot(x, m * x + b, linestyle='--', color=colors[1], linewidth=2)
+
+    ax.grid(True)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    legend = ax.legend(loc=legendLoc[3], fontsize=legendFontSize[4], numpoints=1)
     
-    ax.plot(x, y, colors[0], label=labels[0], markersize=7, marker=markers[0], linestyle="")
+    plt.show()
+
+def mulPoints2(x, y, labels, xlabel, ylabel):
+
+    fig, ax = plt.subplots()
+
+    ax.plot(x, y, marker='o', color=colors[0], markersize=7, label=labels, linestyle="")
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
