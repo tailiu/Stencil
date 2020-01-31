@@ -371,7 +371,7 @@ def getTimeFromData(data):
 
     for i, data1 in enumerate(data):
         for data2 in data1:
-            times[i].append(data2["time"])
+            times[i].append(float(data2["time"]))
     
     return times
 
@@ -384,11 +384,11 @@ def getSizeFromData(data):
 
     for i, data1 in enumerate(data):
         for data2 in data1:
-            sizes[i].append(data2["size"])
+            sizes[i].append(float(data2["size"]))
     
     return sizes
 
-def migrationRateDatasets(folders, labels):
+def migrationRateDatasetsFig(folders, labels):
     
     data1 = []
     data2 = []
@@ -458,6 +458,37 @@ def counter(labels):
 
     g.mulPoints2(edges, nodes, labels, xlabel, ylabel)
 
+def calSum(data):
+
+    res = []
+
+    for data1 in data:
+
+        res1 = 0.0
+
+        for i in data1:
+            res1 += i
+        
+        res.append(res1)
+
+    return res
+
+def migrationRateDatasetsTab(folders, labels):
+
+    data1 = []
+
+    for folder in folders:
+        data1.append(readFile3(evalDir + folder + migrationTime))
+
+    times = getTimeFromData(data1)
+
+    timesSum = calSum(times)
+
+    for i, t in enumerate(timesSum):
+        print labels[i] + ":"
+        print t
+    
+
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
@@ -474,8 +505,9 @@ def counter(labels):
 # danglingDataSystemCombined()
 
 # migrationRate(["SA1"])
-# migrationRateDatasets(["logs_1M/", "logs_100K/"], ["1M", "100K"])
+# migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
 # dataDownTime()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-counter("")
+# counter("")
+migrationRateDatasetsTab(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])

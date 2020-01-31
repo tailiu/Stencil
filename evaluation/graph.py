@@ -7,7 +7,7 @@ colors = ['g', 'k', 'b', 'c', 'r', 'y', 'm', 'w']
 lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center']
-markers = ["o", "v", "^", ".", ">", "<"]
+markers = ["o", "v", "s", "*", "+", "<"]
 
 def line(x, y, xlabel, ylabel, title):
     xs, ys = _sortX(x, y)
