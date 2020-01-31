@@ -61,7 +61,11 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.DstDanglingDataInSystemFile,
 	evalConfig.DataDowntimeInStencilFile,
 	evalConfig.DataDowntimeInNaiveFile,
-	evalConfig.DataBags = 
+	evalConfig.DataBags,
+	evalConfig.MigratedDataSizeByDstFile,
+	evalConfig.MigrationTimeByDstFile,
+	evalConfig.MigratedDataSizeBySrcFile,
+	evalConfig.MigrationTimeBySrcFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -72,7 +76,11 @@ func InitializeEvalConfig() *EvalConfig {
 		"dstSystemDanglingData",
 		"dataDowntimeInStencil",
 		"dataDowntimeInNaive",
-		"dataBags"
+		"dataBags",
+		"migratedDataSizeByDst",
+		"migrationTimeByDst",
+		"migratedDataSizeBySrc",
+		"migrationTimeBySrc"
 
 	return evalConfig
 }

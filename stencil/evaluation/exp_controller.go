@@ -48,8 +48,13 @@ func Exp1() {
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userID, "diaspora", "1", "mastodon", "2", "d", 1
 
+		enableDisplay, displayInFirstPhase := true, true
+
 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-			dstAppName, dstAppID, migrationType, threadNum)
+			dstAppName, dstAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase,
+		)
+
 	}
 
 	log.Println(userIDs)
@@ -106,8 +111,12 @@ func Exp2() {
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
 
+		enableDisplay, displayInFirstPhase := false, false
+
 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-			dstAppName, dstAppID, migrationType, threadNum)
+			dstAppName, dstAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase,
+		)
 		
 		res[userIDs[i]] = "true"
 
@@ -122,7 +131,8 @@ func Exp2() {
 
 }
 
-// The diaspora database needs to be changed to diaspora_1xxxx which has complete data
+// For all the three following get migrated data rate functions,
+// the diaspora database needs to be changed to diaspora_1xxxx which has complete data
 // We can get data size by the following complete dbs:
 // diaspora_1000000, diaspora_100000, diaspora_10000, diaspora_1000
 func Exp2GetMigratedDataRate() {
@@ -145,7 +155,7 @@ func Exp2GetMigratedDataRate() {
 
 		log.Println("Migration ID:", migrationID)
 
-		size := GetMigratedDataSizeFromSrc(
+		size := GetMigratedDataSizeV2(
 			evalConfig,
 			migrationID,
 		)
@@ -170,6 +180,110 @@ func Exp2GetMigratedDataRate() {
 
 		WriteStrToLog(
 			evalConfig.MigrationTimeFile,
+			ConvertMapStringToJSONString(timeLog),
+		)
+
+	}
+
+}
+
+func Exp2GetMigratedDataRateBySrc() {
+	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	migrationData := GetMigrationData(evalConfig)
+
+	for _, migrationData1 := range migrationData {
+
+		sizeLog := make(map[string]string)
+		timeLog := make(map[string]string)
+
+		sizeLog["userID"] = fmt.Sprint(migrationData1["user_id"])
+		timeLog["userID"] = fmt.Sprint(migrationData1["user_id"])
+
+		migrationID := fmt.Sprint(migrationData1["migration_id"])
+
+		log.Println("Migration ID:", migrationID)
+
+		size := GetMigratedDataSizeBySrc(
+			evalConfig,
+			migrationID,
+		)
+
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		sizeLog["size"] = ConvertInt64ToString(size)
+		timeLog["time"] = ConvertSingleDurationToString(time)
+
+		WriteStrToLog(
+			evalConfig.MigratedDataSizeBySrcFile, 
+			ConvertMapStringToJSONString(sizeLog),
+		)
+
+		WriteStrToLog(
+			evalConfig.MigrationTimeBySrcFile,
+			ConvertMapStringToJSONString(timeLog),
+		)
+
+	}
+
+}
+
+func Exp2GetMigratedDataRateByDst() {
+	
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	migrationData := GetMigrationData(evalConfig)
+
+	for _, migrationData1 := range migrationData {
+
+		sizeLog := make(map[string]string)
+		timeLog := make(map[string]string)
+
+		sizeLog["userID"] = fmt.Sprint(migrationData1["user_id"])
+		timeLog["userID"] = fmt.Sprint(migrationData1["user_id"])
+
+		migrationID := fmt.Sprint(migrationData1["migration_id"])
+
+		log.Println("Migration ID:", migrationID)
+
+		size := GetMigratedDataSizeByDst(
+			evalConfig,
+			migrationID,
+		)
+
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		sizeLog["size"] = ConvertInt64ToString(size)
+		timeLog["time"] = ConvertSingleDurationToString(time)
+
+		WriteStrToLog(
+			evalConfig.MigratedDataSizeByDstFile, 
+			ConvertMapStringToJSONString(sizeLog),
+		)
+
+		WriteStrToLog(
+			evalConfig.MigrationTimeByDstFile,
 			ConvertMapStringToJSONString(timeLog),
 		)
 
@@ -232,8 +346,12 @@ func Exp4() {
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userID, "diaspora", "1", "mastodon", "2", "d", 1
 
+		enableDisplay, displayInFirstPhase := false, false
+
 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-			dstAppName, dstAppID, migrationType, threadNum)
+			dstAppName, dstAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase,
+		)
 		
 		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
 		
@@ -286,8 +404,12 @@ func Exp5() {
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userID, "diaspora", "1", "mastodon", "2", "d", 1
 
+		enableDisplay, displayInFirstPhase := false, false
+
 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-			dstAppName, dstAppID, migrationType, threadNum)
+			dstAppName, dstAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase,
+		)
 		
 		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
 		

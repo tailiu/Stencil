@@ -176,7 +176,7 @@ func procDstCols(dstCols string) []string {
 
 }
 
-func GetMigratedDataSizeFromDst(evalConfig *EvalConfig, 
+func GetMigratedDataSizeByDst(evalConfig *EvalConfig, 
 	migrationID string) int64 {
 
 	query1 := fmt.Sprintf(
@@ -253,7 +253,7 @@ func procSrcCols(srcCols string) []string {
 
 }
 
-func GetMigratedDataSizeFromSrc(evalConfig *EvalConfig, 
+func GetMigratedDataSizeBySrc(evalConfig *EvalConfig, 
 	migrationID string) int64 {
 
 	query1 := fmt.Sprintf(

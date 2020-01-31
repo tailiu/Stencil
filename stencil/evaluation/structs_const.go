@@ -65,6 +65,10 @@ type EvalConfig struct {
 	DataDowntimeInStencilFile string
 	DataDowntimeInNaiveFile string
 	DataBags string
+	MigratedDataSizeByDstFile string
+	MigrationTimeByDstFile string
+	MigratedDataSizeBySrcFile string
+	MigrationTimeBySrcFile string
 }
 
 type DataBagData struct {
