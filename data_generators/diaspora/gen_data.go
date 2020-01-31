@@ -12,7 +12,7 @@ import (
 // Note that THREAD_NUM must be larger than 0
 const THREAD_NUM = 100
 
-const APP = "diaspora_1000_new" 
+const APP = "diaspora_1000" 
 const USER_NUM = 1000
 const FOLLOW_NUM = 20660
 const POST_NUM = 8029

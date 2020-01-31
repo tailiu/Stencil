@@ -8,6 +8,16 @@ import (
 	"log"
 )
 
+const APP = "diaspora_1000_st" 
+const USER_NUM = 1000
+const FOLLOW_NUM = 20660
+const POST_NUM = 8029
+const COMMENT_NUM = 13971
+const LIKE_NUM = 85672
+const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
+const MESSAGE_NUM = 40146
+const IMAGE_NUM = 3693
+
 // const APP = "diaspora" 
 // const USER_NUM = 10000
 // const FOLLOW_NUM = 206600
@@ -28,15 +38,15 @@ import (
 // const MESSAGE_NUM = 401460
 // const IMAGE_NUM = 369343
 
-const APP = "diaspora_1000000" 
-const USER_NUM = 1010000
-const FOLLOW_NUM = 3230000
-const POST_NUM = 8029200
-const COMMENT_NUM = 13970800
-const LIKE_NUM = 85671564
-const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-const MESSAGE_NUM = 4014600
-const IMAGE_NUM = 3693432
+// const APP = "diaspora_1000000" 
+// const USER_NUM = 1010000
+// const FOLLOW_NUM = 3230000
+// const POST_NUM = 8029200
+// const COMMENT_NUM = 13970800
+// const LIKE_NUM = 85671564
+// const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
+// const MESSAGE_NUM = 4014600
+// const IMAGE_NUM = 3693432
 
 
 // Function genUsers() tries to create USER_NUM users, but it cannot guarantee
