@@ -121,3 +121,29 @@ func getNodesCounter(evalConfig *EvalConfig,
 	return res
 }
 
+func getCounter(evalConfig *EvalConfig) []map[string]string {
+
+	query1 := fmt.Sprintf(
+		`SELECT nodes, edges FROM dag_counter 
+		ORDER BY nodes ASC`)
+	
+	data, err := db.DataCall(evalConfig.StencilDBConn, query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var res []map[string]string
+	
+	for _, data1 := range data {
+
+		res1 := make(map[string]string)
+		res1["nodes"] = fmt.Sprint(data1["nodes"])
+		res1["edges"] = fmt.Sprint(data1["edges"])
+
+		res = append(res, res1)
+
+	}
+
+	return res
+
+}

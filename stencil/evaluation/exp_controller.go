@@ -31,7 +31,7 @@ func preExp(evalConfig *EvalConfig) {
 
 // In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
-// The source database needs to be changed to diaspora_1000
+// The source database needs to be changed to diaspora_1000_exp
 func Exp1() {
 
 	evalConfig := InitializeEvalConfig()
@@ -207,6 +207,7 @@ func Exp3GetDatadowntime() {
 }
 
 // The diaspora database needs to be changed to diaspora_1000000_exp
+// This is to evaluate the scalability of the migration algorithm with edges
 func Exp4() {
 	
 	evalConfig := InitializeEvalConfig()
@@ -259,6 +260,7 @@ func Exp4() {
 }
 
 // The diaspora database needs to be changed to diaspora_1000000_exp
+// This is to evaluate the scalability of the migration algorithm with nodes
 func Exp5() {
 	
 	evalConfig := InitializeEvalConfig()
@@ -274,7 +276,8 @@ func Exp5() {
 	userIDWithNodes := getNodesCounter(evalConfig, 
 		counterStart, counterNum, counterInterval)
 
-	// log.Println(userIDWithNodes)
+	log.Println(userIDWithNodes)
+	log.Println(len(userIDWithNodes))
 
 	for i := 0; i < len(userIDWithNodes); i ++ {
 		
@@ -307,5 +310,24 @@ func Exp5() {
 	}
 
 	log.Println(userIDWithNodes)
+
+}
+
+func Exp4GetEdgesNodes() {
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	counter := getCounter(evalConfig)
+
+	for _, counter1 := range counter {
+
+		WriteStrToLog(
+			"counter",
+			ConvertMapStringToJSONString(counter1),
+		)
+
+	}
 
 }

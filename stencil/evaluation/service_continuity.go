@@ -13,8 +13,8 @@ func getDataDowntimeOfMigration(evalConfig *EvalConfig, migrationID string) []ti
 
 	query := fmt.Sprintf(
 		`SELECT created_at, displayed_at, dst_table, dst_id
-		FROM evaluation WHERE migration_id = '%s' 
-		and dst_table != 'n/a' and displayed_at is not null`, 
+		FROM evaluation WHERE migration_id = '%s'
+		and displayed_at is not null`, 
 		migrationID)
 
 	// log.Println(query)
