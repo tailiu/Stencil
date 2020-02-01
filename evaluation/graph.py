@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
-plt.rcParams.update({'font.size': 15})
+# caption font size
+plt.rcParams.update({'font.size': 30})
+
 colors = ['g', 'k', 'b', 'c', 'r', 'y', 'm', 'w']
 lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']

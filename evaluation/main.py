@@ -19,6 +19,10 @@ migratedDataSize = "migratedDataSize"
 migrationScalabilityEdgeFile = "migrationScalabilityEdges"
 migrationScalabilityNodeFile = "migrationScalabilityNodes"
 counterFile = "counter"
+migratedDataSizeBySrcFile = "migratedDataSizeBySrc"
+migratedDataSizeByDstFile = "migratedDataSizeByDst"
+migratedTimeBySrcFile = "migrationTimeBySrc"
+migratedTimeByDstFile = "migrationTimeByDst"
 
 dataBags = "dataBags"
 cumNum = 1000
@@ -336,7 +340,7 @@ def getTimeGroups(data, groupNum):
     
     for i, data1 in enumerate(data):
         group = i % groupNum
-        times[group].append(data1["time"])
+        times[group].append(float(data1["time"]))
     
     return times
     
@@ -358,7 +362,7 @@ def migrationRate(labels):
     sizes = [x] * groupNum
 
     xlabel = 'Migration size (MB)'
-    ylabel = 'Migration Time (s)'
+    ylabel = 'Migration time (s)'
 
     g.mulPoints(sizes, times, labels, xlabel, ylabel)
 
@@ -487,7 +491,27 @@ def migrationRateDatasetsTab(folders, labels):
     for i, t in enumerate(timesSum):
         print labels[i] + ":"
         print t
-    
+
+def compareTwoMigratedSizes(labels):
+
+    data1 = readFile3(logDir + migratedDataSizeBySrcFile)
+    data2 = readFile3(logDir + migratedDataSizeByDstFile)
+    data3 = readFile3(logDir + migratedTimeBySrcFile)
+    data4 = readFile3(logDir + migratedTimeByDstFile)
+
+    data5 = [data1, data2]
+    data6 = [data3, data4]
+
+    sizes = getSizeFromData(data5)
+    times = getTimeFromData(data6)
+
+    for i, size in enumerate(sizes):
+        sizes[i] = convertBytesToMB(size)
+
+    xlabel = 'Migration size (MB)'
+    ylabel = 'Migration time (s)'
+
+    g.mulPoints(sizes, times, labels, xlabel, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -504,10 +528,12 @@ def migrationRateDatasetsTab(folders, labels):
 # randomWalk()
 # danglingDataSystemCombined()
 
+
 # migrationRate(["SA1"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
 # dataDownTime()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
 # counter("")
-migrationRateDatasetsTab(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
+# migrationRateDatasetsTab(["logs_1M/", "logs_100K/", "logs_10K/", "logs_1K/"], ["1M", "100K", "10K", "1K"])
+compareTwoMigratedSizes(["Source", "Destination"])
