@@ -656,7 +656,8 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 			fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
 			log.Fatal("@FetchFromMapping: FetchForMapping | ", err)
 			return err
-		} else {
+		} else if len(res) > 0 {
+			fmt.Println("FETCHED DATA ", res)
 			data.UpdateData(toAttr, args[0], targetTabCol[0], res[targetTabCol[1]])
 			node.Data[args[0]] = res[targetTabCol[1]]
 			if len(args) > 3 {
@@ -669,6 +670,8 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 					toMember:   toMemberTokens[0],
 					toAttr:     toMemberTokens[1]})
 			}
+		} else {
+			log.Println("@FetchFromMapping: FetchForMapping | Returned data is nil! Previous node already migrated?", res, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
 		}
 	} else {
 		fmt.Println(node.Tag.Name, node.Data)
@@ -1119,6 +1122,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			}
 
 			if err := self.AddMappedReferences(mappedData.refs); err != nil {
+				log.Println(mappedData.refs)
 				log.Fatal("@MigrateNode > AddMappedReferences: ", err)
 				return err
 			}
@@ -1450,7 +1454,8 @@ func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
 		}
 
 		if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
-			fmt.Println("#Args: ", self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+			fmt.Println(refs)
+			fmt.Println("#Args: ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 			log.Fatal("@AddMappedReferences: Unable to CreateNewReference: ", err)
 			return err
 		}
