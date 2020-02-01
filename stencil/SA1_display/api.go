@@ -69,7 +69,7 @@ func waitGetMigrationID(uid, srcAppID, dstAppID, migrationType string) int {
 
 	}
 
-	stencilDBConn.Close()
+	closeDBConn(stencilDBConn)
 
 	return migrationIDs[0]
 
@@ -85,7 +85,7 @@ func waitForMigrationComplete(migrationID int, wg *sync.WaitGroup) {
 		time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL)
 	}
 
-	stencilDBConn.Close()
+	closeDBConn(stencilDBConn)
 
 }
 

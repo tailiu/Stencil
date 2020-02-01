@@ -646,10 +646,21 @@ func oldGetAllDataInDataBag(evalConfig *EvalConfig,
 	return dataBag
 }
 
+func closeDBConn(conn *sql.DB) {
+
+	err := conn.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func closeDBConns(evalConfig *EvalConfig) {
 
-	evalConfig.StencilDBConn.Close()
-	evalConfig.MastodonDBConn.Close()
-	evalConfig.DiasporaDBConn.Close()
+	log.Println("Close db connections in the evaluation")
+
+	closeDBConn(evalConfig.StencilDBConn)
+	closeDBConn(evalConfig.MastodonDBConn)
+	closeDBConn(evalConfig.DiasporaDBConn)
 
 }

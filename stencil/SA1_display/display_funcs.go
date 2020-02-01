@@ -124,10 +124,21 @@ func CreateDisplayConfig(migrationID int,
 
 }
 
+func closeDBConn(conn *sql.DB) {
+
+	err := conn.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func closeDBConns(displayConfig *displayConfig) {
 
-	displayConfig.stencilDBConn.Close()
-	displayConfig.dstAppConfig.DBConn.Close()
+	log.Println("Close db connections in the display thread")
+	
+	closeDBConn(displayConfig.stencilDBConn)
+	closeDBConn(displayConfig.dstAppConfig.DBConn)
 
 }
 

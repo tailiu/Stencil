@@ -233,6 +233,8 @@ func GetPrevUserIDs(appID, userID string) [][]string {
 
 	stencilDBConn := db.GetDBConn("stencil")
 
+	defer stencilDBConn.Close()
+
 	rootMemberID := getAppRootMemberID(stencilDBConn, appID)
 
 	return getPrevUserIDsByBackTraversal(stencilDBConn,
