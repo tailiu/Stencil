@@ -45,6 +45,7 @@ func Exp1() {
 	shuffleSlice(userIDs)
 
 	for _, userID := range userIDs {
+
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userID, "diaspora", "1", "mastodon", "2", "d", 1
 
@@ -55,23 +56,21 @@ func Exp1() {
 			enableDisplay, displayInFirstPhase,
 		)
 
-	}
-
-	log.Println(userIDs)
-
-	var sizes []int64
-
-	for _, userID := range userIDs {
 		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
-		sizes = append(sizes, getDanglingDataSizeOfMigration(evalConfig, migrationID))
-	}
 
-	log.Println(sizes)
-	
-	WriteStrArrToLog(
-		"exp1", 
-		ConvertInt64ArrToStringArr(sizes),
-	)
+		danglingData := make(map[string]int64)
+
+		srcDanglingData, dstDanglingData :=
+			getDanglingDataSizeOfMigration(evalConfig, migrationID)
+
+		danglingData["srcDanglingData"] = srcDanglingData
+		danglingData["dstDanglingData"] = dstDanglingData
+
+		WriteStrToLog(
+			evalConfig.DanglingDataFile,
+			ConvertMapInt64ToJSONString(danglingData),
+		)
+	}
 
 }
 

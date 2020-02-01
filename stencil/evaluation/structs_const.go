@@ -69,6 +69,7 @@ type EvalConfig struct {
 	MigrationTimeByDstFile string
 	MigratedDataSizeBySrcFile string
 	MigrationTimeBySrcFile string
+	DanglingDataFile string
 }
 
 type DataBagData struct {

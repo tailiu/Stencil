@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-func getMigrationIDBySrcUserID(evalConfig *EvalConfig, userID string) string {
+func getMigrationIDBySrcUserID(evalConfig *EvalConfig, 
+	userID string) string {
 
 	query := fmt.Sprintf(
 		`SELECT migration_id FROM migration_registration 
@@ -48,24 +49,33 @@ func getAllUserIDsInDiaspora(evalConfig *EvalConfig) []string {
 	return userIDs
 }
 
-func getDanglingDataSizeOfMigration(evalConfig *EvalConfig, migrationID string) int64 {
+func getDanglingDataSizeOfMigration(evalConfig *EvalConfig, 
+	migrationID string) (int64, int64) {
 
-	query := fmt.Sprintf(`
-		SELECT pg_column_size(data) FROM data_bags WHERE
-		migration_id = %s`, migrationID)
+	var size1, size2 int64
+
+	query1 := fmt.Sprintf(`
+		SELECT pg_column_size(data), app FROM data_bags WHERE
+		migration_id = %s and app = 1`, migrationID)
 	
-	result, err := db.DataCall(evalConfig.StencilDBConn, query)
+	result1, err := db.DataCall(evalConfig.StencilDBConn, query1)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var size int64
+	for _, data1 := range result1 {
 
-	for _, data1 := range result {
-		size += data1["pg_column_size"].(int64)
+		appID := fmt.Sprint(data1["app"])
+
+		if appID == "1" {
+			size1 += data1["pg_column_size"].(int64)
+		} else {
+			size2 += data1["pg_column_size"].(int64)
+		}
+		
 	}
 
-	return size
+	return size1, size2
 
 }
 
