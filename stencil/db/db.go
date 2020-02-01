@@ -163,6 +163,8 @@ func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...in
 	lastInsertId := -1
 	err := tx.QueryRow(query, args...).Scan(&lastInsertId)
 	if err != nil || lastInsertId == -1 {
+		// fmt.Println(query)
+		// fmt.Println(args)
 		return lastInsertId, err
 	}
 	return lastInsertId, err
