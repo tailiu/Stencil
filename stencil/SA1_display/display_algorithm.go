@@ -40,12 +40,6 @@ func DisplayThread(displayConfig *displayConfig) {
 			time.Sleep(CHECK_INTERVAL)
 		}
 
-	} else {
-
-		for !CheckMigrationComplete(displayConfig) {
-			time.Sleep(CHECK_INTERVAL)
-		}
-
 	}
 
 	log.Println("--------- Second Phase ---------")
@@ -62,6 +56,8 @@ func DisplayThread(displayConfig *displayConfig) {
 
 	log.Println("--------- End of Display Check In One Thread ---------")
 	
+	logDisplayEndTime(displayConfig)
+
 	endTime := time.Now()
 	log.Println("Time used in this display thread: ", endTime.Sub(startTime))
 

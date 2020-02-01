@@ -136,7 +136,7 @@ func closeDBConn(conn *sql.DB) {
 func closeDBConns(displayConfig *displayConfig) {
 
 	log.Println("Close db connections in the display thread")
-	
+
 	closeDBConn(displayConfig.stencilDBConn)
 	closeDBConn(displayConfig.dstAppConfig.DBConn)
 
@@ -825,5 +825,35 @@ func getMigrationIDs(stencilDBConn *sql.DB,
 	}
 
 	return migrationIDs
+
+}
+
+func logDisplayStartTime(displayConfig *displayConfig) {
+
+	query := fmt.Sprintf(`
+		INSERT INTO display_registration (start_time, migration_id)
+		VALUES (now(), %d)`,
+		displayConfig.migrationID,
+	)
+
+	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query); 
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+}
+
+func logDisplayEndTime(displayConfig *displayConfig) {
+
+	query := fmt.Sprintf(`
+		UPDATE display_registration SET end_time = now()
+		WHERE migration_id = %d`,
+		displayConfig.migrationID,
+	)
+
+	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query); 
+	if err1 != nil {
+		log.Fatal(err1)
+	}
 
 }

@@ -9,7 +9,10 @@ import (
 )
 
 const WAIT_FOR_MIGRATION_START_INTERVAL = 100 * time.Millisecond
-const CHECK_MIGRATION_COMPLETE_INTERVAL = time.Second
+
+const CHECK_MIGRATION_COMPLETE_INTERVAL1 = time.Second
+
+const CHECK_MIGRATION_COMPLETE_INTERVAL2 = 500 * time.Millisecond
 
 func displayController(migrationID, threadNum int, 
 	wg *sync.WaitGroup, displayInFirstPhase bool) {
@@ -22,10 +25,18 @@ func displayController(migrationID, threadNum int,
 
 	dConfig := CreateDisplayConfig(migrationID, resolveReference, 
 		newDB, displayInFirstPhase)
+	
+	if !displayInFirstPhase {
+		for !CheckMigrationComplete(dConfig) {
+			time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL2)
+		}
+	}
 
 	log.Println("Migration ID:", migrationID)
 
 	log.Println("Total Display Thread(s):", threadNum)
+	
+	logDisplayStartTime(dConfig)
 
 	for i := 0; i < threadNum; i++ {
 
@@ -82,7 +93,7 @@ func waitForMigrationComplete(migrationID int, wg *sync.WaitGroup) {
 	stencilDBConn := db.GetDBConn("stencil")
 
 	for !CheckMigrationComplete1(stencilDBConn, migrationID) {
-		time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL)
+		time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL1)
 	}
 
 	closeDBConn(stencilDBConn)
