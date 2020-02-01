@@ -78,6 +78,17 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 	return mWorker
 }
 
+func (self *MigrationWorkerV2) CloseDBConns() {
+
+	self.SrcDBConn.Close()
+	self.DstDBConn.Close()
+	self.SrcAppConfig.DBConn.Close()
+	self.DstAppConfig.DBConn.Close()
+	self.SrcAppConfig.QR.StencilDB.Close()
+	self.DstAppConfig.QR.StencilDB.Close()
+
+}
+
 func (self *MigrationWorkerV2) RenewDBConn() {
 	if self.SrcDBConn != nil {
 		self.SrcDBConn.Close()
