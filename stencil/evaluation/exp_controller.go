@@ -113,95 +113,26 @@ func Exp1GetMediaSize() {
 // Notice that enableDisplay, displayInFirstPhase need to be changed in different exps
 func Exp2() {
 
-	migrationNum := 200
-
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
 	preExp(evalConfig)
 
-	userIDs := getAllUserIDsInDiaspora(evalConfig)
+	migrationNum := 100
 
-	shuffleSlice(userIDs)
+	SA1SrcDB, SA1DstDB := "diaspora_1000000_exp", "mastodon"
+	
+	NaiveSrcDB, NaiveDstDB := "diaspora_1000000_exp1", "mastodon_exp"
 
-	// res := make(map[string]string)
+	SA1EnableDisplay, SA1DisplayInFirstPhase := false, false
 
-	for i := 0; i < migrationNum; i ++ {
+	NaiveEnableDisplay, NaiveDisplayInFirstPhase := false, false
 
-		sizeLog := make(map[string]string)
-		timeLog := make(map[string]string)
-
-		db.DIASPORA_DB = "diaspora_1000000_exp"
-		db.MASTODON_DB = "mastodon"
-
-		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
-			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
-
-		enableDisplay, displayInFirstPhase := true, true
-
-		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-			dstAppName, dstAppID, migrationType, threadNum,
-			enableDisplay, displayInFirstPhase,
-		)
-		
-		db.DIASPORA_DB = "diaspora_1000000_exp1"
-		db.MASTODON_DB = "mastodon_exp"
-
-		enableDisplay, displayInFirstPhase = true, false
-
-		migrationType = "n"
-
-		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-			dstAppName, dstAppID, migrationType, threadNum,
-			enableDisplay, displayInFirstPhase,
-		)
-
-		dMigrationID := getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "d")
-
-		nMigrationID := getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "n")
-
-		dMigrationIDInt, err := strconv.Atoi(dMigrationID)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		dTime := GetMigrationTime(
-			evalConfig.StencilDBConn,
-			dMigrationIDInt,
-		)
-
-		nMigrationIDInt, err := strconv.Atoi(nMigrationID)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		nTime := GetMigrationTime(
-			evalConfig.StencilDBConn,
-			nMigrationIDInt,
-		)
-
-		timeLog["deletion_time"] = ConvertSingleDurationToString(dTime)	
-		timeLog["naive_time"] = ConvertSingleDurationToString(nTime)
-		
-		size := GetMigratedDataSizeByDst(
-			evalConfig,
-			dMigrationID,
-		)
-
-		sizeLog["size"] = ConvertInt64ToString(size)
-
-		WriteStrToLog(
-			evalConfig.MigratedDataSizeFile, 
-			ConvertMapStringToJSONString(sizeLog),
-		)
-
-		WriteStrToLog(
-			evalConfig.MigrationTimeFile,
-			ConvertMapStringToJSONString(timeLog),
-		)
-
-	}
+	migrateUserUsingSA1AndNaive(evalConfig, migrationNum, SA1SrcDB, SA1DstDB,
+		NaiveSrcDB, NaiveDstDB, SA1EnableDisplay, SA1DisplayInFirstPhase,
+		NaiveEnableDisplay, NaiveDisplayInFirstPhase,
+	)
 
 }
 
@@ -362,6 +293,31 @@ func Exp2GetMigratedDataRateByDst() {
 		)
 
 	}
+
+}
+
+func Exp3() {
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	preExp(evalConfig)
+
+	migrationNum := 200
+
+	SA1SrcDB, SA1DstDB := "diaspora_1000000_exp", "mastodon"
+	
+	naiveSrcDB, naiveDstDB := "diaspora_1000000_exp1", "mastodon_exp"
+
+	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
+
+	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
+
+	migrateUserUsingSA1AndNaive(evalConfig, migrationNum, SA1SrcDB, SA1DstDB,
+		naiveSrcDB, naiveDstDB, SA1EnableDisplay, SA1DisplayInFirstPhase,
+		naiveEnableDisplay, naiveDisplayInFirstPhase,
+	)
 
 }
 
