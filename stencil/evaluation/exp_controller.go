@@ -110,9 +110,10 @@ func Exp1GetMediaSize() {
 // 2. Data will be migrated in naive migrations from:
 // diaspora_1000000_exp1, diaspora_100000_exp1, diaspora_10000_exp1, diaspora_1000_exp1
 // to mastodon_exp
+// Notice that enableDisplay, displayInFirstPhase need to be changed in different exps
 func Exp2() {
 
-	migrationNum := 100
+	migrationNum := 200
 
 	evalConfig := InitializeEvalConfig()
 
@@ -137,7 +138,7 @@ func Exp2() {
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
 
-		enableDisplay, displayInFirstPhase := false, false
+		enableDisplay, displayInFirstPhase := true, true
 
 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
 			dstAppName, dstAppID, migrationType, threadNum,
@@ -146,6 +147,8 @@ func Exp2() {
 		
 		db.DIASPORA_DB = "diaspora_1000000_exp1"
 		db.MASTODON_DB = "mastodon_exp"
+
+		enableDisplay, displayInFirstPhase = true, false
 
 		migrationType = "n"
 
@@ -370,23 +373,40 @@ func Exp3GetDatadowntime() {
 
 	migrationData := GetMigrationData(evalConfig)
 
-	var tDowntime []time.Duration
+	var dDowntime, nDowntime []time.Duration
 
 	for _, migrationData1 := range migrationData {
 
+		migrationType := fmt.Sprint(migrationData1["migration_type"])
+
 		migrationID := fmt.Sprint(migrationData1["migration_id"])
 
-		downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+		if migrationType == "3" {
 
-		tDowntime = append(tDowntime, downtime...)
+			downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+
+			dDowntime = append(dDowntime, downtime...)
+		
+		} else if migrationType == "5" {
+
+			downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+
+			nDowntime = append(nDowntime, downtime...)
+
+		}
 
 	}
 
-	log.Println(tDowntime)
+	// log.Println(tDowntime)
 
 	WriteStrArrToLog(
 		evalConfig.DataDowntimeInStencilFile, 
-		ConvertDurationToString(tDowntime),
+		ConvertDurationToString(dDowntime),
+	)
+
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInNaiveFile, 
+		ConvertDurationToString(nDowntime),
 	)
 
 }
