@@ -13,6 +13,6 @@ func main() {
 
 	for i := 1; i < 1008102; i += 100 {
 		uid := fmt.Sprint(i)
-		apis.StartCounter("diaspora", "1", uid)
+		apis.StartCounter("diaspora", "1", uid, false)
 	}
 }

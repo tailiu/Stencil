@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-func CreateCounter(appName, appID string) Counter {
-	AppConfig, err := config.CreateAppConfig(appName, appID)
+func CreateCounter(appName, appID string, isBlade ...bool) Counter {
+	AppConfig, err := config.CreateAppConfig(appName, appID, isBlade...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,7 +60,8 @@ func (self *Counter) GetDependentNode(node *migrate.DependencyNode) (*migrate.De
 
 	for _, dep := range self.AppConfig.ShuffleDependencies(self.AppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.AppConfig.GetTag(dep.Tag); err == nil {
-			if where, err := node.ResolveDependencyConditions(self.AppConfig, dep, child); err == nil {
+			// log.Println(fmt.Sprintf("FETCHING  tag  for dependency { %s > %s } ", child.Name, dep.Tag))
+			if where, err := node.ResolveDependencyConditions(self.AppConfig, dep, child); err == nil && where != "" {
 				ql := self.GetTagQL(child)
 				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 				sql += child.ResolveRestrictions()
@@ -90,21 +91,25 @@ func (self *Counter) GetOwnedNode(root *migrate.DependencyNode) (*migrate.Depend
 
 	for _, own := range self.AppConfig.GetShuffledOwnerships() {
 		if child, err := self.AppConfig.GetTag(own.Tag); err == nil {
-			where := root.ResolveOwnershipConditions(own, child)
-			ql := self.GetTagQL(child)
-			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-			sql += child.ResolveRestrictions()
-			sql += self.ExcludeVisited(child)
-			// log.Fatal(sql)
-			if data, err := db.DataCall1(self.AppDBConn, sql); err == nil {
-				if len(data) > 0 {
-					// log.Println(fmt.Sprintf("FETCHING  tag  for ownership { %s } ", own.Tag))
-					return &migrate.DependencyNode{Tag: child, SQL: sql, Data: data}, nil
+			// log.Println(fmt.Sprintf("FETCHING  tag  for ownership { %s } ", own.Tag))
+			if where, err := root.ResolveOwnershipConditions(own, child); err == nil {
+				ql := self.GetTagQL(child)
+				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+				sql += child.ResolveRestrictions()
+				sql += self.ExcludeVisited(child)
+				// log.Fatal(sql)
+				if data, err := db.DataCall1(self.AppDBConn, sql); err == nil {
+					if len(data) > 0 {
+						// log.Println(fmt.Sprintf("FETCHING  tag  for ownership { %s } ", own.Tag))
+						return &migrate.DependencyNode{Tag: child, SQL: sql, Data: data}, nil
+					}
+				} else {
+					fmt.Println(err)
+					log.Fatal(sql)
+					return nil, err
 				}
 			} else {
-				fmt.Println(err)
-				log.Fatal(sql)
-				return nil, err
+
 			}
 		}
 	}
@@ -147,7 +152,7 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 					if joinMap[toTable][fromTable] != nil {
 						joinMap[toTable][fromTable] = nil
 					}
-					joinStr += fmt.Sprintf(" JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
+					joinStr += fmt.Sprintf(" FULL JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
 					_, colStr := db.GetColumnsForTable(self.AppDBConn, toTable)
 					cols += colStr + ","
 					seenMap[toTable] = true
@@ -169,22 +174,23 @@ func (self *Counter) GetAllPreviousNodes(node *migrate.DependencyNode) ([]*migra
 	for _, dep := range self.AppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.AppConfig.GetTag(pdep.Tag); err == nil {
-				where := node.ResolveParentDependencyConditions(pdep.Conditions, parent)
-				ql := self.GetTagQL(parent)
-				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-				sql += parent.ResolveRestrictions()
-				if data, err := db.DataCall(self.AppDBConn, sql); err == nil {
-					for _, datum := range data {
-						newNode := new(migrate.DependencyNode)
-						newNode.Tag = parent
-						newNode.SQL = sql
-						newNode.Data = datum
-						nodes = append(nodes, newNode)
+				if where, err := node.ResolveParentDependencyConditions(pdep.Conditions, parent); err == nil {
+					ql := self.GetTagQL(parent)
+					sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+					sql += parent.ResolveRestrictions()
+					if data, err := db.DataCall(self.AppDBConn, sql); err == nil {
+						for _, datum := range data {
+							newNode := new(migrate.DependencyNode)
+							newNode.Tag = parent
+							newNode.SQL = sql
+							newNode.Data = datum
+							nodes = append(nodes, newNode)
+						}
+					} else {
+						fmt.Println(sql)
+						log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
+						return nil, err
 					}
-				} else {
-					fmt.Println(sql)
-					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
-					return nil, err
 				}
 			} else {
 				log.Fatal("@GetAllPreviousNodes: Tag doesn't exist? ", pdep.Tag)
@@ -225,7 +231,10 @@ func (self *Counter) DeleteNode(node *migrate.DependencyNode) error {
 func (self *Counter) MarkAsVisited(node *migrate.DependencyNode) {
 	for _, tagMember := range node.Tag.Members {
 		idCol := fmt.Sprintf("%s.id", tagMember)
-		if _, ok := node.Data[idCol]; ok {
+		if nodeVal, ok := node.Data[idCol]; ok {
+			if nodeVal == nil {
+				continue
+			}
 			if _, ok := self.VisitedNodes[tagMember]; !ok {
 				self.VisitedNodes[tagMember] = make(map[string]bool)
 			}

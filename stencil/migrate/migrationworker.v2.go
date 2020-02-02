@@ -28,6 +28,7 @@ func CreateBagWorkerV2(uid, srcAppID, dstAppID string, logTxn *transaction.Log_t
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID)
 	if err != nil {
 		log.Fatal(err)
@@ -36,10 +37,19 @@ func CreateBagWorkerV2(uid, srcAppID, dstAppID string, logTxn *transaction.Log_t
 	if err != nil {
 		log.Fatal(err)
 	}
-	mappings := config.GetSchemaMappingsFor(srcAppConfig.AppName, dstAppConfig.AppName)
-	if mappings == nil {
-		log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcAppConfig.AppName, dstAppConfig.AppName))
+
+	var mappings *config.MappedApp
+
+	if srcAppID == dstAppID {
+		mappings = config.GetSelfSchemaMappings(logTxn.DBconn, srcAppID, srcApp)
+		log.Fatal(mappings)
+	} else {
+		mappings = config.GetSchemaMappingsFor(srcAppConfig.AppName, dstAppConfig.AppName)
+		if mappings == nil {
+			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcAppConfig.AppName, dstAppConfig.AppName))
+		}
 	}
+
 	dstAppConfig.QR.Migration = true
 	srcAppConfig.QR.Migration = true
 	mWorker := MigrationWorkerV2{
@@ -135,7 +145,7 @@ func (self *MigrationWorkerV2) MigrationID() int {
 	return self.logTxn.Txn_id
 }
 
-func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []config.DCondition, parentTag config.Tag) string {
+func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []config.DCondition, parentTag config.Tag) (string, error) {
 
 	conditionStr := ""
 	for _, condition := range dconditions {
@@ -163,7 +173,7 @@ func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []conf
 				}
 			}
 			if restricted {
-				return ""
+				return "", errors.New("Returning empty from restricted. Why?")
 			}
 		}
 		depOnAttr, err := parentTag.ResolveTagAttr(condition.DependsOnAttr)
@@ -173,6 +183,9 @@ func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []conf
 			break
 		}
 		if val, ok := node.Data[tagAttr]; ok {
+			if val == nil {
+				return "", errors.New(fmt.Sprintf("trying to assign %s = %s, value is nil in node %s ", tagAttr, depOnAttr, node.Tag.Name))
+			}
 			if conditionStr != "" {
 				conditionStr += " AND "
 			}
@@ -182,7 +195,7 @@ func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []conf
 			log.Fatal("ResolveParentDependencyConditions:", tagAttr, " doesn't exist in node data? ", node.Tag.Name)
 		}
 	}
-	return conditionStr
+	return conditionStr, nil
 }
 
 func (node *DependencyNode) ResolveDependencyConditions(SrcAppConfig config.AppConfig, dep config.Dependency, tag config.Tag) (string, error) {
@@ -239,7 +252,7 @@ func (node *DependencyNode) ResolveDependencyConditions(SrcAppConfig config.AppC
 	return where, nil
 }
 
-func (root *DependencyNode) ResolveOwnershipConditions(own config.Ownership, tag config.Tag) string {
+func (root *DependencyNode) ResolveOwnershipConditions(own config.Ownership, tag config.Tag) (string, error) {
 
 	where := ""
 	for _, condition := range own.Conditions {
@@ -256,7 +269,10 @@ func (root *DependencyNode) ResolveOwnershipConditions(own config.Ownership, tag
 			log.Fatal(err, tag.Name, condition.DependsOnAttr)
 			break
 		}
-		if _, ok := root.Data[depOnAttr]; ok {
+		if nodeVal, ok := root.Data[depOnAttr]; ok {
+			if nodeVal == nil {
+				return "", errors.New(fmt.Sprintf("trying to assign %s = %s, value is nil in node %s ", tagAttr, depOnAttr, root.Tag.Name))
+			}
 			if conditionStr != "" || where != "" {
 				conditionStr += " AND "
 			}
@@ -267,7 +283,7 @@ func (root *DependencyNode) ResolveOwnershipConditions(own config.Ownership, tag
 		}
 		where += conditionStr
 	}
-	return where
+	return where, nil
 }
 
 func (self *MigrationWorkerV2) ExcludeVisited(tag config.Tag) string {
@@ -389,24 +405,27 @@ func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*Dep
 	for _, dep := range self.SrcAppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
-				where := node.ResolveParentDependencyConditions(pdep.Conditions, parent)
-				ql := self.GetTagQL(parent)
-				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-				sql += parent.ResolveRestrictions()
-				// fmt.Println(node.SQL)
-				// log.Fatal("@GetAllPreviousNodes | ", sql)
-				if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
-					for _, datum := range data {
-						newNode := new(DependencyNode)
-						newNode.Tag = parent
-						newNode.SQL = sql
-						newNode.Data = datum
-						nodes = append(nodes, newNode)
+				if where, err := node.ResolveParentDependencyConditions(pdep.Conditions, parent); err == nil {
+					ql := self.GetTagQL(parent)
+					sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+					sql += parent.ResolveRestrictions()
+					// fmt.Println(node.SQL)
+					// log.Fatal("@GetAllPreviousNodes | ", sql)
+					if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
+						for _, datum := range data {
+							newNode := new(DependencyNode)
+							newNode.Tag = parent
+							newNode.SQL = sql
+							newNode.Data = datum
+							nodes = append(nodes, newNode)
+						}
+					} else {
+						fmt.Println(sql)
+						log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
+						return nil, err
 					}
 				} else {
-					fmt.Println(sql)
-					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
-					return nil, err
+
 				}
 			} else {
 				log.Fatal("@GetAllPreviousNodes: Tag doesn't exist? ", pdep.Tag)
@@ -465,24 +484,27 @@ func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, erro
 		// 	continue
 		// }
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
-			where := self.root.ResolveOwnershipConditions(own, child)
-			ql := self.GetTagQL(child)
-			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-			sql += child.ResolveRestrictions()
-			sql += self.ExcludeVisited(child)
-			sql += " ORDER BY random() "
-			// log.Fatal(sql)
-			if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {
-				if len(data) > 0 {
-					newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
-					if !self.wList.IsAlreadyWaiting(newNode) {
-						return &newNode, nil
+			if where, err := self.root.ResolveOwnershipConditions(own, child); err == nil {
+				ql := self.GetTagQL(child)
+				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+				sql += child.ResolveRestrictions()
+				sql += self.ExcludeVisited(child)
+				sql += " ORDER BY random() "
+				// log.Fatal(sql)
+				if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {
+					if len(data) > 0 {
+						newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
+						if !self.wList.IsAlreadyWaiting(newNode) {
+							return &newNode, nil
+						}
 					}
+				} else {
+					fmt.Println("@GetOwnedNode > DataCall1 | ", err)
+					log.Fatal(sql)
+					return nil, err
 				}
 			} else {
-				fmt.Println("@GetOwnedNode > DataCall1 | ", err)
-				log.Fatal(sql)
-				return nil, err
+
 			}
 		}
 	}

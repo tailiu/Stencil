@@ -182,6 +182,34 @@ func LoadSchemaMappings() (*SchemaMappings, error) {
 	return SchemaMappingsObj, nil
 }
 
+func GetSelfSchemaMappings(dbConn *sql.DB, appID, appName string) *MappedApp {
+	mappedApp := new(MappedApp)
+	mappedApp.Name = appName
+
+	if res, err := db.GetTablesForApp(dbConn, appID); err == nil {
+		var mappings []Mapping
+		for _, row := range res {
+			tableID := fmt.Sprint(row["tableID"])
+			if tableName, err := db.TableName(dbConn, tableID, appID); err == nil {
+				if columnsRes, err := db.GetColumnsFromAppSchema(dbConn, tableID); err == nil {
+					var toTable ToTable
+					toTable.Table = tableName
+					toTable.TableID = tableID
+					toTable.Mapping = make(map[string]string)
+					for _, columnRow := range columnsRes {
+						column := fmt.Sprint(columnRow["column_name"])
+						toTable.Mapping[column] = tableName + "." + column
+					}
+					mappings = append(mappings, Mapping{FromTables: []string{tableName}, ToTables: []ToTable{toTable}})
+				}
+
+			}
+		}
+		mappedApp.Mappings = mappings
+	}
+	return mappedApp
+}
+
 func GetSchemaMappingsFor(srcApp, dstApp string) *MappedApp {
 	if schemaMappings, err := LoadSchemaMappings(); err == nil {
 		for _, schemaMapping := range schemaMappings.AllMappings {
