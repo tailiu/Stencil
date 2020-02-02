@@ -410,3 +410,8 @@ func (tag Tag) ResolveRestrictions() string {
 	}
 	return restrictions
 }
+
+func (self *AppConfig) CloseDBConns() {
+	self.DBConn.Close()
+	self.QR.StencilDB.Close()
+}

@@ -349,7 +349,7 @@ func DeleteBagsByRowIDS(dbConn *sql.DB, rowids string) error {
 
 func FetchForMapping(dbConn *sql.DB, targetTable, targetCol, conditionCol, conditionVal string) (map[string]interface{}, error) {
 	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s = '%s'", targetCol, targetTable, conditionCol, conditionVal)
-	fmt.Println(q)
+	// fmt.Println(q)
 	return DataCall1(dbConn, q)
 }
 
