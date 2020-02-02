@@ -189,7 +189,7 @@ func GetSelfSchemaMappings(dbConn *sql.DB, appID, appName string) *MappedApp {
 	if res, err := db.GetTablesForApp(dbConn, appID); err == nil {
 		var mappings []Mapping
 		for _, row := range res {
-			tableID := fmt.Sprint(row["tableID"])
+			tableID := fmt.Sprint(row["table_id"])
 			if tableName, err := db.TableName(dbConn, tableID, appID); err == nil {
 				if columnsRes, err := db.GetColumnsFromAppSchema(dbConn, tableID); err == nil {
 					var toTable ToTable
@@ -201,8 +201,11 @@ func GetSelfSchemaMappings(dbConn *sql.DB, appID, appName string) *MappedApp {
 						toTable.Mapping[column] = tableName + "." + column
 					}
 					mappings = append(mappings, Mapping{FromTables: []string{tableName}, ToTables: []ToTable{toTable}})
+				} else {
+					log.Fatal("@Columns:", err)
 				}
-
+			} else {
+				log.Fatal("@TableName:", err)
 			}
 		}
 		mappedApp.Mappings = mappings

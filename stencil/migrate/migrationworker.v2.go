@@ -42,7 +42,7 @@ func CreateBagWorkerV2(uid, srcAppID, dstAppID string, logTxn *transaction.Log_t
 
 	if srcAppID == dstAppID {
 		mappings = config.GetSelfSchemaMappings(logTxn.DBconn, srcAppID, srcApp)
-		log.Fatal(mappings)
+		// log.Fatal(mappings)
 	} else {
 		mappings = config.GetSchemaMappingsFor(srcAppConfig.AppName, dstAppConfig.AppName)
 		if mappings == nil {

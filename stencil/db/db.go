@@ -337,7 +337,7 @@ func GetUserBagsByTables(dbConn *sql.DB, user_id, app_id, table string) ([]map[s
 }
 
 func GetTablesForApp(dbConn *sql.DB, app_id string) ([]map[string]interface{}, error) {
-	query := "SELECT pk as tableID FROM app_tables WHERE app_id = $1"
+	query := "SELECT pk as table_id FROM app_tables WHERE app_id = $1"
 	return DataCall(dbConn, query, app_id)
 }
 
