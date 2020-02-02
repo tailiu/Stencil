@@ -257,6 +257,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
 			mWorker := migrate.CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threadID)
+			defer mWorker.CloseDBConns()
 
 			switch mWorker.MType() {
 			case migrate.DELETION:
@@ -313,8 +314,23 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 						break
 					}
 				}
+			case migrate.NAIVE:
+				{
+					for {
+						if err := mWorker.NaiveMigration(thread_id); err != nil {
+							if !strings.Contains(err.Error(), "deadlock") {
+								mWorker.RenewDBConn()
+							} else {
+								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+							}
+							continue
+						}
+						break
+					}
+				}
 
 			}
+
 			commitChannel <- ThreadChannel{Finished: true, Thread_id: thread_id}
 		}(threadID, commitChannel)
 	}

@@ -27,6 +27,10 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string) {
 			{
 				mtype = migrate.CONSISTENT
 			}
+		case "n":
+			{
+				mtype = migrate.NAIVE
+			}
 		}
 
 		if err != nil {
@@ -42,6 +46,7 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string) {
 		if mthread.ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, 1) {
 			transaction.LogOutcome(logTxn, "COMMIT")
 			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, 0)
+			logTxn.DBconn.Close()
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 			log.Fatal("Migration transaction aborted!")

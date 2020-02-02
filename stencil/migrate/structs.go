@@ -14,6 +14,7 @@ const (
 	CONSISTENT  = "1"
 	DELETION    = "3"
 	BAGS        = "4"
+	NAIVE       = "5"
 )
 
 type IDRow struct {
