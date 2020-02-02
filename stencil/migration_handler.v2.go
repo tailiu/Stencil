@@ -7,6 +7,7 @@ package main
 import (
 	"log"
 	"os"
+	"stencil/SA1_migrate"
 	"stencil/apis"
 )
 
@@ -24,12 +25,23 @@ func main() {
 
 	mtype := os.Args[3]
 
+	enableDisplay, displayInFirstPhase := false, false
+
+	switch os.Args[8] {
+	case "t":
+		{
+			enableDisplay = true
+		}
+	}
+
 	if len(mtype) <= 0 {
 		log.Fatal("can't read migration type")
 	}
-
-	apis.StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype)
-
+	if mtype == "b" {
+		apis.StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype)
+	} else {
+		SA1_migrate.Controller(uid, srcApp, srcAppID, dstApp, dstAppID, mtype, 1, enableDisplay, displayInFirstPhase)
+	}
 }
 
 // func main2() {
