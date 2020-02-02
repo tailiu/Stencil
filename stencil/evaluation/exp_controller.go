@@ -13,7 +13,7 @@ func preExp(evalConfig *EvalConfig) {
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
 		reference_table, resolved_references, txn_logs, 
-		evaluation, data_bags, display_flags`
+		evaluation, data_bags, display_flags, display_registration`
 
 	query2 := "SELECT truncate_tables('cow')"
 
@@ -26,6 +26,16 @@ func preExp(evalConfig *EvalConfig) {
 			return
 		}
 	}
+
+}
+
+func PreExp() {
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	preExp(evalConfig)
 
 }
 
@@ -70,6 +80,7 @@ func Exp1() {
 			evalConfig.DanglingDataFile,
 			ConvertMapInt64ToJSONString(danglingData),
 		)
+
 	}
 
 }

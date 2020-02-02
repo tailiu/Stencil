@@ -56,7 +56,7 @@ func getDanglingDataSizeOfMigration(evalConfig *EvalConfig,
 
 	query1 := fmt.Sprintf(`
 		SELECT pg_column_size(data), app FROM data_bags WHERE
-		migration_id = %s and app = 1`, migrationID)
+		migration_id = %s`, migrationID)
 	
 	result1, err := db.DataCall(evalConfig.StencilDBConn, query1)
 	if err != nil {
