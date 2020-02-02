@@ -20,6 +20,7 @@ const (
 	stencilDB = "stencil"
 	mastodon = "mastodon"
 	diaspora = "diaspora"
+	mastodon1 = "mastodon_exp"
 
 	INDEPENDENT = "0"
 	CONSISTENT = "1"
@@ -49,6 +50,7 @@ type EvalConfig struct {
 	StencilDBConn *sql.DB
 	MastodonDBConn *sql.DB
 	DiasporaDBConn *sql.DB
+	MastodonDBConn1 *sql.DB
 	TableIDNamePairs map[string]string
 	MastodonTableNameIDPairs map[string]string
 	DiasporaTableNameIDPairs map[string]string

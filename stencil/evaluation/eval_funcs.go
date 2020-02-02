@@ -19,6 +19,7 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig := new(EvalConfig)
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
 	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, true)
+	evalConfig.MastodonDBConn1 = db.GetDBConn(mastodon1, true)
 	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
 	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, mastodon)
 	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)
@@ -163,6 +164,40 @@ func GetMigrationData(evalConfig *EvalConfig) []map[string]interface{} {
 	}
 
 	return data
+
+}
+
+func getMigrationIDBySrcUserIDMigrationType(evalConfig *EvalConfig, 
+	userID, migrationType string) string {
+
+	var mType string
+
+	switch migrationType {
+	case "d":
+		mType = "3"
+	case "n":
+		mType = "5"
+	default:
+		log.Fatal("Cannot find a corresponding migration type")
+	}
+
+	query := fmt.Sprintf(
+		`SELECT migration_id FROM migration_registration 
+		WHERE user_id = %s and migration_type = %s`, 
+		userID, mType)
+	
+	result, err := db.DataCall(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(result) != 1 {
+		log.Fatal("One user id", userID, "results in more than one migration ids")
+	}
+
+	migrationID := fmt.Sprint(result[0]["migration_id"])
+
+	return migrationID
 
 }
 
@@ -664,5 +699,6 @@ func closeDBConns(evalConfig *EvalConfig) {
 	closeDBConn(evalConfig.StencilDBConn)
 	closeDBConn(evalConfig.MastodonDBConn)
 	closeDBConn(evalConfig.DiasporaDBConn)
+	closeDBConn(evalConfig.MastodonDBConn1)
 
 }

@@ -799,6 +799,8 @@ func getMigrationIDs(stencilDBConn *sql.DB,
 	switch migrationType {
 	case "d":
 		mType = "3"
+	case "n":
+		mType = "5"
 	default:
 		log.Fatal("Cannot find a corresponding migration type")
 	}

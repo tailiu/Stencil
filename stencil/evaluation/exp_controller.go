@@ -17,13 +17,19 @@ func preExp(evalConfig *EvalConfig) {
 
 	query2 := "SELECT truncate_tables('cow')"
 
+	query3 := "SELECT truncate_tables('cow')"
+
 	if err1 := db.TxnExecute1(evalConfig.StencilDBConn, query1); err1 != nil {
 		log.Fatal(err1)
 	} else {
 		if err2 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err2 != nil {
 			log.Fatal(err2)
 		} else {
-			return
+			if err3 := db.TxnExecute1(evalConfig.MastodonDBConn1, query3); err3 != nil {
+				log.Fatal(err3)
+			} else {
+				return
+			}
 		}
 	}
 
@@ -97,9 +103,13 @@ func Exp1GetMediaSize() {
 	
 }
 
-// The diaspora database needs to be changed to diaspora_1xxxx_exp
-// Data will be migrated from:
+// The diaspora database needs to be changed to diaspora_1xxxx_exp and diaspora_1xxxx_exp1
+// 1. Data will be migrated in deletion migrations from:
 // diaspora_1000000_exp, diaspora_100000_exp, diaspora_10000_exp, diaspora_1000_exp
+// to mastodon
+// 2. Data will be migrated in naive migrations from:
+// diaspora_1000000_exp1, diaspora_100000_exp1, diaspora_10000_exp1, diaspora_1000_exp1
+// to mastodon_exp
 func Exp2() {
 
 	migrationNum := 100
@@ -114,9 +124,15 @@ func Exp2() {
 
 	shuffleSlice(userIDs)
 
-	res := make(map[string]string)
+	// res := make(map[string]string)
 
 	for i := 0; i < migrationNum; i ++ {
+
+		sizeLog := make(map[string]string)
+		timeLog := make(map[string]string)
+
+		db.DIASPORA_DB = "diaspora_1000000_exp"
+		db.MASTODON_DB = "mastodon"
 
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
@@ -128,16 +144,61 @@ func Exp2() {
 			enableDisplay, displayInFirstPhase,
 		)
 		
-		res[userIDs[i]] = "true"
+		db.DIASPORA_DB = "diaspora_1000000_exp1"
+		db.MASTODON_DB = "mastodon_exp"
+
+		migrationType = "n"
+
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase,
+		)
+
+		dMigrationID := getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "d")
+
+		nMigrationID := getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "n")
+
+		dMigrationIDInt, err := strconv.Atoi(dMigrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		dTime := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			dMigrationIDInt,
+		)
+
+		nMigrationIDInt, err := strconv.Atoi(nMigrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		nTime := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			nMigrationIDInt,
+		)
+
+		timeLog["deletion_time"] = ConvertSingleDurationToString(dTime)	
+		timeLog["naive_time"] = ConvertSingleDurationToString(nTime)
+		
+		size := GetMigratedDataSizeByDst(
+			evalConfig,
+			dMigrationID,
+		)
+
+		sizeLog["size"] = ConvertInt64ToString(size)
+
+		WriteStrToLog(
+			evalConfig.MigratedDataSizeFile, 
+			ConvertMapStringToJSONString(sizeLog),
+		)
+
+		WriteStrToLog(
+			evalConfig.MigrationTimeFile,
+			ConvertMapStringToJSONString(timeLog),
+		)
 
 	}
-
-	log.Println(res)
-	
-	WriteStrToLog(
-		"exp2",
-		ConvertMapStringToJSONString(res),
-	)
 
 }
 
