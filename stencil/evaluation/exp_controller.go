@@ -2,6 +2,7 @@ package evaluation
 
 import (
 	"stencil/SA1_migrate"
+	"stencil/apis"
 	"stencil/db"
 	"log"
 	"fmt"
@@ -497,6 +498,35 @@ func Exp4GetEdgesNodes() {
 			ConvertMapStringToJSONString(counter1),
 		)
 
+	}
+
+}
+
+func Exp4CountEdgesNodes() {
+
+	appName, appID := "diaspora_1000", "1"
+
+	db.DIASPORA_DB = appName
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	userIDs := getAllUserIDsInDiaspora(evalConfig)
+
+	log.Println("total users:", len(userIDs))
+
+	for _, userID := range userIDs {
+		
+		res := make(map[string]int)
+
+		apis.StartCounter(appName, appID, userID)
+
+		WriteStrToLog(
+			evalConfig.Diaspora1KCounterFile,
+			ConvertMapIntToJSONString(res),
+			true,
+		)
 	}
 
 }

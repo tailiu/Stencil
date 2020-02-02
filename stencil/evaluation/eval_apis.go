@@ -45,9 +45,11 @@ func migrateUserUsingSA1AndNaive(evalConfig *EvalConfig,
 			naiveEnableDisplay, naiveDisplayInFirstPhase,
 		)
 
-		dMigrationID := getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "d")
+		dMigrationID := 
+			getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "d")
 
-		nMigrationID := getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "n")
+		nMigrationID := 
+			getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "n")
 
 		dMigrationIDInt, err := strconv.Atoi(dMigrationID)
 		if err != nil {

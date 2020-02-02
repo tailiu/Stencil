@@ -15,6 +15,7 @@ var mediaSize = map[string]int64 {
 }
 
 const logDir = "./evaluation/logs/"
+const logCounterDir = "./evaluation/logs_counter/"
 
 const (
 	stencilDB = "stencil"
@@ -72,6 +73,7 @@ type EvalConfig struct {
 	MigratedDataSizeBySrcFile string
 	MigrationTimeBySrcFile string
 	DanglingDataFile string
+	Diaspora1KCounterFile string
 }
 
 type DataBagData struct {

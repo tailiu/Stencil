@@ -67,7 +67,8 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.MigrationTimeByDstFile,
 	evalConfig.MigratedDataSizeBySrcFile,
 	evalConfig.MigrationTimeBySrcFile,
-	evalConfig.DanglingDataFile = 
+	evalConfig.DanglingDataFile,
+	evalConfig.Diaspora1KCounterFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -83,14 +84,18 @@ func InitializeEvalConfig() *EvalConfig {
 		"migrationTimeByDst",
 		"migratedDataSizeBySrc",
 		"migrationTimeBySrc",
-		"danglingData"
+		"danglingData",
+		"diaspora1KCounter"
 
 	return evalConfig
 }
 
-func getTableIDNamePairsInApp(stencilDBConn *sql.DB, app_id string) []map[string]interface{} {
+func getTableIDNamePairsInApp(stencilDBConn *sql.DB, 
+	app_id string) []map[string]interface{} {
 
-	query := fmt.Sprintf("select pk, table_name from app_tables where app_id = %s", app_id)
+	query := fmt.Sprintf(
+		`select pk, table_name from app_tables where app_id = %s`, 
+		app_id)
 
 	result, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
@@ -122,7 +127,8 @@ func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, 
 	appID string, extraConditions string) []map[string]interface{} {
 	
-	query := fmt.Sprintf("select * from migration_registration where dst_app = '%s' %s;", 
+	query := fmt.Sprintf(
+		`select * from migration_registration where dst_app = '%s' %s;`, 
 		appID, extraConditions)
 	// log.Println(query)
 
@@ -222,26 +228,35 @@ func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID strin
 }
 
 func ConvertFloat64ToString(data []float64) []string {
+	
 	var convertedData []string
+	
 	for _, data1 := range data {
 		convertedData = append(convertedData, fmt.Sprintf("%f", data1))
 	}
+	
 	return convertedData
 }
 
 func ConvertDurationToString(data []time.Duration) []string {
+
 	var convertedData []string
+	
 	for _, data1 := range data {
 		convertedData = append(convertedData, fmt.Sprintf("%f", data1.Seconds()))
 	}
+	
 	return convertedData
 }
 
 func ConvertSingleDurationToString(data time.Duration) string {
+
 	return fmt.Sprintf("%f", data.Seconds())
+
 }
 
 func ConvertMapToJSONString(data map[string]int) string {
+
 	convertedData, err := json.Marshal(data)   
     if err != nil {
         fmt.Println(err.Error())
@@ -252,6 +267,18 @@ func ConvertMapToJSONString(data map[string]int) string {
 }
 
 func ConvertMapStringToJSONString(data map[string]string) string {
+
+	convertedData, err := json.Marshal(data)   
+    if err != nil {
+        fmt.Println(err.Error())
+        log.Fatal()
+    }
+     
+    return string(convertedData)
+}
+
+func ConvertMapIntToJSONString(data map[string]int) string {
+
 	convertedData, err := json.Marshal(data)   
     if err != nil {
         fmt.Println(err.Error())
@@ -262,6 +289,7 @@ func ConvertMapStringToJSONString(data map[string]string) string {
 }
 
 func ConvertMapInt64ToJSONString(data map[string]int64) string {
+
 	convertedData, err := json.Marshal(data)   
     if err != nil {
         fmt.Println(err.Error())
@@ -271,9 +299,20 @@ func ConvertMapInt64ToJSONString(data map[string]int64) string {
     return string(convertedData)
 }
 
-func WriteStrToLog(fileName string, data string) {
+func WriteStrToLog(fileName string, data string, 
+	changeDefaultDir ...bool) {
 
-	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	dir := logDir
+
+	if len(changeDefaultDir) > 0 {
+		if changeDefaultDir[0] {
+			dir = logCounterDir
+		}
+	}
+
+	f, err := os.OpenFile(dir + fileName, 
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		
 	if err != nil {
 		log.Fatal(err)
 	}
