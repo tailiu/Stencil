@@ -60,21 +60,24 @@ func (self *Counter) GetDependentNode(node *migrate.DependencyNode) (*migrate.De
 
 	for _, dep := range self.AppConfig.ShuffleDependencies(self.AppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.AppConfig.GetTag(dep.Tag); err == nil {
-			where := node.ResolveDependencyConditions(self.AppConfig, dep, child)
-			ql := self.GetTagQL(child)
-			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-			sql += child.ResolveRestrictions()
-			sql += self.ExcludeVisited(child)
-			// log.Fatal(sql)
-			if data, err := db.DataCall1(self.AppDBConn, sql); err == nil {
-				if len(data) > 0 {
-					// log.Println(fmt.Sprintf("FETCHING  tag for dependency { %s > %s } ", node.Tag.Name, dep.Tag))
-					return &migrate.DependencyNode{Tag: child, SQL: sql, Data: data}, nil
+			if where, err := node.ResolveDependencyConditions(self.AppConfig, dep, child); err == nil {
+				ql := self.GetTagQL(child)
+				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+				sql += child.ResolveRestrictions()
+				sql += self.ExcludeVisited(child)
+				// log.Fatal(sql)
+				if data, err := db.DataCall1(self.AppDBConn, sql); err == nil {
+					if len(data) > 0 {
+						// log.Println(fmt.Sprintf("FETCHING  tag for dependency { %s > %s } ", node.Tag.Name, dep.Tag))
+						return &migrate.DependencyNode{Tag: child, SQL: sql, Data: data}, nil
+					}
+				} else {
+					fmt.Println(err)
+					log.Fatal(sql)
+					return nil, err
 				}
 			} else {
-				fmt.Println(err)
-				log.Fatal(sql)
-				return nil, err
+
 			}
 		} else {
 			log.Fatal("Unable to fetch tag for: ", dep.Tag)
@@ -111,7 +114,7 @@ func (self *Counter) GetOwnedNode(root *migrate.DependencyNode) (*migrate.Depend
 func (self *Counter) ExcludeVisited(tag config.Tag) string {
 	visited := ""
 	for _, tagMember := range tag.Members {
-		if memberIDs, ok := self.visitedNodes[tagMember]; ok {
+		if memberIDs, ok := self.VisitedNodes[tagMember]; ok {
 			pks := ""
 			for pk := range memberIDs {
 				pks += pk + ","
@@ -223,11 +226,11 @@ func (self *Counter) MarkAsVisited(node *migrate.DependencyNode) {
 	for _, tagMember := range node.Tag.Members {
 		idCol := fmt.Sprintf("%s.id", tagMember)
 		if _, ok := node.Data[idCol]; ok {
-			if _, ok := self.visitedNodes[tagMember]; !ok {
-				self.visitedNodes[tagMember] = make(map[string]bool)
+			if _, ok := self.VisitedNodes[tagMember]; !ok {
+				self.VisitedNodes[tagMember] = make(map[string]bool)
 			}
 			srcID := fmt.Sprint(node.Data[idCol])
-			self.visitedNodes[tagMember][srcID] = true
+			self.VisitedNodes[tagMember][srcID] = true
 		} else {
 			log.Println("In: MarkAsVisited | node.Data =>", node.Data)
 			log.Fatal(idCol, "NOT PRESENT IN NODE DATA")
@@ -266,7 +269,7 @@ func (self *Counter) Traverse(node *migrate.DependencyNode) error {
 	// 	fmt.Println(node.Data)
 	// 	log.Fatal("Error while deleting node ", node.Tag.Name, node.Data[nodeIDAttr])
 	// }
-	log.Println(fmt.Sprintf("User: %s, CURRENT NODES: %d, CURRENT EDGES: %d", self.uid, self.NodeCount, self.EdgeCount))
+	// log.Println(fmt.Sprintf("User: %s, CURRENT NODES: %d, CURRENT EDGES: %d", self.UID, self.NodeCount, self.EdgeCount))
 	return nil
 }
 
@@ -285,12 +288,12 @@ func RunCounter(ctr *Counter) error {
 		if person_id, err := db.GetNextUserFromAppDB(dbName, "people", "id", offset); err == nil {
 			if len(person_id) > 0 {
 				log.Println(">>>>> Current User:", person_id)
-				ctr.uid = person_id
+				ctr.UID = person_id
 				if personNode, err := ctr.FetchUserNode(person_id); err == nil {
-					ctr.root = personNode
+					ctr.Root = personNode
 					ctr.EdgeCount = 0
 					ctr.NodeCount = 0
-					ctr.visitedNodes = make(map[string]map[string]bool)
+					ctr.VisitedNodes = make(map[string]map[string]bool)
 					if err := ctr.Traverse(personNode); err == nil {
 						offset += 100
 						fmt.Println("Counter Finished for user: ", person_id)

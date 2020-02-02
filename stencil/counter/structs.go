@@ -7,12 +7,12 @@ import (
 )
 
 type Counter struct {
-	uid           string
+	UID           string
 	AppConfig     config.AppConfig
 	StencilDBConn *sql.DB
 	AppDBConn     *sql.DB
-	root          *migrate.DependencyNode
+	Root          *migrate.DependencyNode
 	NodeCount     int
 	EdgeCount     int
-	visitedNodes  map[string]map[string]bool
+	VisitedNodes  map[string]map[string]bool
 }

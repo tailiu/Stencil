@@ -9,7 +9,7 @@ func main() {
 	
 	// evaluation.Exp1GetMediaSize()
 
-	evaluation.Exp1()
+	// evaluation.Exp1()
 
 	// evaluation.Exp2()
 
@@ -27,5 +27,5 @@ func main() {
 
 	// evaluation.Exp5()
 
-	// evaluation.PreExp()
+	evaluation.PreExp()
 }
