@@ -7,9 +7,9 @@ import (
 	"stencil/db"
 )
 
-func StartCounter(appName, appID, person_id string) (int, int) {
-	ctr := counter.CreateCounter(appName, appID)
-	ctr.AppDBConn = db.GetDBConn(appName)
+func StartCounter(appName, appID, person_id string, isBlade ...bool) (int, int) {
+	ctr := counter.CreateCounter(appName, appID, isBlade...)
+	ctr.AppDBConn = db.GetDBConn(appName, isBlade...)
 	ctr.UID = person_id
 	ctr.EdgeCount = 0
 	ctr.NodeCount = 0

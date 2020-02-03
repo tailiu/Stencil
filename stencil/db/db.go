@@ -336,6 +336,16 @@ func GetUserBagsByTables(dbConn *sql.DB, user_id, app_id, table string) ([]map[s
 	return DataCall(dbConn, query, user_id, app_id, table)
 }
 
+func GetTablesForApp(dbConn *sql.DB, app_id string) ([]map[string]interface{}, error) {
+	query := "SELECT pk as table_id FROM app_tables WHERE app_id = $1"
+	return DataCall(dbConn, query, app_id)
+}
+
+func GetColumnsFromAppSchema(dbConn *sql.DB, table_id string) ([]map[string]interface{}, error) {
+	query := "SELECT column_name FROM app_schemas WHERE table_id = $1"
+	return DataCall(dbConn, query, table_id)
+}
+
 func DeleteBag(dbConn *sql.DB, bag_id string) error {
 	query := "DELETE FROM data_bags WHERE pk = $1"
 	return Delete(dbConn, query, bag_id)

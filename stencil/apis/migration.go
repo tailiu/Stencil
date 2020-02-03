@@ -27,6 +27,10 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string) {
 			{
 				mtype = migrate.CONSISTENT
 			}
+		case "b":
+			{
+				mtype = migrate.BAGS
+			}
 		case "n":
 			{
 				mtype = migrate.NAIVE
