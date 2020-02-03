@@ -4,92 +4,65 @@ import (
 	"stencil/db"
 	"stencil/SA1_migrate"
 	"log"
+	"database/sql"
 	"strconv"
 )
 
 
-func migrateUserUsingSA1AndNaive(evalConfig *EvalConfig, 
-	migrationNum int, SA1SrcDB, SA1DstDB, naiveSrcDB, naiveDstDB string,
-	SA1EnableDisplay, SA1DisplayInFirstPhase, naiveEnableDisplay, 
-	naiveDisplayInFirstPhase bool) {
+func migrateUserFromDiasporaToMastodon(
+	evalConfig *EvalConfig, evalStencilDB, evalReferDB *sql.DB, 
+	userID, migrationType, stencilDB, srcDB, dstDB, 
+	sizeFile, timeFile string,
+	enableDisplay, displayInFirstPhase bool) {
 
-	userIDs := getAllUserIDsInDiaspora(evalConfig)
+	sizeLog := make(map[string]string)
+	timeLog := make(map[string]string)
 
-	shuffleSlice(userIDs)
+	db.STENCIL_DB = stencilDB
+	db.DIASPORA_DB = srcDB
+	db.MASTODON_DB = dstDB
 
-	// res := make(map[string]string)
+	srcAppName, srcAppID, dstAppName, dstAppID, threadNum := 
+		"diaspora", "1", "mastodon", "2", 1
 
-	for i := 0; i < migrationNum; i ++ {
+	SA1_migrate.Controller(userID, srcAppName, srcAppID, 
+		dstAppName, dstAppID, migrationType, threadNum,
+		enableDisplay, displayInFirstPhase,
+	)
 
-		sizeLog := make(map[string]string)
-		timeLog := make(map[string]string)
+	migrationID := 
+		getMigrationIDBySrcUserIDMigrationType(evalStencilDB, userID, migrationType)
 
-		db.DIASPORA_DB = SA1SrcDB
-		db.MASTODON_DB = SA1DstDB
-
-		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
-			userIDs[i], "diaspora", "1", "mastodon", "2", "d", 1
-
-		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-			dstAppName, dstAppID, migrationType, threadNum,
-			SA1EnableDisplay, SA1DisplayInFirstPhase,
-		)
-		
-		db.DIASPORA_DB = naiveSrcDB
-		db.MASTODON_DB = naiveDstDB
-
-		migrationType = "n"
-
-		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-			dstAppName, dstAppID, migrationType, threadNum,
-			naiveEnableDisplay, naiveDisplayInFirstPhase,
-		)
-
-		dMigrationID := 
-			getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "d")
-
-		nMigrationID := 
-			getMigrationIDBySrcUserIDMigrationType(evalConfig, userIDs[i], "n")
-
-		dMigrationIDInt, err := strconv.Atoi(dMigrationID)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		dTime := GetMigrationTime(
-			evalConfig.StencilDBConn,
-			dMigrationIDInt,
-		)
-
-		nMigrationIDInt, err := strconv.Atoi(nMigrationID)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		nTime := GetMigrationTime(
-			evalConfig.StencilDBConn,
-			nMigrationIDInt,
-		)
-
-		timeLog["deletion_time"] = ConvertSingleDurationToString(dTime)	
-		timeLog["naive_time"] = ConvertSingleDurationToString(nTime)
-		
-		size := GetMigratedDataSizeByDst(
-			evalConfig,
-			dMigrationID,
-		)
-
-		sizeLog["size"] = ConvertInt64ToString(size)
-
-		WriteStrToLog(
-			evalConfig.MigratedDataSizeFile, 
-			ConvertMapStringToJSONString(sizeLog),
-		)
-
-		WriteStrToLog(
-			evalConfig.MigrationTimeFile,
-			ConvertMapStringToJSONString(timeLog),
-		)
-
+	migrationIDInt, err := strconv.Atoi(migrationID)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	time := GetMigrationTime(
+		evalStencilDB,
+		migrationIDInt,
+	)
+
+	size := GetMigratedDataSizeBySrc(
+		evalConfig,
+		evalStencilDB,
+		evalReferDB,
+		migrationID,
+	)
+
+	timeLog["time"] = ConvertSingleDurationToString(time)	
+	timeLog["userID"] = userID
+
+	sizeLog["size"] = ConvertInt64ToString(size)
+	sizeLog["userID"] = userID
+
+	WriteStrToLog(
+		timeFile,
+		ConvertMapStringToJSONString(timeLog),
+	)
+
+	WriteStrToLog(
+		sizeFile, 
+		ConvertMapStringToJSONString(sizeLog),
+	)
 }

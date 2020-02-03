@@ -18,18 +18,28 @@ func preExp(evalConfig *EvalConfig) {
 
 	query2 := "SELECT truncate_tables('cow')"
 
-	query3 := "SELECT truncate_tables('cow')"
-
 	if err1 := db.TxnExecute1(evalConfig.StencilDBConn, query1); err1 != nil {
 		log.Fatal(err1)
 	} else {
-		if err2 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err2 != nil {
+		if err2 := db.TxnExecute1(evalConfig.StencilDBConn1, query1); err2 != nil {
 			log.Fatal(err2)
 		} else {
-			if err3 := db.TxnExecute1(evalConfig.MastodonDBConn1, query3); err3 != nil {
+			if err3 := db.TxnExecute1(evalConfig.StencilDBConn2, query1); err3 != nil {
 				log.Fatal(err3)
 			} else {
-				return
+				if err4 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err4 != nil {
+					log.Fatal(err4)
+				} else {
+					if err5 := db.TxnExecute1(evalConfig.MastodonDBConn1, query2); err5 != nil {
+						log.Fatal(err5)
+					} else {
+						if err6 := db.TxnExecute1(evalConfig.MastodonDBConn2, query2); err6 != nil {
+							log.Fatal(err6)
+						} else {
+							return
+						}
+					}
+				}
 			}
 		}
 	}
@@ -120,20 +130,87 @@ func Exp2() {
 
 	preExp(evalConfig)
 
-	migrationNum := 100
+	migrationNum := 300
 
-	SA1SrcDB, SA1DstDB := "diaspora_1000000_exp", "mastodon"
-	
-	NaiveSrcDB, NaiveDstDB := "diaspora_1000000_exp1", "mastodon_exp"
+	startNum := 10
 
-	SA1EnableDisplay, SA1DisplayInFirstPhase := false, false
+	// ************ SA1 ************
 
-	NaiveEnableDisplay, NaiveDisplayInFirstPhase := false, false
+	SA1MigrationType := "d"
 
-	migrateUserUsingSA1AndNaive(evalConfig, migrationNum, SA1SrcDB, SA1DstDB,
-		NaiveSrcDB, NaiveDstDB, SA1EnableDisplay, SA1DisplayInFirstPhase,
-		NaiveEnableDisplay, NaiveDisplayInFirstPhase,
-	)
+	SA1StencilDB, SA1SrcDB, SA1DstDB := 
+		"stencil_exp", "diaspora_1000000_exp", "mastodon_exp"
+
+	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
+
+	SA1EvalStencilDB := evalConfig.StencilDBConn
+
+	SA1SizeFile, SA1TimeFile := "SA1Size", "SA1Time"
+
+	// ************ SA1 without Display ************
+
+	SA1WithoutDisplayMigrationType := "d"
+
+	SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB := 
+		"stencil_exp1", "diaspora_1000000_exp1", "mastodon_exp1"
+
+	SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase := false, false
+
+	SA1WithoutDisplayEvalStencilDB := evalConfig.StencilDBConn1
+
+	SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile := "SA1WDSize", "SA1WDTime"
+
+	// ************ Naive Migration ************
+
+	naiveMigrationType := "n"
+
+	naiveStencilDB, naiveSrcDB, naiveDstDB := 
+		"stencil_exp2", "diaspora_1000000_exp2", "mastodon_exp2"
+
+	naiveEnableDisplay, naiveDisplayInFirstPhase := false, false
+
+	naiveEvalStencilDB := evalConfig.StencilDBConn2
+
+	naiveSizeFile, naiveTimeFile := "naiveSize", "naiveTime"
+
+
+	userIDs := getAllUserIDsSortByPhotosInDiaspora(evalConfig)
+
+	// log.Println(userIDs)
+
+	for i := startNum; i < migrationNum + startNum; i ++ {
+
+		// ************ SA1 ************
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, SA1EvalStencilDB, evalConfig.DiasporaDBConn, 
+			userIDs[i]["author_id"], SA1MigrationType, 
+			SA1StencilDB, SA1SrcDB, SA1DstDB,
+			SA1SizeFile, SA1TimeFile,
+			SA1EnableDisplay, SA1DisplayInFirstPhase,
+		)
+
+		// ************ SA1 without Display ************
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, SA1WithoutDisplayEvalStencilDB, evalConfig.DiasporaDBConn, 
+			userIDs[i]["author_id"], SA1WithoutDisplayMigrationType, 
+			SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB,
+			SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile,
+			SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase,
+		)
+
+		// ************ Naive Migration ************
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, naiveEvalStencilDB, evalConfig.DiasporaDBConn, 
+			userIDs[i]["author_id"], naiveMigrationType, 
+			naiveStencilDB, naiveSrcDB, naiveDstDB,
+			naiveSizeFile, naiveTimeFile,
+			naiveEnableDisplay, naiveDisplayInFirstPhase,
+		)
+
+	}
 
 }
 
@@ -215,6 +292,8 @@ func Exp2GetMigratedDataRateBySrc() {
 
 		size := GetMigratedDataSizeBySrc(
 			evalConfig,
+			evalConfig.StencilDBConn,
+			evalConfig.DiasporaDBConn,
 			migrationID,
 		)
 
@@ -297,30 +376,34 @@ func Exp2GetMigratedDataRateByDst() {
 
 }
 
-func Exp3() {
+// func Exp3() {
 
-	evalConfig := InitializeEvalConfig()
+// 	evalConfig := InitializeEvalConfig()
 
-	defer closeDBConns(evalConfig)
+// 	defer closeDBConns(evalConfig)
 
-	preExp(evalConfig)
+// 	preExp(evalConfig)
 
-	migrationNum := 200
+// 	migrationNum := 300
 
-	SA1SrcDB, SA1DstDB := "diaspora_1000000_exp", "mastodon"
+// 	SA1StencilDB, SA1SrcDB, SA1DstDB := 
+// 		"stencil_cow", "diaspora_1000000_exp", "mastodon"
 	
-	naiveSrcDB, naiveDstDB := "diaspora_1000000_exp1", "mastodon_exp"
+// 	naiveStencilDB, naiveSrcDB, naiveDstDB := 
+// 		"stencil_exp", "diaspora_1000000_exp1", "mastodon_exp"
 
-	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
+// 	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
 
-	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
+// 	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
 
-	migrateUserUsingSA1AndNaive(evalConfig, migrationNum, SA1SrcDB, SA1DstDB,
-		naiveSrcDB, naiveDstDB, SA1EnableDisplay, SA1DisplayInFirstPhase,
-		naiveEnableDisplay, naiveDisplayInFirstPhase,
-	)
+// 	migrateUserUsingSA1AndNaive(evalConfig, migrationNum, 
+// 		SA1StencilDB, SA1SrcDB, SA1DstDB, 
+// 		naiveStencilDB, naiveSrcDB, naiveDstDB, 
+// 		SA1EnableDisplay, SA1DisplayInFirstPhase,
+// 		naiveEnableDisplay, naiveDisplayInFirstPhase,
+// 	)
 
-}
+// }
 
 func Exp3GetDatadowntime() {
 

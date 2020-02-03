@@ -18,10 +18,13 @@ const logDir = "./evaluation/logs/"
 const logCounterDir = "./evaluation/logs_counter/"
 
 const (
-	stencilDB = "stencil"
-	mastodon = "mastodon"
-	diaspora = "diaspora"
-	mastodon1 = "mastodon_exp"
+	stencilDB = "stencil_exp"
+	stencilDB1 = "stencil_exp1"
+	stencilDB2 = "stencil_exp2"
+	diaspora = "diaspora_1000000_exp"
+	mastodon = "mastodon_exp"
+	mastodon1 = "mastodon_exp1"
+	mastodon2 = "mastodon_exp2"
 
 	INDEPENDENT = "0"
 	CONSISTENT = "1"
@@ -49,9 +52,12 @@ var dependencies = map[string]map[string][]string {
 type EvalConfig struct {
 	Dependencies map[string]map[string][]string
 	StencilDBConn *sql.DB
+	StencilDBConn1 *sql.DB
+	StencilDBConn2 *sql.DB
 	MastodonDBConn *sql.DB
-	DiasporaDBConn *sql.DB
 	MastodonDBConn1 *sql.DB
+	MastodonDBConn2 *sql.DB
+	DiasporaDBConn *sql.DB
 	TableIDNamePairs map[string]string
 	MastodonTableNameIDPairs map[string]string
 	DiasporaTableNameIDPairs map[string]string

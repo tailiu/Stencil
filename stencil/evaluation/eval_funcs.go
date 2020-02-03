@@ -18,11 +18,14 @@ func InitializeEvalConfig() *EvalConfig {
 
 	evalConfig := new(EvalConfig)
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
+	evalConfig.StencilDBConn1 = db.GetDBConn(stencilDB1)
+	evalConfig.StencilDBConn2 = db.GetDBConn(stencilDB2)
 	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, true)
 	evalConfig.MastodonDBConn1 = db.GetDBConn(mastodon1, true)
+	evalConfig.MastodonDBConn2 = db.GetDBConn(mastodon2, true)
 	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
-	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, mastodon)
-	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)
+	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, "mastodon")
+	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, "diaspora")
 	evalConfig.Dependencies = dependencies
 	evalConfig.TableIDNamePairs = GetTableIDNamePairs(evalConfig.StencilDBConn)
 	
@@ -176,7 +179,7 @@ func GetMigrationData(evalConfig *EvalConfig) []map[string]interface{} {
 
 }
 
-func getMigrationIDBySrcUserIDMigrationType(evalConfig *EvalConfig, 
+func getMigrationIDBySrcUserIDMigrationType(dbConn *sql.DB, 
 	userID, migrationType string) string {
 
 	var mType string
@@ -195,7 +198,7 @@ func getMigrationIDBySrcUserIDMigrationType(evalConfig *EvalConfig,
 		WHERE user_id = %s and migration_type = %s`, 
 		userID, mType)
 	
-	result, err := db.DataCall(evalConfig.StencilDBConn, query)
+	result, err := db.DataCall(dbConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -739,8 +742,47 @@ func closeDBConns(evalConfig *EvalConfig) {
 	log.Println("Close db connections in the evaluation")
 
 	closeDBConn(evalConfig.StencilDBConn)
+	closeDBConn(evalConfig.StencilDBConn1)
+	closeDBConn(evalConfig.StencilDBConn2)
 	closeDBConn(evalConfig.MastodonDBConn)
-	closeDBConn(evalConfig.DiasporaDBConn)
 	closeDBConn(evalConfig.MastodonDBConn1)
+	closeDBConn(evalConfig.MastodonDBConn2)
+	closeDBConn(evalConfig.DiasporaDBConn)
+
+}
+
+func procRes(res map[string]interface{}) map[string]string {
+
+	procResult := make(map[string]string)
+
+	for k, v := range res {
+		procResult[k] = fmt.Sprint(v)
+	}
+
+	return procResult
+
+}
+
+func getAllUserIDsSortByPhotosInDiaspora(evalConfig *EvalConfig) []map[string]string {
+
+	query := fmt.Sprintf(`
+		SELECT author_id, count(id) AS nums 
+		FROM photos GROUP BY author_id 
+		ORDER BY nums DESC
+	`)
+
+	data, err := db.DataCall(evalConfig.DiasporaDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var res []map[string]string
+
+	for _, data1 := range data {
+
+		res = append(res, procRes(data1))
+	}
+
+	return res
 
 }
