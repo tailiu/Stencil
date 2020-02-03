@@ -4,9 +4,9 @@ import "database/sql"
 
 var dbConns map[string]*sql.DB
 
-var STENCIL_DB = "stencil_cow"
-var DIASPORA_DB = "diaspora_1000000_exp"
-var MASTODON_DB = "mastodon"
+var STENCIL_DB = "stencil_exp"
+var DIASPORA_DB = "diaspora_test"
+var MASTODON_DB = "mastodon_exp"
 const DB_TEST = false
 const DB_ADDR = "10.230.12.86"
 const DB_ADDR_old = "10.230.12.75"

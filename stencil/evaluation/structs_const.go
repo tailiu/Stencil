@@ -18,10 +18,11 @@ const logDir = "./evaluation/logs/"
 const logCounterDir = "./evaluation/logs_counter/"
 
 const (
+
 	stencilDB = "stencil_exp"
 	stencilDB1 = "stencil_exp1"
 	stencilDB2 = "stencil_exp2"
-	diaspora = "diaspora_1000000_exp"
+	
 	mastodon = "mastodon_exp"
 	mastodon1 = "mastodon_exp1"
 	mastodon2 = "mastodon_exp2"
@@ -30,6 +31,8 @@ const (
 	CONSISTENT = "1"
 	DELETION = "3"
 )
+
+var diaspora = "diaspora_1000000_exp"
 
 var dependencies = map[string]map[string][]string {
 	"diaspora" : map[string][]string {
@@ -80,6 +83,8 @@ type EvalConfig struct {
 	MigrationTimeBySrcFile string
 	DanglingDataFile string
 	Diaspora1KCounterFile string
+	Diaspora10KCounterFile string
+	Diaspora100KCounterFile string
 }
 
 type DataBagData struct {

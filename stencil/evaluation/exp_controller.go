@@ -132,7 +132,7 @@ func Exp2() {
 
 	migrationNum := 300
 
-	startNum := 10
+	startNum := 50
 
 	// ************ SA1 ************
 
@@ -179,6 +179,8 @@ func Exp2() {
 	// log.Println(userIDs)
 
 	for i := startNum; i < migrationNum + startNum; i ++ {
+
+		log.Println("User ID:", userIDs[i]["author_id"])
 
 		// ************ SA1 ************
 
@@ -587,10 +589,12 @@ func Exp4GetEdgesNodes() {
 
 func Exp4CountEdgesNodes() {
 
-	appName, appID := "diaspora_1000", "1"
+	appName, appID := "diaspora", "1"
 
-	db.DIASPORA_DB = appName
-
+	db.DIASPORA_DB = "diaspora_100000"
+	db.STENCIL_DB = "stencil_cow"
+	diaspora = "diaspora_100000"
+	
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
@@ -599,14 +603,25 @@ func Exp4CountEdgesNodes() {
 
 	log.Println("total users:", len(userIDs))
 
+	file := evalConfig.Diaspora100KCounterFile
+
 	for _, userID := range userIDs {
 		
 		res := make(map[string]int)
 
-		apis.StartCounter(appName, appID, userID)
+		nodeCount, edgeCount := apis.StartCounter(appName, appID, userID)
+
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		res["userID"] = userIDInt
+		res["nodes"] = nodeCount
+		res["edges"] = edgeCount
 
 		WriteStrToLog(
-			evalConfig.Diaspora1KCounterFile,
+			file,
 			ConvertMapIntToJSONString(res),
 			true,
 		)

@@ -71,7 +71,9 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.MigratedDataSizeBySrcFile,
 	evalConfig.MigrationTimeBySrcFile,
 	evalConfig.DanglingDataFile,
-	evalConfig.Diaspora1KCounterFile = 
+	evalConfig.Diaspora1KCounterFile,
+	evalConfig.Diaspora10KCounterFile,
+	evalConfig.Diaspora100KCounterFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -88,7 +90,9 @@ func InitializeEvalConfig() *EvalConfig {
 		"migratedDataSizeBySrc",
 		"migrationTimeBySrc",
 		"danglingData",
-		"diaspora1KCounter"
+		"diaspora1KCounter",
+		"diaspora10KCounter",
+		"diaspora100KCounter"
 
 	return evalConfig
 }
