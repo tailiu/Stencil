@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"stencil/db"
+	"database/sql"
 	"strings"
 	"strconv"
 )
@@ -254,7 +255,7 @@ func procSrcCols(srcCols string) []string {
 }
 
 func GetMigratedDataSizeBySrc(evalConfig *EvalConfig, 
-	migrationID string) int64 {
+	stencilDB, diasporaDB *sql.DB, migrationID string) int64 {
 
 	query1 := fmt.Sprintf(
 		`SELECT src_table, src_id, src_cols  
@@ -263,7 +264,7 @@ func GetMigratedDataSizeBySrc(evalConfig *EvalConfig,
 
 	// log.Println(query1)
 	
-	result, err := db.DataCall(evalConfig.StencilDBConn, query1)
+	result, err := db.DataCall(stencilDB, query1)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -294,7 +295,7 @@ func GetMigratedDataSizeBySrc(evalConfig *EvalConfig,
 		log.Println("src id:", srcID)
 
 		size := calculateRowSize(
-			evalConfig.DiasporaDBConn, 
+			diasporaDB, 
 			procSrcCols,
 			srcTable,
 			srcID,

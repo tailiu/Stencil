@@ -18,11 +18,14 @@ func InitializeEvalConfig() *EvalConfig {
 
 	evalConfig := new(EvalConfig)
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
+	evalConfig.StencilDBConn1 = db.GetDBConn(stencilDB1)
+	evalConfig.StencilDBConn2 = db.GetDBConn(stencilDB2)
 	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, true)
 	evalConfig.MastodonDBConn1 = db.GetDBConn(mastodon1, true)
+	evalConfig.MastodonDBConn2 = db.GetDBConn(mastodon2, true)
 	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
-	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, mastodon)
-	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, diaspora)
+	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, "mastodon")
+	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, "diaspora")
 	evalConfig.Dependencies = dependencies
 	evalConfig.TableIDNamePairs = GetTableIDNamePairs(evalConfig.StencilDBConn)
 	
@@ -67,7 +70,10 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.MigrationTimeByDstFile,
 	evalConfig.MigratedDataSizeBySrcFile,
 	evalConfig.MigrationTimeBySrcFile,
-	evalConfig.DanglingDataFile = 
+	evalConfig.DanglingDataFile,
+	evalConfig.Diaspora1KCounterFile,
+	evalConfig.Diaspora10KCounterFile,
+	evalConfig.Diaspora100KCounterFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -83,14 +89,20 @@ func InitializeEvalConfig() *EvalConfig {
 		"migrationTimeByDst",
 		"migratedDataSizeBySrc",
 		"migrationTimeBySrc",
-		"danglingData"
+		"danglingData",
+		"diaspora1KCounter",
+		"diaspora10KCounter",
+		"diaspora100KCounter"
 
 	return evalConfig
 }
 
-func getTableIDNamePairsInApp(stencilDBConn *sql.DB, app_id string) []map[string]interface{} {
+func getTableIDNamePairsInApp(stencilDBConn *sql.DB, 
+	app_id string) []map[string]interface{} {
 
-	query := fmt.Sprintf("select pk, table_name from app_tables where app_id = %s", app_id)
+	query := fmt.Sprintf(
+		`select pk, table_name from app_tables where app_id = %s`, 
+		app_id)
 
 	result, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
@@ -122,7 +134,8 @@ func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 func GetAllMigrationIDsOfAppWithConds(stencilDBConn *sql.DB, 
 	appID string, extraConditions string) []map[string]interface{} {
 	
-	query := fmt.Sprintf("select * from migration_registration where dst_app = '%s' %s;", 
+	query := fmt.Sprintf(
+		`select * from migration_registration where dst_app = '%s' %s;`, 
 		appID, extraConditions)
 	// log.Println(query)
 
@@ -155,7 +168,10 @@ func GetAllMigrationIDs(evalConfig *EvalConfig) []string {
 
 func GetMigrationData(evalConfig *EvalConfig) []map[string]interface{} {
 
-	query := fmt.Sprintf("select user_id, migration_id from migration_registration")
+	query := fmt.Sprintf(
+		`select user_id, migration_id, migration_type 
+		from migration_registration`)
+	
 	// log.Println(query)
 
 	data, err := db.DataCall(evalConfig.StencilDBConn, query)
@@ -167,7 +183,7 @@ func GetMigrationData(evalConfig *EvalConfig) []map[string]interface{} {
 
 }
 
-func getMigrationIDBySrcUserIDMigrationType(evalConfig *EvalConfig, 
+func getMigrationIDBySrcUserIDMigrationType(dbConn *sql.DB, 
 	userID, migrationType string) string {
 
 	var mType string
@@ -186,7 +202,7 @@ func getMigrationIDBySrcUserIDMigrationType(evalConfig *EvalConfig,
 		WHERE user_id = %s and migration_type = %s`, 
 		userID, mType)
 	
-	result, err := db.DataCall(evalConfig.StencilDBConn, query)
+	result, err := db.DataCall(dbConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -219,26 +235,35 @@ func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID strin
 }
 
 func ConvertFloat64ToString(data []float64) []string {
+	
 	var convertedData []string
+	
 	for _, data1 := range data {
 		convertedData = append(convertedData, fmt.Sprintf("%f", data1))
 	}
+	
 	return convertedData
 }
 
 func ConvertDurationToString(data []time.Duration) []string {
+
 	var convertedData []string
+	
 	for _, data1 := range data {
 		convertedData = append(convertedData, fmt.Sprintf("%f", data1.Seconds()))
 	}
+	
 	return convertedData
 }
 
 func ConvertSingleDurationToString(data time.Duration) string {
+
 	return fmt.Sprintf("%f", data.Seconds())
+
 }
 
 func ConvertMapToJSONString(data map[string]int) string {
+
 	convertedData, err := json.Marshal(data)   
     if err != nil {
         fmt.Println(err.Error())
@@ -249,6 +274,18 @@ func ConvertMapToJSONString(data map[string]int) string {
 }
 
 func ConvertMapStringToJSONString(data map[string]string) string {
+
+	convertedData, err := json.Marshal(data)   
+    if err != nil {
+        fmt.Println(err.Error())
+        log.Fatal()
+    }
+     
+    return string(convertedData)
+}
+
+func ConvertMapIntToJSONString(data map[string]int) string {
+
 	convertedData, err := json.Marshal(data)   
     if err != nil {
         fmt.Println(err.Error())
@@ -259,6 +296,7 @@ func ConvertMapStringToJSONString(data map[string]string) string {
 }
 
 func ConvertMapInt64ToJSONString(data map[string]int64) string {
+
 	convertedData, err := json.Marshal(data)   
     if err != nil {
         fmt.Println(err.Error())
@@ -268,9 +306,20 @@ func ConvertMapInt64ToJSONString(data map[string]int64) string {
     return string(convertedData)
 }
 
-func WriteStrToLog(fileName string, data string) {
+func WriteStrToLog(fileName string, data string, 
+	changeDefaultDir ...bool) {
 
-	f, err := os.OpenFile(logDir + fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	dir := logDir
+
+	if len(changeDefaultDir) > 0 {
+		if changeDefaultDir[0] {
+			dir = logCounterDir
+		}
+	}
+
+	f, err := os.OpenFile(dir + fileName, 
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -697,8 +746,47 @@ func closeDBConns(evalConfig *EvalConfig) {
 	log.Println("Close db connections in the evaluation")
 
 	closeDBConn(evalConfig.StencilDBConn)
+	closeDBConn(evalConfig.StencilDBConn1)
+	closeDBConn(evalConfig.StencilDBConn2)
 	closeDBConn(evalConfig.MastodonDBConn)
-	closeDBConn(evalConfig.DiasporaDBConn)
 	closeDBConn(evalConfig.MastodonDBConn1)
+	closeDBConn(evalConfig.MastodonDBConn2)
+	closeDBConn(evalConfig.DiasporaDBConn)
+
+}
+
+func procRes(res map[string]interface{}) map[string]string {
+
+	procResult := make(map[string]string)
+
+	for k, v := range res {
+		procResult[k] = fmt.Sprint(v)
+	}
+
+	return procResult
+
+}
+
+func getAllUserIDsSortByPhotosInDiaspora(evalConfig *EvalConfig) []map[string]string {
+
+	query := fmt.Sprintf(`
+		SELECT author_id, count(id) AS nums 
+		FROM photos GROUP BY author_id 
+		ORDER BY nums DESC
+	`)
+
+	data, err := db.DataCall(evalConfig.DiasporaDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var res []map[string]string
+
+	for _, data1 := range data {
+
+		res = append(res, procRes(data1))
+	}
+
+	return res
 
 }

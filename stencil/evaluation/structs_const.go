@@ -15,12 +15,19 @@ var mediaSize = map[string]int64 {
 }
 
 const logDir = "./evaluation/logs/"
+const logCounterDir = "./evaluation/logs_counter/"
+
+var	stencilDB = "stencil_exp"
+var	stencilDB1 = "stencil_exp1"
+var	stencilDB2 = "stencil_exp2"
+	
+var	mastodon = "mastodon_exp"
+var	mastodon1 = "mastodon_exp1"
+var	mastodon2 = "mastodon_exp2"
+
+var diaspora = "diaspora_1000000"
 
 const (
-	stencilDB = "stencil"
-	mastodon = "mastodon"
-	diaspora = "diaspora"
-	mastodon1 = "mastodon_exp"
 
 	INDEPENDENT = "0"
 	CONSISTENT = "1"
@@ -48,9 +55,12 @@ var dependencies = map[string]map[string][]string {
 type EvalConfig struct {
 	Dependencies map[string]map[string][]string
 	StencilDBConn *sql.DB
+	StencilDBConn1 *sql.DB
+	StencilDBConn2 *sql.DB
 	MastodonDBConn *sql.DB
-	DiasporaDBConn *sql.DB
 	MastodonDBConn1 *sql.DB
+	MastodonDBConn2 *sql.DB
+	DiasporaDBConn *sql.DB
 	TableIDNamePairs map[string]string
 	MastodonTableNameIDPairs map[string]string
 	DiasporaTableNameIDPairs map[string]string
@@ -72,6 +82,9 @@ type EvalConfig struct {
 	MigratedDataSizeBySrcFile string
 	MigrationTimeBySrcFile string
 	DanglingDataFile string
+	Diaspora1KCounterFile string
+	Diaspora10KCounterFile string
+	Diaspora100KCounterFile string
 }
 
 type DataBagData struct {

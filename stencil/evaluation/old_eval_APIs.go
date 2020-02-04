@@ -3,6 +3,8 @@ package evaluation
 import (
 	"log"
 	"strconv"
+	"stencil/db"
+	"stencil/SA1_migrate"
 )
 
 func AnomaliesDanglingData(migrationID string, evalConfig *EvalConfig) {
@@ -269,4 +271,83 @@ func oldExp2GetMigratedDataRate() {
 
 	}
 
+}
+
+func oldMigrateUserUsingSA1AndNaive(evalConfig *EvalConfig, 
+	SA1StencilDB, SA1SrcDB, SA1DstDB, userID,
+	naiveStencilDB, naiveSrcDB, naiveDstDB string, 
+	SA1EnableDisplay, SA1DisplayInFirstPhase, 
+	naiveEnableDisplay, naiveDisplayInFirstPhase bool) {
+
+	sizeLog := make(map[string]string)
+	timeLog := make(map[string]string)
+
+	db.STENCIL_DB = SA1StencilDB
+	db.DIASPORA_DB = SA1SrcDB
+	db.MASTODON_DB = SA1DstDB
+
+	uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+		userID, "diaspora", "1", "mastodon", "2", "d", 1
+
+	SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+		dstAppName, dstAppID, migrationType, threadNum,
+		SA1EnableDisplay, SA1DisplayInFirstPhase,
+	)
+
+	db.STENCIL_DB = naiveStencilDB
+	db.DIASPORA_DB = naiveSrcDB
+	db.MASTODON_DB = naiveDstDB
+
+	migrationType = "n"
+
+	SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+		dstAppName, dstAppID, migrationType, threadNum,
+		naiveEnableDisplay, naiveDisplayInFirstPhase,
+	)
+
+	dMigrationID := 
+		getMigrationIDBySrcUserIDMigrationType(evalConfig.StencilDBConn, userID, "d")
+
+	nMigrationID := 
+		getMigrationIDBySrcUserIDMigrationType(evalConfig.StencilDBConn, userID, "n")
+
+	dMigrationIDInt, err := strconv.Atoi(dMigrationID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dTime := GetMigrationTime(
+		evalConfig.StencilDBConn,
+		dMigrationIDInt,
+	)
+
+	nMigrationIDInt, err := strconv.Atoi(nMigrationID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	nTime := GetMigrationTime(
+		evalConfig.StencilDBConn,
+		nMigrationIDInt,
+	)
+
+	timeLog["deletion_time"] = ConvertSingleDurationToString(dTime)	
+	timeLog["naive_time"] = ConvertSingleDurationToString(nTime)
+	
+	size := GetMigratedDataSizeByDst(
+		evalConfig,
+		dMigrationID,
+	)
+
+	sizeLog["size"] = ConvertInt64ToString(size)
+
+	WriteStrToLog(
+		evalConfig.MigratedDataSizeFile, 
+		ConvertMapStringToJSONString(sizeLog),
+	)
+
+	WriteStrToLog(
+		evalConfig.MigrationTimeFile,
+		ConvertMapStringToJSONString(timeLog),
+	)
 }
