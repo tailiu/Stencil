@@ -133,6 +133,10 @@ func Exp1() {
 			enableDisplay, displayInFirstPhase,
 		)
 
+		log.Println("************ Calculate Dangling Data Size ************")
+
+		refreshEvalConfigDBConnections(evalConfig)
+
 		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
 
 		danglingData := make(map[string]int64)
@@ -193,7 +197,7 @@ func Exp2() {
 
 	migrationNum := 300
 
-	startNum := 150
+	startNum := 200
 
 	// ************ SA1 ************
 
@@ -203,8 +207,6 @@ func Exp2() {
 		"stencil_exp", "diaspora_1000000_exp", "mastodon_exp"
 
 	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
-
-	SA1EvalStencilDB := evalConfig.StencilDBConn
 
 	SA1SizeFile, SA1TimeFile := "SA1Size", "SA1Time"
 
@@ -217,8 +219,6 @@ func Exp2() {
 
 	SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase := false, false
 
-	SA1WithoutDisplayEvalStencilDB := evalConfig.StencilDBConn1
-
 	SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile := "SA1WDSize", "SA1WDTime"
 
 	// ************ Naive Migration ************
@@ -229,8 +229,6 @@ func Exp2() {
 		"stencil_exp2", "diaspora_1000000_exp2", "mastodon_exp2"
 
 	naiveEnableDisplay, naiveDisplayInFirstPhase := false, false
-
-	naiveEvalStencilDB := evalConfig.StencilDBConn2
 
 	naiveSizeFile, naiveTimeFile := "naiveSize", "naiveTime"
 
@@ -248,7 +246,7 @@ func Exp2() {
 		// ************ SA1 ************
 
 		migrateUserFromDiasporaToMastodon(
-			evalConfig, SA1EvalStencilDB, evalConfig.DiasporaDBConn, 
+			evalConfig, SA1StencilDB, diaspora, 
 			userID, SA1MigrationType, 
 			SA1StencilDB, SA1SrcDB, SA1DstDB,
 			SA1SizeFile, SA1TimeFile,
@@ -260,7 +258,7 @@ func Exp2() {
 		// ************ SA1 without Display ************
 
 		migrateUserFromDiasporaToMastodon(
-			evalConfig, SA1WithoutDisplayEvalStencilDB, evalConfig.DiasporaDBConn, 
+			evalConfig, SA1WithoutDisplayStencilDB, diaspora, 
 			userID, SA1WithoutDisplayMigrationType, 
 			SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB,
 			SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile,
@@ -272,7 +270,7 @@ func Exp2() {
 		// ************ Naive Migration ************
 
 		migrateUserFromDiasporaToMastodon(
-			evalConfig, naiveEvalStencilDB, evalConfig.DiasporaDBConn, 
+			evalConfig, naiveStencilDB, diaspora, 
 			userID, naiveMigrationType, 
 			naiveStencilDB, naiveSrcDB, naiveDstDB,
 			naiveSizeFile, naiveTimeFile,

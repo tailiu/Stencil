@@ -841,3 +841,30 @@ func refreshEvalConfigDBConnections(evalConfig *EvalConfig) {
 	connectToDB(evalConfig)
 
 }
+
+func getDBConnByName(evalConfig *EvalConfig, dbName string) *sql.DB {
+
+	var connection *sql.DB
+
+	switch dbName {
+	case stencilDB:
+		connection = evalConfig.StencilDBConn
+	case stencilDB1:
+		connection = evalConfig.StencilDBConn1
+	case stencilDB2:
+		connection = evalConfig.StencilDBConn2
+	case mastodon:
+		connection = evalConfig.MastodonDBConn
+	case mastodon1:
+		connection = evalConfig.MastodonDBConn1
+	case mastodon2:
+		connection = evalConfig.MastodonDBConn2
+	case diaspora:
+		connection = evalConfig.DiasporaDBConn
+	default:
+		log.Fatal("Cannot find a connection")
+	}
+
+	return connection
+
+}
