@@ -57,8 +57,8 @@ func preExp1(evalConfig *EvalConfig) {
 	if err1 := db.TxnExecute1(evalConfig.StencilDBConn, query1); err1 != nil {
 		log.Fatal(err1)	
 	} else {
-		if err4 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err4 != nil {
-			log.Fatal(err4)
+		if err2 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err2 != nil {
+			log.Fatal(err2)
 		} else {
 			return
 		}
@@ -75,6 +75,24 @@ func PreExp() {
 	preExp(evalConfig)
 
 }
+
+func RecreateDiaspora1MDB() {
+
+	diaspora = "diaspora_test"
+
+	dbConn := db.GetDBConn(diaspora)
+
+	defer closeDBConn(dbConn)
+
+	templateDB := "diaspora_1000000"
+
+	recreateDBByTemplate(dbConn, "diaspora_1000000_exp", templateDB)
+
+	recreateDBByTemplate(dbConn, "diaspora_1000000_exp1", templateDB)
+
+	recreateDBByTemplate(dbConn, "diaspora_1000000_exp2", templateDB)
+
+}	
 
 // In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
@@ -122,6 +140,7 @@ func Exp1() {
 		srcDanglingData, dstDanglingData :=
 			getDanglingDataSizeOfMigration(evalConfig, migrationID)
 
+		danglingData["userID"] = ConvertStringtoInt64(userID)
 		danglingData["srcDanglingData"] = srcDanglingData
 		danglingData["dstDanglingData"] = dstDanglingData
 
@@ -157,6 +176,14 @@ func Exp1GetMediaSize() {
 func Exp2() {
 
 	diaspora = "diaspora_1000000"
+
+	stencilDB = "stencil_exp"
+	stencilDB1 = "stencil_exp1"
+	stencilDB2 = "stencil_exp2"
+
+	mastodon = "mastodon_exp"
+	mastodon1 = "mastodon_exp1"
+	mastodon2 = "mastodon_exp2"
 
 	evalConfig := InitializeEvalConfig()
 

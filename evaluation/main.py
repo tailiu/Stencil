@@ -268,11 +268,11 @@ def dataDownTime():
     
     data = []
     data.append(readFile2(logDir + dataDownTimeInStencil))
-    # data.append(readFile2(logDir + dataDownTimeInNaive))
+    data.append(readFile2(logDir + dataDownTimeInNaive))
     
     labels = [
         "Stencil",
-        # "Naive"
+        "Naive system"
     ]
     g.cumulativeGraph(data, labels, "Data downtime (s)", "Cumulative probability")
 
@@ -343,7 +343,7 @@ def getTimeGroups(data, groupNum):
         times[group].append(float(data1["time"]))
     
     return times
-    
+
 def migrationRate(labels):
 
     times = readFile3(logDir + migrationTime)
@@ -365,6 +365,43 @@ def migrationRate(labels):
     ylabel = 'Migration time (s)'
 
     g.mulPoints(sizes, times, labels, xlabel, ylabel)
+
+def getTimeGroups1(data, groupNum):
+
+    times = []
+    
+    for i in range(groupNum):
+        times.append([])
+    
+    for i, data1 in enumerate(data):
+        key = "deletion_time"
+        times[0].append(float(data1[key]))
+        key = "naive_time"
+        times[1].append(float(data1[key]))
+
+    return times
+
+def migrationRate1(labels):
+
+    times = readFile3(logDir + migrationTime)
+    sizes = readFile3(logDir + migratedDataSize)
+
+    groupNum = len(labels)
+
+    times = getTimeGroups1(times, groupNum)
+
+    x = []
+    for i, data in enumerate(sizes):
+        x.append(data["size"])
+    
+    x = convertBytesToMB(x)
+    sizes = [x] * groupNum
+
+    xlabel = 'Migration size (MB)'
+    ylabel = 'Migration time (s)'
+
+    g.mulPoints(sizes, times, labels, xlabel, ylabel)
+
 
 def getTimeFromData(data):
 
@@ -511,7 +548,10 @@ def compareTwoMigratedSizes(labels):
     xlabel = 'Migration size (MB)'
     ylabel = 'Migration time (s)'
 
+    print sizes
+    
     g.mulPoints(sizes, times, labels, xlabel, ylabel)
+
 
 # leftoverCDF()
 # danglingData()
@@ -529,11 +569,11 @@ def compareTwoMigratedSizes(labels):
 # danglingDataSystemCombined()
 
 
-# migrationRate(["SA1"])
+# migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
-# dataDownTime()
+dataDownTime()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", "logs_100K/", "logs_10K/", "logs_1K/"], ["1M", "100K", "10K", "1K"])
-compareTwoMigratedSizes(["Source", "Destination"])
+# compareTwoMigratedSizes(["Source", "Destination"])
