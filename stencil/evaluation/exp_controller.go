@@ -46,6 +46,26 @@ func preExp(evalConfig *EvalConfig) {
 
 }
 
+func preExp1(evalConfig *EvalConfig) {
+
+	query1 := `TRUNCATE identity_table, migration_registration, 
+		reference_table, resolved_references, txn_logs, 
+		evaluation, data_bags, display_flags, display_registration`
+
+	query2 := "SELECT truncate_tables('cow')"
+
+	if err1 := db.TxnExecute1(evalConfig.StencilDBConn, query1); err1 != nil {
+		log.Fatal(err1)	
+	} else {
+		if err4 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err4 != nil {
+			log.Fatal(err4)
+		} else {
+			return
+		}
+	}
+
+}
+
 func PreExp() {
 
 	evalConfig := InitializeEvalConfig()
@@ -61,17 +81,29 @@ func PreExp() {
 // The source database needs to be changed to diaspora_1000_exp
 func Exp1() {
 
+	stencilDB = "stencil_cow"
+	mastodon = "mastodon"
+	diaspora = "diaspora_1000_exp"
+
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	preExp(evalConfig)
+	preExp1(evalConfig)
+
+	db.STENCIL_DB = "stencil_cow"
+	db.DIASPORA_DB = "diaspora_1000_exp"
+	db.MASTODON_DB = "mastodon"
 
 	userIDs := getAllUserIDsInDiaspora(evalConfig)
 
 	shuffleSlice(userIDs)
 
+	log.Println("Total users:", len(userIDs))
+
 	for _, userID := range userIDs {
+
+		log.Println("User ID:", userID)
 
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userID, "diaspora", "1", "mastodon", "2", "d", 1
@@ -124,6 +156,8 @@ func Exp1GetMediaSize() {
 // Notice that enableDisplay, displayInFirstPhase need to be changed in different exps
 func Exp2() {
 
+	diaspora = "diaspora_1000000"
+
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
@@ -132,7 +166,7 @@ func Exp2() {
 
 	migrationNum := 300
 
-	startNum := 50
+	startNum := 100
 
 	// ************ SA1 ************
 
@@ -192,6 +226,8 @@ func Exp2() {
 			SA1EnableDisplay, SA1DisplayInFirstPhase,
 		)
 
+		log.Println("User ID:", userIDs[i]["author_id"])
+
 		// ************ SA1 without Display ************
 
 		migrateUserFromDiasporaToMastodon(
@@ -202,6 +238,8 @@ func Exp2() {
 			SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase,
 		)
 
+		log.Println("User ID:", userIDs[i]["author_id"])
+		
 		// ************ Naive Migration ************
 
 		migrateUserFromDiasporaToMastodon(
