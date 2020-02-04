@@ -992,7 +992,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(nodeData map[string]interface{}
 				log.Fatal("@FetchDataFromBags: UNABLE TO CONVERT BAG TO MAP ", bagRow, err)
 				return err
 			}
-			if mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromMember, self.DstAppConfig.AppName, dstMember); found {
+			if mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, idRow.FromMember, self.DstAppConfig.AppName, self.DstAppConfig.AppID, dstMember); found {
 				for _, toTable := range mapping.ToTables {
 					for fromAttr, toAttr := range toTable.Mapping {
 						if bagVal, ok := bagRow[fromAttr]; ok {
@@ -1114,9 +1114,25 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			continue
 		}
 		if mappedData, _ := self.GetMappedData(toTable, node); len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
-			mappedData.undoAction.AddDstTable(toTable.Table)
-			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
-				if toTableID, err := db.TableID(self.logTxn.DBconn, toTable.Table, self.DstAppConfig.AppID); err == nil {
+			if toTableID, err := db.TableID(self.logTxn.DBconn, toTable.Table, self.DstAppConfig.AppID); err == nil {
+				if self.mtype == DELETION {
+					var nodeData map[string]interface{}
+					for fromTable := range mappedData.srcTables {
+						if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
+							if fromID, ok := node.Data[fromTable+".id"]; ok {
+								if err := self.FetchDataFromBags(nodeData, self.SrcAppConfig.AppID, fromTableID, fmt.Sprint(fromID), toTableID); err != nil {
+									log.Fatal("@MigrateNode > FetchDataFromBags | ", err)
+								}
+							} else {
+								log.Fatal("@MigrateNode > FetchDataFromBags > id doesn't exist in table ", fromTable, err)
+							}
+						} else {
+							log.Fatal("@MigrateNode > FetchDataFromBags > TableID, fromTable: error in getting table id for member! ", fromTable, err)
+						}
+					}
+				}
+				mappedData.undoAction.AddDstTable(toTable.Table)
+				if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
 					for fromTable := range mappedData.srcTables {
 						if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
 							if fromID, ok := node.Data[fromTable+".id"]; ok {
@@ -1133,7 +1149,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 								log.Fatal("@MigrateNode: InsertIntoIdentityTable | " + fromTable + ".id doesn't exist")
 							}
 						} else {
-							log.Fatal("@MigrateNode > TableID, fromTable: error in getting table id for member! ", toTable.Table, err)
+							log.Fatal("@MigrateNode > TableID, fromTable: error in getting table id for member! ", fromTable, err)
 							return err
 						}
 					}
@@ -1156,14 +1172,14 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 							log.Fatal("@MigrateNode > toTable.Media: Path not found in map!")
 						}
 					}
+					allMappedData = append(allMappedData, mappedData)
 				} else {
-					log.Fatal("@MigrateNode > TableID, toTable: error in getting table id for member! ", toTable.Table, err)
+					// fmt.Println("Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
+					log.Fatal("@MigrateNode > InsertRowIntoAppDB: ", err, " | ", "Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
 					return err
 				}
-				allMappedData = append(allMappedData, mappedData)
 			} else {
-				// fmt.Println("Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
-				log.Fatal("@MigrateNode > InsertRowIntoAppDB: ", err, " | ", "Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
+				log.Fatal("@MigrateNode > TableID, toTable: error in getting table id for member! ", toTable.Table, err)
 				return err
 			}
 
@@ -1276,9 +1292,14 @@ func (self *MigrationWorkerV2) HandleUnmappedNode(node *DependencyNode) error {
 	}
 }
 
-func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, dstApp, srcMember, dstMember string) (config.Mapping, bool) {
+func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.Mapping, bool) {
 	var combinedMapping config.Mapping
-	appMappings := config.GetSchemaMappingsFor(srcApp, dstApp)
+	var appMappings *config.MappedApp
+	if srcApp == dstApp {
+		appMappings = config.GetSelfSchemaMappings(self.logTxn.DBconn, srcAppID, srcApp)
+	} else {
+		appMappings = config.GetSchemaMappingsFor(srcApp, dstApp)
+	}
 	mappingFound := false
 	for _, mapping := range appMappings.Mappings {
 		if mappedTables := helper.IntersectString([]string{srcMember}, mapping.FromTables); len(mappedTables) > 0 {
@@ -1791,7 +1812,7 @@ func (self *MigrationWorkerV2) CommitTransactions() error {
 func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int) error {
 
 	if ownerID, isRoot := self.GetNodeOwner(node); isRoot && len(ownerID) > 0 {
-		log.Println(fmt.Sprintf("x%2dx OWNED   node { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
+		log.Println(fmt.Sprintf("x%2dx | OWNED   node { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
 		if err := self.InitTransactions(); err != nil {
 			return err
 		} else {
@@ -1800,13 +1821,13 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 			defer self.tx.StencilTx.Rollback()
 		}
 
-		log.Println(fmt.Sprintf("x%2dx CHECKING NEXT NODES { %s }", threadID, node.Tag.Name))
+		log.Println(fmt.Sprintf("x%2dx | CHECKING NEXT NODES { %s }", threadID, node.Tag.Name))
 
 		if err := self.CheckNextNode(node); err != nil {
 			return err
 		}
 
-		log.Println(fmt.Sprintf("x%2dx CHECKING PREVIOUS NODES { %s }", threadID, node.Tag.Name))
+		log.Println(fmt.Sprintf("x%2dx | CHECKING PREVIOUS NODES { %s }", threadID, node.Tag.Name))
 
 		if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
 			for _, previousNode := range previousNodes {
@@ -1816,7 +1837,7 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 			return err
 		}
 
-		log.Println(fmt.Sprintf("x%2dx HANDLING MIGRATION { %s }", threadID, node.Tag.Name))
+		log.Println(fmt.Sprintf("x%2dx | HANDLING MIGRATION { %s }", threadID, node.Tag.Name))
 
 		if err := self.HandleMigration(node, false); err == nil {
 			log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } ", threadID, node.Tag.Name))
@@ -1878,7 +1899,7 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 		}
 	}
 
-	log.Println(fmt.Sprintf("#%2d# PROCESS Node { %s } ", threadID, node.Tag.Name))
+	log.Println(fmt.Sprintf("#%2d# | PROCESS Node { %s } ", threadID, node.Tag.Name))
 
 	if strings.EqualFold(node.Tag.Name, "root") {
 		return self.DeleteRoot(threadID)

@@ -6,7 +6,7 @@ var dbConns map[string]*sql.DB
 
 const STENCIL_DB = "stencil_test"
 
-var DIASPORA_DB = "diaspora_test1"
+var DIASPORA_DB = "diaspora_test"
 var MASTODON_DB = "mastodon_test"
 
 const DB_TEST = false
