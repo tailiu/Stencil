@@ -1326,7 +1326,7 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 			}
 		}
 		if len(bagData) > 0 {
-			if id, ok := node.Data[member+".id"]; ok {
+			if id, ok := node.Data[member+".id"]; ok && id != nil {
 				srcID := fmt.Sprint(id)
 				if jsonData, err := json.Marshal(bagData); err == nil {
 					if err := db.CreateNewBag(self.tx.StencilTx, self.SrcAppConfig.AppID, memberID, srcID, ownerID, fmt.Sprint(self.logTxn.Txn_id), jsonData); err != nil {
@@ -1350,7 +1350,7 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 				}
 			} else {
 				fmt.Println(node.Data)
-				log.Fatal("@SendMemberToBag: member doesn't contain id! ", member)
+				log.Fatal("@SendMemberToBag: member doesn't contain id! ", member, id)
 				return err
 			}
 			if !fromNode {
