@@ -234,6 +234,41 @@ func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID strin
 	return result
 }
 
+func recreateDBByTemplate(dbConn *sql.DB, 
+	dbName string, templateDB string) {
+
+	query1 := fmt.Sprintf(
+		"drop database %s", 
+		dbName,
+	)
+
+	query2 := fmt.Sprintf(
+		"create database %s template %s", 
+		dbName, templateDB,
+	)
+
+	if err1 := db.TxnExecute1(dbConn, query1); err1 != nil {
+		log.Fatal(err1)	
+	} else {
+		if err2 := db.TxnExecute1(dbConn, query2); err2 != nil {
+			log.Fatal(err2)
+		} else {
+			return
+		}
+	}
+
+}
+
+func ConvertStringtoInt64(data string) int64 {
+
+	res, err := strconv.ParseInt(data, 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	return res
+}
+
 func ConvertFloat64ToString(data []float64) []string {
 	
 	var convertedData []string

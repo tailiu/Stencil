@@ -11,7 +11,7 @@ func main() {
 
 	// evaluation.Exp1()
 
-	// evaluation.Exp2()
+	evaluation.Exp2()
 
 	// evaluation.Exp2GetMigratedDataRateBySrc()
 
@@ -31,5 +31,8 @@ func main() {
 
 	// evaluation.PreExp()
 
-	evaluation.Exp4CountEdgesNodes()
+	// evaluation.Exp4CountEdgesNodes()
+
+	// evaluation.RecreateDiaspora1MDB()
+
 }
