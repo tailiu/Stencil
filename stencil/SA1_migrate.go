@@ -8,7 +8,7 @@ import (
 func main() {
 
 	uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum :=
-		"999567", "diaspora", "1", "mastodon", "2", "n", 1
+		"996567", "diaspora", "1", "mastodon", "2", "n", 1
 
 	// If enableDisplay is set to be true, then display threads will be started
 	// If displayInFirstPhase is set to be true,

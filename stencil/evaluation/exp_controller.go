@@ -193,7 +193,7 @@ func Exp2() {
 
 	migrationNum := 300
 
-	startNum := 200
+	startNum := 100
 
 	// ************ SA1 ************
 
