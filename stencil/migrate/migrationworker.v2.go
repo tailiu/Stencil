@@ -1348,19 +1348,20 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 					log.Fatal("@SendMemberToBag: unable to convert bag data to JSON ", err)
 					return err
 				}
-			} else {
-				fmt.Println(node.Data)
-				log.Fatal("@SendMemberToBag: member doesn't contain id! ", member, id)
-				return err
-			}
-			if !fromNode {
-				if err := self.AddInnerReferences(node, member); err != nil {
-					fmt.Println(node.Tag.Members)
-					fmt.Println(node.Tag.InnerDependencies)
-					fmt.Println(node.Data)
-					log.Fatal("@SendMemberToBag > AddInnerReferences: Adding Inner References failed ", err)
-					return err
+				if !fromNode {
+					if err := self.AddInnerReferences(node, member); err != nil {
+						fmt.Println(node.Tag.Members)
+						fmt.Println(node.Tag.InnerDependencies)
+						fmt.Println(node.Data)
+						log.Fatal("@SendMemberToBag > AddInnerReferences: Adding Inner References failed ", err)
+						return err
+					}
 				}
+			} else {
+				// fmt.Println(node.Data)
+				// fmt.Println(node.SQL)
+				log.Println("@SendMemberToBag: '", member, "' doesn't contain id! ", id)
+				// return err
 			}
 		}
 	}
@@ -1799,13 +1800,13 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 			defer self.tx.StencilTx.Rollback()
 		}
 
-		log.Println(fmt.Sprintf("x%2dx CHECKING NEXT NODES { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
+		log.Println(fmt.Sprintf("x%2dx CHECKING NEXT NODES { %s }", threadID, node.Tag.Name))
 
 		if err := self.CheckNextNode(node); err != nil {
 			return err
 		}
 
-		log.Println(fmt.Sprintf("x%2dx CHECKING PREVIOUS NODES { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
+		log.Println(fmt.Sprintf("x%2dx CHECKING PREVIOUS NODES { %s }", threadID, node.Tag.Name))
 
 		if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
 			for _, previousNode := range previousNodes {
@@ -1815,7 +1816,7 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 			return err
 		}
 
-		log.Println(fmt.Sprintf("x%2dx HANDLING MIGRATION { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
+		log.Println(fmt.Sprintf("x%2dx HANDLING MIGRATION { %s }", threadID, node.Tag.Name))
 
 		if err := self.HandleMigration(node, false); err == nil {
 			log.Println(fmt.Sprintf("x%2dx MIGRATED  node { %s } ", threadID, node.Tag.Name))
@@ -1846,6 +1847,7 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 		log.Println(fmt.Sprintf("x%2dx VISITED   node { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
 		self.MarkAsVisited(node)
 	}
+	fmt.Println("------------------------------------------------------------------------")
 	return nil
 }
 
@@ -1885,8 +1887,6 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 			return err
 		}
 	}
-
-	fmt.Println("------------------------------------------------------------------------")
 
 	return nil
 }
