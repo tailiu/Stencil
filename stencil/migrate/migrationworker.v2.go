@@ -545,8 +545,7 @@ func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk st
 	return nil
 }
 
-func (self *MigrationWorkerV2) CheckMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
-	breakCondition := false
+func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
 	if len(toTable.Conditions) > 0 {
 		for conditionKey, conditionVal := range toTable.Conditions {
 			if nodeVal, ok := node.Data[conditionKey]; ok {
@@ -576,7 +575,7 @@ func (self *MigrationWorkerV2) CheckMappingConditions(toTable config.ToTable, no
 					default:
 						{
 							fmt.Println(toTable.Table, conditionKey, conditionVal)
-							log.Fatal("@CheckMappingConditions: Case not found:" + conditionVal)
+							log.Fatal("@ValidateMappingConditions: Case not found:" + conditionVal)
 						}
 					}
 				} else if conditionVal[:1] == "$" {
@@ -587,31 +586,46 @@ func (self *MigrationWorkerV2) CheckMappingConditions(toTable config.ToTable, no
 						if !strings.EqualFold(fmt.Sprint(nodeVal), inputVal) {
 							log.Println(nodeVal, "!=", inputVal)
 							fmt.Println(conditionKey, conditionVal, inputVal, nodeVal)
-							log.Fatal("@CheckMappingConditions: return false, from conditionVal[:1] == $")
+							log.Fatal("@ValidateMappingConditions: return false, from conditionVal[:1] == $")
 							return false
 						}
 					} else {
 						fmt.Println("node data:", node.Data)
 						fmt.Println(conditionKey, conditionVal)
-						log.Fatal("@CheckMappingConditions: input doesn't exist?", err)
+						log.Fatal("@ValidateMappingConditions: input doesn't exist?", err)
 					}
 				} else if !strings.EqualFold(fmt.Sprint(nodeVal), conditionVal) {
-					breakCondition = true
 					// log.Println(conditionKey, conditionVal, "!=", nodeVal)
-					return true
+					return false
 				} else {
 					// fmt.Println(*nodeVal, "==", conditionVal)
 				}
 			} else {
-				breakCondition = true
 				log.Println("Condition Key", conditionKey, "doesn't exist!")
 				fmt.Println("node data:", node.Data)
 				fmt.Println("node sql:", node.SQL)
-				log.Fatal("@CheckMappingConditions: stop here and check")
+				log.Fatal("@ValidateMappingConditions: stop here and check")
+				return false
 			}
 		}
 	}
-	return breakCondition
+	return true
+}
+
+func (self *MigrationWorkerV2) ValidateMappedTableData(toTable config.ToTable, mappedData MappedData) bool {
+	for mappedCol, srcMappedCol := range toTable.Mapping {
+		if strings.Contains(srcMappedCol, "$") {
+			continue
+		}
+		for i, mCol := range strings.Split(mappedData.cols, ",") {
+			if strings.EqualFold(mappedCol, mCol) {
+				if mappedData.ivals[i] != nil {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (self *MigrationWorkerV2) GetNodeOwner(node *DependencyNode) (string, bool) {
@@ -861,7 +875,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
 	for _, tagMember := range node.Tag.Members {
 		idCol := fmt.Sprintf("%s.id", tagMember)
-		if _, ok := node.Data[idCol]; ok {
+		if nodeVal, ok := node.Data[idCol]; ok && nodeVal != nil {
 			srcID := fmt.Sprint(node.Data[idCol])
 			if derr := db.ReallyDeleteRowFromAppDB(self.tx.SrcTx, tagMember, srcID); derr != nil {
 				fmt.Println("@ERROR_DeleteRowFromAppDB", derr)
@@ -881,8 +895,8 @@ func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
 			}
 
 		} else {
-			log.Println("node.Data =>", node.Data)
-			log.Fatal(idCol, "NOT PRESENT IN NODE DATA")
+			// log.Println("node.Data =>", node.Data)
+			log.Println("@DeleteRow:  '", idCol, "' not present or is null in node data!", nodeVal)
 		}
 	}
 	return nil
@@ -973,18 +987,23 @@ func (self *MigrationWorkerV2) GetRowsFromIDTable(app, member, id string, getFro
 }
 
 func (self *MigrationWorkerV2) FetchDataFromBags(nodeData map[string]interface{}, app, member, id, dstMember string) error {
+	log.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> IN FetchDataFromBags | ", app, member, id, dstMember)
+	fmt.Println("nodeData: ", nodeData)
 	idRows, err := self.GetRowsFromIDTable(app, member, id, false)
+
 	if err != nil {
 		log.Fatal("@FetchDataFromBags > GetRowsFromIDTable, Unable to get IDRows | ", app, member, id, false, err)
 		return err
 	}
 	for _, idRow := range idRows {
+		fmt.Println("idRow: ", idRow)
 		bagRow, err := db.GetBagByAppMemberIDV2(self.logTxn.DBconn, self.uid, idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id)
 		if err != nil {
 			log.Fatal("@FetchDataFromBags > GetBagByAppMemberIDV2, Unable to get bags | ", self.uid, idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id, err)
 			return err
 		}
 		if bagRow != nil {
+			log.Fatal("bagRow: ", bagRow)
 			bagData := make(map[string]interface{})
 			if err := json.Unmarshal([]byte(fmt.Sprint(bagRow["data"])), &bagData); err != nil {
 				fmt.Println(bagRow["data"])
@@ -1110,10 +1129,13 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 	// fmt.Println("Migrate Node | ", node.Tag.Name, mapping.ToTables)
 	var allMappedData []MappedData
 	for _, toTable := range mapping.ToTables {
-		if self.CheckMappingConditions(toTable, node) {
+		if !self.ValidateMappingConditions(toTable, node) {
 			continue
 		}
 		if mappedData, _ := self.GetMappedData(toTable, node); len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
+			if !self.ValidateMappedTableData(toTable, mappedData) {
+				continue
+			}
 			if toTableID, err := db.TableID(self.logTxn.DBconn, toTable.Table, self.DstAppConfig.AppID); err == nil {
 				if self.mtype == DELETION {
 					var nodeData map[string]interface{}
@@ -1130,6 +1152,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 							log.Fatal("@MigrateNode > FetchDataFromBags > TableID, fromTable: error in getting table id for member! ", fromTable, err)
 						}
 					}
+					log.Println("@@@ final nodeData: ", nodeData)
 				}
 				mappedData.undoAction.AddDstTable(toTable.Table)
 				if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
@@ -1174,7 +1197,8 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 					}
 					allMappedData = append(allMappedData, mappedData)
 				} else {
-					// fmt.Println("Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
+					fmt.Println("Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables)
+					fmt.Println("NODE: ", node.Tag.Name, node.Data)
 					log.Fatal("@MigrateNode > InsertRowIntoAppDB: ", err, " | ", "Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
 					return err
 				}
@@ -1874,7 +1898,7 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 
 func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID int) error {
 
-	if strings.EqualFold(node.Tag.Name, "root") {
+	if strings.EqualFold(node.Tag.Name, "_root") {
 		log.Println(fmt.Sprintf("~%2d~ MIGRATING ROOT {%s}", threadID, node.Tag.Name))
 		if err := self.CallMigration(node, threadID); err != nil {
 			return err
