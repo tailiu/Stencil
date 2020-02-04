@@ -10,7 +10,7 @@ import (
 	"stencil/transaction"
 )
 
-func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string) {
+func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBlade ...bool) {
 
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 
@@ -47,7 +47,7 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string) {
 			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
 		}
 
-		if mthread.ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, 1) {
+		if mthread.ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, 1, isBlade...) {
 			transaction.LogOutcome(logTxn, "COMMIT")
 			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, 0)
 			logTxn.DBconn.Close()

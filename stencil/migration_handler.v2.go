@@ -34,11 +34,19 @@ func main() {
 		}
 	}
 
+	isBlade := false
+	switch os.Args[9] {
+	case "t":
+		{
+			isBlade = true
+		}
+	}
+
 	if len(mtype) <= 0 {
 		log.Fatal("can't read migration type")
 	}
-	if mtype == "b" {
-		apis.StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype)
+	if mtype == "b" || mtype == "d" {
+		apis.StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype, isBlade)
 	} else {
 		SA1_migrate.Controller(uid, srcApp, srcAppID, dstApp, dstAppID, mtype, 1, enableDisplay, displayInFirstPhase)
 	}

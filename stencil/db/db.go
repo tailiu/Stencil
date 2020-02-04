@@ -170,7 +170,7 @@ func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...in
 	return lastInsertId, err
 }
 
-func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, migrationID string) error {
+func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, migrationID interface{}) error {
 	query := "INSERT INTO identity_table (from_app, from_member, from_id, to_app, to_member, to_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
 	_, err := tx.Exec(query, srcApp, srcTable, srcID, dstApp, dstTable, dstID, migrationID)
 	return err
@@ -985,7 +985,7 @@ func SaveForEvaluation(dbConn *sql.DB, srcApp, dstApp, srcTable, dstTable, srcID
 	return err
 }
 
-func SaveForLEvaluation(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID string) error {
+func SaveForLEvaluation(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID interface{}) error {
 	query := "INSERT INTO evaluation (src_app, dst_app, src_table, dst_table, src_id, dst_id, src_cols, dst_cols, migration_id, added_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())"
 	_, err := tx.Exec(query, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcCol, dstCol, migrationID)
 	return err

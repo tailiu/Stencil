@@ -7,23 +7,24 @@ def getDBConn(db):
     return conn, cursor
 
 def getTables():
-    conn, cur = getDBConn(dbName)
     tables = []
-    tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
-    cur.execute(tableq)
-    for row in cur.fetchall():
-        table = row[0]
-        tables.append(table)
+    conn, cur = getDBConn(dbName)
+    with conn:
+        tableq = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+        cur.execute(tableq)
+        for row in cur.fetchall():
+            table = row[0]
+            tables.append(table)
     return tables
 
 def execQuery(tableName):
     conn, cur = getDBConn(dbName)
     with conn:
         q = "ALTER TABLE \"%s\" ADD display_flag bool DEFAULT false;" %tableName
-        print q
+        print ">> %s STARTED!!!" % tableName
         cur.execute(q)
         conn.commit()
-        print "===>> %s finished!!!" % tableName
+        print "==>> %s FINISHED!!!" % tableName
 
 if __name__ == "__main__":
     
