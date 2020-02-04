@@ -30,6 +30,10 @@ func migrateUserFromDiasporaToMastodon(
 		enableDisplay, displayInFirstPhase,
 	)
 
+	log.Println("************ Calculate the Migration Size and Time ************")
+
+	refreshEvalConfigDBConnections(evalConfig)
+
 	migrationID := 
 		getMigrationIDBySrcUserIDMigrationType(evalStencilDB, userID, migrationType)
 

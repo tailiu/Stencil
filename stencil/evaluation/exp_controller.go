@@ -193,7 +193,7 @@ func Exp2() {
 
 	migrationNum := 300
 
-	startNum := 100
+	startNum := 150
 
 	// ************ SA1 ************
 
@@ -241,37 +241,39 @@ func Exp2() {
 
 	for i := startNum; i < migrationNum + startNum; i ++ {
 
-		log.Println("User ID:", userIDs[i]["author_id"])
+		userID := userIDs[i]["author_id"]
+
+		log.Println("User ID:", userID)
 
 		// ************ SA1 ************
 
 		migrateUserFromDiasporaToMastodon(
 			evalConfig, SA1EvalStencilDB, evalConfig.DiasporaDBConn, 
-			userIDs[i]["author_id"], SA1MigrationType, 
+			userID, SA1MigrationType, 
 			SA1StencilDB, SA1SrcDB, SA1DstDB,
 			SA1SizeFile, SA1TimeFile,
 			SA1EnableDisplay, SA1DisplayInFirstPhase,
 		)
 
-		log.Println("User ID:", userIDs[i]["author_id"])
+		log.Println("User ID:", userID)
 
 		// ************ SA1 without Display ************
 
 		migrateUserFromDiasporaToMastodon(
 			evalConfig, SA1WithoutDisplayEvalStencilDB, evalConfig.DiasporaDBConn, 
-			userIDs[i]["author_id"], SA1WithoutDisplayMigrationType, 
+			userID, SA1WithoutDisplayMigrationType, 
 			SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB,
 			SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile,
 			SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase,
 		)
 
-		log.Println("User ID:", userIDs[i]["author_id"])
+		log.Println("User ID:", userID)
 		
 		// ************ Naive Migration ************
 
 		migrateUserFromDiasporaToMastodon(
 			evalConfig, naiveEvalStencilDB, evalConfig.DiasporaDBConn, 
-			userIDs[i]["author_id"], naiveMigrationType, 
+			userID, naiveMigrationType, 
 			naiveStencilDB, naiveSrcDB, naiveDstDB,
 			naiveSizeFile, naiveTimeFile,
 			naiveEnableDisplay, naiveDisplayInFirstPhase,
