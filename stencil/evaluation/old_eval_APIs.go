@@ -351,3 +351,21 @@ func oldMigrateUserUsingSA1AndNaive(evalConfig *EvalConfig,
 		ConvertMapStringToJSONString(timeLog),
 	)
 }
+
+func RecreateDiaspora1MDB() {
+
+	diaspora = "diaspora_test"
+
+	dbConn := db.GetDBConn(diaspora)
+
+	defer closeDBConn(dbConn)
+
+	templateDB := "diaspora_1000000"
+
+	recreateDBByTemplate(dbConn, "diaspora_1000000_exp", templateDB)
+
+	recreateDBByTemplate(dbConn, "diaspora_1000000_exp1", templateDB)
+
+	recreateDBByTemplate(dbConn, "diaspora_1000000_exp2", templateDB)
+
+}	

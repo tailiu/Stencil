@@ -43,6 +43,7 @@ type displayConfig struct {
 	dstAppConfig			*dstAppConfig
 	mappingsFromSrcToDst	*config.MappedApp
 	displayInFirstPhase		bool
+	markAsDelete			bool
 }
 
 type DataInDependencyNode struct {

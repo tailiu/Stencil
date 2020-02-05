@@ -76,24 +76,6 @@ func PreExp() {
 
 }
 
-func RecreateDiaspora1MDB() {
-
-	diaspora = "diaspora_test"
-
-	dbConn := db.GetDBConn(diaspora)
-
-	defer closeDBConn(dbConn)
-
-	templateDB := "diaspora_1000000"
-
-	recreateDBByTemplate(dbConn, "diaspora_1000000_exp", templateDB)
-
-	recreateDBByTemplate(dbConn, "diaspora_1000000_exp1", templateDB)
-
-	recreateDBByTemplate(dbConn, "diaspora_1000000_exp2", templateDB)
-
-}	
-
 // In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
 // The source database needs to be changed to diaspora_1000_exp
@@ -132,6 +114,10 @@ func Exp1() {
 			dstAppName, dstAppID, migrationType, threadNum,
 			enableDisplay, displayInFirstPhase,
 		)
+
+		log.Println("************ Calculate Dangling Data Size ************")
+
+		refreshEvalConfigDBConnections(evalConfig)
 
 		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
 
@@ -193,7 +179,7 @@ func Exp2() {
 
 	migrationNum := 300
 
-	startNum := 100
+	startNum := 200
 
 	// ************ SA1 ************
 
@@ -203,8 +189,6 @@ func Exp2() {
 		"stencil_exp", "diaspora_1000000_exp", "mastodon_exp"
 
 	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
-
-	SA1EvalStencilDB := evalConfig.StencilDBConn
 
 	SA1SizeFile, SA1TimeFile := "SA1Size", "SA1Time"
 
@@ -217,8 +201,6 @@ func Exp2() {
 
 	SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase := false, false
 
-	SA1WithoutDisplayEvalStencilDB := evalConfig.StencilDBConn1
-
 	SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile := "SA1WDSize", "SA1WDTime"
 
 	// ************ Naive Migration ************
@@ -230,8 +212,6 @@ func Exp2() {
 
 	naiveEnableDisplay, naiveDisplayInFirstPhase := false, false
 
-	naiveEvalStencilDB := evalConfig.StencilDBConn2
-
 	naiveSizeFile, naiveTimeFile := "naiveSize", "naiveTime"
 
 
@@ -241,37 +221,39 @@ func Exp2() {
 
 	for i := startNum; i < migrationNum + startNum; i ++ {
 
-		log.Println("User ID:", userIDs[i]["author_id"])
+		userID := userIDs[i]["author_id"]
+
+		log.Println("User ID:", userID)
 
 		// ************ SA1 ************
 
 		migrateUserFromDiasporaToMastodon(
-			evalConfig, SA1EvalStencilDB, evalConfig.DiasporaDBConn, 
-			userIDs[i]["author_id"], SA1MigrationType, 
+			evalConfig, SA1StencilDB, diaspora, 
+			userID, SA1MigrationType, 
 			SA1StencilDB, SA1SrcDB, SA1DstDB,
 			SA1SizeFile, SA1TimeFile,
 			SA1EnableDisplay, SA1DisplayInFirstPhase,
 		)
 
-		log.Println("User ID:", userIDs[i]["author_id"])
+		log.Println("User ID:", userID)
 
 		// ************ SA1 without Display ************
 
 		migrateUserFromDiasporaToMastodon(
-			evalConfig, SA1WithoutDisplayEvalStencilDB, evalConfig.DiasporaDBConn, 
-			userIDs[i]["author_id"], SA1WithoutDisplayMigrationType, 
+			evalConfig, SA1WithoutDisplayStencilDB, diaspora, 
+			userID, SA1WithoutDisplayMigrationType, 
 			SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB,
 			SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile,
 			SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase,
 		)
 
-		log.Println("User ID:", userIDs[i]["author_id"])
+		log.Println("User ID:", userID)
 		
 		// ************ Naive Migration ************
 
 		migrateUserFromDiasporaToMastodon(
-			evalConfig, naiveEvalStencilDB, evalConfig.DiasporaDBConn, 
-			userIDs[i]["author_id"], naiveMigrationType, 
+			evalConfig, naiveStencilDB, diaspora, 
+			userID, naiveMigrationType, 
 			naiveStencilDB, naiveSrcDB, naiveDstDB,
 			naiveSizeFile, naiveTimeFile,
 			naiveEnableDisplay, naiveDisplayInFirstPhase,
@@ -633,6 +615,8 @@ func Exp5() {
 
 }
 
+// This function is for us to get nodes and edges from database to plot 
+// the relationship between them
 func Exp4GetEdgesNodes() {
 
 	evalConfig := InitializeEvalConfig()
@@ -691,5 +675,19 @@ func Exp4CountEdgesNodes() {
 			true,
 		)
 	}
+
+}
+
+func Exp6() {
+
+	stencilDB = "stencil_exp3"
+	mastodon = "mastodon_exp3"
+	diaspora = "diaspora_1000000_exp3"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	preExp1(evalConfig)
 
 }

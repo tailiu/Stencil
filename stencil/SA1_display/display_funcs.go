@@ -14,7 +14,8 @@ import (
 )
 
 func CreateDisplayConfig(migrationID int,
-	resolveReference, newDB, displayInFirstPhase bool) *displayConfig {
+	resolveReference, newDB, 
+	displayInFirstPhase, markAsDelete bool) *displayConfig {
 
 	var displayConfig displayConfig
 
@@ -119,6 +120,7 @@ func CreateDisplayConfig(migrationID int,
 	displayConfig.refResolutionConfig = refResolutionConfig
 	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
 	displayConfig.displayInFirstPhase = displayInFirstPhase
+	displayConfig.markAsDelete = markAsDelete
 
 	return &displayConfig
 
@@ -659,21 +661,37 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 				dataHint.KeyVal["id"],
 				ConvertMapToJSONString(dataHint.Data),
 				displayConfig.dstAppConfig.userID,
-				displayConfig.migrationID)
+				displayConfig.migrationID,
+			)
 
-			q2 = fmt.Sprintf("DELETE FROM %s WHERE id = %d",
-				dataHint.Table, dataHint.KeyVal["id"])
+			if !displayConfig.markAsDelete {
+				q2 = fmt.Sprintf(
+					"DELETE FROM %s WHERE id = %d",
+					dataHint.Table, dataHint.KeyVal["id"],
+				)
+			} else {
+				q2 = fmt.Sprintf(
+					"UPDATE %s SET mark_as_delete = true WHERE id = %d",
+					dataHint.Table, dataHint.KeyVal["id"],
+				)
+			}
 
 		}
 
 		q3 = fmt.Sprintf(`UPDATE display_flags SET 
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
-			displayConfig.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
+			displayConfig.dstAppConfig.appID, 
+			dataHint.TableID, dataHint.KeyVal["id"],
+		)
 
 		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 		log.Println("INSERT INTO data_bags:", q1)
-		log.Println("DELETE FROM the application:", q2)
+		if !displayConfig.markAsDelete {
+			log.Println("DELETE FROM the application:", q2)
+		} else {
+			log.Println("MARK AS DELETE in the application:", q2)
+		}
 		log.Println("UPDATE display_flags:", q3)
 		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
@@ -856,6 +874,30 @@ func logDisplayEndTime(displayConfig *displayConfig) {
 	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query); 
 	if err1 != nil {
 		log.Fatal(err1)
+	}
+
+}
+
+func AddMarkAsDeleteToAllTables(dbConn *sql.DB) {
+
+	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
+		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
+
+	data := db.GetAllColsOfRows(dbConn, query1)
+	
+	// log.Println(data)
+
+	for _, data1 := range data {
+		
+		query2 := fmt.Sprintf(`ALTER TABLE %s ADD mark_as_delete BOOLEAN DEFAULT FALSE;`, 
+			data1["tablename"])
+
+		log.Println(query2)
+
+		if _, err1 := dbConn.Exec(query2); err1 != nil {
+			log.Fatal(err1)
+		}
+		
 	}
 
 }

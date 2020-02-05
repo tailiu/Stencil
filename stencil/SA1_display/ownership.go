@@ -83,8 +83,19 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 
 	}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s",
-		dependsOnTable, dependsOnAttr, depVal)
+	var query string
+
+	if !displayConfig.markAsDelete {
+		query = fmt.Sprintf(
+			"SELECT * FROM %s WHERE %s = %s",
+			dependsOnTable, dependsOnAttr, depVal,
+		)
+	} else {
+		query = fmt.Sprintf(
+			"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false",
+			dependsOnTable, dependsOnAttr, depVal,
+		)
+	}
 	
 	// log.Println("Get a data in the owner node")
 	// log.Println(query)

@@ -4,13 +4,12 @@ import (
 	"stencil/db"
 	"stencil/SA1_migrate"
 	"log"
-	"database/sql"
 	"strconv"
 )
 
 
 func migrateUserFromDiasporaToMastodon(
-	evalConfig *EvalConfig, evalStencilDB, evalReferDB *sql.DB, 
+	evalConfig *EvalConfig, evalStencilDBName, evalReferDBName string, 
 	userID, migrationType, stencilDB, srcDB, dstDB, 
 	sizeFile, timeFile string,
 	enableDisplay, displayInFirstPhase bool) {
@@ -29,6 +28,13 @@ func migrateUserFromDiasporaToMastodon(
 		dstAppName, dstAppID, migrationType, threadNum,
 		enableDisplay, displayInFirstPhase,
 	)
+
+	log.Println("************ Calculate the Migration Size and Time ************")
+
+	refreshEvalConfigDBConnections(evalConfig)
+	
+	evalStencilDB := getDBConnByName(evalConfig, evalStencilDBName)
+	evalReferDB := getDBConnByName(evalConfig, evalReferDBName)	
 
 	migrationID := 
 		getMigrationIDBySrcUserIDMigrationType(evalStencilDB, userID, migrationType)

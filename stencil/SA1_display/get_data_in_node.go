@@ -14,7 +14,20 @@ import (
 func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	table, col, value string) (map[string]interface{}, error) {
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", table, col, value)
+	var query string
+	
+	if !displayConfig.markAsDelete {
+		query = fmt.Sprintf(
+			"SELECT * FROM %s WHERE %s = %s", 
+			table, col, value,
+		)
+	} else {
+		query = fmt.Sprintf(
+			"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false", 
+			table, col, value,
+		)
+	}
+	
 	log.Println(query)
 
 	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
@@ -37,7 +50,20 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 func getRowsBasedOnDependency(displayConfig *displayConfig,
 	table, col, value string) ([]map[string]interface{}, error) {
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", table, col, value)
+	var query string
+
+	if !displayConfig.markAsDelete {
+		query = fmt.Sprintf(
+			"SELECT * FROM %s WHERE %s = %s", 
+			table, col, value,
+		)
+	} else {
+		query = fmt.Sprintf(
+			"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false", 
+			table, col, value,
+		)
+	}
+	
 	log.Println(query)
 
 	data, err := db.DataCall(displayConfig.dstAppConfig.DBConn, query)
@@ -570,7 +596,17 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 func getOneRowBasedOnHint(displayConfig *displayConfig, 
 	hint *HintStruct) (map[string]interface{}, error) {
 	
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %d", hint.Table, hint.KeyVal["id"])
+	var query string
+
+	if !displayConfig.markAsDelete {
+		query = fmt.Sprintf(
+			`SELECT * FROM %s WHERE id = %d`, 
+			hint.Table, hint.KeyVal["id"])
+	} else {
+		query = fmt.Sprintf(
+			`SELECT * FROM %s WHERE id = %d and mark_as_delete = false`, 
+			hint.Table, hint.KeyVal["id"])
+	}
 	
 	// log.Println(query)
 	

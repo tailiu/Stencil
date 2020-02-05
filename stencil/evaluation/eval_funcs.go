@@ -17,13 +17,9 @@ import (
 func InitializeEvalConfig() *EvalConfig {
 
 	evalConfig := new(EvalConfig)
-	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
-	evalConfig.StencilDBConn1 = db.GetDBConn(stencilDB1)
-	evalConfig.StencilDBConn2 = db.GetDBConn(stencilDB2)
-	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, true)
-	evalConfig.MastodonDBConn1 = db.GetDBConn(mastodon1, true)
-	evalConfig.MastodonDBConn2 = db.GetDBConn(mastodon2, true)
-	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
+	
+	connectToDB(evalConfig)
+
 	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, "mastodon")
 	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, "diaspora")
 	evalConfig.Dependencies = dependencies
@@ -823,5 +819,52 @@ func getAllUserIDsSortByPhotosInDiaspora(evalConfig *EvalConfig) []map[string]st
 	}
 
 	return res
+
+}
+
+func connectToDB(evalConfig *EvalConfig) {
+
+	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
+	evalConfig.StencilDBConn1 = db.GetDBConn(stencilDB1)
+	evalConfig.StencilDBConn2 = db.GetDBConn(stencilDB2)
+	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, true)
+	evalConfig.MastodonDBConn1 = db.GetDBConn(mastodon1, true)
+	evalConfig.MastodonDBConn2 = db.GetDBConn(mastodon2, true)
+	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
+
+}
+
+func refreshEvalConfigDBConnections(evalConfig *EvalConfig) {
+
+	closeDBConns(evalConfig)
+
+	connectToDB(evalConfig)
+
+}
+
+func getDBConnByName(evalConfig *EvalConfig, dbName string) *sql.DB {
+
+	var connection *sql.DB
+
+	switch dbName {
+	case stencilDB:
+		connection = evalConfig.StencilDBConn
+	case stencilDB1:
+		connection = evalConfig.StencilDBConn1
+	case stencilDB2:
+		connection = evalConfig.StencilDBConn2
+	case mastodon:
+		connection = evalConfig.MastodonDBConn
+	case mastodon1:
+		connection = evalConfig.MastodonDBConn1
+	case mastodon2:
+		connection = evalConfig.MastodonDBConn2
+	case diaspora:
+		connection = evalConfig.DiasporaDBConn
+	default:
+		log.Fatal("Cannot find a connection")
+	}
+
+	return connection
 
 }

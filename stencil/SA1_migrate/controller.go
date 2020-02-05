@@ -7,9 +7,38 @@ import (
 	"sync"
 )
 
+// By default, enableDisplay, displayInFirstPhase, markAsDelete
+// are true, true, false 
+func handleArgs(args []bool) (bool, bool, bool) {
+
+	enableDisplay, displayInFirstPhase, markAsDelete :=
+		true, true, false
+	
+	for i, arg := range args {
+		switch i {
+		case 0:
+			enableDisplay = arg
+		case 1:
+			displayInFirstPhase = arg
+		case 2:
+			markAsDelete = arg
+		default:
+			log.Fatal(`The input args of the migration and display controller 
+				do not satisfy requirements!`)
+		}
+	}
+
+	return enableDisplay, displayInFirstPhase, markAsDelete
+
+}
+
 func Controller(uid, srcAppName, srcAppID,
-	dstAppName, dstAppID, migrationType string, threadNum int,
-	enableDisplay, displayInFirstPhase bool) {
+	dstAppName, dstAppID, migrationType string, 
+	threadNum int, args ...bool) {
+	
+	enableDisplay, displayInFirstPhase, markAsDelete := handleArgs(args)
+	
+	useBladeServerAsDst := true
 
 	var wg sync.WaitGroup
 
@@ -23,10 +52,11 @@ func Controller(uid, srcAppName, srcAppID,
 	// we only need to wait for one display thread to finish
 	wg.Add(1)
 
-	go apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, true)
+	go apis.StartMigration(uid, srcAppName, srcAppID, 
+		dstAppName, dstAppID, migrationType, useBladeServerAsDst)
 
 	go SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType,
-		threadNum, &wg, enableDisplay, displayInFirstPhase)
+		threadNum, &wg, enableDisplay, displayInFirstPhase, markAsDelete)
 
 	wg.Wait()
 
