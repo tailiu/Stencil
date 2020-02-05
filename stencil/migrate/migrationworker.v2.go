@@ -984,7 +984,7 @@ func (self *MigrationWorkerV2) GetRowsFromIDTable(app, member, id string, getFro
 			ToID:        fmt.Sprint(idRowDB["to_id"])})
 	}
 	return idRows, nil
-} // fmt.Println("Migrate Node | ", node.Tag.Name, mapping.ToTables)
+}
 
 func (self *MigrationWorkerV2) FetchDataFromBags(nodeData map[string]interface{}, app, member, id, dstMember string) error {
 	log.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> IN FetchDataFromBags | ", app, member, id, dstMember)
@@ -1087,7 +1087,7 @@ func (self *MigrationWorkerV2) DeleteNode(mapping config.Mapping, node *Dependen
 	return nil
 }
 
-func (self *MigrationWorkerV2) DeleteRoot(threadID int) error { // fmt.Println("Migrate Node | ", node.Tag.Name, mapping.ToTables)
+func (self *MigrationWorkerV2) DeleteRoot(threadID int) error {
 
 	if err := self.InitTransactions(); err != nil {
 		log.Fatal("@DeleteRoot > InitTransactions", err)
@@ -1898,7 +1898,7 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 
 func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID int) error {
 
-	if strings.EqualFold(node.Tag.Name, "_root") {
+	if strings.EqualFold(node.Tag.Name, "root") {
 		log.Println(fmt.Sprintf("~%2d~ MIGRATING ROOT {%s}", threadID, node.Tag.Name))
 		if err := self.CallMigration(node, threadID); err != nil {
 			return err
