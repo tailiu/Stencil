@@ -24,10 +24,20 @@ func test2() {
 	SA1_display.RemoveDisplayFlagInAllTables(dbConn)
 }
 
+func test3() {
+
+	dbName := "mastodon_exp3"
+
+	dbConn := db.GetDBConn(dbName, true)
+
+	SA1_display.AddMarkAsDeleteToAllTables(dbConn)
+}
+ 
 func main() {
 
-	test1()
+	// test1()
 	
 	// test2()
 
+	test3()
 }

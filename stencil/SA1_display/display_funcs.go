@@ -877,3 +877,27 @@ func logDisplayEndTime(displayConfig *displayConfig) {
 	}
 
 }
+
+func AddMarkAsDeleteToAllTables(dbConn *sql.DB) {
+
+	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
+		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
+
+	data := db.GetAllColsOfRows(dbConn, query1)
+	
+	// log.Println(data)
+
+	for _, data1 := range data {
+		
+		query2 := fmt.Sprintf(`ALTER TABLE %s ADD mark_as_delete BOOLEAN DEFAULT FALSE;`, 
+			data1["tablename"])
+
+		log.Println(query2)
+
+		if _, err1 := dbConn.Exec(query2); err1 != nil {
+			log.Fatal(err1)
+		}
+		
+	}
+
+}

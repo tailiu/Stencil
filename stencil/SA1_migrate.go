@@ -8,16 +8,16 @@ import (
 func main() {
 
 	uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum :=
-		"996567", "diaspora", "1", "mastodon", "2", "n", 1
+		"99655", "diaspora", "1", "mastodon", "2", "d", 1
 
 	// If enableDisplay is set to be true, then display threads will be started
 	// If displayInFirstPhase is set to be true,
 	// then display threads will check in the first phase
-	enableDisplay, displayInFirstPhase := false, false
+	enableDisplay, displayInFirstPhase, markAsDelete := true, false, true
 
 	SA1_migrate.Controller(uid, srcAppName, srcAppID,
 		dstAppName, dstAppID, migrationType, threadNum,
-		enableDisplay, displayInFirstPhase,
+		enableDisplay, displayInFirstPhase, markAsDelete,
 	)
 
 }
