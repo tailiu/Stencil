@@ -8,12 +8,15 @@ import (
 func main() {
 
 	uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum :=
-		"99655", "diaspora", "1", "mastodon", "2", "d", 1
+		"99658", "diaspora", "1", "mastodon", "2", "d", 1
 
 	// If enableDisplay is set to be true, then display threads will be started
 	// If displayInFirstPhase is set to be true,
 	// then display threads will check in the first phase
-	enableDisplay, displayInFirstPhase, markAsDelete := true, false, true
+	// If markAsDelete is set to be true,
+	// the display threads will mark data to be put into data bags
+	// as delete instead of deleting data
+	enableDisplay, displayInFirstPhase, markAsDelete := true, false, false
 
 	SA1_migrate.Controller(uid, srcAppName, srcAppID,
 		dstAppName, dstAppID, migrationType, threadNum,

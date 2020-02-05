@@ -66,10 +66,6 @@ func preExp1(evalConfig *EvalConfig) {
 
 }
 
-func preExp6() {
-	
-}
-
 func PreExp() {
 
 	evalConfig := InitializeEvalConfig()
@@ -683,5 +679,15 @@ func Exp4CountEdgesNodes() {
 }
 
 func Exp6() {
+
+	stencilDB = "stencil_exp3"
+	mastodon = "mastodon_exp3"
+	diaspora = "diaspora_1000000_exp3"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	preExp1(evalConfig)
 
 }
