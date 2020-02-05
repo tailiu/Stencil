@@ -2,7 +2,10 @@ package evaluation
 
 import (
 	"time"
+	"fmt"
+	"log"
 	"database/sql"
+	"stencil/db"
 	"stencil/transaction"
 )
 
@@ -28,5 +31,31 @@ func GetMigrationTime(stencilDBConn *sql.DB,
 	
 	return getMigrationEndTime(stencilDBConn, migrationID).
 		Sub(getMigrationStartTime(stencilDBConn, migrationID))
+
+}
+
+func GetDisplayTime(stencilDBConn *sql.DB, 
+	migrationID string) time.Duration {
+	
+	query := fmt.Sprintf(
+		`SELECT start_time, end_time FROM display_registration 
+		WHERE migration_id = %s`,
+		migrationID,
+	)
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(data) != 1 {
+		log.Fatal("Get more than one row in the display_registration")
+	}
+
+	endTime := data[0]["end_time"].(time.Time)
+	startTime := data[0]["start_time"].(time.Time)
+	displayTime := endTime.Sub(startTime)
+
+	return displayTime
 
 }

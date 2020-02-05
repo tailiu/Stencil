@@ -86,6 +86,7 @@ type EvalConfig struct {
 	Diaspora1KCounterFile string
 	Diaspora10KCounterFile string
 	Diaspora100KCounterFile string
+	Diaspora1MCounterFile string
 }
 
 type DataBagData struct {

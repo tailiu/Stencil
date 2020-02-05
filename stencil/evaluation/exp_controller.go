@@ -636,6 +636,53 @@ func Exp4GetEdgesNodes() {
 
 }
 
+func Exp4Count1MDBEdgesNodes() {
+
+	appName, appID := "diaspora", "1"
+	
+	db.DIASPORA_DB = "diaspora_1000000_counter"
+	db.STENCIL_DB = "stencil_cow"
+	diaspora = "diaspora_1000000_counter"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	userIDs := getAllUserIDsInDiaspora(evalConfig)
+
+	file := evalConfig.Diaspora1MCounterFile
+
+	counter := getCounter(evalConfig)
+
+	for _, userID := range userIDs {
+
+		if isAlreadyCounted(counter, userID) {
+			log.Println("userID", userID, "has already been counted")
+			continue
+		}
+
+		res := make(map[string]int)
+
+		nodeCount, edgeCount := apis.StartCounter(appName, appID, userID)
+
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		res["userID"] = userIDInt
+		res["nodes"] = nodeCount
+		res["edges"] = edgeCount
+
+		WriteStrToLog(
+			file,
+			ConvertMapIntToJSONString(res),
+			true,
+		)
+	}
+
+}
+
 func Exp4CountEdgesNodes() {
 
 	appName, appID := "diaspora", "1"
@@ -650,12 +697,12 @@ func Exp4CountEdgesNodes() {
 
 	userIDs := getAllUserIDsInDiaspora(evalConfig)
 
-	log.Println("total users:", len(userIDs))
+	// log.Println("total users:", len(userIDs))
 
 	file := evalConfig.Diaspora100KCounterFile
 
 	for _, userID := range userIDs {
-		
+
 		res := make(map[string]int)
 
 		nodeCount, edgeCount := apis.StartCounter(appName, appID, userID)
@@ -684,10 +731,75 @@ func Exp6() {
 	mastodon = "mastodon_exp3"
 	diaspora = "diaspora_1000000_exp3"
 
+	counterStart := 0
+	counterNum := 300
+	counterInterval := 10
+
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
 	preExp1(evalConfig)
+
+	res := getEdgesCounter(evalConfig, 
+		counterStart, counterNum, counterInterval)
+
+	log.Println(res)
+
+	for i := 0; i < len(res); i ++ {
+		
+		res1 := res[i]
+
+		userID := res1["person_id"]
+
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+			userID, "diaspora", "1", "mastodon", "2", "d", 1
+
+		enableDisplay, displayInFirstPhase, markAsDelete := true, false, true
+
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase, markAsDelete,
+		)
+		
+		log.Println("************ Calculate Migration and Display Time ************")
+
+		refreshEvalConfigDBConnections(evalConfig)
+
+		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
+		
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		mTime := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		dTime := GetDisplayTime(
+			evalConfig.StencilDBConn,
+			migrationID,
+		)
+
+		res1["migrationTime"] = ConvertSingleDurationToString(mTime)
+		res1["displayTime"] = ConvertSingleDurationToString(dTime)
+
+		log.Println("************ Calculate Nodes and Edges after Migration ************")
+
+		migratedUserID := getMigratedUserID(evalConfig, migrationID, dstAppID)
+
+		nodeCount, edgeCount := apis.StartCounter(dstAppName, dstAppID, 
+			migratedUserID, true)
+
+		res1["nodesAfterMigration"] = strconv.Itoa(nodeCount)
+		res1["edgesAfterMigration"] = strconv.Itoa(edgeCount)
+
+		WriteStrToLog(
+			"scalability",
+			ConvertMapStringToJSONString(res1),
+		)
+	}
 
 }

@@ -69,7 +69,8 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.DanglingDataFile,
 	evalConfig.Diaspora1KCounterFile,
 	evalConfig.Diaspora10KCounterFile,
-	evalConfig.Diaspora100KCounterFile = 
+	evalConfig.Diaspora100KCounterFile,
+	evalConfig.Diaspora1MCounterFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -88,7 +89,8 @@ func InitializeEvalConfig() *EvalConfig {
 		"danglingData",
 		"diaspora1KCounter",
 		"diaspora10KCounter",
-		"diaspora100KCounter"
+		"diaspora100KCounter",
+		"diaspora1MCounter"
 
 	return evalConfig
 }
@@ -842,7 +844,8 @@ func refreshEvalConfigDBConnections(evalConfig *EvalConfig) {
 
 }
 
-func getDBConnByName(evalConfig *EvalConfig, dbName string) *sql.DB {
+func getDBConnByName(evalConfig *EvalConfig, 
+	dbName string) *sql.DB {
 
 	var connection *sql.DB
 
@@ -866,5 +869,34 @@ func getDBConnByName(evalConfig *EvalConfig, dbName string) *sql.DB {
 	}
 
 	return connection
+
+}
+
+func getMigratedUserID(evalConfig *EvalConfig, 
+	migrationID, dstAppID string) string {
+
+	query1 := fmt.Sprintf(
+		`SELECT root_member_id FROM app_root_member 
+		WHERE app_id = %s`, 
+		dstAppID,
+	)
+
+	data1, err := db.DataCall1(evalConfig.StencilDBConn, query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	query2 := fmt.Sprintf(
+		`SELECT id FROM display_flags WHERE migration_id = %s and 
+		table_id = %s and app_id = %s`,
+		migrationID, fmt.Sprint(data1["root_member_id"]), dstAppID,
+	)
+
+	data2, err := db.DataCall1(evalConfig.StencilDBConn, query2)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data2["id"])
 
 }

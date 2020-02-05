@@ -12,7 +12,7 @@ func getEdgesCounter(evalConfig *EvalConfig,
 	counterInterval int) []map[string]string {
 	
 	query1 := fmt.Sprintf(
-		`SELECT person_id, edges FROM dag_counter 
+		`SELECT person_id, edges, nodes FROM dag_counter 
 		ORDER BY edges ASC`)
 	
 	data, err := db.DataCall(evalConfig.StencilDBConn, query1)
@@ -31,6 +31,7 @@ func getEdgesCounter(evalConfig *EvalConfig,
 		res1 := make(map[string]string)
 		res1["person_id"] = fmt.Sprint(data[i]["person_id"])
 		res1["edges"] = fmt.Sprint(data[i]["edges"])
+		res1["nodes"] = fmt.Sprint(data[i]["nodes"])
 
 		currEdgeNum, err := strconv.Atoi(res1["edges"])
 		if err != nil {
@@ -91,6 +92,7 @@ func getNodesCounter(evalConfig *EvalConfig,
 		
 		res1 := make(map[string]string)
 		res1["person_id"] = fmt.Sprint(data[i]["person_id"])
+		res1["edges"] = fmt.Sprint(data[i]["edges"])
 		res1["nodes"] = fmt.Sprint(data[i]["nodes"])
 
 		currNodeNum, err := strconv.Atoi(res1["nodes"])
@@ -124,7 +126,7 @@ func getNodesCounter(evalConfig *EvalConfig,
 func getCounter(evalConfig *EvalConfig) []map[string]string {
 
 	query1 := fmt.Sprintf(
-		`SELECT nodes, edges FROM dag_counter 
+		`SELECT person_id, nodes, edges FROM dag_counter 
 		ORDER BY nodes ASC`)
 	
 	data, err := db.DataCall(evalConfig.StencilDBConn, query1)
@@ -139,11 +141,24 @@ func getCounter(evalConfig *EvalConfig) []map[string]string {
 		res1 := make(map[string]string)
 		res1["nodes"] = fmt.Sprint(data1["nodes"])
 		res1["edges"] = fmt.Sprint(data1["edges"])
+		res1["person_id"] = fmt.Sprint(data1["person_id"])
 
 		res = append(res, res1)
 
 	}
 
 	return res
+
+}
+
+func isAlreadyCounted(counted []map[string]string, userID string) bool {
+
+	for _, count1 := range counted {
+		if count1["person_id"] == userID {
+			return true
+		}
+	}
+
+	return false
 
 }

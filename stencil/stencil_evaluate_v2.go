@@ -37,4 +37,6 @@ func main() {
 
 	evaluation.Exp6()
 
+	// evaluation.Exp4Count1MDBEdgesNodes()
+
 }
