@@ -35,8 +35,8 @@ func main() {
 
 	// evaluation.RecreateDiaspora1MDB()
 
-	evaluation.Exp6()
+	// evaluation.Exp6()
 
-	// evaluation.Exp4Count1MDBEdgesNodes()
+	evaluation.Exp4Count1MDBEdgesNodes()
 
 }

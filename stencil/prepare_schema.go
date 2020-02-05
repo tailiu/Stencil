@@ -26,7 +26,7 @@ func test2() {
 
 func test3() {
 
-	dbName := "mastodon_exp3"
+	dbName := "mastodon_test"
 
 	dbConn := db.GetDBConn(dbName, true)
 

@@ -641,7 +641,7 @@ func Exp4Count1MDBEdgesNodes() {
 	appName, appID := "diaspora", "1"
 	
 	db.DIASPORA_DB = "diaspora_1000000_counter"
-	db.STENCIL_DB = "stencil_cow"
+	db.STENCIL_DB = "stencil_counter"
 	diaspora = "diaspora_1000000_counter"
 
 	evalConfig := InitializeEvalConfig()

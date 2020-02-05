@@ -105,7 +105,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type": "$reshare",
-                                        "guid": "#REF(#ASSIGN(statuses.id),statuses.id)",
+                                        "guid": "#REF(#ASSIGN(statuses.id),statuses.id,posts)",
                                         "root_guid": "statuses.reblog_of_id",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
@@ -127,7 +127,7 @@
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "type":"$mentions_type1",
-                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id)",
+                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id,posts)",
                                         "comments_count": "status_stats.replies_count",
                                         "likes_count": "status_stats.favourites_count",
                                         "reshares_count": "status_stats.reblogs_count"
@@ -144,12 +144,12 @@
                                     "mapping":{
                                         "id":"statuses.id",
                                         "author_id":"#REF(statuses.account_id,accounts.id)",
-                                        "commentable_id":"#REF(statuses.in_reply_to_id,statuses.id)",
+                                        "commentable_id":"#REF(statuses.in_reply_to_id,statuses.id,posts)",
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
                                         "commentable_type":"$commentable_type",
-                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id)"
+                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id,comments)"
                                     }
                                 },
                                 {
@@ -164,7 +164,7 @@
                                         "text":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id)"
+                                        "guid":"#REF(#ASSIGN(statuses.id),statuses.id,messages)"
                                     }
                                 },
                                 {
@@ -175,9 +175,7 @@
                                         "created_at":"conversations.created_at",
                                         "updated_at":"conversations.updated_at",
                                         "author_id":"#REF(statuses.account_id,accounts.id)",
-                                        "guid":"#GUID",
-                                        "created_at":"statuses.created_at",
-                                        "updated_at":"statuses.updated_at"
+                                        "guid":"#GUID"
                                     }
                                 }
                             ]
@@ -196,7 +194,7 @@
                                         "id": "media_attachments.id",
                                         "guid": "#GUID",
                                         "author_id": "#REF(media_attachments.account_id,accounts.id)",
-                                        "status_message_guid": "#REF(media_attachments.status_id,statuses.id)",
+                                        "status_message_guid": "#REF(media_attachments.status_id,statuses.id,posts)",
                                         "text":"media_attachments.description",
                                         "updated_at":"media_attachments.updated_at",
                                         "created_at":"media_attachments.created_at",
@@ -213,7 +211,7 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"favourites.id",
-                                        "target_id":"#REF(favourites.status_id,statuses.id)",
+                                        "target_id":"#REF(favourites.status_id,statuses.id,posts)",
                                         "created_at":"favourites.created_at",
                                         "updated_at":"favourites.updated_at",
                                         "author_id":"#REF(favourites.account_id,accounts.id)",
@@ -250,7 +248,7 @@
                                     "mapping":{
                                         "id":"mentions.id",
                                         "person_id":"#REF(mentions.account_id,accounts.id)",
-                                        "mentions_container_id":"#REF(mentions.status_id,statuses.id)",
+                                        "mentions_container_id":"#REF(mentions.status_id,statuses.id,posts)",
                                         "mentions_container_type":"$mentions_type1"
                                     }
                                 }
@@ -266,7 +264,7 @@
                                         "id":"notifications.id",
                                         "target_type":"notifications.activity_type",
                                         "recipient_id":"#REF(notifications.account_id,accounts.id)",
-                                        "target_id":"#REF(notifications.activity_id,statuses.id)",
+                                        "target_id":"#REF(notifications.activity_id,statuses.id,posts)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }
