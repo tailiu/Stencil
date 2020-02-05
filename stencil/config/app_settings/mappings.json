@@ -89,7 +89,7 @@
                             ]
                         },
                         {
-                            "fromTables": ["statuses", "status_stats"],
+                            "fromTables": ["statuses", "status_stats", "conversations"],
                             "toTables": [
                                 {
                                     "table": "posts",
@@ -117,7 +117,8 @@
                                     "conditions": {
                                             "statuses.visibility": "0",
                                             "statuses.reply": "false",
-                                            "statuses.reblog_of_id": "#NULL"
+                                            "statuses.reblog_of_id": "#NULL",
+                                            "statuses.in_reply_to_id": "#NULL"
                                     },
                                     "mapping": {
                                         "id":"statuses.id",
@@ -137,7 +138,8 @@
                                     "conditions": {
                                             "statuses.visibility": "0",
                                             "statuses.reply": "true",
-                                            "statuses.reblog_of_id": "#NULL"
+                                            "statuses.reblog_of_id": "#NULL",
+                                            "statuses.in_reply_to_id": "#NOTNULL"
                                     },
                                     "mapping":{
                                         "id":"statuses.id",
@@ -164,6 +166,19 @@
                                         "updated_at":"statuses.updated_at",
                                         "guid":"#REF(#ASSIGN(statuses.id),statuses.id)"
                                     }
+                                },
+                                {
+                                    "table": "conversations",
+                                    "conditions":{},
+                                    "mapping": {
+                                        "id":"conversations.id",
+                                        "created_at":"conversations.created_at",
+                                        "updated_at":"conversations.updated_at",
+                                        "author_id":"#REF(statuses.account_id,accounts.id)",
+                                        "guid":"#GUID",
+                                        "created_at":"statuses.created_at",
+                                        "updated_at":"statuses.updated_at"
+                                    }
                                 }
                             ]
                         },
@@ -179,27 +194,13 @@
                                     },
                                     "mapping":{
                                         "id": "media_attachments.id",
+                                        "guid": "#GUID",
                                         "author_id": "#REF(media_attachments.account_id,accounts.id)",
                                         "status_message_guid": "#REF(media_attachments.status_id,statuses.id)",
                                         "text":"media_attachments.description",
                                         "updated_at":"media_attachments.updated_at",
                                         "created_at":"media_attachments.created_at",
                                         "remote_photo_path":"media_attachments.remote_url"
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "fromTables": ["conversations"],
-                            "toTables": [
-                                {
-                                    "table": "conversations",
-                                    "conditions":{},
-                                    "mapping": {
-                                        "id":"conversations.id",
-                                        "created_at":"conversations.created_at",
-                                        "updated_at":"conversations.updated_at",
-                                        "guid":"#GUID"
                                     }
                                 }
                             ]
