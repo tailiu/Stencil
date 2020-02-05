@@ -76,24 +76,6 @@ func PreExp() {
 
 }
 
-func RecreateDiaspora1MDB() {
-
-	diaspora = "diaspora_test"
-
-	dbConn := db.GetDBConn(diaspora)
-
-	defer closeDBConn(dbConn)
-
-	templateDB := "diaspora_1000000"
-
-	recreateDBByTemplate(dbConn, "diaspora_1000000_exp", templateDB)
-
-	recreateDBByTemplate(dbConn, "diaspora_1000000_exp1", templateDB)
-
-	recreateDBByTemplate(dbConn, "diaspora_1000000_exp2", templateDB)
-
-}	
-
 // In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
 // The source database needs to be changed to diaspora_1000_exp
@@ -633,6 +615,8 @@ func Exp5() {
 
 }
 
+// This function is for us to get nodes and edges from database to plot 
+// the relationship between them
 func Exp4GetEdgesNodes() {
 
 	evalConfig := InitializeEvalConfig()
@@ -692,4 +676,8 @@ func Exp4CountEdgesNodes() {
 		)
 	}
 
+}
+
+func Exp6() {
+	
 }

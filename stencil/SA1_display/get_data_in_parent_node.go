@@ -172,7 +172,19 @@ func getHintsInParentNode(displayConfig *displayConfig,
 
 				}
 
-				query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", t2, a2, depVal)
+				var query string
+
+				if !displayConfig.markAsDelete {
+					query = fmt.Sprintf(
+						"SELECT * FROM %s WHERE %s = %s", 
+						t2, a2, depVal,
+					)
+				} else {
+					query = fmt.Sprintf(
+						"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false", 
+						t2, a2, depVal,
+					)
+				}
 
 				data, err1 = db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 				if err1 != nil {
@@ -222,8 +234,19 @@ func getHintsInParentNode(displayConfig *displayConfig,
 
 			}
 
-			query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", 
-				t2, a2, depVal)
+			var query string
+
+			if !displayConfig.markAsDelete {
+				query = fmt.Sprintf(
+					"SELECT * FROM %s WHERE %s = %s", 
+					t2, a2, depVal,
+				)
+			} else {
+				query = fmt.Sprintf(
+					"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false", 
+					t2, a2, depVal,
+				)
+			}
 
 			data, err1 = db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 			if err1 != nil {

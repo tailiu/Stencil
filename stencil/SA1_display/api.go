@@ -15,7 +15,8 @@ const CHECK_MIGRATION_COMPLETE_INTERVAL1 = time.Second
 const CHECK_MIGRATION_COMPLETE_INTERVAL2 = 500 * time.Millisecond
 
 func displayController(migrationID, threadNum int, 
-	wg *sync.WaitGroup, displayInFirstPhase bool) {
+	wg *sync.WaitGroup, displayInFirstPhase, 
+	markAsDelete bool) {
 
 	// If the destination app database is not in the new server, newDB is false
 	newDB := false
@@ -24,7 +25,7 @@ func displayController(migrationID, threadNum int,
 	resolveReference := true
 
 	dConfig := CreateDisplayConfig(migrationID, resolveReference, 
-		newDB, displayInFirstPhase)
+		newDB, displayInFirstPhase, markAsDelete)
 	
 	if !displayInFirstPhase {
 		for !CheckMigrationComplete(dConfig) {
@@ -100,14 +101,42 @@ func waitForMigrationComplete(migrationID int, wg *sync.WaitGroup) {
 
 }
 
-func StartDisplay(uid, srcAppID, dstAppID, migrationType string, 
+func handlArgs(args []bool) (bool, bool, bool) {
+
+	enableDisplay, displayInFirstPhase, markAsDelete :=
+		true, true, false
+	
+	for i, arg := range args {
+		switch i {
+		case 0:
+			enableDisplay = arg
+		case 1:
+			displayInFirstPhase = arg
+		case 2:
+			markAsDelete = arg
+		default:
+			log.Fatal(`The input args of the display controller 
+				do not satisfy requirements!`)
+		}
+	}
+
+	return enableDisplay, displayInFirstPhase, markAsDelete
+
+}
+
+
+func StartDisplay(uid, srcAppID, dstAppID, 
+	migrationType string, 
 	threadNum int, wg *sync.WaitGroup, 
-	enableDisplay, displayInFirstPhase bool) {
+	args ...bool) {
 
 	migrationID := waitGetMigrationID(uid, srcAppID, dstAppID, migrationType)
 
+	enableDisplay, displayInFirstPhase, markAsDelete := handlArgs(args)
+
 	if enableDisplay {
-		displayController(migrationID, threadNum, wg, displayInFirstPhase)
+		displayController(migrationID, threadNum, wg, 
+			displayInFirstPhase, markAsDelete)
 	} else {
 		waitForMigrationComplete(migrationID, wg)
 	}

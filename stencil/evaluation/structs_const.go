@@ -17,6 +17,7 @@ var mediaSize = map[string]int64 {
 const logDir = "./evaluation/logs/"
 const logCounterDir = "./evaluation/logs_counter/"
 
+// These databases are default databases if I don't set them in experiments
 var	stencilDB = "stencil_exp"
 var	stencilDB1 = "stencil_exp1"
 var	stencilDB2 = "stencil_exp2"
