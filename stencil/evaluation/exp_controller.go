@@ -139,7 +139,13 @@ func Exp1() {
 
 }
 
-func Exp1GetMediaSize() {
+// In diaspora_1000 database
+// Total Media Size: 793878636 bytes
+// All Rows Size: 30840457 bytes
+// Total Size: 824719093 bytes
+func Exp1GetTotalMigratedDataSize() {
+
+	diaspora = "diaspora_1000"
 
 	evalConfig := InitializeEvalConfig()
 
@@ -149,6 +155,12 @@ func Exp1GetMediaSize() {
 
 	log.Println("Total Media Size:", mediaSize, "bytes")
 	
+	rowsSize := getAllRowsSize(evalConfig)
+
+	log.Println("All Rows Size:", rowsSize, "bytes")
+
+	log.Println("Total Size:", mediaSize + rowsSize, "bytes")
+
 }
 
 // The diaspora database needs to be changed to diaspora_1xxxx_exp and diaspora_1xxxx_exp1

@@ -4,50 +4,9 @@ import (
 	"fmt"
 	"log"
 	"stencil/db"
-	"math/rand"
 	"strconv"
-	"time"
+	// "time"
 )
-
-func getMigrationIDBySrcUserID(evalConfig *EvalConfig, 
-	userID string) string {
-
-	query := fmt.Sprintf(
-		`SELECT migration_id FROM migration_registration 
-		WHERE user_id = %s`, userID)
-	
-	result, err := db.DataCall(evalConfig.StencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if len(result) != 1 {
-		log.Fatal("One user id", userID, "results in more than one migration ids")
-	}
-
-	migrationID := fmt.Sprint(result[0]["migration_id"])
-
-	return migrationID
-
-}
-
-func getAllUserIDsInDiaspora(evalConfig *EvalConfig) []string {
-
-	query := fmt.Sprintf(`SELECT id FROM people`)
-	
-	result, err := db.DataCall(evalConfig.DiasporaDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var userIDs []string
-
-	for _, data1 := range result {
-		userIDs = append(userIDs, fmt.Sprint(data1["id"]))
-	}
-
-	return userIDs
-}
 
 func getDanglingDataSizeOfMigration(evalConfig *EvalConfig, 
 	migrationID string) (int64, int64) {
@@ -79,16 +38,6 @@ func getDanglingDataSizeOfMigration(evalConfig *EvalConfig,
 
 }
 
-func shuffleSlice(s []string) {
-	
-	rand.Seed(time.Now().UnixNano())
-	
-	rand.Shuffle(len(s), func(i, j int) { 
-		s[i], s[j] = s[j], s[i] 
-	})
-
-}
-
 func getAllMediaSize(evalConfig *EvalConfig) int64 {
 
 	query := fmt.Sprintf(`SELECT id FROM photos`)
@@ -117,5 +66,53 @@ func getAllMediaSize(evalConfig *EvalConfig) int64 {
 	}
 
 	return size
+
+}
+
+func getAllRowsSize(evalConfig *EvalConfig) int64 {
+
+	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
+		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
+
+	data := db.GetAllColsOfRows(evalConfig.DiasporaDBConn, query1)
+	
+	// log.Println(data)
+
+	var totalSize int64
+
+	for _, data1 := range data {
+		
+		tableName := data1["tablename"]
+
+		// references table will cause errors
+		if tableName == "references" {
+			continue
+		}
+
+		// Subtract row header size 24 bytes for each row
+		query2 := fmt.Sprintf(
+			`select sum(pg_column_size(t) - 24) as size from %s as t`, 
+			tableName,
+		)
+
+		log.Println(query2)
+
+		res, err := db.DataCall(evalConfig.DiasporaDBConn, query2)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println(res)
+
+		// There could be no data in some tables like the block table
+		if res[0]["size"] == nil {
+			continue
+		} else {
+			totalSize += res[0]["size"].(int64)
+		}
+		
+	}
+
+	return totalSize
 
 }

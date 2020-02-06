@@ -12,6 +12,7 @@ import (
 	"time"
 	"encoding/json"
 	"strings"
+	"math/rand"
 )
 
 func InitializeEvalConfig() *EvalConfig {
@@ -162,6 +163,46 @@ func GetAllMigrationIDs(evalConfig *EvalConfig) []string {
 
 	return migrationIDs
 
+}
+
+func getMigrationIDBySrcUserID(evalConfig *EvalConfig, 
+	userID string) string {
+
+	query := fmt.Sprintf(
+		`SELECT migration_id FROM migration_registration 
+		WHERE user_id = %s`, userID)
+	
+	result, err := db.DataCall(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(result) != 1 {
+		log.Fatal("One user id", userID, "results in more than one migration ids")
+	}
+
+	migrationID := fmt.Sprint(result[0]["migration_id"])
+
+	return migrationID
+
+}
+
+func getAllUserIDsInDiaspora(evalConfig *EvalConfig) []string {
+
+	query := fmt.Sprintf(`SELECT id FROM people`)
+	
+	result, err := db.DataCall(evalConfig.DiasporaDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var userIDs []string
+
+	for _, data1 := range result {
+		userIDs = append(userIDs, fmt.Sprint(data1["id"]))
+	}
+
+	return userIDs
 }
 
 func GetMigrationData(evalConfig *EvalConfig) []map[string]interface{} {
@@ -898,5 +939,15 @@ func getMigratedUserID(evalConfig *EvalConfig,
 	}
 
 	return fmt.Sprint(data2["id"])
+
+}
+
+func shuffleSlice(s []string) {
+	
+	rand.Seed(time.Now().UnixNano())
+	
+	rand.Shuffle(len(s), func(i, j int) { 
+		s[i], s[j] = s[j], s[i] 
+	})
 
 }
