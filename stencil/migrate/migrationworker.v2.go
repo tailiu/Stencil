@@ -1030,9 +1030,11 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 			if !strings.Contains(mappedData.cols, col) {
 				mappedData.cols += "," + col
 				mappedData.ivals = append(mappedData.ivals, val)
+				mappedData.vals += fmt.Sprintf(",$%d", len(mappedData.ivals))
 			}
 		}
 		mappedData.Trim(",")
+		log.Println("@MigrateNode > FetchDataFromBags > Data merged for: ", toTable.Table)
 	}
 
 	return nil
@@ -1204,7 +1206,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 							// fromID := fmt.Sprint(val.(int))
 							if err := db.InsertIntoIdentityTable(self.tx.StencilTx, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 								fmt.Println("@MigrateNode: InsertIntoIdentityTable")
-								fmt.Println("Args: ", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(self.logTxn.Txn_id))
+								fmt.Println("@Args: ", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(self.logTxn.Txn_id))
 								fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
 								log.Fatal(err)
 								return err
@@ -1239,9 +1241,9 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 				allMappedData = append(allMappedData, mappedData)
 			} else {
-				fmt.Println("Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables)
-				fmt.Println("NODE: ", node.Tag.Name, node.Data)
-				log.Fatal("@MigrateNode > InsertRowIntoAppDB: ", err, " | ", "Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals)
+				fmt.Println("@Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables)
+				fmt.Println("@NODE: ", node.Tag.Name, node.Data)
+				log.Fatalln("@MigrateNode > InsertRowIntoAppDB: ", err)
 				return err
 			}
 
@@ -1355,6 +1357,7 @@ func (self *MigrationWorkerV2) HandleUnmappedNode(node *DependencyNode) error {
 }
 
 func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.Mapping, bool) {
+
 	var combinedMapping config.Mapping
 	var appMappings config.MappedApp
 	if srcApp == dstApp {
@@ -1365,12 +1368,17 @@ func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dst
 	mappingFound := false
 	for _, mapping := range appMappings.Mappings {
 		if mappedTables := helper.IntersectString([]string{srcMember}, mapping.FromTables); len(mappedTables) > 0 {
-			combinedMapping.FromTables = append(combinedMapping.FromTables, mapping.FromTables...)
-			combinedMapping.ToTables = append(combinedMapping.ToTables, mapping.ToTables...)
-			mappingFound = true
+			for _, toTableMapping := range mapping.ToTables {
+				if strings.EqualFold(dstMember, toTableMapping.Table) {
+					combinedMapping.FromTables = append(combinedMapping.FromTables, mapping.FromTables...)
+					combinedMapping.ToTables = append(combinedMapping.ToTables, mapping.ToTables...)
+					mappingFound = true
+				}
+			}
+
 		}
 	}
-
+	// fmt.Println(">>>>>>>>", srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember, " | Mappings | ", combinedMapping)
 	return combinedMapping, mappingFound
 }
 
