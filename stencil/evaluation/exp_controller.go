@@ -139,27 +139,54 @@ func Exp1() {
 
 }
 
-// In diaspora_1000 database
-// Total Media Size: 793878636 bytes
-// All Rows Size: 30840457 bytes
-// Total Size: 824719093 bytes
+// In diaspora_1000 database:
+// Total Media Size in Diaspora: 793878636 bytes
+// All Rows Size in Diaspora: 30840457 bytes
+// Total Size in Diaspora: 824719093 bytes
+// In mastodon database:
+// Total Media Size in Mastodon: 789827483 bytes
+// All Rows Size in Mastodon: 16585552 bytes
+// Dangling Data Size in Mastodon: 330573 bytes
+// Total Size in Mastodon: 806743608 bytes
 func Exp1GetTotalMigratedDataSize() {
 
 	diaspora = "diaspora_1000"
+
+	// Note that mastodon needs to be changed in the config file as well
+	mastodon = "mastodon"
 
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	mediaSize := getAllMediaSize(evalConfig)
+	mediaSizeInDiaspora := getAllMediaSize(evalConfig.DiasporaDBConn, 
+		"photos", evalConfig.DiasporaAppID)
 
-	log.Println("Total Media Size:", mediaSize, "bytes")
+	log.Println("Total Media Size in Diaspora:", mediaSizeInDiaspora, "bytes")
 	
-	rowsSize := getAllRowsSize(evalConfig)
+	rowsSizeInDiaspora := getAllRowsSize(evalConfig.DiasporaDBConn)
 
-	log.Println("All Rows Size:", rowsSize, "bytes")
+	log.Println("All Rows Size in Diaspora:", rowsSizeInDiaspora, "bytes")
 
-	log.Println("Total Size:", mediaSize + rowsSize, "bytes")
+	log.Println("Total Size in Diaspora:", mediaSizeInDiaspora + rowsSizeInDiaspora, "bytes")
+
+	mediaSizeInMastodon := getAllMediaSize(evalConfig.MastodonDBConn, 
+		"media_attachments", evalConfig.MastodonAppID)
+	
+	log.Println("Total Media Size in Mastodon:", mediaSizeInMastodon, "bytes")
+	
+	rowsSizeInMastodon := getAllRowsSize(evalConfig.MastodonDBConn)
+
+	log.Println("All Rows Size in Mastodon:", rowsSizeInMastodon, "bytes")
+
+	danglingDataSizeInMastodon := getDanglingDataSizeOfApp(evalConfig, evalConfig.MastodonAppID)
+
+	log.Println("Dangling Data Size in Mastodon:", danglingDataSizeInMastodon, "bytes")
+
+	log.Println("Total Size in Mastodon:", 
+		mediaSizeInMastodon + rowsSizeInMastodon + danglingDataSizeInMastodon,
+		"bytes",
+	)
 
 }
 
@@ -187,11 +214,12 @@ func Exp2() {
 
 	defer closeDBConns(evalConfig)
 
-	preExp(evalConfig)
+	// preExp(evalConfig)
 
 	migrationNum := 300
 
-	startNum := 200
+	// startNum := 200 // first time and crash at the 69th user
+	startNum := 300
 
 	// ************ SA1 ************
 
@@ -743,9 +771,13 @@ func Exp6() {
 	mastodon = "mastodon_exp3"
 	diaspora = "diaspora_1000000_exp3"
 
-	counterStart := 0
-	counterNum := 300
-	counterInterval := 10
+	// counterStart := 0
+	// counterNum := 300
+	// counterInterval := 10
+
+	// counterStart := 0
+	// counterNum := 300
+	// counterInterval := 10
 
 	evalConfig := InitializeEvalConfig()
 
