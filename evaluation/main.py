@@ -23,6 +23,7 @@ migratedDataSizeBySrcFile = "migratedDataSizeBySrc"
 migratedDataSizeByDstFile = "migratedDataSizeByDst"
 migratedTimeBySrcFile = "migrationTimeBySrc"
 migratedTimeByDstFile = "migrationTimeByDst"
+anomaliesFile = "danglingData"
 
 dataBags = "dataBags"
 cumNum = 1000
@@ -402,7 +403,6 @@ def migrationRate1(labels):
 
     g.mulPoints(sizes, times, labels, xlabel, ylabel)
 
-
 def getTimeFromData(data):
 
     times = []
@@ -552,6 +552,56 @@ def compareTwoMigratedSizes(labels):
     
     g.mulPoints(sizes, times, labels, xlabel, ylabel)
 
+def getPercentageInX1(maxNum):
+    x = []
+    distribution = np.arange(1, maxNum + 1)
+    for i in distribution:
+        x.append(float(i)/float(maxNum))
+    return x
+
+def getDataByKey(data, key):
+    res = []
+
+    for data1 in data:
+        res.append(float(data1[key]))
+    
+    return res
+
+def getPercentagesOfData(data, dataSum):
+
+    percentages = []
+
+    for data1 in data:
+        percentages.append(float(data1)/float(dataSum))
+
+    return percentages
+
+def anomaliesCumSum1(labels):
+
+    # srcTotalDataSize = 824719093
+    # dstTotalDataSize = 806743608
+
+    srcTotalDataSize = 30840457
+    dstTotalDataSize = 16916125
+
+    data = readFile3(logDir + anomaliesFile)
+
+    dstDanglingData = getDataByKey(data, "dstDanglingData")
+    srcDanglingData = getDataByKey(data, "srcDanglingData")
+
+    dstDanglingDataCumSum = np.cumsum(dstDanglingData)
+    srcDanglingDataCumSum = np.cumsum(srcDanglingData)
+
+    srcDanglingDataCumSumPercentage = getPercentagesOfData(srcDanglingDataCumSum, srcTotalDataSize)
+    dstDanglingDataCumSumPercentage = getPercentagesOfData(dstDanglingDataCumSum, dstTotalDataSize)
+
+    x = getPercentageInX1(len(data))
+    y = [srcDanglingDataCumSumPercentage, dstDanglingDataCumSumPercentage]
+
+    xlabel = 'Migrated user number as the percentage of the total user number'
+    ylabel = 'Dangling data size as the percentage \n of the total data size'
+    
+    g.mulLines(x, y, labels, xlabel, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -571,9 +621,10 @@ def compareTwoMigratedSizes(labels):
 
 # migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
-dataDownTime()
+# dataDownTime()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", "logs_100K/", "logs_10K/", "logs_1K/"], ["1M", "100K", "10K", "1K"])
 # compareTwoMigratedSizes(["Source", "Destination"])
+anomaliesCumSum1(["Diaspora", "Mastodon"])
