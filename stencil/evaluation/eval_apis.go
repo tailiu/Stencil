@@ -72,3 +72,20 @@ func migrateUserFromDiasporaToMastodon(
 		ConvertMapStringToJSONString(sizeLog),
 	)
 }
+
+func migrateUserFromDiasporaToMastodon1(
+	userID, migrationType, stencilDB, srcDB, dstDB string,
+	enableDisplay, displayInFirstPhase bool) {
+
+	db.STENCIL_DB = stencilDB
+	db.DIASPORA_DB = srcDB
+	db.MASTODON_DB = dstDB
+
+	srcAppName, srcAppID, dstAppName, dstAppID, threadNum := 
+		"diaspora", "1", "mastodon", "2", 1
+
+	SA1_migrate.Controller(userID, srcAppName, srcAppID, 
+		dstAppName, dstAppID, migrationType, threadNum,
+		enableDisplay, displayInFirstPhase,
+	)
+}

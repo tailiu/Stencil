@@ -105,6 +105,11 @@ type Counter struct {
 	UserID	int	`json:"userID"`
 }
 
+type SA1SizeStruct struct {
+	Size	string `json:"size"`
+	UserID	string `json:"userID"`
+}
+
 // Messages will be handled in special ways
 // var dependencies = map[string]map[string][]string {
 // 	"diaspora" : map[string][]string {

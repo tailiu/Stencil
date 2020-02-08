@@ -482,7 +482,7 @@ func Exp2GetMigratedDataRateByDst() {
 
 // 	defer closeDBConns(evalConfig)
 
-// 	preExp(evalConfig)
+// 	// preExp(evalConfig)
 
 // 	migrationNum := 300
 
@@ -496,7 +496,7 @@ func Exp2GetMigratedDataRateByDst() {
 
 // 	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
 
-// 	migrateUserUsingSA1AndNaive(evalConfig, migrationNum, 
+// 	migrateUserUsingSA1AndNaive(evalConfig, 
 // 		SA1StencilDB, SA1SrcDB, SA1DstDB, 
 // 		naiveStencilDB, naiveSrcDB, naiveDstDB, 
 // 		SA1EnableDisplay, SA1DisplayInFirstPhase,
@@ -504,6 +504,45 @@ func Exp2GetMigratedDataRateByDst() {
 // 	)
 
 // }
+
+func Exp3LoadUserIDsFromLog() {
+
+	SA1MigrationFile := "SA1Size"
+
+	naiveStencilDB, naiveSrcDB, naiveDstDB := 
+		"stencil_exp5", "diaspora_1000000_exp5", "mastodon_exp5"
+
+	migrationType := "n"
+
+	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
+
+	data := ReadStrLinesFromLog(SA1MigrationFile)
+
+	log.Println("Migration number:", len(data))
+
+	log.Println(data)
+
+	for _, data1 := range data {
+		
+		var sizeData SA1SizeStruct
+
+		err := json.Unmarshal([]byte(data1), &sizeData)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		userID := sizeData.UserID
+
+		log.Println("UserID is", userID)
+
+		migrateUserFromDiasporaToMastodon1(
+			userID, migrationType, 
+			naiveStencilDB, naiveSrcDB, naiveDstDB, 
+			naiveEnableDisplay, naiveDisplayInFirstPhase,
+		)
+	}
+
+}
 
 func Exp3GetDatadowntime() {
 
