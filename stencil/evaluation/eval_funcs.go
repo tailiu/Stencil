@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"database/sql"
 	"log"
+	"bufio"
 	"os"
 	"strconv"
 	"time"
@@ -380,6 +381,54 @@ func ConvertMapInt64ToJSONString(data map[string]int64) string {
     return string(convertedData)
 }
 
+func ConvertInt64ToString(data int64) string {
+	return strconv.FormatInt(data, 10)
+}
+
+func ConvertInt64ArrToStringArr(data []int64) []string {
+
+	var res []string
+	
+	for _, data1 := range data {
+		res = append(res, ConvertInt64ToString(data1))
+	}
+
+	return res
+
+}
+
+func ReadStrLinesFromLog(fileName string, 
+	changeDefaultDir ...bool) []string {
+
+	dir := logDir
+
+	if len(changeDefaultDir) > 0 {
+		if changeDefaultDir[0] {
+			dir = logCounterDir
+		}
+	}
+
+	file, err := os.Open(dir + fileName)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer file.Close()
+
+	var data []string
+
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        data = append(data, scanner.Text())
+    }
+
+    if err := scanner.Err(); err != nil {
+        log.Fatal(err)
+	}
+	
+	return data
+
+}
+
 func WriteStrToLog(fileName string, data string, 
 	changeDefaultDir ...bool) {
 
@@ -404,22 +453,6 @@ func WriteStrToLog(fileName string, data string,
 	}
 
 	fmt.Fprintln(f)
-}
-
-func ConvertInt64ToString(data int64) string {
-	return strconv.FormatInt(data, 10)
-}
-
-func ConvertInt64ArrToStringArr(data []int64) []string {
-
-	var res []string
-	
-	for _, data1 := range data {
-		res = append(res, ConvertInt64ToString(data1))
-	}
-
-	return res
-
 }
 
 func WriteStrArrToLog(fileName string, data []string) {

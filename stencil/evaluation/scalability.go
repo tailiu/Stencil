@@ -162,3 +162,37 @@ func isAlreadyCounted(counted []map[string]string, userID string) bool {
 	return false
 
 }
+
+func insertDataIntoCounterTableIfNotExist(evalConfig *EvalConfig, 
+	table string, data Counter) {
+
+	query1 := fmt.Sprintf(
+		`SELECT person_id FROM %s WHERE person_id = '%d'`,
+		table, data.UserID,
+	)
+
+	// log.Println(query1)
+
+	data1, err := db.DataCall1(evalConfig.StencilDBConn, query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if data1["person_id"] != nil {
+		log.Println("UserID", data.UserID, "has already in the table")
+	}
+
+	query2 := fmt.Sprintf(
+		`INSERT INTO %s (person_id, edges, nodes) 
+		VALUES ('%d', %d, %d)`,
+		table, data.UserID, data.Edges, data.Nodes,
+	)
+
+	// log.Println(query2)
+
+	err1 := db.TxnExecute1(evalConfig.StencilDBConn, query2)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+}

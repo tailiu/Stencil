@@ -6,6 +6,7 @@ import (
 	"stencil/db"
 	"log"
 	"fmt"
+	"encoding/json"
 	"strconv"
 	"time"
 )
@@ -81,19 +82,29 @@ func PreExp() {
 // The source database needs to be changed to diaspora_1000_exp
 func Exp1() {
 
-	stencilDB = "stencil_cow"
-	mastodon = "mastodon"
-	diaspora = "diaspora_1000_exp"
+	// This is the configuration of the first time test
+	// stencilDB = "stencil_cow"
+	// mastodon = "mastodon"
+	// diaspora = "diaspora_1000_exp"
+
+	stencilDB = "stencil_exp4"
+	mastodon = "mastodon_exp4"
+	diaspora = "diaspora_1000_exp4"
 
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	preExp1(evalConfig)
+	// preExp1(evalConfig)
 
-	db.STENCIL_DB = "stencil_cow"
-	db.DIASPORA_DB = "diaspora_1000_exp"
-	db.MASTODON_DB = "mastodon"
+	// This is the configuration of the first time test
+	// db.STENCIL_DB = "stencil_cow"
+	// db.DIASPORA_DB = "diaspora_1000_exp"
+	// db.MASTODON_DB = "mastodon"
+
+	db.STENCIL_DB = "stencil_exp4"
+	db.DIASPORA_DB = "diaspora_1000_exp4"
+	db.MASTODON_DB = "mastodon_exp4"
 
 	userIDs := getAllUserIDsInDiaspora(evalConfig)
 
@@ -694,7 +705,10 @@ func Exp4Count1MDBEdgesNodes() {
 
 	counter := getCounter(evalConfig)
 
-	for _, userID := range userIDs {
+	for i := len(userIDs) -  1; i > 10000; i-- {  
+	// for _, userID := range userIDs {
+
+		userID := userIDs[i]
 
 		if isAlreadyCounted(counter, userID) {
 			log.Println("userID", userID, "has already been counted")
@@ -721,6 +735,40 @@ func Exp4Count1MDBEdgesNodes() {
 		)
 	}
 
+}
+
+func Exp4LoadCounterResToTable() {
+
+	stencilDB = "stencil_counter"
+	counterFile := "diaspora1MCounter"
+	counterTable := "dag_counter"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	data := ReadStrLinesFromLog(counterFile, true)
+
+	// log.Println(data)
+
+	for _, data1 := range data {
+		
+		var counter1 Counter
+
+		// log.Println(data1)
+
+		err := json.Unmarshal([]byte(data1), &counter1)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// log.Println(counter1.UserID)
+		
+		insertDataIntoCounterTableIfNotExist(evalConfig,
+			counterTable, counter1)
+
+	}
+	
 }
 
 func Exp4CountEdgesNodes() {
@@ -775,9 +823,9 @@ func Exp6() {
 	// counterNum := 300
 	// counterInterval := 10
 
-	// counterStart := 0
-	// counterNum := 300
-	// counterInterval := 10
+	counterStart := 0
+	counterNum := 300
+	counterInterval := 10
 
 	evalConfig := InitializeEvalConfig()
 

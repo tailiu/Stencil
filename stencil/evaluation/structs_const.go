@@ -99,6 +99,12 @@ type DisplayedData struct {
 	RowIDs 		[]string
 }
 
+type Counter struct {
+	Edges	int	`json:"edges"`
+	Nodes	int	`json:"nodes"`
+	UserID	int	`json:"userID"`
+}
+
 // Messages will be handled in special ways
 // var dependencies = map[string]map[string][]string {
 // 	"diaspora" : map[string][]string {
