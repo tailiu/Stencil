@@ -253,6 +253,40 @@ func (node *DependencyNode) ResolveDependencyConditions(SrcAppConfig config.AppC
 	return where, nil
 }
 
+func (node *DependencyNode) ResolveParentOwnershipConditions(own *config.Ownership, depOnTag config.Tag) (string, error) {
+
+	where := ""
+	for _, condition := range own.Conditions {
+		conditionStr := ""
+		tagAttr, err := node.Tag.ResolveTagAttr(condition.TagAttr)
+		if err != nil {
+			fmt.Println("@ResolveParentOwnershipConditions > data1", node.Data)
+			log.Fatal(err, node.Tag.Name, condition.TagAttr)
+			break
+		}
+		depOnAttr, err := depOnTag.ResolveTagAttr(condition.DependsOnAttr)
+		if err != nil {
+			fmt.Println("@ResolveParentOwnershipConditions > data2", node.Data)
+			log.Fatal(err, depOnTag.Name, condition.DependsOnAttr)
+			break
+		}
+		if nodeVal, ok := node.Data[tagAttr]; ok {
+			if nodeVal == nil {
+				return "", errors.New(fmt.Sprintf("@ResolveParentOwnershipConditions > trying to assign %s = %s, value is nil in node %s ", depOnAttr, tagAttr, node.Tag.Name))
+			}
+			if conditionStr != "" || where != "" {
+				conditionStr += " AND "
+			}
+			conditionStr += fmt.Sprintf("%s = '%v'", depOnAttr, node.Data[tagAttr])
+		} else {
+			fmt.Println("@ResolveParentOwnershipConditions > data3", node.Data)
+			log.Fatal("@ResolveParentOwnershipConditions > ", tagAttr, " doesn't exist in ", node.Tag.Name)
+		}
+		where += conditionStr
+	}
+	return where, nil
+}
+
 func (root *DependencyNode) ResolveOwnershipConditions(own config.Ownership, tag config.Tag) (string, error) {
 
 	where := ""
@@ -408,6 +442,34 @@ func (self *MigrationWorkerV2) GetAllNextNodes(node *DependencyNode) ([]*Depende
 
 func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*DependencyNode, error) {
 	var nodes []*DependencyNode
+
+	if node.Tag.Name != "root" {
+		if ownership := self.SrcAppConfig.GetOwnership(node.Tag.Name, "root"); ownership != nil {
+			if where, err := node.ResolveParentOwnershipConditions(ownership, self.root.Tag); err == nil {
+				ql := self.GetTagQL(self.root.Tag)
+				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+				sql += self.root.Tag.ResolveRestrictions()
+				if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
+					for _, datum := range data {
+						newNode := new(DependencyNode)
+						newNode.Tag = self.root.Tag
+						newNode.SQL = sql
+						newNode.Data = datum
+						nodes = append(nodes, newNode)
+					}
+				} else {
+					fmt.Println(sql)
+					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
+					return nil, err
+				}
+			} else {
+				log.Println("@GetAllPreviousNodes > ResolveParentOwnershipConditions: ", err)
+			}
+		} else {
+			log.Fatal("@GetAllPreviousNodes: Ownership doesn't exist? ", node.Tag.Name, "root")
+		}
+	}
+
 	for _, dep := range self.SrcAppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
@@ -431,7 +493,7 @@ func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*Dep
 						return nil, err
 					}
 				} else {
-
+					log.Println("@GetAllPreviousNodes > ResolveParentDependencyConditions: ", err)
 				}
 			} else {
 				log.Fatal("@GetAllPreviousNodes: Tag doesn't exist? ", pdep.Tag)
