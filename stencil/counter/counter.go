@@ -171,6 +171,34 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 
 func (self *Counter) GetAllPreviousNodes(node *migrate.DependencyNode) ([]*migrate.DependencyNode, error) {
 	var nodes []*migrate.DependencyNode
+
+	if node.Tag.Name != "root" {
+		if ownership := self.AppConfig.GetOwnership(node.Tag.Name, "root"); ownership != nil {
+			if where, err := node.ResolveParentOwnershipConditions(ownership, self.Root.Tag); err == nil {
+				ql := self.GetTagQL(self.Root.Tag)
+				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+				sql += self.Root.Tag.ResolveRestrictions()
+				if data, err := db.DataCall(self.AppDBConn, sql); err == nil {
+					for _, datum := range data {
+						newNode := new(migrate.DependencyNode)
+						newNode.Tag = self.Root.Tag
+						newNode.SQL = sql
+						newNode.Data = datum
+						nodes = append(nodes, newNode)
+					}
+				} else {
+					fmt.Println(sql)
+					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
+					return nil, err
+				}
+			} else {
+				log.Println("@GetAllPreviousNodes > ResolveParentOwnershipConditions: ", err)
+			}
+		} else {
+			log.Fatal("@GetAllPreviousNodes: Ownership doesn't exist? ", node.Tag.Name, "root")
+		}
+	}
+
 	for _, dep := range self.AppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.AppConfig.GetTag(pdep.Tag); err == nil {
@@ -282,7 +310,7 @@ func (self *Counter) Traverse(node *migrate.DependencyNode) error {
 	}
 
 	self.NodeCount += 1
-	self.EdgeCount += 1 // Ownership edge
+	// self.EdgeCount += 1 // Ownership edge
 
 	self.MarkAsVisited(node)
 
