@@ -27,15 +27,16 @@
                 "member1":"statuses",
                 "member2":"status_stats",
                 "member3":"mentions",
-                "member4":"stream_entries"
+                "member5":"stream_entries",
+                "member6":"conversations"
             },
             "keys": {
+                "conversation_id":"member1.conversation_id",
                 "id":"member1.id",
                 "reply":"member1.in_reply_to_id",
                 "reblog":"member1.reblog_of_id",
                 "account":"member1.account_id",
-                "conversation_id":"member1.conversation_id",
-                "activity_id": "member4.activity_id"
+                "activity_id": "member5.activity_id"
             },
             "inner_dependencies":[
                 {
@@ -45,19 +46,13 @@
                     "member1.id":"member3.status_id"
                 },
                 {
-                    "member1.id":"member4.activity_id"
+                    "member1.id":"member5.activity_id"
+                },
+                {
+                    "member1.conversation_id":"member6.id"
                 }
             ],
             "display_setting": "display_based_on_inner_dependencies"
-        },
-        {
-            "name": "conversations",
-            "members" : {
-                "member1": "conversations"
-            },
-            "keys": {
-                "id":"member1.id"
-            }
         },
         {
             "name": "media_attachments",
@@ -107,15 +102,6 @@
             "tag": "statuses",
             "depends_on": [
                 {
-                    "tag":"conversations",
-                    "conditions":[
-                        {   "tag_attr": "conversation_id",
-                            "depends_on_attr": "id"
-                        }
-                    ],
-                    "display_setting": "parent_node_not_displays_with_check"
-                },
-                {
                     "tag":"statuses",
                     "as": "S1",
                     "conditions":[
@@ -138,7 +124,7 @@
                     "display_setting": "parent_node_not_displays_with_check"
                 }
             ],
-            "combined_display_setting":"conversations and S1 and S2"
+            "combined_display_setting":"S1 or S2"
         },
         {
             "tag": "media_attachments",
