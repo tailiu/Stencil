@@ -6,6 +6,23 @@ import (
 	"strings"
 )
 
+/**
+ *
+ * "parent_node_not_displays_without_check": this condition is satisfied
+ * 		in any case no matter of the phase or whether the parent node is displayed or not.
+ *
+ * "parent_node_not_displays_with_check": in the first phase, if parent nodes are not displayed,
+ * 		then this condition is not satisfied. In the second phase, this condition is always satisfied,
+ *		no matter whether parent nodes are displayed or not.
+ *
+ *
+ * "parent_node_complete_displays": only when the parent node is complete, this condition is satisfied
+ *
+ * "parent_node_partially_displays": only when the parent node is partially/completely displayed, 
+ *		this condition is satisfied
+ *
+ */
+
 func ReturnResultBasedOnNodeCompleteness(err error) error {
 
 	if err != nil {

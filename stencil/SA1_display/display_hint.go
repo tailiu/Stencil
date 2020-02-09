@@ -358,6 +358,6 @@ func (hint *HintStruct) GetOwnershipSpec(
 
 	}
 
-	return nil, errors.New("Error: No Tag Found For the Provided Data")
+	return nil, errors.New("Error: No Ownership Tag Found For the Provided Data")
 
 }

@@ -124,6 +124,8 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 		log.Println("==================== Check Ownership ====================")
 
+		log.Println("Check data with tag:", oneMigratedData.Tag)
+		
 		// If the tag of this node is the root, the node could be the migrating user's 
 		// or other users' root. Regardless of that, this node will be displayed
 		// and there is no need to further check data dependencies since root node does not
@@ -145,59 +147,66 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 		// we need to check the ownership and sharing relationships of this data.
 		// The check of sharing conditions for now is not implemented for now.
 		} else {
-
+			
 			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(displayConfig)
+			
+			// Mastodon conversations have no ownership settings. In this case
+			// we cannot check ownership settings
 			if err12 != nil {
-				log.Fatal(err12)
-			}
-
-			// log.Println(dataOwnershipSpec)
-
-			dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
-
-			// The root node could be incomplete
-			if err13 != nil {
-				log.Println("An error in getting the checked node's owner:")
-				log.Println(err13)
-			}
-
-			// Display the data not displayed in the root node
-			// this root node should be could be the migrating user's root node
-			// or other users' root nodes
-			if len(dataInOwnerNode) != 0 {
-
-				displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
-					displayConfig, dataInOwnerNode)
 				
-				if len(displayedDataInOwnerNode) != 0 {
+				log.Println(err12)
+				log.Println("Skip this ownership check")
+			
+			} else {
+				// log.Println(dataOwnershipSpec)
 
-					err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
-					if err6 != nil {
-						log.Fatal(err6)
+				dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
+
+				// The root node could be incomplete
+				if err13 != nil {
+					log.Println("An error in getting the checked node's owner:")
+					log.Println(err13)
+				}
+
+				// Display the data not displayed in the root node
+				// this root node should be could be the migrating user's root node
+				// or other users' root nodes
+				if len(dataInOwnerNode) != 0 {
+
+					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
+						displayConfig, dataInOwnerNode)
+					
+					if len(displayedDataInOwnerNode) != 0 {
+
+						err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
+						if err6 != nil {
+							log.Fatal(err6)
+						}
+
 					}
 
 				}
 
+				// If based on the ownership display settings this node is allowed to be displayed,
+				// then continue to check dependencies.
+				// Otherwise, no data in the node can be displayed.
+				if displayResultBasedOnOwnership := CheckOwnershipCondition(
+					dataOwnershipSpec.Display_setting, err13); 
+					!displayResultBasedOnOwnership {
+
+					log.Println(`Ownership display settings are not satisfied, 
+						so this node cannot be displayed`)
+
+					return chechPutIntoDataBag(displayConfig, 
+						secondRound, dataInNode)
+
+				} else {
+
+					log.Println("Ownership display settings are satisfied")
+
+				}
 			}
-
-			// If based on the ownership display settings this node is allowed to be displayed,
-			// then continue to check dependencies.
-			// Otherwise, no data in the node can be displayed.
-			if displayResultBasedOnOwnership := CheckOwnershipCondition(
-				dataOwnershipSpec.Display_setting, err13); 
-				!displayResultBasedOnOwnership {
-
-				log.Println(`Ownership display settings are not satisfied, 
-					so this node cannot be displayed`)
-
-				return chechPutIntoDataBag(displayConfig, 
-					secondRound, dataInNode)
-
-			} else {
-
-				log.Println("Ownership display settings are satisfied")
-
-			}
+			
 		}
 		
 		log.Println("==================== Check Inter-node dependencies ====================")
