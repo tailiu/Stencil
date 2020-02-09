@@ -10,6 +10,7 @@ lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center']
 markers = ["o", "v", "s", "*", "+", "<"]
+linestyles = ["solid", "dashed", "dotted", ""]
 
 def line(x, y, xlabel, ylabel, title):
     xs, ys = _sortX(x, y)
@@ -208,6 +209,21 @@ def mulPoints2(x, y, labels, xlabel, ylabel):
     
     plt.show()
 
+def mulLines(x, y, labels, xlabel, ylabel):
+
+    fig, ax = plt.subplots()
+
+    for i in range(len(y)):
+        ax.plot(x, y[i], color=colors[i], label=labels[i], linewidth=3.3, linestyle=linestyles[i])
+    
+    ax.grid(True)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    legend = ax.legend(loc=legendLoc[3], fontsize=legendFontSize[3], numpoints=1)
+
+    plt.show()
+
 def mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS):
     fig, ax = plt.subplots()
     # ax.plot(x, danglingLikesCS, 'c--', label='Dangling likes without posts in Diaspora')
@@ -246,7 +262,6 @@ def mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, st
     legend = ax.legend(loc=2, fontsize='small')
 
     plt.show()
-
 
 def dataBag(data, apps, ylabel):
     fig, ax = plt.subplots()

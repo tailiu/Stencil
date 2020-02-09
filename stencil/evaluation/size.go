@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"stencil/db"
+	"database/sql"
 	"strconv"
+	"strings"
 	// "time"
 )
 
@@ -38,11 +40,38 @@ func getDanglingDataSizeOfMigration(evalConfig *EvalConfig,
 
 }
 
-func getAllMediaSize(evalConfig *EvalConfig) int64 {
+func getDanglingDataSizeOfApp(evalConfig *EvalConfig,
+	appID string) int64 {
 
-	query := fmt.Sprintf(`SELECT id FROM photos`)
+	query := fmt.Sprintf(`
+		SELECT pg_column_size(data) FROM data_bags WHERE app = %s`, 
+		appID,
+	)
+
+	// log.Println(query)
+
+	result, err := db.DataCall(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var size int64
+
+	for _, data1 := range result {
+		size += data1["pg_column_size"].(int64)
+	}
+
+	return size
+}
+
+func getAllMediaSize(dbConn *sql.DB, table, appID string) int64 {
+
+	query := fmt.Sprintf(
+		`SELECT id FROM %s`,
+		table,
+	)
 	
-	result, err := db.DataCall(evalConfig.DiasporaDBConn, query)
+	result, err := db.DataCall(dbConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,10 +87,10 @@ func getAllMediaSize(evalConfig *EvalConfig) int64 {
 		}
 
 		size += calculateMediaSize(
-				evalConfig.DiasporaDBConn, 
-				"photos",
+				dbConn, 
+				table,
 				id,
-				"1",
+				appID,
 			)
 	}
 
@@ -69,12 +98,12 @@ func getAllMediaSize(evalConfig *EvalConfig) int64 {
 
 }
 
-func getAllRowsSize(evalConfig *EvalConfig) int64 {
+func getAllRowsSize(dbConn *sql.DB) int64 {
 
 	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
 		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
 
-	data := db.GetAllColsOfRows(evalConfig.DiasporaDBConn, query1)
+	data := db.GetAllColsOfRows(dbConn, query1)
 	
 	// log.Println(data)
 
@@ -97,7 +126,7 @@ func getAllRowsSize(evalConfig *EvalConfig) int64 {
 
 		log.Println(query2)
 
-		res, err := db.DataCall(evalConfig.DiasporaDBConn, query2)
+		res, err := db.DataCall(dbConn, query2)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -115,4 +144,117 @@ func getAllRowsSize(evalConfig *EvalConfig) int64 {
 
 	return totalSize
 
+}
+
+func calculateMediaSize(AppDBConn *sql.DB, table string, 
+	pKey int, AppID string) int64 {
+	
+	if AppID == "1" && table == "photos" {
+
+		query := fmt.Sprintf(
+			`select remote_photo_name from %s where id = %d`,
+			table, pKey)
+		
+		res, err2 := db.DataCall1(AppDBConn, query)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+
+		return mediaSize[fmt.Sprint(res["remote_photo_name"])]
+
+	} else if AppID == "2" && table == "media_attachments" {
+
+		query := fmt.Sprintf(
+			`select remote_url from %s where id = %d`,
+			table, pKey)
+		
+		res, err2 := db.DataCall1(AppDBConn, query)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+
+		parts := strings.Split(fmt.Sprint(res["remote_url"]), "/")
+		mediaName := parts[len(parts) - 1]
+		return mediaSize[mediaName]
+
+	} else if AppID == "3" && table == "tweets" {
+
+		query := fmt.Sprintf(
+			`select tweet_media from %s where id = %d`,
+			table, pKey)
+		
+		res, err2 := db.DataCall1(AppDBConn, query)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+
+		parts := strings.Split(fmt.Sprint(res["tweet_media"]), "/")
+		mediaName := parts[len(parts) - 1]
+		return mediaSize[mediaName]
+
+	} else if AppID == "4" && table == "file" {
+
+		query := fmt.Sprintf(
+			`select url from %s where id = %d`,
+			table, pKey)
+		
+		res, err2 := db.DataCall1(AppDBConn, query)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+
+		parts := strings.Split(fmt.Sprint(res["url"]), "/")
+		mediaName := parts[len(parts) - 1]
+		return mediaSize[mediaName]
+	
+	} else {
+		return 0
+	}
+}
+
+func calculateRowSize(AppDBConn *sql.DB, 
+	cols []string, table string, pKey int, 
+	AppID string, checkMediaSize bool) int64 {
+
+	selectQuery := "select"
+	
+	for i, col := range cols {
+		selectQuery += " pg_column_size(" + col + ") "
+		if i != len(cols) - 1 {
+			selectQuery += " + "
+		}
+		if i == len(cols) - 1{
+			selectQuery += " as cols_size "
+		}
+	}
+	
+	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
+	// log.Println(table)
+	// log.Println(query)
+	
+	row, err2 := db.DataCall1(AppDBConn, query)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+	// log.Println(row["cols_size"].(int64))
+	// if table == "photos" {
+	// 	fmt.Print(fmt.Sprint(pKey) + ":" + fmt.Sprint(calculateMediaSize(AppDBConn, table, pKey, AppID)) + ",")
+	// }
+	
+	var mediaSize int64
+
+	if checkMediaSize {
+		mediaSize = calculateMediaSize(AppDBConn, table, pKey, AppID)
+	}
+
+	if row["cols_size"] == nil {
+
+		return mediaSize
+		
+	} else {
+
+		return row["cols_size"].(int64) + mediaSize
+		
+	}
+	
 }

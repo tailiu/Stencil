@@ -273,7 +273,7 @@ func oldExp2GetMigratedDataRate() {
 
 }
 
-func oldMigrateUserUsingSA1AndNaive(evalConfig *EvalConfig, 
+func migrateUserUsingSA1AndNaive(evalConfig *EvalConfig, 
 	SA1StencilDB, SA1SrcDB, SA1DstDB, userID,
 	naiveStencilDB, naiveSrcDB, naiveDstDB string, 
 	SA1EnableDisplay, SA1DisplayInFirstPhase, 

@@ -6,6 +6,7 @@ import (
 	"stencil/db"
 	"log"
 	"fmt"
+	"encoding/json"
 	"strconv"
 	"time"
 )
@@ -81,19 +82,29 @@ func PreExp() {
 // The source database needs to be changed to diaspora_1000_exp
 func Exp1() {
 
-	stencilDB = "stencil_cow"
-	mastodon = "mastodon"
-	diaspora = "diaspora_1000_exp"
+	// This is the configuration of the first time test
+	// stencilDB = "stencil_cow"
+	// mastodon = "mastodon"
+	// diaspora = "diaspora_1000_exp"
+
+	stencilDB = "stencil_exp4"
+	mastodon = "mastodon_exp4"
+	diaspora = "diaspora_1000_exp4"
 
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	preExp1(evalConfig)
+	// preExp1(evalConfig)
 
-	db.STENCIL_DB = "stencil_cow"
-	db.DIASPORA_DB = "diaspora_1000_exp"
-	db.MASTODON_DB = "mastodon"
+	// This is the configuration of the first time test
+	// db.STENCIL_DB = "stencil_cow"
+	// db.DIASPORA_DB = "diaspora_1000_exp"
+	// db.MASTODON_DB = "mastodon"
+
+	db.STENCIL_DB = "stencil_exp4"
+	db.DIASPORA_DB = "diaspora_1000_exp4"
+	db.MASTODON_DB = "mastodon_exp4"
 
 	userIDs := getAllUserIDsInDiaspora(evalConfig)
 
@@ -139,27 +150,54 @@ func Exp1() {
 
 }
 
-// In diaspora_1000 database
-// Total Media Size: 793878636 bytes
-// All Rows Size: 30840457 bytes
-// Total Size: 824719093 bytes
+// In diaspora_1000 database:
+// Total Media Size in Diaspora: 793878636 bytes
+// All Rows Size in Diaspora: 30840457 bytes
+// Total Size in Diaspora: 824719093 bytes
+// In mastodon database:
+// Total Media Size in Mastodon: 789827483 bytes
+// All Rows Size in Mastodon: 16585552 bytes
+// Dangling Data Size in Mastodon: 330573 bytes
+// Total Size in Mastodon: 806743608 bytes
 func Exp1GetTotalMigratedDataSize() {
 
 	diaspora = "diaspora_1000"
+
+	// Note that mastodon needs to be changed in the config file as well
+	mastodon = "mastodon"
 
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	mediaSize := getAllMediaSize(evalConfig)
+	mediaSizeInDiaspora := getAllMediaSize(evalConfig.DiasporaDBConn, 
+		"photos", evalConfig.DiasporaAppID)
 
-	log.Println("Total Media Size:", mediaSize, "bytes")
+	log.Println("Total Media Size in Diaspora:", mediaSizeInDiaspora, "bytes")
 	
-	rowsSize := getAllRowsSize(evalConfig)
+	rowsSizeInDiaspora := getAllRowsSize(evalConfig.DiasporaDBConn)
 
-	log.Println("All Rows Size:", rowsSize, "bytes")
+	log.Println("All Rows Size in Diaspora:", rowsSizeInDiaspora, "bytes")
 
-	log.Println("Total Size:", mediaSize + rowsSize, "bytes")
+	log.Println("Total Size in Diaspora:", mediaSizeInDiaspora + rowsSizeInDiaspora, "bytes")
+
+	mediaSizeInMastodon := getAllMediaSize(evalConfig.MastodonDBConn, 
+		"media_attachments", evalConfig.MastodonAppID)
+	
+	log.Println("Total Media Size in Mastodon:", mediaSizeInMastodon, "bytes")
+	
+	rowsSizeInMastodon := getAllRowsSize(evalConfig.MastodonDBConn)
+
+	log.Println("All Rows Size in Mastodon:", rowsSizeInMastodon, "bytes")
+
+	danglingDataSizeInMastodon := getDanglingDataSizeOfApp(evalConfig, evalConfig.MastodonAppID)
+
+	log.Println("Dangling Data Size in Mastodon:", danglingDataSizeInMastodon, "bytes")
+
+	log.Println("Total Size in Mastodon:", 
+		mediaSizeInMastodon + rowsSizeInMastodon + danglingDataSizeInMastodon,
+		"bytes",
+	)
 
 }
 
@@ -187,11 +225,12 @@ func Exp2() {
 
 	defer closeDBConns(evalConfig)
 
-	preExp(evalConfig)
+	// preExp(evalConfig)
 
 	migrationNum := 300
 
-	startNum := 200
+	// startNum := 200 // first time and crash at the 69th user
+	startNum := 300
 
 	// ************ SA1 ************
 
@@ -443,7 +482,7 @@ func Exp2GetMigratedDataRateByDst() {
 
 // 	defer closeDBConns(evalConfig)
 
-// 	preExp(evalConfig)
+// 	// preExp(evalConfig)
 
 // 	migrationNum := 300
 
@@ -457,7 +496,7 @@ func Exp2GetMigratedDataRateByDst() {
 
 // 	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
 
-// 	migrateUserUsingSA1AndNaive(evalConfig, migrationNum, 
+// 	migrateUserUsingSA1AndNaive(evalConfig, 
 // 		SA1StencilDB, SA1SrcDB, SA1DstDB, 
 // 		naiveStencilDB, naiveSrcDB, naiveDstDB, 
 // 		SA1EnableDisplay, SA1DisplayInFirstPhase,
@@ -465,6 +504,45 @@ func Exp2GetMigratedDataRateByDst() {
 // 	)
 
 // }
+
+func Exp3LoadUserIDsFromLog() {
+
+	SA1MigrationFile := "SA1Size"
+
+	naiveStencilDB, naiveSrcDB, naiveDstDB := 
+		"stencil_exp5", "diaspora_1000000_exp5", "mastodon_exp5"
+
+	migrationType := "n"
+
+	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
+
+	data := ReadStrLinesFromLog(SA1MigrationFile)
+
+	log.Println("Migration number:", len(data))
+
+	log.Println(data)
+
+	for _, data1 := range data {
+		
+		var sizeData SA1SizeStruct
+
+		err := json.Unmarshal([]byte(data1), &sizeData)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		userID := sizeData.UserID
+
+		log.Println("UserID is", userID)
+
+		migrateUserFromDiasporaToMastodon1(
+			userID, migrationType, 
+			naiveStencilDB, naiveSrcDB, naiveDstDB, 
+			naiveEnableDisplay, naiveDisplayInFirstPhase,
+		)
+	}
+
+}
 
 func Exp3GetDatadowntime() {
 
@@ -666,7 +744,10 @@ func Exp4Count1MDBEdgesNodes() {
 
 	counter := getCounter(evalConfig)
 
-	for _, userID := range userIDs {
+	for i := len(userIDs) -  1; i > 10000; i-- {  
+	// for _, userID := range userIDs {
+
+		userID := userIDs[i]
 
 		if isAlreadyCounted(counter, userID) {
 			log.Println("userID", userID, "has already been counted")
@@ -693,6 +774,40 @@ func Exp4Count1MDBEdgesNodes() {
 		)
 	}
 
+}
+
+func Exp4LoadCounterResToTable() {
+
+	stencilDB = "stencil_counter"
+	counterFile := "diaspora1MCounter"
+	counterTable := "dag_counter"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	data := ReadStrLinesFromLog(counterFile, true)
+
+	// log.Println(data)
+
+	for _, data1 := range data {
+		
+		var counter1 Counter
+
+		// log.Println(data1)
+
+		err := json.Unmarshal([]byte(data1), &counter1)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// log.Println(counter1.UserID)
+		
+		insertDataIntoCounterTableIfNotExist(evalConfig,
+			counterTable, counter1)
+
+	}
+	
 }
 
 func Exp4CountEdgesNodes() {
@@ -742,6 +857,10 @@ func Exp6() {
 	stencilDB = "stencil_exp3"
 	mastodon = "mastodon_exp3"
 	diaspora = "diaspora_1000000_exp3"
+
+	// counterStart := 0
+	// counterNum := 300
+	// counterInterval := 10
 
 	counterStart := 0
 	counterNum := 300

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"database/sql"
 	"log"
+	"bufio"
 	"os"
 	"strconv"
 	"time"
@@ -380,6 +381,54 @@ func ConvertMapInt64ToJSONString(data map[string]int64) string {
     return string(convertedData)
 }
 
+func ConvertInt64ToString(data int64) string {
+	return strconv.FormatInt(data, 10)
+}
+
+func ConvertInt64ArrToStringArr(data []int64) []string {
+
+	var res []string
+	
+	for _, data1 := range data {
+		res = append(res, ConvertInt64ToString(data1))
+	}
+
+	return res
+
+}
+
+func ReadStrLinesFromLog(fileName string, 
+	changeDefaultDir ...bool) []string {
+
+	dir := logDir
+
+	if len(changeDefaultDir) > 0 {
+		if changeDefaultDir[0] {
+			dir = logCounterDir
+		}
+	}
+
+	file, err := os.Open(dir + fileName)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer file.Close()
+
+	var data []string
+
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        data = append(data, scanner.Text())
+    }
+
+    if err := scanner.Err(); err != nil {
+        log.Fatal(err)
+	}
+	
+	return data
+
+}
+
 func WriteStrToLog(fileName string, data string, 
 	changeDefaultDir ...bool) {
 
@@ -406,22 +455,6 @@ func WriteStrToLog(fileName string, data string,
 	fmt.Fprintln(f)
 }
 
-func ConvertInt64ToString(data int64) string {
-	return strconv.FormatInt(data, 10)
-}
-
-func ConvertInt64ArrToStringArr(data []int64) []string {
-
-	var res []string
-	
-	for _, data1 := range data {
-		res = append(res, ConvertInt64ToString(data1))
-	}
-
-	return res
-
-}
-
 func WriteStrArrToLog(fileName string, data []string) {
 
 	f, err := os.OpenFile(logDir + fileName, 
@@ -441,119 +474,6 @@ func WriteStrArrToLog(fileName string, data []string) {
 		}
 	}
 	fmt.Fprintln(f)
-}
-
-func calculateMediaSize(AppDBConn *sql.DB, table string, 
-	pKey int, AppID string) int64 {
-	
-	if AppID == "1" && table == "photos" {
-
-		query := fmt.Sprintf(
-			`select remote_photo_name from %s where id = %d`,
-			table, pKey)
-		
-		res, err2 := db.DataCall1(AppDBConn, query)
-		if err2 != nil {
-			log.Fatal(err2)
-		}
-
-		return mediaSize[fmt.Sprint(res["remote_photo_name"])]
-
-	} else if AppID == "2" && table == "media_attachments" {
-
-		query := fmt.Sprintf(
-			`select remote_url from %s where id = %d`,
-			table, pKey)
-		
-		res, err2 := db.DataCall1(AppDBConn, query)
-		if err2 != nil {
-			log.Fatal(err2)
-		}
-
-		parts := strings.Split(fmt.Sprint(res["remote_url"]), "/")
-		mediaName := parts[len(parts) - 1]
-		return mediaSize[mediaName]
-
-	} else if AppID == "3" && table == "tweets" {
-
-		query := fmt.Sprintf(
-			`select tweet_media from %s where id = %d`,
-			table, pKey)
-		
-		res, err2 := db.DataCall1(AppDBConn, query)
-		if err2 != nil {
-			log.Fatal(err2)
-		}
-
-		parts := strings.Split(fmt.Sprint(res["tweet_media"]), "/")
-		mediaName := parts[len(parts) - 1]
-		return mediaSize[mediaName]
-
-	} else if AppID == "4" && table == "file" {
-
-		query := fmt.Sprintf(
-			`select url from %s where id = %d`,
-			table, pKey)
-		
-		res, err2 := db.DataCall1(AppDBConn, query)
-		if err2 != nil {
-			log.Fatal(err2)
-		}
-
-		parts := strings.Split(fmt.Sprint(res["url"]), "/")
-		mediaName := parts[len(parts) - 1]
-		return mediaSize[mediaName]
-	
-	} else {
-		return 0
-	}
-}
-
-func calculateRowSize(AppDBConn *sql.DB, 
-	cols []string, table string, pKey int, 
-	AppID string, checkMediaSize bool) int64 {
-
-	selectQuery := "select"
-	
-	for i, col := range cols {
-		selectQuery += " pg_column_size(" + col + ") "
-		if i != len(cols) - 1 {
-			selectQuery += " + "
-		}
-		if i == len(cols) - 1{
-			selectQuery += " as cols_size "
-		}
-	}
-	
-	query := selectQuery + " from " + table + " where id = " + strconv.Itoa(pKey)
-	// log.Println(table)
-	// log.Println(query)
-	
-	row, err2 := db.DataCall1(AppDBConn, query)
-	if err2 != nil {
-		log.Fatal(err2)
-	}
-	// log.Println(row["cols_size"].(int64))
-	// if table == "photos" {
-	// 	fmt.Print(fmt.Sprint(pKey) + ":" + fmt.Sprint(calculateMediaSize(AppDBConn, table, pKey, AppID)) + ",")
-	// }
-	
-	var mediaSize int64
-
-	if checkMediaSize {
-		mediaSize = calculateMediaSize(AppDBConn, table, pKey, AppID)
-	}
-
-	if row["cols_size"] == nil {
-
-		return mediaSize
-		
-	} else {
-
-		return row["cols_size"].(int64) + mediaSize
-		
-	}
-	
 }
 
 func transformTableKeyToNormalType(tableKey map[string]interface{}) (string, int) {
