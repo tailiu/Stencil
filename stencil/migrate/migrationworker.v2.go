@@ -293,10 +293,15 @@ func (self *MigrationWorkerV2) ExcludeVisited(tag config.Tag) string {
 		if memberIDs, ok := self.visitedNodes[tagMember]; ok {
 			pks := ""
 			for pk := range memberIDs {
-				pks += pk + ","
+				if len(pk) > 0 {
+					pks += pk + ","
+				}
 			}
-			pks = strings.Trim(pks, ",")
-			visited += fmt.Sprintf(" AND %s.id NOT IN (%s) ", tagMember, pks)
+			if pks != "" {
+				pks = strings.Trim(pks, ",")
+				visited += fmt.Sprintf(" AND %s.id NOT IN (%s) ", tagMember, pks)
+			}
+
 		}
 	}
 	return visited
@@ -505,7 +510,7 @@ func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, erro
 					return nil, err
 				}
 			} else {
-
+				log.Println("@GetOwnedNode > ResolveOwnershipConditions | ", err)
 			}
 		}
 	}
@@ -1008,6 +1013,9 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	toTableData := make(map[string]interface{})
 
 	prevUIDs := reference_resolution.GetPrevUserIDs(self.SrcAppConfig.AppID, self.uid)
+	if prevUIDs == nil {
+		prevUIDs = make(map[string]string)
+	}
 	prevUIDs[self.SrcAppConfig.AppID] = self.uid
 
 	for fromTable := range mappedData.srcTables {
@@ -1547,7 +1555,10 @@ func (self *MigrationWorkerV2) IsVisited(node *DependencyNode) bool {
 func (self *MigrationWorkerV2) MarkAsVisited(node *DependencyNode) {
 	for _, tagMember := range node.Tag.Members {
 		idCol := fmt.Sprintf("%s.id", tagMember)
-		if _, ok := node.Data[idCol]; ok {
+		if nodeVal, ok := node.Data[idCol]; ok {
+			if nodeVal == nil {
+				continue
+			}
 			if _, ok := self.visitedNodes[tagMember]; !ok {
 				self.visitedNodes[tagMember] = make(map[string]bool)
 			}
