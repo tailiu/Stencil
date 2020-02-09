@@ -172,8 +172,8 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"conversations.id",
-                                        "created_at":"conversations.created_at",
-                                        "updated_at":"conversations.updated_at",
+                                        "created_at":"statuses.created_at",
+                                        "updated_at":"statuses.updated_at",
                                         "author_id":"#REF(statuses.account_id,accounts.id)",
                                         "guid":"#GUID"
                                     }

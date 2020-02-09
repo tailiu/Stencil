@@ -1,16 +1,16 @@
 package main
 
 import (
-	"stencil/SA1_display"
 	"fmt"
 	"log"
+	"stencil/SA1_display"
 	"sync"
 )
 
 func test1() {
 
 	threadNum := 1
-	
+
 	migrationID := 754595238
 
 	// If the destination app database is not in the new server, newDB is false
@@ -21,10 +21,10 @@ func test1() {
 
 	displayInFirstPhase := true
 
-	displayConfig := SA1_display.CreateDisplayConfig(migrationID, 
+	displayConfig := SA1_display.CreateDisplayConfig(migrationID,
 		resolveReference, newDB, displayInFirstPhase)
 
-	log.Println("Migration ID:",migrationID)
+	log.Println("Migration ID:", migrationID)
 
 	for i := 0; i < threadNum; i++ {
 
@@ -43,7 +43,7 @@ func test1() {
 // func test2() {
 
 // 	threadNum := 1
-	
+
 // 	migrationID := 800666262
 
 // 	SA1_display.StartDisplay(migrationID, threadNum)
@@ -53,21 +53,21 @@ func test1() {
 func test3() {
 
 	var wg sync.WaitGroup
-	
+
 	log.Println("############### Start Display Controller ###############")
 
 	// Instead of waiting for all display threads to finish,
 	// we only need to wait for one display thread to finish
 	wg.Add(1)
 
-	uid, srcAppID, dstAppID, migrationType, threadNum := 
+	uid, srcAppID, dstAppID, migrationType, threadNum :=
 		"24214", "1", "2", "d", 1
 
 	enableDisplay, displayInFirstPhase := true, true
 
 	// SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType, threadNum, nil)
 
-	go SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType, 
+	go SA1_display.StartDisplay(uid, srcAppID, dstAppID, migrationType,
 		threadNum, &wg, enableDisplay, displayInFirstPhase)
 
 	wg.Wait()
@@ -77,7 +77,7 @@ func test3() {
 }
 
 func main() {
-	
+
 	// test1()
 	// test2()
 	test3()

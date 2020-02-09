@@ -170,7 +170,7 @@ func (tag Tag) ResolveTagAttr(attr string) (string, error) {
 			return "", errors.New("Tag Not Resolved, Member Not Found: " + attr)
 		}
 	}
-	return "", errors.New("Tag Not Resolved, Attr Not Found in Tag Keys")
+	return "", errors.New("Tag Not Resolved, Attr Not Found in Tag Keys: " + tag.Name + ":" + attr)
 }
 
 func (self Tag) CreateInDepMap() map[string]map[string][]string {

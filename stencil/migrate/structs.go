@@ -18,14 +18,16 @@ const (
 )
 
 type IDRow struct {
-	FromAppName string
-	FromAppID   string
-	FromMember  string
-	FromID      string
-	ToAppID     string
-	ToAppName   string
-	ToMember    string
-	ToID        string
+	FromAppName  string
+	FromAppID    string
+	FromMember   string
+	FromMemberID string
+	FromID       string
+	ToAppID      string
+	ToAppName    string
+	ToMember     string
+	ToMemberID   string
+	ToID         string
 }
 
 type Transactions struct {

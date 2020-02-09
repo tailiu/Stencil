@@ -171,6 +171,34 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 
 func (self *Counter) GetAllPreviousNodes(node *migrate.DependencyNode) ([]*migrate.DependencyNode, error) {
 	var nodes []*migrate.DependencyNode
+
+	if node.Tag.Name != "root" {
+		if ownership := self.AppConfig.GetOwnership(node.Tag.Name, "root"); ownership != nil {
+			if where, err := node.ResolveParentOwnershipConditions(ownership, self.Root.Tag); err == nil {
+				ql := self.GetTagQL(self.Root.Tag)
+				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+				sql += self.Root.Tag.ResolveRestrictions()
+				if data, err := db.DataCall(self.AppDBConn, sql); err == nil {
+					for _, datum := range data {
+						newNode := new(migrate.DependencyNode)
+						newNode.Tag = self.Root.Tag
+						newNode.SQL = sql
+						newNode.Data = datum
+						nodes = append(nodes, newNode)
+					}
+				} else {
+					fmt.Println(sql)
+					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
+					return nil, err
+				}
+			} else {
+				log.Println("@GetAllPreviousNodes > ResolveParentOwnershipConditions: ", err)
+			}
+		} else {
+			log.Fatal("@GetAllPreviousNodes: Ownership doesn't exist? ", node.Tag.Name, "root")
+		}
+	}
+
 	for _, dep := range self.AppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
 			if parent, err := self.AppConfig.GetTag(pdep.Tag); err == nil {
@@ -248,37 +276,44 @@ func (self *Counter) MarkAsVisited(node *migrate.DependencyNode) {
 }
 
 func (self *Counter) Traverse(node *migrate.DependencyNode) error {
-	nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
-	for {
-		if adjNode, err := self.GetAdjNode(node); err != nil {
-			return err
-		} else if adjNode == nil {
-			break
-		} else {
-			adjNodeIDAttr, _ := adjNode.Tag.ResolveTagAttr("id")
-			// log.Println(fmt.Sprintf("Current   Node: { %s } | ID: %v ", node.Tag.Name, node.Data[nodeIDAttr]))
-			// log.Println(fmt.Sprintf("Adjacent  Node: { %s } | ID: %v ", adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr]))
-			if err := self.Traverse(adjNode); err != nil {
-				log.Fatal(fmt.Sprintf("ERROR! NODE : { %s } | ID: %v, ADJ_NODE : { %s } | ID: %v | err: [ %s ]", node.Tag.Name, node.Data[nodeIDAttr], adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr], err))
+	if nodeIDAttr, err := node.Tag.ResolveTagAttr("id"); err != nil {
+		fmt.Println("Nil Node: ", node.Tag.Name, "[", nodeIDAttr, "] | ", node.Data)
+	} else {
+		nodeID := node.Data[nodeIDAttr]
+		for {
+			if adjNode, err := self.GetAdjNode(node); err != nil {
 				return err
+			} else if adjNode == nil {
+				break
+			} else {
+				if adjNodeIDAttr, err := adjNode.Tag.ResolveTagAttr("id"); err != nil {
+					log.Fatal(err)
+				} else {
+					adjNodeID := adjNode.Data[adjNodeIDAttr]
+					if adjNodeID == nil {
+						fmt.Println("Nil Adj Node: ", adjNode.Tag.Name, "[", adjNodeIDAttr, "] | ", adjNode.Data)
+					}
+					log.Println(fmt.Sprintf("Current   Node: { %s } | ID: %v | Adjacent  Node: { %s } | ID: %v", node.Tag.Name, nodeID, adjNode.Tag.Name, adjNodeID))
+					if err := self.Traverse(adjNode); err != nil {
+						log.Fatal(fmt.Sprintf("ERROR! NODE : { %s } | ID: %v, ADJ_NODE : { %s } | ID: %v | err: [ %s ]", node.Tag.Name, nodeID, adjNode.Tag.Name, adjNodeID, err))
+						return err
+					}
+				}
 			}
 		}
 	}
 
-	self.NodeCount += 1
 	if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
 		self.EdgeCount += len(previousNodes)
 	} else {
 		log.Fatal("Error while getting previous nodes for the leaf!")
 	}
 
+	self.NodeCount += 1
+	// self.EdgeCount += 1 // Ownership edge
+
 	self.MarkAsVisited(node)
 
-	// if err := self.DeleteNode(node); err != nil {
-	// 	fmt.Println(node.Data)
-	// 	log.Fatal("Error while deleting node ", node.Tag.Name, node.Data[nodeIDAttr])
-	// }
-	// log.Println(fmt.Sprintf("User: %s, CURRENT NODES: %d, CURRENT EDGES: %d", self.UID, self.NodeCount, self.EdgeCount))
 	return nil
 }
 
