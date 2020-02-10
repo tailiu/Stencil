@@ -233,8 +233,9 @@ func Exp2() {
 	// startNum := 300 // second time and crash at the 67th user
 	// startNum := 400 // third time and stop at the 14th user
 	// startNum := 600 // fouth time and stop at the 1st user
+	// startNum := 900 // fifth time and stop at th 10 user
 
-	startNum := 900
+	startNum := 920
 
 	// ************ SA1 ************
 
@@ -317,10 +318,6 @@ func Exp2() {
 	}
 
 }
-
-// func Exp2() {
-
-// }
 
 // For all the three following get migrated data rate functions,
 // the diaspora database needs to be changed to diaspora_1xxxx which has complete data
@@ -561,6 +558,60 @@ func Exp3GetDatadowntime() {
 	migrationData := GetMigrationData(evalConfig)
 
 	var dDowntime, nDowntime []time.Duration
+
+	for _, migrationData1 := range migrationData {
+
+		migrationType := fmt.Sprint(migrationData1["migration_type"])
+
+		migrationID := fmt.Sprint(migrationData1["migration_id"])
+
+		if migrationType == "3" {
+
+			downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+
+			dDowntime = append(dDowntime, downtime...)
+		
+		} else if migrationType == "5" {
+
+			downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+
+			nDowntime = append(nDowntime, downtime...)
+
+		}
+
+	}
+
+	// log.Println(tDowntime)
+
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInStencilFile, 
+		ConvertDurationToString(dDowntime),
+	)
+
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInNaiveFile, 
+		ConvertDurationToString(nDowntime),
+	)
+
+}
+
+func Exp3GetDatadowntime1() {
+
+	SA1StencilDB := "stencil_exp"
+	naiveStencilDB := "stencil_exp5"
+
+	logFile := "SA1Size"
+	migrationNum := 100
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	data := ReadStrLinesFromLog(logFile)
+
+	var dDowntime, nDowntime []time.Duration
+
+	for i := 0; i < migrationNum; i++ {
 
 	for _, migrationData1 := range migrationData {
 
