@@ -230,7 +230,11 @@ func Exp2() {
 	migrationNum := 300
 
 	// startNum := 200 // first time and crash at the 69th user
-	startNum := 300
+	// startNum := 300 // second time and crash at the 67th user
+	// startNum := 400 // third time and stop at the 14th user
+	// startNum := 600 // fouth time and stop at the 1st user
+
+	startNum := 900
 
 	// ************ SA1 ************
 
@@ -313,6 +317,10 @@ func Exp2() {
 	}
 
 }
+
+// func Exp2() {
+
+// }
 
 // For all the three following get migrated data rate functions,
 // the diaspora database needs to be changed to diaspora_1xxxx which has complete data
@@ -744,9 +752,10 @@ func Exp4Count1MDBEdgesNodes() {
 
 	counter := getCounter(evalConfig)
 
-	for i := len(userIDs) -  1; i > 10000; i-- {  
+	// for i := len(userIDs) -  1; i > 10000; i-- {  
 	// for _, userID := range userIDs {
-
+	for i := 0; i < len(userIDs); i += 100 {  
+	
 		userID := userIDs[i]
 
 		if isAlreadyCounted(counter, userID) {

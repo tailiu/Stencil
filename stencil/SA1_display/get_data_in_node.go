@@ -283,7 +283,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					break
 				}
 			}
-		} 
+		}
 
 		// If the first argument of the from attribute does not contain "id", 
 		// this indicates we can use the current data and the relationship indicated

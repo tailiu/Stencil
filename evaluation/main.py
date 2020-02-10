@@ -403,6 +403,55 @@ def migrationRate1(labels):
 
     g.mulPoints(sizes, times, labels, xlabel, ylabel)
 
+def readDataFromFile(fileName):
+    return readFile3(logDir + fileName)
+    
+def getDataByKey1(data, keyName):
+    return float(data[keyName])
+
+def migrationRate2(sizeFiles, timeFiles, labels):
+
+    sizeData = []
+    timeData = []
+
+    for sizeFile in sizeFiles:
+        sizeData.append(readDataFromFile(sizeFile))
+
+    for timeFile in timeFiles:
+        timeData.append(readDataFromFile(timeFile))
+
+    groupNum = len(timeData)
+
+    sizes = [[] for _ in range(groupNum)]
+    times = [[] for _ in range(groupNum)]
+
+    for group, size in enumerate(sizeData):
+        for sizeData1 in size:
+            sizes[group].append(getDataByKey1(sizeData1, "size"))
+
+    for group, time in enumerate(timeData):
+        for timeData1 in time:
+            sizes[group].append(getDataByKey1(sizeData1, "size")) 
+
+    print sizes
+
+    # for time in timeData:
+    #     times.append(time, getDataByKey("size"))
+
+    # times = getTimeGroups1(times, groupNum)
+
+    # x = []
+    # for i, data in enumerate(sizes):
+    #     x.append(data["size"])
+    
+    # x = convertBytesToMB(x)
+    # sizes = [x] * groupNum
+
+    # xlabel = 'Migration size (MB)'
+    # ylabel = 'Migration time (s)'
+
+    # g.mulPoints(sizes, times, labels, xlabel, ylabel)
+
 def getTimeFromData(data):
 
     times = []
@@ -627,4 +676,5 @@ def anomaliesCumSum1(labels):
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", "logs_100K/", "logs_10K/", "logs_1K/"], ["1M", "100K", "10K", "1K"])
 # compareTwoMigratedSizes(["Source", "Destination"])
-anomaliesCumSum1(["Diaspora", "Mastodon"])
+# anomaliesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
+migrationRate2(["SA1Size", "SA1WDSize", "naiveSize"], ["SA1Time", "SA1WDTime", "naiveTime"], ["SA1", "SA1 without display" "Naive system"])
