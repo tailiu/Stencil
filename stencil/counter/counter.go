@@ -186,6 +186,11 @@ func (self *Counter) GetAllPreviousNodes(node *migrate.DependencyNode) ([]*migra
 						newNode.Data = datum
 						nodes = append(nodes, newNode)
 					}
+					if len(nodes) < 1 {
+						fmt.Println(node.Tag.Name)
+						fmt.Println(node.Data)
+						fmt.Println(sql)
+					}
 				} else {
 					fmt.Println(sql)
 					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
@@ -293,7 +298,7 @@ func (self *Counter) Traverse(node *migrate.DependencyNode) error {
 					if adjNodeID == nil {
 						fmt.Println("Nil Adj Node: ", adjNode.Tag.Name, "[", adjNodeIDAttr, "] | ", adjNode.Data)
 					}
-					log.Println(fmt.Sprintf("Current   Node: { %s } | ID: %v | Adjacent  Node: { %s } | ID: %v", node.Tag.Name, nodeID, adjNode.Tag.Name, adjNodeID))
+					// log.Println(fmt.Sprintf("Current   Node: { %s } | ID: %v | Adjacent  Node: { %s } | ID: %v", node.Tag.Name, nodeID, adjNode.Tag.Name, adjNodeID))
 					if err := self.Traverse(adjNode); err != nil {
 						log.Fatal(fmt.Sprintf("ERROR! NODE : { %s } | ID: %v, ADJ_NODE : { %s } | ID: %v | err: [ %s ]", node.Tag.Name, nodeID, adjNode.Tag.Name, adjNodeID, err))
 						return err
@@ -304,7 +309,8 @@ func (self *Counter) Traverse(node *migrate.DependencyNode) error {
 	}
 
 	if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
-		self.EdgeCount += len(previousNodes)
+		previousNodesCount := len(previousNodes)
+		self.EdgeCount += previousNodesCount
 	} else {
 		log.Fatal("Error while getting previous nodes for the leaf!")
 	}
