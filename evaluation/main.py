@@ -133,7 +133,8 @@ def danglingDataCumSum():
 
     x = np.arange(1, cumNum + 1)
 
-    g.mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS)
+    g.mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, 
+        danglingTotalCS, danglingStatusesCS, danglingFavCS)
 
 def getServiceInterruptionData(data):
     likesAfterPosts = []
@@ -272,7 +273,7 @@ def dataDownTime():
     data.append(readFile2(logDir + dataDownTimeInNaive))
     
     labels = [
-        "Stencil",
+        "SA1",
         "Naive system"
     ]
     g.cumulativeGraph(data, labels, "Data downtime (s)", "Cumulative probability")
@@ -397,6 +398,50 @@ def migrationRate1(labels):
     
     x = convertBytesToMB(x)
     sizes = [x] * groupNum
+
+    xlabel = 'Migration size (MB)'
+    ylabel = 'Migration time (s)'
+
+    g.mulPoints(sizes, times, labels, xlabel, ylabel)
+
+def readDataFromFile(fileName):
+    return readFile3(logDir + fileName)
+    
+def getDataByKey1(data, keyName):
+    return float(data[keyName])
+
+def migrationRate2(sizeFiles, timeFiles, labels):
+
+    sizeData = []
+    timeData = []
+
+    for sizeFile in sizeFiles:
+        sizeData.append(readDataFromFile(sizeFile))
+
+    for timeFile in timeFiles:
+        timeData.append(readDataFromFile(timeFile))
+
+    groupNum = len(timeData)
+
+    sizes = [[] for _ in range(groupNum)]
+    times = [[] for _ in range(groupNum)]
+
+    for group, size in enumerate(sizeData):
+        for i, sizeData1 in enumerate(size):
+            if i < 100:
+                sizes[group].append(getDataByKey1(sizeData1, "size"))
+
+    for group, time in enumerate(timeData):
+        for i, timeData1 in enumerate(time):
+            if i < 100:
+                times[group].append(getDataByKey1(timeData1, "time")) 
+    
+    sizesMB = convertBytesToMB(sizes[0])
+    sizes = [sizesMB] * groupNum
+
+    print len(sizes)
+    print len(times)
+    print len(labels)
 
     xlabel = 'Migration size (MB)'
     ylabel = 'Migration time (s)'
@@ -614,17 +659,27 @@ def anomaliesCumSum1(labels):
 # migrationRateDifferentNumOfThreads('Consistent/independent migration', migrationRate)
 # migrationRateDifferentNumOfThreads('Deletion migration', migrationRate)
 # dataDownTime()
-# migrationRate(["App with DAG and display", "App without DAG but with display", "App with DAG but without display", "App without DAG or display"])
+# migrationRate(["App with DAG and display", 
+    # "App without DAG but with display", 
+    # "App with DAG but without display", 
+    # "App without DAG or display"])
 # randomWalk()
 # danglingDataSystemCombined()
 
 
 # migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
-# dataDownTime()
+dataDownTime()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
 # counter("")
-# migrationRateDatasetsTab(["logs_1M/", "logs_100K/", "logs_10K/", "logs_1K/"], ["1M", "100K", "10K", "1K"])
+# migrationRateDatasetsTab(["logs_1M/", 
+    # "logs_100K/", 
+    # "logs_10K/", 
+    # "logs_1K/"], 
+    # ["1M", "100K", "10K", "1K"])
 # compareTwoMigratedSizes(["Source", "Destination"])
-anomaliesCumSum1(["Diaspora", "Mastodon"])
+# anomaliesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
+# migrationRate2(["SA1Size", "SA1WDSize", "naiveSize"], 
+#     ["SA1Time", "SA1WDTime", "naiveTime"], 
+#     ["SA1", "SA1 without display", "Naive system"])

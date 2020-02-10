@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"stencil/db"
+	"database/sql"
 	"time"
 )
 
-func getDataDowntimeOfMigration(evalConfig *EvalConfig, migrationID string) []time.Duration {
+func getDataDowntimeOfMigration(dbConn *sql.DB,
+	migrationID string) []time.Duration {
 
 	var downtime []time.Duration
 
@@ -19,7 +21,7 @@ func getDataDowntimeOfMigration(evalConfig *EvalConfig, migrationID string) []ti
 
 	// log.Println(query)
 	
-	result, err := db.DataCall(evalConfig.StencilDBConn, query)
+	result, err := db.DataCall(dbConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

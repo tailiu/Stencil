@@ -11,7 +11,7 @@ func main() {
 
 	// evaluation.Exp1()
 
-	evaluation.Exp2()
+	// evaluation.Exp2()
 
 	// evaluation.Exp2GetMigratedDataRateBySrc()
 
@@ -38,5 +38,11 @@ func main() {
 	// evaluation.Exp6()
 
 	// evaluation.Exp4Count1MDBEdgesNodes()
+
+	// evaluation.Exp4LoadCounterResToTable()
+
+	// evaluation.Exp3LoadUserIDsFromLog()
+
+	evaluation.Exp3GetDatadowntimeByLoadingUserIDFromLog()
 
 }

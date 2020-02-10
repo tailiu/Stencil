@@ -3,9 +3,9 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 30})
+plt.rcParams.update({'font.size': 25})
 
-colors = ['g', 'k', 'b', 'c', 'r', 'y', 'm', 'w']
+colors = ['g', 'r', 'b', 'c', 'y', 'k', 'm', 'w']
 lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center']
@@ -164,13 +164,13 @@ def mulPoints(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
     
     for i in range(len(x)):
-        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle="")
+        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle=linestyles[-1])
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[3], fontsize=legendFontSize[4], numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[3], numpoints=1)
     
     plt.show()
 
