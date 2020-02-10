@@ -481,34 +481,36 @@ func Exp2GetMigratedDataRateByDst() {
 
 }
 
-// func Exp3() {
+func Exp3() {
 
-// 	evalConfig := InitializeEvalConfig()
+	evalConfig := InitializeEvalConfig()
 
-// 	defer closeDBConns(evalConfig)
+	defer closeDBConns(evalConfig)
 
-// 	// preExp(evalConfig)
+	// preExp(evalConfig)
 
-// 	migrationNum := 300
+	// migrationNum := 300
 
-// 	SA1StencilDB, SA1SrcDB, SA1DstDB := 
-// 		"stencil_cow", "diaspora_1000000_exp", "mastodon"
+	SA1StencilDB, SA1SrcDB, SA1DstDB := 
+		"stencil_cow", "diaspora_1000000_exp", "mastodon"
 	
-// 	naiveStencilDB, naiveSrcDB, naiveDstDB := 
-// 		"stencil_exp", "diaspora_1000000_exp1", "mastodon_exp"
+	naiveStencilDB, naiveSrcDB, naiveDstDB := 
+		"stencil_exp", "diaspora_1000000_exp1", "mastodon_exp"
 
-// 	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
+	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
 
-// 	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
+	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
 
-// 	migrateUserUsingSA1AndNaive(evalConfig, 
-// 		SA1StencilDB, SA1SrcDB, SA1DstDB, 
-// 		naiveStencilDB, naiveSrcDB, naiveDstDB, 
-// 		SA1EnableDisplay, SA1DisplayInFirstPhase,
-// 		naiveEnableDisplay, naiveDisplayInFirstPhase,
-// 	)
+	userID := "1"
+	
+	migrateUserUsingSA1AndNaive(evalConfig, 
+		SA1StencilDB, SA1SrcDB, SA1DstDB, userID,
+		naiveStencilDB, naiveSrcDB, naiveDstDB, 
+		SA1EnableDisplay, SA1DisplayInFirstPhase,
+		naiveEnableDisplay, naiveDisplayInFirstPhase,
+	)
 
-// }
+}
 
 func Exp3LoadUserIDsFromLog() {
 
@@ -567,13 +569,15 @@ func Exp3GetDatadowntime() {
 
 		if migrationType == "3" {
 
-			downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+			downtime := getDataDowntimeOfMigration(evalConfig.StencilDBConn,
+				migrationID)
 
 			dDowntime = append(dDowntime, downtime...)
 		
 		} else if migrationType == "5" {
 
-			downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
+			downtime := getDataDowntimeOfMigration(evalConfig.StencilDBConn,
+				migrationID)
 
 			nDowntime = append(nDowntime, downtime...)
 
@@ -595,7 +599,7 @@ func Exp3GetDatadowntime() {
 
 }
 
-func Exp3GetDatadowntime1() {
+func Exp3GetDatadowntimeByLoadingUserIDFromLog() {
 
 	SA1StencilDB := "stencil_exp"
 	naiveStencilDB := "stencil_exp5"
@@ -603,48 +607,50 @@ func Exp3GetDatadowntime1() {
 	logFile := "SA1Size"
 	migrationNum := 100
 
-	evalConfig := InitializeEvalConfig()
+	stencilDB = SA1StencilDB
+	stencilDB1 = naiveStencilDB
 
+	evalConfig := InitializeEvalConfig()
 	defer closeDBConns(evalConfig)
 
 	data := ReadStrLinesFromLog(logFile)
 
-	var dDowntime, nDowntime []time.Duration
+	var SA1Downtime, naiveDowntime []time.Duration
 
 	for i := 0; i < migrationNum; i++ {
 
-	for _, migrationData1 := range migrationData {
+		var data1 SA1SizeStruct 
 
-		migrationType := fmt.Sprint(migrationData1["migration_type"])
-
-		migrationID := fmt.Sprint(migrationData1["migration_id"])
-
-		if migrationType == "3" {
-
-			downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
-
-			dDowntime = append(dDowntime, downtime...)
-		
-		} else if migrationType == "5" {
-
-			downtime := getDataDowntimeOfMigration(evalConfig, migrationID)
-
-			nDowntime = append(nDowntime, downtime...)
-
+		err := json.Unmarshal([]byte(data[i]), &data1)
+		if err != nil {
+			log.Fatal(err)
 		}
+
+		userID := data1.UserID
+
+		SA1MigrationID := getMigrationIDBySrcUserID1(evalConfig.StencilDBConn, userID)
+		naiveMigrationID := getMigrationIDBySrcUserID1(evalConfig.StencilDBConn1, userID)
+
+		SA1Downtime1 := getDataDowntimeOfMigration(evalConfig.StencilDBConn,
+			SA1MigrationID)
+		naiveDowntime1 := getDataDowntimeOfMigration(evalConfig.StencilDBConn1,
+			naiveMigrationID)
+
+		SA1Downtime = append(SA1Downtime, SA1Downtime1...)
+		naiveDowntime = append(naiveDowntime, naiveDowntime1...)
 
 	}
 
-	// log.Println(tDowntime)
+	log.Println(SA1Downtime)
 
 	WriteStrArrToLog(
 		evalConfig.DataDowntimeInStencilFile, 
-		ConvertDurationToString(dDowntime),
+		ConvertDurationToString(SA1Downtime),
 	)
 
 	WriteStrArrToLog(
 		evalConfig.DataDowntimeInNaiveFile, 
-		ConvertDurationToString(nDowntime),
+		ConvertDurationToString(naiveDowntime),
 	)
 
 }
@@ -791,6 +797,8 @@ func Exp4Count1MDBEdgesNodes() {
 	
 	db.DIASPORA_DB = "diaspora_1000000_counter"
 	db.STENCIL_DB = "stencil_counter"
+
+	stencilDB = "stencil_counter"
 	diaspora = "diaspora_1000000_counter"
 
 	evalConfig := InitializeEvalConfig()
@@ -803,11 +811,15 @@ func Exp4Count1MDBEdgesNodes() {
 
 	counter := getCounter(evalConfig)
 
+	log.Println("Total user:", len(userIDs))
+
 	// for i := len(userIDs) -  1; i > 10000; i-- {  
 	// for _, userID := range userIDs {
 	for i := 0; i < len(userIDs); i += 100 {  
-	
+		
 		userID := userIDs[i]
+
+		log.Println("Counting userID:", userID)
 
 		if isAlreadyCounted(counter, userID) {
 			log.Println("userID", userID, "has already been counted")

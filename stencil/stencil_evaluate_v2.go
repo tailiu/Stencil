@@ -43,4 +43,6 @@ func main() {
 
 	// evaluation.Exp3LoadUserIDsFromLog()
 
+	evaluation.Exp3GetDatadowntimeByLoadingUserIDFromLog()
+
 }

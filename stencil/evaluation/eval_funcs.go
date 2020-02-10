@@ -188,6 +188,28 @@ func getMigrationIDBySrcUserID(evalConfig *EvalConfig,
 
 }
 
+func getMigrationIDBySrcUserID1(dbConn *sql.DB, 
+	userID string) string {
+
+	query := fmt.Sprintf(
+		`SELECT migration_id FROM migration_registration 
+		WHERE user_id = %s`, userID)
+	
+	result, err := db.DataCall(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(result) != 1 {
+		log.Fatal("One user id", userID, "results in more than one migration ids")
+	}
+
+	migrationID := fmt.Sprint(result[0]["migration_id"])
+
+	return migrationID
+
+}
+
 func getAllUserIDsInDiaspora(evalConfig *EvalConfig) []string {
 
 	query := fmt.Sprintf(`SELECT id FROM people`)
