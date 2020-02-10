@@ -470,36 +470,36 @@ func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*Dep
 		}
 	}
 
-	for _, dep := range self.SrcAppConfig.GetParentDependencies(node.Tag.Name) {
-		for _, pdep := range dep.DependsOn {
-			if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
-				if where, err := node.ResolveParentDependencyConditions(pdep.Conditions, parent); err == nil {
-					ql := self.GetTagQL(parent)
-					sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-					sql += parent.ResolveRestrictions()
-					// fmt.Println(node.SQL)
-					// log.Fatal("@GetAllPreviousNodes | ", sql)
-					if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
-						for _, datum := range data {
-							newNode := new(DependencyNode)
-							newNode.Tag = parent
-							newNode.SQL = sql
-							newNode.Data = datum
-							nodes = append(nodes, newNode)
-						}
-					} else {
-						fmt.Println(sql)
-						log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
-						return nil, err
-					}
-				} else {
-					log.Println("@GetAllPreviousNodes > ResolveParentDependencyConditions: ", err)
-				}
-			} else {
-				log.Fatal("@GetAllPreviousNodes: Tag doesn't exist? ", pdep.Tag)
-			}
-		}
-	}
+	// for _, dep := range self.SrcAppConfig.GetParentDependencies(node.Tag.Name) {
+	// 	for _, pdep := range dep.DependsOn {
+	// 		if parent, err := self.SrcAppConfig.GetTag(pdep.Tag); err == nil {
+	// 			if where, err := node.ResolveParentDependencyConditions(pdep.Conditions, parent); err == nil {
+	// 				ql := self.GetTagQL(parent)
+	// 				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+	// 				sql += parent.ResolveRestrictions()
+	// 				// fmt.Println(node.SQL)
+	// 				// log.Fatal("@GetAllPreviousNodes | ", sql)
+	// 				if data, err := db.DataCall(self.SrcDBConn, sql); err == nil {
+	// 					for _, datum := range data {
+	// 						newNode := new(DependencyNode)
+	// 						newNode.Tag = parent
+	// 						newNode.SQL = sql
+	// 						newNode.Data = datum
+	// 						nodes = append(nodes, newNode)
+	// 					}
+	// 				} else {
+	// 					fmt.Println(sql)
+	// 					log.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
+	// 					return nil, err
+	// 				}
+	// 			} else {
+	// 				log.Println("@GetAllPreviousNodes > ResolveParentDependencyConditions: ", err)
+	// 			}
+	// 		} else {
+	// 			log.Fatal("@GetAllPreviousNodes: Tag doesn't exist? ", pdep.Tag)
+	// 		}
+	// 	}
+	// }
 	return nodes, nil
 }
 

@@ -27,11 +27,15 @@ func StartCounter(appName, appID, person_id string, isBlade ...bool) (int, int) 
 		log.Fatal("User Node Not Created: ", err)
 	}
 
+	// if err := db.InsertIntoDAGCounter(ctr.StencilDBConn, person_id, ctr.EdgeCount, ctr.NodeCount); err != nil {
+	// 	log.Fatal("Insertion Failed into DAGCOUNTER!", err)
+	// }
+
 	ctr.AppConfig.CloseDBConns()
 	ctr.AppDBConn.Close()
 	ctr.StencilDBConn.Close()
 
-	log.Println(fmt.Sprintf("Finished counter for user [%s] in app [%s:%s] | Nodes: %d, Edges: %d", person_id, appID, appName, ctr.NodeCount, ctr.EdgeCount))
+	log.Println(fmt.Sprintf("Finished counter for user \"%s\" in app [%s:%s] | Nodes: %d, Edges: %d", person_id, appID, appName, ctr.NodeCount, ctr.EdgeCount))
 	fmt.Println("------------------------------------------------------------------------")
 	return ctr.NodeCount, ctr.EdgeCount
 }
