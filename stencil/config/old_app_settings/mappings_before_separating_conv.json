@@ -89,7 +89,7 @@
                             ]
                         },
                         {
-                            "fromTables": ["statuses", "status_stats"],
+                            "fromTables": ["statuses", "status_stats", "conversations"],
                             "toTables": [
                                 {
                                     "table": "posts",
@@ -166,20 +166,15 @@
                                         "updated_at":"statuses.updated_at",
                                         "guid":"#REF(#ASSIGN(statuses.id),statuses.id,messages)"
                                     }
-                                }
-                            ]
-                        },
-                        {
-                            "fromTables": ["conversations"],
-                            "toTables": [
+                                },
                                 {
                                     "table": "conversations",
                                     "conditions":{},
                                     "mapping": {
                                         "id":"conversations.id",
-                                        "created_at":"conversations.created_at",
-                                        "updated_at":"conversations.updated_at",
-                                        "author_id":"#REF(#FETCH(statuses.account_id,statuses.conversation_id,conversations.id),accounts.id)",
+                                        "created_at":"statuses.created_at",
+                                        "updated_at":"statuses.updated_at",
+                                        "author_id":"#REF(statuses.account_id,accounts.id)",
                                         "guid":"#GUID"
                                     }
                                 }
