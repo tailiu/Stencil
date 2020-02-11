@@ -83,6 +83,7 @@ type EvalConfig struct {
 	MigratedDataSizeBySrcFile string
 	MigrationTimeBySrcFile string
 	DanglingDataFile string
+	DanglingObjectsFile string
 	Diaspora1KCounterFile string
 	Diaspora10KCounterFile string
 	Diaspora100KCounterFile string

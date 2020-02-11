@@ -258,3 +258,11 @@ func calculateRowSize(AppDBConn *sql.DB,
 	}
 	
 }
+
+func getDanglingObjectsOfMigration(evalConfig *EvalConfig,
+	migrationID string) (int, int) {
+
+	
+
+	return 0, 0
+}

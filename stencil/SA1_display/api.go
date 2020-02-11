@@ -57,7 +57,7 @@ func displayController(migrationID, threadNum int,
 
 }
 
-func waitGetMigrationID(uid, srcAppID, dstAppID, migrationType string) int {
+func waitToGetMigrationID(uid, srcAppID, dstAppID, migrationType string) int {
 
 	var migrationIDs []int
 
@@ -130,7 +130,7 @@ func StartDisplay(uid, srcAppID, dstAppID,
 	threadNum int, wg *sync.WaitGroup, 
 	args ...bool) {
 
-	migrationID := waitGetMigrationID(uid, srcAppID, dstAppID, migrationType)
+	migrationID := waitToGetMigrationID(uid, srcAppID, dstAppID, migrationType)
 
 	enableDisplay, displayInFirstPhase, markAsDelete := handlArgs(args)
 

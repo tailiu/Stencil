@@ -69,6 +69,7 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.MigratedDataSizeBySrcFile,
 	evalConfig.MigrationTimeBySrcFile,
 	evalConfig.DanglingDataFile,
+	evalConfig.DanglingObjectsFile,
 	evalConfig.Diaspora1KCounterFile,
 	evalConfig.Diaspora10KCounterFile,
 	evalConfig.Diaspora100KCounterFile,
@@ -89,6 +90,7 @@ func InitializeEvalConfig() *EvalConfig {
 		"migratedDataSizeBySrc",
 		"migrationTimeBySrc",
 		"danglingData",
+		"DanglingObjects",
 		"diaspora1KCounter",
 		"diaspora10KCounter",
 		"diaspora100KCounter",
@@ -166,6 +168,26 @@ func GetAllMigrationIDs(evalConfig *EvalConfig) []string {
 
 }
 
+func GetAllMigrationIDsOrderByEndTime(evalConfig *EvalConfig) []string {
+
+	query := fmt.Sprintf(
+		"select migration_id from migration_registration order by end_time")
+	// log.Println(query)
+
+	data, err := db.DataCall(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var migrationIDs []string
+	for _, data1 := range data {
+		migrationIDs = append(migrationIDs, fmt.Sprint(data1["migration_id"]))
+	} 
+
+	return migrationIDs
+
+}
+
 func getMigrationIDBySrcUserID(evalConfig *EvalConfig, 
 	userID string) string {
 
@@ -210,9 +232,16 @@ func getMigrationIDBySrcUserID1(dbConn *sql.DB,
 
 }
 
-func getAllUserIDsInDiaspora(evalConfig *EvalConfig) []string {
+func getAllUserIDsInDiaspora(evalConfig *EvalConfig, 
+	orderByUserIDs ...bool) []string {
 
-	query := fmt.Sprintf(`SELECT id FROM people`)
+	var query string
+
+	if len(orderByUserIDs) == 1 && orderByUserIDs[0] {
+		query = fmt.Sprintf(`SELECT id FROM people order by id`)
+	} else {
+		query = fmt.Sprintf(`SELECT id FROM people`)
+	}
 	
 	result, err := db.DataCall(evalConfig.DiasporaDBConn, query)
 	if err != nil {
