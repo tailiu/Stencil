@@ -1015,12 +1015,16 @@ func Exp6() {
 	mastodon = "mastodon_exp3"
 	diaspora = "diaspora_1000000_exp3"
 
+	db.STENCIL_DB = "stencil_exp3"
+	db.DIASPORA_DB = "diaspora_1000000_exp3"
+	db.MASTODON_DB = "mastodon_exp3"
+
 	// counterStart := 0
 	// counterNum := 300
 	// counterInterval := 10
 
 	counterStart := 0
-	counterNum := 300
+	counterNum := 100
 	counterInterval := 10
 
 	evalConfig := InitializeEvalConfig()
@@ -1032,10 +1036,11 @@ func Exp6() {
 	res := getEdgesCounter(evalConfig, 
 		counterStart, counterNum, counterInterval)
 
+	log.Println("Total Num:", len(res))
 	log.Println(res)
 
 	for i := 0; i < len(res); i ++ {
-		
+
 		res1 := res[i]
 
 		userID := res1["person_id"]

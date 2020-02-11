@@ -35,7 +35,7 @@ func main() {
 
 	// evaluation.RecreateDiaspora1MDB()
 
-	// evaluation.Exp6()
+	evaluation.Exp6()
 
 	// evaluation.Exp4Count1MDBEdgesNodes()
 
@@ -47,7 +47,7 @@ func main() {
 
 	// evaluation.Exp1GetDanglingObjects()
 
-	evaluation.Exp1GetTotalObjects()
+	// evaluation.Exp1GetTotalObjects()
 
 	// evaluation.Exp1GetDanglingDataSize("977607531")
 
