@@ -260,9 +260,122 @@ func calculateRowSize(AppDBConn *sql.DB,
 }
 
 func getDanglingObjectsOfMigration(evalConfig *EvalConfig,
-	migrationID string) (int, int) {
+	migrationID string) (int64, int64) {
 
+	var size1, size2 int64
+
+	query1 := fmt.Sprintf(`
+		SELECT count(*) as num, app FROM data_bags WHERE
+		migration_id = %s GROUP BY app`, migrationID)
 	
+	result1, err := db.DataCall(evalConfig.StencilDBConn, query1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	return 0, 0
+	for _, data1 := range result1 {
+
+		appID := fmt.Sprint(data1["app"])
+		num := data1["num"]
+
+		if num == nil {
+			continue
+		}
+
+		if appID == "1" {
+			size1 = num.(int64)
+		} else {
+			size2 = num.(int64)
+		}
+		
+	}
+
+	return size1, size2
+
+}
+
+func getTotalRowCountsOfDB(dbConn *sql.DB) int64 {
+
+	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
+		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
+
+	data := db.GetAllColsOfRows(dbConn, query1)
+	
+	// log.Println(data)
+
+	var totalRows int64
+
+	for _, data1 := range data {
+		
+		tableName := data1["tablename"]
+
+		// references table will cause errors
+		if tableName == "references" {
+			continue
+		}
+
+		query2 := fmt.Sprintf(
+			`select count(*) as num from %s`, 
+			tableName,
+		)
+
+		// log.Println(query2)
+
+		res, err := db.DataCall1(dbConn, query2)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// log.Println(res)
+
+		totalRows += res["num"].(int64)
+		
+	}
+
+	return totalRows
+
+}
+
+func getTotalRowCountsOfTable(dbConn *sql.DB, tableName string) int64 {
+	
+	query := fmt.Sprintf(
+		`select count(*) as num from %s`, 
+		tableName,
+	)
+
+	// log.Println(query)
+
+	res, err := db.DataCall1(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if res["num"] == nil {
+		return 0
+	} else {
+		return res["num"].(int64)
+	} 
+
+}
+
+func getDanglingObjectsOfApp(evalConfig *EvalConfig, appID string) int64 {
+
+	query := fmt.Sprintf(
+		`select count(*) as num from data_bags where app = %s`, 
+		appID,
+	)
+
+	// log.Println(query)
+
+	res, err := db.DataCall1(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if res["num"] == nil {
+		return 0
+	} else {
+		return res["num"].(int64)
+	}
+
 }

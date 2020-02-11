@@ -80,7 +80,7 @@ func PreExp() {
 // In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
 // The source database needs to be changed to diaspora_1000_exp
-func Exp1() {
+func Exp1(firstUserID ...string) {
 
 	// This is the configuration of the first time test
 	// stencilDB = "stencil_cow"
@@ -109,6 +109,10 @@ func Exp1() {
 	userIDs := getAllUserIDsInDiaspora(evalConfig)
 
 	shuffleSlice(userIDs)
+
+	if len(firstUserID) != 0 {
+		userIDs = moveElementToStartOfSlice(userIDs, firstUserID[0])
+	}
 
 	log.Println("Total users:", len(userIDs))
 
@@ -181,7 +185,7 @@ func Exp1GetDanglingDataSize(migrationID string) {
 func Exp1GetTotalMigratedDataSize() {
 
 	diaspora = "diaspora_1000"
-
+	stencilDB = "stencil_cow"
 	// Note that mastodon needs to be changed in the config file as well
 	mastodon = "mastodon"
 
@@ -232,27 +236,51 @@ func Exp1GetDanglingObjects() {
 
 	migrationIDs := GetAllMigrationIDsOrderByEndTime(evalConfig)
 
-	log.Println(migrationIDs)
+	// log.Println(migrationIDs)
 
 	for _, migrationID := range migrationIDs {
 
-		danglingObjects := make(map[string]int)
+		danglingObjects := make(map[string]int64)
 
 		srcDanglingObjects, dstDanglingObjects :=
 			getDanglingObjectsOfMigration(evalConfig, migrationID)
 
-		danglingObjects["srcDanglingData"] = srcDanglingObjects
-		danglingObjects["dstDanglingData"] = dstDanglingObjects
+		danglingObjects["srcDanglingObjs"] = srcDanglingObjects
+		danglingObjects["dstDanglingObjs"] = dstDanglingObjects
 
 		WriteStrToLog(
 			evalConfig.DanglingObjectsFile,
-			ConvertMapIntToJSONString(danglingObjects),
+			ConvertMapInt64ToJSONString(danglingObjects),
 		)
 
 	}
 }
 
 func Exp1GetTotalObjects() {
+	
+	diaspora = "diaspora_1000"
+	stencilDB = "stencil_cow"
+	// Note that mastodon needs to be changed in the config file as well
+	mastodon = "mastodon"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	totalRowCounts1 := getTotalRowCountsOfDB(evalConfig.DiasporaDBConn)
+
+	totalPhotoCounts1 := getTotalRowCountsOfTable(evalConfig.DiasporaDBConn, "photos")
+
+	log.Println("Total Objects in Diaspora:", totalRowCounts1 + totalPhotoCounts1)
+
+	totalRowCounts2 := getTotalRowCountsOfDB(evalConfig.MastodonDBConn)
+
+	totalPhotoCounts2 := getTotalRowCountsOfTable(evalConfig.MastodonDBConn, "media_attachments")
+
+	danglingObjs2 := getDanglingObjectsOfApp(evalConfig, "2")
+
+	log.Println("Total Objects in Mastodon:", 
+		totalRowCounts2 + totalPhotoCounts2 + danglingObjs2)
 
 }
 
@@ -290,8 +318,9 @@ func Exp2() {
 	// startNum := 600 // fouth time and stop at the 1st user
 	// startNum := 900 // fifth time and stop at the 10th user
 	// startNum := 920 // sixth time and crashes at the 52th user
+	// startNum := 1500 // seventh time and crashes at the 11th user
 
-	startNum := 1500 
+	startNum := 1520
 
 	// ************ SA1 ************
 
@@ -871,7 +900,7 @@ func Exp4Count1MDBEdgesNodes() {
 
 	// for i := len(userIDs) -  1; i > 10000; i-- {  
 	// for _, userID := range userIDs {
-	for i := 260000; i < len(userIDs); i += 100 {  
+	for i := 280000; i < len(userIDs); i += 100 {  
 		
 		userID := userIDs[i]
 
