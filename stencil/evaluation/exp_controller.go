@@ -150,6 +150,25 @@ func Exp1() {
 
 }
 
+func Exp1GetDanglingDataSize(migrationID string) {
+
+	stencilDB = "stencil_exp4"
+	mastodon = "mastodon_exp4"
+	diaspora = "diaspora_1000_exp4"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	srcDanglingData, dstDanglingData :=
+		getDanglingDataSizeOfMigration(evalConfig, migrationID)
+	
+	log.Println("Migration ID:", migrationID)
+	log.Println("Src dangling data size:", srcDanglingData)
+	log.Println("Dst dangling data size:", dstDanglingData)
+
+}
+
 // In diaspora_1000 database:
 // Total Media Size in Diaspora: 793878636 bytes
 // All Rows Size in Diaspora: 30840457 bytes
@@ -201,6 +220,42 @@ func Exp1GetTotalMigratedDataSize() {
 
 }
 
+func Exp1GetDanglingObjects() {
+
+	stencilDB = "stencil_cow"
+	mastodon = "mastodon"
+	diaspora = "diaspora_1000_exp"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	migrationIDs := GetAllMigrationIDsOrderByEndTime(evalConfig)
+
+	log.Println(migrationIDs)
+
+	for _, migrationID := range migrationIDs {
+
+		danglingObjects := make(map[string]int)
+
+		srcDanglingObjects, dstDanglingObjects :=
+			getDanglingObjectsOfMigration(evalConfig, migrationID)
+
+		danglingObjects["srcDanglingData"] = srcDanglingObjects
+		danglingObjects["dstDanglingData"] = dstDanglingObjects
+
+		WriteStrToLog(
+			evalConfig.DanglingObjectsFile,
+			ConvertMapIntToJSONString(danglingObjects),
+		)
+
+	}
+}
+
+func Exp1GetTotalObjects() {
+
+}
+
 // The diaspora database needs to be changed to diaspora_1xxxx_exp and diaspora_1xxxx_exp1
 // 1. Data will be migrated in deletion migrations from:
 // diaspora_1000000_exp, diaspora_100000_exp, diaspora_10000_exp, diaspora_1000_exp
@@ -233,9 +288,10 @@ func Exp2() {
 	// startNum := 300 // second time and crash at the 67th user
 	// startNum := 400 // third time and stop at the 14th user
 	// startNum := 600 // fouth time and stop at the 1st user
-	// startNum := 900 // fifth time and stop at th 10 user
+	// startNum := 900 // fifth time and stop at the 10th user
+	// startNum := 920 // sixth time and crashes at the 52th user
 
-	startNum := 920
+	startNum := 1500 
 
 	// ************ SA1 ************
 
@@ -805,7 +861,7 @@ func Exp4Count1MDBEdgesNodes() {
 
 	defer closeDBConns(evalConfig)
 
-	userIDs := getAllUserIDsInDiaspora(evalConfig)
+	userIDs := getAllUserIDsInDiaspora(evalConfig, true)
 
 	file := evalConfig.Diaspora1MCounterFile
 
@@ -815,7 +871,7 @@ func Exp4Count1MDBEdgesNodes() {
 
 	// for i := len(userIDs) -  1; i > 10000; i-- {  
 	// for _, userID := range userIDs {
-	for i := 0; i < len(userIDs); i += 100 {  
+	for i := 260000; i < len(userIDs); i += 100 {  
 		
 		userID := userIDs[i]
 

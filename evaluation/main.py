@@ -274,9 +274,13 @@ def dataDownTime():
     
     labels = [
         "SA1",
-        "Naive system"
+        "Naive system+"
     ]
-    g.cumulativeGraph(data, labels, "Data downtime (s)", "Cumulative probability")
+
+    xlabel = "Data downtime (s)"
+    ylabel = "Cumulative probability"
+
+    g.cumulativeGraph(data, labels, xlabel, ylabel)
 
 def convertBytesToMB(data):
     
