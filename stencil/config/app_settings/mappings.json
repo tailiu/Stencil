@@ -155,7 +155,8 @@
                                 {
                                     "table": "messages",
                                     "conditions": {
-                                            "statuses.visibility": "3"
+                                            "statuses.visibility": "3",
+                                            "statuses.conversation_id": "#NOTNULL"
                                     },
                                     "mapping":{    
                                         "id":"statuses.id",

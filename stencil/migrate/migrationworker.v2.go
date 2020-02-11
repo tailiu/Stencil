@@ -1083,7 +1083,8 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	for fromTable := range mappedData.srcTables {
 		if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
 			if fromID, ok := node.Data[fromTable+".id"]; ok {
-				if err := self.FetchDataFromBags(toTableData, prevUIDs, self.SrcAppConfig.AppID, fromTableID, fmt.Sprint(fromID), toTable.TableID, toTable.Table); err != nil {
+				visitedRows := make(map[string]bool)
+				if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, self.SrcAppConfig.AppID, fromTableID, fmt.Sprint(fromID), toTable.TableID, toTable.Table); err != nil {
 					log.Fatal("@MigrateNode > FetchDataFromBags | ", err)
 				}
 			} else {
@@ -1110,14 +1111,25 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	return nil
 }
 
-func (self *MigrationWorkerV2) FetchDataFromBags(toTableData map[string]interface{}, prevUIDs map[string]string, app, member, id, dstMemberID, dstMemberName string) error {
+func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, toTableData map[string]interface{}, prevUIDs map[string]string, app, member, id, dstMemberID, dstMemberName string) error {
+
+	currentRow := fmt.Sprintf("%s:%s:%s", app, member, id)
+
+	if _, ok := visitedRows[currentRow]; ok {
+		return nil
+	} else {
+		visitedRows[currentRow] = true
+	}
 
 	idRows, err := self.GetRowsFromIDTable(app, member, id, false)
 
 	if err != nil {
 		log.Fatal("@FetchDataFromBags > GetRowsFromIDTable, Unable to get IDRows | ", app, member, id, false, err)
 		return err
+	} else {
+		log.Println("@FetchDataFromBags > GetRowsFromIDTable | ", idRows)
 	}
+
 	for _, idRow := range idRows {
 
 		bagRow, err := db.GetBagByAppMemberIDV2(self.logTxn.DBconn, prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMemberID, idRow.FromID, self.logTxn.Txn_id)
@@ -1136,7 +1148,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(toTableData map[string]interfac
 			}
 
 			if mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
-
+				log.Println("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
 				for _, toTable := range mapping.ToTables {
 					for fromAttr, toAttr := range toTable.Mapping {
 						if _, ok := toTableData[fromAttr]; !ok {
@@ -1164,12 +1176,15 @@ func (self *MigrationWorkerV2) FetchDataFromBags(toTableData map[string]interfac
 						return err
 					}
 				}
+			} else {
+				log.Println("@FetchDataFromBags > FetchMappingsForBag, No mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
 			}
 		} else {
-			log.Fatal("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id)
+			log.Println("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id)
 		}
 
-		if err := self.FetchDataFromBags(toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName); err != nil {
+		log.Println("@FetchDataFromBags > FetchDataFromBags: Recursive Traversal | ", toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName)
+		if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName); err != nil {
 			log.Fatal("@FetchDataFromBags > FetchDataFromBags: Error while recursing | ", toTableData, idRow.FromAppID, idRow.FromMember, idRow.FromID)
 			return err
 		}
@@ -1249,10 +1264,11 @@ func (self *MigrationWorkerV2) DeleteRoot(threadID int) error {
 
 func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *DependencyNode, isBag bool) error {
 
-	// fetchDataFromBags, id table recursion?
-
 	var allMappedData []MappedData
 	for _, toTable := range mapping.ToTables {
+
+		log.Println("@MigrateNode > ToTable: ", toTable.Table)
+
 		if !self.ValidateMappingConditions(toTable, node) {
 			continue
 		}
@@ -1262,11 +1278,11 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			}
 
 			if self.mtype == DELETION {
-				// fmt.Println("Unmerged Mapped Data: ", mappedData)
+				fmt.Println("Unmerged Mapped Data: ", mappedData.cols)
 				if err := self.MergeBagDataWithMappedData(&mappedData, node, toTable); err != nil {
 					log.Fatal("@MigrateNode > MergeDataFromBagsWithMappedData | ", err)
 				}
-				// log.Fatal("Merged Mapped Data: ", mappedData)
+				log.Println("@MigrateNode > MergeDataFromBagsWithMappedData > Merged Mapped Data: ", toTable.Table, mappedData)
 			}
 
 			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
@@ -1568,7 +1584,7 @@ func (self *MigrationWorkerV2) HandleMigration(node *DependencyNode, isBag bool)
 
 	if mapping, found := self.FetchMappingsForNode(node); found {
 		tagMembers := node.Tag.GetTagMembers()
-		if helper.Sublist(tagMembers, mapping.FromTables) { // other mappings HANDLE!
+		if helper.Sublist(tagMembers, mapping.FromTables) {
 			return self.MigrateNode(mapping, node, isBag)
 		}
 		if wNode, err := self.HandleWaitingList(mapping, tagMembers, node); wNode != nil && err == nil {
