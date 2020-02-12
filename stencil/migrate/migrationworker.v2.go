@@ -64,9 +64,9 @@ func CreateBagWorkerV2(uid, srcAppID, dstAppID string, logTxn *transaction.Log_t
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
 		visitedNodes: make(map[string]map[string]bool)}
-	if err := mWorker.FetchRoot(threadID); err != nil {
-		log.Fatal(err)
-	}
+	// if err := mWorker.FetchRoot(threadID); err != nil {
+	// 	log.Fatal(err)
+	// }
 	mWorker.FTPClient = GetFTPClient()
 	log.Println("Bag Worker Created for thread: ", threadID)
 	fmt.Println("************************************************************************")
@@ -756,6 +756,21 @@ func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface
 	}
 }
 
+func (self *MappedData) UpdateRefs(fromID, fromMember, fromAttr, toID, toMember, toAttr interface{}) {
+
+	if toID == nil || fromID == nil {
+		return
+	}
+
+	self.refs = append(self.refs, MappingRef{
+		fromID:     fmt.Sprint(fromID),
+		fromMember: fmt.Sprint(fromMember),
+		fromAttr:   fmt.Sprint(fromAttr),
+		toID:       fmt.Sprint(toID),
+		toMember:   fmt.Sprint(toMember),
+		toAttr:     fmt.Sprint(toAttr)})
+}
+
 func (self *MappedData) Trim(chars string) {
 	self.vals = strings.Trim(self.vals, chars)
 	self.cols = strings.Trim(self.cols, chars)
@@ -775,18 +790,11 @@ func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, as
 			log.Fatal("@FetchFromMapping: FetchForMapping | ", err)
 			return err
 		} else if len(res) > 0 {
-			// fmt.Println("FETCHED DATA ", res)
 			data.UpdateData(toAttr, args[0], targetTabCol[0], res[targetTabCol[1]])
 			node.Data[args[0]] = res[targetTabCol[1]]
 			if len(args) > 3 {
 				toMemberTokens := strings.Split(args[3], ".")
-				data.refs = append(data.refs, MappingRef{
-					fromID:     fmt.Sprint(res[targetTabCol[1]]),
-					fromMember: targetTabCol[0],
-					fromAttr:   targetTabCol[1],
-					toID:       fmt.Sprint(res[targetTabCol[1]]),
-					toMember:   toMemberTokens[0],
-					toAttr:     toMemberTokens[1]})
+				data.UpdateRefs(res[targetTabCol[1]], targetTabCol[0], targetTabCol[1], res[targetTabCol[1]], toMemberTokens[0], toMemberTokens[1])
 			}
 		} else {
 			log.Println("@FetchFromMapping: FetchForMapping | Returned data is nil! Previous node already migrated?", res, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
@@ -854,29 +862,27 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 						assignedTabColTokens := strings.Split(assignedTabCol, ".")
 						referredTabColTokens := strings.Split(referredTabCol, ".")
 						data.UpdateData(toAttr, assignedTabCol, assignedTabColTokens[0], nodeVal)
-						var fromID string
+						var fromID interface{}
 						if val, ok := node.Data[assignedTabColTokens[0]+".id"]; ok {
-							fromID = fmt.Sprint(val)
+							fromID = val
 						} else {
 							fmt.Println(assignedTabColTokens[0], " | ", assignedTabColTokens)
 							fmt.Println(node.Data)
 							log.Fatal("@GetMappedData > #REF #ASSIGN> fromID: Unable to find ref value in node data")
 							return data, errors.New("Unable to find ref value in node data")
 						}
-						data.refs = append(data.refs, MappingRef{fromID: fromID, fromMember: assignedTabColTokens[0], fromAttr: assignedTabColTokens[1], toID: fmt.Sprint(nodeVal), toAttr: referredTabColTokens[1], toMember: referredTabColTokens[0]})
-						// fmt.Println(data.refs)
+						data.UpdateRefs(fromID, assignedTabColTokens[0], assignedTabColTokens[1], nodeVal, referredTabColTokens[0], referredTabColTokens[1])
 					}
-					// log.Fatal("FOUND #REF#ASSIGN MAPPING")
 				} else {
 					args := strings.Split(assignedTabCol, ",")
 					if nodeVal, ok := node.Data[args[0]]; ok {
 						argsTokens := strings.Split(args[0], ".")
 						data.UpdateData(toAttr, args[0], argsTokens[0], nodeVal)
 					}
-					var toID, fromID string
+					var toID, fromID interface{}
 
 					if val, ok := node.Data[args[0]]; ok {
-						toID = fmt.Sprint(val)
+						toID = val
 					} else {
 						fmt.Println(args[0], " | ", args)
 						fmt.Println(node.Data)
@@ -888,16 +894,14 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					secondMemberTokens := strings.Split(args[1], ".")
 
 					if val, ok := node.Data[firstMemberTokens[0]+".id"]; ok {
-						fromID = fmt.Sprint(val)
+						fromID = val
 					} else {
 						fmt.Println(args[0], " | ", args)
 						fmt.Println(node.Data)
 						log.Fatal("@GetMappedData > #REF > fromID: Unable to find ref value in node data")
 						return data, errors.New("Unable to find ref value in node data")
 					}
-
-					data.refs = append(data.refs, MappingRef{fromID: fromID, fromMember: firstMemberTokens[0], fromAttr: firstMemberTokens[1], toID: toID, toAttr: secondMemberTokens[1], toMember: secondMemberTokens[0]})
-					// fmt.Println(toTable.Table, toAttr, fromAttr, data.refs[len(data.refs)-1])
+					data.UpdateRefs(fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
 				}
 			} else if strings.Contains(fromAttr, "#ASSIGN") {
 				if nodeVal, ok := node.Data[assignedTabCol]; ok {
@@ -1074,7 +1078,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 
 	toTableData := make(map[string]interface{})
 
-	prevUIDs := reference_resolution.GetPrevUserIDs(self.SrcAppConfig.AppID, self.uid)
+	prevUIDs := reference_resolution.GetPrevUserIDs(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.uid)
 	if prevUIDs == nil {
 		prevUIDs = make(map[string]string)
 	}
@@ -1692,6 +1696,11 @@ func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
 			return err
 		}
 
+		if len(ref.toID) < 1 {
+			log.Println("@AddMappedReferences: Unable to CreateNewReference | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+			continue
+		}
+
 		if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
 			fmt.Println(refs)
 			fmt.Println("#Args: ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
@@ -1818,10 +1827,9 @@ func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, refe
 
 func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error {
 
-	prevIDs := reference_resolution.GetPrevUserIDs(self.SrcAppConfig.AppID, self.uid)
-	// prevIDs = append(prevIDs, []string{self.SrcAppConfig.AppID, self.uid})
+	prevIDs := reference_resolution.GetPrevUserIDs(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.uid)
 	prevIDs[self.SrcAppConfig.AppID] = self.uid
-	log.Fatal(prevIDs)
+
 	for bagAppID, userID := range prevIDs {
 
 		log.Println(fmt.Sprintf("x%2dx Starting Bags for User: %s App: %s", threadID, userID, bagAppID))
@@ -1829,13 +1837,13 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 		bags, err := db.GetBagsV2(self.logTxn.DBconn, bagAppID, userID, self.logTxn.Txn_id)
 
 		if err != nil {
-			log.Fatal(fmt.Sprintf("x%2dx UNABLE TO FETCH BAGS FOR USER: %s | %s", threadID, self.uid, err))
+			log.Fatal(fmt.Sprintf("x%2dx UNABLE TO FETCH BAGS FOR USER: %s | %s", threadID, userID, err))
 			return err
 		}
 
-		bagWorker := CreateBagWorkerV2(self.uid, bagAppID, self.DstAppConfig.AppID, self.logTxn, BAGS, threadID, isBlade...)
+		bagWorker := CreateBagWorkerV2(userID, bagAppID, self.DstAppConfig.AppID, self.logTxn, BAGS, threadID, isBlade...)
 
-		// log.Fatal(fmt.Sprintf("x%2dx Bag Worker Created | %s -> %s ", threadID, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+		log.Println(fmt.Sprintf("x%2dx Bag Worker Created | %s -> %s ", threadID, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
 
 		for _, bag := range bags {
 
