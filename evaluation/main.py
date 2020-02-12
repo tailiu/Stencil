@@ -581,9 +581,11 @@ def scalability(labels):
         displayTimes.append(float(data1["displayTime"]))
         migrationTimes.append(float(data1["migrationTime"]))
     
-    x = [nodesBeforeMigration, nodesAfterMigration, 
-        edgesBeforeMigration, edgesAfterMigration]
-    y = [migrationTimes, displayTimes]
+    x = [[nodesBeforeMigration, nodesAfterMigration], 
+        [edgesBeforeMigration, edgesAfterMigration]]
+    
+    y = [[migrationTimes, displayTimes],
+        [migrationTimes, displayTimes]]
 
     xlabels = ["Nodes", "Edges"]
     ylabels = ['Migration time (s)', 'Migration time (s)']
@@ -778,7 +780,7 @@ def anomaliesCumSum2(labels):
 # dataDownTimeInPercentages()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-scalability("SA1 migration algorithm", "SA1 display algorithm")
+scalability(["SA1 migration algorithm", "SA1 display algorithm"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
     # "logs_100K/", 
