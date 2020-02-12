@@ -14,6 +14,8 @@ dstSystemDanglingData = "dstSystemDanglingData"
 migrationRate = "migrationRate"
 dataDownTimeInStencil = "dataDowntimeInStencil"
 dataDownTimeInNaive = "dataDowntimeInNaive"
+dataDownTimeInPercentageInStencil = "dataDownTimeInPercentageInStencil"
+dataDownTimeInPercentageInNaive = "dataDownTimeInPercentageInNaive"
 migrationTime = "migrationTime"
 migratedDataSize = "migratedDataSize"
 migrationScalabilityEdgeFile = "migrationScalabilityEdges"
@@ -25,6 +27,7 @@ migratedTimeBySrcFile = "migrationTimeBySrc"
 migratedTimeByDstFile = "migrationTimeByDst"
 anomaliesFile1 = "danglingData"
 anomaliesFile2 = "danglingObjects"
+scalabilityFile = "scalability"
 
 dataBags = "dataBags"
 cumNum = 1000
@@ -279,6 +282,33 @@ def dataDownTime():
     ]
 
     xlabel = "Data downtime (s)"
+    ylabel = "Cumulative probability"
+
+    g.cumulativeGraph(data, labels, xlabel, ylabel)
+
+def mul100(data):
+    res = []
+    
+    for data1 in data:
+        res.append(data1 * 100.0)
+
+    return res
+
+def dataDownTimeInPercentages():
+    
+    data = []
+    data.append(readFile2(logDir + dataDownTimeInPercentageInStencil))
+    data.append(readFile2(logDir + dataDownTimeInPercentageInNaive))
+    
+    data[0] = mul100(data[0])
+    data[1] = mul100(data[1])
+
+    labels = [
+        "SA1",
+        "Naive system+"
+    ]
+
+    xlabel = "Percentage of data downtime"
     ylabel = "Cumulative probability"
 
     g.cumulativeGraph(data, labels, xlabel, ylabel)
@@ -693,6 +723,9 @@ def anomaliesCumSum2(labels):
     
     g.mulLines(x, y, labels, xlabel, ylabel)
 
+# def scalability():
+
+
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
@@ -715,8 +748,10 @@ def anomaliesCumSum2(labels):
 # migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
 # dataDownTime()
+dataDownTimeInPercentages()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
+# scalability("SA1 migration algorithm", "SA1 display algorithm")
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
     # "logs_100K/", 
@@ -725,7 +760,7 @@ def anomaliesCumSum2(labels):
     # ["1M", "100K", "10K", "1K"])
 # compareTwoMigratedSizes(["Source", "Destination"])
 # anomaliesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
-anomaliesCumSum2(["Diaspora (source)", "Mastodon (destination)"])
+# anomaliesCumSum2(["Diaspora (source)", "Mastodon (destination)"])
 # migrationRate2(["SA1Size", "SA1WDSize", "naiveSize"], 
 #     ["SA1Time", "SA1WDTime", "naiveTime"], 
 #     ["SA1", "SA1 without display", "Naive system"])

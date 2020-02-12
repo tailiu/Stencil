@@ -8,7 +8,7 @@ plt.rcParams.update({'font.size': 25})
 colors = ['g', 'r', 'b', 'c', 'y', 'k', 'm', 'w']
 lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
-legendLoc = ['best', 'upper right', 'upper left', 'upper center']
+legendLoc = ['best', 'upper right', 'upper left', 'upper center', 'center right']
 markers = ["o", "v", "s", "*", "+", "<"]
 linestyles = ["solid", "dashed", "dotted", ""]
 
@@ -126,7 +126,13 @@ def cumulativeGraph(dataArr, labels, xlabel, ylabel):
     ax.set_ylabel(ylabel)
     ax.grid(True)
     
-    legend = ax.legend(loc=1, fontsize=legendFontSize[4])
+    # This legend setting should be enought for most graphs
+    # legend = ax.legend(loc=legendLoc[1], fontsize=legendFontSize[4])
+
+    # I want to change location by coordinates
+    # bbox_to_anchor = (x0, y0, width, height) 
+    # (x0,y0) are the lower left corner coordinates of the bounding box.
+    legend = ax.legend(bbox_to_anchor=(1, 0.95), loc=legendLoc[1], fontsize=legendFontSize[4])
 
     plt.show()
 
