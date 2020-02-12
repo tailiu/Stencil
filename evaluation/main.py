@@ -288,7 +288,7 @@ def dataDownTime():
 
 def mul100(data):
     res = []
-    
+
     for data1 in data:
         res.append(data1 * 100.0)
 
@@ -345,7 +345,6 @@ def randomWalk():
     data2.insert(0, 0.0)
     
     g.dataBag(data2, apps, "Data bag size (bytes)")
-
 
 def danglingDataSystemCombined():
     
@@ -563,6 +562,34 @@ def scalabilityNode(labels):
 
     g.mulPoints1(nodes, times, labels, xlabel, ylabel)
 
+def scalability(labels):
+
+    data = readFile3(logDir + scalabilityFile)
+    
+    edgesBeforeMigration = []
+    nodesBeforeMigration = []
+    edgesAfterMigration = []
+    nodesAfterMigration = []
+    migrationTimes = []
+    displayTimes = []
+
+    for data1 in data:
+        nodesBeforeMigration.append(int(data1["nodes"]))
+        nodesAfterMigration.append(int(data1["nodesAfterMigration"]))
+        edgesBeforeMigration.append(int(data1["edges"]))
+        edgesAfterMigration.append(int(data1["edgesAfterMigration"]))
+        displayTimes.append(float(data1["displayTime"]))
+        migrationTimes.append(float(data1["migrationTime"]))
+    
+    x = [nodesBeforeMigration, nodesAfterMigration, 
+        edgesBeforeMigration, edgesAfterMigration]
+    y = [migrationTimes, displayTimes]
+
+    xlabels = ["Nodes", "Edges"]
+    ylabels = ['Migration time (s)', 'Migration time (s)']
+
+    g.mulPoints3(x, y, labels, xlabels, ylabels)
+
 def counter(labels):
 
     data = readFile3(logDir + counterFile)
@@ -748,10 +775,10 @@ def anomaliesCumSum2(labels):
 # migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
 # dataDownTime()
-dataDownTimeInPercentages()
+# dataDownTimeInPercentages()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-# scalability("SA1 migration algorithm", "SA1 display algorithm")
+scalability("SA1 migration algorithm", "SA1 display algorithm")
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
     # "logs_100K/", 
