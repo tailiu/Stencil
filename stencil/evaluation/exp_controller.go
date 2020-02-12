@@ -91,6 +91,8 @@ func Exp1(firstUserID ...string) {
 	mastodon = "mastodon_exp4"
 	diaspora = "diaspora_1000_exp4"
 
+	migrationNum := 1000
+
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
@@ -116,7 +118,10 @@ func Exp1(firstUserID ...string) {
 
 	log.Println("Total users:", len(userIDs))
 
-	for _, userID := range userIDs {
+	for i := 0; i < migrationNum; i++ {
+	// for _, userID := range userIDs {
+
+		userID := userIDs[i]
 
 		log.Println("User ID:", userID)
 

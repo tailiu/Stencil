@@ -6,11 +6,10 @@ from numpy.polynomial.polynomial import polyfit
 plt.rcParams.update({'font.size': 25})
 
 colors = ['g', 'r', 'b', 'c', 'y', 'k', 'm', 'w']
-lineStyles = ['-', '--', '-.', ':', ""]
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center', 'center right']
 markers = ["o", "v", "s", "*", "+", "<"]
-linestyles = ["solid", "dashed", "dotted", ""]
+lineStyles = ["solid", "dashed", "dotted",""]
 
 def line(x, y, xlabel, ylabel, title):
     xs, ys = _sortX(x, y)
@@ -234,7 +233,7 @@ def mulPoints3(x, y, labels, xlabels, ylabels):
             y12 = np.array(y11)
             b, m = polyfit(x12, y12, 1)
 
-            ax.plot(x12, y12, marker='o', color=colors[j], markersize=7, label=labels[j], linestyle=lineStyles[-1])
+            ax.plot(x12, y12, marker=markers[j], color=colors[j], markersize=7, label=labels[j], linestyle=lineStyles[-1])
             ax.plot(x12, m * x12 + b, linestyle=lineStyles[j], color=colors[j], linewidth=2)
 
         ax.grid(True)
