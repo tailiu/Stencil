@@ -95,7 +95,7 @@ func Exp1(firstUserID ...string) {
 
 	defer closeDBConns(evalConfig)
 
-	// preExp1(evalConfig)
+	preExp1(evalConfig)
 
 	// This is the configuration of the first time test
 	// db.STENCIL_DB = "stencil_cow"
@@ -319,8 +319,9 @@ func Exp2() {
 	// startNum := 900 // fifth time and stop at the 10th user
 	// startNum := 920 // sixth time and crashes at the 52th user
 	// startNum := 1500 // seventh time and crashes at the 11th user
+	// startNum := 1520 eighth time and stop at the 61th user
 
-	startNum := 1520
+	startNum := 2000
 
 	// ************ SA1 ************
 
@@ -684,7 +685,7 @@ func Exp3GetDatadowntime() {
 
 }
 
-func Exp3GetDatadowntimeByLoadingUserIDFromLog() {
+func Exp3GetDataDowntimeByLoadingUserIDFromLog() {
 
 	SA1StencilDB := "stencil_exp"
 	naiveStencilDB := "stencil_exp5"
@@ -736,6 +737,72 @@ func Exp3GetDatadowntimeByLoadingUserIDFromLog() {
 	WriteStrArrToLog(
 		evalConfig.DataDowntimeInNaiveFile, 
 		ConvertDurationToString(naiveDowntime),
+	)
+
+}
+
+func Exp3GetDataDowntimeInPercentageByLoadingUserIDFromLog() {
+
+	SA1StencilDB := "stencil_exp"
+	naiveStencilDB := "stencil_exp5"
+
+	logFile := "SA1Size"
+	migrationNum := 100
+
+	stencilDB = SA1StencilDB
+	stencilDB1 = naiveStencilDB
+
+	evalConfig := InitializeEvalConfig()
+	defer closeDBConns(evalConfig)
+
+	data := ReadStrLinesFromLog(logFile)
+
+	var SA1PercentageOfDowntime, naivePercentageOfDowntime []float64
+
+	for i := 0; i < migrationNum; i++ {
+
+		var data1 SA1SizeStruct 
+
+		err := json.Unmarshal([]byte(data[i]), &data1)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		userID := data1.UserID
+
+		SA1MigrationID := getMigrationIDBySrcUserID1(evalConfig.StencilDBConn, userID)
+		naiveMigrationID := getMigrationIDBySrcUserID1(evalConfig.StencilDBConn1, userID)
+
+		SA1Downtime := getDataDowntimeOfMigration(evalConfig.StencilDBConn,
+			SA1MigrationID)
+		naiveDowntime := getDataDowntimeOfMigration(evalConfig.StencilDBConn1,
+			naiveMigrationID)
+
+		SA1TotalTime := getTotalTimeOfMigration(evalConfig.StencilDBConn, 
+			SA1MigrationID)
+		naiveTotalTime := getTotalTimeOfMigration(evalConfig.StencilDBConn1, 
+			naiveMigrationID)
+		
+		SA1PercentageOfDowntime1 := calculateTimeInPercentage(SA1Downtime, SA1TotalTime)
+		naivePercentageOfDowntime1 := calculateTimeInPercentage(naiveDowntime, naiveTotalTime)
+		
+		SA1PercentageOfDowntime = append(SA1PercentageOfDowntime, 
+			SA1PercentageOfDowntime1...)
+		naivePercentageOfDowntime = append(naivePercentageOfDowntime, 
+			naivePercentageOfDowntime1...)
+
+	}
+
+	log.Println(SA1PercentageOfDowntime)
+
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInPercentageInStencilFile, 
+		ConvertFloat64ToString(SA1PercentageOfDowntime),
+	)
+
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInPercentageInNaiveFile, 
+		ConvertFloat64ToString(naivePercentageOfDowntime),
 	)
 
 }

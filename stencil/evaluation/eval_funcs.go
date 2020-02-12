@@ -73,7 +73,9 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.Diaspora1KCounterFile,
 	evalConfig.Diaspora10KCounterFile,
 	evalConfig.Diaspora100KCounterFile,
-	evalConfig.Diaspora1MCounterFile = 
+	evalConfig.Diaspora1MCounterFile,
+	evalConfig.DataDowntimeInPercentageInStencilFile,
+	evalConfig.DataDowntimeInPercentageInNaiveFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -94,7 +96,9 @@ func InitializeEvalConfig() *EvalConfig {
 		"diaspora1KCounter",
 		"diaspora10KCounter",
 		"diaspora100KCounter",
-		"diaspora1MCounter"
+		"diaspora1MCounter",
+		"dataDowntimeInPercentageInStencil",
+		"dataDowntimeInPercentageInNaive"
 
 	return evalConfig
 }
