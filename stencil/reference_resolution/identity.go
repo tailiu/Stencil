@@ -278,11 +278,7 @@ func getPrevUserIDsByBackTraversal(stencilDBConn *sql.DB,
 // A -> B -> C and we have the appID and userID in C, it can get A and B
 // For the case A -> B and A -> C concurrently (not a line history)
 // and we have the appID and userID in C, it can only get A not B
-func GetPrevUserIDs(appID, userID string) map[string]string {
-
-	stencilDBConn := db.GetDBConn("stencil")
-
-	defer stencilDBConn.Close()
+func GetPrevUserIDs(stencilDBConn *sql.DB, appID, userID string) map[string]string {
 
 	rootMemberID := getAppRootMemberID(stencilDBConn, appID)
 

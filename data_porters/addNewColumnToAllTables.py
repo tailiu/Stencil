@@ -28,7 +28,7 @@ def execQuery(tableName):
 
 if __name__ == "__main__":
     
-    dbName  = "diaspora_1000"
+    dbName  = "diaspora_test"
     threads = []
 
     for table in getTables():

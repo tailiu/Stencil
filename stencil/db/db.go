@@ -868,8 +868,10 @@ func GetNewRowID(dbConn *sql.DB) int32 {
 	var rowid int32
 	for {
 		rowid = rand.Int31n(2147483647)
-		q := "SELECT row_id FROM migration_table WHERE row_id = $1"
-		if v, err := DataCall1(dbConn, q, rowid); err == nil && v == nil {
+		q := fmt.Sprintf("SELECT row_id FROM migration_table WHERE row_id = %d", rowid)
+		if v, err := DataCall1(dbConn, q); err != nil {
+			log.Fatal("@db.GetNewRowID: ", err)
+		} else if v == nil {
 			break
 		}
 	}
