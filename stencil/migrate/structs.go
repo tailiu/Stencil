@@ -40,6 +40,7 @@ type DependencyNode struct {
 	Tag  config.Tag
 	SQL  string
 	Data map[string]interface{}
+	IDs  []uint8
 }
 
 type WaitingNode struct {

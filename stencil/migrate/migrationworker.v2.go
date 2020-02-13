@@ -309,7 +309,7 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 				log.Println("Condition Key", conditionKey, "doesn't exist!")
 				fmt.Println("node data:", node.Data)
 				fmt.Println("node sql:", node.SQL)
-				log.Fatal("@ValidateMappingConditions: stop here and check")
+				// log.Fatal("@ValidateMappingConditions: stop here and check")
 				return false
 			}
 		}
@@ -484,10 +484,10 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					if val, ok := node.Data[args[0]]; ok {
 						toID = val
 					} else {
-						fmt.Println(args[0], " | ", args)
-						fmt.Println(node.Data)
-						log.Fatal("@GetMappedData > #REF > toID: Unable to find ref value in node data")
-						return data, errors.New("Unable to find ref value in node data")
+						// fmt.Println(args[0], " | ", args)
+						// fmt.Println(node.Data)
+						// log.Fatal("@GetMappedData > #REF > toID: Unable to find ref value in node data")
+						return data, errors.New("Unable to find toID ref value in node data: " + args[0])
 					}
 
 					firstMemberTokens := strings.Split(args[0], ".")
@@ -496,10 +496,10 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					if val, ok := node.Data[firstMemberTokens[0]+".id"]; ok {
 						fromID = val
 					} else {
-						fmt.Println(args[0], " | ", args)
+						fmt.Println(firstMemberTokens[0]+".id", " | ", args)
 						fmt.Println(node.Data)
-						log.Fatal("@GetMappedData > #REF > fromID: Unable to find ref value in node data")
-						return data, errors.New("Unable to find ref value in node data")
+						// log.Fatal("@GetMappedData > #REF > fromID: Unable to find ref value in node data")
+						return data, errors.New("Unable to find fromID ref value in node data: " + firstMemberTokens[0] + ".id")
 					}
 					data.UpdateRefs(fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
 				}
@@ -689,9 +689,10 @@ func (self *MigrationWorkerV2) DeleteRoot(threadID int) error {
 func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *DependencyNode, isBag bool) error {
 
 	var allMappedData []MappedData
+
 	for _, toTable := range mapping.ToTables {
 
-		log.Println("@MigrateNode > ToTable: ", toTable.Table)
+		// log.Println("@MigrateNode > ToTable: ", toTable.Table)
 
 		if !self.ValidateMappingConditions(toTable, node) {
 			continue
@@ -751,9 +752,13 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 				allMappedData = append(allMappedData, mappedData)
 			} else {
-				fmt.Println("@Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables)
-				fmt.Println("@NODE: ", node.Tag.Name, node.Data)
-				log.Fatalln("@MigrateNode > InsertRowIntoAppDB: ", err)
+				if self.mtype == BAGS {
+					// log.Println("@MigrateNode > InsertRowIntoAppDB: ", err)
+				} else {
+					fmt.Println("@Args: ", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables)
+					fmt.Println("@NODE: ", node.Tag.Name, node.Data)
+					log.Fatalln("@MigrateNode > InsertRowIntoAppDB: ", err)
+				}
 				return err
 			}
 

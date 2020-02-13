@@ -1,9 +1,11 @@
 package config
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
+	"stencil/db"
 	"stencil/helper"
 	"stencil/qr"
 	"strings"
@@ -173,7 +175,14 @@ func (tag Tag) ResolveTagAttr(attr string) (string, error) {
 	return "", errors.New("Tag Not Resolved, Attr Not Found in Tag Keys: " + tag.Name + ":" + attr)
 }
 
-func (self Tag) CreateInDepMap() map[string]map[string][]string {
+func (self Tag) CreateInDepMap(isBag ...bool) map[string]map[string][]string {
+
+	bag := false
+	if len(isBag) > 0 {
+		if isBag[0] {
+			bag = true
+		}
+	}
 
 	joinMap := make(map[string]map[string][]string)
 
@@ -193,7 +202,14 @@ func (self Tag) CreateInDepMap() map[string]map[string][]string {
 				joinMap[mapFromTable] = make(map[string][]string)
 			}
 
-			condition := fmt.Sprintf("%s.%s=%s.%s", mapFromTable, mapFromCol, mapToTable, mapToCol)
+			var condition string
+
+			if bag {
+				condition = fmt.Sprintf("%s.\"data\"->>'%s.%s'=%s.\"data\"->>'%s.%s'", mapFromTable, mapFromTable, mapFromCol, mapToTable, mapToTable, mapToCol)
+			} else {
+				condition = fmt.Sprintf("%s.%s=%s.%s", mapFromTable, mapFromCol, mapToTable, mapToCol)
+			}
+
 			joinMap[mapFromTable][mapToTable] = append(joinMap[mapFromTable][mapToTable], condition)
 		}
 	}
@@ -414,4 +430,16 @@ func (tag Tag) ResolveRestrictions() string {
 func (self *AppConfig) CloseDBConns() {
 	self.DBConn.Close()
 	self.QR.StencilDB.Close()
+}
+
+func (tag Tag) MemberIDs(dbConn *sql.DB, app_id string) (map[string]string, error) {
+	tableIDMap := make(map[string]string)
+	for _, table := range tag.Members {
+		if tableID, err := db.TableID(dbConn, table, app_id); err == nil {
+			tableIDMap[table] = tableID
+		} else {
+			return nil, err
+		}
+	}
+	return tableIDMap, nil
 }

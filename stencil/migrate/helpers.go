@@ -196,6 +196,57 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 	return sql
 }
 
+func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
+
+	if tableIDs, err := tag.MemberIDs(self.logTxn.DBconn, self.SrcAppConfig.AppID); err != nil {
+		log.Fatal("@GetTagQLForBag: ", err)
+	} else {
+
+		// log.Println("@GetTagQLForBag: Table IDS | ", tableIDs)
+
+		sql := "SELECT array[%s] as ids, %s as json_data FROM %s "
+
+		if len(tag.InnerDependencies) > 0 {
+			idCols, cols := "", ""
+			joinMap := tag.CreateInDepMap(true)
+			// log.Fatalln(joinMap)
+			seenMap := make(map[string]bool)
+			joinStr := ""
+			for fromTable, toTablesMap := range joinMap {
+				// log.Print(fromTable, toTablesMap)
+				if _, ok := seenMap[fromTable]; !ok {
+					joinStr += fmt.Sprintf("data_bags %s", fromTable)
+					idCols += fmt.Sprintf("%s.id,", fromTable)
+					cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", fromTable)
+				}
+				for toTable, conditions := range toTablesMap {
+					if conditions != nil {
+						conditions = append(conditions, joinMap[toTable][fromTable]...)
+						if joinMap[toTable][fromTable] != nil {
+							joinMap[toTable][fromTable] = nil
+						}
+						joinStr += fmt.Sprintf(" FULL JOIN data_bags %s ON %s.member = %s AND %s.member = %s AND %s ", toTable, fromTable, tableIDs[fromTable], toTable, tableIDs[toTable], strings.Join(conditions, " AND "))
+						cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", toTable)
+						idCols += fmt.Sprintf("%s.id,", toTable)
+						seenMap[toTable] = true
+					}
+				}
+				seenMap[fromTable] = true
+			}
+			sql = fmt.Sprintf(sql, strings.Trim(idCols, ","), strings.Trim(cols, ",|"), joinStr)
+		} else {
+			table := tag.Members["member1"]
+			joinStr := fmt.Sprintf("data_bags %s", table)
+			idCols := fmt.Sprintf("%s.id", table)
+			cols := fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ", table)
+			sql = fmt.Sprintf(sql, idCols, cols, joinStr)
+		}
+
+		return sql
+	}
+	return ""
+}
+
 func (self *MigrationWorkerV2) InitTransactions() error {
 	var err error
 	self.tx.SrcTx, err = self.SrcDBConn.Begin()
