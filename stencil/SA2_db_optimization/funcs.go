@@ -1,0 +1,29 @@
+package SA2_db_optimization
+
+import (
+	"stencil/db"
+	"database/sql"
+)
+
+func existsInSlice(s []int, element int) bool {
+
+	for _, v := range s {
+		if element == v {
+			return true
+		}
+	}
+
+	return false
+
+} 
+
+func getAllTablesInDBs(dbConn *sql.DB) []map[string]string {
+
+	query := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
+		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
+
+	data := db.GetAllColsOfRows(dbConn, query)
+
+	return data
+
+}

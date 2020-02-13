@@ -47,7 +47,7 @@ func main() {
 
 	// evaluation.Exp1GetDanglingObjects()
 
-	evaluation.Exp1GetTotalObjects()
+	// evaluation.Exp1GetTotalObjects()
 
 	// evaluation.Exp1GetDanglingDataSize("977607531")
 

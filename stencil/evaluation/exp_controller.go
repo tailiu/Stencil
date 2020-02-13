@@ -330,9 +330,10 @@ func Exp2() {
 	// startNum := 900 // fifth time and stop at the 10th user
 	// startNum := 920 // sixth time and crashes at the 52th user
 	// startNum := 1500 // seventh time and crashes at the 11th user
-	// startNum := 1520 eighth time and stop at the 61th user
+	// startNum := 1520 // eighth time and stop at the 61th user
+	// startNum := 2000 // ninth time and crash at the 4th user
 
-	startNum := 2000
+	startNum := 3010
 
 	// ************ SA1 ************
 
@@ -978,7 +979,7 @@ func Exp4Count1MDBEdgesNodes() {
 
 	// for i := len(userIDs) -  1; i > 10000; i-- {  
 	// for _, userID := range userIDs {
-	for i := 280000; i < len(userIDs); i += 100 {  
+	for i := 577000; i < len(userIDs); i += 100 {  
 		
 		userID := userIDs[i]
 
