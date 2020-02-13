@@ -97,7 +97,7 @@ func Exp1(firstUserID ...string) {
 
 	defer closeDBConns(evalConfig)
 
-	preExp1(evalConfig)
+	// preExp1(evalConfig)
 
 	// This is the configuration of the first time test
 	// db.STENCIL_DB = "stencil_cow"
@@ -231,9 +231,11 @@ func Exp1GetTotalMigratedDataSize() {
 
 func Exp1GetDanglingObjects() {
 
-	stencilDB = "stencil_cow"
-	mastodon = "mastodon"
-	diaspora = "diaspora_1000_exp"
+	// stencilDB = "stencil_cow"
+	// mastodon = "mastodon"
+	// diaspora = "diaspora_1000_exp"
+
+	stencilDB = "stencil_exp4"
 
 	evalConfig := InitializeEvalConfig()
 
@@ -263,10 +265,14 @@ func Exp1GetDanglingObjects() {
 
 func Exp1GetTotalObjects() {
 	
+	// diaspora = "diaspora_1000"
+	// stencilDB = "stencil_cow"
+	// // Note that mastodon needs to be changed in the config file as well
+	// mastodon = "mastodon"
+
 	diaspora = "diaspora_1000"
-	stencilDB = "stencil_cow"
-	// Note that mastodon needs to be changed in the config file as well
-	mastodon = "mastodon"
+	stencilDB = "stencil_exp4"
+	mastodon = "mastodon_exp4"
 
 	evalConfig := InitializeEvalConfig()
 

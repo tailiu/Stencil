@@ -701,7 +701,7 @@ def getPercentagesOfData1(data, dataSum):
 
     return percentages
 
-def anomaliesCumSum1(labels):
+def danglingDataSizesCumSum1(labels):
 
     # srcTotalDataSize = 824719093
     # dstTotalDataSize = 806743608
@@ -728,24 +728,29 @@ def anomaliesCumSum1(labels):
     
     g.mulLines(x, y, labels, xlabel, ylabel)
 
-def anomaliesCumSum2(labels):
+def danglingObjsCumSum2(labels):
 
-    srcTotalDataSize = 397001
-    dstTotalDataSize = 236766
+    # Total objs count for the 999 users migration
+    # srcTotalObjs = 397001
+    # dstTotalObjs = 236766
+
+    # Total objs count for the 1000 users migration
+    srcTotalObjs = 397001
+    dstTotalObjs = 208942
 
     data = readFile3(logDir + anomaliesFile2)
 
-    dstDanglingData = getDataByKey(data, "dstDanglingObjs")
-    srcDanglingData = getDataByKey(data, "srcDanglingObjs")
+    dstDanglingObjs = getDataByKey(data, "dstDanglingObjs")
+    srcDanglingObjs = getDataByKey(data, "srcDanglingObjs")
 
-    dstDanglingDataCumSum = np.cumsum(dstDanglingData)
-    srcDanglingDataCumSum = np.cumsum(srcDanglingData)
+    dstDanglingObjsCumSum = np.cumsum(dstDanglingObjs)
+    srcDanglingObjsCumSum = np.cumsum(srcDanglingObjs)
 
-    srcDanglingDataCumSumPercentage = getPercentagesOfData1(srcDanglingDataCumSum, srcTotalDataSize)
-    dstDanglingDataCumSumPercentage = getPercentagesOfData1(dstDanglingDataCumSum, dstTotalDataSize)
+    srcDanglingObjsCumSumPercentage = getPercentagesOfData1(srcDanglingObjsCumSum, srcTotalObjs)
+    dstDanglingObjsCumSumPercentage = getPercentagesOfData1(dstDanglingObjsCumSum, dstTotalObjs)
 
     x = getPercentageInX2(len(data))
-    y = [srcDanglingDataCumSumPercentage, dstDanglingDataCumSumPercentage]
+    y = [srcDanglingObjsCumSumPercentage, dstDanglingObjsCumSumPercentage]
 
     xlabel = 'Percentage of users migrated'
     ylabel = 'Percentage of dangling objects'
@@ -780,7 +785,7 @@ def anomaliesCumSum2(labels):
 # dataDownTimeInPercentages()
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-scalability(["SA1 migration algorithm", "SA1 display algorithm"])
+# scalability(["SA1 migration algorithm", "SA1 display algorithm"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
     # "logs_100K/", 
@@ -788,8 +793,8 @@ scalability(["SA1 migration algorithm", "SA1 display algorithm"])
     # "logs_1K/"], 
     # ["1M", "100K", "10K", "1K"])
 # compareTwoMigratedSizes(["Source", "Destination"])
-# anomaliesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
-# anomaliesCumSum2(["Diaspora (source)", "Mastodon (destination)"])
+# danglingDataSizesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
+danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
 # migrationRate2(["SA1Size", "SA1WDSize", "naiveSize"], 
 #     ["SA1Time", "SA1WDTime", "naiveTime"], 
 #     ["SA1", "SA1 without display", "Naive system"])

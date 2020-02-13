@@ -169,7 +169,7 @@ def mulPoints(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
     
     for i in range(len(x)):
-        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle=linestyles[-1])
+        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle=lineStyles[-1])
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
@@ -249,13 +249,13 @@ def mulLines(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
 
     for i in range(len(y)):
-        ax.plot(x, y[i], color=colors[i], label=labels[i], linewidth=3.3, linestyle=linestyles[i])
+        ax.plot(x, y[i], color=colors[i], label=labels[i], linewidth=3.3, linestyle=lineStyles[i])
     
     ax.grid(True)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[3], fontsize=legendFontSize[3], numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[3], numpoints=1)
 
     plt.show()
 

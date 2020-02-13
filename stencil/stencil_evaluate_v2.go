@@ -9,7 +9,7 @@ func main() {
 	
 	// evaluation.Exp1GetTotalMigratedDataSize()
 
-	evaluation.Exp1()
+	// evaluation.Exp1()
 
 	// evaluation.Exp2()
 
@@ -47,7 +47,7 @@ func main() {
 
 	// evaluation.Exp1GetDanglingObjects()
 
-	// evaluation.Exp1GetTotalObjects()
+	evaluation.Exp1GetTotalObjects()
 
 	// evaluation.Exp1GetDanglingDataSize("977607531")
 
