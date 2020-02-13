@@ -130,7 +130,9 @@ func (self *QI) GenSQL() (string, []interface{}) {
 			cols = append(cols, col)
 			vals = append(vals, fmt.Sprintf("$%d", i+1))
 		}
-		q := fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s) ON CONFLICT DO NOTHING;", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
+		// q := fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s) ON CONFLICT DO NOTHING;", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
+		q := fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s);", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
+
 		return q, self.Values
 	}
 	fmt.Println("!!! Unable to identify query type.", self.Type)

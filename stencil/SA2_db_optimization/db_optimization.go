@@ -2,6 +2,7 @@ package SA2_db_optimization
 
 import (
 	"stencil/db"
+	"stencil/apis"
 	"strings"
 	"log"
 	"fmt"
@@ -180,6 +181,26 @@ func CreatePartitionedMigrationTable() {
 
 }
 
+// If you drop the partitioned table, then all partitions of the table 
+// will also be dropped.
+func DropPartitionedTable() {
+
+	db.STENCIL_DB = "stencil_exp_sa2"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	defer dbConn.Close()
+	
+	query := "DROP TABLE migration_table"
+
+	log.Println(query)
+
+	err := db.TxnExecute1(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func DropPartitions() {
 
 	db.STENCIL_DB = "stencil_exp_sa2"
@@ -213,26 +234,28 @@ func DropPartitions() {
 
 }
 
+// When creating a range partition, the lower bound specified with FROM is an inclusive bound,
+// whereas the upper bound specified with TO is an exclusive bound.
 func CreatPartitions() {
 
 	maxRowID := 2147483647
 	ranges1 := [][]int {
-		{1, 7}, 		// aspects
-		{7, 9},			// comments
-		{9, 10},		// contacts
-		{10, 11},		// conversations
-		{11, 13},		// messages
-		{13, 14},		// notification_actors
-		{14, 19},		// notifications
-		{19, 20},		// people
-		{20, 26},		// photos
-		{26, 27},		// posts
-		{27, 32},		// profiles
-		{32, 35},		// aspect_visibilities
-		{35, 39},		// users
-		{39, 41},		// conversation_visibilities
-		{41, 52},		// likes
-		{52, 198},		// all other tables
+		{1, 7}, 		// 1. aspects
+		{7, 9},			// 2. comments
+		{9, 10},		// 3. contacts
+		{10, 11},		// 4. conversations
+		{11, 13},		// 5. messages
+		{13, 14},		// 6. notification_actors
+		{14, 19},		// 7. notifications
+		{19, 20},		// 8. people
+		{20, 26},		// 9. photos
+		{26, 27},		// 10. posts
+		{27, 32},		// 11. profiles
+		{32, 35},		// 12. aspect_visibilities
+		{35, 39},		// 13. users
+		{39, 41},		// 14. conversation_visibilities
+		{41, 52},		// 15. likes
+		{52, 198},		// 16. all other tables
 	}
 
 	subPartitionTables := []int {
@@ -328,4 +351,23 @@ func CreatPartitions() {
 		log.Fatal(err)
 	}
 	
+}
+
+func PopulateSA2Tables() {
+
+	var limit int64 
+
+	db.STENCIL_DB = "stencil_exp_sa2"
+
+	// table := "conversations"
+	// table := "messages"
+	// table := "people"
+	table := "notifications"
+	limit = 2000	
+
+	appName := "diaspora_1000000"
+	appID := "1"
+
+	apis.Port(appName, appID, table, limit)
+
 }
