@@ -88,6 +88,8 @@ type EvalConfig struct {
 	Diaspora10KCounterFile string
 	Diaspora100KCounterFile string
 	Diaspora1MCounterFile string
+	DataDowntimeInPercentageInStencilFile string
+	DataDowntimeInPercentageInNaiveFile string
 }
 
 type DataBagData struct {

@@ -80,7 +80,7 @@ func PreExp() {
 // In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
 // The source database needs to be changed to diaspora_1000_exp
-func Exp1() {
+func Exp1(firstUserID ...string) {
 
 	// This is the configuration of the first time test
 	// stencilDB = "stencil_cow"
@@ -90,6 +90,8 @@ func Exp1() {
 	stencilDB = "stencil_exp4"
 	mastodon = "mastodon_exp4"
 	diaspora = "diaspora_1000_exp4"
+
+	migrationNum := 1000
 
 	evalConfig := InitializeEvalConfig()
 
@@ -110,9 +112,16 @@ func Exp1() {
 
 	shuffleSlice(userIDs)
 
+	if len(firstUserID) != 0 {
+		userIDs = moveElementToStartOfSlice(userIDs, firstUserID[0])
+	}
+
 	log.Println("Total users:", len(userIDs))
 
-	for _, userID := range userIDs {
+	for i := 0; i < migrationNum; i++ {
+	// for _, userID := range userIDs {
+
+		userID := userIDs[i]
 
 		log.Println("User ID:", userID)
 
@@ -181,7 +190,7 @@ func Exp1GetDanglingDataSize(migrationID string) {
 func Exp1GetTotalMigratedDataSize() {
 
 	diaspora = "diaspora_1000"
-
+	stencilDB = "stencil_cow"
 	// Note that mastodon needs to be changed in the config file as well
 	mastodon = "mastodon"
 
@@ -222,9 +231,11 @@ func Exp1GetTotalMigratedDataSize() {
 
 func Exp1GetDanglingObjects() {
 
-	stencilDB = "stencil_cow"
-	mastodon = "mastodon"
-	diaspora = "diaspora_1000_exp"
+	// stencilDB = "stencil_cow"
+	// mastodon = "mastodon"
+	// diaspora = "diaspora_1000_exp"
+
+	stencilDB = "stencil_exp4"
 
 	evalConfig := InitializeEvalConfig()
 
@@ -232,27 +243,55 @@ func Exp1GetDanglingObjects() {
 
 	migrationIDs := GetAllMigrationIDsOrderByEndTime(evalConfig)
 
-	log.Println(migrationIDs)
+	// log.Println(migrationIDs)
 
 	for _, migrationID := range migrationIDs {
 
-		danglingObjects := make(map[string]int)
+		danglingObjects := make(map[string]int64)
 
 		srcDanglingObjects, dstDanglingObjects :=
 			getDanglingObjectsOfMigration(evalConfig, migrationID)
 
-		danglingObjects["srcDanglingData"] = srcDanglingObjects
-		danglingObjects["dstDanglingData"] = dstDanglingObjects
+		danglingObjects["srcDanglingObjs"] = srcDanglingObjects
+		danglingObjects["dstDanglingObjs"] = dstDanglingObjects
 
 		WriteStrToLog(
 			evalConfig.DanglingObjectsFile,
-			ConvertMapIntToJSONString(danglingObjects),
+			ConvertMapInt64ToJSONString(danglingObjects),
 		)
 
 	}
 }
 
 func Exp1GetTotalObjects() {
+	
+	// diaspora = "diaspora_1000"
+	// stencilDB = "stencil_cow"
+	// // Note that mastodon needs to be changed in the config file as well
+	// mastodon = "mastodon"
+
+	diaspora = "diaspora_1000"
+	stencilDB = "stencil_exp4"
+	mastodon = "mastodon_exp4"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	totalRowCounts1 := getTotalRowCountsOfDB(evalConfig.DiasporaDBConn)
+
+	totalPhotoCounts1 := getTotalRowCountsOfTable(evalConfig.DiasporaDBConn, "photos")
+
+	log.Println("Total Objects in Diaspora:", totalRowCounts1 + totalPhotoCounts1)
+
+	totalRowCounts2 := getTotalRowCountsOfDB(evalConfig.MastodonDBConn)
+
+	totalPhotoCounts2 := getTotalRowCountsOfTable(evalConfig.MastodonDBConn, "media_attachments")
+
+	danglingObjs2 := getDanglingObjectsOfApp(evalConfig, "2")
+
+	log.Println("Total Objects in Mastodon:", 
+		totalRowCounts2 + totalPhotoCounts2 + danglingObjs2)
 
 }
 
@@ -290,8 +329,10 @@ func Exp2() {
 	// startNum := 600 // fouth time and stop at the 1st user
 	// startNum := 900 // fifth time and stop at the 10th user
 	// startNum := 920 // sixth time and crashes at the 52th user
+	// startNum := 1500 // seventh time and crashes at the 11th user
+	// startNum := 1520 eighth time and stop at the 61th user
 
-	startNum := 1500 
+	startNum := 2000
 
 	// ************ SA1 ************
 
@@ -655,7 +696,7 @@ func Exp3GetDatadowntime() {
 
 }
 
-func Exp3GetDatadowntimeByLoadingUserIDFromLog() {
+func Exp3GetDataDowntimeByLoadingUserIDFromLog() {
 
 	SA1StencilDB := "stencil_exp"
 	naiveStencilDB := "stencil_exp5"
@@ -707,6 +748,72 @@ func Exp3GetDatadowntimeByLoadingUserIDFromLog() {
 	WriteStrArrToLog(
 		evalConfig.DataDowntimeInNaiveFile, 
 		ConvertDurationToString(naiveDowntime),
+	)
+
+}
+
+func Exp3GetDataDowntimeInPercentageByLoadingUserIDFromLog() {
+
+	SA1StencilDB := "stencil_exp"
+	naiveStencilDB := "stencil_exp5"
+
+	logFile := "SA1Size"
+	migrationNum := 100
+
+	stencilDB = SA1StencilDB
+	stencilDB1 = naiveStencilDB
+
+	evalConfig := InitializeEvalConfig()
+	defer closeDBConns(evalConfig)
+
+	data := ReadStrLinesFromLog(logFile)
+
+	var SA1PercentageOfDowntime, naivePercentageOfDowntime []float64
+
+	for i := 0; i < migrationNum; i++ {
+
+		var data1 SA1SizeStruct 
+
+		err := json.Unmarshal([]byte(data[i]), &data1)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		userID := data1.UserID
+
+		SA1MigrationID := getMigrationIDBySrcUserID1(evalConfig.StencilDBConn, userID)
+		naiveMigrationID := getMigrationIDBySrcUserID1(evalConfig.StencilDBConn1, userID)
+
+		SA1Downtime := getDataDowntimeOfMigration(evalConfig.StencilDBConn,
+			SA1MigrationID)
+		naiveDowntime := getDataDowntimeOfMigration(evalConfig.StencilDBConn1,
+			naiveMigrationID)
+
+		SA1TotalTime := getTotalTimeOfMigration(evalConfig.StencilDBConn, 
+			SA1MigrationID)
+		naiveTotalTime := getTotalTimeOfMigration(evalConfig.StencilDBConn1, 
+			naiveMigrationID)
+		
+		SA1PercentageOfDowntime1 := calculateTimeInPercentage(SA1Downtime, SA1TotalTime)
+		naivePercentageOfDowntime1 := calculateTimeInPercentage(naiveDowntime, naiveTotalTime)
+		
+		SA1PercentageOfDowntime = append(SA1PercentageOfDowntime, 
+			SA1PercentageOfDowntime1...)
+		naivePercentageOfDowntime = append(naivePercentageOfDowntime, 
+			naivePercentageOfDowntime1...)
+
+	}
+
+	log.Println(SA1PercentageOfDowntime)
+
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInPercentageInStencilFile, 
+		ConvertFloat64ToString(SA1PercentageOfDowntime),
+	)
+
+	WriteStrArrToLog(
+		evalConfig.DataDowntimeInPercentageInNaiveFile, 
+		ConvertFloat64ToString(naivePercentageOfDowntime),
 	)
 
 }
@@ -871,7 +978,7 @@ func Exp4Count1MDBEdgesNodes() {
 
 	// for i := len(userIDs) -  1; i > 10000; i-- {  
 	// for _, userID := range userIDs {
-	for i := 260000; i < len(userIDs); i += 100 {  
+	for i := 280000; i < len(userIDs); i += 100 {  
 		
 		userID := userIDs[i]
 
@@ -986,12 +1093,16 @@ func Exp6() {
 	mastodon = "mastodon_exp3"
 	diaspora = "diaspora_1000000_exp3"
 
+	db.STENCIL_DB = "stencil_exp3"
+	db.DIASPORA_DB = "diaspora_1000000_exp3"
+	db.MASTODON_DB = "mastodon_exp3"
+
 	// counterStart := 0
 	// counterNum := 300
 	// counterInterval := 10
 
 	counterStart := 0
-	counterNum := 300
+	counterNum := 100
 	counterInterval := 10
 
 	evalConfig := InitializeEvalConfig()
@@ -1003,10 +1114,11 @@ func Exp6() {
 	res := getEdgesCounter(evalConfig, 
 		counterStart, counterNum, counterInterval)
 
+	log.Println("Total Num:", len(res))
 	log.Println(res)
 
 	for i := 0; i < len(res); i ++ {
-		
+
 		res1 := res[i]
 
 		userID := res1["person_id"]

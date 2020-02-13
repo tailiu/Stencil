@@ -6,11 +6,10 @@ from numpy.polynomial.polynomial import polyfit
 plt.rcParams.update({'font.size': 25})
 
 colors = ['g', 'r', 'b', 'c', 'y', 'k', 'm', 'w']
-lineStyles = ['-', '--', '-.', ':']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
-legendLoc = ['best', 'upper right', 'upper left', 'upper center']
+legendLoc = ['best', 'upper right', 'upper left', 'upper center', 'center right']
 markers = ["o", "v", "s", "*", "+", "<"]
-linestyles = ["solid", "dashed", "dotted", ""]
+lineStyles = ["solid", "dashed", "dotted",""]
 
 def line(x, y, xlabel, ylabel, title):
     xs, ys = _sortX(x, y)
@@ -126,7 +125,13 @@ def cumulativeGraph(dataArr, labels, xlabel, ylabel):
     ax.set_ylabel(ylabel)
     ax.grid(True)
     
-    legend = ax.legend(loc=1, fontsize=legendFontSize[4])
+    # This legend setting should be enought for most graphs
+    # legend = ax.legend(loc=legendLoc[1], fontsize=legendFontSize[4])
+
+    # I want to change location by coordinates
+    # bbox_to_anchor = (x0, y0, width, height) 
+    # (x0,y0) are the lower left corner coordinates of the bounding box.
+    legend = ax.legend(bbox_to_anchor=(1, 0.95), loc=legendLoc[1], fontsize=legendFontSize[4])
 
     plt.show()
 
@@ -164,7 +169,7 @@ def mulPoints(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
     
     for i in range(len(x)):
-        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle=linestyles[-1])
+        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle=lineStyles[-1])
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
@@ -209,22 +214,54 @@ def mulPoints2(x, y, labels, xlabel, ylabel):
     
     plt.show()
 
+def mulPoints3(x, y, labels, xlabels, ylabels):
+
+    figNum = len(y)
+
+    fig, axs = plt.subplots(nrows=1, ncols=figNum)
+
+    for i, ax in enumerate(axs):
+        
+        x1 = x[i]
+        y1 = y[i]
+
+        for j, x11 in enumerate(x1):
+
+            y11 = y1[j]
+
+            x12 = np.array(x11)
+            y12 = np.array(y11)
+            b, m = polyfit(x12, y12, 1)
+
+            ax.plot(x12, y12, marker=markers[j], color=colors[j], markersize=7, label=labels[j], linestyle=lineStyles[-1])
+            ax.plot(x12, m * x12 + b, linestyle=lineStyles[j], color=colors[j], linewidth=2)
+
+        ax.grid(True)
+        ax.set_xlabel(xlabels[i])
+        ax.set_ylabel(ylabels[i])
+
+        legend = ax.legend(loc=legendLoc[3], fontsize=legendFontSize[3], numpoints=1)
+    
+    plt.show()
+
 def mulLines(x, y, labels, xlabel, ylabel):
 
     fig, ax = plt.subplots()
 
     for i in range(len(y)):
-        ax.plot(x, y[i], color=colors[i], label=labels[i], linewidth=3.3, linestyle=linestyles[i])
+        ax.plot(x, y[i], color=colors[i], label=labels[i], linewidth=3.3, linestyle=lineStyles[i])
     
     ax.grid(True)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[3], fontsize=legendFontSize[3], numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[3], numpoints=1)
 
     plt.show()
 
-def mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS):
+def mulLinesDanglingDataCumSum(x, danglingLikesCS, danglingCommentsCS, 
+    danglingMessagesCS, danglingTotalCS, danglingStatusesCS, danglingFavCS):
+    
     fig, ax = plt.subplots()
     # ax.plot(x, danglingLikesCS, 'c--', label='Dangling likes without posts in Diaspora')
     # ax.plot(x, danglingCommentsCS, 'g--', label='Dangling comments without posts in Diaspora')

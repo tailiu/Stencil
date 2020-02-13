@@ -73,7 +73,7 @@ func GetDBConn(app string, isBlade ...bool) *sql.DB {
 
 	log.Println(fmt.Sprintf("Connecting to DB \"%s\" @ [%s] for App {%s} ...", dbName, dbAddr, app))
 
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbAddr, DB_PORT, DB_USER, DB_PASSWORD, dbName)
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=600", dbAddr, DB_PORT, DB_USER, DB_PASSWORD, dbName)
 
 	dbConn, err := sql.Open("postgres", psqlInfo)
 	if err != nil {

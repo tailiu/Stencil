@@ -73,7 +73,9 @@ func InitializeEvalConfig() *EvalConfig {
 	evalConfig.Diaspora1KCounterFile,
 	evalConfig.Diaspora10KCounterFile,
 	evalConfig.Diaspora100KCounterFile,
-	evalConfig.Diaspora1MCounterFile = 
+	evalConfig.Diaspora1MCounterFile,
+	evalConfig.DataDowntimeInPercentageInStencilFile,
+	evalConfig.DataDowntimeInPercentageInNaiveFile = 
 		"srcAnomaliesVsMigrationSize",
 		"dstAnomaliesVsMigrationSize",
 		"interruptionDuration",
@@ -90,11 +92,13 @@ func InitializeEvalConfig() *EvalConfig {
 		"migratedDataSizeBySrc",
 		"migrationTimeBySrc",
 		"danglingData",
-		"DanglingObjects",
+		"danglingObjects",
 		"diaspora1KCounter",
 		"diaspora10KCounter",
 		"diaspora100KCounter",
-		"diaspora1MCounter"
+		"diaspora1MCounter",
+		"dataDowntimeInPercentageInStencil",
+		"dataDowntimeInPercentageInNaive"
 
 	return evalConfig
 }
@@ -920,5 +924,28 @@ func shuffleSlice(s []string) {
 	rand.Shuffle(len(s), func(i, j int) { 
 		s[i], s[j] = s[j], s[i] 
 	})
+
+}
+
+func moveElementToStartOfSlice(s []string, 
+	element string) []string {
+
+	if len(s) == 0 || s[0] == element {
+		return s
+	} 
+	
+	if s[len(s)-1] == element {
+		s = append([]string{element}, s[:len(s)-1]...)
+		return s
+	} 
+
+	for i, value := range s {
+		if value == element {
+			s = append([]string{element}, append((s)[:i], (s)[i+1:]...)...)
+			break
+		}
+	}
+
+	return s
 
 }

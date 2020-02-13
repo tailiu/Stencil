@@ -9,7 +9,7 @@ func main() {
 	
 	// evaluation.Exp1GetTotalMigratedDataSize()
 
-	evaluation.Exp1()
+	// evaluation.Exp1()
 
 	// evaluation.Exp2()
 
@@ -43,10 +43,14 @@ func main() {
 
 	// evaluation.Exp3LoadUserIDsFromLog()
 
-	// evaluation.Exp3GetDatadowntimeByLoadingUserIDFromLog()
+	// evaluation.Exp3GetDataDowntimeByLoadingUserIDFromLog()
 
 	// evaluation.Exp1GetDanglingObjects()
 
-	evaluation.Exp1GetDanglingDataSize("977607531")
+	evaluation.Exp1GetTotalObjects()
+
+	// evaluation.Exp1GetDanglingDataSize("977607531")
+
+	// evaluation.Exp3GetDataDowntimeInPercentageByLoadingUserIDFromLog()
 
 }

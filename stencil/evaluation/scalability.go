@@ -27,7 +27,7 @@ func getEdgesCounter(evalConfig *EvalConfig,
 	counter := 0
 
 	for i := counterStart; i < len(data); i++ {
-		
+
 		res1 := make(map[string]string)
 		res1["person_id"] = fmt.Sprint(data[i]["person_id"])
 		res1["edges"] = fmt.Sprint(data[i]["edges"])
@@ -180,6 +180,7 @@ func insertDataIntoCounterTableIfNotExist(evalConfig *EvalConfig,
 
 	if data1["person_id"] != nil {
 		log.Println("UserID", data.UserID, "has already in the table")
+		return
 	}
 
 	query2 := fmt.Sprintf(

@@ -1,6 +1,7 @@
 package evaluation
 
 import (
+	"strconv"
 	"time"
 	"fmt"
 	"log"
@@ -9,11 +10,11 @@ import (
 	"stencil/transaction"
 )
 
-func getMigrationStartTime(stencilDBConn *sql.DB, 
+func getMigrationStartTime(dbConn *sql.DB, 
 	migrationID int) time.Time {
 
 	log_txn := new(transaction.Log_txn)
-	log_txn.DBconn = stencilDBConn
+	log_txn.DBconn = dbConn
 	log_txn.Txn_id = migrationID
 	
 	if startTime := log_txn.GetCreatedAt("BEGIN_TRANSACTION"); 
@@ -57,5 +58,90 @@ func GetDisplayTime(stencilDBConn *sql.DB,
 	displayTime := endTime.Sub(startTime)
 
 	return displayTime
+
+}
+
+func getDataDowntimeOfMigration(dbConn *sql.DB,
+	migrationID string) []time.Duration {
+
+	var downtime []time.Duration
+
+	query := fmt.Sprintf(
+		`SELECT created_at, displayed_at, dst_table, dst_id
+		FROM evaluation WHERE migration_id = '%s'
+		and displayed_at is not null`, 
+		migrationID)
+
+	// log.Println(query)
+	
+	result, err := db.DataCall(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	checkedData := make(map[string]bool)
+
+	for _, data1 := range result {
+
+		dstTable := fmt.Sprint(data1["dst_table"])
+		dstID := fmt.Sprint(data1["dst_id"])
+
+		key := dstTable + ":" + dstID
+
+		if _, ok := checkedData[key]; ok {
+			// log.Println("Duplicate key:", key)
+			continue
+		}
+
+		downtime = append(
+			downtime, 
+			data1["displayed_at"].(time.Time).Sub(data1["created_at"].(time.Time)),
+		)
+
+		checkedData[key] = true
+
+	}
+
+	return downtime
+
+}
+
+func getTotalTimeOfMigration(dbConn *sql.DB,
+	migrationID string) time.Duration {
+
+	query := fmt.Sprintf(
+		`SELECT end_time FROM display_registration 
+		WHERE migration_id = %s`,
+		migrationID,
+	)
+
+	data, err := db.DataCall1(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	migrationIDInt, err1 := strconv.Atoi(migrationID)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	migrationStartTime := getMigrationStartTime(dbConn, migrationIDInt)
+
+	totalTime := data["end_time"].(time.Time).Sub(migrationStartTime)
+
+	return totalTime
+
+}
+
+func calculateTimeInPercentage(times []time.Duration, 
+	totalTime time.Duration) []float64 {
+
+	var timesInPercentage []float64
+	
+	for _, time := range times {
+		timesInPercentage = append(timesInPercentage, time.Seconds() / totalTime.Seconds())
+	}
+
+	return timesInPercentage
 
 }
