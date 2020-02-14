@@ -139,20 +139,9 @@
                             "tag_attr": "tweet",
                             "depends_on_attr": "id"
                         }
-                    ],
-                    "display_setting": "parent_node_partially_displays"
-                },
-                {
-                    "tag": "root",
-                    "conditions": [
-                        {
-                            "tag_attr": "user_id",
-                            "depends_on_attr": "id"
-                        }
                     ]
                 }
-            ],
-            "combined_display_setting":"tweets and root"
+            ]
         },
         {
             "tag": "actions",
@@ -161,7 +150,7 @@
                     "tag": "root",
                     "conditions": [
                         {   
-                            "tag_attr": "to_user_id",
+                            "tag_attr": "from_user_id",
                             "depends_on_attr": "id"
                         }
                     ]
@@ -177,6 +166,26 @@
                         {   
                             "tag_attr": "conversation_id",
                             "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "tag": "conversations",
+            "depends_on": [
+                {
+                    "tag": "root",
+                    "conditions": [
+                        {   
+                            "tag_attr": "user_id",
+                            "depends_on_attr": "id",
+                            "restrictions": [
+                                {
+                                    "col":"role",
+                                    "val":"creator"
+                                }
+                            ]
                         }
                     ]
                 }
@@ -210,13 +219,7 @@
             "conditions": [
                 {
                     "tag_attr":"user_id",
-                    "depends_on_attr":"id",
-                    "restrictions": [
-                        {
-                            "col":"role",
-                            "val":"creator"
-                        }
-                    ]
+                    "depends_on_attr":"id"
                 }
             ]
         },

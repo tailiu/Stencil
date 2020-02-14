@@ -563,8 +563,8 @@ func TruncateUnrelatedTables() {
 
 }
 
-// My machine: people, users
-// VM: notifications, profiles
+// My machine: people(finished), users, likes
+// VM: notifications, profiles(finished), posts
 // Blade server: notification_actors
 func PopulateSA2Tables() {
 
@@ -572,7 +572,7 @@ func PopulateSA2Tables() {
 
 	db.STENCIL_DB = "stencil_exp_sa2"
 
-	table := "users"
+	table := "likes"
 	limit = 2000	
 
 	appName := "diaspora_1000000"
