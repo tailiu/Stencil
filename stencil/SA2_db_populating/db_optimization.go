@@ -508,6 +508,43 @@ func DropPrimaryKeysOfParitions() {
 
 }
 
+func AddPrimaryKeysToParitions() {
+
+	db.STENCIL_DB = "stencil_exp_sa2"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	defer dbConn.Close()
+
+	var queries []string
+	
+	tables := getAllTablesInDBs(dbConn)
+
+	for _, t := range tables {
+		
+		table := t["tablename"]
+
+		if strings.Contains(table, "migration_table_sub_") {
+
+			query := fmt.Sprintf(
+				`ALTER TABLE %s ADD CONSTRAINT %s_pk 
+				PRIMARY KEY (app_id, table_id, group_id, row_id, mark_as_delete);`,
+				table, table,
+			)
+
+			log.Println(query)
+
+			queries = append(queries, query)
+		}
+
+	} 
+
+	err := db.TxnExecute(dbConn, queries)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func TruncateUnrelatedTables() {
 
 	db.STENCIL_DB = "stencil_exp_sa2"

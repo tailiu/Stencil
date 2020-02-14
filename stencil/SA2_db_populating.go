@@ -20,7 +20,9 @@ func main() {
 
 	// SA2_db_populating.DropPartitionedTable()
 
-	SA2_db_populating.PopulateSA2Tables()
+	// SA2_db_populating.PopulateSA2Tables()
+
+	// SA2_db_populating.AddPrimaryKeysToParitions()
 
 	// SA2_db_populating.TruncateUnrelatedTables()
 

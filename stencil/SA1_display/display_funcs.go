@@ -625,6 +625,20 @@ func setDstUserIDIfNotSet(displayConfig *displayConfig) {
 
 }
 
+func addTableNameToDataAttibutes(data map[string]interface{}, 
+	tableName string) map[string]interface{} {
+
+	procData := make(map[string]interface{})
+
+	for attr, val := range data {
+		procAttr := tableName + "." + attr
+		procData[procAttr] = val
+	}
+
+	return procData
+
+}
+
 // When putting data to dag bags, it does not matter whether we set unresolved references
 // to NULLs or not, so we don't set those as NULLs.
 func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error {
@@ -653,13 +667,15 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 		// In both cases, there is no need to execute queries1 and queries2 again.
 		if dataHint.Data != nil {
 
+			procData := addTableNameToDataAttibutes(dataHint.Data, dataHint.Table)
+
 			q1 = fmt.Sprintf(`INSERT INTO data_bags 
 				(app, member, id, data, user_id, migration_id) VALUES 
 				(%s, %s, %d, '%s', %s, %d)`,
 				displayConfig.dstAppConfig.appID,
 				dataHint.TableID,
 				dataHint.KeyVal["id"],
-				ConvertMapToJSONString(dataHint.Data),
+				ConvertMapToJSONString(procData),
 				displayConfig.dstAppConfig.userID,
 				displayConfig.migrationID,
 			)
