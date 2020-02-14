@@ -1,4 +1,4 @@
-package SA2_db_optimization
+package SA2_db_populating
 
 import (
 	"stencil/db"

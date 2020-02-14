@@ -1,4 +1,4 @@
-package SA2_db_optimization
+package SA2_db_populating
 
 import (
 	"stencil/db"
@@ -10,7 +10,7 @@ import (
 
 func TruncateSA2Tables() {
 
-	db.STENCIL_DB = "stencil"
+	db.STENCIL_DB = "stencil_exp_sa2"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 
@@ -149,8 +149,6 @@ func ListRowCountsOfDB() {
 
 // Note that Primary keys, index, foreign keys 
 // are not supported on a partitioned table
-// Nor can one truncate a partitioned table 
-// since all data is stored in partitions
 func CreatePartitionedMigrationTable() {
 	
 	db.STENCIL_DB = "stencil_exp_sa2"
@@ -510,6 +508,24 @@ func DropPrimaryKeysOfParitions() {
 
 }
 
+func TruncateUnrelatedTables() {
+
+	db.STENCIL_DB = "stencil_exp_sa2"
+	
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	defer dbConn.Close()
+
+	query1 := `TRUNCATE identity_table, migration_registration, 
+		reference_table, resolved_references, txn_logs, 
+		evaluation, data_bags, display_flags, display_registration`
+	
+	err1 := db.TxnExecute1(dbConn, query1)
+	if err1 != nil {
+		log.Fatal(err1)
+	} 
+
+}
+
 // My machine: people, users
 // VM: notifications, profiles
 // Blade server: notification_actors
@@ -519,7 +535,7 @@ func PopulateSA2Tables() {
 
 	db.STENCIL_DB = "stencil_exp_sa2"
 
-	table := "notifications"
+	table := "users"
 	limit = 2000	
 
 	appName := "diaspora_1000000"
