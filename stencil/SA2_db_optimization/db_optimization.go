@@ -305,7 +305,7 @@ func CreatPartitions() {
 
 		}
 
-		log.Println(query1)
+		// log.Println(query1)
 
 		queries = append(queries, query1)
 	
@@ -338,7 +338,7 @@ func CreatPartitions() {
 			
 			rangeStart1 = rangeEnd1
 
-			log.Println(query2)
+			// log.Println(query2)
 	
 			queries = append(queries, query2)
 
@@ -350,7 +350,127 @@ func CreatPartitions() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	tables := getAllTablesInDBs(dbConn)
 	
+	var queries1 []string
+
+	for _, t := range tables {
+		
+		table := t["tablename"]
+
+		if strings.Contains(table, "migration_table_") &&
+			table != "migration_table_backup" && 
+			!isSubPartitionTable(subPartitionTableIDs, table) {
+				
+			query19 := fmt.Sprintf(
+				`ALTER TABLE %s ADD CONSTRAINT %s_pk 
+				PRIMARY KEY (app_id, table_id, group_id, row_id, mark_as_delete);`,
+				table, table,
+			)
+
+			query20 := fmt.Sprintf(
+				`ALTER TABLE %s ADD CONSTRAINT %s_app_tables_fkey
+				FOREIGN KEY (table_id) REFERENCES app_tables (pk);`,
+				table, table,
+			)
+
+			query3 := fmt.Sprintf(
+				`ALTER TABLE %s ADD CONSTRAINT %s_apps_fkey
+				FOREIGN KEY (app_id) REFERENCES apps (pk);`,
+				table, table,
+			)
+
+			query4 := fmt.Sprintf(
+				`CREATE INDEX ON %s (app_id, table_id, mflag, mark_as_delete);`,
+				table,
+			)
+
+			query5 := fmt.Sprintf(
+				`CREATE INDEX ON %s (app_id, table_id, row_id);`,
+				table,
+			)
+
+			query6 := fmt.Sprintf(
+				`CREATE INDEX ON %s (bag);`,
+				table,
+			)
+
+			query7 := fmt.Sprintf(
+				`CREATE INDEX ON %s (app_id);`,
+				table,
+			)
+
+			query8 := fmt.Sprintf(
+				`CREATE INDEX ON %s (app_id, group_id, row_id);`,
+				table,
+			)
+			
+			query9 := fmt.Sprintf(
+				`CREATE INDEX ON %s (row_id);`,
+				table,
+			)
+
+			query10 := fmt.Sprintf(
+				`CREATE INDEX ON %s (row_id, group_id);`,
+				table,
+			)
+
+			query11 := fmt.Sprintf(
+				`CREATE INDEX ON %s (table_id);`,
+				table,
+			)
+			
+			query12 := fmt.Sprintf(
+				`CREATE INDEX ON %s (app_id, group_id, row_id, table_id);`,
+				table,
+			)
+			
+			query13 := fmt.Sprintf(
+				`CREATE INDEX ON %s (mark_as_delete);`,
+				table,
+			)
+
+			query14 := fmt.Sprintf(
+				`CREATE INDEX ON %s (mflag);`,
+				table,
+			)
+
+			query15 := fmt.Sprintf(
+				`CREATE INDEX ON %s (migration_id);`,
+				table,
+			)
+
+			query16 := fmt.Sprintf(
+				`CREATE INDEX ON %s (group_id);`,
+				table,
+			)
+
+			query17 := fmt.Sprintf(
+				`CREATE INDEX ON %s (user_id);`,
+				table,
+			)
+
+			query18 := fmt.Sprintf(
+				`CREATE INDEX ON %s (app_id, table_id, group_id, row_id, mark_as_delete);`,
+				table,
+			)
+
+			queries1 = append(queries1,
+				query19, query20, query3, query4,
+				query5, query6, query7, query8,
+				query9, query10, query11, query12,
+				query13, query14, query15, query16,
+				query17, query18,
+			)
+		}
+	}
+
+	err1 := db.TxnExecute(dbConn, queries1)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
 }
 
 func PopulateSA2Tables() {
@@ -363,7 +483,7 @@ func PopulateSA2Tables() {
 	// table := "messages"
 	// table := "people"
 	table := "notifications"
-	limit = 2000	
+	limit = 3000	
 
 	appName := "diaspora_1000000"
 	appID := "1"
