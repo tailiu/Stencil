@@ -268,6 +268,7 @@ func CreatPartitions() {
 	db.STENCIL_DB = "stencil_exp_sa2"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
+	defer dbConn.Close()
 
 	var queries []string
 	
@@ -473,17 +474,53 @@ func CreatPartitions() {
 
 }
 
+func DropPrimaryKeysOfParitions() {
+
+	db.STENCIL_DB = "stencil_exp_sa2"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	defer dbConn.Close()
+
+	var queries []string
+	
+	tables := getAllTablesInDBs(dbConn)
+
+	for _, t := range tables {
+		
+		table := t["tablename"]
+
+		if strings.Contains(table, "migration_table_sub_") {
+
+			query := fmt.Sprintf(
+				`ALTER TABLE %s DROP CONSTRAINT %s_pk;`,
+				table, table,
+			)
+
+			log.Println(query)
+
+			queries = append(queries, query)
+		}
+
+	} 
+
+	err := db.TxnExecute(dbConn, queries)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+// My machine: people, users
+// VM: notifications, profiles
+// Blade server: notification_actors
 func PopulateSA2Tables() {
 
 	var limit int64 
 
 	db.STENCIL_DB = "stencil_exp_sa2"
 
-	// table := "conversations"
-	// table := "messages"
-	// table := "people"
 	table := "notifications"
-	limit = 3000	
+	limit = 2000	
 
 	appName := "diaspora_1000000"
 	appID := "1"

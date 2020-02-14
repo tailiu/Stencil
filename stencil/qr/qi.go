@@ -113,7 +113,28 @@ func (self *QR) ResolveInsertWithoutRowDesc(qi *QI, rowID int32) []*QI {
 	return PQIs
 }
 
+// func (self *QI) GenSQL() (string, []interface{}) {
 
+// 	switch self.Type {
+// 	case QTSelect:
+// 		fmt.Println("!!! Unimplemented type: Select")
+// 	case QTUpdate:
+// 		fmt.Println("!!! Unimplemented type: Update")
+// 	case QTDelete:
+// 		fmt.Println("!!! Unimplemented type: Delete")
+// 	case QTInsert:
+// 		var cols, vals []string
+// 		for i, col := range self.Columns {
+// 			cols = append(cols, col)
+// 			vals = append(vals, fmt.Sprintf("$%d", i+1))
+// 		}
+// 		q := fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s) ON CONFLICT DO NOTHING;", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
+
+// 		return q, self.Values
+// 	}
+// 	fmt.Println("!!! Unable to identify query type.", self.Type)
+// 	return "", self.Values
+// }
 
 func (self *QI) GenSQL() (string, []interface{}) {
 
@@ -130,13 +151,20 @@ func (self *QI) GenSQL() (string, []interface{}) {
 			cols = append(cols, col)
 			vals = append(vals, fmt.Sprintf("$%d", i+1))
 		}
-		// q := fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s) ON CONFLICT DO NOTHING;", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
-		q := fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s);", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
+
+		var q string
+
+		if strings.Contains(self.TableName, "migration_table") {
+			q = fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s);", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
+		} else {
+			q = fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s) ON CONFLICT DO NOTHING;", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
+		}
 
 		return q, self.Values
 	}
 	fmt.Println("!!! Unable to identify query type.", self.Type)
 	return "", self.Values
+
 }
 
 func getInsertQueryIngs(sql string) *QI {

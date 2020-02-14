@@ -22,4 +22,6 @@ func main() {
 
 	SA2_db_optimization.PopulateSA2Tables()
 
+	// SA2_db_optimization.DropPrimaryKeysOfParitions()
+
 }
