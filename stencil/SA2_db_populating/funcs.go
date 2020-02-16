@@ -4,6 +4,7 @@ import (
 	"stencil/db"
 	"database/sql"
 	"strconv"
+	"fmt"
 )
 
 func existsInSlice(s []int, element int) bool {
@@ -45,4 +46,29 @@ func isSubPartitionTable(subPartitionTableIDs map[int]int, table string) bool {
 
 	return false
 
+}
+
+func getTotalRowCountOfTable(dbName, table) int {
+
+	dbConn := db.GetDBConn(dbName)
+	defer dbConn.Close()
+
+	query := fmt.Sprintf(
+		`SELECT count(*) as num from %s`, table,
+	)
+
+	res, err := db.DataCall1(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmp := fmt.Sprint(res["num"])
+
+	num, err1 := strconv.Atoi(tmp)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	return num
+	
 }

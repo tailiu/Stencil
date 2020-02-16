@@ -2,7 +2,6 @@ package SA2_db_populating
 
 import (
 	"stencil/db"
-	"stencil/apis"
 	"strings"
 	"log"
 	"fmt"
@@ -561,29 +560,5 @@ func TruncateUnrelatedTables() {
 	if err1 != nil {
 		log.Fatal(err1)
 	} 
-
-}
-
-// First population:
-// My machine: people(finished), users(finished), likes, comments
-// VM: profiles(finished), notifications, posts
-// Blade server: notification_actors, aspect_visibilities
-// Second population:
-// VM: conversations(finished), conversation_visibilities(finished), 
-// 		users(finished), photos 
-// Blade server: people(finished), profiles(finished)
-func PopulateSA2Tables() {
-
-	var limit int64 
-
-	db.STENCIL_DB = "stencil_exp_sa2_1"
-
-	table := "notifications"
-	limit = 50000	
-
-	appName := "diaspora_1000000_sa2_1"
-	appID := "1"
-
-	apis.Port(appName, appID, table, limit)
 
 }
