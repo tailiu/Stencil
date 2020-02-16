@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"strconv"
 	"fmt"
+	"log"
 )
 
 func existsInSlice(s []int, element int) bool {
@@ -48,10 +49,7 @@ func isSubPartitionTable(subPartitionTableIDs map[int]int, table string) bool {
 
 }
 
-func getTotalRowCountOfTable(dbName, table) int {
-
-	dbConn := db.GetDBConn(dbName)
-	defer dbConn.Close()
+func getTotalRowCountOfTable(dbConn *sql.DB, table string) int64 {
 
 	query := fmt.Sprintf(
 		`SELECT count(*) as num from %s`, table,
@@ -62,13 +60,13 @@ func getTotalRowCountOfTable(dbName, table) int {
 		log.Fatal(err)
 	}
 
-	tmp := fmt.Sprint(res["num"])
+	// tmp := fmt.Sprint(res["num"])
 
-	num, err1 := strconv.Atoi(tmp)
-	if err1 != nil {
-		log.Fatal(err1)
-	}
+	// num, err1 := strconv.Atoi(tmp)
+	// if err1 != nil {
+	// 	log.Fatal(err1)
+	// }
 
-	return num
-	
+	return res["num"].(int64)
+
 }

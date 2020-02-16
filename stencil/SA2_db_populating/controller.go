@@ -4,17 +4,50 @@ import (
 	"stencil/apis"
 	"stencil/db"
 	"sync"
+	"database/sql"
+	"time"
+	"log"
 )
 
 // Note that [dataSeqStart, dataSeqEnd)
-func PopulateSA2Tables(dataSeqStart, dataSeqEnd, ) {
+func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB, 
+	dataSeqStart, dataSeqEnd, limit int64, wg *sync.WaitGroup,
+	appName, appID, table string) {
 
-	var offset, limit int64 
+	log.Println("Thread working on range:", dataSeqStart, "-", dataSeqEnd)
 
-	offset = 99
-	limit = 2000	
+	defer wg.Done()
 
-	apis.Port(appName, appID, table, limit, offset)
+	if dataSeqStart > dataSeqEnd {
+		return 
+	}
+
+	offset := dataSeqStart
+
+	for {
+
+		if offset + limit > dataSeqEnd {
+
+			apis.Port(
+				appName, appID, table, 
+				dataSeqEnd - offset, offset,
+				appDBConn, stencilDBConn,
+			)
+
+			break
+
+		} else {
+
+			apis.Port(
+				appName, appID, table, 
+				limit, offset,
+				appDBConn, stencilDBConn,
+			)
+			
+		}
+
+		offset += limit
+	}
 
 }
 
@@ -28,36 +61,63 @@ func PopulateSA2Tables(dataSeqStart, dataSeqEnd, ) {
 // Blade server: people(finished), profiles(finished)
 func PupulatingController() {
 
+	var limit int64
+
+	// ******************* Setting Parameters Start *******************
+	
 	db.STENCIL_DB = "stencil_exp_sa2_test"
+
+	table := "conversations"
 
 	appName := "diaspora_1000000"
 	appID := "1"
 
-	threadNum := 50 
+	limit = 10000
+	threadNum := 10
 
-	table := "notifications"
+	// ****************************** End ******************************
+
+	log.Println("Start populating data from table:", table)
+
+	startTime := time.Now()
+
+	stencilDBConn := db.GetDBConn(db.STENCIL_DB)
+	defer stencilDBConn.Close()
+
+	appDBConn := db.GetDBConn(appName)
+	defer appDBConn.Close()
 
 	var wg sync.WaitGroup
 
 	wg.Add(threadNum)
 
-	rowCount := getTotalRowCountOfTable(appName, table)
+	rowCount := getTotalRowCountOfTable(appDBConn, table)
 
 	log.Println("Total row count:", rowCount)
 	
-	dataSeqStart := 0
+	var dataSeqStart, dataSeqStep int64
+
+	dataSeqStart = 0
 	
-	dataSeqStep := rowCount / threadNum
+	dataSeqStep = rowCount / int64(threadNum)
 
 	for i := 0; i < threadNum; i++ {
 		
 		if i != threadNum - 1 {
 
-			go PopulateSA2Tables(dataSeqStart, dataSeqStart + dataSeqStep)
+			go PopulateSA2Tables(
+				stencilDBConn, appDBConn, 
+				dataSeqStart, dataSeqStart + dataSeqStep, limit, &wg,
+				appName, appID, table,
+			)
 
 		} else {
 
-			go PopulateSA2Tables(dataSeqStart, rowCount)
+			go PopulateSA2Tables(
+				stencilDBConn, appDBConn, 
+				dataSeqStart, rowCount, limit, &wg,
+				appName, appID, table,
+			)
 
 		}
 
@@ -67,5 +127,9 @@ func PupulatingController() {
 
 	wg.Wait()
 
+	endTime := time.Now()
+
+	log.Println("Populating", table, "is done")
+	log.Println("Time used:", endTime.Sub(startTime))
 
 }

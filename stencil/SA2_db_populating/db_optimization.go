@@ -9,7 +9,7 @@ import (
 
 func TruncateSA2Tables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2_1"
+	db.STENCIL_DB = "stencil_exp_sa2_test"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 

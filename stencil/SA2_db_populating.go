@@ -28,4 +28,6 @@ func main() {
 
 	// SA2_db_populating.DropPrimaryKeysOfParitions()
 
+	SA2_db_populating.PupulatingController()
+
 }
