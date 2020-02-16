@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 25})
+plt.rcParams.update({'font.size': 28})
 
 colors = ['g', 'r', 'b', 'c', 'y', 'k', 'm', 'w']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
@@ -255,7 +255,7 @@ def mulLines(x, y, labels, xlabel, ylabel):
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[3], numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[4], numpoints=1)
 
     plt.show()
 

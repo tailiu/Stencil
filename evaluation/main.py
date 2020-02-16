@@ -736,7 +736,8 @@ def danglingObjsCumSum2(labels):
 
     # Total objs count for the 1000 users migration
     srcTotalObjs = 397001
-    dstTotalObjs = 208942
+    # dstTotalObjs = 208942
+    dstTotalObjs = 123257
 
     data = readFile3(logDir + anomaliesFile2)
 
@@ -753,7 +754,8 @@ def danglingObjsCumSum2(labels):
     y = [srcDanglingObjsCumSumPercentage, dstDanglingObjsCumSumPercentage]
 
     xlabel = 'Percentage of users migrated'
-    ylabel = 'Percentage of dangling objects'
+    # ylabel = 'Percentage of dangling objects'
+    ylabel = 'Ratio of dangling objects to total objects'
     
     g.mulLines(x, y, labels, xlabel, ylabel)
 
