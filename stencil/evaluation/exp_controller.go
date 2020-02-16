@@ -290,8 +290,12 @@ func Exp1GetTotalObjects() {
 
 	danglingObjs2 := getDanglingObjectsOfApp(evalConfig, "2")
 
+	log.Println("Total Objects in Mastodon without dangling objects:", 
+		totalRowCounts2 + totalPhotoCounts2)
+
 	log.Println("Total Objects in Mastodon:", 
 		totalRowCounts2 + totalPhotoCounts2 + danglingObjs2)
+
 
 }
 
@@ -1046,25 +1050,36 @@ func Exp4LoadCounterResToTable() {
 	
 }
 
+// diaspora_100000: count edges and nodes every 10 users
+// diaspora_10000 and diaspora_10000: count edges and nodes of every user
 func Exp4CountEdgesNodes() {
+
+	// db.DIASPORA_DB = "diaspora_100000"
+	// diaspora = "diaspora_100000"	
+	
+	db.DIASPORA_DB = "diaspora_10000"
+	diaspora = "diaspora_10000"
+
+	// db.DIASPORA_DB = "diaspora_1000"
+	// diaspora = "diaspora_1000"
 
 	appName, appID := "diaspora", "1"
 
-	db.DIASPORA_DB = "diaspora_100000"
-	db.STENCIL_DB = "stencil_cow"
-	diaspora = "diaspora_100000"
-	
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	userIDs := getAllUserIDsInDiaspora(evalConfig)
+	// The file name needs to be changed
+	file := evalConfig.Diaspora10KCounterFile
 
-	// log.Println("total users:", len(userIDs))
+	userIDs := getAllUserIDsInDiaspora(evalConfig, true)
 
-	file := evalConfig.Diaspora100KCounterFile
+	log.Println("total users:", len(userIDs))
 
+	// for i := 0; i < len(userIDs); i += 10 {
 	for _, userID := range userIDs {
+
+		// userID := userIDs[i]
 
 		res := make(map[string]int)
 

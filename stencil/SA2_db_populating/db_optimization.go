@@ -10,7 +10,7 @@ import (
 
 func TruncateSA2Tables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 
@@ -151,7 +151,7 @@ func ListRowCountsOfDB() {
 // are not supported on a partitioned table
 func CreatePartitionedMigrationTable() {
 	
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
@@ -183,7 +183,7 @@ func CreatePartitionedMigrationTable() {
 // will also be dropped.
 func DropPartitionedTable() {
 
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
@@ -201,7 +201,7 @@ func DropPartitionedTable() {
 
 func DropPartitions() {
 
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
@@ -238,22 +238,23 @@ func CreatPartitions() {
 
 	maxRowID := 2147483647
 	ranges1 := [][]int {
-		{1, 7}, 		// 1. aspects
-		{7, 9},			// 2. comments
-		{9, 10},		// 3. contacts
-		{10, 11},		// 4. conversations
-		{11, 13},		// 5. messages
-		{13, 14},		// 6. notification_actors
-		{14, 19},		// 7. notifications
-		{19, 20},		// 8. people
-		{20, 26},		// 9. photos
-		{26, 27},		// 10. posts
-		{27, 32},		// 11. profiles
-		{32, 35},		// 12. aspect_visibilities
-		{35, 39},		// 13. users
-		{39, 41},		// 14. conversation_visibilities
-		{41, 52},		// 15. likes
-		{52, 198},		// 16. all other tables
+		{1, 7}, 		// 1. aspects						(4,032,432)
+		{7, 9},			// 2. comments						(13,481,411)
+		{9, 10},		// 3. contacts						(5,191,420)
+		{10, 11},		// 4. conversations					(81,119)
+		{11, 13},		// 5. messages						(5,400,995)
+		{13, 14},		// 6. notification_actors			(46,785,209)
+		{14, 19},		// 7. notifications					(46,785,209)
+		{19, 20},		// 8. people						(1,008,108)
+		{20, 26},		// 9. photos						(3,692,680)
+		{26, 27},		// 10. posts						(7,562,681)
+		{27, 30},		// 11. profiles						(1,008,108)
+		{30, 32}, 		// 12. share_visibilities			(7,562,681)
+		{32, 35},		// 13. aspect_visibilities			(14,814,749)
+		{35, 39},		// 14. users						(1,008,108)
+		{39, 41},		// 15. conversation_visibilities	(162,238)
+		{41, 52},		// 16. likes						(30,626,969)
+		{52, 198},		// 17. all other tables
 	}
 
 	subPartitionTables := []int {
@@ -263,7 +264,7 @@ func CreatPartitions() {
 	partitionNum1 := len(ranges1)
 	partitionNum2 := 5
 
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
@@ -474,7 +475,7 @@ func CreatPartitions() {
 
 func DropPrimaryKeysOfParitions() {
 
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
@@ -510,7 +511,7 @@ func DropPrimaryKeysOfParitions() {
 
 func AddPrimaryKeysToParitions() {
 
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
@@ -547,7 +548,7 @@ func AddPrimaryKeysToParitions() {
 
 func TruncateUnrelatedTables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 	
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
@@ -563,19 +564,24 @@ func TruncateUnrelatedTables() {
 
 }
 
-// My machine: people(finished), users, likes
-// VM: notifications, profiles(finished), posts
-// Blade server: notification_actors
+// First population:
+// My machine: people(finished), users(finished), likes, comments
+// VM: profiles(finished), notifications, posts
+// Blade server: notification_actors, aspect_visibilities
+// Second population:
+// VM: conversations(finished), conversation_visibilities(finished), 
+// 		users(finished), photos 
+// Blade server: people(finished), profiles(finished)
 func PopulateSA2Tables() {
 
 	var limit int64 
 
-	db.STENCIL_DB = "stencil_exp_sa2"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
-	table := "likes"
-	limit = 2000	
+	table := "notifications"
+	limit = 50000	
 
-	appName := "diaspora_1000000"
+	appName := "diaspora_1000000_sa2_1"
 	appID := "1"
 
 	apis.Port(appName, appID, table, limit)
