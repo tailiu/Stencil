@@ -77,7 +77,7 @@ func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset i
 	log.Println("Done:", table)
 }
 
-func Port(appName, appID, table string, limit, offset int64) {
+func Port(appName, appID, table string, limit, offset int64, appDB, stencilDB *sql.DB) {
 	rand.Seed(time.Now().UnixNano())
-	transfer(qr.NewQR(appName, appID), db.GetDBConn(appName), db.GetDBConn(db.STENCIL_DB), table, limit, offset)
+	transfer(qr.NewQR(appName, appID), appDB, stencilDB, table, limit, offset)
 }
