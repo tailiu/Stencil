@@ -62,21 +62,22 @@ func _transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset 
 	}
 }
 
-func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit int64) {
+func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset int64) {
 
 	log.Println("Populating ", table)
-	if totalRows, err := db.GetRowCount(appDB, table); err == nil {
-		for offset := int64(0); offset < totalRows; offset += limit {
-			log.Println(fmt.Sprintf(">> %s: %d - %d of %d | Remaining: %d", table, offset, offset+limit, totalRows, totalRows-offset))
-			_transfer(QR, appDB, stencilDB, table, limit, offset)
-		}
-	} else {
-		log.Fatal("Error while fetching total rows", err)
-	}
+	// if totalRows, err := db.GetRowCount(appDB, table); err == nil {
+	// for offset := int64(0); offset < totalRows; offset += limit {
+	// log.Println(fmt.Sprintf(">> %s: %d - %d of %d | Remaining: %d", table, offset, offset+limit, totalRows, totalRows-offset))
+	log.Println(fmt.Sprintf(">> %s: %d - %d", table, offset, offset+limit))
+	_transfer(QR, appDB, stencilDB, table, limit, offset)
+	// }
+	// } else {
+	// 	log.Fatal("Error while fetching total rows", err)
+	// }
 	log.Println("Done:", table)
 }
 
-func Port(appName, appID, table string, limit int64) {
+func Port(appName, appID, table string, limit, offset int64) {
 	rand.Seed(time.Now().UnixNano())
-	transfer(qr.NewQR(appName, appID), db.GetDBConn(appName), db.GetDBConn(db.STENCIL_DB), table, limit)
+	transfer(qr.NewQR(appName, appID), db.GetDBConn(appName), db.GetDBConn(db.STENCIL_DB), table, limit, offset)
 }
