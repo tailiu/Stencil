@@ -79,5 +79,5 @@ func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset i
 
 func Port(appName, appID, table string, limit, offset int64, appDB, stencilDB *sql.DB) {
 	rand.Seed(time.Now().UnixNano())
-	transfer(qr.NewQR(appName, appID), appDB, stencilDB, table, limit, offset)
+	transfer(qr.NewQRWithDBConn(appName, appID, stencilDB), appDB, stencilDB, table, limit, offset)
 }
