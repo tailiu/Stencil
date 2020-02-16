@@ -1,14 +1,29 @@
 package qr
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"stencil/db"
 	"strings"
-	"math/rand"
 	"time"
 )
+
+func NewQRWithDBConn(app_name, app_id string, dbConn *sql.DB) *QR {
+	qr := new(QR)
+	qr.AppName = app_name
+	qr.AppID = app_id
+	qr.StencilDB = dbConn
+	// fmt.Println("Fetching Base Mappings...")
+	qr.getBaseMappings()
+	// fmt.Println("Fetching Supplementary Mappings...")
+	qr.getSupplementaryMappings()
+	// fmt.Println("QR Created")
+	rand.Seed(time.Now().UnixNano())
+	return qr
+}
 
 func NewQR(app_name, app_id string) *QR {
 	qr := new(QR)
@@ -109,7 +124,7 @@ func (self *QR) getBaseMappings() error {
 		}
 		return nil
 	} else {
-		log.Fatal("UNABLE TO FETCH BASE_MAPPINGS:",err)
+		log.Fatal("UNABLE TO FETCH BASE_MAPPINGS:", err)
 		return err
 	}
 }
@@ -143,7 +158,7 @@ func (self *QR) getSupplementaryMappings() error {
 		}
 		return nil
 	} else {
-		log.Fatal("UNABLE TO FETCH SUPP_MAPPINGS:",err)
+		log.Fatal("UNABLE TO FETCH SUPP_MAPPINGS:", err)
 		return err
 	}
 }
