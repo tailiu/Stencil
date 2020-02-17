@@ -148,6 +148,20 @@
 
                 }
             ]
+        },
+        {
+            "tag": "subscription",
+            "depends_on": [
+                {
+                    "tag": "root",
+                    "conditions": [
+                        {
+                            "tag_attr": "subscribed",
+                            "depends_on_attr": "id"
+                        }
+                    ]
+                }
+            ]
         }
     ],
     "ownership":[

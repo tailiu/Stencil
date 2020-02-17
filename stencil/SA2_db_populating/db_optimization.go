@@ -9,7 +9,7 @@ import (
 
 func TruncateSA2Tables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2_test"
+	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 
@@ -231,124 +231,17 @@ func DropPartitions() {
 
 }
 
-// When creating a range partition, the lower bound specified with FROM is an inclusive bound,
-// whereas the upper bound specified with TO is an exclusive bound.
-func CreatPartitions() {
+func CreateConstraints() {
 
-	maxRowID := 2147483647
-	ranges1 := [][]int {
-		{1, 7}, 		// 1. aspects						(4,032,432)
-		{7, 9},			// 2. comments						(13,481,411)
-		{9, 10},		// 3. contacts						(5,191,420)
-		{10, 11},		// 4. conversations					(81,119)
-		{11, 13},		// 5. messages						(5,400,995)
-		{13, 14},		// 6. notification_actors			(46,785,209)
-		{14, 19},		// 7. notifications					(46,785,209)
-		{19, 20},		// 8. people						(1,008,108)
-		{20, 26},		// 9. photos						(3,692,680)
-		{26, 27},		// 10. posts						(7,562,681)
-		{27, 30},		// 11. profiles						(1,008,108)
-		{30, 32}, 		// 12. share_visibilities			(7,562,681)
-		{32, 35},		// 13. aspect_visibilities			(14,814,749)
-		{35, 39},		// 14. users						(1,008,108)
-		{39, 41},		// 15. conversation_visibilities	(162,238)
-		{41, 52},		// 16. likes						(30,626,969)
-		{52, 198},		// 17. all other tables
+	subPartitionTableIDs := map[int]int{
+		0: 6,
+		1: 7,
 	}
-
-	subPartitionTables := []int {
-		13, 14,
-	}
-
-	partitionNum1 := len(ranges1)
-	partitionNum2 := 5
 
 	db.STENCIL_DB = "stencil_exp_sa2_1"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
-
-	var queries []string
-	
-	subPartitionTableIDs := make(map[int]int)
-
-	for i := 0; i < partitionNum1; i++ {
-		
-		var query1 string
-		
-		rangeStart := ranges1[i][0]
-		rangeEnd := ranges1[i][1]
-
-		if ok := existsInSlice(subPartitionTables, rangeStart); !ok {
-
-			query1 = fmt.Sprintf(
-				`CREATE TABLE migration_table_%d PARTITION OF migration_table 
-				FOR VALUES FROM ('%d') TO ('%d') `,
-				i + 1,
-				rangeStart, 
-				rangeEnd,
-			)
-
-		} else {
-
-			query1 = fmt.Sprintf(
-				`CREATE TABLE migration_table_%d PARTITION OF migration_table 
-				FOR VALUES FROM ('%d') TO ('%d') 
-				PARTITION BY RANGE (row_id) `,
-				i + 1,
-				rangeStart, 
-				rangeEnd,
-			)
-
-			subPartitionTableIDs[rangeStart] = i + 1
-
-		}
-
-		// log.Println(query1)
-
-		queries = append(queries, query1)
-	
-	}
-
-	for _, subPartitionTableID := range subPartitionTableIDs {
-
-		var rangeEnd1 int
-
-		rangeStart1 := 0
-		step := maxRowID / partitionNum2
-
-		for j := 0; j < partitionNum2; j ++ {
-
-			if j != partitionNum2 - 1 {
-				rangeEnd1 = rangeStart1 + step
-			} else {
-				rangeEnd1 = maxRowID
-			}
-
-			query2 := fmt.Sprintf(
-				`CREATE TABLE migration_table_sub_%d_%d PARTITION OF migration_table_%d 
-				FOR VALUES FROM ('%d') TO ('%d')`,
-				subPartitionTableID,
-				j + 1,
-				subPartitionTableID,
-				rangeStart1,
-				rangeEnd1,
-			)
-			
-			rangeStart1 = rangeEnd1
-
-			// log.Println(query2)
-	
-			queries = append(queries, query2)
-
-		}
-
-	}
-
-	err := db.TxnExecute(dbConn, queries)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	tables := getAllTablesInDBs(dbConn)
 	
@@ -468,6 +361,130 @@ func CreatPartitions() {
 	err1 := db.TxnExecute(dbConn, queries1)
 	if err1 != nil {
 		log.Fatal(err1)
+	}
+}
+
+// When creating a range partition, the lower bound specified with FROM is an inclusive bound,
+// whereas the upper bound specified with TO is an exclusive bound.
+func CreatPartitions(createConstrainsts ...bool) {
+
+	maxRowID := 2147483647
+	ranges1 := [][]int {
+		{1, 7}, 		// 1. aspects						(4,032,432)
+		{7, 9},			// 2. comments						(13,481,411)
+		{9, 10},		// 3. contacts						(5,191,420)
+		{10, 11},		// 4. conversations					(81,119)
+		{11, 13},		// 5. messages						(5,400,995)
+		{13, 14},		// 6. notification_actors			(46,785,209)
+		{14, 19},		// 7. notifications					(46,785,209)
+		{19, 20},		// 8. people						(1,008,108)
+		{20, 26},		// 9. photos						(3,692,680)
+		{26, 27},		// 10. posts						(7,562,681)
+		{27, 30},		// 11. profiles						(1,008,108)
+		{30, 32}, 		// 12. share_visibilities			(7,562,681)
+		{32, 35},		// 13. aspect_visibilities			(14,814,749)
+		{35, 39},		// 14. users						(1,008,108)
+		{39, 41},		// 15. conversation_visibilities	(162,238)
+		{41, 52},		// 16. likes						(30,626,969)
+		{52, 198},		// 17. all other tables
+	}
+
+	subPartitionTables := []int {
+		13, 14,
+	}
+
+	partitionNum1 := len(ranges1)
+	partitionNum2 := 5
+
+	db.STENCIL_DB = "stencil_exp_sa2_1"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	defer dbConn.Close()
+
+	var queries []string
+	
+	subPartitionTableIDs := make(map[int]int)
+
+	for i := 0; i < partitionNum1; i++ {
+		
+		var query1 string
+		
+		rangeStart := ranges1[i][0]
+		rangeEnd := ranges1[i][1]
+
+		if ok := existsInSlice(subPartitionTables, rangeStart); !ok {
+
+			query1 = fmt.Sprintf(
+				`CREATE TABLE migration_table_%d PARTITION OF migration_table 
+				FOR VALUES FROM ('%d') TO ('%d') `,
+				i + 1,
+				rangeStart, 
+				rangeEnd,
+			)
+
+		} else {
+
+			query1 = fmt.Sprintf(
+				`CREATE TABLE migration_table_%d PARTITION OF migration_table 
+				FOR VALUES FROM ('%d') TO ('%d') 
+				PARTITION BY RANGE (row_id) `,
+				i + 1,
+				rangeStart, 
+				rangeEnd,
+			)
+
+			subPartitionTableIDs[rangeStart] = i + 1
+
+		}
+
+		// log.Println(query1)
+
+		queries = append(queries, query1)
+	
+	}
+
+	for _, subPartitionTableID := range subPartitionTableIDs {
+
+		var rangeEnd1 int
+
+		rangeStart1 := 0
+		step := maxRowID / partitionNum2
+
+		for j := 0; j < partitionNum2; j ++ {
+
+			if j != partitionNum2 - 1 {
+				rangeEnd1 = rangeStart1 + step
+			} else {
+				rangeEnd1 = maxRowID
+			}
+
+			query2 := fmt.Sprintf(
+				`CREATE TABLE migration_table_sub_%d_%d PARTITION OF migration_table_%d 
+				FOR VALUES FROM ('%d') TO ('%d')`,
+				subPartitionTableID,
+				j + 1,
+				subPartitionTableID,
+				rangeStart1,
+				rangeEnd1,
+			)
+			
+			rangeStart1 = rangeEnd1
+
+			// log.Println(query2)
+	
+			queries = append(queries, query2)
+
+		}
+
+	}
+
+	err := db.TxnExecute(dbConn, queries)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(createConstrainsts) == 0 || createConstrainsts[0] {
+		CreateConstraints()
 	}
 
 }
