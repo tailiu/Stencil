@@ -9,6 +9,8 @@ import (
 	"stencil/db"
 	"stencil/reference_resolution"
 	"strings"
+
+	"github.com/gookit/color"
 )
 
 func (self *MigrationWorkerV2) ConstructBagNode(bagMember, bagMemberID, bagRowID string) (*DependencyNode, error) {
@@ -29,7 +31,13 @@ func (self *MigrationWorkerV2) ConstructBagNode(bagMember, bagMemberID, bagRowID
 				log.Fatal(fmt.Sprintf("@ConstructBagNode: UNABLE TO CONVERT BAG TO MAP: %s", err))
 				return nil, err
 			}
-			bagNode := &DependencyNode{Tag: *bagTag, SQL: sql, Data: bagData, IDs: data["ids"].([]uint8)}
+			var bagPKs []int64
+			if err := json.Unmarshal(data["pks_json"].([]byte), &bagPKs); err != nil {
+				fmt.Println("@ConstructBagNode >> ", data)
+				log.Fatal(fmt.Sprintf("@ConstructBagNode: UNABLE TO CONVERT pks_json TO []int64: %s", err))
+				return nil, err
+			}
+			bagNode := &DependencyNode{Tag: *bagTag, SQL: sql, Data: bagData, PKs: bagPKs}
 			return bagNode, nil
 		} else {
 			if err == nil {
@@ -165,7 +173,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 		log.Fatal("@FetchDataFromBags > GetRowsFromIDTable, Unable to get IDRows | ", app, member, id, false, err)
 		return err
 	} else {
-		log.Println("@FetchDataFromBags > GetRowsFromIDTable | ", idRows)
+		self.Logger.Info("@FetchDataFromBags > GetRowsFromIDTable | ", idRows)
 	}
 
 	for _, idRow := range idRows {
@@ -179,14 +187,14 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 
 			bagData := make(map[string]interface{})
 			if err := json.Unmarshal(bagRow["data"].([]byte), &bagData); err != nil {
-				fmt.Println(bagRow["data"])
-				fmt.Println(bagRow)
+				self.Logger.Info(bagRow["data"])
+				self.Logger.Info(bagRow)
 				log.Fatal("@FetchDataFromBags: UNABLE TO CONVERT BAG TO MAP ", bagRow, err)
 				return err
 			}
 
 			if mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
-				log.Println("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
+				self.Logger.Info("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
 				for _, toTable := range mapping.ToTables {
 					for fromAttr, toAttr := range toTable.Mapping {
 						if _, ok := toTableData[fromAttr]; !ok {
@@ -198,7 +206,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 					}
 				}
 
-				if len(bagData) == 0 {
+				if self.IsNodeDataEmpty(bagData) {
 					if err := db.DeleteBagV2(self.tx.StencilTx, fmt.Sprint(bagRow["pk"])); err != nil {
 						log.Fatal("@FetchDataFromBags > DeleteBagV2, Unable to delete bag | ", bagRow["pk"])
 						return err
@@ -215,13 +223,13 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 					}
 				}
 			} else {
-				log.Println("@FetchDataFromBags > FetchMappingsForBag, No mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
+				self.Logger.Error("@FetchDataFromBags > FetchMappingsForBag, No mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
 			}
 		} else {
 			log.Println("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id)
 		}
 
-		log.Println("@FetchDataFromBags > FetchDataFromBags: Recursive Traversal | ", toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName)
+		self.Logger.Warn("@FetchDataFromBags > FetchDataFromBags: Recursive Traversal | ", toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName)
 		if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName); err != nil {
 			log.Fatal("@FetchDataFromBags > FetchDataFromBags: Error while recursing | ", toTableData, idRow.FromAppID, idRow.FromMember, idRow.FromID)
 			return err
@@ -230,26 +238,17 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 	return nil
 }
 
-func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, ownerID string, fromNode bool) error {
-	if !strings.EqualFold(self.mtype, DELETION) {
+func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, ownerID string) error {
+	if self.mtype != DELETION && self.mtype != BAGS {
 		return nil
 	}
 	if memberID, err := db.TableID(self.logTxn.DBconn, member, self.SrcAppConfig.AppID); err != nil {
 		log.Fatal("@SendMemberToBag > TableID: error in getting table id for member! ", member, err)
 		return err
 	} else {
-		bagData := make(map[string]interface{})
-		for col, val := range node.Data {
-			colTokens := strings.Split(col, ".")
-			colMember := colTokens[0]
-			// colAttr := colTokens[1]
-			if strings.Contains(colMember, member) {
-				bagData[col] = val
-			}
-		}
+		bagData := self.GetMemberDataFromNode(member, node.Data)
 		if len(bagData) > 0 {
-			if id, ok := node.Data[member+".id"]; ok && id != nil {
-				srcID := fmt.Sprint(id)
+			if srcID, ok := node.Data[member+".id"]; ok && srcID != nil {
 				if jsonData, err := json.Marshal(bagData); err == nil {
 					if err := db.CreateNewBag(self.tx.StencilTx, self.SrcAppConfig.AppID, memberID, srcID, ownerID, fmt.Sprint(self.logTxn.Txn_id), jsonData); err != nil {
 						fmt.Println(self.SrcAppConfig.AppName, member, srcID, ownerID)
@@ -257,32 +256,24 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 						log.Fatal("@SendMemberToBag: error in creating bag! ", err)
 						return err
 					}
-					// if serr := db.SaveForEvaluation(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, memberID, "n/a", srcID, "n/a", "*", "n/a", fmt.Sprint(self.logTxn.Txn_id)); serr != nil {
-					// 	log.Fatal("@SendMemberToBag > SaveForEvaluation =>", serr)
-					// }
-					if derr := db.ReallyDeleteRowFromAppDB(self.tx.SrcTx, member, fmt.Sprint(id)); derr != nil {
-						fmt.Println("@SendMemberToBag > DeleteRowFromAppDB")
-						log.Fatal(derr)
-						return derr
+					if self.mtype == BAGS {
+
+					} else {
+						if derr := db.ReallyDeleteRowFromAppDB(self.tx.SrcTx, member, srcID); derr != nil {
+							fmt.Println("@SendMemberToBag > DeleteRowFromAppDB")
+							log.Fatal(derr)
+							return derr
+						}
 					}
 				} else {
 					fmt.Println(bagData)
 					log.Fatal("@SendMemberToBag: unable to convert bag data to JSON ", err)
 					return err
 				}
-				if !fromNode {
-					if err := self.AddInnerReferences(node, member); err != nil {
-						fmt.Println(node.Tag.Members)
-						fmt.Println(node.Tag.InnerDependencies)
-						fmt.Println(node.Data)
-						log.Fatal("@SendMemberToBag > AddInnerReferences: Adding Inner References failed ", err)
-						return err
-					}
-				}
 			} else {
 				// fmt.Println(node.Data)
 				// fmt.Println(node.SQL)
-				log.Println("@SendMemberToBag: '", member, "' doesn't contain id! ", id)
+				log.Println("@SendMemberToBag: '", member, "' doesn't contain id! ", srcID)
 				// return err
 			}
 		}
@@ -292,28 +283,23 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 }
 
 func (self *MigrationWorkerV2) SendNodeToBagWithOwnerID(node *DependencyNode, ownerID string) error {
-	if !strings.EqualFold(self.mtype, DELETION) {
+	if self.mtype != DELETION && self.mtype != BAGS {
 		return nil
 	}
 	for _, member := range node.Tag.Members {
-		if err := self.SendMemberToBag(node, member, ownerID, true); err != nil {
+		if err := self.SendMemberToBag(node, member, ownerID); err != nil {
 			fmt.Println(node)
 			log.Fatal("@SendNodeToBagWithOwnerID > SendMemberToBag: ownerID error! ")
 			return err
+		} else {
+			log.Println(fmt.Sprintf("%s { %s :  %s } | Owner ID: %v ", color.FgYellow.Render("BAG"), node.Tag.Name, member, ownerID))
 		}
-	}
-	if err := self.AddInnerReferences(node, ""); err != nil {
-		fmt.Println(node.Tag.Members)
-		fmt.Println(node.Tag.InnerDependencies)
-		fmt.Println(node.Data)
-		log.Fatal("@SendNodeToBagWithOwnerID > AddInnerReferences: Adding Inner References failed ", err)
-		return err
 	}
 	return nil
 }
 
 func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
-	if !strings.EqualFold(self.mtype, DELETION) {
+	if self.mtype != DELETION {
 		return nil
 	}
 	if ownerID, _ := self.GetNodeOwner(node); len(ownerID) > 0 {
@@ -328,12 +314,41 @@ func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
 	return nil
 }
 
+func (bagWorker *MigrationWorkerV2) DeleteBag(bagNode *DependencyNode) error {
+	for _, pk := range bagNode.PKs {
+		bagPK := fmt.Sprint(pk)
+		if err := db.DeleteBagV2(bagWorker.tx.StencilTx, bagPK); err != nil {
+			fmt.Println(bagNode)
+			log.Fatal(fmt.Sprintf("@DeleteBag: UNABLE TO DELETE BAG : %s | %s ", bagPK, err))
+			return err
+		} else {
+			log.Println(fmt.Sprintf("DELETED bag { Tag: %s } | PK: %s", bagNode.Tag.Name, bagPK))
+		}
+	}
+	return nil
+}
+
+func (self *MigrationWorkerV2) UpdateProcessedBagIDs(bagNode *DependencyNode, processedBags map[string]bool) {
+	for _, pk := range bagNode.PKs {
+		pkStr := fmt.Sprint(pk)
+		processedBags[pkStr] = true
+	}
+}
+
 func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error {
 
 	prevIDs := reference_resolution.GetPrevUserIDs(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.uid)
+	if prevIDs == nil {
+		prevIDs = make(map[string]string)
+	}
+
 	prevIDs[self.SrcAppConfig.AppID] = self.uid
 
 	for bagAppID, userID := range prevIDs {
+
+		if bagAppID != "1" {
+			continue
+		}
 
 		log.Println(fmt.Sprintf("x%2dx Starting Bags for User: %s App: %s", threadID, userID, bagAppID))
 
@@ -348,9 +363,18 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 
 		log.Println(fmt.Sprintf("x%2dx Bag Worker Created | %s -> %s ", threadID, bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
 
+		processedBags := make(map[string]bool)
+
 		for _, bag := range bags {
 
+			bagPK := fmt.Sprint(bag["pk"])
+
+			if _, ok := processedBags[bagPK]; ok {
+				continue
+			}
+
 			bagRowID := fmt.Sprint(bag["id"])
+			bagUserID := fmt.Sprint(bag["user_id"])
 			bagMemberID := fmt.Sprint(bag["member"])
 			bagMemberName, err := db.TableName(bagWorker.logTxn.DBconn, bagMemberID, bagAppID)
 
@@ -358,9 +382,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 				log.Fatal("@MigrateBags > Table Name: ", err)
 			}
 
-			bagID := fmt.Sprint(bag["pk"])
-
-			log.Println(fmt.Sprintf("~%2d~ Current    Bag: { %s } | ID: %s, App: %s ", threadID, bagMemberName, bagID, bagAppID))
+			log.Println(fmt.Sprintf("~%2d~ Current    Bag: { %s } | PK: %s, App: %s ", threadID, bagMemberName, bagPK, bagAppID))
 
 			if bagNode, err := bagWorker.ConstructBagNode(bagMemberName, bagMemberID, bagRowID); err == nil {
 
@@ -368,53 +390,38 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 					return err
 				}
 
-				toCommit := true
-				if err := bagWorker.HandleMigration(bagNode, true); err != nil {
-					toCommit = false
-					// fmt.Println(bag)
-					log.Println(fmt.Sprintf("x%2dx UNABLE TO MIGRATE BAG { %s } | ID: %s | %s ", threadID, bagNode.Tag.Name, bagID, err))
+				if migrated, err := bagWorker.HandleMigration(bagNode); err != nil {
+					log.Println(fmt.Sprintf("x%2dx UNABLE TO MIGRATE BAG { %s } | PK: %s | Owner: %s | %s ", threadID, bagNode.Tag.Name, bagPK, bagUserID, err))
+					if err := bagWorker.RollbackTransactions(); err != nil {
+						log.Fatal(fmt.Sprintf("x%2dx UNABLE TO ROLLBACK bag { %s } | Owner: %s | %s | PK: %s", threadID, bagNode.Tag.Name, bagUserID, err, bagPK))
+					} else {
+						log.Println(fmt.Sprintf("x%2dx ROLLBACK bag { %s } | PK: %s ", threadID, bagNode.Tag.Name, bagPK))
+					}
 				} else {
-					log.Println(fmt.Sprintf("x%2dx MIGRATED bag { %s } | ID: %s", threadID, bagNode.Tag.Name, bagID))
+					if migrated {
+						log.Println(fmt.Sprintf("x%2dx MIGRATED bag { %s } | PK: %s", threadID, bagNode.Tag.Name, bagPK))
 
-					if bagWorker.IsNodeDataEmpty(bagNode) {
-						if err := db.DeleteBagV2(bagWorker.tx.StencilTx, bagID); err != nil {
-							toCommit = false
-							fmt.Println(bag)
-							log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO DELETE BAG : %s | %s ", threadID, bagID, err))
-							// return err
-						} else {
-							log.Println(fmt.Sprintf("x%2dx DELETED bag { %s } ", threadID, bagNode.Tag.Name))
+						if !bagWorker.IsNodeDataEmpty(bagNode.Data) {
+							fmt.Println("LeftOver Data =>  ", bagNode.Data)
+							log.Println(fmt.Sprintf("x%2dx HANDLING LEFTOVER DATA { %s } | PK: %s | Owner: %s", threadID, bagNode.Tag.Name, bagPK, bagUserID))
+							if err := bagWorker.SendNodeToBagWithOwnerID(bagNode, bagUserID); err != nil {
+								fmt.Println(bagNode)
+								log.Fatal(fmt.Sprintf("x%2dx @MigrateBags > SendNodeToBagWithOwnerID | { %s } | PK: %s", threadID, bagNode.Tag.Name, bagPK))
+							} else {
+								log.Println(fmt.Sprintf("x%2dx BAGGED LEFTOVER DATA { %s } | PK: %s | Owner: %s", threadID, bagNode.Tag.Name, bagPK, bagUserID))
+							}
 						}
 					} else {
-						if jsonData, err := json.Marshal(bagNode.Data); err == nil {
-							if err := db.UpdateBag(bagWorker.tx.StencilTx, bagID, bagWorker.logTxn.Txn_id, jsonData); err != nil {
-								toCommit = false
-								fmt.Println(bag)
-								log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO UPDATE BAG : %s | %s ", threadID, bagID, err))
-								// return err
-							} else {
-								log.Println(fmt.Sprintf("x%2dx UPDATED bag { %s } ", threadID, bagNode.Tag.Name))
-							}
-						} else {
-							toCommit = false
-							fmt.Println(bagNode.Data)
-							log.Fatal(fmt.Sprintf("x%2dx @MigrateBags: UNABLE TO MARSHALL BAG DATA : %s | %s ", threadID, bagID, err))
-							// return err
-						}
+						log.Println(fmt.Sprintf("x%2dx BAG NOT MIGRATED; NO ERR { %s } | PK: %s", threadID, bagNode.Tag.Name, bagPK))
 					}
-				}
-				if toCommit {
+
 					if err := bagWorker.CommitTransactions(); err != nil {
 						log.Fatal(fmt.Sprintf("x%2dx UNABLE TO COMMIT bag { %s } | %s ", threadID, bagNode.Tag.Name, err))
-						// return err
 					} else {
-						log.Println(fmt.Sprintf("x%2dx COMMITTED bag { %s } ", threadID, bagNode.Tag.Name))
+						log.Println(fmt.Sprintf("x%2dx COMMITTED bag { %s } | PK: %s", threadID, bagNode.Tag.Name, bagPK))
 					}
-				} else {
-					log.Println(fmt.Sprintf("x%2dx ROLLBACK bag { %s } | ID: %s ", threadID, bagNode.Tag.Name, bagID))
-					bagWorker.tx.DstTx.Rollback()
-					bagWorker.tx.SrcTx.Rollback()
-					bagWorker.tx.StencilTx.Rollback()
+
+					bagWorker.UpdateProcessedBagIDs(bagNode, processedBags)
 				}
 
 			} else {

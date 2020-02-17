@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/jlaffaye/ftp"
+	logg "github.com/withmandala/go-log"
 )
 
 const (
@@ -40,7 +41,7 @@ type DependencyNode struct {
 	Tag  config.Tag
 	SQL  string
 	Data map[string]interface{}
-	IDs  []uint8
+	PKs  []int64
 }
 
 type WaitingNode struct {
@@ -96,6 +97,7 @@ type MigrationWorker struct {
 	visitedNodes map[string]map[string]bool
 	arg          string
 	Size         int
+	Logger       *logg.Logger
 	// threadID     int
 }
 
@@ -113,6 +115,7 @@ type LMigrationWorker struct {
 	mtype        string
 	visitedNodes map[string]bool
 	FTPClient    *ftp.ServerConn
+	Logger       *logg.Logger
 	// threadID     int
 }
 
@@ -131,5 +134,6 @@ type MigrationWorkerV2 struct {
 	visitedNodes map[string]map[string]bool
 	FTPClient    *ftp.ServerConn
 	tx           Transactions
+	Logger       *logg.Logger
 	// threadID     int
 }

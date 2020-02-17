@@ -27,7 +27,7 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 			log.Println(fmt.Sprintf("~%2d~ Current   Node { %s } | ID: %v ", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
 			log.Println(fmt.Sprintf("~%2d~ Adjacent  Node { %s } | ID: %v ", threadID, adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr]))
 			if err := self.DeletionMigration(adjNode, threadID); err != nil {
-				log.Fatal(fmt.Sprintf("~%2d~ ERROR! NODE { %s } | ID: %v, ADJ_NODE : { %s } | ID: %v | err: [ %s ]", threadID, node.Tag.Name, node.Data[nodeIDAttr], adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr], err))
+				self.Logger.Fatal(fmt.Sprintf("~%2d~ ERROR! NODE { %s } | ID: %v, ADJ_NODE : { %s } | ID: %v | err: [ %s ]", threadID, node.Tag.Name, node.Data[nodeIDAttr], adjNode.Tag.Name, adjNode.Data[adjNodeIDAttr], err))
 				return err
 			}
 		}

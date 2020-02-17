@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/gookit/color"
 	_ "github.com/lib/pq" // postgres driver
 )
 
@@ -71,13 +72,13 @@ func GetDBConn(app string, isBlade ...bool) *sql.DB {
 		}
 	}
 
-	log.Println(fmt.Sprintf("Connecting to DB \"%s\" @ [%s] for App {%s} ...", dbName, dbAddr, app))
-
+	color.Tag("info").Println(fmt.Sprintf("Connecting to DB \"%s\" @ [%s] for App {%s} ...", dbName, dbAddr, app))
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=600", dbAddr, DB_PORT, DB_USER, DB_PASSWORD, dbName)
 
 	dbConn, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		fmt.Println("error connecting to the db app:", app)
+		color.Error.Println("error connecting to the db app:", app)
+		// fmt.Println("error connecting to the db app:", app)
 		log.Fatal(err)
 	}
 
@@ -163,8 +164,6 @@ func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...in
 	lastInsertId := -1
 	err := tx.QueryRow(query, args...).Scan(&lastInsertId)
 	if err != nil || lastInsertId == -1 {
-		// fmt.Println(query)
-		// fmt.Println(args)
 		return lastInsertId, err
 	}
 	return lastInsertId, err
@@ -233,7 +232,7 @@ func InsertIntoDAGCounter(dbConn *sql.DB, person_id string, edges, nodes int) er
 	return err
 }
 
-func ReallyDeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
+func ReallyDeleteRowFromAppDB(tx *sql.Tx, table, id interface{}) error {
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", table)
 	if _, err := tx.Exec(query, id); err != nil {
 		log.Println(query, id)
@@ -271,7 +270,7 @@ func DeleteBagV2(tx *sql.Tx, pk string) error {
 	return err
 }
 
-func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id string, data []byte) error {
+func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id interface{}, data []byte) error {
 	query := "INSERT INTO data_bags (app, member, id, data, user_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING"
 	_, err := tx.Exec(query, app, member, id, data, user_id, migration_id)
 	return err
@@ -288,7 +287,7 @@ func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id string) ([]map[str
 }
 
 func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[string]interface{}, error) {
-	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND app = $2 AND migration_id != $3"
+	query := "SELECT app, member, id, data, pk, user_id FROM data_bags WHERE user_id = $1 AND app = $2 AND migration_id != $3"
 	return DataCall(dbConn, query, user_id, app_id, migration_id)
 }
 

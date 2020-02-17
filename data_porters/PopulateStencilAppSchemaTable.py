@@ -124,6 +124,8 @@ def addSchemaMappings(app_name):
                                         if "#FETCH" in mappedFromAttr:
                                             mappedFromAttr = mappedFromAttr.replace("#FETCH","")
                                             mappedFromAttr = mappedFromAttr.strip("()")
+                                        if "#ASSIGN" in mappedFromAttr:
+                                            continue
                                         mappedFromAttr = mappedFromAttr.split(",")[0]
                                     else:
                                         continue
@@ -139,7 +141,8 @@ def addSchemaMappings(app_name):
                                     mapperAttrID = stencilCursor.fetchone()[0]
                                 except Exception as e:
                                     print "ERROR ENCOUNTERED! EXIT at 1!"
-                                    print e
+                                    print mappedTable["mapping"]
+                                    print mappedCol, ":", mappedFromAttr
                                     print _sql
                                     exit(0)
                                 

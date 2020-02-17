@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gookit/color"
 )
 
 func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, MaD string) (int, error) {
@@ -244,9 +246,10 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 
 	if threads != 0 {
 		if !db.RegisterMigration(uid, srcAppID, dstAppID, mtype, logTxn.Txn_id, threads, logTxn.DBconn, true) {
-			log.Fatal("Unable to register migration!")
+			color.Red.Println("Unable to register migration!")
+			log.Fatal()
 		} else {
-			log.Println("Migration registered:", mtype)
+			color.Cyan.Println("Migration registered:", mtype)
 		}
 	} else {
 		threads = 1
@@ -274,22 +277,22 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 			case migrate.DELETION:
 				{
 					for {
-						break
-						if err := mWorker.MigrateBags(thread_id, isBlade...); err != nil {
-							log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
-							time.Sleep(time.Second * 5)
-							continue
-						}
-						break
-					}
-
-					for {
 						if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
 							if !strings.Contains(err.Error(), "deadlock") {
 								mWorker.RenewDBConn(isBlade...)
 							} else {
 								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
 							}
+							continue
+						}
+						break
+					}
+
+					for {
+						break
+						if err := mWorker.MigrateBags(thread_id, isBlade...); err != nil {
+							log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
+							time.Sleep(time.Second * 5)
 							continue
 						}
 						break
@@ -353,7 +356,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 
 	var finished_threads []string
 	for threadResponse := range commitChannel {
-		fmt.Println("THREAD FINISHED WORKING", threadResponse, strings.Join(finished_threads, ","))
+		color.Cyan.Println("THREAD FINISHED WORKING", threadResponse, strings.Join(finished_threads, ","))
 		if !threadResponse.Finished {
 			finished = false
 		}
