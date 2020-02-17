@@ -30,11 +30,10 @@ func (self *MigrationWorkerV2) FetchRoot(threadID int) error {
 			self.root = &DependencyNode{Tag: root, SQL: sql, Data: data}
 		} else {
 			if err == nil {
-				err = errors.New("no data returned for root node, doesn't exist?")
+				err = errors.New("Can't fetch Root node. Check if it exists. UID: " + self.uid)
 			} else {
 				fmt.Println("@FetchRoot > DataCall1 | ", err)
 			}
-			fmt.Println(sql)
 			return err
 		}
 	} else {
@@ -557,7 +556,7 @@ func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
 
 		} else {
 			// log.Println("node.Data =>", node.Data)
-			log.Println("@DeleteRow:  '", idCol, "' not present or is null in node data!", nodeVal)
+			self.Logger.Info("@DeleteRow:  '", idCol, "' not present or is null in node data!", nodeVal)
 		}
 	}
 	return nil
@@ -660,9 +659,8 @@ func (self *MigrationWorkerV2) DeleteRoot(threadID int) error {
 		self.Logger.Fatal("@DeleteRoot: Can't find mappings for root | ", mapping, found)
 	}
 	if err := self.CommitTransactions(); err != nil {
+		self.Logger.Fatal("@DeleteRoot: ERROR COMMITING TRANSACTIONS! ")
 		return err
-	} else {
-		log.Println(fmt.Sprintf("x%2dx %s ROOT ", threadID, color.FgRed.Render("Deleted")))
 	}
 	return nil
 }
@@ -684,17 +682,16 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			self.Logger.Fatal("@MigrateNode > GetMappedData Error | ", mappedDataErr)
 		} else if len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
 			if !self.ValidateMappedTableData(toTable, mappedData) {
-				log.Println("@MigrateNode > ValidateMappedTableData: Validation failed!")
+				self.Logger.Warn("@MigrateNode > ValidateMappedTableData: Validation failed!")
 				continue
 			}
 
-			if self.mtype == DELETION {
-				self.Logger.Info("Unmerged Mapped Data: ", mappedData.cols)
+			if self.mtype == DELETION || self.mtype == BAGS {
+				self.Logger.Infof("Before Merging Data | %s\n%v\n---", toTable.Table, mappedData)
 				if err := self.MergeBagDataWithMappedData(&mappedData, node, toTable); err != nil {
 					self.Logger.Fatal("@MigrateNode > MergeDataFromBagsWithMappedData | ", err)
 				}
-				self.Logger.Info("Merged Data | Table | ", toTable.Table)
-				self.Logger.Info("Merged Data | Data | ", toTable.Table, mappedData)
+				self.Logger.Infof("After Merging Data | %s\n%v\n---", toTable.Table, mappedData)
 			}
 
 			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
@@ -720,8 +717,8 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 
 				if err := self.PushData(self.tx.StencilTx, toTable, fmt.Sprint(id), mappedData, node); err != nil {
-					fmt.Println("@MigrateNode")
-					fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
+					self.Logger.Warn("@MigrateNode")
+					self.Logger.Warn("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
 					self.Logger.Fatal(err)
 					return migrated, err
 				}
@@ -739,9 +736,9 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 				allMappedData = append(allMappedData, mappedData)
 			} else {
-				fmt.Println(fmt.Sprintf("@Args: [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables))
-				fmt.Println("@NODE: ", node.Tag.Name, "|", node.Data)
-				log.Println("@MigrateNode > InsertRowIntoAppDB: ", err)
+				self.Logger.Warn(fmt.Sprintf("@Args: [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables))
+				self.Logger.Warn("@NODE: ", node.Tag.Name, "|", node.Data)
+				self.Logger.Error("@MigrateNode > InsertRowIntoAppDB: ", err)
 				if self.mtype == DELETION {
 					self.Logger.Fatal("@MigrateNode > InsertRowIntoAppDB: STOP HERE!")
 				}
@@ -770,10 +767,16 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 	}
 
 	if len(allMappedData) > 0 {
-		self.Logger.Info("Migrated Data =>  ", allMappedData)
 		migrated = true
+		self.Logger.Info("Migrated Data:\n", allMappedData)
 		for _, mappedData := range allMappedData {
 			self.RemoveMappedDataFromNodeData(mappedData, node)
+		}
+		if self.mtype == BAGS {
+			if err := self.DeleteBag(node); err != nil {
+				self.Logger.Fatal("@MigrateNode > DeleteBag:", err)
+				return false, err
+			}
 		}
 	}
 
@@ -793,17 +796,6 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 					return false, err
 				} else {
 					log.Println(fmt.Sprintf("%s node { %s }", color.FgRed.Render("Deleted"), node.Tag.Name))
-				}
-			}
-		case BAGS:
-			{
-				if migrated {
-					if err := self.DeleteBag(node); err != nil {
-						self.Logger.Fatal("@MigrateNode > DeleteBag:", err)
-						return false, err
-					} else {
-						log.Println(fmt.Sprintf("%s { %s }", color.FgRed.Render("Deleted BAG"), node.Tag.Name))
-					}
 				}
 			}
 		}

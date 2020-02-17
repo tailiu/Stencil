@@ -99,7 +99,7 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 		Logger:       logg.New(os.Stderr)}
 
 	if err := mWorker.FetchRoot(threadID); err != nil {
-		log.Fatal(err)
+		mWorker.Logger.Fatal(err)
 	}
 	mWorker.FTPClient = GetFTPClient()
 	mWorker.Logger.WithTimestamp()

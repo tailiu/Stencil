@@ -276,12 +276,12 @@ func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id interface{}
 	return err
 }
 
-func GetRowsFromIDTableByTo(dbConn *sql.DB, app, member, id string) ([]map[string]interface{}, error) {
+func GetRowsFromIDTableByTo(dbConn *sql.DB, app, member, id interface{}) ([]map[string]interface{}, error) {
 	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
 	return DataCall(dbConn, query, app, member, id)
 }
 
-func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id string) ([]map[string]interface{}, error) {
+func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id interface{}) ([]map[string]interface{}, error) {
 	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
 	return DataCall(dbConn, query, app, member, id)
 }
@@ -291,12 +291,12 @@ func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[
 	return DataCall(dbConn, query, user_id, app_id, migration_id)
 }
 
-func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id string, migration_id int) (map[string]interface{}, error) {
+func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id interface{}, migration_id int) (map[string]interface{}, error) {
 	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND app = $2 AND member = $3 and id = $4 AND migration_id != $5"
 	return DataCall1(dbConn, query, user_id, app, member, id, migration_id)
 }
 
-func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference string) error {
+func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference interface{}) error {
 	query := "INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;"
 	_, err := tx.Exec(query, app, fromMember, fromID, fromReference, toMember, toID, toReference, migration_id)
 	return err
@@ -661,7 +661,7 @@ func DataCallIgnoreVisited(db *sql.DB, SQL string, visited []string, args ...int
 	// db := GetDBConn(app)
 	// log.Println(SQL, args)
 	if rows, err := db.Query(SQL, args...); err != nil {
-		log.Println("ERROR:", SQL, args, err)
+		color.Red.Println("ERROR:", SQL, args, err)
 		return nil, err
 	} else {
 		defer rows.Close()
@@ -702,7 +702,7 @@ func DataCall(db *sql.DB, SQL string, args ...interface{}) ([]map[string]interfa
 	// db := GetDBConn(app)
 	// log.Println(SQL, args)
 	if rows, err := db.Query(SQL, args...); err != nil {
-		log.Println("ERROR:", SQL, args, err)
+		color.Danger.Printf("ERROR | %s\nQuery | %s\nArgs | %v\n", err, SQL, args)
 		return nil, err
 	} else {
 		defer rows.Close()
