@@ -344,7 +344,7 @@
                                         "content":"statuses.text",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "reply_to_id": "#REF(statuses.in_reply_to_id,statuses.id)"
+                                        "reply_to_id": "#REF(statuses.in_reply_to_id,statuses.id,tweets)"
                                     }
                                 },
                                 {
@@ -358,7 +358,7 @@
                                         "user_id":"#REF(statuses.account_id,accounts.id)",
                                         "created_at":"statuses.created_at",
                                         "updated_at":"statuses.updated_at",
-                                        "tweet_id":"#REF(statuses.reblog_of_id,statuses.id)"
+                                        "tweet_id":"#REF(statuses.reblog_of_id,statuses.id,tweets)"
                                     }
                                 },
                                 {
@@ -400,7 +400,7 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"favourites.id",
-                                        "tweet_id":"#REF(favourites.status_id,statuses.id)",
+                                        "tweet_id":"#REF(favourites.status_id,statuses.id,tweets)",
                                         "created_at":"favourites.created_at",
                                         "updated_at":"favourites.updated_at",
                                         "user_id":"#REF(favourites.account_id,accounts.id)"                                    
@@ -436,7 +436,7 @@
                                         "id":"notifications.id",
                                         "notification_type":"notifications.activity_type",
                                         "user_id":"#REF(notifications.account_id,accounts.id)",
-                                        "tweet":"#REF(notifications.activity_id,statuses.id)",
+                                        "tweet":"#REF(notifications.activity_id,statuses.id,tweets)",
                                         "from_user":"#REF(notifications.from_account_id,accounts.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
@@ -936,7 +936,7 @@
                                         "user_id": "#REF(posts.author_id,people.id)",
                                         "created_at":"posts.created_at",
                                         "updated_at":"posts.updated_at",
-                                        "tweet_id":"#REF(posts.root_guid,posts.id)"
+                                        "tweet_id":"#REF(posts.root_guid,posts.id,tweets)"
                                     }
                                 }
                             ]
@@ -953,7 +953,7 @@
                                         "content":"comments.text",
                                         "created_at":"comments.created_at",
                                         "updated_at":"comments.updated_at",
-                                        "reply_to_id":"#REF(comments.commentable_id,posts.id)"
+                                        "reply_to_id":"#REF(comments.commentable_id,posts.id,tweets)"
                                     }
                                 }
                             ]
@@ -1009,7 +1009,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"likes.id",
-                                        "tweet_id":"#REF(likes.target_id,posts.id)",
+                                        "tweet_id":"#REF(likes.target_id,posts.id,tweets)",
                                         "created_at":"likes.created_at",
                                         "updated_at":"likes.updated_at",
                                         "user_id":"#REF(likes.author_id,people.id)"
@@ -1048,7 +1048,7 @@
                                         "notification_type":"notifications.target_type",
                                         "user_id":"#REF(notifications.recipient_id,people.id)",
                                         "from_user":"#REF(notification_actors.person_id,people.id)",
-                                        "tweet":"#REF(notifications.target_id,posts.id)",
+                                        "tweet":"#REF(notifications.target_id,posts.id,tweets)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }

@@ -366,6 +366,8 @@ func CreateConstraints() {
 
 // When creating a range partition, the lower bound specified with FROM is an inclusive bound,
 // whereas the upper bound specified with TO is an exclusive bound.
+// Creating constraints is optional
+// We can add constraints after populating to increase populating speed
 func CreatPartitions(createConstrainsts ...bool) {
 
 	maxRowID := 2147483647
