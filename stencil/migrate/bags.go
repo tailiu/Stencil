@@ -176,7 +176,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 		self.Logger.Fatal("@FetchDataFromBags > GetRowsFromIDTable, Unable to get IDRows | ", app, member, id, false, err)
 		return err
 	} else if len(idRows) < 1 {
-		self.Logger.Info("@FetchDataFromBags > GetRowsFromIDTable | No IDRows found | ", app, member, id, false)
+		// self.Logger.Info("@FetchDataFromBags > GetRowsFromIDTable | No IDRows found | ", app, member, id, false)
 		return nil
 	} else {
 		self.Logger.Info("@FetchDataFromBags > GetRowsFromIDTable | ", idRows)

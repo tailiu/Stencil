@@ -687,11 +687,11 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			}
 
 			if self.mtype == DELETION || self.mtype == BAGS {
-				self.Logger.Infof("Before Merging Data | %s\n%v\n---", toTable.Table, mappedData)
+				// self.Logger.Infof("Before Merging Data | %s\n%v\n---", toTable.Table, mappedData)
 				if err := self.MergeBagDataWithMappedData(&mappedData, node, toTable); err != nil {
 					self.Logger.Fatal("@MigrateNode > MergeDataFromBagsWithMappedData | ", err)
 				}
-				self.Logger.Infof("After Merging Data | %s\n%v\n---", toTable.Table, mappedData)
+				// self.Logger.Infof("After Merging Data | %s\n%v\n---", toTable.Table, mappedData)
 			}
 
 			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
@@ -768,7 +768,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 
 	if len(allMappedData) > 0 {
 		migrated = true
-		self.Logger.Info("Migrated Data:\n", allMappedData)
+		// self.Logger.Info("Migrated Data:\n", allMappedData)
 		for _, mappedData := range allMappedData {
 			self.RemoveMappedDataFromNodeData(mappedData, node)
 		}
