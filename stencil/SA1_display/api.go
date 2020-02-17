@@ -14,18 +14,14 @@ const CHECK_MIGRATION_COMPLETE_INTERVAL1 = time.Second
 
 const CHECK_MIGRATION_COMPLETE_INTERVAL2 = 500 * time.Millisecond
 
-func displayController(migrationID, threadNum int, 
-	wg *sync.WaitGroup, displayInFirstPhase, 
-	markAsDelete bool) {
-
-	// If the destination app database is not in the new server, newDB is false
-	newDB := false
+func displayController(migrationID, threadNum int, wg *sync.WaitGroup, 
+	displayInFirstPhase, markAsDelete, useBladeServerAsDst bool) {
 
 	// If the display controller needs to resolve references, resolveReference is true
 	resolveReference := true
 
 	dConfig := CreateDisplayConfig(migrationID, resolveReference, 
-		newDB, displayInFirstPhase, markAsDelete)
+		useBladeServerAsDst, displayInFirstPhase, markAsDelete)
 	
 	if !displayInFirstPhase {
 		for !CheckMigrationComplete(dConfig) {
@@ -101,10 +97,10 @@ func waitForMigrationComplete(migrationID int, wg *sync.WaitGroup) {
 
 }
 
-func handlArgs(args []bool) (bool, bool, bool) {
+func handlArgs(args []bool) (bool, bool, bool, bool) {
 
-	enableDisplay, displayInFirstPhase, markAsDelete :=
-		true, true, false
+	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst :=
+		true, true, false, true
 	
 	for i, arg := range args {
 		switch i {
@@ -114,13 +110,15 @@ func handlArgs(args []bool) (bool, bool, bool) {
 			displayInFirstPhase = arg
 		case 2:
 			markAsDelete = arg
+		case 3:
+			useBladeServerAsDst = arg
 		default:
 			log.Fatal(`The input args of the display controller 
 				do not satisfy requirements!`)
 		}
 	}
 
-	return enableDisplay, displayInFirstPhase, markAsDelete
+	return enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst
 
 }
 
@@ -132,11 +130,13 @@ func StartDisplay(uid, srcAppID, dstAppID,
 
 	migrationID := waitToGetMigrationID(uid, srcAppID, dstAppID, migrationType)
 
-	enableDisplay, displayInFirstPhase, markAsDelete := handlArgs(args)
+	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst := handlArgs(args)
 
 	if enableDisplay {
-		displayController(migrationID, threadNum, wg, 
-			displayInFirstPhase, markAsDelete)
+		displayController(
+			migrationID, threadNum, wg, 
+			displayInFirstPhase, markAsDelete, useBladeServerAsDst,
+		)
 	} else {
 		waitForMigrationComplete(migrationID, wg)
 	}
