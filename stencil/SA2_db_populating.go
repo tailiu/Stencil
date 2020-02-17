@@ -16,7 +16,7 @@ func main() {
 
 	// SA2_db_populating.CreatePartitionedMigrationTable()
 
-	// SA2_db_populating.CreatPartitions()
+	// SA2_db_populating.CreatPartitions(false)
 
 	// SA2_db_populating.DropPartitionedTable()
 
