@@ -1275,7 +1275,7 @@
                                     "conditions":{},
                                     "mapping":{
                                         "id":"likes.id",
-                                        "status_id":"#REF(likes.tweet_id,tweets.id)",
+                                        "status_id":"#REF(likes.tweet_id,tweets.id,statuses)",
                                         "created_at":"likes.created_at",
                                         "updated_at":"likes.updated_at",
                                         "account_id":"#REF(likes.user_id,users.id)"                                    
@@ -1294,10 +1294,10 @@
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
                                         "text":"tweets.content",
-                                        "in_reply_to_id":"#REF(tweets.reply_to_id,tweets.id)",
+                                        "in_reply_to_id":"#REF(tweets.reply_to_id,tweets.id,statuses)",
                                         "account_id":"#REF(tweets.user_id,users.id)",
                                         "visibility": "$visibility0",
-                                        "conversation_id": "#REF(tweets.id,tweets.id)"
+                                        "conversation_id": "#REF(tweets.id,tweets.id,statuses)"
                                     }
                                 },
                                 {
@@ -1305,7 +1305,7 @@
 									"mapping": {
                                         "id": "tweets.id",
 										"created_at": "tweets.created_at",
-										"status_id": "#REF(tweets.id,tweets.id)",
+										"status_id": "#REF(tweets.id,tweets.id,statuses)",
 										"updated_at": "tweets.updated_at"
 									}
                                 },
@@ -1330,9 +1330,9 @@
                                         "created_at":"retweets.created_at",
                                         "updated_at":"retweets.updated_at",
                                         "account_id":"#REF(retweets.user_id,users.id)",
-                                        "reblog_of_id":"#REF(retweets.tweet_id,tweets.id)",
+                                        "reblog_of_id":"#REF(retweets.tweet_id,tweets.id,statuses)",
                                         "visibility": "$visibility0",
-                                        "conversation_id": "#REF(retweets.id,retweets.id)"
+                                        "conversation_id": "#REF(retweets.id,retweets.id,statuses)"
                                     }
                                 },
                                 {
@@ -1340,7 +1340,7 @@
 									"mapping": {
                                         "id": "retweets.id",
 										"created_at": "retweets.created_at",
-										"status_id": "#REF(retweets.id,retweets.id)",
+										"status_id": "#REF(retweets.id,retweets.id,statuses)",
 										"updated_at": "retweets.updated_at"
 									}
                                 },
@@ -1396,7 +1396,7 @@
                                     "mapping":{ 
                                         "id":"notifications.id",
                                         "activity_type":"notifications.notification_type",
-                                        "activity_id":"#REF(notifications.tweet,tweets.id)",
+                                        "activity_id":"#REF(notifications.tweet,tweets.id,statuses)",
                                         "account_id":"#REF(notifications.user_id,users.id)",
                                         "from_account_id":"#REF(notifications.from_user,users.id)",
                                         "created_at":"notifications.created_at",
@@ -1450,7 +1450,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"users.id",
-                                        "owner_id":"#REF(credentials.id,credentials.id)",
+                                        "owner_id":"#REF(credentials.id,credentials.id,users)",
                                         "diaspora_handle":"users.handle",
                                         "created_at":"users.created_at",
                                         "updated_at":"users.updated_at"
@@ -1485,7 +1485,7 @@
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
                                         "type":"$post_type_status",
-                                        "guid":"#REF(tweets.id,tweets.id)"
+                                        "guid":"#REF(tweets.id,tweets.id,posts)"
                                     }
                                 },
                                 {
@@ -1499,8 +1499,8 @@
                                         "text":"tweets.content",
                                         "created_at":"tweets.created_at",
                                         "updated_at":"tweets.updated_at",
-                                        "commentable_id":"#REF(tweets.reply_to_id,tweets.id)",
-                                        "guid":"#REF(tweets.id,tweets.id)"
+                                        "commentable_id":"#REF(tweets.reply_to_id,tweets.id,posts)",
+                                        "guid":"#REF(tweets.id,tweets.id,comments)"
                                     }
                                 }
                             ]
@@ -1518,7 +1518,7 @@
                                         "updated_at":"retweets.updated_at",
                                         "type":"$reshare",
                                         "guid":"#REF(retweets.id,retweets.id)",
-                                        "root_guid": "#REF(retweets.tweet_id,tweets.id)"
+                                        "root_guid": "#REF(retweets.tweet_id,tweets.id,posts)"
                                     }
                                 }
                             ]
@@ -1577,7 +1577,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"likes.id",
-                                        "target_id":"#REF(likes.tweet_id,tweets.id)",
+                                        "target_id":"#REF(likes.tweet_id,tweets.id,posts)",
                                         "created_at":"likes.created_at",
                                         "updated_at":"likes.updated_at",
                                         "author_id":"#REF(likes.user_id,users.id)"
@@ -1616,7 +1616,7 @@
                                         "id":"notifications.id",
                                         "target_type":"notifications.notification_type",
                                         "recipient_id":"#REF(notifications.user_id,users.id)",
-                                        "target_id":"#REF(notifications.tweet,tweets.id)",
+                                        "target_id":"#REF(notifications.tweet,tweets.id,posts)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
                                     }
