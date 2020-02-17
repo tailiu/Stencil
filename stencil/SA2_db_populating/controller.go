@@ -56,8 +56,8 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // VM: profiles(finished), notifications, posts
 // Blade server: notification_actors, aspect_visibilities
 // Second population:
-// My machine: likes 
-// Blade server: notification_actors, notifications
+// My machine: users 
+// Blade server: people
 func PupulatingController() {
 
 	var limit int64
@@ -66,7 +66,7 @@ func PupulatingController() {
 	
 	db.STENCIL_DB = "stencil_exp_sa2_1"
 
-	table := "comments"
+	table := "users"
 
 	appName := "diaspora_1000000_sa2_1"
 	appID := "1"
