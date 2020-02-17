@@ -738,9 +738,11 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			} else {
 				self.Logger.Warn(fmt.Sprintf("@Args: [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables))
 				self.Logger.Warn("@NODE: ", node.Tag.Name, "|", node.Data)
-				self.Logger.Error("@MigrateNode > InsertRowIntoAppDB: ", err)
+
 				if self.mtype == DELETION {
-					self.Logger.Fatal("@MigrateNode > InsertRowIntoAppDB: STOP HERE!")
+					self.Logger.Fatal("@MigrateNode > InsertRowIntoAppDB: ", err)
+				} else if self.mtype == BAGS {
+					self.Logger.Error("@MigrateNode > InsertRowIntoAppDB: ", err)
 				}
 				return migrated, err
 			}
