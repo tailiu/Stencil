@@ -16,11 +16,15 @@ import (
 	"math/rand"
 )
 
-func InitializeEvalConfig() *EvalConfig {
+func InitializeEvalConfig(isBladeServer ...bool) *EvalConfig {
 
 	evalConfig := new(EvalConfig)
 	
-	connectToDB(evalConfig)
+	if len(isBladeServer) == 1 {
+		connectToDB(evalConfig, isBladeServer[0])
+	} else {
+		connectToDB(evalConfig)
+	}
 
 	evalConfig.MastodonAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, "mastodon")
 	evalConfig.DiasporaAppID = db.GetAppIDByAppName(evalConfig.StencilDBConn, "diaspora")
@@ -867,23 +871,36 @@ func getAllUserIDsSortByPhotosInDiaspora(evalConfig *EvalConfig) []map[string]st
 
 }
 
-func connectToDB(evalConfig *EvalConfig) {
+func connectToDB(evalConfig *EvalConfig, isBladeServer ...bool) {
+
+	bladeServer := true
+
+	if len(isBladeServer) == 1 {
+		bladeServer = isBladeServer[0]
+	}
 
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
 	evalConfig.StencilDBConn1 = db.GetDBConn(stencilDB1)
 	evalConfig.StencilDBConn2 = db.GetDBConn(stencilDB2)
-	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, true)
-	evalConfig.MastodonDBConn1 = db.GetDBConn(mastodon1, true)
-	evalConfig.MastodonDBConn2 = db.GetDBConn(mastodon2, true)
 	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
+	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, bladeServer)
+	evalConfig.MastodonDBConn1 = db.GetDBConn(mastodon1, bladeServer)
+	evalConfig.MastodonDBConn2 = db.GetDBConn(mastodon2, bladeServer)
+	evalConfig.TwitterDBConn = db.GetDBConn(twitter, bladeServer)
+	evalConfig.GnusocialDBConn = db.GetDBConn(gnusocial, bladeServer)
 
 }
 
-func refreshEvalConfigDBConnections(evalConfig *EvalConfig) {
+func refreshEvalConfigDBConnections(evalConfig *EvalConfig, 
+	isBladeServer ...bool) {
 
 	closeDBConns(evalConfig)
-
-	connectToDB(evalConfig)
+	
+	if len(isBladeServer) == 1{
+		connectToDB(evalConfig, isBladeServer[0])
+	} else {
+		connectToDB(evalConfig)
+	}
 
 }
 

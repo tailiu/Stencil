@@ -78,6 +78,32 @@ func PreExp() {
 
 }
 
+func preExp7(evalConfig *EvalConfig) {
+
+	query1 := `TRUNCATE identity_table, migration_registration, 
+		reference_table, resolved_references, txn_logs, 
+		evaluation, data_bags, display_flags, display_registration`
+
+	query2 := "SELECT truncate_tables('cow')"
+
+	if err1 := db.TxnExecute1(evalConfig.StencilDBConn, query1); err1 != nil {
+		log.Fatal(err1)	
+	} else {
+		if err2 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err2 != nil {
+			log.Fatal(err2)
+		} else {
+			if err3 := db.TxnExecute1(evalConfig.TwitterDBConn, query2); err3 != nil {
+				log.Fatal(err3)
+			} else {
+				if err4 := db.TxnExecute1(evalConfig.GnusocialDBConn, query2); err4 != nil {
+					log.Fatal(err4)
+				}
+			}
+		}
+	}
+
+}
+
 // In this experiment, we migrate 1000 users from Diaspora to Mastodon
 // Note that in this exp the migration thread should not migrate data from data bags
 // The source database needs to be changed to diaspora_1000_exp
@@ -1077,7 +1103,7 @@ func Exp4CountEdgesNodes() {
 
 	log.Println("total users:", len(userIDs))
 
-	for i := 682; i < len(userIDs); i ++ {
+	for i := 717; i < len(userIDs); i ++ {
 	// for _, userID := range userIDs {
 
 		userID := userIDs[i]
@@ -1198,21 +1224,32 @@ func Exp7() {
 	// migrationSeq := []string{"diaspora", "mastodon", "twitter", "gnusocial", "diaspora"}
 	
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter",
+		"diaspora", "mastodon", "twitter", "diaspora",
 	}
 
+	db.STENCIL_DB = "stencil_exp6"
+	db.DIASPORA_DB = "diaspora_test2"
+	db.MASTODON_DB = "mastodon_exp6"
+	db.TWITTER_DB = "twitter_exp6"
+	db.GNUSOCIAL_DB = "gnusocial_exp6"
+
 	stencilDB = "stencil_exp6"
+	mastodon = "mastodon_exp6"
+	twitter = "twitter_exp6"
+	gnusocial = "gnusocial_exp6"
 
 	// migrationNum := 100
 
-	evalConfig := InitializeEvalConfig()
+	evalConfig := InitializeEvalConfig(false)
 
 	defer closeDBConns(evalConfig)
+
+	preExp7(evalConfig)
 
 	var migrationIDs []string
 
 	userIDs := []string {
-		"989871", "34551",
+		"98992", "34592",
 	}
 
 	userNum := len(userIDs)
@@ -1250,7 +1287,7 @@ func Exp7() {
 				markAsDelete, useBladeServerAsDst, enableBags,
 			)
 
-			refreshEvalConfigDBConnections(evalConfig)
+			refreshEvalConfigDBConnections(evalConfig, false)
 
 			migrationID := getMigrationIDBySrcUserIDMigrationTypeFromToAppID(
 				evalConfig.StencilDBConn, userID, 

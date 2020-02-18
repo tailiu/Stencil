@@ -7,9 +7,11 @@ import (
 
 func test1() {
 
-	dbName := "mastodon"
+	dbName := "gnusocial_exp6"
 
-	dbConn := db.GetDBConn(dbName, true)
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
 
 	SA1_display.AddDisplayFlagToAllTables(dbConn)
 
@@ -35,9 +37,9 @@ func test3() {
  
 func main() {
 
-	// test1()
+	test1()
 	
 	// test2()
 
-	test3()
+	// test3()
 }

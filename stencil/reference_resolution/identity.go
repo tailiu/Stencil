@@ -168,7 +168,7 @@ func getRootMembersOfApps(stencilDBConn *sql.DB) map[string]string {
 		log.Fatal(err)
 	}
 
-	var rootMembers map[string]string
+	rootMembers := make(map[string]string)
 	
 	for _, data1 := range data {
 		rootMembers[fmt.Sprint(data1["app_id"])] =
