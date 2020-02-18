@@ -2,6 +2,7 @@ package evaluation
 
 import (
 	"stencil/SA1_migrate"
+	"stencil/reference_resolution"
 	"stencil/apis"
 	"stencil/db"
 	"log"
@@ -1076,10 +1077,10 @@ func Exp4CountEdgesNodes() {
 
 	log.Println("total users:", len(userIDs))
 
-	// for i := 0; i < len(userIDs); i += 10 {
-	for _, userID := range userIDs {
+	for i := 682; i < len(userIDs); i ++ {
+	// for _, userID := range userIDs {
 
-		// userID := userIDs[i]
+		userID := userIDs[i]
 
 		res := make(map[string]int)
 
@@ -1194,30 +1195,45 @@ func Exp6() {
 // Random walk experiment
 func Exp7() {
 
-	// migrationSeq := ["diaspora", "mastodon", "twitter", "gnusocial", "diaspora"]
+	// migrationSeq := []string{"diaspora", "mastodon", "twitter", "gnusocial", "diaspora"}
 	
-	migrationSeq := ["diaspora", "mastodon", "twitter"]
+	migrationSeq := []string {
+		"diaspora", "mastodon", "twitter",
+	}
 
 	stencilDB = "stencil_exp6"
 
-	migrationNum := 100
+	// migrationNum := 100
 
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
 
-	var migrationID string
+	var migrationIDs []string
+
+	userIDs := []string {
+		"989871", "34551",
+	}
+
+	userNum := len(userIDs)
 
 	for i := 0; i < len(migrationSeq) - 1; i++ {
 
-		for _, userID := range userIDs {
+		for j, userID := range userIDs {
 			
 			if i != 0 {
-				userID = 
+				userID = reference_resolution.GetNextUserID(
+					evalConfig.StencilDBConn, 
+					migrationIDs[(i - 1) * userNum + j],
+				)
 			}
 
 			fromApp := migrationSeq[i]
 			toApp := migrationSeq[i+1]
+
+			log.Println("Migrating user ID:", userID)
+			log.Println("From app:", fromApp)
+			log.Println("To app:", toApp)
 
 			fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
 			toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
@@ -1225,24 +1241,24 @@ func Exp7() {
 			uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 				userID, fromApp, fromAppID, toApp, toAppID, "d", 1
 	
-			enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst := 
-				true, true, false, false
+			enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags := 
+				true, true, false, false, true
 	
 			SA1_migrate.Controller(uid, srcAppName, srcAppID, 
 				dstAppName, dstAppID, migrationType, threadNum,
 				enableDisplay, displayInFirstPhase, 
-				markAsDelete, useBladeServerAsDst,
+				markAsDelete, useBladeServerAsDst, enableBags,
 			)
 
 			refreshEvalConfigDBConnections(evalConfig)
 
-			migrationID = getMigrationIDBySrcUserIDMigrationTypeFromToAppID(
+			migrationID := getMigrationIDBySrcUserIDMigrationTypeFromToAppID(
 				evalConfig.StencilDBConn, userID, 
-				fromAppID, toAppID, migrationType,
+				srcAppID, dstAppID, migrationType,
 			)
+			
+			migrationIDs = append(migrationIDs, migrationID)
 
-			migrationID
-	
 		}
 
 	}
