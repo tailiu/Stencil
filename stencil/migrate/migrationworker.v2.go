@@ -152,7 +152,7 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 
 	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
-			log.Println(fmt.Sprintf("x%2dx | FETCHING  tag for dependency { %s > %s } ", threadID, node.Tag.Name, dep.Tag))
+			log.Println(fmt.Sprintf("FETCHING  tag for dependency { %s > %s } ", node.Tag.Name, dep.Tag))
 			if where, err := node.ResolveDependencyConditions(self.SrcAppConfig, dep, child); err == nil {
 				ql := self.GetTagQL(child)
 				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
@@ -184,9 +184,9 @@ func (self *MigrationWorkerV2) GetDependentNode(node *DependencyNode, threadID i
 func (self *MigrationWorkerV2) GetOwnedNode(threadID int) (*DependencyNode, error) {
 
 	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
-		log.Println(fmt.Sprintf("x%2dx | FETCHING  tag  for ownership { %s } ", threadID, own.Tag))
+		log.Println(fmt.Sprintf("FETCHING  tag  for ownership { %s } ", own.Tag))
 		// if self.unmappedTags.Exists(own.Tag) {
-		// 	log.Println(fmt.Sprintf("x%2dx |         UNMAPPED  tag  { %s } ", threadID, own.Tag))
+		// 	log.Println(fmt.Sprintf("        UNMAPPED  tag  { %s } ", own.Tag))
 		// 	continue
 		// }
 		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
@@ -556,7 +556,7 @@ func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
 
 		} else {
 			// log.Println("node.Data =>", node.Data)
-			self.Logger.Info("@DeleteRow:  '", idCol, "' not present or is null in node data!", nodeVal)
+			self.Logger.Tracef("@DeleteRow: '%v' not present or is null in node data! | %v", idCol, nodeVal)
 		}
 	}
 	return nil
@@ -574,10 +574,10 @@ func (self *MigrationWorkerV2) TransferMedia(filePath string) error {
 	fileName := fpTokens[len(fpTokens)-1]
 	fsName := "/" + fileName
 
-	log.Println(fmt.Sprintf("Transferring file [%s] with name [%s] to [%s]...", filePath, fileName, fsName))
+	log.Println(color.FgLightWhite.Render(fmt.Sprintf("Transferring file [%s] with name [%s] to [%s]...", filePath, fileName, fsName)))
 	for {
 		if err := self.FTPClient.Stor(fsName, file); err != nil {
-			log.Println("File Transfer Failed: ", err)
+			self.Logger.Errorf("File Transfer Failed: %v", err)
 			self.FTPClient.Quit()
 			self.FTPClient = GetFTPClient()
 			continue
@@ -677,21 +677,22 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			continue
 		}
 		if mappedData, mappedDataErr := self.GetMappedData(toTable, node); mappedDataErr != nil {
-			self.Logger.Info(node.Data)
-			self.Logger.Info(mappedData)
+			self.Logger.Debug(node.Data)
+			self.Logger.Debug(mappedData)
 			self.Logger.Fatal("@MigrateNode > GetMappedData Error | ", mappedDataErr)
 		} else if len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
 			if !self.ValidateMappedTableData(toTable, mappedData) {
-				self.Logger.Warn("@MigrateNode > ValidateMappedTableData: Validation failed!")
+				self.Logger.Tracef("toTable: %s | mappedData: %v", toTable.Table, mappedData)
+				self.Logger.Warn("@MigrateNode > ValidateMappedTableData: All Nulls?")
 				continue
 			}
 
 			if self.mtype == DELETION || self.mtype == BAGS {
-				// self.Logger.Infof("Before Merging Data | %s\n%v\n---", toTable.Table, mappedData)
+				// self.Logger.Tracef("Before Merging Data | %s\n%v\n---", toTable.Table, mappedData)
 				if err := self.MergeBagDataWithMappedData(&mappedData, node, toTable); err != nil {
 					self.Logger.Fatal("@MigrateNode > MergeDataFromBagsWithMappedData | ", err)
 				}
-				// self.Logger.Infof("After Merging Data | %s\n%v\n---", toTable.Table, mappedData)
+				// self.Logger.Tracef("After Merging Data | %s\n%v\n---", toTable.Table, mappedData)
 			}
 
 			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
@@ -717,8 +718,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 
 				if err := self.PushData(self.tx.StencilTx, toTable, fmt.Sprint(id), mappedData, node); err != nil {
-					self.Logger.Warn("@MigrateNode")
-					self.Logger.Warn("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
+					self.Logger.Debug("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
 					self.Logger.Fatal(err)
 					return migrated, err
 				}
@@ -736,8 +736,8 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 				allMappedData = append(allMappedData, mappedData)
 			} else {
-				self.Logger.Warn(fmt.Sprintf("@Args: [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables))
-				self.Logger.Warn("@NODE: ", node.Tag.Name, "|", node.Data)
+				self.Logger.Debugf("@Args | [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables)
+				self.Logger.Debugf("@NODE: %s | Data: %v", node.Tag.Name, node.Data)
 
 				if self.mtype == DELETION {
 					self.Logger.Fatal("@MigrateNode > InsertRowIntoAppDB: ", err)
@@ -770,7 +770,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 
 	if len(allMappedData) > 0 {
 		migrated = true
-		// self.Logger.Info("Migrated Data:\n", allMappedData)
+		// self.Logger.Tracef("Migrated Data:\n", allMappedData)
 		for _, mappedData := range allMappedData {
 			self.RemoveMappedDataFromNodeData(mappedData, node)
 		}
@@ -931,7 +931,7 @@ func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
 func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int) error {
 
 	if ownerID, isRoot := self.GetNodeOwner(node); isRoot && len(ownerID) > 0 {
-		log.Println(fmt.Sprintf("x%2dx | OWNED   node { %s } | root [%s] : owner [%s]", threadID, node.Tag.Name, self.uid, ownerID))
+		log.Println(fmt.Sprintf("OWNED   node { %s } | root [%s] : owner [%s]", node.Tag.Name, self.uid, ownerID))
 		if err := self.InitTransactions(); err != nil {
 			return err
 		} else {
@@ -940,13 +940,13 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 			defer self.tx.StencilTx.Rollback()
 		}
 
-		log.Println(fmt.Sprintf("x%2dx | CHECKING NEXT NODES { %s }", threadID, node.Tag.Name))
+		log.Println(fmt.Sprintf("CHECKING NEXT NODES { %s }", node.Tag.Name))
 
 		if err := self.CheckNextNode(node); err != nil {
 			return err
 		}
 
-		log.Println(fmt.Sprintf("x%2dx | CHECKING PREVIOUS NODES { %s }", threadID, node.Tag.Name))
+		log.Println(fmt.Sprintf("CHECKING PREVIOUS NODES { %s }", node.Tag.Name))
 
 		if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
 			for _, previousNode := range previousNodes {
@@ -956,21 +956,21 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 			return err
 		}
 
-		log.Println(fmt.Sprintf("x%2dx | HANDLING MIGRATION { %s }", threadID, node.Tag.Name))
+		log.Println(fmt.Sprintf("HANDLING MIGRATION { %s }", node.Tag.Name))
 
 		if migrated, err := self.HandleMigration(node); err == nil {
 			if migrated {
-				log.Println(fmt.Sprintf("x%2dx %s  node { %s } ", threadID, color.FgLightGreen.Render("Migrated"), node.Tag.Name))
+				log.Println(fmt.Sprintf("%s  node { %s } ", color.FgLightGreen.Render("Migrated"), node.Tag.Name))
 			} else {
-				log.Println(fmt.Sprintf("x%2dx %s  node { %s } ", threadID, color.FgGreen.Render("Not Migrated / No Err"), node.Tag.Name))
+				log.Println(fmt.Sprintf("%s  node { %s } ", color.FgGreen.Render("Not Migrated / No Err"), node.Tag.Name))
 			}
 		} else {
 			if strings.EqualFold(err.Error(), "3") {
-				log.Println(fmt.Sprintf("x%2dx UNMAPPED  node { %s } ", threadID, node.Tag.Name))
+				log.Println(fmt.Sprintf("UNMAPPED  node { %s } ", node.Tag.Name))
 			} else if strings.EqualFold(err.Error(), "2") {
-				log.Println(fmt.Sprintf("x%2dx Sent2Bag  node { %s } ", threadID, node.Tag.Name))
+				log.Println(fmt.Sprintf("Sent2Bag  node { %s } ", node.Tag.Name))
 			} else {
-				log.Println(fmt.Sprintf("x%2dx FAILED    node { %s } ", threadID, node.Tag.Name))
+				log.Println(fmt.Sprintf("FAILED    node { %s } ", node.Tag.Name))
 				if strings.EqualFold(err.Error(), "0") {
 					log.Println(err)
 					return err
@@ -985,10 +985,10 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 		if err := self.CommitTransactions(); err != nil {
 			return err
 		} else {
-			log.Println(fmt.Sprintf("x%2dx COMMITTED node { %s } ", threadID, node.Tag.Name))
+			log.Println(fmt.Sprintf("COMMITTED node { %s } ", node.Tag.Name))
 		}
 	} else {
-		log.Println(fmt.Sprintf("x%2dx %s  node { %s } | root [%s] : owner [%s]", threadID, color.FgBlue.Render("Visited"), node.Tag.Name, self.uid, ownerID))
+		log.Println(fmt.Sprintf("%s  node { %s } | root [%s] : owner [%s]", color.FgBlue.Render("Visited"), node.Tag.Name, self.uid, ownerID))
 		self.MarkAsVisited(node)
 	}
 	fmt.Println("------------------------------------------------------------------------")
@@ -1006,22 +1006,22 @@ func (self *MigrationWorkerV2) CallMigrationX(node *DependencyNode, threadID int
 		}
 		if migrated, err := self.HandleMigration(node); err == nil {
 			if migrated {
-				log.Println(fmt.Sprintf("x%2dx %s  node { %s } ", threadID, color.FgLightGreen.Render("Migrated"), node.Tag.Name))
+				log.Println(fmt.Sprintf("%s  node { %s } ", color.FgLightGreen.Render("Migrated"), node.Tag.Name))
 			} else {
-				log.Println(fmt.Sprintf("x%2dx %s  node { %s } ", threadID, color.FgGreen.Render("Not Migrated / No Err"), node.Tag.Name))
+				log.Println(fmt.Sprintf("%s  node { %s } ", color.FgGreen.Render("Not Migrated / No Err"), node.Tag.Name))
 			}
 		} else {
-			log.Println(fmt.Sprintf("x%2dx | RCVD ERR  node { %s } ", threadID, node.Tag.Name), err)
+			log.Println(fmt.Sprintf("RCVD ERR  node { %s } ", node.Tag.Name), err)
 			// if self.unmappedTags.Exists(node.Tag.Name) {
-			// 	log.Println(fmt.Sprintf("x%2dx | BREAKLOOP node { %s } ", threadID, node.Tag.Name), err)
+			// 	log.Println(fmt.Sprintf("BREAKLOOP node { %s } ", node.Tag.Name), err)
 			// 	continue
 			// }
 			if strings.EqualFold(err.Error(), "3") {
-				log.Println(fmt.Sprintf("x%2dx | IGNORED   node { %s } ", threadID, node.Tag.Name))
+				log.Println(fmt.Sprintf("IGNORED   node { %s } ", node.Tag.Name))
 			} else if strings.EqualFold(err.Error(), "2") {
-				log.Println(fmt.Sprintf("x%2dx | BAGGED?   node { %s } ", threadID, node.Tag.Name))
+				log.Println(fmt.Sprintf("BAGGED?   node { %s } ", node.Tag.Name))
 			} else {
-				log.Println(fmt.Sprintf("x%2dx | FAILED    node { %s } ", threadID, node.Tag.Name), err)
+				log.Println(fmt.Sprintf("FAILED    node { %s } ", node.Tag.Name), err)
 				if strings.EqualFold(err.Error(), "0") {
 					log.Println(err)
 					return err
@@ -1032,13 +1032,13 @@ func (self *MigrationWorkerV2) CallMigrationX(node *DependencyNode, threadID int
 			}
 		}
 		if err := self.CommitTransactions(); err != nil {
-			self.Logger.Fatal(fmt.Sprintf("x%2dx | UNABEL to COMMIT node { %s } ", threadID, node.Tag.Name))
+			self.Logger.Fatal(fmt.Sprintf("UNABEL to COMMIT node { %s } ", node.Tag.Name))
 			return err
 		} else {
-			log.Println(fmt.Sprintf("x%2dx COMMITTED node { %s } ", threadID, node.Tag.Name))
+			log.Println(fmt.Sprintf("COMMITTED node { %s } ", node.Tag.Name))
 		}
 	} else {
-		log.Println(fmt.Sprintf("x%2dx %s  node { %s } | root [%s] : owner [%s]", threadID, color.FgBlue.Render("Visited"), node.Tag.Name, self.uid, ownerID))
+		log.Println(fmt.Sprintf("%s  node { %s } | root [%s] : owner [%s]", color.FgBlue.Render("Visited"), node.Tag.Name, self.uid, ownerID))
 	}
 	self.MarkAsVisited(node)
 	return nil
