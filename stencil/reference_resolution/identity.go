@@ -159,6 +159,66 @@ func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 
 }
 
+func getRootMembersOfApps(stencilDBConn *sql.DB) map[string]string {
+
+	query := `SELECT app_id, root_member_id from app_root_member`
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var rootMembers map[string]string
+	
+	for _, data1 := range data {
+		rootMembers[fmt.Sprint(data1["app_id"])] =
+			fmt.Sprint(data1["root_member_id"])
+	}
+
+	return rootMembers
+
+}
+
+func GetNextUserID(stencilDBConn *sql.DB, migrationID string) string {
+
+	appRootMembers := getRootMembersOfApps(stencilDBConn)
+
+	query := fmt.Sprintf(
+		`SELECT user_id, src_app, dst_app FROM migration_registration
+		WHERE migration_id = %s`,
+		migrationID,
+	)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	userID := fmt.Sprint(data["user_id"])
+	srcApp := fmt.Sprint(data["src_app"])
+	dstApp := fmt.Sprint(data["dst_app"])
+	
+	query1 := fmt.Sprintf(
+		`SELECT to_id FROM identity_table 
+		WHERE from_app = %s and from_member = %s and from_id = %s 
+		and to_app = %s and to_member =%s and migration_id = %s`,
+		srcApp, appRootMembers[srcApp], userID,
+		dstApp, appRootMembers[dstApp], migrationID,
+	)
+
+	data1, err1 := db.DataCall1(stencilDBConn, query1)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	if data1["to_id"] == nil {
+		log.Fatal("Cannot get user ID in the destination application!")
+	}
+
+	return fmt.Sprint(data1["to_id"])
+
+}
+
 func getAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
 
 	query := fmt.Sprintf(`SELECT root_member_id from app_root_member 

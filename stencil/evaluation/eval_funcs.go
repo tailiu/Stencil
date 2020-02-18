@@ -51,7 +51,7 @@ func InitializeEvalConfig() *EvalConfig {
 	}
 
    	evalConfig.DiasporaTableNameIDPairs = diasporaTableNameIDPairs
-
+	
 	// t := time.Now()
 	evalConfig.SrcAnomaliesVsMigrationSizeFile, 
 	evalConfig.DstAnomaliesVsMigrationSizeFile, 
@@ -316,7 +316,6 @@ func getMigrationIDBySrcUserIDMigrationTypeFromToAppID(stencilDBConn *sql.DB,
 	uid, srcAppID, dstAppID, migrationType string) string {
 
 	var mType string
-	var migrationIDs []int
 
 	switch migrationType {
 	case "d":

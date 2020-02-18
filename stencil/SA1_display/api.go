@@ -66,6 +66,8 @@ func waitToGetMigrationID(uid, srcAppID, dstAppID, migrationType string) int {
 		
 		// log.Println("*******")
 		// log.Println(migrationIDs)
+		
+		// log.Println("user ID:", uid)
 
 		if migrationNum := len(migrationIDs); migrationNum == 0 {
 			time.Sleep(WAIT_FOR_MIGRATION_START_INTERVAL)

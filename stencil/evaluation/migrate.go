@@ -89,3 +89,7 @@ func migrateUserFromDiasporaToMastodon1(
 		enableDisplay, displayInFirstPhase,
 	)
 }
+
+func migrateUser() {
+	
+}
