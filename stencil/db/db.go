@@ -54,6 +54,14 @@ func GetDBConn(app string, isBlade ...bool) *sql.DB {
 		{
 			dbName = MASTODON_DB
 		}
+	case "twitter":
+		{
+			dbName = TWITTER_DB
+		}
+	case "gnusocial":
+		{
+			dbName = GNUSOCIAL_DB
+		}
 	case "stencil":
 		{
 			dbName = STENCIL_DB

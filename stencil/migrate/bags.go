@@ -200,7 +200,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 			}
 
 			if mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
-				self.Logger.Info("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
+				// self.Logger.Info("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
 				for _, toTable := range mapping.ToTables {
 					for fromAttr, toAttr := range toTable.Mapping {
 						if _, ok := toTableData[fromAttr]; !ok {
@@ -235,7 +235,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 			log.Println("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id)
 		}
 
-		self.Logger.Infof("@FetchDataFromBags > FetchDataFromBags: %s | FromAppID: %s FromMemberID: %s FromID: %v dstMemberID:%s dstMemberName:%s \ntoTableData: %v\nprevUIDs:%v\n ",
+		self.Logger.Infof("@FetchDataFromBags > FetchDataFromBags: %s |\nFromAppID: %s FromMemberID: %s FromID: %v dstMemberID:%s dstMemberName:%s \ntoTableData: %v\nprevUIDs:%v\n ",
 			color.FgLightMagenta.Render("Recursive Traversal"), idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName,
 			toTableData, prevUIDs)
 		if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName); err != nil {
