@@ -243,21 +243,21 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 	var wg sync.WaitGroup
 
 	if enableBags {
-		color.Cyan.Println("Bags Enabled")
+		color.Cyan.Println("-- Bags Enabled")
 	}
 
 	if isBlade {
-		color.Cyan.Println("Using Blade for dst")
+		color.Cyan.Println("-- Using Blade for Destination")
 	}
 
 	commitChannel := make(chan ThreadChannel)
 
 	if threads != 0 {
 		if !db.RegisterMigration(uid, srcAppID, dstAppID, mtype, logTxn.Txn_id, threads, logTxn.DBconn, true) {
-			color.Red.Println("Unable to register migration!")
+			color.Error.Println("Unable to register migration!")
 			log.Fatal()
 		} else {
-			color.Cyan.Println("Migration registered:", mtype)
+			color.Cyan.Println("-- Migration Registered:", mtype)
 		}
 	} else {
 		threads = 1
@@ -275,7 +275,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 				{
 					for {
 						if err := mWorker.MigrateBags(thread_id, isBlade); err != nil {
-							log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
+							mWorker.Logger.Error("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
 							time.Sleep(time.Second * 5)
 							continue
 						}
@@ -299,7 +299,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 					if enableBags {
 						for {
 							if err := mWorker.MigrateBags(thread_id, isBlade); err != nil {
-								log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
+								mWorker.Logger.Error("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
 								time.Sleep(time.Second * 5)
 								continue
 							}
@@ -365,7 +365,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 
 	var finished_threads []string
 	for threadResponse := range commitChannel {
-		color.Cyan.Println("THREAD FINISHED WORKING", threadResponse, strings.Join(finished_threads, ","))
+		color.Light.Println("THREAD FINISHED WORKING", threadResponse, strings.Join(finished_threads, ","))
 		if !threadResponse.Finished {
 			finished = false
 		}

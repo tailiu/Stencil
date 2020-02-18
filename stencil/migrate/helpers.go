@@ -10,7 +10,6 @@ import (
 	"stencil/transaction"
 	"strings"
 
-	"github.com/gookit/color"
 	logg "github.com/withmandala/go-log"
 )
 
@@ -67,7 +66,8 @@ func CreateBagWorkerV2(uid, srcAppID, dstAppID string, logTxn *transaction.Log_t
 	mWorker.FTPClient = GetFTPClient()
 	mWorker.Logger.WithTimestamp()
 	mWorker.Logger.WithColor()
-	color.Cyan.Println("Bag Worker Created for thread: ", threadID)
+	mWorker.Logger.WithDebug()
+	mWorker.Logger.Infof("Bag Worker Created for thread: %v", threadID)
 	fmt.Println("************************************************************************")
 	return mWorker
 }
@@ -104,7 +104,9 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 	mWorker.FTPClient = GetFTPClient()
 	mWorker.Logger.WithTimestamp()
 	mWorker.Logger.WithColor()
-	color.Cyan.Println("Worker Created for thread: ", threadID)
+	mWorker.Logger.WithDebug()
+	mWorker.Logger.Infof("Worker Created for thread: %v", threadID)
+
 	fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 	return mWorker
 }

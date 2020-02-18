@@ -8,6 +8,8 @@ import (
 	"stencil/migrate"
 	"stencil/mthread"
 	"stencil/transaction"
+
+	"github.com/gookit/color"
 )
 
 func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBlade, enableBags bool) {
@@ -59,4 +61,5 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBla
 	} else {
 		log.Fatal("Can't begin migration transaction: ", err)
 	}
+	color.Success.Println("End of Migration")
 }

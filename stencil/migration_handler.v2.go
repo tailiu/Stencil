@@ -13,29 +13,27 @@ import (
 func main() {
 
 	srcApp := flag.String("srcApp", "diaspora", "")
-	dstApp := flag.String("dstApp", "mastodon", "")
-
 	srcAppID := flag.String("srcAppID", "1", "")
+
+	dstApp := flag.String("dstApp", "mastodon", "")
 	dstAppID := flag.String("dstAppID", "2", "")
 
+	threads := flag.Int("threads", 1, "")
+	mtype := flag.String("mtype", "d", "")
 	uid := flag.String("uid", "", "")
 
-	threads := flag.Int("threads", 1, "")
-
-	mtype := flag.String("mtype", "", "")
-
 	display := flag.Bool("display", false, "")
-	bags := flag.Bool("bags", false, "")
 	blade := flag.Bool("blade", false, "")
+	bags := flag.Bool("bags", false, "")
 
 	flag.Parse()
-
-	// log.Fatal(*srcApp, *srcAppID, *dstApp, *dstAppID, *uid, *mtype, *bags, *blade, *display, *threads)
 
 	if *mtype == "b" || (*mtype == "d" && *display == false) {
 		apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags)
 	} else {
-		SA1_migrate.Controller2(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *threads, *blade, *display, *bags)
+		displayInFirstPhase, markAsDelete := false, false
+		SA1_migrate.Controller(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *threads,
+			*display, displayInFirstPhase, markAsDelete, *blade, *bags)
 	}
 }
 
