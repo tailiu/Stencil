@@ -850,8 +850,10 @@ func getMigrationIDs(stencilDBConn *sql.DB,
 		log.Fatal("Cannot find a corresponding migration type")
 	}
 
-	query := fmt.Sprintf(`select migration_id from migration_registration 
-		where user_id = %s and src_app = %s and dst_app = %s and migration_type = %s`,
+	query := fmt.Sprintf(
+		`select migration_id from migration_registration 
+		where user_id = %s and src_app = %s and dst_app = %s 
+		and migration_type = %s`,
 		uid, srcAppID, dstAppID, mType)
 
 	data, err := db.DataCall(stencilDBConn, query)

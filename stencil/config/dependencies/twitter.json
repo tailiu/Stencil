@@ -93,7 +93,8 @@
             },
             "keys": {
                 "id": "member1.id",
-                "from_user_id": "member1.from_user_id" 
+                "from_user_id": "member1.from_user_id",
+                "to_user_id": "member1.to_user_id" 
             }
         }
     ],
@@ -146,7 +147,7 @@
                     "tag": "root",
                     "conditions": [
                         {
-                            "tag_attr": "user_id",
+                            "tag_attr": "to_user",
                             "depends_on_attr": "id"
                         }
                     ]
