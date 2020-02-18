@@ -14,7 +14,7 @@ import (
 )
 
 func CreateDisplayConfig(migrationID int,
-	resolveReference, newDB, 
+	resolveReference, useBladeServerAsDst, 
 	displayInFirstPhase, markAsDelete bool) *displayConfig {
 
 	var displayConfig displayConfig
@@ -50,10 +50,10 @@ func CreateDisplayConfig(migrationID int,
 
 	var dstDBConn *sql.DB
 
-	if newDB {
-		dstDBConn = db.GetDBConn(dstAppName)
-	} else {
+	if useBladeServerAsDst {
 		dstDBConn = db.GetDBConn(dstAppName, true)
+	} else {
+		dstDBConn = db.GetDBConn(dstAppName)
 	}
 
 	// Note that when the display thread is initializing, dstUserID could be nil
