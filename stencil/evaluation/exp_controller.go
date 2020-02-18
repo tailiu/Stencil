@@ -1191,8 +1191,60 @@ func Exp6() {
 
 }
 
+// Random walk experiment
 func Exp7() {
 
+	// migrationSeq := ["diaspora", "mastodon", "twitter", "gnusocial", "diaspora"]
 	
+	migrationSeq := ["diaspora", "mastodon", "twitter"]
+
+	stencilDB = "stencil_exp6"
+
+	migrationNum := 100
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	var migrationID string
+
+	for i := 0; i < len(migrationSeq) - 1; i++ {
+
+		for _, userID := range userIDs {
+			
+			if i != 0 {
+				userID = 
+			}
+
+			fromApp := migrationSeq[i]
+			toApp := migrationSeq[i+1]
+
+			fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
+			toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
+	
+			uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+				userID, fromApp, fromAppID, toApp, toAppID, "d", 1
+	
+			enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst := 
+				true, true, false, false
+	
+			SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+				dstAppName, dstAppID, migrationType, threadNum,
+				enableDisplay, displayInFirstPhase, 
+				markAsDelete, useBladeServerAsDst,
+			)
+
+			refreshEvalConfigDBConnections(evalConfig)
+
+			migrationID = getMigrationIDBySrcUserIDMigrationTypeFromToAppID(
+				evalConfig.StencilDBConn, userID, 
+				fromAppID, toAppID, migrationType,
+			)
+
+			migrationID
+	
+		}
+
+	}
 
 }

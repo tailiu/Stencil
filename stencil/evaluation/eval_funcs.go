@@ -312,6 +312,34 @@ func getMigrationIDBySrcUserIDMigrationType(dbConn *sql.DB,
 
 }
 
+func getMigrationIDBySrcUserIDMigrationTypeFromToAppID(stencilDBConn *sql.DB,
+	uid, srcAppID, dstAppID, migrationType string) string {
+
+	var mType string
+	var migrationIDs []int
+
+	switch migrationType {
+	case "d":
+		mType = "3"
+	case "n":
+		mType = "5"
+	default:
+		log.Fatal("Cannot find a corresponding migration type")
+	}
+
+	query := fmt.Sprintf(`select migration_id from migration_registration 
+		where user_id = %s and src_app = %s and dst_app = %s and migration_type = %s`,
+		uid, srcAppID, dstAppID, mType)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["migration_id"])
+
+}
+
 func GetAllMigrationIDsAndTypesOfAppWithConds(stencilDBConn *sql.DB, appID string, 
 	extraConditions string) []map[string]interface{} {
 	

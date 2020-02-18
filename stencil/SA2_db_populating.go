@@ -36,6 +36,6 @@ func main() {
 
 	// SA2_db_populating.CreateIndexesConstraintsOnBaseSupTables()
 	
-	SA2_db_populating.PupulatingController()
+	// SA2_db_populating.PupulatingController()
 
 }
