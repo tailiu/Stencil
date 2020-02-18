@@ -57,7 +57,7 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // Blade server: notification_actors, aspect_visibilities
 // Second population:
 // My machine: users 
-// Blade server: people
+// Blade server: people, profile
 func PupulatingController() {
 
 	var limit int64
@@ -71,8 +71,8 @@ func PupulatingController() {
 	appName := "diaspora_1000000_sa2_1"
 	appID := "1"
 
-	limit = 10000
-	threadNum := 10
+	limit = 3000
+	threadNum := 5
 
 	// ****************************** End ******************************
 

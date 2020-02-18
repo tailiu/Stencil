@@ -17,7 +17,7 @@ func TruncateSA2Tables() {
 
 	query3 := "TRUNCATE "
 	
-	data := getAllTablesInDBs(dbConn)
+	data := getAllTablesInDB(dbConn)
 
 	for _, data1 := range data {
 
@@ -63,7 +63,7 @@ func GetTotalRowCountsOfDB() {
 
 	defer dbConn.Close()
 
-	data := getAllTablesInDBs(dbConn)
+	data := getAllTablesInDB(dbConn)
 	
 	// log.Println(data)
 
@@ -107,7 +107,7 @@ func ListRowCountsOfDB() {
 	dbConn := db.GetDBConn(dbName)
 	defer dbConn.Close()
 
-	data := getAllTablesInDBs(dbConn)
+	data := getAllTablesInDB(dbConn)
 	
 	// log.Println(data)
 
@@ -205,7 +205,7 @@ func DropPartitions() {
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
 
-	data := getAllTablesInDBs(dbConn)
+	data := getAllTablesInDB(dbConn)
 	
 	query := "DROP TABLE "
 
@@ -231,7 +231,7 @@ func DropPartitions() {
 
 }
 
-func CreateConstraints() {
+func CreateConstraintsIndexesOnPartitions() {
 
 	subPartitionTableIDs := map[int]int{
 		0: 6,
@@ -243,7 +243,7 @@ func CreateConstraints() {
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
 
-	tables := getAllTablesInDBs(dbConn)
+	tables := getAllTablesInDB(dbConn)
 	
 	var queries1 []string
 
@@ -486,7 +486,7 @@ func CreatPartitions(createConstrainsts ...bool) {
 	}
 
 	if len(createConstrainsts) == 0 || createConstrainsts[0] {
-		CreateConstraints()
+		CreateConstraintsIndexesOnPartitions()
 	}
 
 }
@@ -500,7 +500,7 @@ func DropPrimaryKeysOfParitions() {
 
 	var queries []string
 	
-	tables := getAllTablesInDBs(dbConn)
+	tables := getAllTablesInDB(dbConn)
 
 	for _, t := range tables {
 		
@@ -536,7 +536,7 @@ func AddPrimaryKeysToParitions() {
 
 	var queries []string
 	
-	tables := getAllTablesInDBs(dbConn)
+	tables := getAllTablesInDB(dbConn)
 
 	for _, t := range tables {
 		
@@ -579,5 +579,61 @@ func TruncateUnrelatedTables() {
 	if err1 != nil {
 		log.Fatal(err1)
 	} 
+
+}
+
+func CreateIndexDataTable() {
+
+	db.STENCIL_DB = "stencil_exp_sa2_1"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	
+	defer dbConn.Close()
+
+	createIndexDataTable(dbConn)
+	
+}
+
+func StoreIndexesOfBaseSupTables() {
+
+	db.STENCIL_DB = "stencil_exp_sa2_1"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	
+	defer dbConn.Close()
+
+	indexData := getIndexesOfBaseSupTables(dbConn)
+
+	insertIndexDataToTable(dbConn, indexData)
+
+}
+
+func DropIndexesConstraintsOfBaseSupTables() {
+
+	db.STENCIL_DB = "stencil_exp_sa2_1"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	
+	defer dbConn.Close()
+
+	indexData, constraintData := getConstraintsIndexesOfBaseSupTables(dbConn)
+
+	dropConstraintsOfBaseSupTables(dbConn, constraintData)
+
+	dropIndexesOfBaseSupTables(dbConn, indexData)
+
+}
+
+func CreateIndexesConstraintsOnBaseSupTables() {
+	
+	db.STENCIL_DB = "stencil_exp_sa2_1"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	
+	defer dbConn.Close()
+
+	createConstraintsOnBaseSupTables(dbConn)
+
+	createIndexesOfBaseSupTables(dbConn)
 
 }

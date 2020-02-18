@@ -28,6 +28,14 @@ func main() {
 
 	// SA2_db_populating.DropPrimaryKeysOfParitions()
 
+	// SA2_db_populating.CreateIndexDataTable()
+
+	// SA2_db_populating.StoreIndexesOfBaseSupTables()
+
+	// SA2_db_populating.DropIndexesConstraintsOfBaseSupTables()
+
+	// SA2_db_populating.CreateIndexesConstraintsOnBaseSupTables()
+	
 	SA2_db_populating.PupulatingController()
 
 }
