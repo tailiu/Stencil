@@ -251,7 +251,8 @@ func GetUndisplayedMigratedData(displayConfig *displayConfig) []*HintStruct {
 
 	for _, data1 := range data {
 
-		displayHints = append(displayHints, TransformDisplayFlagDataToHint(displayConfig, data1))
+		displayHints = append(displayHints, 
+			TransformDisplayFlagDataToHint(displayConfig, data1))
 
 	}
 	// fmt.Println(displayHints)
@@ -281,7 +282,8 @@ func CheckMigrationComplete(displayConfig *displayConfig) bool {
 
 }
 
-func CheckMigrationComplete1(stencilDBConn *sql.DB, migrationID int) bool {
+func CheckMigrationComplete1(stencilDBConn *sql.DB, 
+	migrationID int) bool {
 
 	query := fmt.Sprintf(
 		`SELECT 1 FROM txn_logs 
@@ -420,7 +422,8 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 }
 
-func CheckDisplay(displayConfig *displayConfig, dataHint *HintStruct) bool {
+func CheckDisplay(displayConfig *displayConfig, 
+	dataHint *HintStruct) bool {
 
 	query := fmt.Sprintf("SELECT display_flag from %s where id = %d",
 		dataHint.Table, dataHint.KeyVal["id"])
@@ -555,14 +558,22 @@ func getTableIDByTableName(stencilDBConn *sql.DB, appID, tableName string) strin
 func getSrcDstAppIDsUserIDByMigrationID(stencilDBConn *sql.DB,
 	migrationID int) (string, string, string) {
 
-	query := fmt.Sprintf("select src_app, dst_app, user_id from migration_registration")
+	query := fmt.Sprintf(
+		`SELECT src_app, dst_app, user_id FROM migration_registration 
+		WHERE migration_id = %d`,
+		migrationID,
+	)
 
 	data, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return fmt.Sprint(data["src_app"]), fmt.Sprint(data["dst_app"]), fmt.Sprint(data["user_id"])
+	srcApp := fmt.Sprint(data["src_app"]) 
+	dstApp := fmt.Sprint(data["dst_app"])
+	userID := fmt.Sprint(data["user_id"])
+
+	return srcApp, dstApp, userID
 
 }
 

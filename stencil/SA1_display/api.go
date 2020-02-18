@@ -132,6 +132,8 @@ func StartDisplay(uid, srcAppID, dstAppID,
 
 	migrationID := waitToGetMigrationID(uid, srcAppID, dstAppID, migrationType)
 
+	log.Println("Migration ID Found by Display:", migrationID)
+
 	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst := handlArgs(args)
 
 	if enableDisplay {
