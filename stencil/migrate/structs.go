@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/jlaffaye/ftp"
+	logg "github.com/withmandala/go-log"
 )
 
 const (
@@ -22,12 +23,12 @@ type IDRow struct {
 	FromAppID    string
 	FromMember   string
 	FromMemberID string
-	FromID       string
+	FromID       interface{}
 	ToAppID      string
 	ToAppName    string
 	ToMember     string
 	ToMemberID   string
-	ToID         string
+	ToID         interface{}
 }
 
 type Transactions struct {
@@ -40,7 +41,7 @@ type DependencyNode struct {
 	Tag  config.Tag
 	SQL  string
 	Data map[string]interface{}
-	IDs  []uint8
+	PKs  []int64
 }
 
 type WaitingNode struct {
@@ -63,10 +64,10 @@ type UnmappedTags struct {
 }
 
 type MappingRef struct {
-	fromID     string
+	fromID     interface{}
 	fromMember string
 	fromAttr   string
-	toID       string
+	toID       interface{}
 	toMember   string
 	toAttr     string
 }
@@ -96,6 +97,7 @@ type MigrationWorker struct {
 	visitedNodes map[string]map[string]bool
 	arg          string
 	Size         int
+	Logger       *logg.Logger
 	// threadID     int
 }
 
@@ -113,6 +115,7 @@ type LMigrationWorker struct {
 	mtype        string
 	visitedNodes map[string]bool
 	FTPClient    *ftp.ServerConn
+	Logger       *logg.Logger
 	// threadID     int
 }
 
@@ -131,5 +134,6 @@ type MigrationWorkerV2 struct {
 	visitedNodes map[string]map[string]bool
 	FTPClient    *ftp.ServerConn
 	tx           Transactions
+	Logger       *logg.Logger
 	// threadID     int
 }

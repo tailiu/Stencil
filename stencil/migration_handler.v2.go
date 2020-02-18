@@ -5,50 +5,37 @@
 package main
 
 import (
-	"log"
-	"os"
+	"flag"
 	"stencil/SA1_migrate"
 	"stencil/apis"
 )
 
 func main() {
-	// evalConfig := evaluation.InitializeEvalConfig()
 
-	srcApp, srcAppID := os.Args[4], os.Args[5]
-	dstApp, dstAppID := os.Args[6], os.Args[7]
+	srcApp := flag.String("srcApp", "diaspora", "")
+	dstApp := flag.String("dstApp", "mastodon", "")
 
-	// threads, err := strconv.Atoi(os.Args[1])
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	uid := os.Args[2]
+	srcAppID := flag.String("srcAppID", "1", "")
+	dstAppID := flag.String("dstAppID", "2", "")
 
-	mtype := os.Args[3]
+	uid := flag.String("uid", "", "")
 
-	enableDisplay, displayInFirstPhase := false, false
+	threads := flag.Int("threads", 1, "")
 
-	switch os.Args[8] {
-	case "t":
-		{
-			enableDisplay = true
-		}
-	}
+	mtype := flag.String("mtype", "", "")
 
-	isBlade := false
-	switch os.Args[9] {
-	case "t":
-		{
-			isBlade = true
-		}
-	}
+	display := flag.Bool("display", false, "")
+	bags := flag.Bool("bags", false, "")
+	blade := flag.Bool("blade", false, "")
 
-	if len(mtype) <= 0 {
-		log.Fatal("can't read migration type")
-	}
-	if mtype == "b" || (mtype == "d" && enableDisplay == false) {
-		apis.StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype, isBlade)
+	flag.Parse()
+
+	// log.Fatal(*srcApp, *srcAppID, *dstApp, *dstAppID, *uid, *mtype, *bags, *blade, *display, *threads)
+
+	if *mtype == "b" || (*mtype == "d" && *display == false) {
+		apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags)
 	} else {
-		SA1_migrate.Controller(uid, srcApp, srcAppID, dstApp, dstAppID, mtype, 1, enableDisplay, displayInFirstPhase)
+		SA1_migrate.Controller2(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *threads, *blade, *display, *bags)
 	}
 }
 

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gookit/color"
 )
 
 func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, MaD string) (int, error) {
@@ -237,16 +239,25 @@ func LThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *t
 	return finished
 }
 
-func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, isBlade ...bool) bool {
+func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, isBlade bool, enableBags bool) bool {
 	var wg sync.WaitGroup
+
+	if enableBags {
+		color.Cyan.Println("Bags Enabled")
+	}
+
+	if isBlade {
+		color.Cyan.Println("Using Blade for dst")
+	}
 
 	commitChannel := make(chan ThreadChannel)
 
 	if threads != 0 {
 		if !db.RegisterMigration(uid, srcAppID, dstAppID, mtype, logTxn.Txn_id, threads, logTxn.DBconn, true) {
-			log.Fatal("Unable to register migration!")
+			color.Red.Println("Unable to register migration!")
+			log.Fatal()
 		} else {
-			log.Println("Migration registered:", mtype)
+			color.Cyan.Println("Migration registered:", mtype)
 		}
 	} else {
 		threads = 1
@@ -256,14 +267,14 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 		wg.Add(1)
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
-			mWorker := migrate.CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threadID, isBlade...)
+			mWorker := migrate.CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threadID, isBlade)
 			defer mWorker.CloseDBConns()
 
 			switch mWorker.MType() {
 			case migrate.BAGS:
 				{
 					for {
-						if err := mWorker.MigrateBags(thread_id, isBlade...); err != nil {
+						if err := mWorker.MigrateBags(thread_id, isBlade); err != nil {
 							log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
 							time.Sleep(time.Second * 5)
 							continue
@@ -274,19 +285,9 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 			case migrate.DELETION:
 				{
 					for {
-						break
-						if err := mWorker.MigrateBags(thread_id, isBlade...); err != nil {
-							log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
-							time.Sleep(time.Second * 5)
-							continue
-						}
-						break
-					}
-
-					for {
 						if err := mWorker.DeletionMigration(mWorker.GetRoot(), thread_id); err != nil {
 							if !strings.Contains(err.Error(), "deadlock") {
-								mWorker.RenewDBConn(isBlade...)
+								mWorker.RenewDBConn(isBlade)
 							} else {
 								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
 							}
@@ -294,13 +295,24 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 						}
 						break
 					}
+
+					if enableBags {
+						for {
+							if err := mWorker.MigrateBags(thread_id, isBlade); err != nil {
+								log.Println("@ThreadControllerV2 > MigrateBags | Crashed with error: ", err)
+								time.Sleep(time.Second * 5)
+								continue
+							}
+							break
+						}
+					}
 				}
 			case migrate.CONSISTENT:
 				{
 					for {
 						if err := mWorker.ConsistentMigration(thread_id); err != nil {
 							if !strings.Contains(err.Error(), "deadlock") {
-								mWorker.RenewDBConn(isBlade...)
+								mWorker.RenewDBConn(isBlade)
 							} else {
 								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
 							}
@@ -314,7 +326,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 					for {
 						if err := mWorker.IndependentMigration(thread_id); err != nil {
 							if !strings.Contains(err.Error(), "deadlock") {
-								mWorker.RenewDBConn(isBlade...)
+								mWorker.RenewDBConn(isBlade)
 							} else {
 								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
 							}
@@ -328,7 +340,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 					for {
 						if err := mWorker.NaiveMigration(thread_id); err != nil {
 							if !strings.Contains(err.Error(), "deadlock") {
-								mWorker.RenewDBConn(isBlade...)
+								mWorker.RenewDBConn(isBlade)
 							} else {
 								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
 							}
@@ -353,7 +365,7 @@ func ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *
 
 	var finished_threads []string
 	for threadResponse := range commitChannel {
-		fmt.Println("THREAD FINISHED WORKING", threadResponse, strings.Join(finished_threads, ","))
+		color.Cyan.Println("THREAD FINISHED WORKING", threadResponse, strings.Join(finished_threads, ","))
 		if !threadResponse.Finished {
 			finished = false
 		}

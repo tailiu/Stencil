@@ -54,7 +54,7 @@ def deletePhysicalTables():
         cur.execute(q)
 
 def truncatePhysicalTables():
-    tables = ["supplementary_tables", "physical_schema", "physical_mappings"]
+    tables = ["supplementary_tables", "physical_schema", "physical_mappings", "migration_table"]
     for table in tables:
         # if table not in ["migration_registration", "display_flags", "txn_logs", "evaluation"]:
         sql = 'TRUNCATE "%s" RESTART IDENTITY CASCADE;'%table

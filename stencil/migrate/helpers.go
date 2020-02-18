@@ -3,11 +3,15 @@ package migrate
 import (
 	"fmt"
 	"log"
+	"os"
 	"stencil/config"
 	"stencil/db"
 	"stencil/helper"
 	"stencil/transaction"
 	"strings"
+
+	"github.com/gookit/color"
+	logg "github.com/withmandala/go-log"
 )
 
 func CreateBagWorkerV2(uid, srcAppID, dstAppID string, logTxn *transaction.Log_txn, mtype string, threadID int, isBlade ...bool) MigrationWorkerV2 {
@@ -55,12 +59,15 @@ func CreateBagWorkerV2(uid, srcAppID, dstAppID string, logTxn *transaction.Log_t
 		DstDBConn:    db.GetDBConn(dstAppConfig.AppName, isBlade...),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
-		visitedNodes: make(map[string]map[string]bool)}
+		visitedNodes: make(map[string]map[string]bool),
+		Logger:       logg.New(os.Stderr)}
 	// if err := mWorker.FetchRoot(threadID); err != nil {
 	// 	log.Fatal(err)
 	// }
 	mWorker.FTPClient = GetFTPClient()
-	log.Println("Bag Worker Created for thread: ", threadID)
+	mWorker.Logger.WithTimestamp()
+	mWorker.Logger.WithColor()
+	color.Cyan.Println("Bag Worker Created for thread: ", threadID)
 	fmt.Println("************************************************************************")
 	return mWorker
 }
@@ -88,13 +95,16 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 		DstDBConn:    db.GetDBConn(dstApp, isBlade...),
 		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
 		mtype:        mtype,
-		visitedNodes: make(map[string]map[string]bool)}
+		visitedNodes: make(map[string]map[string]bool),
+		Logger:       logg.New(os.Stderr)}
 
 	if err := mWorker.FetchRoot(threadID); err != nil {
-		log.Fatal(err)
+		mWorker.Logger.Fatal(err)
 	}
 	mWorker.FTPClient = GetFTPClient()
-	log.Println("Worker Created for thread: ", threadID)
+	mWorker.Logger.WithTimestamp()
+	mWorker.Logger.WithColor()
+	color.Cyan.Println("Worker Created for thread: ", threadID)
 	fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 	return mWorker
 }
@@ -158,6 +168,19 @@ func (self *MigrationWorkerV2) ExcludeVisited(tag config.Tag) string {
 	return visited
 }
 
+func (self *MigrationWorkerV2) GetMemberDataFromNode(member string, nodeData map[string]interface{}) map[string]interface{} {
+	memberData := make(map[string]interface{})
+	for col, val := range nodeData {
+		colTokens := strings.Split(col, ".")
+		colMember := colTokens[0]
+		// colAttr := colTokens[1]
+		if strings.Contains(colMember, member) && val != nil {
+			memberData[col] = val
+		}
+	}
+	return memberData
+}
+
 func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 
 	sql := "SELECT %s FROM %s "
@@ -202,9 +225,7 @@ func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
 		log.Fatal("@GetTagQLForBag: ", err)
 	} else {
 
-		// log.Println("@GetTagQLForBag: Table IDS | ", tableIDs)
-
-		sql := "SELECT array[%s] as ids, %s as json_data FROM %s "
+		sql := "SELECT array_to_json(array_remove(array[%s], NULL)) as pks_json, %s as json_data FROM %s "
 
 		if len(tag.InnerDependencies) > 0 {
 			idCols, cols := "", ""
@@ -216,7 +237,7 @@ func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
 				// log.Print(fromTable, toTablesMap)
 				if _, ok := seenMap[fromTable]; !ok {
 					joinStr += fmt.Sprintf("data_bags %s", fromTable)
-					idCols += fmt.Sprintf("%s.id,", fromTable)
+					idCols += fmt.Sprintf("%s.pk,", fromTable)
 					cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", fromTable)
 				}
 				for toTable, conditions := range toTablesMap {
@@ -227,7 +248,7 @@ func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
 						}
 						joinStr += fmt.Sprintf(" FULL JOIN data_bags %s ON %s.member = %s AND %s.member = %s AND %s ", toTable, fromTable, tableIDs[fromTable], toTable, tableIDs[toTable], strings.Join(conditions, " AND "))
 						cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", toTable)
-						idCols += fmt.Sprintf("%s.id,", toTable)
+						idCols += fmt.Sprintf("%s.pk,", toTable)
 						seenMap[toTable] = true
 					}
 				}
@@ -237,7 +258,7 @@ func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
 		} else {
 			table := tag.Members["member1"]
 			joinStr := fmt.Sprintf("data_bags %s", table)
-			idCols := fmt.Sprintf("%s.id", table)
+			idCols := fmt.Sprintf("%s.pk", table)
 			cols := fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ", table)
 			sql = fmt.Sprintf(sql, idCols, cols, joinStr)
 		}
@@ -279,6 +300,23 @@ func (self *MigrationWorkerV2) CommitTransactions() error {
 	}
 	if err := self.tx.StencilTx.Commit(); err != nil {
 		log.Fatal("Error committing Stencil DB Transaction! ", err)
+		return err
+	}
+	return nil
+}
+
+func (self *MigrationWorkerV2) RollbackTransactions() error {
+	// log.Fatal("@CommitTransactions: About to Commit!")
+	if err := self.tx.SrcTx.Rollback(); err != nil {
+		log.Fatal("Error rolling back Source DB Transaction! ", err)
+		return err
+	}
+	if err := self.tx.DstTx.Rollback(); err != nil {
+		log.Fatal("Error rolling back Destination DB Transaction! ", err)
+		return err
+	}
+	if err := self.tx.StencilTx.Rollback(); err != nil {
+		log.Fatal("Error rolling back Stencil DB Transaction! ", err)
 		return err
 	}
 	return nil

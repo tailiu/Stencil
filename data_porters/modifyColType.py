@@ -54,7 +54,7 @@ def execQuery(dbName, tableName):
 
 if __name__ == "__main__":
     
-    for db in ["diaspora_100000", "diaspora_1000000"]:
+    for db in ["gnusocial_test", "gnusocial_template", "twitter_test", "twitter_template"]:
         print "\n\nCURRENT DB : %s\n\n"%db
         time.sleep(3)
         diconnectOtherConns(db)

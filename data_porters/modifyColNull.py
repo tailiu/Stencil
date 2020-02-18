@@ -33,7 +33,12 @@ def execQuery(dbName, tableName, columns):
         for column in columns:
             q = "ALTER TABLE \"%s\" ALTER COLUMN \"%s\" DROP NOT NULL;"%(tableName, column)
             print q
-            cur.execute(q)
+            try:
+                cur.execute(q)
+            except Exception as e:
+                print e
+                conn.rollback()
+                return
         conn.commit()
     print ">> %s FINISHED!!!" % tableName
 
@@ -41,8 +46,8 @@ if __name__ == "__main__":
     
     for db in ["diaspora_test", "diaspora_10000", "diaspora_100000", "diaspora_1000000"]:
         diconnectOtherConns(db)
-        tables = ["likes"]
-        columns = ["created_at", "updated_at"]
+        tables = getTables(db)
+        columns = ["commentable_id"]
         for table in tables:
             execQuery(db, table, columns)
         

@@ -23,7 +23,7 @@ func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
 			return err
 		}
 
-		if len(ref.toID) < 1 {
+		if ref.toID == nil {
 			log.Println("@AddMappedReferences: Unable to CreateNewReference | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 			continue
 		}
