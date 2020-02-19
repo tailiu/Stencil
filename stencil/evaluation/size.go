@@ -336,6 +336,27 @@ func getTotalRowCountsOfDB(dbConn *sql.DB) int64 {
 
 }
 
+func getTotalRowCountsOfApp(evalConfig *EvalConfig, appName string) int64 {
+
+	var rowCounts int64
+
+	switch appName {
+	case "diaspora":
+		rowCounts = getTotalRowCountsOfDB(evalConfig.DiasporaDBConn)
+	case "mastodon":
+		rowCounts = getTotalRowCountsOfDB(evalConfig.MastodonDBConn)
+	case "twitter":
+		rowCounts = getTotalRowCountsOfDB(evalConfig.TwitterDBConn)
+	case "gnusocial":
+		rowCounts = getTotalRowCountsOfDB(evalConfig.GnusocialDBConn)
+	default:
+		log.Fatal("Cannot find a connection for the app:", appName)
+	}
+
+	return rowCounts
+
+}
+
 func getTotalRowCountsOfTable(dbConn *sql.DB, tableName string) int64 {
 	
 	query := fmt.Sprintf(
@@ -368,6 +389,25 @@ func getDanglingObjectsOfApp(evalConfig *EvalConfig, appID string) int64 {
 	// log.Println(query)
 
 	res, err := db.DataCall1(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if res["num"] == nil {
+		return 0
+	} else {
+		return res["num"].(int64)
+	}
+
+}
+
+func getDanglingObjectsOfSystem(dbConn *sql.DB) int64 {
+
+	query := fmt.Sprintf(`select count(*) as num from data_bags`)
+
+	// log.Println(query)
+
+	res, err := db.DataCall1(dbConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

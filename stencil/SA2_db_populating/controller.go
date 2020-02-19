@@ -56,8 +56,8 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // VM: profiles(finished), notifications, posts
 // Blade server: notification_actors, aspect_visibilities
 // Second population:
-// My machine: users 
-// Blade server: people, profile
+// My machine:  
+// Blade server: profiles
 func PupulatingController() {
 
 	var limit int64
