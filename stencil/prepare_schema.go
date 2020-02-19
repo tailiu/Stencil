@@ -2,6 +2,7 @@ package main
 
 import (
 	"stencil/SA1_display"
+	"stencil/evaluation"
 	"stencil/db"
 )
 
@@ -21,7 +22,9 @@ func test2() {
 
 	dbName := "mastodon"
 
-	dbConn := db.GetDBConn(dbName, true)
+	isBladeServer := true
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
 
 	SA1_display.RemoveDisplayFlagInAllTables(dbConn)
 }
@@ -30,16 +33,33 @@ func test3() {
 
 	dbName := "mastodon_exp3"
 
-	dbConn := db.GetDBConn(dbName, true)
+	isBladeServer := true
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
 
 	SA1_display.AddMarkAsDeleteToAllTables(dbConn)
 }
- 
+
+func test4() {
+
+	dbName := "diaspora_test2"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+
+	evaluation.AlterTableColumnsIntToInt8(dbConn)
+
+}
+
 func main() {
 
-	test1()
+	// test1()
 	
 	// test2()
 
 	// test3()
+
+	test4()
+
 }

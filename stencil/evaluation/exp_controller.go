@@ -1249,7 +1249,7 @@ func Exp7() {
 	var migrationIDs []string
 
 	userIDs := []string {
-		"99960", "99961", "99962", "99963", "99964",
+		"99940", "99941", "99942", "99943", "99944",
 	}
 
 	userNum := len(userIDs)

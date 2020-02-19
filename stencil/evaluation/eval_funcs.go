@@ -997,3 +997,71 @@ func moveElementToStartOfSlice(s []string,
 	return s
 
 }
+
+func getAllTablesOfDB(dbConn *sql.DB) []string {
+
+	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
+		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
+
+	data := db.GetAllColsOfRows(dbConn, query1)
+
+	var tables []string 
+	
+	for _, data1 := range data {
+		tables = append(tables, fmt.Sprint(data1["tablename"]))
+	}
+	
+	return tables
+
+}
+
+func AlterTableColumnsIntToInt8(dbConn *sql.DB) {
+
+	tables := getAllTablesOfDB(dbConn)
+
+	for _, table := range tables {
+
+		var columnsToBeUpdated []string
+
+		query1 := fmt.Sprintf(
+			`select column_name, data_type from information_schema.columns 
+			where table_name = '%s'`, 
+			table,
+		)
+
+		res1, err1 := db.DataCall(dbConn, query1)
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+
+		// log.Println(res1)
+
+		for _, data1 := range res1 {
+			
+			if data1["data_type"] == "integer" {
+				columnsToBeUpdated = append(columnsToBeUpdated, 
+					fmt.Sprint(data1["column_name"]))
+			}
+			
+		}
+
+		var queries []string
+
+		for _, col := range columnsToBeUpdated {
+
+			query2 := fmt.Sprintf(
+				`ALTER TABLE %s ALTER COLUMN %s TYPE int8`,
+				table, col,
+			)
+			queries = append(queries, query2)
+
+		}
+
+		err2 := db.TxnExecute(dbConn, queries)
+		if err2 != nil {
+			log.Fatal(err2)
+		}		
+
+	}
+
+}
