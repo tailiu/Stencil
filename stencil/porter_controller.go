@@ -6,6 +6,8 @@ import (
 )
 
 func main() {
-	appName, appID, table := "diaspora", "1", "posts"
-	apis.Port(appName, appID, table, 100, 200, db.GetDBConn(appName), db.GetDBConn(db.STENCIL_DB))
+	for _, table := range []string{"photos", "posts", "likes", "comments", "conversations", "messages", "contacts", "notifications", "users", "people", "profiles"} {
+		appName, appID, table := "diaspora", "1", table
+		apis.Port(appName, appID, table, 1000, 200, db.GetDBConn(appName), db.GetDBConn(db.STENCIL_DB))
+	}
 }

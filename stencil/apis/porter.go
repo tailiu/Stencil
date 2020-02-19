@@ -8,7 +8,64 @@ import (
 	"stencil/db"
 	"stencil/qr"
 	"time"
+
+	"github.com/gookit/color"
 )
+
+func printQIs(QIs []*qr.QI) {
+	for _, qi := range QIs {
+		fmt.Println()
+		fmt.Println(qi)
+	}
+}
+
+func runBulkTx(dbConn *sql.DB, QIs [][]*qr.QI) bool {
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		log.Fatal("transaction can't even begin")
+	}
+
+	success := true
+
+	queries, args := qr.GenSQLBulk(QIs)
+
+	if queriesLen, argsLen := len(queries), len(args); queriesLen > 0 && argsLen > 0 && queriesLen == argsLen {
+		for i := 0; i < queriesLen; i++ {
+			color.LightMagenta.Println(queries[i])
+			fmt.Println(args[i])
+			if _, err := tx.Exec(queries[i], args[i]...); err != nil {
+				success = false
+				color.Danger.Print("Execution Failed: ")
+				log.Fatal(err)
+			} else {
+				color.Info.Println("Executed")
+			}
+		}
+	} else {
+		success = false
+		color.Danger.Printf("Mismatched queries and args: %s | %s\n", queriesLen, argsLen)
+	}
+
+	if success {
+		if err := tx.Commit(); err != nil {
+			color.Danger.Print("Commit Failed: ")
+			log.Fatal(err)
+		} else {
+			color.Success.Println("Committed!")
+		}
+	} else {
+		tx.Rollback()
+		fmt.Println(queries)
+		fmt.Println()
+		fmt.Println(args)
+		fmt.Println()
+		color.Danger.Print("Execution Halted! ")
+		log.Fatal()
+	}
+
+	return success
+}
 
 func runTx(dbConn *sql.DB, QIs []*qr.QI) bool {
 	tx, err := dbConn.Begin()
@@ -20,7 +77,8 @@ func runTx(dbConn *sql.DB, QIs []*qr.QI) bool {
 
 	for _, qi := range QIs {
 		query, args := qi.GenSQL()
-		// fmt.Println(query)
+
+		fmt.Println(query)
 		if _, err := tx.Exec(query, args...); err != nil {
 			success = false
 			fmt.Println("Some error:", err)
@@ -35,19 +93,21 @@ func runTx(dbConn *sql.DB, QIs []*qr.QI) bool {
 	} else {
 		tx.Rollback()
 		fmt.Println("QIs :=v")
-		fmt.Println(QIs)
-		log.Fatal()
+		printQIs(QIs)
+		log.Fatal("Fatal: Not ported!")
 	}
 
 	return success
 }
 
-func _transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset int64) {
+func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset int64) {
+	log.Println(fmt.Sprintf("Populating %s: %d - %d", color.FgYellow.Render(table), offset, offset+limit))
 	q := fmt.Sprintf("SELECT * FROM \"%s\" ORDER BY id LIMIT %d OFFSET %d", table, limit, offset)
 	if ldata, err := db.DataCall(appDB, q); err != nil {
 		fmt.Println(q)
 		log.Fatal("Some problem with logical data query:", err)
 	} else {
+		var groupedQIs [][]*qr.QI
 		for _, ldatum := range ldata {
 			var cols []string
 			var vals []interface{}
@@ -56,25 +116,11 @@ func _transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset 
 			}
 			qi := qr.CreateQI(table, cols, vals, qr.QTInsert)
 			rowid := db.GetNewRowID(stencilDB)
-			qis := QR.ResolveInsert(qi, rowid)
-			runTx(stencilDB, qis)
+			groupedQIs = append(groupedQIs, QR.ResolveInsert(qi, rowid))
 		}
+		runBulkTx(stencilDB, groupedQIs)
 	}
-}
-
-func transfer(QR *qr.QR, appDB, stencilDB *sql.DB, table string, limit, offset int64) {
-
-	log.Println("Populating ", table)
-	// if totalRows, err := db.GetRowCount(appDB, table); err == nil {
-	// for offset := int64(0); offset < totalRows; offset += limit {
-	// log.Println(fmt.Sprintf(">> %s: %d - %d of %d | Remaining: %d", table, offset, offset+limit, totalRows, totalRows-offset))
-	log.Println(fmt.Sprintf(">> %s: %d - %d", table, offset, offset+limit))
-	_transfer(QR, appDB, stencilDB, table, limit, offset)
-	// }
-	// } else {
-	// 	log.Fatal("Error while fetching total rows", err)
-	// }
-	log.Println("Done:", table)
+	color.Notice.Println("Done:", table)
 }
 
 func Port(appName, appID, table string, limit, offset int64, appDB, stencilDB *sql.DB) {
