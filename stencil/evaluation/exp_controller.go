@@ -1224,7 +1224,7 @@ func Exp7() {
 	// migrationSeq := []string{"diaspora", "mastodon", "twitter", "gnusocial", "diaspora"}
 	
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter", "mastodon",
+		"diaspora", "mastodon", "diaspora",
 	}
 
 	db.STENCIL_DB = "stencil_exp6"
@@ -1249,7 +1249,7 @@ func Exp7() {
 	var migrationIDs []string
 
 	userIDs := []string {
-		"99989", "99988", "99987", "99986", "99985",
+		"99960", "99961", "99962", "99963", "99964",
 	}
 
 	userNum := len(userIDs)
@@ -1300,15 +1300,17 @@ func Exp7() {
 
 		}
 
-		if i == 0 {
-			totalRemainingObjsInOriginalApp = getTotalRowCountsOfApp(evalConfig, fromApp)
+		// Only when the start application is Diaspora do we need to do this
+		if i == 0 && fromApp == "diaspora" {
+			totalRemainingObjsInOriginalApp = 
+				getTotalObjsIncludingMediaOfApp(evalConfig, fromApp)
 		}
 
-		danglingObjs := getDanglingObjectsOfSystem(evalConfig.StencilDBConn)
-		totalObjs := getTotalRowCountsOfApp(evalConfig, toApp)
+		danglingObjs := getDanglingObjsIncludingMediaOfSystem(evalConfig.StencilDBConn)
+		totalObjs := getTotalObjsIncludingMediaOfApp(evalConfig, toApp)
 
 		// Only when the final application is Diaspora do we need to do this
-		if i == len(migrationSeq) - 1 && toApp == migrationSeq[0] {
+		if i == len(migrationSeq) - 1 && toApp == "diaspora" {
 			totalObjs -= totalRemainingObjsInOriginalApp
 		}
 
