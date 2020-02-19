@@ -51,39 +51,49 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 
 }
 
-// First population:
+// First population (stencil_exp_sa2):
 // My machine: people(finished), users(finished), likes, comments
 // VM: profiles(finished), notifications, posts
 // Blade server: notification_actors, aspect_visibilities
-// Second population:
+
+// Second population (stencil_exp_sa2_1):
 // My machine:  
-// Blade server: profiles
+// Blade server: photos
+
+// Third population (stencil_exp_sa2_2):
+// Blade server: remaining comments
+// My machine:
 func PupulatingController() {
 
-	var limit int64
+	var limit, startPoint int64
 
 	// ******************* Setting Parameters Start *******************
 	
+	isStencilOnBladeServer := false
+	isAppOnBladeServer := false
+
 	db.STENCIL_DB = "stencil_exp_sa2_1"
 
-	table := "users"
+	table := "photos"
+	startPoint = 0
 
 	appName := "diaspora_1000000_sa2_1"
 	appID := "1"
 
-	limit = 3000
-	threadNum := 5
+	limit = 2500
+	threadNum := 10
 
 	// ****************************** End ******************************
 
 	log.Println("Start populating data from table:", table)
+	log.Println("Start point:", startPoint)
 
 	startTime := time.Now()
 
-	stencilDBConn := db.GetDBConn(db.STENCIL_DB)
+	stencilDBConn := db.GetDBConn(db.STENCIL_DB, isStencilOnBladeServer)
 	defer stencilDBConn.Close()
 
-	appDBConn := db.GetDBConn(appName)
+	appDBConn := db.GetDBConn(appName, isAppOnBladeServer)
 	defer appDBConn.Close()
 
 	var wg sync.WaitGroup
@@ -96,9 +106,9 @@ func PupulatingController() {
 	
 	var dataSeqStart, dataSeqStep int64
 
-	dataSeqStart = 0
+	dataSeqStart = startPoint
 	
-	dataSeqStep = rowCount / int64(threadNum)
+	dataSeqStep = (rowCount - startPoint) / int64(threadNum)
 
 	for i := 0; i < threadNum; i++ {
 		

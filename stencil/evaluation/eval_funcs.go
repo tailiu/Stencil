@@ -1062,6 +1062,8 @@ func AlterTableColumnsIntToInt8(dbConn *sql.DB) {
 			log.Fatal(err2)
 		}		
 
+		log.Println("Finish Modifying:", table)
+
 	}
 
 }

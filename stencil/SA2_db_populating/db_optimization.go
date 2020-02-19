@@ -150,9 +150,11 @@ func ListRowCountsOfDB() {
 // are not supported on a partitioned table
 func CreatePartitionedMigrationTable() {
 	
+	isStencilOnBladeServer := false
+
 	db.STENCIL_DB = "stencil_exp_sa2_1"
 
-	dbConn := db.GetDBConn(db.STENCIL_DB)
+	dbConn := db.GetDBConn(db.STENCIL_DB, isStencilOnBladeServer)
 	defer dbConn.Close()
 
 	query1 := 
@@ -372,6 +374,23 @@ func CreatPartitions(createConstrainsts ...bool) {
 
 	maxRowID := 2147483647
 	ranges1 := [][]int {
+		// {1, 7}, 		// 1. aspects						(4,032,432)
+		// {7, 9},			// 2. comments						(13,481,411)
+		// {9, 10},		// 3. contacts						(5,191,420)
+		// {10, 11},		// 4. conversations					(81,119)
+		// {11, 13},		// 5. messages						(5,400,995)
+		// {13, 14},		// 6. notification_actors			(46,785,209)
+		// {14, 19},		// 7. notifications					(46,785,209)
+		// {19, 20},		// 8. people						(1,008,108)
+		// {20, 26},		// 9. photos						(3,692,680)
+		// {26, 27},		// 10. posts						(7,562,681)
+		// {27, 30},		// 11. profiles						(1,008,108)
+		// {30, 32}, 		// 12. share_visibilities			(7,562,681)
+		// {32, 35},		// 13. aspect_visibilities			(14,814,749)
+		// {35, 39},		// 14. users						(1,008,108)
+		// {39, 41},		// 15. conversation_visibilities	(162,238)
+		// {41, 52},		// 16. likes						(30,626,969)
+		// {52, 198},		// 17. all other tables
 		{1, 7}, 		// 1. aspects						(4,032,432)
 		{7, 9},			// 2. comments						(13,481,411)
 		{9, 10},		// 3. contacts						(5,191,420)
@@ -382,13 +401,12 @@ func CreatPartitions(createConstrainsts ...bool) {
 		{19, 20},		// 8. people						(1,008,108)
 		{20, 26},		// 9. photos						(3,692,680)
 		{26, 27},		// 10. posts						(7,562,681)
-		{27, 30},		// 11. profiles						(1,008,108)
-		{30, 32}, 		// 12. share_visibilities			(7,562,681)
-		{32, 35},		// 13. aspect_visibilities			(14,814,749)
-		{35, 39},		// 14. users						(1,008,108)
-		{39, 41},		// 15. conversation_visibilities	(162,238)
-		{41, 52},		// 16. likes						(30,626,969)
-		{52, 198},		// 17. all other tables
+		{27, 32},		// 11. profiles	(1,008,108) && share_visibilities (7,562,681)				
+		{32, 35},		// 12. aspect_visibilities			(14,814,749)
+		{35, 39},		// 13. users						(1,008,108)
+		{39, 41},		// 14. conversation_visibilities	(162,238)
+		{41, 52},		// 15. likes						(30,626,969)
+		{52, 198},		// 16. all other tables
 	}
 
 	subPartitionTables := []int {
@@ -398,9 +416,11 @@ func CreatPartitions(createConstrainsts ...bool) {
 	partitionNum1 := len(ranges1)
 	partitionNum2 := 5
 
+	isStencilOnBladeServer := false
+
 	db.STENCIL_DB = "stencil_exp_sa2_1"
 
-	dbConn := db.GetDBConn(db.STENCIL_DB)
+	dbConn := db.GetDBConn(db.STENCIL_DB, isStencilOnBladeServer)
 	defer dbConn.Close()
 
 	var queries []string
@@ -610,9 +630,11 @@ func StoreIndexesOfBaseSupTables() {
 
 func DropIndexesConstraintsOfBaseSupTables() {
 
+	isStencilOnBladeServer := false
+
 	db.STENCIL_DB = "stencil_exp_sa2_1"
 
-	dbConn := db.GetDBConn(db.STENCIL_DB)
+	dbConn := db.GetDBConn(db.STENCIL_DB, isStencilOnBladeServer)
 	
 	defer dbConn.Close()
 

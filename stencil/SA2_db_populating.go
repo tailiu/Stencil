@@ -6,7 +6,7 @@ import (
 
 func main() {
 
-	// SA2_db_populating.TruncateSA2Tables()
+	SA2_db_populating.TruncateSA2Tables()
 
 	// SA2_db_populating.GetTotalRowCountsOfDB()
 
