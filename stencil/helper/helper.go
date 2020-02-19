@@ -7,8 +7,8 @@ package helper
 import (
 	"fmt"
 	"log"
-	"sort"
 	"math/rand"
+	"sort"
 	"strings"
 	"time"
 )
@@ -35,6 +35,15 @@ func Contains(list []string, str string) bool {
 		}
 	}
 	return false
+}
+
+func ContainsIdx(list []string, str string) (int, bool) {
+	for i, v := range list {
+		if strings.EqualFold(v, str) {
+			return i, true
+		}
+	}
+	return -1, false
 }
 
 func Init() {
@@ -89,7 +98,7 @@ func Sublist(first, second []string) bool {
 	return true
 }
 
-func GetKeysOfPhyTabMap(m map[string][][]string) []string{
+func GetKeysOfPhyTabMap(m map[string][][]string) []string {
 	var keys []string
 	for k := range m {
 		keys = append(keys, k)
@@ -103,14 +112,16 @@ func Shuffle(vals []int) []int {
 	ret := make([]int, len(vals))
 	perm := r.Perm(len(vals))
 	for i, randIndex := range perm {
-	  ret[i] = vals[randIndex]
+		ret[i] = vals[randIndex]
 	}
 	return ret
-  }
+}
 
 func ConcatMaps(a map[string]string, b map[string]string) {
-	if b == nil || a == nil {return}
-    for k,v := range b {
-        a[k] = v
-    }
+	if b == nil || a == nil {
+		return
+	}
+	for k, v := range b {
+		a[k] = v
+	}
 }

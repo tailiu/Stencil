@@ -3,11 +3,13 @@ package qr
 import (
 	"errors"
 	"fmt"
-	"regexp"
-	"strings"
-	"stencil/db"
-	"github.com/xwb1989/sqlparser"
 	"log"
+	"regexp"
+	"stencil/db"
+	"stencil/helper"
+	"strings"
+
+	"github.com/xwb1989/sqlparser"
 )
 
 func CreateQI(table string, cols []string, vals []interface{}, qtype string) *QI {
@@ -38,37 +40,6 @@ func (self *QI) Print() {
 	// }
 }
 
-// func (self *QI) ResolveInsert(QR *QR, rowID int32) []*QI {
-
-// 	var PQIs []*QI
-// 	newRowCols := []string{"rowid", "app_id", "table"}
-// 	newRowVals := []interface{}{rowID, QR.AppID, self.TableName}
-// 	newRowQI := CreateQI("row_desc", newRowCols, newRowVals, QTInsert)
-// 	PQIs = append(PQIs, newRowQI)
-// 	phyMap := QR.GetPhyMappingForLogicalTable(self.TableName)
-
-// 	for pt, mapping := range phyMap {
-// 		isValid := false
-// 		pqiCols := []string{"pk"}
-// 		pqiVals := []interface{}{rowID}
-// 		for _, colmap := range mapping {
-// 			if val, err := self.valueOfColumn(colmap[1]); err == nil {
-// 				isValid = true
-// 				pqiCols = append(pqiCols, colmap[0])
-// 				pqiVals = append(pqiVals, val)
-// 			}
-// 		}
-// 		if isValid {
-// 			pqi := CreateQI(pt, pqiCols, pqiVals, QTInsert)
-// 			PQIs = append(PQIs, pqi)
-// 		}
-
-// 	}
-// 	return PQIs
-// }
-
-
-
 func (self *QR) ResolveInsert(qi *QI, rowID int32) []*QI {
 
 	PQIs := self.ResolveInsertWithoutRowDesc(qi, rowID)
@@ -78,11 +49,11 @@ func (self *QR) ResolveInsert(qi *QI, rowID int32) []*QI {
 			newRowVals := []interface{}{rowID, rowID, self.AppID, tableID}
 			newRowQI := CreateQI("migration_table", newRowCols, newRowVals, QTInsert)
 			PQIs = append(PQIs, newRowQI)
-		}else{
+		} else {
 			fmt.Println("Cant get tableID for ", qi.TableName)
 			log.Fatal(err)
 		}
-		
+
 	}
 	return PQIs
 }
@@ -90,7 +61,7 @@ func (self *QR) ResolveInsert(qi *QI, rowID int32) []*QI {
 func (self *QR) ResolveInsertWithoutRowDesc(qi *QI, rowID int32) []*QI {
 
 	var PQIs []*QI
-	
+
 	phyMap := self.GetPhyMappingForLogicalTable(qi.TableName)
 
 	for pt, mapping := range phyMap {
@@ -112,29 +83,6 @@ func (self *QR) ResolveInsertWithoutRowDesc(qi *QI, rowID int32) []*QI {
 	}
 	return PQIs
 }
-
-// func (self *QI) GenSQL() (string, []interface{}) {
-
-// 	switch self.Type {
-// 	case QTSelect:
-// 		fmt.Println("!!! Unimplemented type: Select")
-// 	case QTUpdate:
-// 		fmt.Println("!!! Unimplemented type: Update")
-// 	case QTDelete:
-// 		fmt.Println("!!! Unimplemented type: Delete")
-// 	case QTInsert:
-// 		var cols, vals []string
-// 		for i, col := range self.Columns {
-// 			cols = append(cols, col)
-// 			vals = append(vals, fmt.Sprintf("$%d", i+1))
-// 		}
-// 		q := fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES (%s) ON CONFLICT DO NOTHING;", self.TableName, strings.Join(cols, "\",\""), strings.Join(vals, ","))
-
-// 		return q, self.Values
-// 	}
-// 	fmt.Println("!!! Unable to identify query type.", self.Type)
-// 	return "", self.Values
-// }
 
 func (self *QI) GenSQL() (string, []interface{}) {
 
@@ -165,6 +113,72 @@ func (self *QI) GenSQL() (string, []interface{}) {
 	fmt.Println("!!! Unable to identify query type.", self.Type)
 	return "", self.Values
 
+}
+
+type BulkTrackerTable struct {
+	TableName string
+	Columns   []string
+	Values    [][]interface{}
+}
+
+type BulkTracker struct {
+	tables map[string]BulkTrackerTable
+}
+
+func GenSQLBulk(GroupedQIs [][]*QI) ([]string, [][]interface{}) {
+
+	var queries []string
+	var args [][]interface{}
+
+	var tracker BulkTracker
+	tracker.tables = make(map[string]BulkTrackerTable)
+
+	for _, SingleQI := range GroupedQIs {
+		for _, qi := range SingleQI {
+			if trackerTable, exists := tracker.tables[qi.TableName]; exists {
+				newValues := make([]interface{}, len(trackerTable.Columns))
+				for qiIdx, qiCol := range qi.Columns {
+					if trackerIdx, found := helper.ContainsIdx(trackerTable.Columns, qiCol); !found {
+						trackerTable.Columns = append(trackerTable.Columns, qiCol)
+						for i, trackerValues := range trackerTable.Values {
+							trackerTable.Values[i] = append(trackerValues, nil)
+						}
+						temp := newValues
+						newValues = make([]interface{}, len(trackerTable.Columns))
+						newValues = append(temp, qi.Values[qiIdx])
+						tracker.tables[qi.TableName] = trackerTable
+					} else {
+						newValues[trackerIdx] = qi.Values[qiIdx]
+					}
+				}
+				trackerTable.Values = append(trackerTable.Values, newValues)
+				tracker.tables[qi.TableName] = trackerTable
+			} else {
+				tracker.tables[qi.TableName] = BulkTrackerTable{qi.TableName, qi.Columns, [][]interface{}{qi.Values}}
+			}
+		}
+	}
+
+	for tableName, tableIngs := range tracker.tables {
+		LastPlaceHolder := 1
+		qValues := ""
+		var iValues []interface{}
+		for _, valuesList := range tableIngs.Values {
+			var vals []string
+			for i := 0; i < len(valuesList); i++ {
+				vals = append(vals, fmt.Sprintf("$%d", LastPlaceHolder+i))
+			}
+			LastPlaceHolder += len(valuesList)
+			qValues += fmt.Sprintf("(%s),", strings.Join(vals, ","))
+			iValues = append(iValues, valuesList...)
+		}
+		qValues = strings.Trim(qValues, ", ")
+		args = append(args, iValues)
+		query := fmt.Sprintf("INSERT INTO \"%s\" (\"%s\") VALUES %s;", tableName, strings.Join(tableIngs.Columns, "\",\""), qValues)
+		queries = append(queries, query)
+	}
+
+	return queries, args
 }
 
 func getInsertQueryIngs(sql string) *QI {

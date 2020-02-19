@@ -7,6 +7,8 @@ import (
 	"stencil/config"
 	"strings"
 	"time"
+
+	"github.com/gookit/color"
 )
 
 func (self DependencyNode) GetValueForKey(key string) (string, error) {
@@ -50,7 +52,7 @@ func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []conf
 	for _, condition := range dconditions {
 		tagAttr, err := node.Tag.ResolveTagAttr(condition.TagAttr)
 		if err != nil {
-			log.Println(err, node.Tag.Name, condition.TagAttr)
+			color.Error.Println(err, node.Tag.Name, condition.TagAttr)
 			log.Fatal("@ResolveParentDependencyConditions: tagAttr in condition doesn't exist? ", condition.TagAttr)
 			break
 		}
@@ -63,10 +65,11 @@ func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []conf
 							restricted = true
 						}
 					} else {
-						fmt.Println(node.Data)
+						color.Error.Println(node.Data)
 						log.Fatal("@ResolveParentDependencyConditions:", tagAttr, " doesn't exist in node data? ", node.Tag.Name)
 					}
 				} else {
+					color.Error.Println(err)
 					log.Fatal("@ResolveParentDependencyConditions: Col in restrictions doesn't exist? ", restriction["col"])
 					break
 				}
@@ -77,7 +80,7 @@ func (node *DependencyNode) ResolveParentDependencyConditions(dconditions []conf
 		}
 		depOnAttr, err := parentTag.ResolveTagAttr(condition.DependsOnAttr)
 		if err != nil {
-			log.Println(err, parentTag.Name, condition.DependsOnAttr)
+			color.Error.Println(err, parentTag.Name, condition.DependsOnAttr)
 			log.Fatal("@ResolveParentDependencyConditions: depOnAttr in condition doesn't exist? ", condition.DependsOnAttr)
 			break
 		}
@@ -107,24 +110,26 @@ func (node *DependencyNode) ResolveDependencyConditions(SrcAppConfig config.AppC
 					conditionStr := ""
 					tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
 					if err != nil {
-						log.Println(err, tag.Name, condition.TagAttr)
+						color.Error.Println(err, tag.Name, condition.TagAttr)
+						log.Fatal("Stop and Check Dependencies!")
 						break
 					}
 					depOnAttr, err := depOnTag.ResolveTagAttr(condition.DependsOnAttr)
 					if err != nil {
-						log.Println(err, depOnTag.Name, condition.DependsOnAttr)
+						color.Error.Println(err, depOnTag.Name, condition.DependsOnAttr)
+						log.Fatal("Stop and Check Dependencies!")
 						break
 					}
 					if nodeVal, ok := node.Data[depOnAttr]; ok {
 						if nodeVal == nil {
-							return "", errors.New(fmt.Sprintf("trying to assign %s = %s, value is nil in node %s ", tagAttr, depOnAttr, node.Tag.Name))
+							return "", errors.New(color.FgLightRed.Render(fmt.Sprintf("trying to assign %s = %s, value is nil in node %s ", tagAttr, depOnAttr, node.Tag.Name)))
 						}
 						if conditionStr != "" || where != "" {
 							conditionStr += " AND "
 						}
 						conditionStr += fmt.Sprintf("%s = '%v'", tagAttr, nodeVal)
 					} else {
-						fmt.Println(depOnTag)
+						color.Warn.Println(depOnTag)
 						log.Fatal("ResolveDependencyConditions:", depOnAttr, " doesn't exist in ", depOnTag.Name)
 					}
 					if len(condition.Restrictions) > 0 {
@@ -139,6 +144,7 @@ func (node *DependencyNode) ResolveDependencyConditions(SrcAppConfig config.AppC
 
 						}
 						if restrictions == "" {
+							color.Error.Println("Restrictions not resolved?")
 							log.Fatal(condition.Restrictions)
 						}
 						conditionStr += fmt.Sprintf(" AND (%s) ", restrictions)
