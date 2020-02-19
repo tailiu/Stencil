@@ -6,6 +6,9 @@ import (
 	// "time"
 )
 
+const logDir = "./evaluation/logs/"
+const logCounterDir = "./evaluation/logs_counter/"
+
 var mediaSize = map[string]int64 {
 	"1.jpg": 512017,
 	"2.jpg": 206993,
@@ -14,8 +17,17 @@ var mediaSize = map[string]int64 {
 	"5.jpg": 1033414,
 }
 
-const logDir = "./evaluation/logs/"
-const logCounterDir = "./evaluation/logs_counter/"
+var appMediaTables = map[string]string {
+	"diaspora": "photos",
+	"mastodon": "media_attachments",
+	"gnusocial": "file",
+}
+
+var mediaTables = map[string]string {
+	"31": "photos",
+	"76": "media_attachments",
+	"124": "file",
+}
 
 // These databases are default databases if I don't set them in experiments
 var	stencilDB = "stencil_exp"

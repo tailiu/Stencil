@@ -336,6 +336,57 @@ func getTotalRowCountsOfDB(dbConn *sql.DB) int64 {
 
 }
 
+func getMediaCountsOfApp(dbConn *sql.DB, appName string) int64 {
+
+	var mediaCounts int64
+
+	if table, ok := appMediaTables[appName]; ok {
+
+		query1 := fmt.Sprintf(`select count(*) as num from %s`, table)
+
+		res1, err1 := db.DataCall1(dbConn, query1)
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+
+		if res1["num"] != nil {
+			mediaCounts = res1["num"].(int64)
+		}
+
+	}
+
+	return mediaCounts
+
+}
+
+func getTotalObjsIncludingMediaOfApp(evalConfig *EvalConfig, 
+	appName string) int64 {
+
+	var totalObjs, rowCounts, mediaCounts int64
+
+	switch appName {
+	case "diaspora":
+		rowCounts = getTotalRowCountsOfDB(evalConfig.DiasporaDBConn)
+		mediaCounts = getMediaCountsOfApp(evalConfig.DiasporaDBConn, appName)
+	case "mastodon":
+		rowCounts = getTotalRowCountsOfDB(evalConfig.MastodonDBConn)
+		mediaCounts = getMediaCountsOfApp(evalConfig.MastodonDBConn, appName)
+	case "twitter":
+		rowCounts = getTotalRowCountsOfDB(evalConfig.TwitterDBConn)
+		mediaCounts = getMediaCountsOfApp(evalConfig.TwitterDBConn, appName)
+	case "gnusocial":
+		rowCounts = getTotalRowCountsOfDB(evalConfig.GnusocialDBConn)
+		mediaCounts = getMediaCountsOfApp(evalConfig.GnusocialDBConn, appName)
+	default:
+		log.Fatal("Cannot find a connection for the app:", appName)
+	}
+
+	totalObjs = rowCounts + mediaCounts
+
+	return totalObjs
+
+}
+
 func getTotalRowCountsOfTable(dbConn *sql.DB, tableName string) int64 {
 	
 	query := fmt.Sprintf(
@@ -377,5 +428,43 @@ func getDanglingObjectsOfApp(evalConfig *EvalConfig, appID string) int64 {
 	} else {
 		return res["num"].(int64)
 	}
+
+}
+
+func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB) int64 {
+
+	query1 := fmt.Sprintf(`select count(*) as num from data_bags`)
+
+	// log.Println(query)
+
+	res1, err1 := db.DataCall1(dbConn, query1)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	var objsInDB int64
+
+	if res1["num"] != nil {
+		objsInDB += res1["num"].(int64)
+	}
+
+	query2 := fmt.Sprintf(`select member from data_bags`)
+
+	res2, err2 := db.DataCall(dbConn, query2)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	for _, data := range res2 {
+
+		table := fmt.Sprint(data["member"])
+
+		if _, ok := mediaTables[table]; ok {
+			objsInDB += 1
+		}
+
+	}
+
+	return objsInDB
 
 }

@@ -924,6 +924,10 @@ func getDBConnByName(evalConfig *EvalConfig,
 		connection = evalConfig.MastodonDBConn2
 	case diaspora:
 		connection = evalConfig.DiasporaDBConn
+	case twitter:
+		connection = evalConfig.TwitterDBConn
+	case gnusocial:
+		connection = evalConfig.GnusocialDBConn
 	default:
 		log.Fatal("Cannot find a connection")
 	}

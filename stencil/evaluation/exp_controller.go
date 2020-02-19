@@ -1224,7 +1224,7 @@ func Exp7() {
 	// migrationSeq := []string{"diaspora", "mastodon", "twitter", "gnusocial", "diaspora"}
 	
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter", "diaspora",
+		"diaspora", "mastodon", "diaspora",
 	}
 
 	db.STENCIL_DB = "stencil_exp6"
@@ -1249,12 +1249,20 @@ func Exp7() {
 	var migrationIDs []string
 
 	userIDs := []string {
-		"99990",
+		"99960", "99961", "99962", "99963", "99964",
 	}
 
 	userNum := len(userIDs)
 
+	var totalRemainingObjsInOriginalApp int64
+
 	for i := 0; i < len(migrationSeq) - 1; i++ {
+
+		fromApp := migrationSeq[i]
+		toApp := migrationSeq[i+1]
+
+		fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
+		toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
 
 		for j, userID := range userIDs {
 			
@@ -1265,16 +1273,10 @@ func Exp7() {
 				)
 			}
 
-			fromApp := migrationSeq[i]
-			toApp := migrationSeq[i+1]
-
 			log.Println("Migrating user ID:", userID)
 			log.Println("From app:", fromApp)
 			log.Println("To app:", toApp)
 
-			fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
-			toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
-	
 			uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 				userID, fromApp, fromAppID, toApp, toAppID, "d", 1
 	
@@ -1297,6 +1299,29 @@ func Exp7() {
 			migrationIDs = append(migrationIDs, migrationID)
 
 		}
+
+		// Only when the start application is Diaspora do we need to do this
+		if i == 0 && fromApp == "diaspora" {
+			totalRemainingObjsInOriginalApp = 
+				getTotalObjsIncludingMediaOfApp(evalConfig, fromApp)
+		}
+
+		danglingObjs := getDanglingObjsIncludingMediaOfSystem(evalConfig.StencilDBConn)
+		totalObjs := getTotalObjsIncludingMediaOfApp(evalConfig, toApp)
+
+		// Only when the final application is Diaspora do we need to do this
+		if i == len(migrationSeq) - 1 && toApp == "diaspora" {
+			totalObjs -= totalRemainingObjsInOriginalApp
+		}
+
+		objs := make(map[string]int64)
+		objs["danglingObjs"] = danglingObjs
+		objs["totalObjs"] = totalObjs
+
+		WriteStrToLog(
+			"dataBags",
+			ConvertMapInt64ToJSONString(objs),
+		)
 
 	}
 
