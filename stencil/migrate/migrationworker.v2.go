@@ -319,7 +319,7 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 
 func (self *MigrationWorkerV2) ValidateMappedTableData(toTable config.ToTable, mappedData MappedData) bool {
 	for mappedCol, srcMappedCol := range toTable.Mapping {
-		if strings.Contains(srcMappedCol, "$") {
+		if strings.Contains(srcMappedCol, "$") || strings.Contains(srcMappedCol, ".id") {
 			continue
 		}
 		for i, mCol := range strings.Split(mappedData.cols, ",") {
@@ -435,6 +435,9 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 		srcTables:   make(map[string][]string),
 		undoAction:  new(transaction.UndoAction)}
 
+	newRowId := db.GetNewRowIDForTable(self.DstDBConn, toTable.Table)
+	data.UpdateData("id", "", "", newRowId)
+
 	for toAttr, fromAttr := range toTable.Mapping {
 		if strings.EqualFold("id", toAttr) {
 			continue
@@ -529,6 +532,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 	}
 	data.undoAction.AddDstTable(toTable.Table)
 	data.Trim(", ")
+	// log.Fatal(data)
 	return data, nil
 }
 
