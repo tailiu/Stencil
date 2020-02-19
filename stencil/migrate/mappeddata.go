@@ -13,7 +13,9 @@ func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface
 	self.ivals = append(self.ivals, ival)
 	self.vals += fmt.Sprintf("$%d,", len(self.ivals))
 	self.cols += fmt.Sprintf("%s,", col)
-	self.orgCols += fmt.Sprintf("%s,", orgCol)
+	if orgCol != "" {
+		self.orgCols += fmt.Sprintf("%s,", orgCol)
+	}
 	if fromTable != "" {
 		if _, ok := self.srcTables[fromTable]; !ok {
 			self.srcTables[fromTable] = []string{strings.Split(orgCol, ".")[1]}

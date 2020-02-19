@@ -885,6 +885,21 @@ func GetNewRowID(dbConn *sql.DB) int32 {
 	return rowid
 }
 
+func GetNewRowIDForTable(dbConn *sql.DB, table string) string {
+
+	var rowid int32
+	for {
+		rowid = rand.Int31n(2147483647)
+		q := fmt.Sprintf("SELECT id FROM %s WHERE id = %d", table, rowid)
+		if v, err := DataCall1(dbConn, q); err != nil {
+			log.Fatal("@db.GetNewRowID: ", table, err)
+		} else if v == nil {
+			break
+		}
+	}
+	return fmt.Sprint(rowid)
+}
+
 func GetAllColsOfRows(dbConn *sql.DB, query string) []map[string]string {
 	rows, err := dbConn.Query(query)
 	defer rows.Close()
