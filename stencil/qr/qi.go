@@ -115,16 +115,6 @@ func (self *QI) GenSQL() (string, []interface{}) {
 
 }
 
-type BulkTrackerTable struct {
-	TableName string
-	Columns   []string
-	Values    [][]interface{}
-}
-
-type BulkTracker struct {
-	tables map[string]BulkTrackerTable
-}
-
 func GenSQLBulk(GroupedQIs [][]*QI) ([]string, [][]interface{}) {
 
 	var queries []string

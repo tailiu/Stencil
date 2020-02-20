@@ -46,7 +46,7 @@ type QSold struct {
 	TableAliases map[string]map[string]string
 	seen         map[string]bool
 	vals         []interface{}
-	PK 			 bool
+	PK           bool
 }
 
 type QS struct {
@@ -62,7 +62,7 @@ type QS struct {
 	TableAliases map[string]map[string]string
 	seen         map[string]bool
 	vals         []interface{}
-	PK 			 bool
+	PK           bool
 }
 
 type QU struct {
@@ -72,4 +72,14 @@ type QU struct {
 	Where           map[string]string
 	affected_tables []string
 	affected_rows   []string
+}
+
+type BulkTrackerTable struct {
+	TableName string
+	Columns   []string
+	Values    [][]interface{}
+}
+
+type BulkTracker struct {
+	tables map[string]BulkTrackerTable
 }
