@@ -431,7 +431,7 @@ func getDanglingObjectsOfApp(evalConfig *EvalConfig, appID string) int64 {
 
 }
 
-func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB) int64 {
+func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB, toApp string) int64 {
 
 	query1 := fmt.Sprintf(`select count(*) as num from data_bags`)
 
@@ -442,29 +442,33 @@ func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB) int64 {
 		log.Fatal(err1)
 	}
 
-	var objsInDB int64
+	var objsInDB, mediaObjs int64
 
 	if res1["num"] != nil {
-		objsInDB += res1["num"].(int64)
+		objsInDB = res1["num"].(int64)
 	}
 
-	query2 := fmt.Sprintf(`select member from data_bags`)
+	if toApp == "twitter" {
 
-	res2, err2 := db.DataCall(dbConn, query2)
-	if err2 != nil {
-		log.Fatal(err2)
-	}
+		query2 := fmt.Sprintf(`select member from data_bags`)
 
-	for _, data := range res2 {
+		res2, err2 := db.DataCall(dbConn, query2)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
 
-		table := fmt.Sprint(data["member"])
+		for _, data := range res2 {
 
-		if _, ok := mediaTables[table]; ok {
-			objsInDB += 1
+			table := fmt.Sprint(data["member"])
+
+			if _, ok := mediaTables[table]; ok {
+				objsInDB += 1
+			}
+
 		}
 
 	}
 
-	return objsInDB
+	return objsInDB + mediaObjs
 
 }

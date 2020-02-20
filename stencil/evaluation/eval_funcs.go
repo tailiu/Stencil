@@ -1067,3 +1067,52 @@ func AlterTableColumnsIntToInt8(dbConn *sql.DB) {
 	}
 
 }
+
+func AlterTableColumnsAddIDInt8IfNotExists(dbConn *sql.DB) {
+
+	tables := getAllTablesOfDB(dbConn)
+
+	for _, table := range tables {
+
+		query1 := fmt.Sprintf(
+			`select column_name, data_type from information_schema.columns 
+			where table_name = '%s'`, 
+			table,
+		)
+
+		res1, err1 := db.DataCall(dbConn, query1)
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+
+		// log.Println(res1)
+
+		isIDmissing := true
+
+		for _, data1 := range res1 {
+			
+			if fmt.Sprint(data1["column_name"]) == "id" {
+				isIDmissing = false
+			}
+			
+		}
+
+		if isIDmissing {
+
+			query2 := fmt.Sprintf(
+				`ALTER TABLE %s ADD COLUMN id int8`,
+				table,
+			)
+	
+			err2 := db.TxnExecute1(dbConn, query2)
+			if err2 != nil {
+				log.Fatal(err2)
+			}
+
+		}
+
+		log.Println("Finish Checking:", table)
+
+	}
+
+}

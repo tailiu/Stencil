@@ -1223,8 +1223,12 @@ func Exp7() {
 
 	// migrationSeq := []string{"diaspora", "mastodon", "twitter", "gnusocial", "diaspora"}
 	
+	// migrationSeq := []string {
+	// 	"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
+	// }
+
 	migrationSeq := []string {
-		"diaspora", "mastodon", "diaspora",
+		"diaspora", "mastodon", "twitter", "diaspora",
 	}
 
 	db.STENCIL_DB = "stencil_exp6"
@@ -1249,7 +1253,7 @@ func Exp7() {
 	var migrationIDs []string
 
 	userIDs := []string {
-		"99940", "99941", "99942", "99943", "99944",
+		"100",
 	}
 
 	userNum := len(userIDs)
@@ -1306,7 +1310,7 @@ func Exp7() {
 				getTotalObjsIncludingMediaOfApp(evalConfig, fromApp)
 		}
 
-		danglingObjs := getDanglingObjsIncludingMediaOfSystem(evalConfig.StencilDBConn)
+		danglingObjs := getDanglingObjsIncludingMediaOfSystem(evalConfig.StencilDBConn, toApp)
 		totalObjs := getTotalObjsIncludingMediaOfApp(evalConfig, toApp)
 
 		// Only when the final application is Diaspora do we need to do this

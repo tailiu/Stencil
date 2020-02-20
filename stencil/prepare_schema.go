@@ -52,6 +52,18 @@ func test4() {
 
 }
 
+func test5() {
+
+	dbName := "gnusocial_exp6"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+
+	evaluation.AlterTableColumnsAddIDInt8IfNotExists(dbConn)
+
+}
+
 func main() {
 
 	// test1()
@@ -60,6 +72,8 @@ func main() {
 
 	// test3()
 
-	test4()
+	// test4()
+
+	test5()
 
 }

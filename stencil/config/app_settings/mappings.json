@@ -483,6 +483,7 @@
                                 {
                                     "table": "subscription",
                                     "mapping": {
+                                        "id":"follows.id",
                                         "subscriber": "#REF(follows.account_id,accounts.id)",
                                         "subscribed": "#REF(follows.target_account_id,accounts.id)",
                                         "created":"follows.created_at",
@@ -538,7 +539,8 @@
                                     "table": "file_to_post",
                                     "conditions": {},
                                     "mapping": {
-                                        "file_id": "#REF(media_attachments.id,media_attachments.id)",
+                                        "id": "media_attachments.id",
+                                        "file_id": "#REF(#ASSIGN(media_attachments.id),media_attachments.id)",
                                         "post_id": "#REF(media_attachments.status_id,statuses.id)",
                                         "modified": "media_attachments.updated_at"
                                     }
@@ -566,6 +568,7 @@
                                 {
                                     "table": "fave",
                                     "mapping": {
+                                        "id": "favourites.id",
                                         "user_id": "#REF(favourites.account_id,accounts.id)",
                                         "notice_id": "#REF(favourites.status_id,statuses.id)",
                                         "created": "favourites.created_at",
@@ -1097,6 +1100,7 @@
                                         "contacts.receiving": "true"
                                     },
                                     "mapping": {
+                                        "id": "contacts.id",
                                         "subscriber": "#REF(contacts.user_id,people.id)",
                                         "subscribed": "#REF(contacts.person_id,people.id)",
                                         "created": "contacts.created_at",
@@ -1161,7 +1165,8 @@
                                     "table": "file_to_post",
                                     "conditions":{},
                                     "mapping": {
-                                        "file_id": "#REF(photos.id,photos.id)",
+                                        "id": "photos.id",
+                                        "file_id": "#REF(#ASSIGN(photos.id),photos.id)",
                                         "post_id": "#REF(#FETCH(posts.id,posts.guid,photos.status_message_guid),posts.id)",
                                         "modified": "photos.updated_at"
                                     }
@@ -1190,6 +1195,7 @@
                                 {
                                     "table": "fave",
                                     "mapping": {
+                                        "id": "likes.id",
                                         "user_id": "#REF(likes.author_id,people.id)",
                                         "notice_id": "#REF(likes.target_id,posts.id)",
                                         "created": "likes.created_at",
@@ -1677,6 +1683,7 @@
                                         "user_actions.action_type": "follows"
                                     },
                                     "mapping": {
+                                        "id": "user_actions.id",
                                         "subscriber": "#REF(user_actions.from_user_id,users.id)",
                                         "subscribed": "#REF(user_actions.to_user_id,users.id)",
                                         "created":"user_actions.created_at",
@@ -1723,6 +1730,7 @@
                                 {
                                     "table": "fave",
                                     "mapping": {
+                                        "id": "likes.id",
                                         "user_id": "#REF(likes.user_id,users.id)",
                                         "notice_id": "#REF(likes.tweet_id,tweets.id)",
                                         "created": "likes.created_at",
@@ -1789,6 +1797,7 @@
                                 {
                                     "table": "follows",
                                     "mapping": {
+                                        "id": "subscription.id",
                                         "account_id": "#REF(subscription.subscriber,profile.id)",
                                         "target_account_id": "#REF(subscription.subscribed,profile.id)",
                                         "created_at":"subscription.created",
@@ -1902,6 +1911,7 @@
                                 {
                                     "table": "favourites",
                                     "mapping": {
+                                        "id": "fave.id",
                                         "account_id": "#REF(fave.user_id,profile.id)",
                                         "status_id": "#REF(fave.notice_id,notice.id,statuses)",
                                         "created_at": "fave.created",
@@ -1954,6 +1964,7 @@
                                 {
                                     "table": "user_actions",
                                     "mapping": {
+                                        "id": "subscription.id",
                                         "from_user_id": "#REF(subscription.subscriber,profile.id)",
                                         "to_user_id": "#REF(subscription.subscribed,profile.id)",
                                         "created_at":"subscription.created",
@@ -2001,6 +2012,7 @@
                                 {
                                     "table": "likes",
                                     "mapping": {
+                                        "id": "fave.id",
                                         "user_id": "#REF(fave.user_id,profile.id)",
                                         "tweet_id": "#REF(fave.notice_id,notice.id,tweets)",
                                         "created_at": "fave.created",
@@ -2075,6 +2087,7 @@
                                 {
                                     "table": "contacts",
                                     "mapping": {
+                                        "id": "subscription.id",
                                         "user_id": "#REF(subscription.subscriber,profile.id)",
                                         "person_id": "#REF(subscription.subscribed,profile.id)",
                                         "created_at":"subscription.created",
@@ -2165,6 +2178,7 @@
                                 {
                                     "table": "likes",
                                     "mapping": {
+                                        "id": "fave.id",
                                         "author_id": "#REF(fave.user_id,profile.id)",
                                         "target_id": "#REF(fave.notice_id,notice.id,posts)",
                                         "created_at": "fave.created",

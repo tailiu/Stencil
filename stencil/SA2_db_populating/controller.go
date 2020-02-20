@@ -78,7 +78,9 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // My machine:
 
 // seventh population (stencil_exp_sa2_7)
-// Blade server: conversations(done and deleted), conversation_visibilities(done and deleted)
+// Blade server: conversations(done and deleted), 
+// 				conversation_visibilities(done and deleted),
+// 				posts
 // My machine:
 
 // eighth population (stencil_exp_sa2_8)
