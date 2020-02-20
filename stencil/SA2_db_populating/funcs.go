@@ -200,7 +200,7 @@ func insertIndexDataToTable(dbConn *sql.DB, indexes map[string]string) {
 
 }
 
-func dropIndexesOfBaseSupTables(dbConn *sql.DB, 
+func dropIndexes(dbConn *sql.DB, 
 	indexes map[string]string) {
 
 	var queries []string
@@ -226,7 +226,7 @@ func dropIndexesOfBaseSupTables(dbConn *sql.DB,
 
 }
 
-func dropConstraintsOfBaseSupTables(dbConn *sql.DB, 
+func dropConstraints(dbConn *sql.DB, 
 	constraints map[string]string) {
 	
 	var queries []string
@@ -318,4 +318,84 @@ func createIndexesOfBaseSupTables(dbConn *sql.DB) {
 		log.Fatal(err)
 	}
 
+}
+
+func isPartitionTable(table string) bool {
+
+	if strings.Contains(table, "migration_table_") {
+		return true
+	} else {
+		return false
+	}
+
+}
+
+func getIndexesOfPartitions(dbConn *sql.DB) map[string]string {
+
+	data := getAllTablesInDB(dbConn)
+
+	indexData := make(map[string]string)
+
+	for _, data1 := range data {
+
+		table := data1["tablename"]
+
+		if !isPartitionTable(table) {
+			continue
+		}
+
+		query1 := fmt.Sprintf(
+			"SELECT * FROM pg_indexes WHERE tablename = '%s'",
+			table,
+		)
+
+		indexes := db.GetAllColsOfRows(dbConn, query1)
+
+		for _, index := range indexes {
+			
+			key := index["tablename"] + ":" + index["indexname"]
+			
+			indexData[key] = index["indexdef"]
+				
+		}
+	}
+
+	return indexData
+
+}
+
+func getConstraintsOfPartitions(dbConn *sql.DB) map[string]string {
+
+	constraintData := make(map[string]string)
+
+	query2 := `select conrelid::regclass AS table_from, conname, pg_get_constraintdef(c.oid)
+				from pg_constraint c join pg_namespace n ON n.oid = c.connamespace
+				where contype in ('f', 'p','c','u') order by table_from`
+	
+	constraints := db.GetAllColsOfRows(dbConn, query2)
+
+	for _, constraint := range constraints {
+		
+		table := fmt.Sprint(constraint["table_from"])
+
+		if !isPartitionTable(table) {
+			continue
+		}
+
+		constraintData[table] = fmt.Sprint(constraint["conname"])
+	}
+
+	return constraintData
+
+}
+
+func getConstraintsIndexesOfPartitions(
+	dbConn *sql.DB) (map[string]string, map[string]string) {
+
+	indexData := getIndexesOfPartitions(dbConn)
+
+	constraintData := getConstraintsOfPartitions(dbConn)
+		
+	return indexData, constraintData
+	
 }

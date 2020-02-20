@@ -6,7 +6,7 @@ import (
 
 func main() {
 
-	SA2_db_populating.TruncateSA2Tables()
+	// SA2_db_populating.TruncateSA2Tables()
 
 	// SA2_db_populating.GetTotalRowCountsOfDB()
 
@@ -36,6 +36,8 @@ func main() {
 
 	// SA2_db_populating.CreateIndexesConstraintsOnBaseSupTables()
 	
+	// SA2_db_populating.DropIndexesConstraintsOfPartitions()
+
 	// SA2_db_populating.PupulatingController()
 
 }

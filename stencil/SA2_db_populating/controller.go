@@ -57,11 +57,31 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // Blade server: notification_actors, aspect_visibilities
 
 // Second population (stencil_exp_sa2_1):
-// My machine:  
+// My machine: 
 // Blade server: photos
 
 // Third population (stencil_exp_sa2_2):
 // Blade server: remaining comments
+// My machine:
+
+// Forth population (stencil_exp_sa2_4):
+// Blade server: remaining likes
+// My machine:
+
+// Fifth population (stencil_exp_sa2_5)
+// Blade server: remaining notifications
+// My machine:
+
+// sixth population (stencil_exp_sa2_6)
+// Blade server: remaining notification_actors
+// My machine:
+
+// seventh population (stencil_exp_sa2_7)
+// Blade server: messages
+// My machine:
+
+// eighth population (stencil_exp_sa2_8)
+// Blade server: conversations
 // My machine:
 func PupulatingController() {
 
