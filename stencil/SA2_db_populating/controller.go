@@ -54,7 +54,8 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // First population (stencil_exp_sa2):
 // My machine: people(finished), users(finished), likes, comments
 // VM: profiles(finished), notifications, posts
-// Blade server: conversations(done), notification_actors, aspect_visibilities
+// Blade server: conversations(done), conversation_visibilities(done),
+//				notification_actors, aspect_visibilities				
 
 // Second population (stencil_exp_sa2_1):
 // My machine: 
@@ -77,7 +78,7 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // My machine:
 
 // seventh population (stencil_exp_sa2_7)
-// Blade server: conversations(done and deleted), conversation_visibilities
+// Blade server: conversations(done and deleted), conversation_visibilities(done and deleted)
 // My machine:
 
 // eighth population (stencil_exp_sa2_8)
