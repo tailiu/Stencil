@@ -1228,7 +1228,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter", "diaspora",
+		"diaspora", "gnusocial", "diaspora",
 	}
 
 	db.STENCIL_DB = "stencil_exp6"
@@ -1253,7 +1253,7 @@ func Exp7() {
 	var migrationIDs []string
 
 	userIDs := []string {
-		"100",
+		"70",
 	}
 
 	userNum := len(userIDs)

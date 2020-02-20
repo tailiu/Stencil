@@ -18,12 +18,12 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	
 	if !displayConfig.markAsDelete {
 		query = fmt.Sprintf(
-			"SELECT * FROM %s WHERE %s = %s", 
+			`SELECT * FROM "%s" WHERE %s = %s`, 
 			table, col, value,
 		)
 	} else {
 		query = fmt.Sprintf(
-			"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false", 
+			`SELECT * FROM "%s" WHERE %s = %s and mark_as_delete = false`, 
 			table, col, value,
 		)
 	}
@@ -54,17 +54,17 @@ func getRowsBasedOnDependency(displayConfig *displayConfig,
 
 	if !displayConfig.markAsDelete {
 		query = fmt.Sprintf(
-			"SELECT * FROM %s WHERE %s = %s", 
+			`SELECT * FROM "%s" WHERE %s = %s`, 
 			table, col, value,
 		)
 	} else {
 		query = fmt.Sprintf(
-			"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false", 
+			`SELECT * FROM "%s" WHERE %s = %s and mark_as_delete = false`, 
 			table, col, value,
 		)
 	}
 	
-	log.Println(query)
+	// log.Println(query)
 
 	data, err := db.DataCall(displayConfig.dstAppConfig.DBConn, query)
 	if err != nil {
@@ -284,6 +284,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				}
 			}
 		}
+
+		log.Println("okokok")
 
 		// If the first argument of the from attribute does not contain "id", 
 		// this indicates we can use the current data and the relationship indicated
@@ -600,11 +602,11 @@ func getOneRowBasedOnHint(displayConfig *displayConfig,
 
 	if !displayConfig.markAsDelete {
 		query = fmt.Sprintf(
-			`SELECT * FROM %s WHERE id = %d`, 
+			`SELECT * FROM "%s" WHERE id = %d`, 
 			hint.Table, hint.KeyVal["id"])
 	} else {
 		query = fmt.Sprintf(
-			`SELECT * FROM %s WHERE id = %d and mark_as_delete = false`, 
+			`SELECT * FROM "%s" WHERE id = %d and mark_as_delete = false`, 
 			hint.Table, hint.KeyVal["id"])
 	}
 	

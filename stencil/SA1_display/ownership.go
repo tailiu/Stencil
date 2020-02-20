@@ -87,12 +87,12 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 
 	if !displayConfig.markAsDelete {
 		query = fmt.Sprintf(
-			"SELECT * FROM %s WHERE %s = %s",
+			`SELECT * FROM "%s" WHERE %s = %s`,
 			dependsOnTable, dependsOnAttr, depVal,
 		)
 	} else {
 		query = fmt.Sprintf(
-			"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false",
+			`SELECT * FROM "%s" WHERE %s = %s and mark_as_delete = false`,
 			dependsOnTable, dependsOnAttr, depVal,
 		)
 	}

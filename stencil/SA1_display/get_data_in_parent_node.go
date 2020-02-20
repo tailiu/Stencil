@@ -176,12 +176,12 @@ func getHintsInParentNode(displayConfig *displayConfig,
 
 				if !displayConfig.markAsDelete {
 					query = fmt.Sprintf(
-						"SELECT * FROM %s WHERE %s = %s", 
+						`SELECT * FROM "%s" WHERE %s = %s`, 
 						t2, a2, depVal,
 					)
 				} else {
 					query = fmt.Sprintf(
-						"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false", 
+						`SELECT * FROM "%s" WHERE %s = %s and mark_as_delete = false`, 
 						t2, a2, depVal,
 					)
 				}
@@ -238,12 +238,12 @@ func getHintsInParentNode(displayConfig *displayConfig,
 
 			if !displayConfig.markAsDelete {
 				query = fmt.Sprintf(
-					"SELECT * FROM %s WHERE %s = %s", 
+					`SELECT * FROM "%s" WHERE %s = %s`, 
 					t2, a2, depVal,
 				)
 			} else {
 				query = fmt.Sprintf(
-					"SELECT * FROM %s WHERE %s = %s and mark_as_delete = false", 
+					`SELECT * FROM "%s" WHERE %s = %s and mark_as_delete = false`, 
 					t2, a2, depVal,
 				)
 			}
