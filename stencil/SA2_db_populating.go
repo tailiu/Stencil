@@ -38,6 +38,8 @@ func main() {
 	
 	// SA2_db_populating.DropIndexesConstraintsOfPartitions()
 
+	// SA2_db_populating.DumpAllBaseSupTablesToAnotherDB()
+
 	// SA2_db_populating.PupulatingController()
 
 }

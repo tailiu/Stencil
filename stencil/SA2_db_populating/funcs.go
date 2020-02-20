@@ -32,6 +32,28 @@ func getAllTablesInDB(dbConn *sql.DB) []map[string]string {
 
 }
 
+func getAllBaseSupTablesInDB(dbConn *sql.DB) []string {
+
+	var allBaseSupTables []string
+
+	allTables := getAllTablesInDB(dbConn)
+
+	for _, t := range allTables {
+
+		table := t["tablename"]
+
+		if !isBaseOrSupTable(table) {
+			continue
+		}
+
+		allBaseSupTables = append(allBaseSupTables, table)
+
+	}
+
+	return allBaseSupTables
+
+}
+
 func isSubPartitionTable(subPartitionTableIDs map[int]int, table string) bool {
 
 	for _, subPartitionTableID := range subPartitionTableIDs {
@@ -397,5 +419,5 @@ func getConstraintsIndexesOfPartitions(
 	constraintData := getConstraintsOfPartitions(dbConn)
 		
 	return indexData, constraintData
-	
+
 }

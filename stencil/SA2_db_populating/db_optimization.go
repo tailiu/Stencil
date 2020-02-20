@@ -9,7 +9,7 @@ import (
 
 func TruncateSA2Tables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2_1"
+	db.STENCIL_DB = "stencil_exp_sa2_7"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 
@@ -639,7 +639,7 @@ func DropIndexesConstraintsOfPartitions() {
 	indexData, constraintData := getConstraintsIndexesOfPartitions(dbConn)
 
 	dropConstraints(dbConn, constraintData)
-	
+
 	dropIndexes(dbConn, indexData)
 
 }
@@ -673,5 +673,66 @@ func CreateIndexesConstraintsOnBaseSupTables() {
 	createConstraintsOnBaseSupTables(dbConn)
 
 	createIndexesOfBaseSupTables(dbConn)
+
+}
+
+func OldDumpAllBaseSupTablesToAnotherDB() {
+
+	srcDB := "stencil_exp_sa2_7"
+
+	dstDB := "stencil_exp_sa2_8"
+
+	db.STENCIL_DB = srcDB
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	
+	defer dbConn.Close()
+
+	baseSupTables := getAllBaseSupTablesInDB(dbConn)
+
+	query := "pg_dump -U cow -t "
+
+	for i, table := range baseSupTables {
+
+		if i == len(baseSupTables) - 1 {
+			query += table + " "
+		} else {
+			query += table + ","
+		}
+
+	}
+
+	query += srcDB + " | " + "psql -U cow " + dstDB
+
+	log.Println(query)
+
+}
+
+func DumpAllBaseSupTablesToAnotherDB() {
+
+	srcDB := "stencil_exp_sa2_7"
+
+	dstDB := "stencil_exp_sa2_3"
+
+	query1 := fmt.Sprintf(
+		`pg_dump -U cow -a -t supplementary_* --exclude-table-data='supplementary_tables'  %s | psql -U cow %s`,
+		srcDB, dstDB,
+	)
+	
+	query2 := fmt.Sprintf(
+		`pg_dump -U cow -a -t base_* %s | psql -U cow %s`,
+		srcDB, dstDB,
+	)
+	
+	query3 := fmt.Sprintf(
+		`pg_dump -U cow -a -t table_name_to_be_replaced %s | psql -U cow %s`,
+		srcDB, dstDB, 
+	)
+
+	log.Println(query1)
+
+	log.Println(query2)
+
+	log.Println(query3)
 
 }
