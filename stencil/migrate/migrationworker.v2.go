@@ -319,7 +319,7 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 
 func (self *MigrationWorkerV2) ValidateMappedTableData(toTable config.ToTable, mappedData MappedData) bool {
 	for mappedCol, srcMappedCol := range toTable.Mapping {
-		if strings.Contains(srcMappedCol, "$") || strings.Contains(srcMappedCol, ".id") {
+		if srcMappedCol[0:1] == "$" { //|| mappedCol == "id" {
 			continue
 		}
 		for i, mCol := range strings.Split(mappedData.cols, ",") {
@@ -440,6 +440,20 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 
 	for toAttr, fromAttr := range toTable.Mapping {
 		if strings.EqualFold("id", toAttr) {
+			if self.mtype != BAGS && strings.Contains(fromAttr, "#REF") {
+				assignedTabCol := strings.Trim(fromAttr, "(#REF)")
+				args := strings.Split(assignedTabCol, ",")
+				if toID, fromID, err := data.GetIDs(args[0], node.Data); err == nil {
+					secondMemberTokens := strings.Split(args[1], ".")
+					firstMemberTokens := strings.Split(args[0], ".")
+					data.UpdateRefs(fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
+				} else {
+					fmt.Printf("args[0]: '%v' \n", args[0])
+					fmt.Printf("toID: '%v' | fromID: '%v' \n", toID, fromID)
+					self.Logger.Fatal("@GetMappedData > id > GetIDs | ", err)
+					return data, err
+				}
+			}
 			continue
 		}
 		if val, ok := node.Data[fromAttr]; ok {
@@ -447,7 +461,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 			data.UpdateData(toAttr, fromAttr, fromTokens[0], val)
 			data.undoAction.AddData(fromAttr, val)
 			data.undoAction.AddOrgTable(fromTokens[0])
-		} else if strings.Contains(fromAttr, "$") {
+		} else if fromAttr[0:1] == "$" {
 			if inputVal, err := self.mappings.GetInput(fromAttr); err == nil {
 				data.UpdateData(toAttr, fromAttr, "", inputVal)
 			}
@@ -474,6 +488,8 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 							return data, errors.New("Unable to find ref value in node data")
 						}
 						data.UpdateRefs(fromID, assignedTabColTokens[0], assignedTabColTokens[1], nodeVal, referredTabColTokens[0], referredTabColTokens[1])
+					} else {
+						self.Logger.Fatalf("Unable to GetMappedData from %s", fromAttr)
 					}
 				} else {
 					args := strings.Split(assignedTabCol, ",")
