@@ -168,7 +168,7 @@ func UpdateTx(tx *sql.Tx, query string, args ...interface{}) error {
 }
 
 func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...interface{}) (int, error) {
-	query := fmt.Sprintf("INSERT INTO %s (%s, display_flag) VALUES (%s, true) RETURNING id;", table, cols, placeholders)
+	query := fmt.Sprintf("INSERT INTO \"%s\" (%s, display_flag) VALUES (%s, true) RETURNING id;", table, cols, placeholders)
 	lastInsertId := -1
 	err := tx.QueryRow(query, args...).Scan(&lastInsertId)
 	if err != nil || lastInsertId == -1 {
@@ -877,6 +877,7 @@ func GetNewRowID(dbConn *sql.DB) int32 {
 		rowid = rand.Int31n(2147483647)
 		q := fmt.Sprintf("SELECT row_id FROM migration_table WHERE row_id = %d", rowid)
 		if v, err := DataCall1(dbConn, q); err != nil {
+			fmt.Println(q)
 			log.Fatal("@db.GetNewRowID: ", err)
 		} else if v == nil {
 			break
@@ -890,9 +891,11 @@ func GetNewRowIDForTable(dbConn *sql.DB, table string) string {
 	var rowid int32
 	for {
 		rowid = rand.Int31n(2147483647)
-		q := fmt.Sprintf("SELECT id FROM %s WHERE id = %d", table, rowid)
+		q := fmt.Sprintf("SELECT id FROM \"%s\" WHERE id = %d", table, rowid)
 		if v, err := DataCall1(dbConn, q); err != nil {
-			log.Fatal("@db.GetNewRowID: ", table, err)
+			fmt.Println(q)
+			log.Println("@db.GetNewRowIDForTable: ", table)
+			log.Fatal(err)
 		} else if v == nil {
 			break
 		}
