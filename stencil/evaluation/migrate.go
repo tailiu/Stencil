@@ -3,6 +3,8 @@ package evaluation
 import (
 	"stencil/db"
 	"stencil/SA1_migrate"
+	"stencil/reference_resolution"
+	"database/sql"
 	"log"
 	"strconv"
 )
@@ -90,6 +92,48 @@ func migrateUserFromDiasporaToMastodon1(
 	)
 }
 
-func migrateUser() {
-	
+func migrateUsersInExp7(evalConfig *EvalConfig, evalStencilDBConn *sql.DB, 
+	seqNum int, fromApp, toApp, fromAppID, toAppID string,
+	migrationIDs, userIDs []string, enableBagsOption bool) []string {
+
+	for j, userID := range userIDs {
+		
+		if seqNum != 0 {
+
+			userNum := len(userIDs)
+
+			userID = reference_resolution.GetNextUserID(
+				evalStencilDBConn, 
+				migrationIDs[(seqNum - 1) * userNum + j],
+			)
+		}
+
+		log.Println("Migrating user ID:", userID)
+		log.Println("From app:", fromApp)
+		log.Println("To app:", toApp)
+
+		uid, migrationType, threadNum := userID, "d", 1
+
+		enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags := 
+			true, true, false, false, enableBagsOption
+
+		SA1_migrate.Controller(uid, fromApp, fromAppID, 
+			toApp, toAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase, 
+			markAsDelete, useBladeServerAsDst, enableBags,
+		)
+
+		refreshEvalConfigDBConnections(evalConfig, false)
+
+		migrationID := getMigrationIDBySrcUserIDMigrationTypeFromToAppID(
+			evalStencilDBConn, userID, 
+			fromAppID, toAppID, migrationType,
+		)
+		
+		migrationIDs = append(migrationIDs, migrationID)
+
+	}
+
+	return migrationIDs
+
 }

@@ -458,3 +458,25 @@ func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB,
 	return totalDanglingObjs
 
 }
+
+func calculateDanglingAndTotalObjectsInExp7(
+	evalConfig *EvalConfig, stencilDBConn *sql.DB,
+	totalMediaInMigrations, totalRemainingObjsInOriginalApp int64,
+	toApp string, seqNum, seqLen int) map[string]int64 {
+
+	danglingObjs := getDanglingObjsIncludingMediaOfSystem(stencilDBConn,
+		toApp, totalMediaInMigrations)
+	totalObjs := getTotalObjsIncludingMediaOfApp(evalConfig, toApp)
+
+	// Only when the final application is Diaspora do we need to do this
+	if seqNum == seqLen - 1 && toApp == "diaspora" {
+		totalObjs -= totalRemainingObjsInOriginalApp
+	}
+
+	objs := make(map[string]int64)
+	objs["danglingObjs"] = danglingObjs
+	objs["totalObjs"] = totalObjs
+
+	return objs
+
+}

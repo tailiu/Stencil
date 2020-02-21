@@ -2,7 +2,6 @@ package evaluation
 
 import (
 	"stencil/SA1_migrate"
-	"stencil/reference_resolution"
 	"stencil/apis"
 	"stencil/db"
 	"log"
@@ -1251,23 +1250,23 @@ func Exp7() {
 
 	preExp7(evalConfig)
 
-	var migrationIDs []string
-
 	userIDs := []string {
 		"3",
 	}
-
-	userNum := len(userIDs)
 
 	var totalRemainingObjsInOriginalApp int64
 	var totalMediaBeforeAllMigrations int64
 	var totalMediaInMigrations int64
 
+	var migrationIDs []string
+
+	seqLen := len(migrationSeq)
+
 	for i := 0; i < len(migrationSeq) - 1; i++ {
 
 		fromApp := migrationSeq[i]
 		toApp := migrationSeq[i+1]
-
+		
 		fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
 		toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
 
@@ -1276,41 +1275,13 @@ func Exp7() {
 				getMediaCountsOfApp(evalConfig.DiasporaDBConn, fromApp)
 		}
 
-		for j, userID := range userIDs {
-			
-			if i != 0 {
-				userID = reference_resolution.GetNextUserID(
-					evalConfig.StencilDBConn, 
-					migrationIDs[(i - 1) * userNum + j],
-				)
-			}
+		enableBags := true
 
-			log.Println("Migrating user ID:", userID)
-			log.Println("From app:", fromApp)
-			log.Println("To app:", toApp)
-
-			uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
-				userID, fromApp, fromAppID, toApp, toAppID, "d", 1
-	
-			enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags := 
-				true, true, false, false, true
-	
-			SA1_migrate.Controller(uid, srcAppName, srcAppID, 
-				dstAppName, dstAppID, migrationType, threadNum,
-				enableDisplay, displayInFirstPhase, 
-				markAsDelete, useBladeServerAsDst, enableBags,
-			)
-
-			refreshEvalConfigDBConnections(evalConfig, false)
-
-			migrationID := getMigrationIDBySrcUserIDMigrationTypeFromToAppID(
-				evalConfig.StencilDBConn, userID, 
-				srcAppID, dstAppID, migrationType,
-			)
-			
-			migrationIDs = append(migrationIDs, migrationID)
-
-		}
+		migrationIDs = migrateUsersInExp7(
+			evalConfig, evalConfig.StencilDBConn,
+			i, fromApp, toApp, fromAppID, toAppID,
+			migrationIDs, userIDs, enableBags,
+		)
 
 		// Only when the start application is Diaspora do we need to do this
 		if i == 0 && fromApp == "diaspora" {
@@ -1320,23 +1291,17 @@ func Exp7() {
 
 			totalRemainingObjsInOriginalApp = 
 				getTotalObjsIncludingMediaOfApp(evalConfig, fromApp)
+			
 		}
 
-		danglingObjs := getDanglingObjsIncludingMediaOfSystem(evalConfig.StencilDBConn,
-			toApp, totalMediaInMigrations)
-		totalObjs := getTotalObjsIncludingMediaOfApp(evalConfig, toApp)
-
-		// Only when the final application is Diaspora do we need to do this
-		if i == len(migrationSeq) - 1 && toApp == "diaspora" {
-			totalObjs -= totalRemainingObjsInOriginalApp
-		}
-
-		objs := make(map[string]int64)
-		objs["danglingObjs"] = danglingObjs
-		objs["totalObjs"] = totalObjs
+		objs := calculateDanglingAndTotalObjectsInExp7(
+			evalConfig, evalConfig.StencilDBConn,
+			totalMediaInMigrations, totalRemainingObjsInOriginalApp,
+			toApp, i, seqLen,
+		)
 
 		WriteStrToLog(
-			"dataBags",
+			"dataBagsEnabled",
 			ConvertMapInt64ToJSONString(objs),
 		)
 
