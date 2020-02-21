@@ -96,6 +96,24 @@ func preExp7(evalConfig *EvalConfig) {
 			} else {
 				if err4 := db.TxnExecute1(evalConfig.GnusocialDBConn, query2); err4 != nil {
 					log.Fatal(err4)
+				} else {
+					if err5 := db.TxnExecute1(evalConfig.StencilDBConn1, query1); err5 != nil {
+						log.Fatal(err5)
+					} else {
+						if err6 := db.TxnExecute1(evalConfig.MastodonDBConn1, query2); err6 != nil {
+							log.Fatal(err6)
+						} else {
+							if err7 := db.TxnExecute1(evalConfig.TwitterDBConn1, query2); err7 != nil {
+								log.Fatal(err7)
+							} else {
+								if err8 := db.TxnExecute1(evalConfig.GnusocialDBConn1, query2); err8 != nil {
+									log.Fatal(err8)
+								} else {
+									return
+								}
+							}
+						}
+					}
 				}
 			}
 		}
@@ -1230,17 +1248,17 @@ func Exp7() {
 		"diaspora", "mastodon", "diaspora",
 	}
 
-	db.STENCIL_DB = "stencil_exp6"
-	db.DIASPORA_DB = "diaspora_test2"
-	db.MASTODON_DB = "mastodon_exp6"
-	db.TWITTER_DB = "twitter_exp6"
-	db.GNUSOCIAL_DB = "gnusocial_exp6"
-
 	stencilDB = "stencil_exp6"
 	diaspora = "diaspora_test2"
 	mastodon = "mastodon_exp6"
 	twitter = "twitter_exp6"
 	gnusocial = "gnusocial_exp6"
+
+	stencilDB1 = "stencil_exp7"
+	diaspora1 = "diaspora_test3"
+	mastodon1 = "mastodon_exp7"
+	twitter1 = "twitter_exp7"
+	gnusocial1 = "gnusocial_exp7"
 
 	// migrationNum := 100
 
@@ -1251,14 +1269,14 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"5",
+		"9",
 	}
 
 	var totalRemainingObjsInOriginalApp int64
 	var totalMediaBeforeAllMigrations int64
 	var totalMediaInMigrations int64
 
-	var migrationIDs []string
+	var migrationIDs, migrationIDs1 []string
 
 	seqLen := len(migrationSeq)
 
@@ -1277,10 +1295,30 @@ func Exp7() {
 
 		enableBags := true
 
+		db.STENCIL_DB = "stencil_exp6"
+		db.DIASPORA_DB = "diaspora_test2"
+		db.MASTODON_DB = "mastodon_exp6"
+		db.TWITTER_DB = "twitter_exp6"
+		db.GNUSOCIAL_DB = "gnusocial_exp6"
+
 		migrationIDs = migrateUsersInExp7(
 			evalConfig, stencilDB,
 			i, fromApp, toApp, fromAppID, toAppID,
 			migrationIDs, userIDs, enableBags,
+		)
+
+		enableBags = false
+
+		db.STENCIL_DB = "stencil_exp7"
+		db.DIASPORA_DB = "diaspora_test3"
+		db.MASTODON_DB = "mastodon_exp7"
+		db.TWITTER_DB = "twitter_exp7"
+		db.GNUSOCIAL_DB = "gnusocial_exp7"
+
+		migrationIDs1 = migrateUsersInExp7(
+			evalConfig, stencilDB1,
+			i, fromApp, toApp, fromAppID, toAppID,
+			migrationIDs1, userIDs, enableBags,
 		)
 
 		// Only when the start application is Diaspora do we need to do this
@@ -1290,12 +1328,22 @@ func Exp7() {
 				getMediaCountsOfApp(evalConfig.DiasporaDBConn, fromApp)
 
 			totalRemainingObjsInOriginalApp = 
-				getTotalObjsIncludingMediaOfApp(evalConfig, fromApp)
+				getTotalObjsIncludingMediaOfApp(evalConfig.DiasporaDBConn, fromApp)
 			
 		}
 
+		enableBags = true
+
 		objs := calculateDanglingAndTotalObjectsInExp7(
-			evalConfig, stencilDB,
+			evalConfig, enableBags,
+			totalMediaInMigrations, totalRemainingObjsInOriginalApp,
+			toApp, i, seqLen,
+		)
+
+		enableBags = false
+
+		objs1 := calculateDanglingAndTotalObjectsInExp7(
+			evalConfig, enableBags,
 			totalMediaInMigrations, totalRemainingObjsInOriginalApp,
 			toApp, i, seqLen,
 		)
@@ -1303,6 +1351,11 @@ func Exp7() {
 		WriteStrToLog(
 			"dataBagsEnabled",
 			ConvertMapInt64ToJSONString(objs),
+		)
+
+		WriteStrToLog(
+			"dataBagsNotEnabled",
+			ConvertMapInt64ToJSONString(objs1),
 		)
 
 	}

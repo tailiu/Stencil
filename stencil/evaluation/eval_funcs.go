@@ -828,10 +828,19 @@ func closeDBConns(evalConfig *EvalConfig) {
 	closeDBConn(evalConfig.StencilDBConn)
 	closeDBConn(evalConfig.StencilDBConn1)
 	closeDBConn(evalConfig.StencilDBConn2)
+
 	closeDBConn(evalConfig.MastodonDBConn)
 	closeDBConn(evalConfig.MastodonDBConn1)
 	closeDBConn(evalConfig.MastodonDBConn2)
+
 	closeDBConn(evalConfig.DiasporaDBConn)
+	closeDBConn(evalConfig.DiasporaDBConn1)
+
+	closeDBConn(evalConfig.TwitterDBConn)
+	closeDBConn(evalConfig.TwitterDBConn1)
+	
+	closeDBConn(evalConfig.GnusocialDBConn)
+	closeDBConn(evalConfig.GnusocialDBConn1)
 
 }
 
@@ -882,12 +891,19 @@ func connectToDB(evalConfig *EvalConfig, isBladeServer ...bool) {
 	evalConfig.StencilDBConn = db.GetDBConn(stencilDB)
 	evalConfig.StencilDBConn1 = db.GetDBConn(stencilDB1)
 	evalConfig.StencilDBConn2 = db.GetDBConn(stencilDB2)
+
 	evalConfig.DiasporaDBConn = db.GetDBConn(diaspora)
+	evalConfig.DiasporaDBConn1 = db.GetDBConn(diaspora1)
+
 	evalConfig.MastodonDBConn = db.GetDBConn(mastodon, bladeServer)
 	evalConfig.MastodonDBConn1 = db.GetDBConn(mastodon1, bladeServer)
 	evalConfig.MastodonDBConn2 = db.GetDBConn(mastodon2, bladeServer)
+
 	evalConfig.TwitterDBConn = db.GetDBConn(twitter, bladeServer)
+	evalConfig.TwitterDBConn1 = db.GetDBConn(twitter1, bladeServer)
+
 	evalConfig.GnusocialDBConn = db.GetDBConn(gnusocial, bladeServer)
+	evalConfig.GnusocialDBConn1 = db.GetDBConn(gnusocial1, bladeServer)
 
 }
 
@@ -896,7 +912,7 @@ func refreshEvalConfigDBConnections(evalConfig *EvalConfig,
 
 	closeDBConns(evalConfig)
 	
-	if len(isBladeServer) == 1{
+	if len(isBladeServer) == 1 {
 		connectToDB(evalConfig, isBladeServer[0])
 	} else {
 		connectToDB(evalConfig)
@@ -928,6 +944,12 @@ func getDBConnByName(evalConfig *EvalConfig,
 		connection = evalConfig.TwitterDBConn
 	case gnusocial:
 		connection = evalConfig.GnusocialDBConn
+	case diaspora1:
+		connection = evalConfig.DiasporaDBConn1
+	case twitter1:
+		connection = evalConfig.TwitterDBConn1
+	case gnusocial1:
+		connection = evalConfig.GnusocialDBConn1
 	default:
 		log.Fatal("Cannot find a connection by the provided connection name")
 	}

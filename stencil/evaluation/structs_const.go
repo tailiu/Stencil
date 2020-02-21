@@ -38,9 +38,14 @@ var	mastodon = "mastodon_exp"
 var	mastodon1 = "mastodon_exp1"
 var	mastodon2 = "mastodon_exp2"
 
-var diaspora = "diaspora_test2"
+var diaspora = "diaspora_test"
+var diaspora1 = "diaspora_test"
+
 var twitter = "twitter_test"
+var twitter1 = "twitter_test"
+
 var gnusocial = "gnusocial_test"
+var gnusocial1 = "gnusocial_test"
 
 const (
 
@@ -78,6 +83,9 @@ type EvalConfig struct {
 	DiasporaDBConn *sql.DB
 	TwitterDBConn *sql.DB
 	GnusocialDBConn *sql.DB
+	DiasporaDBConn1 *sql.DB
+	TwitterDBConn1 *sql.DB
+	GnusocialDBConn1 *sql.DB
 	TableIDNamePairs map[string]string
 	MastodonTableNameIDPairs map[string]string
 	DiasporaTableNameIDPairs map[string]string

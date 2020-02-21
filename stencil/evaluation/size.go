@@ -359,29 +359,45 @@ func getMediaCountsOfApp(dbConn *sql.DB, appName string) int64 {
 
 }
 
-func getTotalObjsIncludingMediaOfApp(evalConfig *EvalConfig, 
+func getTotalObjsIncludingMediaOfApp(dbConn *sql.DB, 
 	appName string) int64 {
+	
+	rowCounts := getTotalRowCountsOfDB(dbConn)
+	mediaCounts := getMediaCountsOfApp(dbConn, appName)
 
-	var totalObjs, rowCounts, mediaCounts int64
+	totalObjs := rowCounts + mediaCounts
+
+	return totalObjs
+
+}
+
+func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig, 
+	appName string, enableBags bool) int64 {
+
+	var totalObjs int64
+
+	connSuffix := ""
+
+	if !enableBags {
+		connSuffix += "1"
+	}
 
 	switch appName {
 	case "diaspora":
-		rowCounts = getTotalRowCountsOfDB(evalConfig.DiasporaDBConn)
-		mediaCounts = getMediaCountsOfApp(evalConfig.DiasporaDBConn, appName)
+		diasporaDBConn := getDBConnByName(evalConfig, diaspora + connSuffix)
+		totalObjs = getTotalObjsIncludingMediaOfApp(diasporaDBConn, appName)
 	case "mastodon":
-		rowCounts = getTotalRowCountsOfDB(evalConfig.MastodonDBConn)
-		mediaCounts = getMediaCountsOfApp(evalConfig.MastodonDBConn, appName)
+		mastodonDBConn := getDBConnByName(evalConfig, mastodon + connSuffix)
+		totalObjs = getTotalObjsIncludingMediaOfApp(mastodonDBConn, appName)
 	case "twitter":
-		rowCounts = getTotalRowCountsOfDB(evalConfig.TwitterDBConn)
-		mediaCounts = getMediaCountsOfApp(evalConfig.TwitterDBConn, appName)
+		twitterDBConn := getDBConnByName(evalConfig, twitter + connSuffix)
+		totalObjs = getTotalObjsIncludingMediaOfApp(twitterDBConn, appName)
 	case "gnusocial":
-		rowCounts = getTotalRowCountsOfDB(evalConfig.GnusocialDBConn)
-		mediaCounts = getMediaCountsOfApp(evalConfig.GnusocialDBConn, appName)
+		gnusocialDBConn := getDBConnByName(evalConfig, gnusocial + connSuffix)
+		totalObjs = getTotalObjsIncludingMediaOfApp(gnusocialDBConn, appName)
 	default:
 		log.Fatal("Cannot find a connection for the app:", appName)
 	}
-
-	totalObjs = rowCounts + mediaCounts
 
 	return totalObjs
 
@@ -460,15 +476,21 @@ func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB,
 }
 
 func calculateDanglingAndTotalObjectsInExp7(
-	evalConfig *EvalConfig, stencilDBConnName string,
+	evalConfig *EvalConfig, enableBags bool,
 	totalMediaInMigrations, totalRemainingObjsInOriginalApp int64,
 	toApp string, seqNum, seqLen int) map[string]int64 {
 
-	stencilDBConn := getDBConnByName(evalConfig, stencilDBConnName)
+	connSuffix := ""
+
+	if !enableBags {
+		connSuffix += "1"
+	}
+
+	stencilDBConn := getDBConnByName(evalConfig, stencilDB + connSuffix)
 
 	danglingObjs := getDanglingObjsIncludingMediaOfSystem(stencilDBConn,
 		toApp, totalMediaInMigrations)
-	totalObjs := getTotalObjsIncludingMediaOfApp(evalConfig, toApp)
+	totalObjs := getTotalObjsIncludingMediaOfAppInExp7(evalConfig, toApp, enableBags)
 
 	// Only when the final application is Diaspora do we need to do this
 	if seqNum == seqLen - 1 && toApp == "diaspora" {
