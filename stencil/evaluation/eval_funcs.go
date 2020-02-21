@@ -929,7 +929,7 @@ func getDBConnByName(evalConfig *EvalConfig,
 	case gnusocial:
 		connection = evalConfig.GnusocialDBConn
 	default:
-		log.Fatal("Cannot find a connection")
+		log.Fatal("Cannot find a connection by the provided connection name")
 	}
 
 	return connection

@@ -92,9 +92,11 @@ func migrateUserFromDiasporaToMastodon1(
 	)
 }
 
-func migrateUsersInExp7(evalConfig *EvalConfig, evalStencilDBConn *sql.DB, 
+func migrateUsersInExp7(evalConfig *EvalConfig, stencilDBConnName string, 
 	seqNum int, fromApp, toApp, fromAppID, toAppID string,
 	migrationIDs, userIDs []string, enableBagsOption bool) []string {
+
+	var stencilDBConn *sql.DB
 
 	for j, userID := range userIDs {
 		
@@ -102,8 +104,10 @@ func migrateUsersInExp7(evalConfig *EvalConfig, evalStencilDBConn *sql.DB,
 
 			userNum := len(userIDs)
 
+			stencilDBConn = getDBConnByName(evalConfig, stencilDBConnName)
+
 			userID = reference_resolution.GetNextUserID(
-				evalStencilDBConn, 
+				stencilDBConn, 
 				migrationIDs[(seqNum - 1) * userNum + j],
 			)
 		}
@@ -125,8 +129,10 @@ func migrateUsersInExp7(evalConfig *EvalConfig, evalStencilDBConn *sql.DB,
 
 		refreshEvalConfigDBConnections(evalConfig, false)
 
+		stencilDBConn = getDBConnByName(evalConfig, stencilDBConnName)
+
 		migrationID := getMigrationIDBySrcUserIDMigrationTypeFromToAppID(
-			evalStencilDBConn, userID, 
+			stencilDBConn, userID, 
 			fromAppID, toAppID, migrationType,
 		)
 		

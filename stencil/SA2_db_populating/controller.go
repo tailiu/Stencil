@@ -100,13 +100,13 @@ func PupulatingController() {
 	isStencilOnBladeServer := false
 	isAppOnBladeServer := false
 
-	db.STENCIL_DB = "stencil_exp_sa2_11"
+	db.STENCIL_DB = "stencil_exp_sa2_12"
 
-	table := "likes"
+	table := "notifications"
 	startPoint = 0
-	endPoint = 200000
+	endPoint = 300000
 
-	appName := "diaspora_100000_sa2_11"
+	appName := "diaspora_100000_sa2_12"
 	appID := "1"
 
 	limit = 2500

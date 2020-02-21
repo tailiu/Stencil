@@ -460,9 +460,11 @@ func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB,
 }
 
 func calculateDanglingAndTotalObjectsInExp7(
-	evalConfig *EvalConfig, stencilDBConn *sql.DB,
+	evalConfig *EvalConfig, stencilDBConnName string,
 	totalMediaInMigrations, totalRemainingObjsInOriginalApp int64,
 	toApp string, seqNum, seqLen int) map[string]int64 {
+
+	stencilDBConn := getDBConnByName(evalConfig, stencilDBConnName)
 
 	danglingObjs := getDanglingObjsIncludingMediaOfSystem(stencilDBConn,
 		toApp, totalMediaInMigrations)

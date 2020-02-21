@@ -9,7 +9,7 @@ import (
 
 func TruncateSA2Tables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2_11"
+	db.STENCIL_DB = "stencil_exp_sa2_12"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 
@@ -710,7 +710,7 @@ func OldDumpAllBaseSupTablesToAnotherDB() {
 
 func DumpAllBaseSupTablesToAnotherDB() {
 
-	srcDB := "stencil_exp_sa2_11"
+	srcDB := "stencil_exp_sa2_12"
 
 	dstDB := "stencil_exp_sa2_100k"
 

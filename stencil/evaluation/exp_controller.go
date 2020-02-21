@@ -1251,7 +1251,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"3",
+		"5",
 	}
 
 	var totalRemainingObjsInOriginalApp int64
@@ -1278,7 +1278,7 @@ func Exp7() {
 		enableBags := true
 
 		migrationIDs = migrateUsersInExp7(
-			evalConfig, evalConfig.StencilDBConn,
+			evalConfig, stencilDB,
 			i, fromApp, toApp, fromAppID, toAppID,
 			migrationIDs, userIDs, enableBags,
 		)
@@ -1295,7 +1295,7 @@ func Exp7() {
 		}
 
 		objs := calculateDanglingAndTotalObjectsInExp7(
-			evalConfig, evalConfig.StencilDBConn,
+			evalConfig, stencilDB,
 			totalMediaInMigrations, totalRemainingObjsInOriginalApp,
 			toApp, i, seqLen,
 		)
