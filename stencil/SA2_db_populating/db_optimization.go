@@ -9,7 +9,7 @@ import (
 
 func TruncateSA2Tables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2_13"
+	db.STENCIL_DB = "stencil_exp_sa2_10"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 
@@ -710,9 +710,9 @@ func OldDumpAllBaseSupTablesToAnotherDB() {
 
 func DumpAllBaseSupTablesToAnotherDB() {
 
-	srcDB := "stencil_exp_sa2_7"
+	srcDB := "stencil_exp_sa2_10"
 
-	dstDB := "stencil_exp_sa2_3"
+	dstDB := "stencil_exp_sa2_100k"
 
 	query1 := fmt.Sprintf(
 		`pg_dump -U cow -a -t supplementary_* --exclude-table-data='supplementary_tables'  %s | psql -U cow %s`,

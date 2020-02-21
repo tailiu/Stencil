@@ -40,6 +40,6 @@ func main() {
 
 	// SA2_db_populating.DumpAllBaseSupTablesToAnotherDB()
 
-	SA2_db_populating.PupulatingController()
+	// SA2_db_populating.PupulatingController()
 
 }

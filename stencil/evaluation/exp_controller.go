@@ -1228,7 +1228,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "gnusocial", "diaspora",
+		"diaspora", "mastodon", "diaspora",
 	}
 
 	db.STENCIL_DB = "stencil_exp6"
@@ -1238,6 +1238,7 @@ func Exp7() {
 	db.GNUSOCIAL_DB = "gnusocial_exp6"
 
 	stencilDB = "stencil_exp6"
+	diaspora = "diaspora_test2"
 	mastodon = "mastodon_exp6"
 	twitter = "twitter_exp6"
 	gnusocial = "gnusocial_exp6"
@@ -1253,12 +1254,14 @@ func Exp7() {
 	var migrationIDs []string
 
 	userIDs := []string {
-		"40",
+		"3",
 	}
 
 	userNum := len(userIDs)
 
 	var totalRemainingObjsInOriginalApp int64
+	var totalMediaBeforeAllMigrations int64
+	var totalMediaInMigrations int64
 
 	for i := 0; i < len(migrationSeq) - 1; i++ {
 
@@ -1267,6 +1270,11 @@ func Exp7() {
 
 		fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
 		toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
+
+		if i == 0 && fromApp == "diaspora" {
+			totalMediaBeforeAllMigrations = 
+				getMediaCountsOfApp(evalConfig.DiasporaDBConn, fromApp)
+		}
 
 		for j, userID := range userIDs {
 			
@@ -1306,11 +1314,16 @@ func Exp7() {
 
 		// Only when the start application is Diaspora do we need to do this
 		if i == 0 && fromApp == "diaspora" {
+
+			totalMediaInMigrations = totalMediaBeforeAllMigrations - 
+				getMediaCountsOfApp(evalConfig.DiasporaDBConn, fromApp)
+
 			totalRemainingObjsInOriginalApp = 
 				getTotalObjsIncludingMediaOfApp(evalConfig, fromApp)
 		}
 
-		danglingObjs := getDanglingObjsIncludingMediaOfSystem(evalConfig.StencilDBConn, toApp)
+		danglingObjs := getDanglingObjsIncludingMediaOfSystem(evalConfig.StencilDBConn,
+			toApp, totalMediaInMigrations)
 		totalObjs := getTotalObjsIncludingMediaOfApp(evalConfig, toApp)
 
 		// Only when the final application is Diaspora do we need to do this

@@ -28,11 +28,16 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 
 		if offset + limit > dataSeqEnd {
 
-			apis.Port(
-				appName, appID, table, 
-				dataSeqEnd - offset, offset,
-				appDBConn, stencilDBConn,
-			)
+			// if offset (start) is equal to dataSeqEnd, there is no need to populate
+			if offset != dataSeqEnd {
+
+				apis.Port(
+					appName, appID, table, 
+					dataSeqEnd - offset, offset,
+					appDBConn, stencilDBConn,
+				)
+
+			}
 
 			break
 
@@ -95,13 +100,13 @@ func PupulatingController() {
 	isStencilOnBladeServer := false
 	isAppOnBladeServer := false
 
-	db.STENCIL_DB = "stencil_exp_sa2_13"
+	db.STENCIL_DB = "stencil_exp_sa2_10"
 
-	table := "photos"
-	startPoint = 0
-	endPoint = 150000
+	table := "posts"
+	startPoint = 200000
+	endPoint = 400000
 
-	appName := "diaspora_100000_sa2_13"
+	appName := "diaspora_100000_sa2_10"
 	appID := "1"
 
 	limit = 2500
@@ -132,7 +137,7 @@ func PupulatingController() {
 		rowCount = endPoint
 	}
 
-	log.Println("Total row count:", rowCount) 
+	log.Println("End point:", rowCount) 
 
 	dataSeqStart = startPoint
 	
