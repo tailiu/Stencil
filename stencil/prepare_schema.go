@@ -64,6 +64,20 @@ func test5() {
 
 }
 
+func test6() {
+
+	dbName := "gnusocial_exp6"
+
+	col := "urlhash"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+
+	evaluation.GetTablesContainingCol(dbConn, col)
+
+}
+
 func main() {
 
 	// test1()
@@ -74,6 +88,7 @@ func main() {
 
 	// test4()
 
-	test5()
+	// test5()
 
+	test6()
 }

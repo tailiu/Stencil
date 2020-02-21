@@ -379,12 +379,14 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 
 		query1 += query1Where
 
-		query2 = fmt.Sprintf(`UPDATE Display_flags SET 
+		query2 = fmt.Sprintf(
+			`UPDATE Display_flags SET 
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
 			displayConfig.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
 		
-		query3 = fmt.Sprintf(`UPDATE evaluation SET
+		query3 = fmt.Sprintf(
+			`UPDATE evaluation SET
 			displayed_at = now() WHERE migration_id = '%d' and
 			src_app = '%s' and dst_app = '%s' and
 			dst_table = '%s' and dst_id = '%d'`,
@@ -680,7 +682,8 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 
 			procData := addTableNameToDataAttibutes(dataHint.Data, dataHint.Table)
 
-			q1 = fmt.Sprintf(`INSERT INTO data_bags 
+			q1 = fmt.Sprintf(
+				`INSERT INTO data_bags 
 				(app, member, id, data, user_id, migration_id) VALUES 
 				(%s, %s, %d, '%s', %s, %d)`,
 				displayConfig.dstAppConfig.appID,
@@ -693,19 +696,20 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 
 			if !displayConfig.markAsDelete {
 				q2 = fmt.Sprintf(
-					"DELETE FROM %s WHERE id = %d",
+					`DELETE FROM "%s" WHERE id = %d`,
 					dataHint.Table, dataHint.KeyVal["id"],
 				)
 			} else {
 				q2 = fmt.Sprintf(
-					"UPDATE %s SET mark_as_delete = true WHERE id = %d",
+					`UPDATE "%s" SET mark_as_delete = true WHERE id = %d`,
 					dataHint.Table, dataHint.KeyVal["id"],
 				)
 			}
 
 		}
 
-		q3 = fmt.Sprintf(`UPDATE display_flags SET 
+		q3 = fmt.Sprintf(
+			`UPDATE display_flags SET 
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
 			displayConfig.dstAppConfig.appID, 

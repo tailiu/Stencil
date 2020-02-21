@@ -88,19 +88,20 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // My machine:
 func PupulatingController() {
 
-	var limit, startPoint int64
+	var limit, startPoint, endPoint int64
 
 	// ******************* Setting Parameters Start *******************
 	
 	isStencilOnBladeServer := false
 	isAppOnBladeServer := false
 
-	db.STENCIL_DB = "stencil_exp_sa2_1"
+	db.STENCIL_DB = "stencil_exp_sa2_13"
 
 	table := "photos"
 	startPoint = 0
+	endPoint = 150000
 
-	appName := "diaspora_1000000_sa2_1"
+	appName := "diaspora_100000_sa2_13"
 	appID := "1"
 
 	limit = 2500
@@ -123,11 +124,15 @@ func PupulatingController() {
 
 	wg.Add(threadNum)
 
-	rowCount := getTotalRowCountOfTable(appDBConn, table)
+	var dataSeqStart, dataSeqStep, rowCount int64
 
-	log.Println("Total row count:", rowCount)
-	
-	var dataSeqStart, dataSeqStep int64
+	if endPoint == -1 {
+		rowCount = getTotalRowCountOfTable(appDBConn, table)
+	} else {
+		rowCount = endPoint
+	}
+
+	log.Println("Total row count:", rowCount) 
 
 	dataSeqStart = startPoint
 	

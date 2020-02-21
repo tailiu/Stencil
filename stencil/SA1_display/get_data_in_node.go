@@ -285,8 +285,6 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			}
 		}
 
-		log.Println("okokok")
-
 		// If the first argument of the from attribute does not contain "id", 
 		// this indicates we can use the current data and the relationship indicated
 		// by table0, col0, table1, col1, value to get data

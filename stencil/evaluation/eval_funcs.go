@@ -1116,3 +1116,36 @@ func AlterTableColumnsAddIDInt8IfNotExists(dbConn *sql.DB) {
 	}
 
 }
+
+func GetTablesContainingCol(dbConn *sql.DB, col string) {
+
+	tables := getAllTablesOfDB(dbConn)
+
+	var tablesContainingCol []string
+
+	for _, table := range tables {
+
+		query1 := fmt.Sprintf(
+			`select column_name, data_type from information_schema.columns 
+			where table_name = '%s'`, 
+			table,
+		)
+
+		res1, err1 := db.DataCall(dbConn, query1)
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+
+		for _, data1 := range res1 {
+			
+			if fmt.Sprint(data1["column_name"]) == col {
+				tablesContainingCol = append(tablesContainingCol, table)
+			}
+			
+		}
+
+	}
+
+	log.Println(tablesContainingCol)
+
+}

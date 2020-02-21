@@ -189,6 +189,8 @@ func GetNextUserID(stencilDBConn *sql.DB, migrationID string) string {
 		migrationID,
 	)
 
+	log.Println(query)
+
 	data, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
@@ -205,6 +207,8 @@ func GetNextUserID(stencilDBConn *sql.DB, migrationID string) string {
 		srcApp, appRootMembers[srcApp], userID,
 		dstApp, appRootMembers[dstApp], migrationID,
 	)
+
+	log.Println(query1)
 
 	data1, err1 := db.DataCall1(stencilDBConn, query1)
 	if err1 != nil {
