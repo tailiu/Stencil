@@ -7,6 +7,7 @@ import (
 	"strings"
 	"fmt"
 	"log"
+	SSHClient "github.com/helloyi/go-sshclient"
 )
 
 func existsInSlice(s []int, element int) bool {
@@ -419,5 +420,137 @@ func getConstraintsIndexesOfPartitions(
 	constraintData := getConstraintsOfPartitions(dbConn)
 		
 	return indexData, constraintData
+
+}
+
+func SSHMachineExeCommands(host, port, usersname, password string, cmds []string) {
+
+	client, err := SSHClient.DialWithPasswd(host + ":" + port, usersname, password)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer client.Close()
+
+	for _, cmd := range cmds {
+
+		out, err1 := client.Cmd(cmd).Output()
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+		fmt.Println(string(out))
+
+	}
+
+}
+
+func dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB string, 
+	migrationTables []string) [] string {
+
+	log.Println("Src DB:", srcDB)
+	
+	log.Println("Dst DB:", dstDB)
+
+	var queries []string
+
+	query1 := fmt.Sprintf(
+		`pg_dump -U cow -a -t supplementary_* --exclude-table-data='supplementary_tables'  %s | psql -U cow %s`,
+		srcDB, dstDB,
+	)
+	
+	query2 := fmt.Sprintf(
+		`pg_dump -U cow -a -t base_* %s | psql -U cow %s`,
+		srcDB, dstDB,
+	)
+	
+	queries = append(queries, query1, query2)
+
+	var migrationTableQueries []string
+
+	for _, migrationTable := range migrationTables {
+
+		if migrationTable == "migration_table_6" || migrationTable == "migration_table_7" {
+
+			migrationTableNum := migrationTable[len(migrationTable)-1:]
+
+			for i := 0; i < 5; i ++ {
+
+				subMigrationTableNum := strconv.Itoa(i+1)
+
+				subMigrationTable := "migration_table_sub_" + migrationTableNum +
+					 "_" +  subMigrationTableNum
+
+				query3 := fmt.Sprintf(
+					`pg_dump -U cow -a -t %s %s | psql -U cow %s`,
+					subMigrationTable, srcDB, dstDB, 
+				)
+
+				migrationTableQueries = append(migrationTableQueries, query3)
+
+			}
+
+		} else {
+
+			query3 := fmt.Sprintf(
+				`pg_dump -U cow -a -t %s %s | psql -U cow %s`,
+				migrationTable, srcDB, dstDB, 
+			)
+
+			migrationTableQueries = append(migrationTableQueries, query3)
+		}
+
+	}
+
+	queries = append(queries, migrationTableQueries...)
+
+	return queries
+
+}
+
+func truncateSA2Tables(dbName string) {
+
+	db.STENCIL_DB = dbName
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+
+	query1 := `TRUNCATE migration_table`
+
+	query3 := "TRUNCATE "
+	
+	data := getAllTablesInDB(dbConn)
+
+	for _, data1 := range data {
+
+		tableName := data1["tablename"]
+
+		if strings.Contains(tableName, "base_") {
+			query3 += tableName + ", "
+			continue
+		}
+
+		if strings.Contains(tableName, "supplementary_") &&
+			tableName != "supplementary_tables" {
+			query3 += tableName + ", "
+			continue
+		}
+
+	}
+	
+	query3 = query3[:len(query3) - 2]
+
+	log.Println(query1)
+	log.Println(query3)
+
+	queries := []string{query1, query3} 
+
+	err := db.TxnExecute(dbConn, queries)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err1 := dbConn.Close()
+	if err1 != nil {
+		log.Fatal(err1)
+	}
 
 }

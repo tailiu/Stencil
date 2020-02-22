@@ -9,49 +9,9 @@ import (
 
 func TruncateSA2Tables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2_12"
+	dbName := "stencil_exp_sa2_13"
 
-	dbConn := db.GetDBConn(db.STENCIL_DB)
-
-	query1 := `TRUNCATE migration_table`
-
-	query3 := "TRUNCATE "
-	
-	data := getAllTablesInDB(dbConn)
-
-	for _, data1 := range data {
-
-		tableName := data1["tablename"]
-
-		if strings.Contains(tableName, "base_") {
-			query3 += tableName + ", "
-			continue
-		}
-
-		if strings.Contains(tableName, "supplementary_") &&
-			tableName != "supplementary_tables" {
-			query3 += tableName + ", "
-			continue
-		}
-
-	}
-	
-	query3 = query3[:len(query3) - 2]
-
-	log.Println(query1)
-	log.Println(query3)
-
-	queries := []string{query1, query3} 
-
-	err := db.TxnExecute(dbConn, queries)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err1 := dbConn.Close()
-	if err1 != nil {
-		log.Fatal(err1)
-	}
+	truncateSA2Tables(dbName)
 
 }
 
@@ -710,9 +670,9 @@ func OldDumpAllBaseSupTablesToAnotherDB() {
 
 func DumpAllBaseSupTablesToAnotherDB() {
 
-	srcDB := "stencil_exp_sa2_12"
+	srcDB := "stencil_exp_sa2_10"
 
-	dstDB := "stencil_exp_sa2_100k"
+	dstDB := "stencil_exp_sa2_100k" 
 
 	query1 := fmt.Sprintf(
 		`pg_dump -U cow -a -t supplementary_* --exclude-table-data='supplementary_tables'  %s | psql -U cow %s`,
@@ -734,5 +694,30 @@ func DumpAllBaseSupTablesToAnotherDB() {
 	log.Println(query2)
 
 	log.Println(query3)
+
+}
+
+func CheckpointTruncate() {
+
+	host, port, usersname, password := 
+		db.DB_ADDR, db.SSH_PROT, db.SSH_USERNAME, db.SSH_PASSWORD
+
+	srcDB := "stencil_exp_sa2_12"
+
+	dstDB := "stencil_exp_sa2_100k" 
+
+	migrationTables := []string {
+		"migration_table_7",
+	}
+	
+	cmds := dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB, migrationTables)
+
+	for _, cmd := range cmds {
+		log.Println(cmd)
+	}
+
+	SSHMachineExeCommands(host, port, usersname, password, cmds)
+
+	truncateSA2Tables(srcDB)
 
 }
