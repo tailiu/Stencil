@@ -1245,7 +1245,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "diaspora",
+		"diaspora", "mastodon", "twitter", "gnusocial",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1271,7 +1271,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"15",
+		"18", "19",
 	}
 
 	var totalRemainingObjsInOriginalApp int64

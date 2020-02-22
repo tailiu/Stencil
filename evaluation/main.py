@@ -28,6 +28,8 @@ migratedTimeByDstFile = "migrationTimeByDst"
 anomaliesFile1 = "danglingData"
 anomaliesFile2 = "danglingObjects"
 scalabilityFile = "scalability"
+dataBagsEnabledFile = "dataBagsEnabled"
+dataBagsNotEnabledFile = "dataBagsNotEnabled"
 
 dataBags = "dataBags"
 cumNum = 1000
@@ -759,8 +761,34 @@ def danglingObjsCumSum2(labels):
     
     g.mulLines(x, y, labels, xlabel, ylabel)
 
-# def scalability():
+def getPercentagesOfData(numerators, denominators):
 
+    rates = []
+    
+    for i in range(len(numerators)):
+        rates.append(numerators[i] / denominators[i] * 100)
+    
+    return rates
+
+def randomWalk1(apps, labels):
+    
+    data1 = readFile3(logDir + dataBagsEnabledFile)
+    data2 = readFile3(logDir + dataBagsNotEnabledFile)
+
+    totalObjs1 = getDataByKey(data1, "totalObjs")
+    danglingObjs1 = getDataByKey(data1, "danglingObjs")
+
+    totalObjs2 = getDataByKey(data2, "totalObjs")
+    danglingObjs2 = getDataByKey(data2, "danglingObjs")
+
+    percentages1 = getPercentagesOfData(danglingObjs1, totalObjs1)
+    percentages2 = getPercentagesOfData(danglingObjs2, totalObjs2)
+
+    ylabel = 'Percentage of dangling objects to total objects'
+    
+    percentages = [percentages1, percentages2]
+
+    g.dataBag1(percentages, labels, apps, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -796,7 +824,9 @@ def danglingObjsCumSum2(labels):
     # ["1M", "100K", "10K", "1K"])
 # compareTwoMigratedSizes(["Source", "Destination"])
 # danglingDataSizesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
-danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
+# danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
 # migrationRate2(["SA1Size", "SA1WDSize", "naiveSize"], 
 #     ["SA1Time", "SA1WDTime", "naiveTime"], 
 #     ["SA1", "SA1 without display", "Naive system"])
+randomWalk1(["diaspora", "mastodon", "diaspora"],
+            ["Stencil with data bags", "Stencil without data bags"])

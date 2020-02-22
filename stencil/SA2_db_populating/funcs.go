@@ -434,7 +434,7 @@ func SSHMachineExeCommands(host, port, usersname, password string, cmds []string
 
 	for i, cmd := range cmds {
 
-		log.Println("Command", i, ":")
+		log.Println("Command", i+1, ":")
 		log.Println(cmd)
 
 		out, err1 := client.Cmd(cmd).Output()

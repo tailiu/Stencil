@@ -9,7 +9,7 @@ import (
 
 func TruncateSA2Tables() {
 
-	dbName := "stencil_exp_sa2_13"
+	dbName := "stencil_exp_sa2_10"
 
 	truncateSA2Tables(dbName)
 
@@ -62,7 +62,7 @@ func GetTotalRowCountsOfDB() {
 
 func ListRowCountsOfDB() {
 
-	dbName := "diaspora_100000"
+	dbName := "stencil_exp_sa2_10"
 
 	dbConn := db.GetDBConn(dbName)
 	defer dbConn.Close()

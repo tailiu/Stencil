@@ -315,6 +315,27 @@ def dataBag(data, apps, ylabel):
 
     plt.show()
 
+def dataBag1(data, labels, apps, ylabel):
+    fig, ax = plt.subplots()
+
+    # the label locations
+    x = np.arange(0, len(apps))
+
+    # the width of the bar
+    barWidth = 0.3
+
+    ax.bar(x - barWidth/2, data[0], width=barWidth, align="center", label=labels[0], color=colors[0])
+    ax.bar(x + barWidth/2, data[1], width=barWidth, align="center", label=labels[1], color=colors[1])
+    
+    ax.set_xticks(x)
+    ax.set_xticklabels(apps)
+    ax.grid(True)
+    ax.set_ylabel(ylabel)
+
+    legend = ax.legend(loc=legendLoc[1], fontsize=legendFontSize[4], numpoints=1)
+
+    plt.show()
+
 def danglingDataSystemCombined(x, y, xlabel, ylabel, labels):
     fig, ax = plt.subplots()
     for i, y1 in enumerate(y):
