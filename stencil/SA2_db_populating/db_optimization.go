@@ -332,49 +332,7 @@ func CreateConstraintsIndexesOnPartitions() {
 // We can add constraints after populating to increase populating speed
 func CreatPartitions(createConstrainsts ...bool) {
 
-	maxRowID := 2147483647
-	ranges1 := [][]int {
-		{1, 7}, 		// 1. aspects						(4,032,432)
-		{7, 9},			// 2. comments						(13,481,411)
-		{9, 10},		// 3. contacts						(5,191,420)
-		{10, 11},		// 4. conversations					(81,119)
-		{11, 13},		// 5. messages						(5,400,995)
-		{13, 14},		// 6. notification_actors			(46,785,209)
-		{14, 19},		// 7. notifications					(46,785,209)
-		{19, 20},		// 8. people						(1,008,108)
-		{20, 26},		// 9. photos						(3,692,680)
-		{26, 27},		// 10. posts						(7,562,681)
-		{27, 30},		// 11. profiles						(1,008,108)
-		{30, 32}, 		// 12. share_visibilities			(7,562,681)
-		{32, 35},		// 13. aspect_visibilities			(14,814,749)
-		{35, 39},		// 14. users						(1,008,108)
-		{39, 41},		// 15. conversation_visibilities	(162,238)
-		{41, 52},		// 16. likes						(30,626,969)
-		{52, 198},		// 17. all other tables
-		// {1, 7}, 		// 1. aspects						(4,032,432) *
-		// {7, 9},			// 2. comments						(13,481,411)
-		// {9, 10},		// 3. contacts						(5,191,420) *
-		// {10, 11},		// 4. conversations					(81,119) 
-		// {11, 13},		// 5. messages						(5,400,995) *
-		// {13, 14},		// 6. notification_actors			(46,785,209)
-		// {14, 19},		// 7. notifications					(46,785,209)
-		// {19, 20},		// 8. people						(1,008,108)
-		// {20, 26},		// 9. photos						(3,692,680)
-		// {26, 27},		// 10. posts						(7,562,681)
-		// {27, 32},		// 11. profiles	(1,008,108) && share_visibilities (7,562,681) *				
-		// {32, 35},		// 12. aspect_visibilities			(14,814,749) *
-		// {35, 39},		// 13. users						(1,008,108)
-		// {39, 41},		// 14. conversation_visibilities	(162,238)
-		// {41, 52},		// 15. likes						(30,626,969)
-		// {52, 198},		// 16. all other tables
-	}
-
-	subPartitionTables := []int {
-		13, 14,
-	}
-
-	partitionNum1 := len(ranges1)
-	partitionNum2 := 5
+	partitionNum1 := len(ranges)
 
 	isStencilOnBladeServer := false
 
@@ -391,8 +349,8 @@ func CreatPartitions(createConstrainsts ...bool) {
 		
 		var query1 string
 		
-		rangeStart := ranges1[i][0]
-		rangeEnd := ranges1[i][1]
+		rangeStart := ranges[i][0]
+		rangeEnd := ranges[i][1]
 
 		if ok := existsInSlice(subPartitionTables, rangeStart); !ok {
 
@@ -430,11 +388,11 @@ func CreatPartitions(createConstrainsts ...bool) {
 		var rangeEnd1 int
 
 		rangeStart1 := 0
-		step := maxRowID / partitionNum2
+		step := maxRowID / subPartionNum
 
-		for j := 0; j < partitionNum2; j ++ {
+		for j := 0; j < subPartionNum; j ++ {
 
-			if j != partitionNum2 - 1 {
+			if j != subPartionNum - 1 {
 				rangeEnd1 = rangeStart1 + step
 			} else {
 				rangeEnd1 = maxRowID
@@ -699,26 +657,12 @@ func DumpAllBaseSupTablesToAnotherDB() {
 
 func CheckpointTruncate() {
 
-	host, port, usersname, password := 
-		db.DB_ADDR, db.SSH_PROT, db.SSH_USERNAME, db.SSH_PASSWORD
+	srcDB := "stencil_exp_sa2_10"
 
-	srcDB := "stencil_exp_sa2_11"
+	migrationTable := "migration_table_6"
 
 	dstDB := "stencil_exp_sa2_100k" 
 
-	migrationTables := []string {
-		"migration_table_16",
-	}
-	
-	cmds := dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB, migrationTables)
-
-	log.Println("All Commands:")
-	for _, cmd := range cmds {
-		log.Println(cmd)
-	}
-
-	SSHMachineExeCommands(host, port, usersname, password, cmds)
-
-	truncateSA2Tables(srcDB)
+	checkpointTruncate(srcDB, dstDB, migrationTable)
 
 }

@@ -447,8 +447,8 @@ func SSHMachineExeCommands(host, port, usersname, password string, cmds []string
 
 }
 
-func dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB string, 
-	migrationTables []string) [] string {
+func dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB, 
+	migrationTable string) []string {
 
 	log.Println("Src DB:", srcDB)
 	
@@ -470,38 +470,34 @@ func dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB string,
 
 	var migrationTableQueries []string
 
-	for _, migrationTable := range migrationTables {
+	if migrationTable == "migration_table_6" || migrationTable == "migration_table_7" {
 
-		if migrationTable == "migration_table_6" || migrationTable == "migration_table_7" {
+		migrationTableNum := migrationTable[len(migrationTable)-1:]
 
-			migrationTableNum := migrationTable[len(migrationTable)-1:]
+		for i := 0; i < subPartionNum; i ++ {
 
-			for i := 0; i < 5; i ++ {
+			subMigrationTableNum := strconv.Itoa(i+1)
 
-				subMigrationTableNum := strconv.Itoa(i+1)
-
-				subMigrationTable := "migration_table_sub_" + migrationTableNum +
-					 "_" +  subMigrationTableNum
-
-				query3 := fmt.Sprintf(
-					`pg_dump -U cow -a -t %s %s | psql -U cow %s`,
-					subMigrationTable, srcDB, dstDB, 
-				)
-
-				migrationTableQueries = append(migrationTableQueries, query3)
-
-			}
-
-		} else {
+			subMigrationTable := "migration_table_sub_" + migrationTableNum +
+					"_" +  subMigrationTableNum
 
 			query3 := fmt.Sprintf(
 				`pg_dump -U cow -a -t %s %s | psql -U cow %s`,
-				migrationTable, srcDB, dstDB, 
+				subMigrationTable, srcDB, dstDB, 
 			)
 
 			migrationTableQueries = append(migrationTableQueries, query3)
+
 		}
 
+	} else {
+
+		query3 := fmt.Sprintf(
+			`pg_dump -U cow -a -t %s %s | psql -U cow %s`,
+			migrationTable, srcDB, dstDB, 
+		)
+
+		migrationTableQueries = append(migrationTableQueries, query3)
 	}
 
 	queries = append(queries, migrationTableQueries...)
@@ -555,5 +551,23 @@ func truncateSA2Tables(dbName string) {
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+
+}
+
+func checkpointTruncate(srcDB, dstDB, migrationTable string) {
+
+	host, port, usersname, password := 
+		db.DB_ADDR, db.SSH_PROT, db.SSH_USERNAME, db.SSH_PASSWORD
+	
+	cmds := dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB, migrationTable)
+
+	log.Println("All Commands:")
+	for _, cmd := range cmds {
+		log.Println(cmd)
+	}
+
+	SSHMachineExeCommands(host, port, usersname, password, cmds)
+
+	truncateSA2Tables(srcDB)
 
 }
