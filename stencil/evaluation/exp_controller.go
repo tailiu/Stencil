@@ -1269,7 +1269,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"9",
+		"11",
 	}
 
 	var totalRemainingObjsInOriginalApp int64

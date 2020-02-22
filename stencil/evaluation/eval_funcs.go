@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"strings"
 	"math/rand"
+	"sync"
 )
 
 func InitializeEvalConfig(isBladeServer ...bool) *EvalConfig {
@@ -1087,6 +1088,77 @@ func AlterTableColumnsIntToInt8(dbConn *sql.DB) {
 		log.Println("Finish Modifying:", table)
 
 	}
+
+}
+
+func alterATableColumnsIntToInt8(dbConn *sql.DB, table string, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
+	log.Println("Start Modifying:", table)
+
+	var columnsToBeUpdated []string
+
+	query1 := fmt.Sprintf(
+		`select column_name, data_type from information_schema.columns 
+		where table_name = '%s'`, 
+		table,
+	)
+
+	res1, err1 := db.DataCall(dbConn, query1)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	// log.Println(res1)
+
+	for _, data1 := range res1 {
+		
+		if data1["data_type"] == "integer" {
+			columnsToBeUpdated = append(columnsToBeUpdated, 
+				fmt.Sprint(data1["column_name"]))
+		}
+		
+	}
+
+	var queries []string
+
+	for _, col := range columnsToBeUpdated {
+
+		query2 := fmt.Sprintf(
+			`ALTER TABLE %s ALTER COLUMN %s TYPE int8`,
+			table, col,
+		)
+		queries = append(queries, query2)
+
+	}
+
+	err2 := db.TxnExecute(dbConn, queries)
+	if err2 != nil {
+		log.Fatal(err2)
+	}		
+
+	log.Println("Finish Modifying:", table)
+
+}
+
+func AlterTableColumnsIntToInt8Concurrently(dbConn *sql.DB) {
+
+	var wg sync.WaitGroup
+
+	tables := getAllTablesOfDB(dbConn)
+
+	wg.Add(len(tables))
+
+	for _, table := range tables {
+
+		go alterATableColumnsIntToInt8(dbConn, table, &wg)	
+
+	}
+
+	wg.Wait()
+
+	log.Println("Finish Modifying All Tables")
 
 }
 

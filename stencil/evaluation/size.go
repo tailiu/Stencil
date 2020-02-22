@@ -382,6 +382,8 @@ func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig,
 		connSuffix += "1"
 	}
 
+	log.Println(appName + connSuffix)
+
 	switch appName {
 	case "diaspora":
 		diasporaDBConn := getDBConnByName(evalConfig, diaspora + connSuffix)
@@ -485,6 +487,8 @@ func calculateDanglingAndTotalObjectsInExp7(
 	if !enableBags {
 		connSuffix += "1"
 	}
+
+	log.Println(stencilDB + connSuffix)
 
 	stencilDBConn := getDBConnByName(evalConfig, stencilDB + connSuffix)
 

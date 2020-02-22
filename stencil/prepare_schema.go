@@ -13,6 +13,7 @@ func test1() {
 	isBladeServer := false
 
 	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
 
 	SA1_display.AddDisplayFlagToAllTables(dbConn)
 
@@ -25,6 +26,7 @@ func test2() {
 	isBladeServer := true
 
 	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
 
 	SA1_display.RemoveDisplayFlagInAllTables(dbConn)
 }
@@ -36,6 +38,7 @@ func test3() {
 	isBladeServer := true
 
 	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
 
 	SA1_display.AddMarkAsDeleteToAllTables(dbConn)
 }
@@ -47,6 +50,7 @@ func test4() {
 	isBladeServer := false
 
 	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
 
 	evaluation.AlterTableColumnsIntToInt8(dbConn)
 
@@ -59,6 +63,7 @@ func test5() {
 	isBladeServer := false
 
 	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
 
 	evaluation.AlterTableColumnsAddIDInt8IfNotExists(dbConn)
 
@@ -73,9 +78,24 @@ func test6() {
 	isBladeServer := false
 
 	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
 
 	evaluation.GetTablesContainingCol(dbConn, col)
 
+}
+
+func test7() {
+
+	dbName := "diaspora_100000_int8_template"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
+
+	evaluation.AlterTableColumnsIntToInt8Concurrently(dbConn)
+
+	
 }
 
 func main() {
@@ -90,5 +110,8 @@ func main() {
 
 	// test5()
 
-	test6()
+	// test6()
+
+	test7()
+
 }

@@ -42,7 +42,7 @@ func main() {
 
 	// SA2_db_populating.CheckpointTruncate()
 
-	SA2_db_populating.PupulatingController()
+	// SA2_db_populating.PupulatingController()
 
 
 }
