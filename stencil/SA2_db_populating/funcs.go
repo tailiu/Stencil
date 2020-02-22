@@ -432,7 +432,10 @@ func SSHMachineExeCommands(host, port, usersname, password string, cmds []string
 
 	defer client.Close()
 
-	for _, cmd := range cmds {
+	for i, cmd := range cmds {
+
+		log.Println("Command", i, ":")
+		log.Println(cmd)
 
 		out, err1 := client.Cmd(cmd).Output()
 		if err1 != nil {

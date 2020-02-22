@@ -103,8 +103,8 @@ func PupulatingController() {
 	db.STENCIL_DB = "stencil_exp_sa2_11"
 
 	table := "likes"
-	startPoint = 400000
-	endPoint = 600000
+	startPoint = 600000
+	endPoint = 800000
 
 	appName := "diaspora_100000_sa2_11"
 	appID := "1"

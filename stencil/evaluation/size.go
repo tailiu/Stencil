@@ -376,26 +376,28 @@ func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig,
 
 	var totalObjs int64
 
-	connSuffix := ""
+	var diasporaDBConn, mastodonDBConn, twitterDBConn, gnusocialDBConn *sql.DB
 
-	if !enableBags {
-		connSuffix += "1"
+	if enableBags {
+		diasporaDBConn = evalConfig.DiasporaDBConn
+		mastodonDBConn = evalConfig.MastodonDBConn
+		twitterDBConn = evalConfig.TwitterDBConn
+		gnusocialDBConn = evalConfig.GnusocialDBConn
+	} else {
+		diasporaDBConn = evalConfig.DiasporaDBConn1
+		mastodonDBConn = evalConfig.MastodonDBConn1
+		twitterDBConn = evalConfig.TwitterDBConn1
+		gnusocialDBConn = evalConfig.GnusocialDBConn1
 	}
-
-	log.Println(appName + connSuffix)
 
 	switch appName {
 	case "diaspora":
-		diasporaDBConn := getDBConnByName(evalConfig, diaspora + connSuffix)
 		totalObjs = getTotalObjsIncludingMediaOfApp(diasporaDBConn, appName)
 	case "mastodon":
-		mastodonDBConn := getDBConnByName(evalConfig, mastodon + connSuffix)
 		totalObjs = getTotalObjsIncludingMediaOfApp(mastodonDBConn, appName)
 	case "twitter":
-		twitterDBConn := getDBConnByName(evalConfig, twitter + connSuffix)
 		totalObjs = getTotalObjsIncludingMediaOfApp(twitterDBConn, appName)
 	case "gnusocial":
-		gnusocialDBConn := getDBConnByName(evalConfig, gnusocial + connSuffix)
 		totalObjs = getTotalObjsIncludingMediaOfApp(gnusocialDBConn, appName)
 	default:
 		log.Fatal("Cannot find a connection for the app:", appName)
@@ -482,15 +484,13 @@ func calculateDanglingAndTotalObjectsInExp7(
 	totalMediaInMigrations, totalRemainingObjsInOriginalApp int64,
 	toApp string, seqNum, seqLen int) map[string]int64 {
 
-	connSuffix := ""
+	var stencilDBConn *sql.DB
 
-	if !enableBags {
-		connSuffix += "1"
+	if enableBags {
+		stencilDBConn = evalConfig.StencilDBConn
+	} else {
+		stencilDBConn = evalConfig.StencilDBConn1
 	}
-
-	log.Println(stencilDB + connSuffix)
-
-	stencilDBConn := getDBConnByName(evalConfig, stencilDB + connSuffix)
 
 	danglingObjs := getDanglingObjsIncludingMediaOfSystem(stencilDBConn,
 		toApp, totalMediaInMigrations)

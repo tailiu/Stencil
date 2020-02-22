@@ -44,5 +44,4 @@ func main() {
 
 	// SA2_db_populating.PupulatingController()
 
-
 }

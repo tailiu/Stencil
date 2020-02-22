@@ -1248,12 +1248,14 @@ func Exp7() {
 		"diaspora", "mastodon", "diaspora",
 	}
 
+	// Database setup for migrations enabled databags
 	stencilDB = "stencil_exp6"
 	diaspora = "diaspora_test2"
 	mastodon = "mastodon_exp6"
 	twitter = "twitter_exp6"
 	gnusocial = "gnusocial_exp6"
 
+	// Database setup for migrations not enabled databags
 	stencilDB1 = "stencil_exp7"
 	diaspora1 = "diaspora_test3"
 	mastodon1 = "mastodon_exp7"
@@ -1269,7 +1271,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"11",
+		"15",
 	}
 
 	var totalRemainingObjsInOriginalApp int64
@@ -1295,11 +1297,11 @@ func Exp7() {
 
 		enableBags := true
 
-		db.STENCIL_DB = "stencil_exp6"
-		db.DIASPORA_DB = "diaspora_test2"
-		db.MASTODON_DB = "mastodon_exp6"
-		db.TWITTER_DB = "twitter_exp6"
-		db.GNUSOCIAL_DB = "gnusocial_exp6"
+		db.STENCIL_DB = stencilDB
+		db.DIASPORA_DB = diaspora
+		db.MASTODON_DB = mastodon
+		db.TWITTER_DB = twitter
+		db.GNUSOCIAL_DB = gnusocial
 
 		migrationIDs = migrateUsersInExp7(
 			evalConfig, stencilDB,
@@ -1309,11 +1311,11 @@ func Exp7() {
 
 		enableBags = false
 
-		db.STENCIL_DB = "stencil_exp7"
-		db.DIASPORA_DB = "diaspora_test3"
-		db.MASTODON_DB = "mastodon_exp7"
-		db.TWITTER_DB = "twitter_exp7"
-		db.GNUSOCIAL_DB = "gnusocial_exp7"
+		db.STENCIL_DB = stencilDB1
+		db.DIASPORA_DB = diaspora1
+		db.MASTODON_DB = mastodon1
+		db.TWITTER_DB = twitter1
+		db.GNUSOCIAL_DB = gnusocial1
 
 		migrationIDs1 = migrateUsersInExp7(
 			evalConfig, stencilDB1,

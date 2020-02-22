@@ -702,16 +702,17 @@ func CheckpointTruncate() {
 	host, port, usersname, password := 
 		db.DB_ADDR, db.SSH_PROT, db.SSH_USERNAME, db.SSH_PASSWORD
 
-	srcDB := "stencil_exp_sa2_12"
+	srcDB := "stencil_exp_sa2_11"
 
 	dstDB := "stencil_exp_sa2_100k" 
 
 	migrationTables := []string {
-		"migration_table_7",
+		"migration_table_16",
 	}
 	
 	cmds := dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB, migrationTables)
 
+	log.Println("All Commands:")
 	for _, cmd := range cmds {
 		log.Println(cmd)
 	}

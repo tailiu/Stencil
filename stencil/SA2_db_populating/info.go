@@ -10,11 +10,11 @@ package SA2_db_populating
  *
  *							(users, profiles, people, conversation_visibilities, conversations, 
  *								photos, contacts, messages, posts,
- *								messages(0 - 400,000), comments(0 - 600,000),
- *								likes(0 - 400,000), notifications(0 - 1,000,000))
+ *								messages(0 - 400,000), comments(0 - 800,000),
+ *								likes(0 - 600,000), notifications(0 - 1,000,000))
  * 
  * 		{1, 7}, 		// 1. aspects						(401,924) 
- *		{7, 9},			// 2. comments						(1,348,745) (13) My machine (600,000 - 800,000)
+ *		{7, 9},			// 2. comments						(1,348,745) (13) My machine (800,000 - 1,000,000)
  *		{9, 10},		// 3. contacts						(519,572) (done) 
  *		{10, 11},		// 4. conversations					(8,151) (done)
  *		{11, 13},		// 5. messages						(540,120) (done)
@@ -28,7 +28,7 @@ package SA2_db_populating
  *		{32, 35},		// 13. aspect_visibilities			(1,482,308)
  *		{35, 39},		// 14. users						(100,481) (done) 
  *		{39, 41},		// 15. conversation_visibilities	(16,302) (done)
- *		{41, 52},		// 16. likes						(3,055,543) (11) My machine (400,000 - 600,000)
+ *		{41, 52},		// 16. likes						(3,055,543) (11) My machine (600,000 - 800,000)
  *		{52, 198},		// 17. all other tables
  *
  *							
