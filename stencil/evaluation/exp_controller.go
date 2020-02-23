@@ -1101,8 +1101,8 @@ func Exp4CountEdgesNodes() {
 	// db.DIASPORA_DB = "diaspora_100000"
 	// diaspora = "diaspora_100000"	
 	
-	db.DIASPORA_DB = "diaspora_10000"
-	diaspora = "diaspora_10000"
+	db.DIASPORA_DB = "diaspora_100000"
+	diaspora = "diaspora_100000"
 
 	// db.DIASPORA_DB = "diaspora_1000"
 	// diaspora = "diaspora_1000"
@@ -1114,13 +1114,13 @@ func Exp4CountEdgesNodes() {
 	defer closeDBConns(evalConfig)
 
 	// The file name needs to be changed
-	file := evalConfig.Diaspora10KCounterFile
+	file := evalConfig.Diaspora100KCounterFile
 
 	userIDs := getAllUserIDsInDiaspora(evalConfig, true)
 
 	log.Println("total users:", len(userIDs))
 
-	for i := 717; i < len(userIDs); i ++ {
+	for i := 22971; i < len(userIDs); i ++ {
 	// for _, userID := range userIDs {
 
 		userID := userIDs[i]
@@ -1244,8 +1244,13 @@ func Exp7() {
 	// 	"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
 	// }
 
+	// This can work without bugs
+	// migrationSeq := []string {
+	// 	"diaspora", "mastodon", "twitter",
+	// }
+
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter", "gnusocial",
+		"diaspora", "mastodon", "twitter",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1271,7 +1276,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"18", "19",
+		"21", "22",
 	}
 
 	var totalRemainingObjsInOriginalApp int64

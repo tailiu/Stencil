@@ -97,12 +97,12 @@ func PupulatingController() {
 
 	// ******************* Setting Parameters Start *******************
 	
-	id := ""
+	id := "12"
 
-	table := "comments"
+	table := "notifications"
 
-	startPoint = 1200000
-	endPoint = -1
+	startPoint = 0
+	endPoint = 200000
 
 	db.STENCIL_DB = "stencil_exp_sa2_" + id
 	
@@ -179,7 +179,6 @@ func PupulatingController() {
 
 }
 
-
 func startPopulatingThreads(stencilDBConn, appDBConn *sql.DB,
 	threadNum int,  dataSeqStart, dataSeqStep, dataSeqEnd, limit int64,
 	appName, appID, table string, wg *sync.WaitGroup) {
@@ -216,14 +215,14 @@ func PupulatingControllerWithCheckpointAndTruncate() {
 
 	// ******************* Setting Parameters Start *******************
 	
-	dbID := "13"
+	dbID := "12"
 
-	table := "aspects"
+	table := "notifications"
 	startPoint = 0
-	endPoint = 100000
+	endPoint = -1
 
 	db.STENCIL_DB = "stencil_exp_sa2_" + dbID
-	
+
 	srcDB := db.STENCIL_DB
 	dstDB := "stencil_exp_sa2_100k" 
 	
