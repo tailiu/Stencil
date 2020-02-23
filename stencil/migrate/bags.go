@@ -7,6 +7,7 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
+	"stencil/helper"
 	"stencil/reference_resolution"
 	"strings"
 
@@ -133,7 +134,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 		if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
 			if fromID, ok := node.Data[fromTable+".id"]; ok {
 				visitedRows := make(map[string]bool)
-				if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, self.SrcAppConfig.AppID, fromTableID, fromID, toTable.TableID, toTable.Table); err != nil {
+				if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, self.SrcAppConfig.AppID, fromTableID, fromID, toTable.TableID, toTable.Table, toTable.Table); err != nil {
 					self.Logger.Fatal("@MigrateNode > FetchDataFromBags | ", err)
 				}
 			} else {
@@ -146,8 +147,9 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 
 	if len(toTableData) > 0 {
 
+		mappedCols := strings.Split(mappedData.cols, ",")
 		for col, val := range toTableData {
-			if !strings.Contains(mappedData.cols, col) {
+			if !helper.Contains(mappedCols, col) {
 				mappedData.cols += "," + col
 				mappedData.ivals = append(mappedData.ivals, val)
 				mappedData.vals += fmt.Sprintf(",$%d", len(mappedData.ivals))
@@ -160,7 +162,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	return nil
 }
 
-func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, toTableData map[string]interface{}, prevUIDs map[string]string, app, member string, id interface{}, dstMemberID, dstMemberName string) error {
+func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, toTableData map[string]interface{}, prevUIDs map[string]string, app, member string, id interface{}, dstMemberID, dstMemberName, toTableName string) error {
 
 	currentRow := fmt.Sprintf("%s:%s:%s", app, member, id)
 
@@ -200,13 +202,24 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 			}
 
 			if mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
-				// self.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
+				self.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
 				for _, toTable := range mapping.ToTables {
-					for fromAttr, toAttr := range toTable.Mapping {
-						if _, ok := toTableData[fromAttr]; !ok {
-							if bagVal, exists := bagData[toAttr]; exists {
-								toTableData[fromAttr] = bagVal
+					if !strings.EqualFold(toTable.Table, toTableName) {
+						continue
+					}
+					for toAttr, fromAttr := range toTable.Mapping {
+						if _, ok := toTableData[toAttr]; !ok {
+							if bagVal, _, _, _, found, err := self.DecodeMappingValue(fromAttr, bagData, true); err == nil {
+								if found && bagVal != nil {
+									toTableData[toAttr] = bagVal
+								}
+								self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Added | toTable: [%s], fromAttr: [%s], toAttr: [%s], BagVal: [%v], Found: [%v]", toTable.Table, fromAttr, toAttr, bagVal, found)
+							} else {
+								self.Logger.Debug(bagData)
+								self.Logger.Fatalf("Unable to decode mapped val | fromAttr: [%s], toAttr: [%s]", fromAttr, toAttr)
 							}
+						} else {
+							self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Exists | toTable: [%s], fromAttr: [%s], toAttr: [%s], BagVal: [%v]", toTable.Table, fromAttr, toAttr, toTableData[toAttr])
 						}
 						delete(bagData, toAttr)
 					}
@@ -238,7 +251,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 		self.Logger.Tracef("@FetchDataFromBags > FetchDataFromBags: %s |\nFromAppID: %s FromMemberID: %s FromID: %v dstMemberID: %s dstMemberName: %s \ntoTableData: %v\nprevUIDs: %v\n ",
 			color.FgLightMagenta.Render("Recursive Traversal"), idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName,
 			toTableData, prevUIDs)
-		if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName); err != nil {
+		if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName, toTableName); err != nil {
 			self.Logger.Fatal("@FetchDataFromBags > FetchDataFromBags: Error while recursing | ", toTableData, idRow.FromAppID, idRow.FromMember, idRow.FromID)
 			return err
 		}

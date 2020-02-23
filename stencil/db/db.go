@@ -626,7 +626,8 @@ func GetColumnsForTable(db *sql.DB, table string) ([]string, string) {
 			if strings.EqualFold(col, "column_name") {
 				resultList = append(resultList, columns[i])
 				// resultStr += fmt.Sprintf("IFNULL(%s.%s, 'NULL') AS \"%s.%s\",", table, columns[i], table, columns[i])
-				resultStr += table + "." + columns[i] + " AS \"" + table + "." + columns[i] + "\","
+				// resultStr += table + "." + columns[i] + " AS \"" + table + "." + columns[i] + "\","
+				resultStr += fmt.Sprintf("\"%s\".\"%s\" AS \"%s.%s\",", table, columns[i], table, columns[i])
 			}
 
 		}

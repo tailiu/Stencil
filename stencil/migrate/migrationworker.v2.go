@@ -22,18 +22,19 @@ func (self *MigrationWorkerV2) FetchRoot(threadID int) error {
 	tagName := "root"
 	if root, err := self.SrcAppConfig.GetTag(tagName); err == nil {
 		rootTable, rootCol := self.SrcAppConfig.GetItemsFromKey(root, "root_id")
-		where := fmt.Sprintf("%s.%s = '%s'", rootTable, rootCol, self.uid)
+		where := fmt.Sprintf("\"%s\".\"%s\" = '%s'", rootTable, rootCol, self.uid)
 		ql := self.GetTagQL(root)
 		sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 		sql += root.ResolveRestrictions()
-		if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil && len(data) > 0 {
-			self.root = &DependencyNode{Tag: root, SQL: sql, Data: data}
-		} else {
-			if err == nil {
-				err = errors.New("Can't fetch Root node. Check if it exists. UID: " + self.uid)
+		if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {
+			if len(data) > 0 {
+				self.root = &DependencyNode{Tag: root, SQL: sql, Data: data}
 			} else {
-				fmt.Println("@FetchRoot > DataCall1 | ", err)
+				self.Logger.Trace(sql)
+				return errors.New("Can't fetch Root node. Check if it exists. UID: " + self.uid)
 			}
+		} else {
+			self.Logger.Debug(sql)
 			return err
 		}
 	} else {
@@ -377,34 +378,48 @@ func (self *MigrationWorkerV2) GetNodeOwner(node *DependencyNode) (string, bool)
 	return "", false
 }
 
-func (self *MigrationWorkerV2) FetchFromMapping(node *DependencyNode, toAttr, assignedTabCol string, data *MappedData) error {
-	args := strings.Split(assignedTabCol, ",")
+func (self *MigrationWorkerV2) FetchFromMapping(nodeData map[string]interface{}, fromAttr string) (interface{}, string, string, *MappingRef, error) {
+
+	var mappedVal interface{}
+	var ref *MappingRef
+
+	fromTable, cleanedFromAttr := "", ""
+
+	args := strings.Split(fromAttr, ",")
 	for i, arg := range args {
 		args[i] = strings.Trim(arg, "()")
 	}
-	if nodeVal, ok := node.Data[args[2]]; ok {
+
+	if nodeVal, ok := nodeData[args[2]]; ok {
 		targetTabCol := strings.Split(args[0], ".")
 		comparisonTabCol := strings.Split(args[1], ".")
 		if res, err := db.FetchForMapping(self.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
-			fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
+			self.Logger.Debug(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
 			self.Logger.Fatal("@FetchFromMapping: FetchForMapping | ", err)
-			return err
 		} else if len(res) > 0 {
-			data.UpdateData(toAttr, args[0], targetTabCol[0], res[targetTabCol[1]])
-			node.Data[args[0]] = res[targetTabCol[1]]
+			mappedVal = res[targetTabCol[1]]
+			fromTable = targetTabCol[0]
+			cleanedFromAttr = args[0]
+			nodeData[args[0]] = res[targetTabCol[1]]
 			if len(args) > 3 {
 				toMemberTokens := strings.Split(args[3], ".")
-				data.UpdateRefs(res[targetTabCol[1]], targetTabCol[0], targetTabCol[1], res[targetTabCol[1]], toMemberTokens[0], toMemberTokens[1])
+				ref = &MappingRef{
+					fromID:     fmt.Sprint(res[targetTabCol[1]]),
+					fromMember: fmt.Sprint(targetTabCol[0]),
+					fromAttr:   fmt.Sprint(targetTabCol[1]),
+					toID:       fmt.Sprint(res[targetTabCol[1]]),
+					toMember:   fmt.Sprint(toMemberTokens[0]),
+					toAttr:     fmt.Sprint(toMemberTokens[1])}
 			}
 		} else {
-			log.Println("@FetchFromMapping: FetchForMapping | Returned data is nil! Previous node already migrated?", res, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
+			err = errors.New(fmt.Sprintf("@FetchFromMapping: FetchForMapping | Returned data is nil! Previous node already migrated? Args: [%s, %s, %s, %s]", targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)))
+			return mappedVal, fromTable, cleanedFromAttr, ref, nil
 		}
 	} else {
-		fmt.Println(node.Tag.Name, node.Data)
-		self.Logger.Fatal("@FetchFromMapping: unable to fetch ", args[2])
-		return errors.New("Unable to fetch data from node")
+		fmt.Println(nodeData)
+		self.Logger.Fatal("@FetchFromMapping: unable to #FETCH ", args[2])
 	}
-	return nil
+	return mappedVal, fromTable, cleanedFromAttr, ref, nil
 }
 
 func (self *MigrationWorkerV2) RemoveMappedDataFromNodeData(mappedData MappedData, node *DependencyNode) {
@@ -426,6 +441,157 @@ func (self *MigrationWorkerV2) IsNodeDataEmpty(data map[string]interface{}) bool
 	return true
 }
 
+func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[string]interface{}, args ...bool) (interface{}, string, string, *MappingRef, bool, error) {
+
+	isBag := false
+
+	if len(args) > 0 {
+		isBag = args[0]
+	}
+
+	if self.mtype == BAGS {
+		isBag = true
+	}
+
+	self.Logger.Tracef("@DecodeMappingValue | fromAttr [%s] | isBag: [%v] | args: [%v] | data: %v", fromAttr, isBag, args, nodeData)
+
+	var mappedVal interface{}
+	var ref *MappingRef
+
+	fromTable := ""
+	found := true
+	cleanedFromAttr := fromAttr
+
+	switch fromAttr[0:1] {
+	case "$":
+		{
+			if inputVal, err := self.mappings.GetInput(fromAttr); err == nil {
+				mappedVal = inputVal
+			}
+		}
+	case "#":
+		{
+			cleanedFromAttr = strings.Trim(fromAttr, "#(ASSIGNFETCHREF)")
+			if strings.Contains(fromAttr, "#REF") {
+				if strings.Contains(fromAttr, "#FETCH") {
+					var err error
+					if !isBag {
+						if mappedVal, fromTable, cleanedFromAttr, ref, err = self.FetchFromMapping(nodeData, cleanedFromAttr); err != nil {
+							self.Logger.Fatal("@DecodeMappingValue > FetchFromMapping: ", cleanedFromAttr, err)
+						}
+					} else {
+						found = false
+					}
+				} else if strings.Contains(fromAttr, "#ASSIGN") {
+					cleanedFromAttrTokens := strings.Split(cleanedFromAttr, ",")
+					referredTabCol := cleanedFromAttrTokens[1]
+					cleanedFromAttr = strings.Trim(cleanedFromAttrTokens[0], "()")
+					if nodeVal, ok := nodeData[cleanedFromAttr]; ok && nodeVal != nil {
+						cleanedFromAttrTokens := strings.Split(cleanedFromAttr, ".")
+						referredTabColTokens := strings.Split(referredTabCol, ".")
+						fromTable = cleanedFromAttrTokens[0]
+						mappedVal = nodeVal
+
+						if !isBag {
+							var fromID interface{}
+							if val, ok := nodeData[cleanedFromAttrTokens[0]+".id"]; ok {
+								fromID = val
+							} else {
+								fmt.Println(cleanedFromAttrTokens[0], " | ", cleanedFromAttrTokens)
+								fmt.Println(nodeData)
+								self.Logger.Fatal("@DecodeMappingValue > #REF > #ASSIGN > fromID: Unable to find ref value in node data | ", cleanedFromAttrTokens[0])
+							}
+							ref = &MappingRef{
+								fromID:     fmt.Sprint(fromID),
+								fromMember: fmt.Sprint(cleanedFromAttrTokens[0]),
+								fromAttr:   fmt.Sprint(cleanedFromAttrTokens[1]),
+								toID:       fmt.Sprint(nodeVal),
+								toMember:   fmt.Sprint(referredTabColTokens[0]),
+								toAttr:     fmt.Sprint(referredTabColTokens[1]),
+							}
+						}
+					} else {
+						self.Logger.Fatalf("Unable to DecodeMappingValue from %s", fromAttr)
+					}
+				} else {
+					args := strings.Split(cleanedFromAttr, ",")
+					if nodeVal, ok := nodeData[args[0]]; ok {
+						argsTokens := strings.Split(args[0], ".")
+						mappedVal = nodeVal
+						fromTable = argsTokens[0]
+						cleanedFromAttr = args[0]
+					}
+					if !isBag {
+						if toID, fromID, err := GetIDsFromNodeData(args[0], nodeData); err == nil {
+							secondMemberTokens := strings.Split(args[1], ".")
+							firstMemberTokens := strings.Split(args[0], ".")
+							ref = &MappingRef{
+								fromID:     fmt.Sprint(fromID),
+								fromMember: fmt.Sprint(firstMemberTokens[0]),
+								fromAttr:   fmt.Sprint(firstMemberTokens[1]),
+								toID:       fmt.Sprint(toID),
+								toMember:   fmt.Sprint(secondMemberTokens[0]),
+								toAttr:     fmt.Sprint(secondMemberTokens[1]),
+							}
+						} else {
+							self.Logger.Debug("args[0]: '%v' \n", args[0])
+							self.Logger.Debug("toID: '%v' | fromID: '%v' \n", toID, fromID)
+							self.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
+						}
+					}
+				}
+			} else if strings.Contains(fromAttr, "#ASSIGN") {
+				if nodeVal, ok := nodeData[cleanedFromAttr]; ok {
+					cleanedFromAttrTokens := strings.Split(cleanedFromAttr, ".")
+					mappedVal = nodeVal
+					fromTable = cleanedFromAttrTokens[0]
+				} else {
+					self.Logger.Fatalf("@DecodeMappingValue > #ASSIGN > Can't find assigned attr in data | cleanedFromAttr:[%s]", cleanedFromAttr)
+				}
+			} else if strings.Contains(fromAttr, "#FETCH") {
+				if !isBag {
+					var err error
+					if mappedVal, fromTable, cleanedFromAttr, ref, err = self.FetchFromMapping(nodeData, cleanedFromAttr); err != nil {
+						self.Logger.Debug(nodeData)
+						self.Logger.Debug(cleanedFromAttr)
+						self.Logger.Fatal("@DecodeMappingValue > #FETCH > FetchFromMapping: Unable to fetch | ", err)
+					}
+				} else {
+					found = false
+				}
+			} else {
+				switch fromAttr {
+				case "#GUID":
+					{
+						mappedVal = uuid.New()
+					}
+				case "#RANDINT":
+					{
+						mappedVal = self.SrcAppConfig.QR.NewRowId()
+					}
+				default:
+					{
+						self.Logger.Fatal("@DecodeMappingValue: Case not found:" + fromAttr)
+					}
+				}
+			}
+		}
+	default:
+		{
+			if val, ok := nodeData[fromAttr]; ok {
+				fromTokens := strings.Split(fromAttr, ".")
+				mappedVal = val
+				fromTable = fromTokens[0]
+			} else {
+				found = false
+			}
+		}
+	}
+
+	self.Logger.Tracef("@DecodeMappingValue | mappedVal: [%v], fromTable: [%s], cleanedFromAttr: [%s], found: [%v], ref: %v", mappedVal, fromTable, cleanedFromAttr, found, ref)
+	return mappedVal, fromTable, cleanedFromAttr, ref, found, nil
+}
+
 func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) (MappedData, error) {
 	data := MappedData{
 		cols:        "",
@@ -443,7 +609,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 			if self.mtype != BAGS && strings.Contains(fromAttr, "#REF") {
 				assignedTabCol := strings.Trim(fromAttr, "(#REF)")
 				args := strings.Split(assignedTabCol, ",")
-				if toID, fromID, err := data.GetIDs(args[0], node.Data); err == nil {
+				if toID, fromID, err := GetIDsFromNodeData(args[0], node.Data); err == nil {
 					secondMemberTokens := strings.Split(args[1], ".")
 					firstMemberTokens := strings.Split(args[0], ".")
 					data.UpdateRefs(fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
@@ -456,99 +622,30 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 			}
 			continue
 		}
-		if val, ok := node.Data[fromAttr]; ok {
-			fromTokens := strings.Split(fromAttr, ".")
-			data.UpdateData(toAttr, fromAttr, fromTokens[0], val)
-			data.undoAction.AddData(fromAttr, val)
-			data.undoAction.AddOrgTable(fromTokens[0])
-		} else if fromAttr[0:1] == "$" {
-			if inputVal, err := self.mappings.GetInput(fromAttr); err == nil {
-				data.UpdateData(toAttr, fromAttr, "", inputVal)
-			}
-		} else if strings.Contains(fromAttr, "#") {
-			assignedTabCol := strings.Trim(fromAttr, "(#ASSIGN#FETCH#REF)")
-			if strings.Contains(fromAttr, "#REF") {
-				if strings.Contains(fromAttr, "#FETCH") {
-					self.FetchFromMapping(node, toAttr, assignedTabCol, &data)
-				} else if strings.Contains(fromAttr, "#ASSIGN") {
-					assignedTabColTokens := strings.Split(assignedTabCol, ",")
-					referredTabCol := assignedTabColTokens[1]
-					assignedTabCol = strings.Trim(assignedTabColTokens[0], "()")
-					if nodeVal, ok := node.Data[assignedTabCol]; ok && nodeVal != nil {
-						assignedTabColTokens := strings.Split(assignedTabCol, ".")
-						referredTabColTokens := strings.Split(referredTabCol, ".")
-						data.UpdateData(toAttr, assignedTabCol, assignedTabColTokens[0], nodeVal)
-						var fromID interface{}
-						if val, ok := node.Data[assignedTabColTokens[0]+".id"]; ok {
-							fromID = val
-						} else {
-							fmt.Println(assignedTabColTokens[0], " | ", assignedTabColTokens)
-							fmt.Println(node.Data)
-							self.Logger.Fatal("@GetMappedData > #REF #ASSIGN> fromID: Unable to find ref value in node data")
-							return data, errors.New("Unable to find ref value in node data")
-						}
-						data.UpdateRefs(fromID, assignedTabColTokens[0], assignedTabColTokens[1], nodeVal, referredTabColTokens[0], referredTabColTokens[1])
-					} else {
-						self.Logger.Fatalf("Unable to GetMappedData from %s", fromAttr)
+		if mappedValue, fromTable, cleanedFromAttr, ref, found, err := self.DecodeMappingValue(fromAttr, node.Data); err == nil {
+			if found {
+				if mappedValue != nil {
+					data.UpdateData(toAttr, cleanedFromAttr, fromTable, mappedValue)
+					if ref != nil {
+						data.refs = append(data.refs, *ref)
+					}
+					if len(fromTable) > 0 {
+						data.undoAction.AddOrgTable(fromTable)
+						data.undoAction.AddData(cleanedFromAttr, mappedValue)
 					}
 				} else {
-					args := strings.Split(assignedTabCol, ",")
-					if nodeVal, ok := node.Data[args[0]]; ok {
-						argsTokens := strings.Split(args[0], ".")
-						data.UpdateData(toAttr, args[0], argsTokens[0], nodeVal)
-					}
-					if self.mtype != BAGS {
-						if toID, fromID, err := data.GetIDs(args[0], node.Data); err == nil {
-							secondMemberTokens := strings.Split(args[1], ".")
-							firstMemberTokens := strings.Split(args[0], ".")
-							data.UpdateRefs(fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
-						} else {
-							fmt.Printf("args[0]: '%v' \n", args[0])
-							fmt.Printf("toID: '%v' | fromID: '%v' \n", toID, fromID)
-							self.Logger.Fatal("@GetMappedData > GetIDs | ", err)
-							return data, err
-						}
-					}
-				}
-			} else if strings.Contains(fromAttr, "#ASSIGN") {
-				if nodeVal, ok := node.Data[assignedTabCol]; ok {
-					assignedTabColTokens := strings.Split(assignedTabCol, ".")
-					data.UpdateData(toAttr, assignedTabCol, assignedTabColTokens[0], nodeVal)
-				}
-			} else if strings.Contains(fromAttr, "#FETCH") {
-				// #FETCH(targetSrcTable.targetSrcCol, targetSrcTable.srcColToCompare, currentSrcTable.currentSrcColForComparison)
-				// # Do we need to create an identity entry for row referenced in fetch?
-				if err := self.FetchFromMapping(node, toAttr, assignedTabCol, &data); err != nil {
-					fmt.Println(node.Data)
-					fmt.Println(toAttr, assignedTabCol)
-					self.Logger.Fatal("@GetMappedData > #FETCH > FetchFromMapping: Unable to fetch")
-					return data, err
+
 				}
 			} else {
-				switch fromAttr {
-				case "#GUID":
-					{
-						data.UpdateData(toAttr, assignedTabCol, "", uuid.New())
-					}
-				case "#RANDINT":
-					{
-						data.UpdateData(toAttr, assignedTabCol, "", self.SrcAppConfig.QR.NewRowId())
-					}
-				default:
-					{
-						fmt.Println(toTable.Table, toAttr, fromAttr)
-						self.Logger.Fatal("@GetMappedData: Case not found:" + fromAttr)
-					}
-				}
+				data.orgColsLeft += fmt.Sprintf("%s,", cleanedFromAttr)
 			}
-			// self.Logger.Fatal(fromAttr)
 		} else {
-			data.orgColsLeft += fmt.Sprintf("%s,", fromAttr)
+			self.Logger.Fatalf("@DecodeMappingValue | fromAttr: %s | err: %s | Data: %v", fromAttr, err, node.Data)
 		}
+
 	}
 	data.undoAction.AddDstTable(toTable.Table)
 	data.Trim(", ")
-	// log.Fatal(data)
 	return data, nil
 }
 
