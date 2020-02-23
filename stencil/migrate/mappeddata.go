@@ -40,7 +40,7 @@ func (self *MappedData) UpdateRefs(fromID, fromMember, fromAttr, toID, toMember,
 		toAttr:     fmt.Sprint(toAttr)})
 }
 
-func (self *MappedData) GetIDs(firstMember string, nodeData map[string]interface{}) (interface{}, interface{}, error) {
+func GetIDsFromNodeData(firstMember string, nodeData map[string]interface{}) (interface{}, interface{}, error) {
 	var toID, fromID interface{}
 
 	if val, ok := nodeData[firstMember]; ok {

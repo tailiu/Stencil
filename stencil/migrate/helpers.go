@@ -194,7 +194,7 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 		joinStr := ""
 		for fromTable, toTablesMap := range joinMap {
 			if _, ok := seenMap[fromTable]; !ok {
-				joinStr += fromTable
+				joinStr += fmt.Sprintf("\"%s\"", fromTable)
 				_, colStr := db.GetColumnsForTable(self.SrcDBConn, fromTable)
 				cols += colStr + ","
 			}
@@ -204,7 +204,7 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 					if joinMap[toTable][fromTable] != nil {
 						joinMap[toTable][fromTable] = nil
 					}
-					joinStr += fmt.Sprintf(" FULL JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
+					joinStr += fmt.Sprintf(" FULL JOIN \"%s\" ON %s ", toTable, strings.Join(conditions, " AND "))
 					_, colStr := db.GetColumnsForTable(self.SrcDBConn, toTable)
 					cols += colStr + ","
 					seenMap[toTable] = true
