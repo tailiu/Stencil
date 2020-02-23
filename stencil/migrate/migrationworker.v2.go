@@ -453,7 +453,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 		isBag = true
 	}
 
-	self.Logger.Tracef("@DecodeMappingValue | fromAttr [%s] | isBag: [%v] | args: [%v] | data: %v", fromAttr, isBag, args, nodeData)
+	// self.Logger.Tracef("@DecodeMappingValue | fromAttr [%s] | isBag: [%v] | args: [%v] | data: %v", fromAttr, isBag, args, nodeData)
 
 	var mappedVal interface{}
 	var ref *MappingRef
@@ -588,7 +588,10 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 		}
 	}
 
-	self.Logger.Tracef("@DecodeMappingValue | mappedVal: [%v], fromTable: [%s], cleanedFromAttr: [%s], found: [%v], ref: %v", mappedVal, fromTable, cleanedFromAttr, found, ref)
+	if isBag {
+		self.Logger.Tracef("@DecodeMappingValue | mappedVal: [%v], fromTable: [%s], cleanedFromAttr: [%s], found: [%v], ref: %v", mappedVal, fromTable, cleanedFromAttr, found, ref)
+	}
+
 	return mappedVal, fromTable, cleanedFromAttr, ref, found, nil
 }
 
@@ -805,11 +808,11 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			}
 
 			if self.mtype == DELETION || self.mtype == BAGS {
-				// self.Logger.Tracef("Before Merging Data | %s\n%v\n---", toTable.Table, mappedData)
+				// self.Logger.Tracef("Before Merging Data | %s\n%v | %v\n---", toTable.Table, mappedData.cols, mappedData.ivals)
 				if err := self.MergeBagDataWithMappedData(&mappedData, node, toTable); err != nil {
 					self.Logger.Fatal("@MigrateNode > MergeDataFromBagsWithMappedData | ", err)
 				}
-				// self.Logger.Tracef("After Merging Data | %s\n%v\n---", toTable.Table, mappedData)
+				// self.Logger.Tracef("After Merging Data | %s\n%v | %v\n---", toTable.Table, mappedData.cols, mappedData.ivals)
 			}
 
 			if id, err := db.InsertRowIntoAppDB(self.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
