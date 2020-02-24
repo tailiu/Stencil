@@ -1120,7 +1120,7 @@ func Exp4CountEdgesNodes() {
 
 	log.Println("total users:", len(userIDs))
 
-	for i := 22971; i < len(userIDs); i ++ {
+	for i := 22975; i < len(userIDs); i += 10 {
 	// for _, userID := range userIDs {
 
 		userID := userIDs[i]
@@ -1250,7 +1250,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter",
+		"diaspora", "mastodon", "gnusocial",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1276,7 +1276,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"21", "22",
+		"23",
 	}
 
 	var totalRemainingObjsInOriginalApp int64

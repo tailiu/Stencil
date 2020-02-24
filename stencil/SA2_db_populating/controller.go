@@ -215,10 +215,10 @@ func PupulatingControllerWithCheckpointAndTruncate() {
 
 	// ******************* Setting Parameters Start *******************
 	
-	dbID := "12"
+	dbID := "10"
 
-	table := "notifications"
-	startPoint = 0
+	table := "aspect_visibilities"
+	startPoint = 1000000
 	endPoint = -1
 
 	db.STENCIL_DB = "stencil_exp_sa2_" + dbID

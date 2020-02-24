@@ -62,7 +62,7 @@ func GetTotalRowCountsOfDB() {
 
 func ListRowCountsOfDB() {
 
-	dbName := "stencil_exp_sa2_12"
+	dbName := "stencil_exp_sa2_100k"
 
 	dbConn := db.GetDBConn(dbName)
 	defer dbConn.Close()
@@ -200,23 +200,23 @@ func CreateConstraintsIndexesOnPartitions() {
 		1: 7,
 	}
 
-	db.STENCIL_DB = "stencil_exp_sa2_1"
+	db.STENCIL_DB = "stencil_exp_sa2_100k"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
 
 	tables := getAllTablesInDB(dbConn)
-	
-	var queries1 []string
 
 	for _, t := range tables {
 		
+		var queries1 []string
+
 		table := t["tablename"]
 
 		if strings.Contains(table, "migration_table_") &&
 			table != "migration_table_backup" && 
 			!isSubPartitionTable(subPartitionTableIDs, table) {
-				
+			
 			query19 := fmt.Sprintf(
 				`ALTER TABLE %s ADD CONSTRAINT %s_pk 
 				PRIMARY KEY (app_id, table_id, group_id, row_id, mark_as_delete);`,
@@ -317,13 +317,23 @@ func CreateConstraintsIndexesOnPartitions() {
 				query13, query14, query15, query16,
 				query17, query18,
 			)
+
+			log.Println("Creating indexes and constraints for table:", table)
+
+			for _, q1 := range queries1 {
+
+				log.Println(q1)
+
+				err1 := db.TxnExecute1(dbConn, q1)
+				if err1 != nil {
+					log.Fatal(err1)
+				}
+
+			}
+
 		}
 	}
 
-	err1 := db.TxnExecute(dbConn, queries1)
-	if err1 != nil {
-		log.Fatal(err1)
-	}
 }
 
 // When creating a range partition, the lower bound specified with FROM is an inclusive bound,
@@ -467,7 +477,7 @@ func DropPrimaryKeysOfParitions() {
 
 func AddPrimaryKeysToParitions() {
 
-	db.STENCIL_DB = "stencil_exp_sa2_1"
+	db.STENCIL_DB = "stencil_exp_sa2_100k"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
@@ -594,6 +604,22 @@ func CreateIndexesConstraintsOnBaseSupTables() {
 
 }
 
+func DeleteRowsByDuplicateColumnsInMigrationTables() {
+
+	db.STENCIL_DB = ""
+
+	uniqueCols := []string {
+		"app_id", "table_id", "group_id", "row_id", "mark_as_delete",
+	}
+	
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	
+	defer dbConn.Close()
+
+	deleteRowsByDuplicateColumnsInMigrationTables(dbConn, uniqueCols)
+
+}
+
 func OldDumpAllBaseSupTablesToAnotherDB() {
 
 	srcDB := "stencil_exp_sa2_7"
@@ -659,7 +685,7 @@ func CheckpointTruncate() {
 
 	srcDB := "stencil_exp_sa2_10"
 
-	migrationTable := "migration_table_6"
+	migrationTable := "migration_table_13"
 
 	dstDB := "stencil_exp_sa2_100k" 
 

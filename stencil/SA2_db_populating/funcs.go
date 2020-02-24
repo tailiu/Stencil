@@ -571,3 +571,40 @@ func checkpointTruncate(srcDB, dstDB, migrationTable string) {
 	truncateSA2Tables(srcDB)
 
 }
+
+func deleteRowsByDuplicateColumnsInMigrationTables(dbConn *sql.DB, uniqueCols []string) {
+
+	tables := getAllTablesInDB(dbConn)
+
+	for _, t := range tables {
+
+		table := t["tablename"]
+
+		if !isPartitionTable(table) {
+			continue
+		}
+
+		query := fmt.Sprintf(
+			`DELETE FROM %s t1 USING %s t2 
+			WHERE t1.ctid < t2.ctid and `
+		)		
+
+		for j, uCol := range uniqueCols {
+			if j != len(uniqueCols) - 1 {
+				query += uCol + " and "
+			} else {
+				query += uCol
+			}
+		}
+
+		log.Println(query)
+		log.Println("Delete Duplicate rows but keep one in:", table)
+
+		err := db.TxnExecute1(dbConn, query)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	}
+
+}

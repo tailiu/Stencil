@@ -44,6 +44,10 @@ func main() {
 
 	// SA2_db_populating.PupulatingController()
 
+	// SA2_db_populating.CreateConstraintsIndexesOnPartitions(false)
+
+	SA2_db_populating.DeleteRowsByDuplicateColumnsInMigrationTables()
+
 	// SA2_db_populating.PupulatingControllerWithCheckpointAndTruncate()
 
 }
