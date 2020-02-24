@@ -320,7 +320,7 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 
 func (self *MigrationWorkerV2) ValidateMappedTableData(toTable config.ToTable, mappedData MappedData) bool {
 	for mappedCol, srcMappedCol := range toTable.Mapping {
-		if srcMappedCol[0:1] == "$" { //|| mappedCol == "id" {
+		if srcMappedCol[0:1] == "$" || mappedCol == "id" {
 			continue
 		}
 		for i, mCol := range strings.Split(mappedData.cols, ",") {
@@ -467,6 +467,9 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 		{
 			if inputVal, err := self.mappings.GetInput(fromAttr); err == nil {
 				mappedVal = inputVal
+			} else {
+				self.Logger.Debugf("@DecodeMappingValue | fromAttr [%s] | isBag: [%v] | data: %v", fromAttr, isBag, nodeData)
+				self.Logger.Fatal(err)
 			}
 		}
 	case "#":
@@ -511,7 +514,12 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 							}
 						}
 					} else {
-						self.Logger.Fatalf("Unable to DecodeMappingValue from %s", fromAttr)
+						self.Logger.Debugf("fromAttr: [%s], cleanedFromAttr: [%s], nodeData: %v", fromAttr, cleanedFromAttr, nodeData)
+						if isBag {
+							self.Logger.Debugf("Unable to DecodeMappingValue | value found = [%v]", ok)
+						} else {
+							self.Logger.Fatalf("Unable to DecodeMappingValue | value found = [%v]", ok)
+						}
 					}
 				} else {
 					args := strings.Split(cleanedFromAttr, ",")
@@ -579,9 +587,8 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 	default:
 		{
 			if val, ok := nodeData[fromAttr]; ok {
-				fromTokens := strings.Split(fromAttr, ".")
 				mappedVal = val
-				fromTable = fromTokens[0]
+				fromTable = strings.Split(fromAttr, ".")[0]
 			} else {
 				found = false
 			}
@@ -596,6 +603,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 }
 
 func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) (MappedData, error) {
+
 	data := MappedData{
 		cols:        "",
 		vals:        "",
@@ -623,9 +631,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					return data, err
 				}
 			}
-			continue
-		}
-		if mappedValue, fromTable, cleanedFromAttr, ref, found, err := self.DecodeMappingValue(fromAttr, node.Data); err == nil {
+		} else if mappedValue, fromTable, cleanedFromAttr, ref, found, err := self.DecodeMappingValue(fromAttr, node.Data); err == nil {
 			if found {
 				if mappedValue != nil {
 					data.UpdateData(toAttr, cleanedFromAttr, fromTable, mappedValue)
@@ -645,10 +651,11 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 		} else {
 			self.Logger.Fatalf("@DecodeMappingValue | fromAttr: %s | err: %s | Data: %v", fromAttr, err, node.Data)
 		}
-
 	}
+
 	data.undoAction.AddDstTable(toTable.Table)
 	data.Trim(", ")
+
 	return data, nil
 }
 
@@ -856,7 +863,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 				allMappedData = append(allMappedData, mappedData)
 			} else {
-				self.Logger.Debugf("@Args | [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables)
+				self.Logger.Debugf("@Args | [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s], [srcCols: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables, mappedData.orgCols)
 				self.Logger.Debugf("@NODE: %s | Data: %v", node.Tag.Name, node.Data)
 
 				if self.mtype == DELETION {
