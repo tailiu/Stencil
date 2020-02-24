@@ -119,10 +119,32 @@ func addToResolvedReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
+func checkExistsInResolvedReference(refResolutionConfig *RefResolutionConfig, 
+	memberToBeUpdated, IDToBeUpdated, id string) {
 
-func updateReferences(refResolutionConfig *RefResolutionConfig, 
-	refID, member, id, attr, memberToBeUpdated, 
-	IDToBeUpdated, attrToBeUpdated string) (string, error) {
+	query1 := fmt.Sprintf(
+		`SELECT pk from resolved_references
+		WHERE app = %s and member = %s and id = %s`,
+		refResolutionConfig.appID, 
+		refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
+		IDToBeUpdated,
+	)
+
+	data1, err1 := db.DataCall1(refResolutionConfig.stencilDBConn, query1)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	if len(data1) != 0 {
+		log.Fatal("Have not considered this case1 for now")
+	}
+	
+}
+
+func updateReferences(
+	refResolutionConfig *RefResolutionConfig, refID,
+	member, id, attr, 
+	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated string) (string, error) {
 
 	if attr == "" && attrToBeUpdated == "" {
 		
@@ -164,6 +186,40 @@ func updateReferences(refResolutionConfig *RefResolutionConfig,
 
 			log.Println("Update references:")
 
+			var q0 []string
+			
+			if attrToBeUpdated == "id" {
+				
+				// This is to update id in the display_flags table
+				displayFlagsQ0 := getUpdateIDInDisplayFlagsQuery(
+					refResolutionConfig, memberToBeUpdated, IDToBeUpdated, id, 
+				)
+
+				// This is to update to_id in the identity table
+				// There is no need to update id in the reference table
+				// since the reference table stores ids in the source app
+				updateToIDQ0 := getUpdateToIDInIdentityTableQuery(
+					refResolutionConfig, memberToBeUpdated, IDToBeUpdated, id, 
+				)
+
+				// This data must not be used to update other data, because
+				// in that case, the updated value of other data is stale value
+				// and the data could already be displayed or put into data bags
+				// which is incorrect.
+				// But if the attributes in this data are updated, then
+				// I have to change the id of those resolved reference rows
+				// This is for now not considered 
+				checkExistsInResolvedReference(
+					refResolutionConfig, 
+					memberToBeUpdated,
+					IDToBeUpdated,
+					id,
+				)
+
+				q0 = append(q0, displayFlagsQ0, updateToIDQ0)
+
+			}
+
 			// Even if the thread crashes after executing q1, the crash
 			// does not influence the algorithm because the reference record is still there, 
 			// the thread can still try to update it, which does not change the value actually.
@@ -181,19 +237,22 @@ func updateReferences(refResolutionConfig *RefResolutionConfig,
 			var queries []string
 
 			q2 := deleteRef(refID)
-			
-			log.Println(q2)
 
 			q3 := addToResolvedReferences(
 				refResolutionConfig, 
 				refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
 				IDToBeUpdated, 
 				attrToBeUpdated, 
-				data)
-			
-			log.Println(q3)
+				data,
+			)
 
 			queries = append(queries, q2, q3)
+			queries = append(queries, q0...)
+
+			for _, updateQ := range queries {
+				log.Println(updateQ)
+			}
+
 			err1 := db.TxnExecute(refResolutionConfig.stencilDBConn, queries)
 
 			if err1 != nil {

@@ -634,15 +634,15 @@ func getDataInNode(displayConfig *displayConfig,
 
 		data, err := getOneRowBasedOnHint(displayConfig, hint)
 		if err != nil {
-
 			return nil, err
-
 		} else {
 
 			hint.Data = data
 
 		}
 	}
+
+	log.Println("My data is:", hint.Data)
 	
 	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
 

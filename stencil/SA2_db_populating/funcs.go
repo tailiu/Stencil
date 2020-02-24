@@ -277,8 +277,6 @@ func createConstraintsOnBaseSupTables(dbConn *sql.DB) {
 
 	tables := getAllTablesInDB(dbConn)
 
-	var queries []string
-
 	for _, t := range tables {
 
 		table := t["tablename"]
@@ -292,12 +290,14 @@ func createConstraintsOnBaseSupTables(dbConn *sql.DB) {
 			table, table,
 		)
 
-		queries = append(queries, query1)
-	}
+		
+		log.Println("Create constraint for the table:", table)
+		log.Println(query1)
 
-	err := db.TxnExecute(dbConn, queries)
-	if err != nil {
-		log.Fatal(err)
+		err := db.TxnExecute1(dbConn, query1)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }
@@ -323,22 +323,23 @@ func getAllIndexDefsOfBaseSupFromIndexTable(dbConn *sql.DB) []string {
 func createIndexesOfBaseSupTables(dbConn *sql.DB) {
 
 	indexDefs := getAllIndexDefsOfBaseSupFromIndexTable(dbConn)
-
-	var indexDefsWithoutPK []string
 	
 	// There is no need to create index on pk again since
 	// we have already created a unique index on pk when creating
 	// primary key constraint
 	for _, indexDef := range indexDefs {
+
 		if strings.Contains(indexDef, "(pk)") {
 			continue
 		}
-		indexDefsWithoutPK = append(indexDefsWithoutPK, indexDef)
-	}
 
-	err := db.TxnExecute(dbConn, indexDefsWithoutPK)
-	if err != nil {
-		log.Fatal(err)
+		log.Println("Create index:", indexDef)
+
+		err := db.TxnExecute1(dbConn, indexDef)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 	}
 
 }

@@ -834,9 +834,33 @@ func refreshCachedDataHints(displayConfig *displayConfig,
 
 	var err2 error
 
-	for i, hint1 := range hints {
+	for i := range hints {
 
-		hints[i].Data, err2 = getOneRowBasedOnHint(displayConfig, hint1)
+		hintID := strconv.Itoa(hints[i].KeyVal["id"])
+		hintDataID := fmt.Sprint(hints[i].Data["id"])
+
+		// Data id could change and the cached hint id could become
+		// different from the got data id
+		// for example, in profile, user.id could change.
+		// There are two cases: 
+		// 1. hint.id is old but data id is new
+		// so we use data id to update hint.id 
+		// (this can only happen in the first phase since some attributes
+		// are not resolved because other data has not come)
+		// 2. hint.id is old and data id is old, then this does not cause problems
+		// display settings should be set to prevent this data from being displayed
+		// and this data should wait other data this data depends on to come
+		if hintID != hintDataID {
+
+			intHintDataID, err1 := strconv.Atoi(hintDataID)
+			if err1 != nil {
+				log.Fatal(err1)
+			}
+
+			hints[i].KeyVal["id"] = intHintDataID
+		}
+
+		hints[i].Data, err2 = getOneRowBasedOnHint(displayConfig, hints[i])
 		if err2 != nil {
 			log.Fatal(err2)
 		}

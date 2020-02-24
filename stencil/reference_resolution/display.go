@@ -125,3 +125,19 @@ func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig,
 	return updatedAttrs
 	
 }
+
+func getUpdateIDInDisplayFlagsQuery(refResolutionConfig *RefResolutionConfig, 
+	table, IDToBeUpdated, id string) string {
+	
+	query := fmt.Sprintf(
+		`UPDATE display_flags SET id = %s, updated_at = now() 
+		WHERE app_id = %s and table_id = %s 
+		and id = %s and migration_id = %d;`,
+		id, refResolutionConfig.appID, 
+		refResolutionConfig.appTableNameIDPairs[table],
+		IDToBeUpdated, refResolutionConfig.migrationID,
+	)
+
+	return query
+
+}

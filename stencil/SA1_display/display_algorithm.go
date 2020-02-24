@@ -83,6 +83,8 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(
 		displayConfig, oneMigratedData)
 
+	log.Println("+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+	
 	log.Println("Data in Node:")
 
 	for _, oneDataInNode := range dataInNode {

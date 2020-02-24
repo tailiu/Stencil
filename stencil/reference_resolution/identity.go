@@ -48,7 +48,8 @@ func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig,
 func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
 	ID *Identity) []map[string]interface{} {
 
-	query := fmt.Sprintf(`SELECT * FROM identity_table 
+	query := fmt.Sprintf(
+		`SELECT * FROM identity_table 
 		WHERE from_app = %s and from_member = %s and from_id = %s`,
 		ID.app, ID.member, ID.id)
 
@@ -108,6 +109,22 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 	}
 
 	return res
+}
+
+func getUpdateToIDInIdentityTableQuery(refResolutionConfig *RefResolutionConfig,
+	table, IDToBeUpdated, id string) string {
+
+	query := fmt.Sprintf(
+		`UPDATE identity_table SET to_id = %s 
+		WHERE to_app = %s and to_member = %s 
+		and to_id = %s`,
+		id, refResolutionConfig.appID, 
+		refResolutionConfig.appTableNameIDPairs[table],
+		IDToBeUpdated,
+	)
+
+	return query
+
 }
 
 func GetPreviousIDWithoutFromMember(refResolutionConfig *RefResolutionConfig,

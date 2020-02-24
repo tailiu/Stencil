@@ -305,17 +305,18 @@ func CreateConstraintsIndexesOnPartitions() {
 				table,
 			)
 
-			query18 := fmt.Sprintf(
-				`CREATE INDEX ON %s (app_id, table_id, group_id, row_id, mark_as_delete);`,
-				table,
-			)
+			// Primary key has already covered this index:
+			// query18 := fmt.Sprintf(
+			// 	`CREATE INDEX ON %s (app_id, table_id, group_id, row_id, mark_as_delete);`,
+			// 	table,
+			// )
 
 			queries1 = append(queries1,
 				query19, query20, query3, query4,
 				query5, query6, query7, query8,
 				query9, query10, query11, query12,
 				query13, query14, query15, query16,
-				query17, query18,
+				query17,
 			)
 
 			log.Println("Creating indexes and constraints for table:", table)
@@ -592,7 +593,7 @@ func DropIndexesConstraintsOfBaseSupTables() {
 
 func CreateIndexesConstraintsOnBaseSupTables() {
 	
-	db.STENCIL_DB = "stencil_exp_sa2_1"
+	db.STENCIL_DB = "stencil_exp_sa2_100k"
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	
