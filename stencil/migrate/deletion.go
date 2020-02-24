@@ -18,7 +18,7 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 			return err
 		}
 	}
-
+	return nil
 	for {
 		if adjNode, err := self.GetAdjNode(node, threadID); err != nil {
 			return err

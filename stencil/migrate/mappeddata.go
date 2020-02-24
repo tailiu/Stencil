@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/gookit/color"
 )
 
 func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface{}) {
@@ -40,16 +42,19 @@ func (self *MappedData) UpdateRefs(fromID, fromMember, fromAttr, toID, toMember,
 		toAttr:     fmt.Sprint(toAttr)})
 }
 
-func GetIDsFromNodeData(firstMember string, nodeData map[string]interface{}) (interface{}, interface{}, error) {
+func GetIDsFromNodeData(firstMember string, secondMember string, nodeData map[string]interface{}) (interface{}, interface{}, error) {
 	var toID, fromID interface{}
+
+	color.Yellow.Println("GetIDsFromNodeData: ", firstMember, secondMember)
 
 	if val, ok := nodeData[firstMember]; ok {
 		toID = val
 	} else {
-		// fmt.Println(args[0], " | ", args)
-		// fmt.Println(node.Data)
-		// log.Fatal("@GetMappedData > #REF > toID: Unable to find ref value in node data")
 		return nil, nil, errors.New("Unable to find toID ref value in node data: " + firstMember)
+	}
+
+	if val, ok := nodeData[secondMember]; ok {
+		toID = val
 	}
 
 	firstMemberTokens := strings.Split(firstMember, ".")
@@ -57,9 +62,6 @@ func GetIDsFromNodeData(firstMember string, nodeData map[string]interface{}) (in
 	if val, ok := nodeData[firstMemberTokens[0]+".id"]; ok {
 		fromID = val
 	} else {
-		fmt.Println(firstMemberTokens[0] + ".id")
-		fmt.Println(nodeData)
-		// log.Fatal("@GetMappedData > #REF > fromID: Unable to find ref value in node data")
 		return nil, nil, errors.New("Unable to find fromID ref value in node data: " + firstMemberTokens[0] + ".id")
 	}
 
