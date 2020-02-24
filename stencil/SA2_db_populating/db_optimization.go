@@ -606,7 +606,7 @@ func CreateIndexesConstraintsOnBaseSupTables() {
 
 func DeleteRowsByDuplicateColumnsInMigrationTables() {
 
-	db.STENCIL_DB = ""
+	db.STENCIL_DB = "stencil_exp_sa2_100k"
 
 	uniqueCols := []string {
 		"app_id", "table_id", "group_id", "row_id", "mark_as_delete",
@@ -617,6 +617,22 @@ func DeleteRowsByDuplicateColumnsInMigrationTables() {
 	defer dbConn.Close()
 
 	deleteRowsByDuplicateColumnsInMigrationTables(dbConn, uniqueCols)
+
+}
+
+func DeleteRowsByDuplicateColumnsInBaseSupTables() {
+
+	db.STENCIL_DB = "stencil_exp_sa2_100k"
+
+	uniqueCols := []string {
+		"pk",
+	}
+	
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	
+	defer dbConn.Close()
+
+	deleteRowsByDuplicateColumnsInBaseSupTables(dbConn, uniqueCols)
 
 }
 

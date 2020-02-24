@@ -572,6 +572,41 @@ func checkpointTruncate(srcDB, dstDB, migrationTable string) {
 
 }
 
+func deleteRowsByDuplicateColumnsInATable(dbConn *sql.DB,
+	uniqueCols []string, table string) {
+
+	query := fmt.Sprintf(
+		`DELETE FROM %s t1 USING %s t2 
+		WHERE t1.ctid < t2.ctid and `,
+		table, table,
+	)		
+
+	for j, uCol := range uniqueCols {
+		
+		var condition string
+		
+		condition = fmt.Sprintf(
+			`t1.%s = t2.%s`,
+			uCol, uCol,
+		)
+
+		if j != len(uniqueCols) - 1 {
+			condition += " and "
+		} 
+
+		query += condition
+	}
+
+	log.Println(query)
+	log.Println("Delete Duplicate rows but keep one in the table:", table)
+
+	err := db.TxnExecute1(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func deleteRowsByDuplicateColumnsInMigrationTables(dbConn *sql.DB, uniqueCols []string) {
 
 	tables := getAllTablesInDB(dbConn)
@@ -584,26 +619,25 @@ func deleteRowsByDuplicateColumnsInMigrationTables(dbConn *sql.DB, uniqueCols []
 			continue
 		}
 
-		query := fmt.Sprintf(
-			`DELETE FROM %s t1 USING %s t2 
-			WHERE t1.ctid < t2.ctid and `
-		)		
+		deleteRowsByDuplicateColumnsInATable(dbConn, uniqueCols, table)
 
-		for j, uCol := range uniqueCols {
-			if j != len(uniqueCols) - 1 {
-				query += uCol + " and "
-			} else {
-				query += uCol
-			}
+	}
+
+}
+
+func deleteRowsByDuplicateColumnsInBaseSupTables(dbConn *sql.DB, uniqueCols []string) {
+
+	tables := getAllTablesInDB(dbConn)
+
+	for _, t := range tables {
+
+		table := t["tablename"]
+
+		if !isBaseOrSupTable(table) {
+			continue
 		}
 
-		log.Println(query)
-		log.Println("Delete Duplicate rows but keep one in:", table)
-
-		err := db.TxnExecute1(dbConn, query)
-		if err != nil {
-			log.Fatal(err)
-		}
+		deleteRowsByDuplicateColumnsInATable(dbConn, uniqueCols, table)
 
 	}
 
