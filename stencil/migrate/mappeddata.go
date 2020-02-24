@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/gookit/color"
 )
 
 func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface{}) {
@@ -44,8 +42,6 @@ func (self *MappedData) UpdateRefs(fromID, fromMember, fromAttr, toID, toMember,
 
 func GetIDsFromNodeData(firstMember string, secondMember string, nodeData map[string]interface{}) (interface{}, interface{}, error) {
 	var toID, fromID interface{}
-
-	color.Yellow.Println("GetIDsFromNodeData: ", firstMember, secondMember)
 
 	if val, ok := nodeData[firstMember]; ok {
 		toID = val
