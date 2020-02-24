@@ -201,7 +201,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 				return err
 			}
 
-			if mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
+			if bagMappedApp, mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
 				self.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
 				for _, toTable := range mapping.ToTables {
 					if !strings.EqualFold(toTable.Table, toTableName) {
@@ -209,7 +209,14 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 					}
 					for toAttr, fromAttr := range toTable.Mapping {
 						if _, ok := toTableData[toAttr]; !ok {
-							if bagVal, _, _, _, found, err := self.DecodeMappingValue(fromAttr, bagData, true); err == nil {
+							if fromAttr[0:1] == "$" {
+								if inputVal, err := bagMappedApp.GetInput(fromAttr); err == nil {
+									toTableData[toAttr] = inputVal
+								} else {
+									self.Logger.Debugf("@FetchDataFromBags | fromAttr [%s]", fromAttr)
+									self.Logger.Fatal(err)
+								}
+							} else if bagVal, _, _, _, found, err := self.DecodeMappingValue(fromAttr, bagData, true); err == nil {
 								if found && bagVal != nil {
 									toTableData[toAttr] = bagVal
 								}

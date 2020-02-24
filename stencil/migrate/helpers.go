@@ -363,7 +363,7 @@ func (self *MigrationWorkerV2) MarkAsVisited(node *DependencyNode) {
 	}
 }
 
-func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.Mapping, bool) {
+func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.MappedApp, config.Mapping, bool) {
 
 	var combinedMapping config.Mapping
 	var appMappings config.MappedApp
@@ -386,7 +386,7 @@ func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dst
 		}
 	}
 	// fmt.Println(">>>>>>>>", srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember, " | Mappings | ", combinedMapping)
-	return combinedMapping, mappingFound
+	return appMappings, combinedMapping, mappingFound
 }
 
 func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (config.Mapping, bool) {

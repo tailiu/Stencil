@@ -468,6 +468,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 			if inputVal, err := self.mappings.GetInput(fromAttr); err == nil {
 				mappedVal = inputVal
 			} else {
+				self.Logger.Debugf("@DecodeMappingValue | fromAttr [%s] | isBag: [%v] | data: %v", fromAttr, isBag, nodeData)
 				self.Logger.Fatal(err)
 			}
 		}
@@ -513,7 +514,12 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 							}
 						}
 					} else {
-						self.Logger.Fatalf("Unable to DecodeMappingValue from %s", fromAttr)
+						self.Logger.Debugf("fromAttr: [%s], cleanedFromAttr: [%s], nodeData: %v", fromAttr, cleanedFromAttr, nodeData)
+						if isBag {
+							self.Logger.Debugf("Unable to DecodeMappingValue | value found = [%v]", ok)
+						} else {
+							self.Logger.Fatalf("Unable to DecodeMappingValue | value found = [%v]", ok)
+						}
 					}
 				} else {
 					args := strings.Split(cleanedFromAttr, ",")
