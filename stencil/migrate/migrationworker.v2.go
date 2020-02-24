@@ -522,7 +522,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						cleanedFromAttr = args[0]
 					}
 					if !isBag {
-						if toID, fromID, err := GetIDsFromNodeData(args[0], nodeData); err == nil {
+						if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], nodeData); err == nil {
 							secondMemberTokens := strings.Split(args[1], ".")
 							firstMemberTokens := strings.Split(args[0], ".")
 							ref = &MappingRef{
@@ -612,7 +612,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 			if self.mtype != BAGS && strings.Contains(fromAttr, "#REF") {
 				assignedTabCol := strings.Trim(fromAttr, "(#REF)")
 				args := strings.Split(assignedTabCol, ",")
-				if toID, fromID, err := GetIDsFromNodeData(args[0], node.Data); err == nil {
+				if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], node.Data); err == nil {
 					secondMemberTokens := strings.Split(args[1], ".")
 					firstMemberTokens := strings.Split(args[0], ".")
 					data.UpdateRefs(fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
