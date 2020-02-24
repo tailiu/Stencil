@@ -608,7 +608,7 @@ func getOneRowBasedOnHint(displayConfig *displayConfig,
 			hint.Table, hint.KeyVal["id"])
 	}
 	
-	// log.Println(query)
+	log.Println(query)
 	
 	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
 	if err != nil {

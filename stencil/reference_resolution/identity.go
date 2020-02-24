@@ -111,6 +111,23 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 	return res
 }
 
+func getInsertIntoIDChangesTableQuery(refResolutionConfig *RefResolutionConfig,
+	table, IDToBeUpdated, id string) string {
+
+	query := fmt.Sprintf(
+		`INSERT INTO id_changes (app_id, table_id, old_id, new_id, migration_id)
+		VALUES (%s, %s, %s, %s, %d)`,
+		refResolutionConfig.appID, 
+		refResolutionConfig.appTableNameIDPairs[table],
+		IDToBeUpdated,
+		id,
+		refResolutionConfig.migrationID,
+	)
+
+	return query
+
+}
+
 func getUpdateToIDInIdentityTableQuery(refResolutionConfig *RefResolutionConfig,
 	table, IDToBeUpdated, id string) string {
 

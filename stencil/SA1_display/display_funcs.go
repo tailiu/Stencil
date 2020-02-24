@@ -433,7 +433,8 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 func CheckDisplay(displayConfig *displayConfig, 
 	dataHint *HintStruct) bool {
 
-	query := fmt.Sprintf("SELECT display_flag from %s where id = %d",
+	query := fmt.Sprintf(
+		`SELECT display_flag from "%s" where id = %d`,
 		dataHint.Table, dataHint.KeyVal["id"])
 
 	data1, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
@@ -829,40 +830,101 @@ func isNodeInCurrentMigration(displayConfig *displayConfig,
 
 }
 
+func getIDChanges(displayConfig *displayConfig, hint *HintStruct) string {
+
+	log.Println("ok")
+
+	query := fmt.Sprintf(
+		`SELECT new_id FROM id_changes WHERE 
+		app_id = %s and table_id = %s and old_id = %d`,
+		displayConfig.dstAppConfig.appID,
+		hint.TableID,
+		hint.KeyVal["id"],
+	)
+
+	log.Println(query)
+
+	data, err := db.DataCall1(displayConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(data)
+
+	if len(data) == 0 {
+		return ""
+	} else {
+		return fmt.Sprint(data["new_id"])
+	}
+
+}
+
 func refreshCachedDataHints(displayConfig *displayConfig,
 	hints []*HintStruct) {
 
-	var err2 error
+	var err2, err3 error
 
 	for i := range hints {
 
-		hintID := strconv.Itoa(hints[i].KeyVal["id"])
-		hintDataID := fmt.Sprint(hints[i].Data["id"])
+		log.Println("=====")
+		log.Println(hints[i])
+		log.Println("=====")
 
-		// Data id could change and the cached hint id could become
-		// different from the got data id
-		// for example, in profile, user.id could change.
-		// There are two cases: 
-		// 1. hint.id is old but data id is new
-		// so we use data id to update hint.id 
-		// (this can only happen in the first phase since some attributes
-		// are not resolved because other data has not come)
-		// 2. hint.id is old and data id is old, then this does not cause problems
-		// display settings should be set to prevent this data from being displayed
-		// and this data should wait other data this data depends on to come
-		if hintID != hintDataID {
+		// hintID := strconv.Itoa(hints[i].KeyVal["id"])
+		// hintDataID := fmt.Sprint(hints[i].Data["id"])
 
-			intHintDataID, err1 := strconv.Atoi(hintDataID)
-			if err1 != nil {
-				log.Fatal(err1)
-			}
+		// // Data id could change and the cached hint id could become stale and 
+		// // different from the got data id
+		// // for example, in profile, user.id could change.
+		// // There are two cases: 
+		// // 1. hint.id is old but data id is new
+		// // so we use data id to update hint.id 
+		// // (this can only happen in the first phase since some attributes
+		// // are not resolved because other data has not come)
+		// // 2. hint.id is old and data id is old, then this does not cause problems
+		// // display settings should be set to prevent this data from being displayed
+		// // and this data should wait other data this data depends on to come
+		// if hintID != hintDataID {
 
-			hints[i].KeyVal["id"] = intHintDataID
-		}
+		// 	intHintDataID, err1 := strconv.Atoi(hintDataID)
+		// 	if err1 != nil {
+		// 		log.Fatal(err1)
+		// 	}
+
+		// 	hints[i].KeyVal["id"] = intHintDataID
+		// }
 
 		hints[i].Data, err2 = getOneRowBasedOnHint(displayConfig, hints[i])
 		if err2 != nil {
-			log.Fatal(err2)
+			
+			log.Println(err2)
+
+			log.Println(hints[i])
+
+			log.Println("I am here!")
+
+			newID := getIDChanges(displayConfig, hints[i])
+
+			log.Println("new id:", newID)
+
+			if newID == "" {
+				// Note that for now this case is not considered
+				panic("Since there is no application service, this data shoud not be deleted")
+			
+			} else {
+
+				newHint := CreateHint(hints[i].Table, hints[i].TableID, newID)
+
+				log.Println(newHint)
+
+				newHint.Data, err3 = getOneRowBasedOnHint(displayConfig, newHint)
+				if err3 != nil {
+					log.Fatal(err3)
+				}
+
+				hints[i] = newHint
+			}
+			
 		}
 
 	}
@@ -961,6 +1023,29 @@ func AddMarkAsDeleteToAllTables(dbConn *sql.DB) {
 			log.Fatal(err1)
 		}
 		
+	}
+
+}
+
+func CreateIDChangesTable(dbConn *sql.DB) {
+
+	query1 := `CREATE TABLE id_changes (
+		app_id int8 NOT NULL,
+		table_id int8 NOT NULL,
+		old_id int8 NOT NULL,
+		new_id int8 NOT NULL,
+		migration_id int8 NOT NULL
+	);`
+
+	query2 := `CREATE INDEX ON id_changes (app_id, table_id, old_id);`
+
+	queries := []string {
+		query1, query2,
+	}
+
+	err1 := db.TxnExecute(dbConn, queries); 
+	if err1 != nil {
+		log.Fatal(err1)
 	}
 
 }

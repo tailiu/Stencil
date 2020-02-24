@@ -14,7 +14,7 @@ import (
 func preExp(evalConfig *EvalConfig) {
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
-		reference_table, resolved_references, txn_logs, 
+		reference_table, resolved_references, txn_logs, id_changes,
 		evaluation, data_bags, display_flags, display_registration`
 
 	query2 := "SELECT truncate_tables('cow')"
@@ -50,7 +50,7 @@ func preExp(evalConfig *EvalConfig) {
 func preExp1(evalConfig *EvalConfig) {
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
-		reference_table, resolved_references, txn_logs, 
+		reference_table, resolved_references, txn_logs, id_changes,
 		evaluation, data_bags, display_flags, display_registration`
 
 	query2 := "SELECT truncate_tables('cow')"
@@ -80,7 +80,7 @@ func PreExp() {
 func preExp7(evalConfig *EvalConfig) {
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
-		reference_table, resolved_references, txn_logs, 
+		reference_table, resolved_references, txn_logs, id_changes,
 		evaluation, data_bags, display_flags, display_registration`
 
 	query2 := "SELECT truncate_tables('cow')"
@@ -1276,14 +1276,15 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"37",
+		"51",
 	}
 
 	var totalRemainingObjsInOriginalApp int64
 	var totalMediaBeforeAllMigrations int64
 	var totalMediaInMigrations int64
 
-	var migrationIDs, migrationIDs1 []string
+	var migrationIDs []string
+	// var migrationIDs1 []string
 
 	seqLen := len(migrationSeq)
 
@@ -1316,17 +1317,17 @@ func Exp7() {
 
 		enableBags = false
 
-		db.STENCIL_DB = stencilDB1
-		db.DIASPORA_DB = diaspora1
-		db.MASTODON_DB = mastodon1
-		db.TWITTER_DB = twitter1
-		db.GNUSOCIAL_DB = gnusocial1
+		// db.STENCIL_DB = stencilDB1
+		// db.DIASPORA_DB = diaspora1
+		// db.MASTODON_DB = mastodon1
+		// db.TWITTER_DB = twitter1
+		// db.GNUSOCIAL_DB = gnusocial1
 
-		migrationIDs1 = migrateUsersInExp7(
-			evalConfig, stencilDB1,
-			i, fromApp, toApp, fromAppID, toAppID,
-			migrationIDs1, userIDs, enableBags,
-		)
+		// migrationIDs1 = migrateUsersInExp7(
+		// 	evalConfig, stencilDB1,
+		// 	i, fromApp, toApp, fromAppID, toAppID,
+		// 	migrationIDs1, userIDs, enableBags,
+		// )
 
 		// Only when the start application is Diaspora do we need to do this
 		if i == 0 && fromApp == "diaspora" {
@@ -1349,21 +1350,21 @@ func Exp7() {
 
 		enableBags = false
 
-		objs1 := calculateDanglingAndTotalObjectsInExp7(
-			evalConfig, enableBags,
-			totalMediaInMigrations, totalRemainingObjsInOriginalApp,
-			toApp, i, seqLen,
-		)
+		// objs1 := calculateDanglingAndTotalObjectsInExp7(
+		// 	evalConfig, enableBags,
+		// 	totalMediaInMigrations, totalRemainingObjsInOriginalApp,
+		// 	toApp, i, seqLen,
+		// )
 
 		WriteStrToLog(
 			"dataBagsEnabled",
 			ConvertMapInt64ToJSONString(objs),
 		)
 
-		WriteStrToLog(
-			"dataBagsNotEnabled",
-			ConvertMapInt64ToJSONString(objs1),
-		)
+		// WriteStrToLog(
+		// 	"dataBagsNotEnabled",
+		// 	ConvertMapInt64ToJSONString(objs1),
+		// )
 
 	}
 

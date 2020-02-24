@@ -521,7 +521,7 @@ func TruncateUnrelatedTables() {
 	defer dbConn.Close()
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
-		reference_table, resolved_references, txn_logs, 
+		reference_table, resolved_references, txn_logs, id_changes,
 		evaluation, data_bags, display_flags, display_registration`
 	
 	err1 := db.TxnExecute1(dbConn, query1)

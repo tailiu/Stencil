@@ -188,6 +188,8 @@ func updateReferences(
 
 			var q0 []string
 			
+			// Note that for now when "id" needs to be updated,
+			// we don't consider what will happen if the thread crashes
 			if attrToBeUpdated == "id" {
 				
 				// This is to update id in the display_flags table
@@ -200,6 +202,10 @@ func updateReferences(
 				// since the reference table stores ids in the source app
 				updateToIDQ0 := getUpdateToIDInIdentityTableQuery(
 					refResolutionConfig, memberToBeUpdated, IDToBeUpdated, id, 
+				)
+
+				insertIntoIDChanges := getInsertIntoIDChangesTableQuery(
+					refResolutionConfig, memberToBeUpdated, IDToBeUpdated, id,
 				)
 
 				// This data must not be used to update other data, because
@@ -216,7 +222,7 @@ func updateReferences(
 					id,
 				)
 
-				q0 = append(q0, displayFlagsQ0, updateToIDQ0)
+				q0 = append(q0, displayFlagsQ0, updateToIDQ0, insertIntoIDChanges)
 
 			}
 
@@ -238,13 +244,25 @@ func updateReferences(
 
 			q2 := deleteRef(refID)
 
-			q3 := addToResolvedReferences(
-				refResolutionConfig, 
-				refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
-				IDToBeUpdated, 
-				attrToBeUpdated, 
-				data,
-			)
+			var q3 string
+
+			if attrToBeUpdated == "id" {
+				q3 = addToResolvedReferences(
+					refResolutionConfig, 
+					refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
+					data,
+					attrToBeUpdated, 
+					data,
+				)
+			} else {
+				q3 = addToResolvedReferences(
+					refResolutionConfig, 
+					refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
+					IDToBeUpdated,
+					attrToBeUpdated, 
+					data,
+				)
+			}
 
 			queries = append(queries, q2, q3)
 			queries = append(queries, q0...)

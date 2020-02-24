@@ -98,6 +98,19 @@ func test7() {
 	
 }
 
+func test8() {
+
+	dbName := "stencil_exp7"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
+
+	SA1_display.CreateIDChangesTable(dbConn)
+	
+}
+
 func main() {
 
 	// test1()
@@ -112,6 +125,8 @@ func main() {
 
 	// test6()
 
-	test7()
+	// test7()
+
+	test8()
 
 }
