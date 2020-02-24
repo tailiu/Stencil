@@ -14,8 +14,11 @@ import (
 func getFromReferences(refResolutionConfig *RefResolutionConfig, 
 	IDRow map[string]string) []map[string]interface{} {
 
-	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and from_member = %s 
-		and from_id = %s;`, IDRow["from_app"], IDRow["from_member"], IDRow["from_id"])
+	query := fmt.Sprintf(
+		`SELECT * FROM reference_table 
+		WHERE app = %s and from_member = %s and from_id = %s;`,
+		IDRow["from_app"], IDRow["from_member"], IDRow["from_id"],
+	)
 	
 	log.Println(query)
 	
@@ -33,8 +36,11 @@ func getFromReferences(refResolutionConfig *RefResolutionConfig,
 func getToReferences(refResolutionConfig *RefResolutionConfig, 
 	IDRow map[string]string) []map[string]interface{} {
 
-	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and to_member = %s 
-		and to_id = %s;`, IDRow["from_app"], IDRow["from_member"], IDRow["from_id"])
+	query := fmt.Sprintf(
+		`SELECT * FROM reference_table 
+		WHERE app = %s and to_member = %s and to_id = %s;`, 
+		IDRow["from_app"], IDRow["from_member"], IDRow["from_id"],
+	)
 	
 	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
@@ -49,8 +55,10 @@ func getToReferences(refResolutionConfig *RefResolutionConfig,
 
 func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, attr string) string {
 	
-	query := fmt.Sprintf("SELECT %s FROM %s WHERE id = %s",
-		attr, member, id)
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE id = %s",
+		attr, member, id,
+	)
 	
 	log.Println(query)
 	data, err := db.DataCall1(refResolutionConfig.appDBConn, query)
@@ -68,7 +76,10 @@ func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, at
 
 func deleteRef(refID string) string {
 
-	return fmt.Sprintf("DELETE FROM reference_table WHERE pk = %s", refID)
+	return fmt.Sprintf(
+		"DELETE FROM reference_table WHERE pk = %s", 
+		refID,
+	)
 
 	// err := db.TxnExecute1(refResolutionConfig.StencilDBConn, query)
 	// if err != nil {
@@ -79,8 +90,10 @@ func deleteRef(refID string) string {
 
 func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, data string) string {
 	
-	return fmt.Sprintf("UPDATE %s SET %s = %s WHERE id = %s",
-		memberToBeUpdated, attrToBeUpdated, data, IDToBeUpdated)
+	return fmt.Sprintf(
+		`UPDATE "%s" SET %s = %s WHERE id = %s`,
+		memberToBeUpdated, attrToBeUpdated, data, IDToBeUpdated,
+	)
 
 	// err := db.TxnExecute1(refResolutionConfig.AppConfig.DBConn, query)
 	// if err != nil {
@@ -92,7 +105,8 @@ func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, dat
 func addToResolvedReferences(refResolutionConfig *RefResolutionConfig, 
 	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated, data string) string {
 	
-	return fmt.Sprintf(`INSERT INTO resolved_references 
+	return fmt.Sprintf(
+		`INSERT INTO resolved_references 
 		(app, member, id, migration_id, reference, value)
 		VALUES (%s, %s, %s, %d, '%s', %s)`, 
 		refResolutionConfig.appID, 
@@ -100,7 +114,8 @@ func addToResolvedReferences(refResolutionConfig *RefResolutionConfig,
 		IDToBeUpdated,
 		refResolutionConfig.migrationID,
 		attrToBeUpdated,
-		data)
+		data,
+	)
 
 }
 
@@ -146,6 +161,8 @@ func updateReferences(refResolutionConfig *RefResolutionConfig,
 		if data != "" {
 
 			log.Println("---------------------------------------------")
+
+			log.Println("Update references:")
 
 			// Even if the thread crashes after executing q1, the crash
 			// does not influence the algorithm because the reference record is still there, 

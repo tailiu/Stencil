@@ -367,7 +367,10 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 		// query1 = fmt.Sprintf("UPDATE %s SET display_flag = false WHERE id = %d;",
 		// 	dataHint.Table, dataHint.KeyVal["id"])
 
-		query1 = fmt.Sprintf("UPDATE %s SET display_flag = false", dataHint.Table)
+		query1 = fmt.Sprintf(
+			`UPDATE "%s" SET display_flag = false`, 
+			dataHint.Table,
+		)
 
 		for _, attr := range attrsToBeSetToNULLs {
 
@@ -394,8 +397,11 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 			displayConfig.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
 
 		log.Println("**************************************")
+		log.Println("Update the application table:")
 		log.Println(query1)
+		log.Println("Update the display_flags table:")
 		log.Println(query2)
+		log.Println("Update the evaluation table:")
 		log.Println(query3)
 		log.Println("**************************************")
 
