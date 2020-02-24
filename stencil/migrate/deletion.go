@@ -10,9 +10,10 @@ import (
 
 func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID int) error {
 
+	rootTagName := "root"
 	nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
 
-	if strings.EqualFold(node.Tag.Name, "root") {
+	if strings.EqualFold(node.Tag.Name, rootTagName) {
 		log.Println(fmt.Sprintf("Current   Node { %s } | ID: %v ", color.FgLightYellow.Render(node.Tag.Name), node.Data[nodeIDAttr]))
 		if err := self.CallMigration(node, threadID); err != nil {
 			return err
@@ -38,7 +39,7 @@ func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID 
 
 	log.Println(fmt.Sprintf("PROCESS Node { %s } ", color.FgLightYellow.Render(node.Tag.Name)))
 
-	if strings.EqualFold(node.Tag.Name, "root") {
+	if strings.EqualFold(node.Tag.Name, rootTagName) {
 		return self.DeleteRoot(threadID)
 	} else {
 		if err := self.CallMigration(node, threadID); err != nil {
