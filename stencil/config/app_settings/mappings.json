@@ -1086,8 +1086,8 @@
                                         "fullname":"profiles.full_name",
                                         "bio":"profiles.bio",
                                         "location":"profiles.location",
-                                        "created":"profiles.created_at",
-                                        "modified":"profiles.updated_at"
+                                        "created":"people.created_at",
+                                        "modified":"people.updated_at"
                                     } 
                                 }
                             ]

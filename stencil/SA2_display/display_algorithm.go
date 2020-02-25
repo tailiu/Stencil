@@ -11,6 +11,7 @@ import (
 const checkInterval = 200 * time.Millisecond
 
 func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
+
 	startTime := time.Now()
 
 	log.Println("--------- Start of Display Check ---------")
@@ -30,6 +31,7 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 		migratedData = GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig) {
 		
 		var dhStack [][]int
+
 		for _, oneMigratedData := range migratedData {
 			_, dhStack, _ = checkDisplayOneMigratedData(
 				stencilDBConn, appConfig, oneMigratedData, 
@@ -51,10 +53,14 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 		stencilDBConn, migrationID, appConfig)
 
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
+
 		var dhStack [][]int
+		
 		_, dhStack, _ = checkDisplayOneMigratedData(
 			stencilDBConn, appConfig, oneSecondRoundMigratedData, 
-			secondRound, deletionHoldEnable, dhStack, threadID, userID)
+			secondRound, deletionHoldEnable, 
+			dhStack, threadID, userID,
+		)
 
 		if deletionHoldEnable {
 			RemoveDeletionHold(stencilDBConn, dhStack, threadID)
@@ -71,21 +77,24 @@ func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
 }
 
 // Two-way display check
-func checkDisplayOneMigratedData(
-	stencilDBConn *sql.DB, appConfig *config.AppConfig, 
-	oneMigratedData HintStruct, 
-	secondRound bool, deletionHoldEnable bool, 
-	dhStack [][]int, threadID int, userID string) (string, [][]int, error) {
+func checkDisplayOneMigratedData(stencilDBConn *sql.DB, 
+	appConfig *config.AppConfig, oneMigratedData HintStruct, 
+	secondRound bool, deletionHoldEnable bool, dhStack [][]int, 
+	threadID int, userID string) (string, [][]int, error) {
 
 	// CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
 	log.Println("Check Data ", oneMigratedData)
+	
+	log.Println("==================== Check Intra-node dependencies ====================")
 
 	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(appConfig, 
 		oneMigratedData, stencilDBConn)
 
-	log.Println("-----------")
-	log.Println(dataInNode)
-	log.Println("-----------")
+	log.Println("Data in Node:")
+
+	for _, oneDataInNode := range dataInNode {
+		log.Println(oneDataInNode)
+	}
 
 	// Either this data is not in the destination application,
 	// e.g., this data is displayed by other threads and deleted by application services, 
@@ -200,7 +209,8 @@ func checkDisplayOneMigratedData(
 
 						case "Fail To Get Any Data in the Parent Node":
 
-							pTagConditions[pTag] = ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting, secondRound)
+							pTagConditions[pTag] = ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+								displaySetting, secondRound)
 						}
 					} else {
 

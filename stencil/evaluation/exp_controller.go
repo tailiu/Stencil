@@ -391,7 +391,9 @@ func Exp2() {
 	// startNum := 1520 // eighth time and stop at the 61th user
 	// startNum := 2000 // ninth time and crash at the 4th user
 
-	startNum := 100
+	// startNum := 100 // first time and crash at the 4th user
+
+	startNum := 105 
 
 	// ************ SA1 ************
 
@@ -1295,7 +1297,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter", "diaspora", 
+		"diaspora", "gnusocial", 
 	}
 
 	// Database setup for migrations enabled databags
@@ -1321,7 +1323,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"65",
+		"74",
 	}
 
 	var totalRemainingObjsInOriginalApp int64
