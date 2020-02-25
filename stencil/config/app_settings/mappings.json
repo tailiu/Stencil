@@ -700,6 +700,7 @@
                                 },
                                 {
                                     "table": "conversations",
+                                    "conditions":{},
                                     "mapping": {
                                         "id":"posts.id",
                                         "created_at":"posts.created_at",

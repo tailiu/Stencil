@@ -180,6 +180,7 @@ func (self *MigrationWorkerV2) GetMemberDataFromNode(member string, nodeData map
 			memberData[col] = val
 		}
 	}
+	delete(memberData, "display_flag")
 	return memberData
 }
 

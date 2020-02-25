@@ -230,18 +230,17 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 						} else {
 							self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Exists | toTable: [%s], fromAttr: [%s], toAttr: [%s], BagVal: [%v]", toTable.Table, fromAttr, toAttr, toTableData[toAttr])
 						}
-						self.Logger.Tracef("@FetchDataFromBags > %s | [%s] | [%v]", color.FgMagenta.Render("Deleting Attr From Bag"), color.FgMagenta.Render(cleanedFromAttr), color.FgMagenta.Render(bagData))
+						self.Logger.Tracef("@FetchDataFromBags > %s | [%s] | [%v]", color.FgLightBlue.Render("Deleting Attr From Bag"), color.FgBlue.Render(cleanedFromAttr), color.FgBlue.Render(bagData))
 						delete(bagData, cleanedFromAttr)
 					}
 				}
 
 				if self.IsNodeDataEmpty(bagData) {
-					log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Deleting BAG"), fmt.Sprint(bagRow["pk"])))
 					if err := db.DeleteBagV2(self.tx.StencilTx, fmt.Sprint(bagRow["pk"])); err != nil {
 						self.Logger.Fatal("@FetchDataFromBags > DeleteBagV2, Unable to delete bag | ", bagRow["pk"])
 						return err
 					} else {
-						log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Deleted BAG"), bagData["pk"]))
+						log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Deleted BAG"), bagRow["pk"]))
 					}
 				} else {
 					log.Println(fmt.Sprintf("%s | PK: %v", color.FgYellow.Render("BAG NOT EMPTY"), bagData))
@@ -249,6 +248,8 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 						if err := db.UpdateBag(self.tx.StencilTx, fmt.Sprint(bagRow["pk"]), self.logTxn.Txn_id, jsonData); err != nil {
 							self.Logger.Fatal("@FetchDataFromBags: UNABLE TO UPDATE BAG ", bagRow, err)
 							return err
+						} else {
+							log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Updated BAG"), bagRow["pk"]))
 						}
 					} else {
 						self.Logger.Fatal("@FetchDataFromBags > len(bagData) != 0, Unable to marshall bag | ", bagData)
