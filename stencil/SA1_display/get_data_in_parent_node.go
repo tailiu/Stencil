@@ -80,9 +80,13 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 		}
 	
 	// Normally, there must exist one that needs to be resolved. 
+	// But this could happen for example, in Diaspora, posts.id depends on aspects.shareable_id
+	// There is no need to resolve id here
 	} else {
 
-		panic("Should not happen since there is always one to solve!")
+		// panic("Should not happen since there is always one to solve!")
+
+		return "", NoReferenceToResolve
 
 	}
 }
@@ -162,8 +166,14 @@ func getHintsInParentNode(displayConfig *displayConfig,
 
 					// If there is an error, it means that the reference has not been resolved
 					if err0 != nil {
+						
 						log.Println(err0)
-						return nil, CannotFindAnyDataInParent
+
+						if err0 != NoReferenceToResolve {
+							return nil, CannotFindAnyDataInParent
+						} else {
+							depVal = fmt.Sprint(hints[hintID].Data[a1])
+						}
 					}
 
 				} else {
@@ -224,8 +234,14 @@ func getHintsInParentNode(displayConfig *displayConfig,
 				// If there is an error, it means that the reference has not been resolved
 				// so it cannot be used to get data in the parent node
 				if err0 != nil {
+					
 					log.Println(err0)
-					return nil, CannotFindAnyDataInParent
+
+					if err0 != NoReferenceToResolve {
+						return nil, CannotFindAnyDataInParent
+					} else {
+						depVal = fmt.Sprint(data[a1])
+					}
 				}
 
 			} else {

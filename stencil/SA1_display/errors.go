@@ -31,7 +31,7 @@ var CannotFindAnyDataInParent =
 var NotDependsOnAnyData = 
 	errors.New("This Data Does not Depend on Any Data in the Parent Node")
 
-// Resolve reference when getting data in node
+// Resolve reference when getting data in node or parent node
 var CannotResolveReferencesGetDataInParentNode =
 	errors.New("Fail to resolve references when getting data in a parent node")
 

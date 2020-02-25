@@ -866,9 +866,9 @@ func refreshCachedDataHints(displayConfig *displayConfig,
 
 	for i := range hints {
 
-		log.Println("=====")
-		log.Println(hints[i])
-		log.Println("=====")
+		// log.Println("=====")
+		// log.Println(hints[i])
+		// log.Println("=====")
 
 		// hintID := strconv.Itoa(hints[i].KeyVal["id"])
 		// hintDataID := fmt.Sprint(hints[i].Data["id"])
@@ -899,9 +899,7 @@ func refreshCachedDataHints(displayConfig *displayConfig,
 			
 			log.Println(err2)
 
-			log.Println(hints[i])
-
-			log.Println("I am here!")
+			// log.Println(hints[i])
 
 			newID := getIDChanges(displayConfig, hints[i])
 
@@ -915,14 +913,15 @@ func refreshCachedDataHints(displayConfig *displayConfig,
 
 				newHint := CreateHint(hints[i].Table, hints[i].TableID, newID)
 
-				log.Println(newHint)
-
 				newHint.Data, err3 = getOneRowBasedOnHint(displayConfig, newHint)
 				if err3 != nil {
 					log.Fatal(err3)
 				}
 
 				hints[i] = newHint
+
+				log.Println(hints[i])
+				
 			}
 			
 		}

@@ -100,7 +100,7 @@ func test7() {
 
 func test8() {
 
-	dbName := "stencil_exp7"
+	dbName := "stencil_exp_template"
 
 	isBladeServer := false
 
