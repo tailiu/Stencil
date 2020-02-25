@@ -253,7 +253,9 @@ func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk st
 func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
 	if len(toTable.Conditions) > 0 {
 		for conditionKey, conditionVal := range toTable.Conditions {
+			self.Logger.Debugf("Checking Condition | conditionKey [%s] conditionVal [%s]", conditionKey, conditionVal)
 			if nodeVal, ok := node.Data[conditionKey]; ok {
+				self.Logger.Debugf("Checking Condition | nodeVal [%v]", nodeVal)
 				if conditionVal[:1] == "#" {
 					// fmt.Println("VerifyMappingConditions: conditionVal[:1] == #")
 					// fmt.Println(conditionKey, conditionVal, nodeVal)
@@ -266,6 +268,8 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 								fmt.Println(conditionKey, conditionVal, nodeVal)
 								// self.Logger.Fatal("@VerifyMappingConditions: return false, from case #NULL:")
 								return false
+							} else {
+								log.Println("Case #NULL | ", nodeVal, "==", conditionVal)
 							}
 						}
 					case "#NOTNULL":
@@ -275,6 +279,8 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 								fmt.Println(conditionKey, conditionVal, nodeVal)
 								// self.Logger.Fatal("@VerifyMappingConditions: return false, from case #NOTNULL:")
 								return false
+							} else {
+								log.Println("Case #NOTNULL | ", nodeVal, "==", conditionVal)
 							}
 						}
 					default:
@@ -310,10 +316,14 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 				// fmt.Println("node data:", node.Data)
 				// fmt.Println("node sql:", node.SQL)
 				// self.Logger.Fatal("@ValidateMappingConditions: stop here and check")
+				self.Logger.Warnf("Checking Condition | nodeVal doesn't exist | [%s]", conditionKey)
 				return false
 			}
 		}
+	} else {
+		self.Logger.Debugf("No mapping conditions exist for table: %s", toTable.Table)
 	}
+
 	return true
 }
 
@@ -863,7 +873,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 						self.Logger.Fatal("@MigrateNode > toTable.Media: Path not found in map!")
 					}
 				}
-				self.Logger.Infof("Inserted into: %s", toTable.Table)
+				self.Logger.Infof("Inserted into: %s with ID: %v", toTable.Table, id)
 				allMappedData = append(allMappedData, mappedData)
 			} else {
 				self.Logger.Debugf("@Args | [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s], [srcCols: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables, mappedData.orgCols)
