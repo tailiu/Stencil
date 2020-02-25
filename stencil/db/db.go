@@ -241,7 +241,7 @@ func InsertIntoDAGCounter(dbConn *sql.DB, person_id string, edges, nodes int) er
 }
 
 func ReallyDeleteRowFromAppDB(tx *sql.Tx, table, id interface{}) error {
-	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", table)
+	query := fmt.Sprintf("DELETE FROM \"%s\" WHERE id = $1", table)
 	if _, err := tx.Exec(query, id); err != nil {
 		log.Println(query, id)
 		log.Fatal("## DB ERROR: ", err)
@@ -251,7 +251,7 @@ func ReallyDeleteRowFromAppDB(tx *sql.Tx, table, id interface{}) error {
 }
 
 func DeleteRowFromAppDB(tx *sql.Tx, table, id string) error {
-	query := fmt.Sprintf("UPDATE %s SET mark_as_delete = $1 WHERE id = $2", table)
+	query := fmt.Sprintf("UPDATE \"%s\" SET mark_as_delete = $1 WHERE id = $2", table)
 	if _, err := tx.Exec(query, true, id); err != nil {
 		log.Println(query, "true", id)
 		// log.Fatal("## DB ERROR: ", err)

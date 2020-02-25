@@ -382,6 +382,7 @@ func (self *MigrationWorkerV2) GetNodeOwner(node *DependencyNode) (string, bool)
 			}
 		}
 	} else {
+		self.Logger.Debug(self.SrcAppConfig.Ownerships)
 		self.Logger.Fatal("@GetNodeOwner: Ownership not found:", node.Tag.Name)
 	}
 	return "", false

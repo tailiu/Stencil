@@ -172,7 +172,7 @@ func (tag Tag) ResolveTagAttr(attr string) (string, error) {
 			return "", errors.New("Tag Not Resolved, Member Not Found: " + attr)
 		}
 	}
-	return "", errors.New("Tag Not Resolved, Attr Not Found in Tag Keys: " + tag.Name + ":" + attr)
+	return "", errors.New(fmt.Sprintf("Tag Not Resolved, Attr Not Found in Tag Keys: [%s].[%s] ;", tag.Name, attr))
 }
 
 func (self Tag) CreateInDepMap(isBag ...bool) map[string]map[string][]string {
