@@ -102,7 +102,7 @@ func oldForwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 			procIDRow["to_member"], 
 			procIDRow["to_id"])
 
-		res = append(res, forwardTraverseIDTable(refResolutionConfig, nextData, orginalID)...)
+		res = append(res, oldForwardTraverseIDTable(refResolutionConfig, nextData, orginalID)...)
 
 	}
 

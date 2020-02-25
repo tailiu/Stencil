@@ -65,7 +65,7 @@ func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
 }
 
 func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
-	ID, orginalID *Identity) []*Identity {
+	ID, orginalID *Identity, inRecurrsion bool) []*Identity {
 
 	var res []*Identity
 
@@ -81,11 +81,15 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 			procIDRow["to_member"],
 			procIDRow["to_id"])
 
-		res = append(res, forwardTraverseIDTable(refResolutionConfig, nextData, orginalID)...)
+		res = append(res, forwardTraverseIDTable(refResolutionConfig, nextData, orginalID, true)...)
 
 	}
 
-	if len(IDRows) == 0 {
+	// If recurrsion has not started yet and we cannot find IDRows, then
+	// we should directly return null result and 
+	// not execute the code in the if block since this could directly return
+	// the provided ID to us which is wrong!
+	if len(IDRows) == 0 && inRecurrsion {
 
 		// We don't need to test ID.id != orginalID.id becaseu as long as
 		// ID.member != orginalID.member, this means that

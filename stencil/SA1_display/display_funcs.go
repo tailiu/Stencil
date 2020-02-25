@@ -939,6 +939,8 @@ func getMigrationIDs(stencilDBConn *sql.DB,
 	var migrationIDs []int
 
 	switch migrationType {
+	case "i":
+		mType = "0"
 	case "d":
 		mType = "3"
 	case "n":

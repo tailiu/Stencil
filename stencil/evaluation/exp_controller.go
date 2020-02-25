@@ -423,7 +423,7 @@ func Exp2() {
 
 	// ************ SA1 without Display ************
 
-	SA1IndependentMigrationType := "c"
+	SA1IndependentMigrationType := "i"
 
 	// SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB := 
 	// 	"stencil_exp1", "diaspora_1000000_exp1", "mastodon_exp1"
@@ -1321,7 +1321,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"63",
+		"65",
 	}
 
 	var totalRemainingObjsInOriginalApp int64

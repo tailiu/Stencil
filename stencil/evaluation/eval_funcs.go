@@ -289,6 +289,8 @@ func getMigrationIDBySrcUserIDMigrationType(dbConn *sql.DB,
 	var mType string
 
 	switch migrationType {
+	case "i":
+		mType = "0"
 	case "d":
 		mType = "3"
 	case "n":
@@ -323,6 +325,8 @@ func getMigrationIDBySrcUserIDMigrationTypeFromToAppID(stencilDBConn *sql.DB,
 	var mType string
 
 	switch migrationType {
+	case "i":
+		mType = "0"
 	case "d":
 		mType = "3"
 	case "n":

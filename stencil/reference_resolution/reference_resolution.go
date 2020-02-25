@@ -91,7 +91,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 		data := CreateIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
 
-		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID)
+		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID, false)
 		// log.Println("refIdentityRows: ", refIdentityRows)
 
 		log.Println("After traversing forward the ID table:")
@@ -116,8 +116,13 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 				}
 
 			}
-
+		
+		// If we cannot get any refIdentityRows which means the referenced row has not been migrated
+		// and the application of that row is exactly the destination app, then we can directly
+		// use the id in the reference row to update attributes
 		} else if procRef["app"] == refResolutionConfig.appID {
+
+			log.Println("The data has not been migrated and is in the dest app1")
 
 			oneUpdatedAttr := updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(
 				refResolutionConfig, procRef, orgID)
@@ -152,7 +157,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 		data := CreateIdentity(procRef["app"], procRef["from_member"], procRef["from_id"])
 
-		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID)
+		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID, false)
 		// log.Println(refIdentityRows[0])
 
 		log.Println("After traversing forward the ID table:")
@@ -178,6 +183,8 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 			}
 
 		} else if procRef["app"] == refResolutionConfig.appID {
+
+			log.Println("The data has not been migrated and is in the dest app2")
 
 			oneUpdatedAttr := updateRefOnRightBasedOnMappingsNotUsingRefIDRow(
 				refResolutionConfig, procRef, orgID)
