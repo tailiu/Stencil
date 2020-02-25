@@ -35,7 +35,7 @@ func main() {
 
 	// evaluation.RecreateDiaspora1MDB()
 
-	// evaluation.Exp6()
+	evaluation.Exp6()
 
 	// evaluation.Exp4Count1MDBEdgesNodes()
 
@@ -53,6 +53,6 @@ func main() {
 
 	// evaluation.Exp3GetDataDowntimeInPercentageByLoadingUserIDFromLog()
 
-	evaluation.Exp7()
+	// evaluation.Exp7()
 	
 }

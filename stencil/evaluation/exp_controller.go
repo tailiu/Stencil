@@ -67,6 +67,34 @@ func preExp1(evalConfig *EvalConfig) {
 
 }
 
+func preExp2(evalConfig *EvalConfig) {
+
+	query1 := `TRUNCATE identity_table, migration_registration, 
+		reference_table, resolved_references, txn_logs, id_changes,
+		evaluation, data_bags, display_flags, display_registration`
+
+	query2 := "SELECT truncate_tables('cow')"
+
+	if err1 := db.TxnExecute1(evalConfig.StencilDBConn, query1); err1 != nil {
+		log.Fatal(err1)
+	} else {
+		if err2 := db.TxnExecute1(evalConfig.StencilDBConn1, query1); err2 != nil {
+			log.Fatal(err2)
+		} else {
+			if err4 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err4 != nil {
+				log.Fatal(err4)
+			} else {
+				if err5 := db.TxnExecute1(evalConfig.MastodonDBConn1, query2); err5 != nil {
+					log.Fatal(err5)
+				} else {
+					return
+				}
+			}
+		}
+	}
+
+}
+
 func PreExp() {
 
 	evalConfig := InitializeEvalConfig()
@@ -1109,8 +1137,12 @@ func Exp4Count1MDBEdgesNodes() {
 
 func Exp4LoadCounterResToTable() {
 
-	stencilDB = "stencil_counter"
-	counterFile := "diaspora1MCounter"
+	// stencilDB = "stencil_counter"
+	// counterFile := "diaspora1MCounter"
+	// counterTable := "dag_counter"
+
+	stencilDB = "stencil_100k_exp4"
+	counterFile := "diaspora100KCounter"
 	counterTable := "dag_counter"
 
 	evalConfig := InitializeEvalConfig()
@@ -1196,13 +1228,19 @@ func Exp4CountEdgesNodes() {
 
 func Exp6() {
 
-	stencilDB = "stencil_exp3"
-	mastodon = "mastodon_exp3"
-	diaspora = "diaspora_1000000_exp3"
+	// stencilDB = "stencil_exp3"
+	// mastodon = "mastodon_exp3"
+	// diaspora = "diaspora_1000000_exp3"
 
-	db.STENCIL_DB = "stencil_exp3"
-	db.DIASPORA_DB = "diaspora_1000000_exp3"
-	db.MASTODON_DB = "mastodon_exp3"
+	// db.STENCIL_DB = "stencil_exp3"
+	// db.DIASPORA_DB = "diaspora_1000000_exp3"
+	// db.MASTODON_DB = "mastodon_exp3"
+
+	stencilDB = "stencil_100k_exp4"
+	mastodon = "mastodon_100k_exp4"
+
+	stencilDB1 = "stencil_100k_exp5"
+	mastodon = "mastodon_100k_exp5"
 
 	// counterStart := 0
 	// counterNum := 300
@@ -1216,7 +1254,7 @@ func Exp6() {
 
 	defer closeDBConns(evalConfig)
 
-	preExp1(evalConfig)
+	preExp2(evalConfig)
 
 	res := getEdgesCounter(evalConfig, 
 		counterStart, counterNum, counterInterval)
@@ -1230,6 +1268,10 @@ func Exp6() {
 
 		userID := res1["person_id"]
 
+		db.STENCIL_DB = "stencil_100k_exp4"
+		db.DIASPORA_DB = "diaspora_100k_exp4"
+		db.MASTODON_DB = "mastodon_100k_exp4"
+
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userID, "diaspora", "1", "mastodon", "2", "d", 1
 
@@ -1239,34 +1281,39 @@ func Exp6() {
 			dstAppName, dstAppID, migrationType, threadNum,
 			enableDisplay, displayInFirstPhase, markAsDelete,
 		)
+
+		db.STENCIL_DB = "stencil_100k_exp5"
+		db.DIASPORA_DB = "diaspora_100k_exp5"
+		db.MASTODON_DB = "mastodon_100k_exp5"
 		
+		migrationType = "i"
+
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase, markAsDelete,
+		)
+
 		log.Println("************ Calculate Migration and Display Time ************")
 
 		refreshEvalConfigDBConnections(evalConfig)
 
-		migrationID := getMigrationIDBySrcUserID(evalConfig, userID)
-		
-		migrationIDInt, err := strconv.Atoi(migrationID)
-		if err != nil {
-			log.Fatal(err)
-		}
+		mTime, dTime := getMigrationAndDisplayTimeBySrcUserID(evalConfig.StencilDBConn, userID)
 
-		mTime := GetMigrationTime(
-			evalConfig.StencilDBConn,
-			migrationIDInt,
-		)
+		mTime1, dTime1 := getMigrationAndDisplayTimeBySrcUserID(evalConfig.StencilDBConn1, userID)
 
-		dTime := GetDisplayTime(
-			evalConfig.StencilDBConn,
-			migrationID,
-		)
+		res1["deletionMigrationTime"] = ConvertSingleDurationToString(mTime)
+		res1["deletionDisplayTime"] = ConvertSingleDurationToString(dTime)
 
-		res1["migrationTime"] = ConvertSingleDurationToString(mTime)
-		res1["displayTime"] = ConvertSingleDurationToString(dTime)
+		res1["independentMigrationTime"] = ConvertSingleDurationToString(mTime1)
+		res1["independentDisplayTime"] = ConvertSingleDurationToString(dTime1)
 
 		log.Println("************ Calculate Nodes and Edges after Migration ************")
 
+		migrationID := getMigrationIDBySrcUserID1(evalConfig.StencilDBConn, userID)
+
 		migratedUserID := getMigratedUserID(evalConfig, migrationID, dstAppID)
+
+		db.DIASPORA_DB = "diaspora_100k_exp4"
 
 		nodeCount, edgeCount := apis.StartCounter(dstAppName, dstAppID, 
 			migratedUserID, true)
@@ -1297,7 +1344,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "gnusocial", 
+		"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1323,7 +1370,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"75",
+		"76",
 	}
 
 	var totalRemainingObjsInOriginalApp int64

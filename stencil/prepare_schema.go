@@ -33,7 +33,7 @@ func test2() {
 
 func test3() {
 
-	dbName := "mastodon_exp3"
+	dbName := "mastodon_100k_exp5"
 
 	isBladeServer := true
 
@@ -117,7 +117,7 @@ func main() {
 	
 	// test2()
 
-	// test3()
+	test3()
 
 	// test4()
 
@@ -127,6 +127,6 @@ func main() {
 
 	// test7()
 
-	test8()
+	// test8()
 
 }
