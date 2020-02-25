@@ -36,7 +36,7 @@
             "display_setting": "display_based_on_inner_dependencies"
         },
         {
-            "name": "file",
+            "name": "files",
             "members": {
                 "member1": "file",
                 "member2": "file_to_post"
@@ -118,7 +118,7 @@
             "combined_display_setting":"N1 and N2"
         },
         {
-            "tag": "file",
+            "tag": "files",
             "depends_on": [
                 {
                     "tag":"notice",
@@ -176,16 +176,6 @@
             ]
         },
         {
-            "name": "file",
-            "owned_by":"root",
-            "conditions": [
-                {
-                    "tag_attr":"profile_id",
-                    "depends_on_attr":"id"
-                }
-            ]
-        },
-        {
             "tag":"fave",
             "owned_by":"root",
             "conditions": [
@@ -211,6 +201,16 @@
             "conditions": [
                 {
                     "tag_attr":"subscriber",
+                    "depends_on_attr":"id"
+                }
+            ]
+        },
+        {
+            "tag":"files",
+            "owned_by":"root",
+            "conditions": [
+                {
+                    "tag_attr":"profile_id",
                     "depends_on_attr":"id"
                 }
             ]
