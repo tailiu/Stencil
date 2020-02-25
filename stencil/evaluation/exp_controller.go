@@ -1228,6 +1228,8 @@ func Exp4CountEdgesNodes() {
 
 func Exp6() {
 
+	log.Println("Starting Exp6: Scalability Test")
+
 	// stencilDB = "stencil_exp3"
 	// mastodon = "mastodon_exp3"
 	// diaspora = "diaspora_1000000_exp3"
@@ -1313,7 +1315,10 @@ func Exp6() {
 
 		migratedUserID := getMigratedUserID(evalConfig, migrationID, dstAppID)
 
+		// Note that we need to replace the set db.MASTODON_DB here
+		db.STENCIL_DB = "stencil_100k_exp4"
 		db.DIASPORA_DB = "diaspora_100k_exp4"
+		db.MASTODON_DB = "mastodon_100k_exp4"
 
 		nodeCount, edgeCount := apis.StartCounter(dstAppName, dstAppID, 
 			migratedUserID, true)
@@ -1332,6 +1337,8 @@ func Exp6() {
 // Random walk experiment
 func Exp7() {
 
+	log.Println("Starting Exp7: Databags Test")
+
 	// migrationSeq := []string{"diaspora", "mastodon", "twitter", "gnusocial", "diaspora"}
 	
 	// migrationSeq := []string {
@@ -1344,7 +1351,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
+		"diaspora", "gnusocial", "diaspora",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1370,7 +1377,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"76",
+		"80",
 	}
 
 	var totalRemainingObjsInOriginalApp int64

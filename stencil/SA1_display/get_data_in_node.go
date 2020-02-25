@@ -18,12 +18,12 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	
 	if !displayConfig.markAsDelete {
 		query = fmt.Sprintf(
-			`SELECT * FROM "%s" WHERE %s = %s`, 
+			`SELECT * FROM "%s" WHERE %s = '%s'`, 
 			table, col, value,
 		)
 	} else {
 		query = fmt.Sprintf(
-			`SELECT * FROM "%s" WHERE %s = %s and mark_as_delete = false`, 
+			`SELECT * FROM "%s" WHERE %s = '%s' and mark_as_delete = false`, 
 			table, col, value,
 		)
 	}
@@ -54,12 +54,12 @@ func getRowsBasedOnDependency(displayConfig *displayConfig,
 
 	if !displayConfig.markAsDelete {
 		query = fmt.Sprintf(
-			`SELECT * FROM "%s" WHERE %s = %s`, 
+			`SELECT * FROM "%s" WHERE %s = '%s'`, 
 			table, col, value,
 		)
 	} else {
 		query = fmt.Sprintf(
-			`SELECT * FROM "%s" WHERE %s = %s and mark_as_delete = false`, 
+			`SELECT * FROM "%s" WHERE %s = '%s' and mark_as_delete = false`, 
 			table, col, value,
 		)
 	}
