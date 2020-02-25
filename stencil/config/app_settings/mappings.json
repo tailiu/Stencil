@@ -471,8 +471,8 @@
                                         "id":"accounts.id",
                                         "nickname":"accounts.username",
                                         "bio":"accounts.note",
-                                        "created":"accounts.created_at",
-                                        "modified":"accounts.updated_at"
+                                        "created":"users.created_at",
+                                        "modified":"users.updated_at"
                                     }
                                 }
                             ]
@@ -1235,8 +1235,8 @@
                                     "mapping":{
                                         "id":"users.id",
                                         "username":"users.name",
-                                        "created_at":"users.created_at",
-                                        "updated_at":"users.updated_at",
+                                        "created_at":"credentials.created_at",
+                                        "updated_at":"credentials.updated_at",
                                         "avatar_remote_url":"users.avatar",
                                         "display_name":"users.handle",
                                         "note":"users.bio"
@@ -1657,8 +1657,8 @@
                                         "nickname":"users.name",
                                         "email":"credentials.email",
                                         "password":"credentials.password",
-                                        "created":"users.created_at",
-                                        "modified":"users.updated_at"
+                                        "created":"credentials.created_at",
+                                        "modified":"credentials.updated_at"
                                         
                                     }
                                 },
@@ -1669,8 +1669,8 @@
                                         "id":"users.id",
                                         "nickname":"users.name",
                                         "bio":"users.bio",
-                                        "created":"users.created_at",
-                                        "modified":"users.updated_at"
+                                        "created":"credentials.created_at",
+                                        "modified":"credentials.updated_at"
                                     }
                                 }
                             ]
@@ -2055,8 +2055,8 @@
                                         "email":"user.email",
                                         "username":"user.nickname",
                                         "language":"user.language",
-                                        "created_at":"user.created",
-                                        "updated_at":"user.modified"
+                                        "created_at":"profile.created",
+                                        "updated_at":"profile.modified"
                                     }
                                 },
                                 {
@@ -2076,8 +2076,8 @@
                                         "full_name":"profile.fullname",
                                         "bio":"profile.bio",
                                         "location":"profile.location",
-                                        "created_at":"profile.created",
-                                        "updated_at":"profile.modified"
+                                        "created_at":"user.created",
+                                        "updated_at":"user.modified"
                                     }
                                 }
                             ]
