@@ -372,11 +372,11 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 			dataHint.Table,
 		)
 
-		for _, attr := range attrsToBeSetToNULLs {
-
-			query1 += ", " + attr + " = NULL"
-
-		}
+		// For now disable the following setting NULL code
+		// since setting null could cause mappings problems
+		// for _, attr := range attrsToBeSetToNULLs {
+		// 	query1 += ", " + attr + " = NULL"
+		// }
 
 		query1Where := fmt.Sprintf(" WHERE id = %d;", dataHint.KeyVal["id"])
 
@@ -399,6 +399,8 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 		log.Println("**************************************")
 		log.Println("Update the application table:")
 		log.Println(query1)
+		log.Println("Attributes need to be set as NULL:")
+		log.Println(attrsToBeSetToNULLs)
 		log.Println("Update the display_flags table:")
 		log.Println(query2)
 		log.Println("Update the evaluation table:")

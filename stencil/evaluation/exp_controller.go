@@ -391,7 +391,7 @@ func Exp2() {
 	// startNum := 1520 // eighth time and stop at the 61th user
 	// startNum := 2000 // ninth time and crash at the 4th user
 
-	startNum := 600
+	startNum := 100
 
 	// ************ SA1 ************
 
@@ -1321,7 +1321,7 @@ func Exp7() {
 	preExp7(evalConfig)
 
 	userIDs := []string {
-		"59",
+		"63",
 	}
 
 	var totalRemainingObjsInOriginalApp int64
