@@ -91,25 +91,25 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 // eighth population (stencil_exp_sa2_8)
 // Blade server: messages
 // My machine:
-func PupulatingController() {
+func PupulatingController(tableName string, end int64) {
 
 	var limit, startPoint, endPoint int64
 
 	// ******************* Setting Parameters Start *******************
 	
-	id := "12"
+	// id := "12"
 
-	table := "notifications"
+	table := tableName
 
 	startPoint = 0
-	endPoint = 200000
+	endPoint = end
 
-	db.STENCIL_DB = "stencil_exp_sa2_" + id
+	db.STENCIL_DB = "stencil_exp_sa2_10k"
 	
-	appName := "diaspora_100000_sa2_" + id
+	appName := "diaspora_10000_sa2"
 	appID := "1"
 
-	limit = 2500
+	limit = 1000
 	threadNum := 10
 
 	isStencilOnBladeServer := false
@@ -175,6 +175,42 @@ func PupulatingController() {
 	endTime := time.Now()
 
 	log.Println("Populating", table, "is done")
+	log.Println("Time used:", endTime.Sub(startTime))
+
+}
+
+func PupulatingControllerForAllTables() {
+	
+	startTime := time.Now()
+
+	appName := "diaspora_10000_sa2"
+	
+	appDBConn := db.GetDBConn(appName)
+	defer appDBConn.Close()
+
+	rowCounts := listRowCountsOfDB(appDBConn)
+
+	for table, rowCount := range rowCounts {
+
+		if rowCount != 0 {
+
+			log.Println("==============================")
+			log.Println("Start Populating Table:", table)
+			log.Println("==============================")
+			
+			PupulatingController(table, rowCount)
+		
+		} else {
+
+			log.Println("Skip table:", table, "since its row count is 0")
+
+		}
+
+	}
+
+	endTime := time.Now()
+
+	log.Println("Populating DB is Done!")
 	log.Println("Time used:", endTime.Sub(startTime))
 
 }

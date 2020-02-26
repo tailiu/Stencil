@@ -17,7 +17,7 @@ func TruncateSA2Tables() {
 
 func GetTotalRowCountsOfDB() {
 
-	dbName := "diaspora_1000000_template"
+	dbName := "diaspora_10000_sa2"
 
 	dbConn := db.GetDBConn(dbName)
 
@@ -62,7 +62,7 @@ func GetTotalRowCountsOfDB() {
 
 func ListRowCountsOfDB() {
 
-	dbName := "stencil_exp_sa2_100k"
+	dbName := "diaspora_10000"
 
 	dbConn := db.GetDBConn(dbName)
 	defer dbConn.Close()
@@ -515,13 +515,13 @@ func AddPrimaryKeysToParitions() {
 
 func TruncateUnrelatedTables() {
 
-	db.STENCIL_DB = "stencil_exp_sa2_1"
+	db.STENCIL_DB = "stencil"
 	
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 	defer dbConn.Close()
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
-		reference_table, resolved_references, txn_logs, id_changes,
+		reference_table, resolved_references, txn_logs,
 		evaluation, data_bags, display_flags, display_registration`
 	
 	err1 := db.TxnExecute1(dbConn, query1)
@@ -707,5 +707,17 @@ func CheckpointTruncate() {
 	dstDB := "stencil_exp_sa2_100k" 
 
 	checkpointTruncate(srcDB, dstDB, migrationTable)
+
+}
+
+func DropPrimaryKeysOfSA2Tables() {
+
+	db.STENCIL_DB = "stencil_exp_sa2_10k"
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+
+	defer dbConn.Close()
+
+	dropPrimaryKeysOfSA2Tables(dbConn)
 
 }

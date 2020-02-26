@@ -643,3 +643,92 @@ func deleteRowsByDuplicateColumnsInBaseSupTables(dbConn *sql.DB, uniqueCols []st
 	}
 
 }
+
+func listRowCountsOfDB(dbConn *sql.DB) map[string]int64 {
+
+	rowCounts := make(map[string]int64)
+
+	data := getAllTablesInDB(dbConn)
+
+	for _, data1 := range data {
+		
+		tableName := data1["tablename"]
+
+		// references table will cause errors
+		if tableName == "references" {
+			continue
+		}
+
+		query2 := fmt.Sprintf(
+			`select count(*) as num from %s`, 
+			tableName,
+		)
+
+		// log.Println(query2)
+
+		res, err := db.DataCall1(dbConn, query2)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// log.Println(res)
+
+		rowCounts[tableName] = res["num"].(int64)
+		
+	}
+
+	return rowCounts
+
+}
+
+func isMigrationTable(table string) bool {
+
+	if strings.Contains(table, "migration_table") && table != "migration_table_backup" {
+		return true
+	} else {
+		return false
+	}
+
+}
+
+func dropPrimaryKeysOfSA2Tables(dbConn *sql.DB) {
+	
+	tables := getAllTablesInDB(dbConn)
+
+	for _, t := range tables {
+
+		table := t["tablename"]
+
+		if isBaseOrSupTable(table) {
+
+			query := fmt.Sprintf(
+				`ALTER TABLE %s DROP CONSTRAINT %s_pkey`,
+				table, table,
+			)
+
+			log.Println(query)
+
+			err := db.TxnExecute1(dbConn, query)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+		} else if isMigrationTable(table) {
+			
+			query := fmt.Sprintf(
+				`ALTER TABLE %s DROP CONSTRAINT %s_pk`,
+				table, table,
+			)
+
+			log.Println(query)
+
+			err := db.TxnExecute1(dbConn, query)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+		}
+
+	}
+
+}

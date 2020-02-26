@@ -52,4 +52,8 @@ func main() {
 
 	// SA2_db_populating.PupulatingControllerWithCheckpointAndTruncate()
 
+	// SA2_db_populating.DropPrimaryKeysOfSA2Tables()
+
+	SA2_db_populating.PupulatingControllerForAllTables()
+
 }
