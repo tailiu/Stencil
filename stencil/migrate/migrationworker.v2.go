@@ -818,10 +818,10 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 	for _, toTable := range mapping.ToTables {
 		fmt.Println(".........................................")
 		if !self.ValidateMappingConditions(toTable, node) {
-			self.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Not Validated", toTable.Table)
+			// self.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Not Validated", toTable.Table)
 			continue
 		} else {
-			self.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Validated", toTable.Table)
+			// self.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Validated", toTable.Table)
 		}
 		if mappedData, mappedDataErr := self.GetMappedData(toTable, node); mappedDataErr != nil {
 			self.Logger.Debug(node.Data)
