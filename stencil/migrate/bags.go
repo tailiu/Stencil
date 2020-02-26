@@ -138,7 +138,8 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 					self.Logger.Fatal("@MigrateNode > FetchDataFromBags | ", err)
 				}
 			} else {
-				self.Logger.Fatal("@MigrateNode > FetchDataFromBags > id doesn't exist in table ", fromTable, err)
+				self.Logger.Debug(node.Data)
+				self.Logger.Fatal("@MigrateNode > FetchDataFromBags > id doesn't exist in table ", fromTable)
 			}
 		} else {
 			self.Logger.Fatal("@MigrateNode > FetchDataFromBags > TableID, fromTable: error in getting table id for member! ", fromTable, err)
@@ -208,30 +209,46 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 						continue
 					}
 					for toAttr, fromAttr := range toTable.Mapping {
+
+						var valueForNode interface{}
 						cleanedFromAttr := fromAttr
-						if _, ok := toTableData[toAttr]; !ok {
-							if fromAttr[0:1] == "$" {
-								if inputVal, err := bagMappedApp.GetInput(fromAttr); err == nil {
-									toTableData[toAttr] = inputVal
-								} else {
-									self.Logger.Debugf("@FetchDataFromBags | fromAttr [%s]", fromAttr)
-									self.Logger.Fatal(err)
-								}
-							} else if bagVal, _, decodedFromAttr, _, found, err := self.DecodeMappingValue(fromAttr, bagData, true); err == nil {
-								if found && bagVal != nil {
-									toTableData[toAttr] = bagVal
-								}
-								cleanedFromAttr = decodedFromAttr
-								self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Added | toTable: [%s], fromAttr: [%s], toAttr: [%s], BagVal: [%v], Found: [%v]", toTable.Table, fromAttr, toAttr, bagVal, found)
+
+						if strings.Contains(fromAttr, "#FETCH") {
+							continue
+						} else if fromAttr[0:1] == "$" {
+							if inputVal, err := bagMappedApp.GetInput(fromAttr); err == nil {
+								valueForNode = inputVal
 							} else {
-								self.Logger.Debug(bagData)
-								self.Logger.Fatalf("Unable to decode mapped val | fromAttr: [%s], toAttr: [%s]", fromAttr, toAttr)
+								self.Logger.Debugf("@FetchDataFromBags | fromAttr [%s]", fromAttr)
+								self.Logger.Fatal(err)
+							}
+						} else if bagVal, _, decodedFromAttr, _, found, err := self.DecodeMappingValue(fromAttr, bagData, true); err == nil {
+							cleanedFromAttr = decodedFromAttr
+							if found && bagVal != nil {
+								valueForNode = bagVal
 							}
 						} else {
-							self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Exists | toTable: [%s], fromAttr: [%s], toAttr: [%s], BagVal: [%v]", toTable.Table, fromAttr, toAttr, toTableData[toAttr])
+							self.Logger.Debug(bagData)
+							self.Logger.Fatalf("Unable to decode mapped val | fromAttr: [%s], toAttr: [%s]", fromAttr, toAttr)
 						}
-						self.Logger.Tracef("@FetchDataFromBags > %s | [%s] | [%v]", color.FgLightBlue.Render("Deleting Attr From Bag"), color.FgBlue.Render(cleanedFromAttr), color.FgBlue.Render(bagData))
-						delete(bagData, cleanedFromAttr)
+
+						if _, ok := toTableData[toAttr]; !ok {
+							if valueForNode != nil {
+								toTableData[toAttr] = valueForNode
+								self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Added New | toTable: [%s], fromAttr: [%s], cleanedFromAttr: [%s], toAttr: [%s], valueForNode: [%v], Found: [%v]", toTable.Table, fromAttr, cleanedFromAttr, toAttr, valueForNode, found)
+							} else {
+								self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Decoded but not Added | toTable: [%s], fromAttr: [%s], cleanedFromAttr: [%s], toAttr: [%s], valueForNode: [%v], Found: [%v]", toTable.Table, fromAttr, cleanedFromAttr, toAttr, valueForNode, found)
+							}
+						} else {
+							self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Exists | toTable: [%s], cleanedFromAttr: [%s], fromAttr: [%s], toAttr: [%s], BagVal: [%v]", toTable.Table, cleanedFromAttr, fromAttr, toAttr, toTableData[toAttr])
+						}
+
+						if strings.Contains(cleanedFromAttr, ".id") {
+							self.Logger.Tracef("@FetchDataFromBags > %s | [cleanedFromAttr:%s] | BagData:[%v]", color.FgLightCyan.Render("Not Deleting Attr From Bag"), color.FgBlue.Render(cleanedFromAttr), color.FgBlue.Render(bagData))
+						} else {
+							// self.Logger.Tracef("@FetchDataFromBags > %s | [%s] | BagData:[%v]", color.FgCyan.Render("Deleting Attr From Bag"), color.FgBlue.Render(cleanedFromAttr), color.FgBlue.Render(bagData))
+							delete(bagData, cleanedFromAttr)
+						}
 					}
 				}
 
@@ -249,7 +266,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 							self.Logger.Fatal("@FetchDataFromBags: UNABLE TO UPDATE BAG ", bagRow, err)
 							return err
 						} else {
-							log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Updated BAG"), bagRow["pk"]))
+							log.Println(fmt.Sprintf("%s | PK: %v", color.FgYellow.Render("Updated BAG"), bagRow["pk"]))
 						}
 					} else {
 						self.Logger.Fatal("@FetchDataFromBags > len(bagData) != 0, Unable to marshall bag | ", bagData)
@@ -309,7 +326,7 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 			} else {
 				// fmt.Println(node.Data)
 				// fmt.Println(node.SQL)
-				log.Println("@SendMemberToBag: '", member, "' doesn't contain id! ", srcID)
+				self.Logger.Warn("@SendMemberToBag: '", member, "' doesn't contain id! ", srcID)
 				// return err
 			}
 		}

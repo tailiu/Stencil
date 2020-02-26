@@ -130,7 +130,7 @@ func (self *MigrationWorkerV2) GetAllPreviousNodes(node *DependencyNode) ([]*Dep
 						return nil, err
 					}
 				} else {
-					log.Println("@GetAllPreviousNodes > ResolveParentDependencyConditions: ", err)
+					// log.Println("@GetAllPreviousNodes > ResolveParentDependencyConditions: ", err)
 				}
 			} else {
 				self.Logger.Fatal("@GetAllPreviousNodes: Tag doesn't exist? ", pdep.Tag)
@@ -253,9 +253,9 @@ func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk st
 func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
 	if len(toTable.Conditions) > 0 {
 		for conditionKey, conditionVal := range toTable.Conditions {
-			self.Logger.Debugf("Checking Condition | conditionKey [%s] conditionVal [%s]", conditionKey, conditionVal)
+			// self.Logger.Debugf("Checking Condition | conditionKey [%s] conditionVal [%s]", conditionKey, conditionVal)
 			if nodeVal, ok := node.Data[conditionKey]; ok {
-				self.Logger.Debugf("Checking Condition | nodeVal [%v]", nodeVal)
+				// self.Logger.Debugf("Checking Condition | nodeVal [%v]", nodeVal)
 				if conditionVal[:1] == "#" {
 					// fmt.Println("VerifyMappingConditions: conditionVal[:1] == #")
 					// fmt.Println(conditionKey, conditionVal, nodeVal)
@@ -264,23 +264,23 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 					case "#NULL":
 						{
 							if nodeVal != nil {
-								log.Println("Case #NULL | ", nodeVal, "!=", conditionVal)
-								fmt.Println(conditionKey, conditionVal, nodeVal)
+								// log.Println("Case #NULL | ", nodeVal, "!=", conditionVal)
+								// fmt.Println(conditionKey, conditionVal, nodeVal)
 								// self.Logger.Fatal("@VerifyMappingConditions: return false, from case #NULL:")
 								return false
 							} else {
-								log.Println("Case #NULL | ", nodeVal, "==", conditionVal)
+								// log.Println("Case #NULL | ", nodeVal, "==", conditionVal)
 							}
 						}
 					case "#NOTNULL":
 						{
 							if nodeVal == nil {
-								log.Println("Case #NOTNULL | ", nodeVal, "!=", conditionVal)
-								fmt.Println(conditionKey, conditionVal, nodeVal)
+								// log.Println("Case #NOTNULL | ", nodeVal, "!=", conditionVal)
+								// fmt.Println(conditionKey, conditionVal, nodeVal)
 								// self.Logger.Fatal("@VerifyMappingConditions: return false, from case #NOTNULL:")
 								return false
 							} else {
-								log.Println("Case #NOTNULL | ", nodeVal, "==", conditionVal)
+								// log.Println("Case #NOTNULL | ", nodeVal, "==", conditionVal)
 							}
 						}
 					default:
@@ -321,7 +321,7 @@ func (self *MigrationWorkerV2) ValidateMappingConditions(toTable config.ToTable,
 			}
 		}
 	} else {
-		self.Logger.Debugf("No mapping conditions exist for table: %s", toTable.Table)
+		// self.Logger.Debugf("No mapping conditions exist for table: %s", toTable.Table)
 	}
 
 	return true
@@ -396,9 +396,9 @@ func (self *MigrationWorkerV2) FetchFromMapping(nodeData map[string]interface{},
 	fromTable, cleanedFromAttr := "", ""
 
 	args := strings.Split(fromAttr, ",")
-	for i, arg := range args {
-		args[i] = strings.Trim(arg, "()")
-	}
+	cleanedFromAttr = args[0]
+	// fmt.Println(color.FgLightRed.Render("#############################################################################################################"))
+	self.Logger.Debugf("\n#FETCH: fromAttr: [%s] | cleanedFromAttr: [%s]", fromAttr, cleanedFromAttr)
 
 	if nodeVal, ok := nodeData[args[2]]; ok {
 		targetTabCol := strings.Split(args[0], ".")
@@ -409,7 +409,6 @@ func (self *MigrationWorkerV2) FetchFromMapping(nodeData map[string]interface{},
 		} else if len(res) > 0 {
 			mappedVal = res[targetTabCol[1]]
 			fromTable = targetTabCol[0]
-			cleanedFromAttr = args[0]
 			nodeData[args[0]] = res[targetTabCol[1]]
 			if len(args) > 3 {
 				toMemberTokens := strings.Split(args[3], ".")
@@ -429,6 +428,8 @@ func (self *MigrationWorkerV2) FetchFromMapping(nodeData map[string]interface{},
 		fmt.Println(nodeData)
 		self.Logger.Fatal("@FetchFromMapping: unable to #FETCH ", args[2])
 	}
+	self.Logger.Debugf("\n#FETCH EXIT: fromAttr: [%s] | cleanedFromAttr: [%s] | FromTable: [%s], val: [%v]", fromAttr, cleanedFromAttr, fromTable, mappedVal)
+	// fmt.Println(color.FgLightRed.Render("#############################################################################################################"))
 	return mappedVal, fromTable, cleanedFromAttr, ref, nil
 }
 
@@ -484,7 +485,13 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 		}
 	case "#":
 		{
-			cleanedFromAttr = strings.Trim(fromAttr, "#(ASSIGNFETCHREF)")
+			cleanedFromAttr = strings.ReplaceAll(fromAttr, "(", "")
+			cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, ")", "")
+			cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#ASSIGN", "")
+			cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#FETCH", "")
+			cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#REF", "")
+			// cleanedFromAttr = strings.Trim(cleanedFromAttr, "#ASSIGNFETCHREF")
+			// self.Logger.Debug(color.FgLightYellow.Render(fmt.Sprintf("FromAttr: %s | Cleaned: %s", fromAttr, cleanedFromAttr)))
 			if strings.Contains(fromAttr, "#REF") {
 				if strings.Contains(fromAttr, "#FETCH") {
 					var err error
@@ -533,11 +540,11 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 					}
 				} else {
 					args := strings.Split(cleanedFromAttr, ",")
+					cleanedFromAttr = args[0]
 					if nodeVal, ok := nodeData[args[0]]; ok {
 						argsTokens := strings.Split(args[0], ".")
 						mappedVal = nodeVal
 						fromTable = argsTokens[0]
-						cleanedFromAttr = args[0]
 					}
 					if !isBag {
 						if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], nodeData); err == nil {
@@ -605,9 +612,9 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 		}
 	}
 
-	if isBag {
-		self.Logger.Tracef("@DecodeMappingValue | mappedVal: [%v], fromTable: [%s], cleanedFromAttr: [%s], found: [%v], ref: %v", mappedVal, fromTable, cleanedFromAttr, found, ref)
-	}
+	// if isBag {
+	// self.Logger.Debugf("@DecodeMappingValue | mappedVal: [%v], fromTable: [%s], cleanedFromAttr: [%s], fromAttr: [%s], found: [%v], isBag: [%v]", mappedVal, fromTable, cleanedFromAttr, fromAttr, found, isBag)
+	// }
 
 	return mappedVal, fromTable, cleanedFromAttr, ref, found, nil
 }
