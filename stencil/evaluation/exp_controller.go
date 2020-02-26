@@ -1587,7 +1587,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter", "gnusocial",
+		"diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1604,7 +1604,7 @@ func Exp7() {
 	twitter1 = "twitter_exp7"
 	gnusocial1 = "gnusocial_exp7"
 
-	edgeCounterRangeStart := 750
+	edgeCounterRangeStart := 300
 	edgeCounterRangeEnd := 1200
 	migrationNum := 20
 
@@ -1640,7 +1640,7 @@ func Exp7() {
 
 		log.Println("Next User:", userID)
 
-		preExp7(evalConfig)
+		// preExp7(evalConfig)
 
 		var totalRemainingObjsInOriginalApp int64
 		var totalMediaBeforeAllMigrations int64

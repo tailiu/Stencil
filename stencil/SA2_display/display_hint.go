@@ -34,6 +34,8 @@ func TransformRowToHint(appConfig *config.AppConfig, data map[string]string) Hin
 	hint.TableID = data["table_id"]
 	hint.TableName = appConfig.TableIDNamePairs[data["table_id"]]
 	hint.RowIDs = rowIDs
+	hint.Tag = 
+
 	return hint
 }
 
@@ -210,4 +212,19 @@ func (hint HintStruct) GetAllRowIDs(stencilDBConn *sql.DB,
 	}
 	
 	return result
+}
+
+func (hint HintStruct) GetOwnershipSpec(dstDAG *DAG) (*config.Ownership, error) {
+
+	for _, ownership := range dstDAG.Ownerships {
+
+		if ownership.Tag == hint.Tag {
+
+			return &ownership, nil
+		}
+
+	}
+
+	return nil, errors.New("Error: No Ownership Tag Found For the Provided Data")
+
 }

@@ -15,7 +15,7 @@ import (
 
 const StencilDBName = "stencil"
 
-func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string) {
+func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string, *DAG) {
 	
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
@@ -35,7 +35,12 @@ func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string) {
 
 	threadID := RandomNonnegativeInt()
 
-	return stencilDBConn, &appConfig, threadID, srcUserID
+	dstDAG, err4 := loadDAG(dstAppName)
+	if err4 != nil {
+		log.Fatal(err4)
+	}
+
+	return stencilDBConn, &appConfig, threadID, srcUserID, dstDAG
 
 }
 
@@ -304,6 +309,49 @@ func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
 	
 	return data1["bag"].(bool)
 
+}
+
+func checkDisplayConditionsInNode(displayConfig *displayConfig,
+	dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
+
+	var displayedData, notDisplayedData []*HintStruct
+
+	for _, oneDataInNode := range dataInNode {
+
+		displayed := CheckDisplay(displayConfig, oneDataInNode)
+
+		if !displayed {
+
+			notDisplayedData = append(notDisplayedData, oneDataInNode)
+
+		} else {
+
+			displayedData = append(displayedData, oneDataInNode)
+
+		}
+	}
+
+	return displayedData, notDisplayedData
+
+}
+
+func chechPutIntoDataBag(stencilDBConn *sql.DB, 
+	appID string, dataHints []HintStruct, 
+	userID string, secondRound bool) error {
+
+	if secondRound {
+
+		err9 := putIntoDataBag(stencilDBConn, appID, dataHints, userID)
+		if err9 != nil {
+			log.Println(err9)
+		}
+
+		return NoNodeCanBeDisplayed
+
+	} else {
+
+		return NoNodeCanBeDisplayed
+	}
 }
 
 func PutIntoDataBag(stencilDBConn *sql.DB, 

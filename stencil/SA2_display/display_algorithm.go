@@ -16,7 +16,10 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appConfig, threadID, userID := Initialize(migrationID)
+	stencilDBConn, appConfig, threadID, userID, dstDAG := Initialize(migrationID)
+
+	defer stencilDBConn.Close()
+	defer appConfig.DBConn.Close()
 
 	// CreateDeletionHoldTable(stencilDBConn)
 
@@ -35,7 +38,8 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 		for _, oneMigratedData := range migratedData {
 			_, dhStack, _ = checkDisplayOneMigratedData(
 				stencilDBConn, appConfig, oneMigratedData, 
-				secondRound, deletionHoldEnable, dhStack, threadID, userID)
+				secondRound, deletionHoldEnable, dhStack, threadID, userID, dstDAG,
+			)
 
 			if deletionHoldEnable {
 				RemoveDeletionHold(stencilDBConn, dhStack, threadID)
@@ -59,7 +63,7 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 		_, dhStack, _ = checkDisplayOneMigratedData(
 			stencilDBConn, appConfig, oneSecondRoundMigratedData, 
 			secondRound, deletionHoldEnable, 
-			dhStack, threadID, userID,
+			dhStack, threadID, userID, dstDAG,
 		)
 
 		if deletionHoldEnable {
@@ -82,7 +86,7 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 func checkDisplayOneMigratedData(stencilDBConn *sql.DB, 
 	appConfig *config.AppConfig, oneMigratedData HintStruct, 
 	secondRound bool, deletionHoldEnable bool, dhStack [][]int, 
-	threadID int, userID string) (string, [][]int, error) {
+	threadID int, userID string, dstDAG *DAG) (string, [][]int, error) {
 
 	// CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
 	log.Println("Check Data ", oneMigratedData)
@@ -163,6 +167,133 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 
 			return ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 		}
+		
+		log.Println("==================== Check Ownership ====================")
+
+		nodeTag := oneMigratedData.GetTagName(appConfig)
+
+		log.Println("Check data with tag:", nodeTag)
+		
+		// If the tag of this node is the root, the node could be the migrating user's 
+		// or other users' root. Regardless of that, this node will be displayed
+		// and there is no need to further check data dependencies since root node does not
+		// depend on other nodes
+		if nodeTag == "root" {
+
+			log.Println("The checked data is a root node")
+
+			err15 := Display(stencilDBConn, 
+				appConfig.AppID, dataInNode, 
+				deletionHoldEnable, dhStack, threadID,
+			)
+
+			if err15 != nil {
+				log.Fatal(err15)
+			} else {
+				log.Println("Display a root node when checking ownership")
+			}
+			
+			return ReturnResultBasedOnNodeCompleteness(err1)
+		
+		// If the tag of this node is not the root,
+		// we need to check the ownership and sharing relationships of this data.
+		// The check of sharing conditions for now is not implemented for now.
+		} else {
+			
+			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(dstDAG)
+			
+			// Mastodon conversations have no ownership settings. In this case
+			// we cannot check ownership settings
+			if err12 != nil {
+				
+				log.Println(err12)
+				log.Println("Skip this ownership check")
+			
+			} else {
+				// log.Println(dataOwnershipSpec)
+
+				dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
+
+				// The root node could be incomplete
+				if err13 != nil {
+					log.Println("An error in getting the checked node's owner:")
+					log.Println(err13)
+				}
+
+				// Display the data not displayed in the root node
+				// this root node should be could be the migrating user's root node
+				// or other users' root nodes
+				if len(dataInOwnerNode) != 0 {
+
+					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
+						displayConfig, dataInOwnerNode)
+					
+					if len(displayedDataInOwnerNode) != 0 {
+
+						err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
+						if err6 != nil {
+							log.Fatal(err6)
+						}
+
+					}
+
+					var displayedDataInOwnerNode, notDisplayedDataInOwnerNode []HintStruct
+					for _, dataInOwnerNode1 := range dataInOwnerNode {
+
+						displayed := CheckDisplay(stencilDBConn, appConfig.AppID, dataInOwnerNode1)
+
+						if !displayed {
+
+							notDisplayedDataInOwnerNode = append(notDisplayedDataInOwnerNode, dataInOwnerNode1)
+
+						} else {
+
+							displayedDataInOwnerNode = append(displayedDataInOwnerNode, dataInOwnerNode1)
+						}
+					}
+
+					// Note: This will be changed when considering ongoing application services
+					// and the existence of other display threads !!
+					if len(displayedData) != 0 {
+
+						var err6 error
+
+						err6, dhStack = Display(stencilDBConn, 
+							appConfig.AppID, notDisplayedDataInOwnerNode, 
+							deletionHoldEnable, dhStack, threadID,
+						)
+
+						if err6 != nil {
+
+							return "", dhStack, err6
+
+						}
+					}
+
+				}
+
+				// If based on the ownership display settings this node is allowed to be displayed,
+				// then continue to check dependencies.
+				// Otherwise, no data in the node can be displayed.
+				if displayResultBasedOnOwnership := CheckOwnershipCondition(
+					dataOwnershipSpec.Display_setting, err13); !displayResultBasedOnOwnership {
+
+					log.Println(`Ownership display settings are not satisfied, 
+						so this node cannot be displayed`)
+
+					error16	:= chechPutIntoDataBag(stencilDBConn, appConfig.AppID, 
+						dataInNode, userID, secondRound)
+
+					return NoDataInNodeCanBeDisplayed, dhStack, error16
+
+				} else {
+
+					log.Println("Ownership display settings are satisfied")
+
+				}
+			}
+			
+		}
 
 		log.Println("==================== Check Inter-node dependencies ====================")
 		
@@ -230,9 +361,11 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 
 						result, dhStack, err7 = checkDisplayOneMigratedData(
 							stencilDBConn, appConfig, dataInParentNode, 
-							secondRound, deletionHoldEnable, dhStack, threadID, userID)
+							secondRound, deletionHoldEnable, dhStack, threadID, userID, dstDAG,
+						)
 						
 						if err7 != nil {
+
 							log.Println(err7)
 
 							// If there is path confilct, 
@@ -250,15 +383,15 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 
 						case NoDataInNodeCanBeDisplayed:
 							pTagConditions[pTag] = 
-							ReturnDisplayConditionWhenCannotGetDataFromParentNode(
-								displaySetting, secondRound)
+								ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+									displaySetting, secondRound)
 
-						case "Data In a Node Can be partially Displayed":
+						case PartiallyDisplayed:
 							pTagConditions[pTag] = 
-							ReturnDisplayConditionWhenGetPartialDataFromParentNode(
-								displaySetting)
+								ReturnDisplayConditionWhenGetPartialDataFromParentNode(
+									displaySetting)
 
-						case "Data In a Node Can be completely Displayed":
+						case CompletelyDisplayed:
 							pTagConditions[pTag] = true
 						}
 					}
