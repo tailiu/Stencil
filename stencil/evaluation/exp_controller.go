@@ -570,10 +570,10 @@ func Exp2GetUserIDsByPhotos() {
 
 	preExp(evalConfig)
 
-	migrationNum := 300
+	startNum := 300 
+	migrationNum := 100
 
 	userIDs := getAllUserIDsSortByPhotosInDiaspora(evalConfig)
-
 	log.Println(userIDs)
 
 	// startNum := 200 // first time and crash at the 69th user

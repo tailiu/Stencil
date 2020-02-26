@@ -2,7 +2,7 @@ package SA2_migrate
 
 import (
 	"log"
-	"stencil/SA1_display"
+	"stencil/SA2_display"
 	"stencil/apis"
 	"sync"
 )
@@ -46,9 +46,9 @@ func Controller(uid, srcAppName, srcAppID,
 	var wg sync.WaitGroup
 
 	if enableDisplay {
-		log.Println("############### Start Migration and Display Controller ###############")
+		log.Println("############### Start SA2 Migration and Display Controller ###############")
 	} else {
-		log.Println("############### Start Migration Controller ###############")
+		log.Println("############### Start SA2 Migration Controller ###############")
 	}
 
 	// Instead of waiting for all display threads to finish,
@@ -58,7 +58,7 @@ func Controller(uid, srcAppName, srcAppID,
 	go apis.StartMigration(uid, srcAppName, srcAppID,
 		dstAppName, dstAppID, migrationType, useBladeServerAsDst, enableBags)
 
-	go SA1_display.StartDisplay(
+	go SA2_display.StartDisplay(
 		uid, srcAppID, dstAppID, migrationType, threadNum, &wg, 
 		enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst,
 	)
@@ -66,9 +66,9 @@ func Controller(uid, srcAppName, srcAppID,
 	wg.Wait()
 
 	if enableDisplay {
-		log.Println("############### End Migration and Display Controller ###############")
+		log.Println("############### End SA2 Migration and Display Controller ###############")
 	} else {
-		log.Println("############### End Migration Controller ###############")
+		log.Println("############### End SA2 Migration Controller ###############")
 	}
 
 }

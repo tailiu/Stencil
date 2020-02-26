@@ -11,7 +11,9 @@ func main() {
 
 	// evaluation.Exp1()
 
-	evaluation.Exp2()
+	// evaluation.Exp2()
+
+	// evaluation.Exp2GetUserIDsByPhotos()
 
 	// evaluation.Exp2GetMigratedDataRateBySrc()
 

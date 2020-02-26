@@ -20,8 +20,14 @@ func RandomNonnegativeInt() int {
 	return rand.Intn(math.MaxInt32)
 }
 
-func getUserIDByMigrationID(stencilDBConn *sql.DB, migrationID int) string {
-	query := fmt.Sprintf("select user_id from migration_registration where migration_id = %d", migrationID)
+func getUserIDByMigrationID(stencilDBConn *sql.DB, 
+	migrationID int) string {
+
+	query := fmt.Sprintf(
+		`select user_id from migration_registration
+		where migration_id = %d`,
+		migrationID,
+	)
 
 	data, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
@@ -31,24 +37,69 @@ func getUserIDByMigrationID(stencilDBConn *sql.DB, migrationID int) string {
 	return fmt.Sprint(data["user_id"])
 }
 
-func Initialize(migrationID int, app string) (*sql.DB, *config.AppConfig, int, string) {
+func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string) {
+	
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
-	app_id := db.GetAppIDByAppName(stencilDBConn, app)
+	dstAppID, srcUserID := 
+		getDstAppIDUserIDByMigrationID(stencilDBConn, migrationID)
 
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, true)
+	dstAppName := getAppNameByAppID(stencilDBConn, dstAppID)
+
+	isBladeServer := true
+
+	appConfig, err := config.CreateAppConfigDisplay(dstAppName, 
+		dstAppID, stencilDBConn, isBladeServer)
+	
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	threadID := RandomNonnegativeInt()
 
-	userID := getUserIDByMigrationID(stencilDBConn, migrationID)
+	return stencilDBConn, &appConfig, threadID, srcUserID
 
-	return stencilDBConn, &appConfig, threadID, userID
 }
 
-func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfig *config.AppConfig) []HintStruct {
+func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
+
+	query := fmt.Sprintf("select app_name from apps where pk = %s", appID)
+
+	// log.Println(query)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["app_name"])
+
+}
+
+func getDstAppIDUserIDByMigrationID(stencilDBConn *sql.DB,
+	migrationID int) (string, string) {
+
+	query := fmt.Sprintf(
+		`SELECT dst_app, user_id FROM migration_registration 
+		WHERE migration_id = %d`,
+		migrationID,
+	)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dstApp := fmt.Sprint(data["dst_app"])
+	userID := fmt.Sprint(data["user_id"])
+
+	return dstApp, userID
+
+}
+
+func GetUndisplayedMigratedData(stencilDBConn *sql.DB, 
+	migrationID int, appConfig *config.AppConfig) []HintStruct {
+	
 	var displayHints []HintStruct
 
 	appID, _ := strconv.Atoi(appConfig.AppID)
@@ -57,7 +108,9 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 	// For example, in the one-to-multiple mapping, the same row id has different group ids / table ids
 	// Those rows could be displayed differently
 	query := fmt.Sprintf(
-		"SELECT table_id, array_agg(row_id) as row_ids FROM migration_table where mflag = 1 and app_id = %d and migration_id = %d group by group_id, table_id;",
+		`SELECT table_id, array_agg(row_id) as row_ids 
+		FROM migration_table where mflag = 1 and app_id = %d and migration_id = %d 
+		group by group_id, table_id;`,
 		appID, migrationID)
 	
 	data := db.GetAllColsOfRows(stencilDBConn, query)
@@ -77,7 +130,11 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB, migrationID int, appConfi
 
 func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 
-	query := fmt.Sprintf("SELECT 1 FROM txn_logs WHERE action_id = %d and action_type='COMMIT' LIMIT 1", migrationID)
+	query := fmt.Sprintf(
+		`SELECT 1 FROM txn_logs WHERE action_id = %d 
+		and action_type='COMMIT' LIMIT 1`,
+		migrationID,
+	)
 	
 	data := db.GetAllColsOfRows(stencilDBConn, query)
 	
@@ -99,7 +156,11 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 
 	// Here for one group, we only need to check one row_id to see whether the group is displayed or not
 	// It should be noted that table_id / group_id should also be considered
-	query := fmt.Sprintf("SELECT mflag FROM migration_table WHERE row_id = %d and app_id = %d and table_id = %s", data.RowIDs[0], appID1, data.TableID)
+	query := fmt.Sprintf(
+		`SELECT mflag FROM migration_table 
+		WHERE row_id = %d and app_id = %d and table_id = %s`, 
+		data.RowIDs[0], appID1, data.TableID,
+	)
 	
 	// log.Println("==========")
 	// log.Println(query)
@@ -114,7 +175,10 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 	return data1["mflag"].(int64)
 }
 
-func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deletionHoldEnable bool, dhStack [][]int, threadID int) (error, [][]int) {
+func Display(stencilDBConn *sql.DB, appID string, 
+	dataHints []HintStruct, deletionHoldEnable bool, 
+	dhStack [][]int, threadID int) (error, [][]int) {
+	
 	var queries []string
 
 	for _, dataHint := range dataHints {
@@ -133,10 +197,14 @@ func Display(stencilDBConn *sql.DB, appID string, dataHints []HintStruct, deleti
 		for _, rowID := range rowIDs {
 			
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf("UPDATE migration_table SET mflag = 0, updated_at = now() WHERE row_id = %s and app_id = %s and table_id = %s", 
-				fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
+			query := fmt.Sprintf(
+				`UPDATE migration_table SET mflag = 0, updated_at = now() 
+				WHERE row_id = %s and app_id = %s and table_id = %s`, 
+				fmt.Sprint(rowID["row_id"]), 
+				appID, dataHint.TableID,
+			)
 			
-				log.Println("**************************************")
+			log.Println("**************************************")
 			log.Println(query)
 			log.Println("**************************************")
 			
@@ -165,8 +233,12 @@ func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
 	
 	// Here for one group, we only need to check one to see whether the group is displayed or not
 	// It should be noted that table_id / group_id should also be considered
-	query := fmt.Sprintf("SELECT bag FROM migration_table WHERE row_id = %d and app_id = %d and table_id = %s", 
-		data.RowIDs[0], appID1, data.TableID)
+	query := fmt.Sprintf(
+		`SELECT bag FROM migration_table 
+		WHERE row_id = %d and app_id = %d and table_id = %s`, 
+		data.RowIDs[0], appID1, data.TableID,
+	)
+
 	// log.Println(query)
 	
 	data1, err := db.DataCall1(stencilDBConn, query)
@@ -202,8 +274,10 @@ func PutIntoDataBag(stencilDBConn *sql.DB,
 		for _, rowID := range rowIDs {
 
 			// It should be noted that table_id / group_id should also be considered
-			query := fmt.Sprintf(`UPDATE migration_table SET 
-				user_id = %s, bag = true, mark_as_delete = true, mflag = 0, updated_at = now() 
+			query := fmt.Sprintf(
+				`UPDATE migration_table SET 
+				user_id = %s, bag = true, mark_as_delete = true, 
+				mflag = 0, updated_at = now() 
 				WHERE row_id = %s and app_id = %s and table_id = %s`,
 				userID, fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
 			
@@ -225,7 +299,10 @@ func GetTableNameByTableID(stencilDBConn *sql.DB, tableID string) string {
 		log.Fatal(err)
 	}
 
-	query := fmt.Sprintf("select table_name from app_tables where pk = %d", iTableID)
+	query := fmt.Sprintf(
+		`select table_name from app_tables where pk = %d`,
+		iTableID,
+	)
 	
 	data1, err1 := db.DataCall1(stencilDBConn, query)
 	if err1 != nil {
@@ -236,14 +313,18 @@ func GetTableNameByTableID(stencilDBConn *sql.DB, tableID string) string {
 
 }
 
-func GetTableIDByTableName(stencilDBConn *sql.DB, tableName, appID string) string {
+func GetTableIDByTableName(stencilDBConn *sql.DB, 
+	tableName, appID string) string {
+	
 	appID1, err := strconv.Atoi(appID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	query := fmt.Sprintf("select pk from app_tables where app_id = %d and table_name = '%s'", 
-		appID1, tableName)
+	query := fmt.Sprintf(
+		`select pk from app_tables where app_id = %d and table_name = '%s'`, 
+		appID1, tableName,
+	)
 
 	// log.Println(query)
 	
@@ -257,7 +338,9 @@ func GetTableIDByTableName(stencilDBConn *sql.DB, tableName, appID string) strin
 	return strconv.FormatInt(data1["pk"].(int64), 10)
 }
 
-func CheckAndGetTableNameAndID(stencilDBConn *sql.DB, data *HintStruct, appID string) {
+func CheckAndGetTableNameAndID(stencilDBConn *sql.DB, 
+	data *HintStruct, appID string) {
+	
 	tableName := data.TableName
 	
 	tableID := data.TableID
@@ -267,9 +350,54 @@ func CheckAndGetTableNameAndID(stencilDBConn *sql.DB, data *HintStruct, appID st
 	} 
 	
 	if tableName != "" &&  tableID == "" {
-		data.TableID = GetTableIDByTableName(stencilDBConn, tableName, appID)
+		data.TableID = GetTableIDByTableName(stencilDBConn, 
+			tableName, appID)
 	}
 
 	// log.Println(data.TableID)
 	// log.Println(data.TableName)
+}
+
+func getMigrationIDs(stencilDBConn *sql.DB,
+	uid, srcAppID, dstAppID, migrationType string) []int {
+
+	var mType string
+	var migrationIDs []int
+
+	switch migrationType {
+	case "i":
+		mType = "0"
+	case "d":
+		mType = "3"
+	case "n":
+		mType = "5"
+	default:
+		log.Fatal("Cannot find a corresponding migration type")
+	}
+
+	query := fmt.Sprintf(
+		`select migration_id from migration_registration 
+		where user_id = %s and src_app = %s and dst_app = %s 
+		and migration_type = %s`,
+		uid, srcAppID, dstAppID, mType)
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(data)
+
+	for _, data1 := range data {
+
+		migrationID, ok := data1["migration_id"].(int64)
+		if !ok {
+			log.Fatal("Transform an interface type migrationID to an int64 fails")
+		}
+
+		migrationIDs = append(migrationIDs, int(migrationID))
+	}
+
+	return migrationIDs
+
 }

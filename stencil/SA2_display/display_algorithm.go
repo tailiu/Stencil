@@ -10,13 +10,13 @@ import (
 
 const checkInterval = 200 * time.Millisecond
 
-func DisplayThread(app string, migrationID int, deletionHoldEnable bool) {
+func DisplayThread(migrationID int, deletionHoldEnable bool) {
 
 	startTime := time.Now()
 
 	log.Println("--------- Start of Display Check ---------")
 
-	stencilDBConn, appConfig, threadID, userID := Initialize(migrationID, app)
+	stencilDBConn, appConfig, threadID, userID := Initialize(migrationID)
 
 	// CreateDeletionHoldTable(stencilDBConn)
 
