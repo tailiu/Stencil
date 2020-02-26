@@ -15,7 +15,7 @@ import (
 	"github.com/gookit/color"
 )
 
-func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, MaD string) (int, error) {
+func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, mappings *config.MappedApp, threads int, MaD string, enableBags bool) (int, error) {
 	var wg sync.WaitGroup
 
 	commitChannel := make(chan ThreadChannel)
@@ -63,16 +63,18 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 						}
 						break
 					}
-					for {
-						if err := mWorker.MigrateProcessBags(thread_id); err != nil {
-							if !strings.Contains(err.Error(), "deadlock") {
-								mWorker.RenewDBConn()
-							} else {
-								fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+					if enableBags {
+						for {
+							if err := mWorker.MigrateProcessBags(thread_id); err != nil {
+								if !strings.Contains(err.Error(), "deadlock") {
+									mWorker.RenewDBConn()
+								} else {
+									fmt.Print(">>>>>>>>>>>>>>>>>>>>>>> RESTART AFTER DEADLOCK <<<<<<<<<<<<<<<<<<<<<<<<<<<")
+								}
+								continue
 							}
-							continue
+							break
 						}
-						break
 					}
 				}
 			case migrate.CONSISTENT:
