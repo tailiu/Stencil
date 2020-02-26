@@ -1247,3 +1247,32 @@ func GetTablesContainingCol(dbConn *sql.DB, col string) {
 	log.Println(tablesContainingCol)
 
 }
+
+func DropForeignKeyConstraints(dbConn *sql.DB) {
+
+	query1 := fmt.Sprintf(
+		`select conrelid::regclass AS table_from, conname, pg_get_constraintdef(c.oid)
+		from pg_constraint c join pg_namespace n ON n.oid = c.connamespace
+		where contype in ('f') order by table_from;`,
+	)
+	
+	fkConstraints := db.GetAllColsOfRows(dbConn, query1)
+
+	for _, fkConstraint := range fkConstraints {
+
+		query2 := fmt.Sprintf(
+			`ALTER TABLE "%s" DROP CONSTRAINT %s;`,
+			fkConstraint["table_from"],
+			fkConstraint["conname"],
+		)
+
+		log.Println(query2)
+
+		err2 := db.TxnExecute1(dbConn, query2)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+
+	}
+
+}

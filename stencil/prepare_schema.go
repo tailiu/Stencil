@@ -111,13 +111,26 @@ func test8() {
 	
 }
 
+func test9() {
+
+	dbName := "diaspora_100000_int8_template"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
+
+	evaluation.DropForeignKeyConstraints(dbConn)
+	
+}
+
 func main() {
 
 	// test1()
 	
 	// test2()
 
-	test3()
+	// test3()
 
 	// test4()
 
@@ -128,5 +141,7 @@ func main() {
 	// test7()
 
 	// test8()
+
+	// test9()
 
 }
