@@ -381,6 +381,10 @@ func Exp1GetTotalObjects() {
 // Notice that enableDisplay, displayInFirstPhase need to be changed in different exps
 func Exp2() {
 
+	log.Println("===================================")
+	log.Println("Starting Exp2: Migration Rates Test")
+	log.Println("===================================")
+
 	// diaspora = "diaspora_1000000"
 
 	// stencilDB = "stencil_exp"
@@ -405,23 +409,21 @@ func Exp2() {
 
 	defer closeDBConns(evalConfig)
 
-	// preExp(evalConfig)
+	preExp(evalConfig)
 
-	migrationNum := 300
+	edgeCounterRangeStart := 750
+	edgeCounterRangeEnd := 1200
+	migrationNum := 100
 
-	// startNum := 200 // first time and crash at the 69th user
-	// startNum := 300 // second time and crash at the 67th user
-	// startNum := 400 // third time and stop at the 14th user
-	// startNum := 600 // fouth time and stop at the 1st user
-	// startNum := 900 // fifth time and stop at the 10th user
-	// startNum := 920 // sixth time and crashes at the 52th user
-	// startNum := 1500 // seventh time and crashes at the 11th user
-	// startNum := 1520 // eighth time and stop at the 61th user
-	// startNum := 2000 // ninth time and crash at the 4th user
+	edgeCounter := getEdgesCounterByRange(
+		evalConfig,
+		edgeCounterRangeStart, 
+		edgeCounterRangeEnd, 
+		migrationNum,
+	)
 
-	// startNum := 100 // first time and crash at the 4th user
-
-	startNum := 105 
+	log.Println(edgeCounter)
+	log.Println("Migration number:", len(edgeCounter))
 
 	// ************ SA1 ************
 
@@ -480,9 +482,169 @@ func Exp2() {
 	naiveSizeFile, naiveTimeFile := "naiveSize", "naiveTime"
 
 
+	for i := 0; i < len(edgeCounter); i ++ {
+
+		userID := edgeCounter[i]["person_id"]
+
+		log.Println("User ID:", userID)
+
+		// ************ SA1 Deletion ************
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, SA1StencilDB, diaspora, 
+			userID, SA1MigrationType, 
+			SA1StencilDB, SA1SrcDB, SA1DstDB,
+			SA1SizeFile, SA1TimeFile,
+			SA1EnableDisplay, SA1DisplayInFirstPhase,
+		)
+
+		log.Println("User ID:", userID)
+
+		// // ************ SA1 without Display ************
+
+		// migrateUserFromDiasporaToMastodon(
+		// 	evalConfig, SA1WithoutDisplayStencilDB, diaspora, 
+		// 	userID, SA1WithoutDisplayMigrationType, 
+		// 	SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB,
+		// 	SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile,
+		// 	SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase,
+		// )
+
+		// log.Println("User ID:", userID)
+		
+		// ************ SA1 Independent Migratoin ************
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, SA1IndependentStencilDB, diaspora, 
+			userID, SA1IndependentMigrationType, 
+			SA1IndependentStencilDB, SA1IndependentSrcDB, SA1IndependentDstDB,
+			SA1IndependentSizeFile, SA1IndependentTimeFile,
+			SA1IndependentEnableDisplay, SA1IndependentDisplayInFirstPhase,
+		)
+
+		log.Println("User ID:", userID)
+
+		// ************ Naive Migration ************
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, naiveStencilDB, diaspora, 
+			userID, naiveMigrationType, 
+			naiveStencilDB, naiveSrcDB, naiveDstDB,
+			naiveSizeFile, naiveTimeFile,
+			naiveEnableDisplay, naiveDisplayInFirstPhase,
+		)
+
+	}
+
+}
+
+func Exp2GetUserIDsByPhotos() {
+
+	log.Println("===================================")
+	log.Println("Starting Exp2: Migration Rates Test")
+	log.Println("===================================")
+
+	// diaspora = "diaspora_1000000"
+
+	// stencilDB = "stencil_exp"
+	// stencilDB1 = "stencil_exp1"
+	// stencilDB2 = "stencil_exp2"
+
+	// mastodon = "mastodon_exp"
+	// mastodon1 = "mastodon_exp1"
+	// mastodon2 = "mastodon_exp2"
+
+	diaspora = "diaspora_100000"
+
+	stencilDB = "stencil_100k_exp1"
+	stencilDB1 = "stencil_100k_exp2"
+	stencilDB2 = "stencil_100k_exp3"
+
+	mastodon = "mastodon_100k_exp1"
+	mastodon1 = "mastodon_100k_exp2"
+	mastodon2 = "mastodon_100k_exp3"
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	preExp(evalConfig)
+
+	migrationNum := 300
+
 	userIDs := getAllUserIDsSortByPhotosInDiaspora(evalConfig)
 
-	// log.Println(userIDs)
+	log.Println(userIDs)
+
+	// startNum := 200 // first time and crash at the 69th user
+	// startNum := 300 // second time and crash at the 67th user
+	// startNum := 400 // third time and stop at the 14th user
+	// startNum := 600 // fouth time and stop at the 1st user
+	// startNum := 900 // fifth time and stop at the 10th user
+	// startNum := 920 // sixth time and crashes at the 52th user
+	// startNum := 1500 // seventh time and crashes at the 11th user
+	// startNum := 1520 // eighth time and stop at the 61th user
+	// startNum := 2000 // ninth time and crash at the 4th user
+
+	// startNum := 100 // first time and crash at the 4th user
+	// startNum := 105 
+
+	// ************ SA1 ************
+
+	SA1MigrationType := "d"
+
+	// SA1StencilDB, SA1SrcDB, SA1DstDB := 
+	// 	"stencil_exp", "diaspora_1000000_exp", "mastodon_exp"
+
+	SA1StencilDB, SA1SrcDB, SA1DstDB := 
+		"stencil_100k_exp1", "diaspora_100k_exp1", "mastodon_100k_exp1"
+
+	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
+
+	SA1SizeFile, SA1TimeFile := "SA1Size", "SA1Time"
+
+	// // ************ SA1 without Display ************
+
+	// SA1WithoutDisplayMigrationType := "d"
+
+	// // SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB := 
+	// // 	"stencil_exp1", "diaspora_1000000_exp1", "mastodon_exp1"
+
+	// SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB := 
+	// 	"stencil_100k_exp2", "diaspora_100k_exp2", "mastodon_100k_exp2"
+
+	// SA1WithoutDisplayEnableDisplay, SA1WithoutDisplayDisplayInFirstPhase := false, false
+
+	// SA1WithoutDisplaySizeFile, SA1WithoutDisplayTimeFile := "SA1WDSize", "SA1WDTime"
+
+	// ************ SA1 without Display ************
+
+	SA1IndependentMigrationType := "i"
+
+	// SA1WithoutDisplayStencilDB, SA1WithoutDisplaySrcDB, SA1WithoutDisplayDstDB := 
+	// 	"stencil_exp1", "diaspora_1000000_exp1", "mastodon_exp1"
+
+	SA1IndependentStencilDB, SA1IndependentSrcDB, SA1IndependentDstDB := 
+		"stencil_100k_exp2", "diaspora_100k_exp2", "mastodon_100k_exp2"
+
+	SA1IndependentEnableDisplay, SA1IndependentDisplayInFirstPhase := true, true
+
+	SA1IndependentSizeFile, SA1IndependentTimeFile := "SA1IndepSize", "SAIndepTime"
+
+	// ************ Naive Migration ************
+
+	naiveMigrationType := "n"
+
+	// naiveStencilDB, naiveSrcDB, naiveDstDB := 
+	// 	"stencil_exp2", "diaspora_1000000_exp2", "mastodon_exp2"
+
+	naiveStencilDB, naiveSrcDB, naiveDstDB := 
+		"stencil_100k_exp3", "diaspora_100k_exp3", "mastodon_100k_exp3"
+
+	naiveEnableDisplay, naiveDisplayInFirstPhase := false, false
+
+	naiveSizeFile, naiveTimeFile := "naiveSize", "naiveTime"
+
 
 	for i := startNum; i < migrationNum + startNum; i ++ {
 
@@ -737,7 +899,6 @@ func Exp3() {
 
 }
 
-
 func Exp3LoadUserIDsByDagCounter() {
 
 	log.Println("=================================")
@@ -765,8 +926,9 @@ func Exp3LoadUserIDsByDagCounter() {
 	edgeCounterRangeEnd := 1200
 	migrationNum := 100
 
-
+	// Note that the data in the table dag_counter in stencilDB is latest
 	stencilDB = SA1StencilDB
+
 
 	evalConfig := InitializeEvalConfig()
 

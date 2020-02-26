@@ -11,7 +11,7 @@ func main() {
 
 	// evaluation.Exp1()
 
-	// evaluation.Exp2()
+	evaluation.Exp2()
 
 	// evaluation.Exp2GetMigratedDataRateBySrc()
 
@@ -53,7 +53,7 @@ func main() {
 
 	// evaluation.Exp3GetDataDowntimeInPercentageByLoadingUserIDFromLog()
 
-	evaluation.Exp3LoadUserIDsByDagCounter()
+	// evaluation.Exp3LoadUserIDsByDagCounter()
 
 	// evaluation.Exp7()
 	
