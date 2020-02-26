@@ -5,22 +5,19 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
-	"fmt"
-	"sync"
-	"stencil/migrate"
 	"stencil/config"
+	"stencil/db"
+	"stencil/migrate"
 	"stencil/mthread"
 	"stencil/transaction"
-	"stencil/db"
-	"stencil/display_algorithm"
-	"stencil/evaluation"
 	"strconv"
 )
 
 func main() {
-	evalConfig := evaluation.InitializeEvalConfig()
+	// evalConfig := evaluation.InitializeEvalConfig()
 
 	if logTxn, err := transaction.BeginTransaction(); err == nil {
 		MaD := "0"
@@ -59,25 +56,25 @@ func main() {
 		if mappings == nil {
 			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
 		}
-		var wg sync.WaitGroup
-		for threadID := 0; threadID < threads; threadID++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				return
-				display_algorithm.DisplayThread(dstApp, logTxn.Txn_id, false)
-			}()
-		}
+		// var wg sync.WaitGroup
+		// for threadID := 0; threadID < threads; threadID++ {
+		// 	wg.Add(1)
+		// 	go func() {
+		// 		defer wg.Done()
+		// 		return
+		// 		display_algorithm.DisplayThread(dstApp, logTxn.Txn_id, false)
+		// 	}()
+		// }
 		if msize, err := mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD); err == nil {
 			transaction.LogOutcome(logTxn, "COMMIT")
-			wg.Wait()
+			// wg.Wait()
 			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, msize)
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 			log.Println("Transaction aborted:", logTxn.Txn_id)
 		}
 		// evaluation.GetDataBagOfUser(uid, evalConfig)
-		evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
+		// evaluation.GetTime(fmt.Sprint(logTxn.Txn_id), evalConfig)
 	} else {
 		log.Fatal("Can't begin migration transaction", err)
 	}

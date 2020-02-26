@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -124,4 +125,13 @@ func ConcatMaps(a map[string]string, b map[string]string) {
 	for k, v := range b {
 		a[k] = v
 	}
+}
+func Trace() string {
+	pc, _, _, ok := runtime.Caller(1)
+	if !ok {
+		return "?"
+	}
+
+	fn := runtime.FuncForPC(pc)
+	return fn.Name()
 }

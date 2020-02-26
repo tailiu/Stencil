@@ -32,9 +32,12 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 
 	for threadID := 0; threadID < threads; threadID++ {
 		wg.Add(1)
+
 		go func(thread_id int, commitChannel chan ThreadChannel) {
 			defer wg.Done()
+			// log.Println(fmt.Sprintf("%s: Entering Migration Worker", helper.Trace()))
 			mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, MaD, mappings)
+			// log.Println(fmt.Sprintf("%s: Created Migration Worker", helper.Trace()))
 			switch mWorker.MType() {
 			case migrate.DELETION:
 				{

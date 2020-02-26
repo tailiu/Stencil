@@ -175,6 +175,37 @@ func (tag Tag) ResolveTagAttr(attr string) (string, error) {
 	return "", errors.New(fmt.Sprintf("Tag Not Resolved, Attr Not Found in Tag Keys: [%s].[%s] ;", tag.Name, attr))
 }
 
+func (self Tag) CreateInDepMapSA2() map[string]map[string][]string {
+
+	joinMap := make(map[string]map[string][]string)
+
+	for _, inDep := range self.InnerDependencies {
+		for mapFrom, mapTo := range inDep {
+
+			mapFromItems := strings.Split(mapFrom, ".")
+			mapToItems := strings.Split(mapTo, ".")
+
+			mapFromTable := self.Members[mapFromItems[0]]
+			mapFromCol := mapFromItems[1]
+
+			mapToTable := self.Members[mapToItems[0]]
+			mapToCol := mapToItems[1]
+
+			if _, ok := joinMap[mapFromTable]; !ok {
+				joinMap[mapFromTable] = make(map[string][]string)
+			}
+
+			var condition string
+
+			condition = fmt.Sprintf("%s.%s=%s.%s", mapFromTable, mapFromCol, mapToTable, mapToCol)
+
+			joinMap[mapFromTable][mapToTable] = append(joinMap[mapFromTable][mapToTable], condition)
+		}
+	}
+
+	return joinMap
+}
+
 func (self Tag) CreateInDepMap(isBag ...bool) map[string]map[string][]string {
 
 	bag := false
@@ -364,7 +395,7 @@ func (self *AppConfig) GetTagQS(tag Tag, params map[string]string) *qr.QS {
 
 	qs := qr.CreateQS(self.QR)
 	if len(tag.InnerDependencies) > 0 {
-		joinMap := tag.CreateInDepMap()
+		joinMap := tag.CreateInDepMapSA2()
 		seenMap := make(map[string]bool)
 		for fromTable, toTablesMap := range joinMap {
 			if _, ok := seenMap[fromTable]; !ok {
