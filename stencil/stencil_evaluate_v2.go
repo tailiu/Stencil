@@ -13,6 +13,8 @@ func main() {
 
 	// evaluation.Exp2()
 
+	// evaluation.Exp2GetUserIDsByPhotos()
+
 	// evaluation.Exp2GetMigratedDataRateBySrc()
 
 	// evaluation.Exp2GetMigratedDataRateByDst()
@@ -53,6 +55,8 @@ func main() {
 
 	// evaluation.Exp3GetDataDowntimeInPercentageByLoadingUserIDFromLog()
 
-	evaluation.Exp7()
+	// evaluation.Exp3LoadUserIDsByDagCounter()
+
+	// evaluation.Exp7()
 	
 }

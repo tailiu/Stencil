@@ -46,9 +46,9 @@ func Controller(uid, srcAppName, srcAppID,
 	var wg sync.WaitGroup
 
 	if enableDisplay {
-		log.Println("############### Start Migration and Display Controller ###############")
+		log.Println("############### Start SA1 Migration and Display Controller ###############")
 	} else {
-		log.Println("############### Start Migration Controller ###############")
+		log.Println("############### Start SA1 Migration Controller ###############")
 	}
 
 	// Instead of waiting for all display threads to finish,
@@ -66,9 +66,9 @@ func Controller(uid, srcAppName, srcAppID,
 	wg.Wait()
 
 	if enableDisplay {
-		log.Println("############### End Migration and Display Controller ###############")
+		log.Println("############### End SA1 Migration and Display Controller ###############")
 	} else {
-		log.Println("############### End Migration Controller ###############")
+		log.Println("############### End SA1 Migration Controller ###############")
 	}
 
 }
