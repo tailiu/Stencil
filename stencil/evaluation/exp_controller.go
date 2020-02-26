@@ -704,6 +704,10 @@ func Exp2GetMigratedDataRateByDst() {
 
 func Exp3() {
 
+	log.Println("=================================")
+	log.Println("Starting Exp3: Data Downtime Test")
+	log.Println("=================================")
+	
 	evalConfig := InitializeEvalConfig()
 
 	defer closeDBConns(evalConfig)
@@ -731,6 +735,72 @@ func Exp3() {
 		naiveEnableDisplay, naiveDisplayInFirstPhase,
 	)
 
+}
+
+
+func Exp3LoadUserIDsByDagCounter() {
+
+	log.Println("=================================")
+	log.Println("Starting Exp3: Data Downtime Test")
+	log.Println("=================================")
+
+
+	SA1StencilDB, SA1SrcDB, SA1DstDB := 
+		"stencil_100k_exp8", "diaspora_100k_exp8", "mastodon_100k_exp8"
+
+	SA1MigrationType := "d"
+
+	SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
+
+
+	naiveStencilDB, naiveSrcDB, naiveDstDB := 
+		"stencil_100k_exp9", "diaspora_100k_exp9", "mastodon_100k_exp9"
+
+	naiveMigrationType := "n"
+
+	naiveEnableDisplay, naiveDisplayInFirstPhase := true, false
+
+
+	edgeCounterRangeStart := 750
+	edgeCounterRangeEnd := 1200
+	migrationNum := 100
+
+
+	stencilDB = SA1StencilDB
+
+	evalConfig := InitializeEvalConfig()
+
+	defer closeDBConns(evalConfig)
+
+	edgeCounter := getEdgesCounterByRange(
+		evalConfig,
+		edgeCounterRangeStart, 
+		edgeCounterRangeEnd, 
+		migrationNum,
+	)
+
+	log.Println(edgeCounter)
+	log.Println("Migration number:", len(edgeCounter))
+
+	for _, edgeCounter1 := range edgeCounter {
+		
+		userID := edgeCounter1["person_id"]
+
+		log.Println("UserID is", userID)
+
+		migrateUserFromDiasporaToMastodon1(
+			userID, SA1MigrationType, 
+			SA1StencilDB, SA1SrcDB, SA1DstDB, 
+			SA1EnableDisplay, SA1DisplayInFirstPhase,
+		)
+
+		migrateUserFromDiasporaToMastodon1(
+			userID, naiveMigrationType, 
+			naiveStencilDB, naiveSrcDB, naiveDstDB, 
+			naiveEnableDisplay, naiveDisplayInFirstPhase,
+		)
+
+	}
 }
 
 func Exp3LoadUserIDsFromLog() {
@@ -1141,7 +1211,7 @@ func Exp4LoadCounterResToTable() {
 	// counterFile := "diaspora1MCounter"
 	// counterTable := "dag_counter"
 
-	stencilDB = "stencil_exp7"
+	stencilDB = "stencil_exp_template"
 	counterFile := "diaspora100KCounter"
 	counterTable := "dag_counter"
 
@@ -1485,8 +1555,8 @@ func Exp7() {
 				toApp, i, seqLen,
 			)
 
-			objs["userID"] = ConvertStringtoInt64(userID)
-			objs1["userID"] = ConvertStringtoInt64(userID)
+			objs["orgUserID"] = ConvertStringtoInt64(userID)
+			objs1["orgUserID"] = ConvertStringtoInt64(userID)
 
 			WriteStrToLog(
 				"dataBagsEnabled",

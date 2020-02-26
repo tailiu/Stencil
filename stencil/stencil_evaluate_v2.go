@@ -53,6 +53,8 @@ func main() {
 
 	// evaluation.Exp3GetDataDowntimeInPercentageByLoadingUserIDFromLog()
 
-	evaluation.Exp7()
+	evaluation.Exp3LoadUserIDsByDagCounter()
+
+	// evaluation.Exp7()
 	
 }
