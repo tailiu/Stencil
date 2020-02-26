@@ -10,7 +10,10 @@ import (
 	"fmt"
 )
 
-func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.DB, val string, dep string) (map[string]interface{}, error) {
+func getOneRowBasedOnDependency(appConfig *config.AppConfig, 
+	stencilDBConn *sql.DB, val string, 
+	dep string) (map[string]interface{}, error) {
+	
 	table := strings.Split(dep, ".")[0]
 	key := strings.Split(dep, ".")[1]
 	// log.Println(table)
@@ -26,7 +29,10 @@ func getOneRowBasedOnDependency(appConfig *config.AppConfig, stencilDBConn *sql.
 	}
 }
 
-func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, dependencies []map[string]string, members map[string]string, hint HintStruct) ([]HintStruct, error) {
+func getRemainingDataInNode(appConfig *config.AppConfig, 
+	stencilDBConn *sql.DB, dependencies []map[string]string, 
+	members map[string]string, hint HintStruct) ([]HintStruct, error) {
+	
 	var result []HintStruct
 
 	procDependencies := make(map[string][]string)
@@ -69,7 +75,9 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 						log.Println("Fail to get one data because the value of the relevant column is nil")
 						continue
 					}
-					data1, err1 := getOneRowBasedOnDependency(appConfig, stencilDBConn, fmt.Sprint(val), dep)
+					data1, err1 := getOneRowBasedOnDependency(appConfig, 
+						stencilDBConn, fmt.Sprint(val), dep)
+					
 					if err1 != nil {
 						// log.Println(err1)
 						// fmt.Println(result)
@@ -120,13 +128,18 @@ func getRemainingDataInNode(appConfig *config.AppConfig, stencilDBConn *sql.DB, 
 	}
 }
 
-func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hint HintStruct) (map[string]interface{}, error) {
+func getOneRowBasedOnHint(appConfig *config.AppConfig, 
+	stencilDBConn *sql.DB, hint HintStruct) (map[string]interface{}, error) {
+	
 	restrictions, err := hint.GetRestrictionsInTag(appConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := GetData1FromPhysicalSchemaByRowID(stencilDBConn, appConfig.QR, appConfig.AppID, hint.TableName + ".*", hint.TableName, hint.RowIDs, restrictions)
+	data := GetData1FromPhysicalSchemaByRowID(stencilDBConn, 
+		appConfig.QR, appConfig.AppID, hint.TableName + ".*", hint.TableName, 
+		hint.RowIDs, restrictions,
+	)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
@@ -135,7 +148,9 @@ func getOneRowBasedOnHint(appConfig *config.AppConfig, stencilDBConn *sql.DB, hi
 	}
 }
 
-func getDataInNode(appConfig *config.AppConfig, hint HintStruct, stencilDBConn *sql.DB) ([]HintStruct, error) {
+func getDataInNode(appConfig *config.AppConfig, 
+	hint HintStruct, stencilDBConn *sql.DB) ([]HintStruct, error) {
+	
 	// Get and cache hint.Data if it is not there
 	if len(hint.Data) == 0 {
 		data, err := getOneRowBasedOnHint(appConfig, stencilDBConn, hint)
@@ -153,7 +168,8 @@ func getDataInNode(appConfig *config.AppConfig, hint HintStruct, stencilDBConn *
 				} else {
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					return getRemainingDataInNode(appConfig, stencilDBConn, tag.InnerDependencies, tag.Members, hint)
+					return getRemainingDataInNode(appConfig, stencilDBConn, 
+						tag.InnerDependencies, tag.Members, hint)
 				}
 			}
 		}
@@ -163,7 +179,9 @@ func getDataInNode(appConfig *config.AppConfig, hint HintStruct, stencilDBConn *
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func checkDependsOnExists(appConfig *config.AppConfig, allData []HintStruct, tagName string, data HintStruct) bool {
+func checkDependsOnExists(appConfig *config.AppConfig, 
+	allData []HintStruct, tagName string, data HintStruct) bool {
+	
 	memberID, _ := data.GetMemberID(appConfig, tagName)
 	// fmt.Println(memberID)
 	dependsOnTables := appConfig.GetDependsOnTables(tagName, memberID)
@@ -191,7 +209,9 @@ func checkDependsOnExists(appConfig *config.AppConfig, allData []HintStruct, tag
 	return true
 }
 
-func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []HintStruct, tagName string) []HintStruct {
+func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, 
+	allData []HintStruct, tagName string) []HintStruct {
+	
 	var trimmedData []HintStruct
 
 	for _, data := range allData {
@@ -203,7 +223,9 @@ func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, allData []Hin
 	return trimmedData
 }
 
-func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, hint HintStruct, stencilDBConn *sql.DB) ([]HintStruct, error) {
+func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, 
+	hint HintStruct, stencilDBConn *sql.DB) ([]HintStruct, error) {
+	
 	var data []HintStruct
 	
 	tagName, err := hint.GetTagName(appConfig)

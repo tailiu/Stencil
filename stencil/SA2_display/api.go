@@ -19,8 +19,11 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup,
 	
 	deletionHoldEnable := false
 	
+	stencilDBConn := db.GetDBConn("stencil")
+	defer stencilDBConn.Close()
+
 	if !displayInFirstPhase {
-		for !CheckMigrationComplete(dConfig) {
+		for !CheckMigrationComplete(stencilDBConn) {
 			time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL2)
 		}
 	}
@@ -29,7 +32,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup,
 
 	log.Println("Total Display Thread(s):", threadNum)
 	
-	logDisplayStartTime(dConfig)
+	logDisplayStartTime(stencilDBConn, migrationID)
 
 	for i := 0; i < threadNum; i++ {
 

@@ -53,6 +53,7 @@ func TransformRowToHint1(appConfig *config.AppConfig, data map[string]interface{
 }
 
 func (hint HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) {
+	
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members {
 			if hint.TableName == member {
@@ -61,9 +62,12 @@ func (hint HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) {
 		}
 	}
 	return "", errors.New("No Corresponding Tag Found!")
+
 }
 
-func (hint HintStruct) GetMemberID(appConfig *config.AppConfig, tagName string) (string, error) {
+func (hint HintStruct) GetMemberID(appConfig *config.AppConfig, 
+	tagName string) (string, error) {
+	
 	for _, tag := range appConfig.Tags {
 		if tag.Name == tagName {
 			for memberID, memberTable := range tag.Members {
@@ -99,7 +103,9 @@ func (hint HintStruct) GetParentTags(appConfig *config.AppConfig) ([]string, err
 	return parentTags, nil
 }
 
-func (hint HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig *config.AppConfig, alias string) (string, error) {
+func (hint HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig *config.AppConfig, 
+	alias string) (string, error) {
+	
 	tag, err := hint.GetTagName(appConfig)
 	if err != nil {
 		return "", err
@@ -118,7 +124,9 @@ func (hint HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig 
 	return alias, errors.New("No Corresponding Tag for the Provided Alias Found!")
 }
 
-func (hint HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig, pTag string) (string, error) {
+func (hint HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig, 
+	pTag string) (string, error) {
+	
 	tag, err := hint.GetTagName(appConfig)
 	if err != nil {
 		return "", err
@@ -146,6 +154,7 @@ func (hint HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig, p
 }
 
 func (hint HintStruct) GetCombinedDisplaySettings(appConfig *config.AppConfig) (string, error) {
+	
 	tag, err := hint.GetTagName(appConfig)
 	if err != nil {
 		return "", err
@@ -165,6 +174,7 @@ func (hint HintStruct) GetCombinedDisplaySettings(appConfig *config.AppConfig) (
 }
 
 func (hint HintStruct) GetRestrictionsInTag(appConfig *config.AppConfig) ([]map[string]string, error) {
+	
 	tagName, err := hint.GetTagName(appConfig)
 	if err != nil {
 		return nil, err
@@ -179,8 +189,15 @@ func (hint HintStruct) GetRestrictionsInTag(appConfig *config.AppConfig) ([]map[
 	return nil, errors.New("No matched tag found!")
 }
 
-func (hint HintStruct) GetAllRowIDs(stencilDBConn *sql.DB, appID string) []map[string]interface{} {
-	query := fmt.Sprintf("select row_id from migration_table where app_id = %s and table_id = %s and group_id in (select group_id from migration_table where row_id = %d and table_id = %s and app_id = %s);",
+func (hint HintStruct) GetAllRowIDs(stencilDBConn *sql.DB, 
+	appID string) []map[string]interface{} {
+	
+	query := fmt.Sprintf(
+		`select row_id from migration_table 
+		where app_id = %s and table_id = %s and 
+		group_id in 
+			(select group_id from migration_table 
+			where row_id = %d and table_id = %s and app_id = %s)`,
 		appID, hint.TableID, hint.RowIDs[0], hint.TableID, appID)
 	
 	// log.Println("++++++++")

@@ -10,7 +10,7 @@ import (
 
 const checkInterval = 200 * time.Millisecond
 
-func DisplayThread(migrationID int, deletionHoldEnable bool) {
+func oldDisplayThread(migrationID int, deletionHoldEnable bool) {
 
 	startTime := time.Now()
 
@@ -33,7 +33,7 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 		var dhStack [][]int
 
 		for _, oneMigratedData := range migratedData {
-			_, dhStack, _ = checkDisplayOneMigratedData(
+			_, dhStack, _ = oldCheckDisplayOneMigratedData(
 				stencilDBConn, appConfig, oneMigratedData, 
 				secondRound, deletionHoldEnable, dhStack, threadID, userID)
 
@@ -76,10 +76,11 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 
 	log.Println("Time used in this display thread: ", endTime.Sub(startTime))
 
+
 }
 
 // Two-way display check
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, 
+func oldCheckDisplayOneMigratedData(stencilDBConn *sql.DB, 
 	appConfig *config.AppConfig, oneMigratedData HintStruct, 
 	secondRound bool, deletionHoldEnable bool, dhStack [][]int, 
 	threadID int, userID string) (string, [][]int, error) {
@@ -109,22 +110,22 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 
 		if secondRound {
 
-			err10 := PutIntoDataBag(stencilDBConn, appConfig.AppID,
-				[]HintStruct{oneMigratedData}, userID)
+			err10 := PutIntoDataBag(stencilDBConn, 
+				appConfig.AppID, []HintStruct{oneMigratedData}, userID)
 
 			// Found path conflicts
 			if err10 != nil {
 
-				return NoDataInNodeCanBeDisplayed, dhStack, err10
+				return "No Data In a Node Can be Displayed", dhStack, err10
 
 			} else {
 
-				return NoDataInNodeCanBeDisplayed, dhStack, err1
+				return "No Data In a Node Can be Displayed", dhStack, err1
 
 			}
 		} else {
 
-			return NoDataInNodeCanBeDisplayed, dhStack, err1
+			return "No Data In a Node Can be Displayed", dhStack, err1
 
 		}
 	} else {
@@ -134,7 +135,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 
 			displayed := CheckDisplay(stencilDBConn, appConfig.AppID, dataInNode1)
 
-			if !displayed {
+			if displayed == 1 {
 
 				notDisplayedData = append(notDisplayedData, dataInNode1)
 
@@ -151,9 +152,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 			var err6 error
 
 			err6, dhStack = Display(stencilDBConn, 
-				appConfig.AppID, notDisplayedData, 
-				deletionHoldEnable, dhStack, threadID,
-			)
+				appConfig.AppID, notDisplayedData, deletionHoldEnable, dhStack, threadID)
 
 			if err6 != nil {
 
@@ -164,8 +163,6 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 			return ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 		}
 
-		log.Println("==================== Check Inter-node dependencies ====================")
-		
 		pTags, err2 := oneMigratedData.GetParentTags(appConfig)
 		if err2 != nil {
 			log.Fatal(err2)
@@ -248,7 +245,7 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 
 						switch result {
 
-						case NoDataInNodeCanBeDisplayed:
+						case "No Data In a Node Can be Displayed":
 							pTagConditions[pTag] = 
 							ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 								displaySetting, secondRound)
@@ -290,18 +287,18 @@ func checkDisplayOneMigratedData(stencilDBConn *sql.DB,
 						// Found path conflicts
 
 						if err9 != nil {
-							return NoDataInNodeCanBeDisplayed, 
+							return "No Data In a Node Can be Displayed", 
 							dhStack, 
 							err9
 
 						} else {
-							return NoDataInNodeCanBeDisplayed, 
+							return "No Data In a Node Can be Displayed", 
 							dhStack, 
 							errors.New("Display Setting does not allow the data in the node to be displayed")
 						}
 
 					} else {
-						return NoDataInNodeCanBeDisplayed, 
+						return "No Data In a Node Can be Displayed", 
 						dhStack, 
 						errors.New("Display Setting does not allow the data in the node to be displayed")
 					}

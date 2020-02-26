@@ -15,28 +15,6 @@ import (
 
 const StencilDBName = "stencil"
 
-func RandomNonnegativeInt() int {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(math.MaxInt32)
-}
-
-func getUserIDByMigrationID(stencilDBConn *sql.DB, 
-	migrationID int) string {
-
-	query := fmt.Sprintf(
-		`select user_id from migration_registration
-		where migration_id = %d`,
-		migrationID,
-	)
-
-	data, err := db.DataCall1(stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return fmt.Sprint(data["user_id"])
-}
-
 func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string) {
 	
 	stencilDBConn := db.GetDBConn(StencilDBName)
@@ -61,6 +39,11 @@ func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string) {
 
 }
 
+func RandomNonnegativeInt() int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(math.MaxInt32)
+}
+
 func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
 
 	query := fmt.Sprintf("select app_name from apps where pk = %s", appID)
@@ -74,6 +57,23 @@ func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
 
 	return fmt.Sprint(data["app_name"])
 
+}
+
+func getUserIDByMigrationID(stencilDBConn *sql.DB, 
+	migrationID int) string {
+
+	query := fmt.Sprintf(
+		`select user_id from migration_registration
+		where migration_id = %d`,
+		migrationID,
+	)
+
+	data, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["user_id"])
 }
 
 func getDstAppIDUserIDByMigrationID(stencilDBConn *sql.DB,
@@ -148,13 +148,46 @@ func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 	}
 }
 
-func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
+func logDisplayStartTime(stencilDBConn *sql.DB, migrationID int) {
+
+	query := fmt.Sprintf(`
+		INSERT INTO display_registration (start_time, migration_id)
+		VALUES (now(), %d)`,
+		migrationID,
+	)
+
+	err1 := db.TxnExecute1(stencilDBConn, query); 
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+}
+
+func logDisplayEndTime(stencilDBConn *sql.DB, migrationID int) {
+
+	query := fmt.Sprintf(`
+		UPDATE display_registration SET end_time = now()
+		WHERE migration_id = %d`,
+		migrationID,
+	)
+
+	err1 := db.TxnExecute1(stencilDBConn, query); 
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+}
+
+func CheckDisplay(stencilDBConn *sql.DB, appID string, 
+	data HintStruct) bool {
+	
 	appID1, err1 := strconv.Atoi(appID)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
 
-	// Here for one group, we only need to check one row_id to see whether the group is displayed or not
+	// Here for one group, we only need to check 
+	// one row_id to see whether the group is displayed or not
 	// It should be noted that table_id / group_id should also be considered
 	query := fmt.Sprintf(
 		`SELECT mflag FROM migration_table 
@@ -172,7 +205,13 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string, data HintStruct) int64 {
 		log.Fatal(err)
 	}
 	// log.Println(data1)
-	return data1["mflag"].(int64)
+
+	if fmt.Sprint(data1["mflag"]) == "1" {
+		return false
+	} else {
+		return true
+	}
+
 }
 
 func Display(stencilDBConn *sql.DB, appID string, 
@@ -185,33 +224,39 @@ func Display(stencilDBConn *sql.DB, appID string,
 
 		// This is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
-		if CheckDisplay(stencilDBConn, appID, dataHint) == 0 {
+		if CheckDisplay(stencilDBConn, appID, dataHint) {
 
 			log.Println("Found that there is a path conflict!! When displaying data")
 			return errors.New("Path conflict"), dhStack
 
 		}
 
-		rowIDs := dataHint.GetAllRowIDs(stencilDBConn, appID)
+		data := dataHint.GetAllRowIDs(stencilDBConn, appID)
 
-		for _, rowID := range rowIDs {
+		for _, data1 := range data {
 			
+			rowID := fmt.Sprint(data1["row_id"])
+
 			// It should be noted that table_id / group_id should also be considered
 			query := fmt.Sprintf(
 				`UPDATE migration_table SET mflag = 0, updated_at = now() 
 				WHERE row_id = %s and app_id = %s and table_id = %s`, 
-				fmt.Sprint(rowID["row_id"]), 
-				appID, dataHint.TableID,
+				rowID, appID, dataHint.TableID,
 			)
 			
-			log.Println("**************************************")
-			log.Println(query)
-			log.Println("**************************************")
-			
-			queries = append(queries, query)
+			query1 = fmt.Sprintf(
+				`UPDATE evaluation SET displayed_at = now()
+				WHERE migration_id = '%d' and dst_app = '%s' 
+				and dst_table = '%s' and dst_id = '%s'`,
+				displayConfig.migrationID, appID,
+				dataHint.TableID, rowID,
+			)
+
+			queries = append(queries, query, query1)
 
 		}
 	}
+	
 	if deletionHoldEnable {
 		
 		var dhQueries []string
@@ -221,7 +266,16 @@ func Display(stencilDBConn *sql.DB, appID string,
 
 	}
 
+	log.Println("**************************************")
+	log.Println("Display Data:")
+	for seq, q1 := range queries {
+		log.Println("Query", seq + 1)
+		log.Println(q1)
+	}
+	log.Println("**************************************")
+
 	return db.TxnExecute(stencilDBConn, queries), dhStack
+
 }
 
 func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
