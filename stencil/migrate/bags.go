@@ -130,6 +130,8 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	}
 	prevUIDs[self.SrcAppConfig.AppID] = self.uid
 
+	self.Logger.Infof("@MergeBagDataWithMappedData: Prev User IDs: %v", prevUIDs)
+
 	for fromTable := range mappedData.srcTables {
 		if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
 			if fromID, ok := node.Data[fromTable+".id"]; ok {
@@ -203,7 +205,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 			}
 
 			if bagMappedApp, mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
-				self.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
+				// self.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
 				for _, toTable := range mapping.ToTables {
 					if !strings.EqualFold(toTable.Table, toTableName) {
 						continue
@@ -235,16 +237,16 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 						if _, ok := toTableData[toAttr]; !ok {
 							if valueForNode != nil {
 								toTableData[toAttr] = valueForNode
-								self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Added New | toTable: [%s], fromAttr: [%s], cleanedFromAttr: [%s], toAttr: [%s], valueForNode: [%v], Found: [%v]", toTable.Table, fromAttr, cleanedFromAttr, toAttr, valueForNode, found)
+								// self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Added New | toTable: [%s], fromAttr: [%s], cleanedFromAttr: [%s], toAttr: [%s], valueForNode: [%v], Found: [%v]", toTable.Table, fromAttr, cleanedFromAttr, toAttr, valueForNode, found)
 							} else {
-								self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Decoded but not Added | toTable: [%s], fromAttr: [%s], cleanedFromAttr: [%s], toAttr: [%s], valueForNode: [%v], Found: [%v]", toTable.Table, fromAttr, cleanedFromAttr, toAttr, valueForNode, found)
+								// self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Decoded but not Added | toTable: [%s], fromAttr: [%s], cleanedFromAttr: [%s], toAttr: [%s], valueForNode: [%v], Found: [%v]", toTable.Table, fromAttr, cleanedFromAttr, toAttr, valueForNode, found)
 							}
 						} else {
-							self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Exists | toTable: [%s], cleanedFromAttr: [%s], fromAttr: [%s], toAttr: [%s], BagVal: [%v]", toTable.Table, cleanedFromAttr, fromAttr, toAttr, toTableData[toAttr])
+							// self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Exists | toTable: [%s], cleanedFromAttr: [%s], fromAttr: [%s], toAttr: [%s], BagVal: [%v]", toTable.Table, cleanedFromAttr, fromAttr, toAttr, toTableData[toAttr])
 						}
 
 						if strings.Contains(cleanedFromAttr, ".id") {
-							self.Logger.Tracef("@FetchDataFromBags > %s | [cleanedFromAttr:%s] | BagData:[%v]", color.FgLightCyan.Render("Not Deleting Attr From Bag"), color.FgBlue.Render(cleanedFromAttr), color.FgBlue.Render(bagData))
+							// self.Logger.Tracef("@FetchDataFromBags > %s | [cleanedFromAttr:%s] | BagData:[%v]", color.FgLightCyan.Render("Not Deleting Attr From Bag"), color.FgBlue.Render(cleanedFromAttr), color.FgBlue.Render(bagData))
 						} else {
 							// self.Logger.Tracef("@FetchDataFromBags > %s | [%s] | BagData:[%v]", color.FgCyan.Render("Deleting Attr From Bag"), color.FgBlue.Render(cleanedFromAttr), color.FgBlue.Render(bagData))
 							delete(bagData, cleanedFromAttr)
@@ -274,7 +276,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 					}
 				}
 			} else {
-				self.Logger.Warnf("No mappings found from [%s:%s] to [%s:%s]", idRow.FromAppName, idRow.FromMember, self.DstAppConfig.AppName, dstMemberName)
+				// self.Logger.Warnf("No mappings found from [%s:%s] to [%s:%s]", idRow.FromAppName, idRow.FromMember, self.DstAppConfig.AppName, dstMemberName)
 			}
 		} else {
 			log.Println("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id)
@@ -396,6 +398,8 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 	}
 
 	prevIDs[self.SrcAppConfig.AppID] = self.uid
+
+	self.Logger.Infof("@MigrateBags: Prev User IDs: %v", prevIDs)
 
 	for bagAppID, userID := range prevIDs {
 
