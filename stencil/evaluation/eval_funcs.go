@@ -861,6 +861,26 @@ func procRes(res map[string]interface{}) map[string]string {
 
 }
 
+
+func procRes1(res []map[string]interface{}) []map[string]string {
+
+	var procResult []map[string]string
+
+	for _, res1 := range res {
+
+		procResult1 := make(map[string]string)
+
+		for k, v := range res1 {
+			procResult1[k] = fmt.Sprint(v)
+		}
+
+		procResult = append(procResult, procResult1)
+	}
+
+	return procResult
+
+}
+
 func getAllUserIDsSortByPhotosInDiaspora(evalConfig *EvalConfig) []map[string]string {
 
 	query := fmt.Sprintf(`
@@ -1273,6 +1293,23 @@ func DropForeignKeyConstraints(dbConn *sql.DB) {
 			log.Fatal(err2)
 		}
 
+	}
+
+}
+
+func CreateDagCounter(dbConn *sql.DB, tableName string) {
+
+	query := fmt.Sprintf(
+		`CREATE TABLE %s (
+			person_id varchar,
+			edges int8,
+			nodes int8)`,
+		tableName,
+	)
+
+	err2 := db.TxnExecute1(dbConn, query)
+	if err2 != nil {
+		log.Fatal(err2)
 	}
 
 }

@@ -242,3 +242,41 @@ func insertDataIntoCounterTableIfNotExist(evalConfig *EvalConfig,
 	}
 
 }
+
+func getUserIDsWithSameNodesAcrossDatasets(evalConfig *EvalConfig,
+	seq int) []map[string]string {
+
+	var tableAlias string
+
+	switch seq {
+	case 0:
+		tableAlias = "a"
+	case 1:
+		tableAlias = "b"
+	case 2:
+		tableAlias = "c"
+	case 3:
+		tableAlias = "d"
+	default:
+		log.Fatal("Cannot find a tableAlias")
+	}
+
+	query := fmt.Sprintf(
+		`SELECT DISTINCT %s.person_id, %s.nodes, %s.edges 
+		FROM dag_counter_1K a JOIN dag_counter_10K b ON a.nodes = b.nodes 
+		JOIN dag_counter_100K c ON b.nodes = c.nodes 
+		JOIN dag_counter_1M d ON c.nodes = d.nodes 
+		ORDER BY nodes;`,
+		tableAlias, tableAlias, tableAlias,
+	)
+
+	log.Println(query)
+
+	data, err := db.DataCall(evalConfig.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return procRes1(data)
+
+}

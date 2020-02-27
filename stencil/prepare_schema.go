@@ -124,6 +124,19 @@ func test9() {
 	
 }
 
+func test10() {
+
+	dbName := "stencil_exp10"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
+
+	evaluation.CreateDagCounter(dbConn, "dag_counter_1M")
+	
+}
+
 func main() {
 
 	// test1()
@@ -144,4 +157,5 @@ func main() {
 
 	// test9()
 
+	test10()
 }
