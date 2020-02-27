@@ -5,6 +5,8 @@ import (
 	"log"
 	"stencil/db"
 	"strconv"
+	"database/sql"
+	"strings"
 )
 
 func getEdgesCounter(evalConfig *EvalConfig,
@@ -240,5 +242,55 @@ func insertDataIntoCounterTableIfNotExist(evalConfig *EvalConfig,
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+
+}
+
+func is1KDatasetForSA2(table string) bool {
+
+	if strings.Contains(table, "stencil_exp_sa2_1k_") {
+		return true
+	} else {
+		return false
+	}
+
+}
+
+func getUserIDsWithSameNodesAcrossDatasets(dbConn *sql.DB, 
+	databaseName string) []map[string]string {
+
+	counterTables := map[string]string {
+		"diaspora_1k_exp13": "a", 
+		"diaspora_10k_exp12": "b", 
+		"diaspora_100k_exp11": "c",
+		"diaspora_1m_exp10": "d",
+	}
+
+	tableAlias, ok := counterTables[databaseName]
+	if !ok {
+		if is1KDatasetForSA2(databaseName) {
+			tableAlias = "a"
+		} else {
+			log.Fatal("Cannot get data by the provided database name:", databaseName)
+		}
+		
+	}
+
+	query := fmt.Sprintf(
+		`SELECT DISTINCT %s.person_id, %s.nodes, %s.edges 
+		FROM dag_counter_1K a JOIN dag_counter_10K b ON a.nodes = b.nodes 
+		JOIN dag_counter_100K c ON b.nodes = c.nodes 
+		JOIN dag_counter_1M d ON c.nodes = d.nodes 
+		ORDER BY nodes;`,
+		tableAlias, tableAlias, tableAlias,
+	)
+
+	log.Println(query)
+
+	data, err := db.DataCall(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return procRes1(data)
 
 }

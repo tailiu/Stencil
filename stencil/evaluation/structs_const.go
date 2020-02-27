@@ -137,6 +137,16 @@ type SA1SizeStruct struct {
 	UserID	string `json:"userID"`
 }
 
+type ScalabilityDataStruct struct {
+	DisplayTime 			string `json:"displayTime"`
+	Edges					string `json:"edges"`
+	EdgesAfterMigration		string `json:"edgesAfterMigration"`
+	MigrationTime 			string `json:"migrationTime"`
+	Nodes					string `json:"nodes"`
+	NodesAfterMigration		string `json:"nodesAfterMigration"`
+	PersonID 				string `json:"person_id"`
+}
+
 // Messages will be handled in special ways
 // var dependencies = map[string]map[string][]string {
 // 	"diaspora" : map[string][]string {

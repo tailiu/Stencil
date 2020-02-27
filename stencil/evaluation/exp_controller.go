@@ -4,6 +4,7 @@ import (
 	"stencil/SA1_migrate"
 	"stencil/apis"
 	"stencil/db"
+	"database/sql"
 	"log"
 	"fmt"
 	"encoding/json"
@@ -1004,6 +1005,59 @@ func Exp3LoadUserIDsFromLog() {
 
 }
 
+func Exp3AndExp2LoadUserIDsFromLog() {
+
+	log.Println("=================================================")
+	log.Println("Starting Independent Migrations for Exp2 and Exp3")
+	log.Println("=================================================")
+
+	diaspora = "diaspora_1000000"
+
+	indepSizeFile := "SA1IndepSize"
+	indepTimeFile := "SA1IndepTime"
+
+	SA1MigrationFile := "SA1Size"
+
+	indepStencilDB, indepSrcDB, indepDstDB := 
+		"stencil_exp14", "diaspora_1000000_exp14", "mastodon_exp14"
+
+	indepMigrationType := "i"
+
+	indepEnableDisplay, indepDisplayInFirstPhase := true, true
+
+	migrationNum := 100
+
+	data := ReadStrLinesFromLog(SA1MigrationFile)
+
+	evalConfig := InitializeEvalConfig()
+	defer closeDBConns(evalConfig)
+
+	for i := 0; i < migrationNum; i++ {
+		
+		data1 := data[i]
+
+		var sizeData SA1SizeStruct
+
+		err := json.Unmarshal([]byte(data1), &sizeData)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		userID := sizeData.UserID
+
+		log.Println("UserID:", userID)
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, indepStencilDB, diaspora, 
+			userID, indepMigrationType, 
+			indepStencilDB, indepSrcDB, indepDstDB,
+			indepSizeFile, indepTimeFile,
+			indepEnableDisplay, indepDisplayInFirstPhase,
+		)
+	}
+
+}
+
 func Exp3GetDatadowntime() {
 
 	evalConfig := InitializeEvalConfig()
@@ -1373,9 +1427,9 @@ func Exp4LoadCounterResToTable() {
 	// counterFile := "diaspora1MCounter"
 	// counterTable := "dag_counter"
 
-	stencilDB = "stencil_exp_template"
-	counterFile := "diaspora100KCounter"
-	counterTable := "dag_counter"
+	stencilDB = "stencil_exp_sa2_1k_backup"
+	counterFile := "diaspora1KCounter"
+	counterTable := "dag_counter_1k"
 
 	evalConfig := InitializeEvalConfig()
 
@@ -1568,6 +1622,81 @@ func Exp6() {
 
 }
 
+func Exp6AddIndepLoadFromLog() {
+
+	log.Println("===========================================================")
+	log.Println("Starting Exp6: Add Indpendent Migration to Scalability Test")
+	log.Println("===========================================================")
+
+	// stencilDB = "stencil_exp3"
+	// mastodon = "mastodon_exp3"
+	// diaspora = "diaspora_1000000_exp3"
+
+	// db.STENCIL_DB = "stencil_exp3"
+	// db.DIASPORA_DB = "diaspora_1000000_exp3"
+	// db.MASTODON_DB = "mastodon_exp3"
+
+	stencilDB = "stencil_exp15"
+	mastodon = "mastodon_exp15"
+	diaspora = "diaspora_1000000_exp15"
+
+	scalabilityFile = "scalability"
+
+	scalabilityWithIndependentFile = "scalabilityWithIndependent"
+
+	data := ReadStrLinesFromLog(scalabilityFile)
+
+	evalConfig := InitializeEvalConfig()
+	defer closeDBConns(evalConfig)
+
+	for _, data1 := range data {
+		
+		var sData ScalabilityDataStruct
+
+		err := json.Unmarshal([]byte(data1), &sData)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		userID := sData.PersonID
+
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
+			userID, "diaspora", "1", "mastodon", "2", "i", 1
+
+		enableDisplay, displayInFirstPhase, markAsDelete := false, false
+
+		db.STENCIL_DB = stencilDB
+		db.DIASPORA_DB = diaspora
+		db.MASTODON_DB = mastodon
+
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
+			dstAppName, dstAppID, migrationType, threadNum,
+			enableDisplay, displayInFirstPhase, markAsDelete,
+		)
+
+		log.Println("************ Calculate Migration Time ************")
+
+		refreshEvalConfigDBConnections(evalConfig)
+
+		mTime := getMigrationTimeBySrcUserID(evalConfig.StencilDBConn, userID)
+
+		res1["indepMigrationTime"] = ConvertSingleDurationToString(mTime)
+		res1["displayTime"] = sData.DisplayTime
+		res1["edges"] = sData.Edges
+		res1["edgesAfterMigration"] = sData.EdgesAfterMigration
+		res1["migrationTime"] = sData.MigrationTime
+		res1["nodes"] = sData.Nodes
+		res1["nodesAfterMigration"] = sData.NodesAfterMigration
+		res1["person_id"] = sData.PersonID
+
+		WriteStrToLog(
+			scalabilityWithIndependentFile,
+			ConvertMapStringToJSONString(res1),
+		)
+	}
+
+}
+
 // Random walk experiment
 func Exp7() {
 
@@ -1734,4 +1863,182 @@ func Exp7() {
 		
 	}
 
+}
+
+func Exp8SA1() {
+
+	log.Println("===================================")
+	log.Println("Starting Exp8 for SA1: Dataset Test")
+	log.Println("===================================")
+
+	migrationNum := 100
+
+	// exp8LogFile := "diaspora_1K_dataset"
+
+	// stencilDB = "stencil_exp13"
+	// diaspora = "diaspora_1k_exp13"
+	// mastodon = "mastodon_exp13"
+
+	// diaspora1 = "diaspora_1000"
+
+	
+	exp8LogFile := "diaspora_10K_dataset"
+
+	stencilDB = "stencil_exp12"
+	diaspora = "diaspora_10k_exp12"
+	mastodon = "mastodon_exp12"
+
+	diaspora1 = "diaspora_10000"
+
+
+	// exp8LogFile := "diaspora_100K_dataset"
+
+	// stencilDB = "stencil_exp11"
+	// diaspora = "diaspora_100k_exp11"
+	// mastodon = "mastodon_exp11"
+
+	// diaspora1 = "diaspora_100000"
+
+
+	// exp8LogFile := "diaspora_1M_dataset"
+
+	// stencilDB = "stencil_exp10"
+	// diaspora = "diaspora_1m_exp10"
+	// mastodon = "mastodon_exp10"
+
+	// diaspora1 = "diaspora_1000000"
+
+	// allowedDBName := map[string]string {
+	// 	"diaspora_1k_exp13", "diaspora_10k_exp12",
+	// 	"diaspora_100k_exp11", "diaspora_1m_exp10",
+	// }
+
+	evalConfig := InitializeEvalConfig()
+	defer closeDBConns(evalConfig)
+
+	preExp1(evalConfig)
+
+	userIDsWithCounters := getUserIDsWithSameNodesAcrossDatasets(
+		evalConfig.StencilDBConn, diaspora)
+
+	log.Println(userIDsWithCounters)
+
+	for i := 0; i < migrationNum; i++ {
+
+		data1 := userIDsWithCounters[i]
+		
+		userID := data1["person_id"]
+		nodes := data1["nodes"]
+		edges := data1["edges"]
+
+		SA1StencilDB, SA1SrcDB, SA1DstDB := stencilDB, diaspora, mastodon
+
+		SA1MigrationType := "d"
+
+		SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
+
+		migrateUserFromDiasporaToMastodon1(
+			userID, SA1MigrationType, 
+			SA1StencilDB, SA1SrcDB, SA1DstDB, 
+			SA1EnableDisplay, SA1DisplayInFirstPhase,
+		)
+
+		log.Println("************ Calculate the Migration Size and Time ************")
+
+		logData := make(map[string]string)
+
+		refreshEvalConfigDBConnections(evalConfig)
+
+		migrationID := getMigrationIDBySrcUserIDMigrationType(evalConfig.StencilDBConn, 
+			userID, SA1MigrationType)
+
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		size := GetMigratedDataSizeBySrc(
+			evalConfig,
+			evalConfig.StencilDBConn,
+			evalConfig.DiasporaDBConn1,
+			migrationID,
+		)
+
+		logData["size"] = ConvertInt64ToString(size)
+		logData["time"] = ConvertSingleDurationToString(time)	
+		logData["userID"] = userID
+		logData["nodes"] = nodes
+		logData["edges"] = edges
+
+		WriteStrToLog(
+			exp8LogFile,
+			ConvertMapStringToJSONString(logData),
+		)
+
+	}
+}
+
+func Exp8SA2() {
+
+	log.Println("===================================")
+	log.Println("Starting Exp8 for SA2: Dataset Test")
+	log.Println("===================================")
+
+	seq := 9
+
+	migrationNum := 10
+
+	exp8LogFile := "diaspora_1K_dataset_sa2_" + strconv.Itoa(seq)
+
+	db.STENCIL_DB = "stencil_exp_sa2_1k_exp" + strconv.Itoa(seq)
+
+	var stencilDBConn *sql.DB
+
+	stencilDBConn = db.GetDBConn(db.STENCIL_DB)
+
+	userIDsWithCounters := getUserIDsWithSameNodesAcrossDatasets(stencilDBConn, db.STENCIL_DB)
+
+	log.Println("SEQUENCE NUM:", seq)
+
+	log.Println(userIDsWithCounters)
+
+	for i := 10 * seq; i < 10 * seq + migrationNum; i++ {
+
+		userID := userIDsWithCounters[i]["person_id"]
+
+		srcApp, srcAppID, dstApp, dstAppID, migrationType, enableBags :=
+			"diaspora", "1", "mastodon", "2", "d", true
+
+		apis.StartMigrationSA2(userID, srcApp, srcAppID, dstApp, dstAppID, migrationType, enableBags)
+
+		log.Println("************ Calculate the Migration Time ************")
+
+		stencilDBConn.Close()
+		stencilDBConn = db.GetDBConn(db.STENCIL_DB)
+
+		logData := make(map[string]string)
+
+		migrationID := getMigrationIDBySrcUserID1(stencilDBConn, userID)
+
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		time := GetMigrationTime(stencilDBConn, migrationIDInt)
+
+		logData["time"] = ConvertSingleDurationToString(time)	
+		logData["userID"] = userID
+
+		WriteStrToLog(
+			exp8LogFile,
+			ConvertMapStringToJSONString(logData),
+		)
+
+	}
 }

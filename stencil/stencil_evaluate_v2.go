@@ -57,6 +57,13 @@ func main() {
 
 	// evaluation.Exp3LoadUserIDsByDagCounter()
 
-	evaluation.Exp7()
+	// evaluation.Exp7()
 	
+	// evaluation.Exp8SA1()
+
+	// evaluation.Exp8SA2()
+
+	// evaluation.Exp3AndExp2LoadUserIDsFromLog()
+
+	evaluation.Exp6AddIndepLoadFromLog()
 }
