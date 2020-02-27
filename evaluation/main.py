@@ -640,6 +640,38 @@ def migrationRateDatasetsTab(folders, labels):
         print labels[i] + ":"
         print t
 
+def getSizeFromData(data):
+
+    times = []
+    
+    for i in range(len(data)):
+        times.append([])
+
+    for i, data1 in enumerate(data):
+        for data2 in data1:
+            times[i].append(float(data2["size"]))
+    
+    return times
+
+def migrationRateDatasetsTab1(fileNames):
+
+    data1 = []
+
+    for file in fileNames:
+        data1.append(readFile3(logDir + file))
+
+    times = getTimeFromData(data1)
+
+    timesSum = calSum(times)
+
+    sizes = getSizeFromData(data1)
+
+    sizesSum = calSum(sizes)
+
+    for i, t in enumerate(timesSum):
+        print fileNames[i] + ":"
+        print "times:" + str(t) + "," + "sizes:" + str(sizesSum[i])
+
 def compareTwoMigratedSizes(labels):
 
     data1 = readFile3(logDir + migratedDataSizeBySrcFile)
@@ -818,15 +850,17 @@ def randomWalk1(apps, labels):
 # scalability(["SA1 migration algorithm", "SA1 display algorithm"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
-    # "logs_100K/", 
-    # "logs_10K/", 
-    # "logs_1K/"], 
-    # ["1M", "100K", "10K", "1K"])
+#     "logs_100K/", 
+#     "logs_10K/", 
+#     "logs_1K/"], 
+#     ["1M", "100K", "10K", "1K"])
+migrationRateDatasetsTab1(["diaspora_1K_dataset", "diaspora_10K_dataset", 
+    "diaspora_100K_dataset", "diaspora_1M_dataset"])
 # compareTwoMigratedSizes(["Source", "Destination"])
 # danglingDataSizesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
 # danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
 # migrationRate2(["SA1Size", "SA1WDSize", "naiveSize"], 
 #     ["SA1Time", "SA1WDTime", "naiveTime"], 
 #     ["SA1", "SA1 without display", "Naive system"])
-randomWalk1(["diaspora", "mastodon", "diaspora"],
-            ["Stencil with data bags", "Stencil without data bags"])
+# randomWalk1(["diaspora", "mastodon", "diaspora"],
+#             ["Stencil with data bags", "Stencil without data bags"])

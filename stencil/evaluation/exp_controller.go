@@ -759,6 +759,60 @@ func Exp2GetMigratedDataRate() {
 
 }
 
+func Exp2LoadUserIDsToAddIndepFromLog() {
+
+	log.Println("========================================")
+	log.Println("Starting Independent Migrations for Exp2")
+	log.Println("========================================")
+
+	diaspora = "diaspora_1000000"
+	stencilDB = "stencil_exp14"
+
+	indepSizeFile := "SA1IndepSize"
+	indepTimeFile := "SA1IndepTime"
+
+	SA1MigrationFile := "SA1Size"
+
+	indepStencilDB, indepSrcDB, indepDstDB := 
+		stencilDB, "diaspora_1000000_exp14", "mastodon_exp14"
+
+	indepMigrationType := "i"
+
+	indepEnableDisplay, indepDisplayInFirstPhase := false, false
+
+	migrationNum := 100
+
+	data := ReadStrLinesFromLog(SA1MigrationFile)
+
+	evalConfig := InitializeEvalConfig()
+	defer closeDBConns(evalConfig)
+
+	for i := 0; i < migrationNum; i++ {
+		
+		data1 := data[i]
+
+		var sizeData SA1SizeStruct
+
+		err := json.Unmarshal([]byte(data1), &sizeData)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		userID := sizeData.UserID
+
+		log.Println("UserID:", userID)
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, indepStencilDB, diaspora, 
+			userID, indepMigrationType, 
+			indepStencilDB, indepSrcDB, indepDstDB,
+			indepSizeFile, indepTimeFile,
+			indepEnableDisplay, indepDisplayInFirstPhase,
+		)
+	}
+
+}
+
 func Exp2GetMigratedDataRateBySrc() {
 	
 	evalConfig := InitializeEvalConfig()
@@ -1000,59 +1054,6 @@ func Exp3LoadUserIDsFromLog() {
 			userID, migrationType, 
 			naiveStencilDB, naiveSrcDB, naiveDstDB, 
 			naiveEnableDisplay, naiveDisplayInFirstPhase,
-		)
-	}
-
-}
-
-func Exp3AndExp2LoadUserIDsFromLog() {
-
-	log.Println("=================================================")
-	log.Println("Starting Independent Migrations for Exp2 and Exp3")
-	log.Println("=================================================")
-
-	diaspora = "diaspora_1000000"
-
-	indepSizeFile := "SA1IndepSize"
-	indepTimeFile := "SA1IndepTime"
-
-	SA1MigrationFile := "SA1Size"
-
-	indepStencilDB, indepSrcDB, indepDstDB := 
-		"stencil_exp14", "diaspora_1000000_exp14", "mastodon_exp14"
-
-	indepMigrationType := "i"
-
-	indepEnableDisplay, indepDisplayInFirstPhase := true, true
-
-	migrationNum := 100
-
-	data := ReadStrLinesFromLog(SA1MigrationFile)
-
-	evalConfig := InitializeEvalConfig()
-	defer closeDBConns(evalConfig)
-
-	for i := 0; i < migrationNum; i++ {
-		
-		data1 := data[i]
-
-		var sizeData SA1SizeStruct
-
-		err := json.Unmarshal([]byte(data1), &sizeData)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		userID := sizeData.UserID
-
-		log.Println("UserID:", userID)
-
-		migrateUserFromDiasporaToMastodon(
-			evalConfig, indepStencilDB, diaspora, 
-			userID, indepMigrationType, 
-			indepStencilDB, indepSrcDB, indepDstDB,
-			indepSizeFile, indepTimeFile,
-			indepEnableDisplay, indepDisplayInFirstPhase,
 		)
 	}
 
@@ -1640,9 +1641,9 @@ func Exp6AddIndepLoadFromLog() {
 	mastodon = "mastodon_exp15"
 	diaspora = "diaspora_1000000_exp15"
 
-	scalabilityFile = "scalability"
+	scalabilityFile := "scalability"
 
-	scalabilityWithIndependentFile = "scalabilityWithIndependent"
+	scalabilityWithIndependentFile := "scalabilityWithIndependent"
 
 	data := ReadStrLinesFromLog(scalabilityFile)
 
@@ -1650,7 +1651,7 @@ func Exp6AddIndepLoadFromLog() {
 	defer closeDBConns(evalConfig)
 
 	for _, data1 := range data {
-		
+
 		var sData ScalabilityDataStruct
 
 		err := json.Unmarshal([]byte(data1), &sData)
@@ -1663,7 +1664,7 @@ func Exp6AddIndepLoadFromLog() {
 		uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum := 
 			userID, "diaspora", "1", "mastodon", "2", "i", 1
 
-		enableDisplay, displayInFirstPhase, markAsDelete := false, false
+		enableDisplay, displayInFirstPhase := false, false
 
 		db.STENCIL_DB = stencilDB
 		db.DIASPORA_DB = diaspora
@@ -1671,7 +1672,7 @@ func Exp6AddIndepLoadFromLog() {
 
 		SA1_migrate.Controller(uid, srcAppName, srcAppID, 
 			dstAppName, dstAppID, migrationType, threadNum,
-			enableDisplay, displayInFirstPhase, markAsDelete,
+			enableDisplay, displayInFirstPhase,
 		)
 
 		log.Println("************ Calculate Migration Time ************")
@@ -1679,6 +1680,8 @@ func Exp6AddIndepLoadFromLog() {
 		refreshEvalConfigDBConnections(evalConfig)
 
 		mTime := getMigrationTimeBySrcUserID(evalConfig.StencilDBConn, userID)
+
+		res1 := make(map[string]string) 
 
 		res1["indepMigrationTime"] = ConvertSingleDurationToString(mTime)
 		res1["displayTime"] = sData.DisplayTime
