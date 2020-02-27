@@ -61,5 +61,5 @@ func main() {
 	
 	// evaluation.Exp8()
 
-	evaluation.Exp3LoadUserIDsFromLog1()
+	evaluation.Exp3AndExp2LoadUserIDsFromLog()
 }

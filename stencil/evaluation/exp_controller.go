@@ -1004,13 +1004,13 @@ func Exp3LoadUserIDsFromLog() {
 
 }
 
-func Exp3AndExp2LoadUserIDsFromLog1() {
+func Exp3AndExp2LoadUserIDsFromLog() {
 
 	log.Println("=================================================")
 	log.Println("Starting Independent Migrations for Exp2 and Exp3")
 	log.Println("=================================================")
 
-	diaspora = "diaspora_100000"
+	diaspora = "diaspora_1000000"
 
 	indepSizeFile := "SA1IndepSize"
 	indepTimeFile := "SA1IndepTime"
@@ -1789,11 +1789,11 @@ func Exp7() {
 
 }
 
-func Exp8() {
+func Exp8SA1() {
 
-	log.Println("============================")
-	log.Println("Starting Exp8: Dataset Test")
-	log.Println("============================")
+	log.Println("===================================")
+	log.Println("Starting Exp8 for SA1: Dataset Test")
+	log.Println("===================================")
 
 	migrationNum := 100
 
@@ -1805,6 +1805,120 @@ func Exp8() {
 
 	diaspora1 = "diaspora_1000"
 
+	
+	// exp8LogFile := "diaspora_10K_dataset"
+
+	// stencilDB = "stencil_exp12"
+	// diaspora = "diaspora_10k_exp12"
+	// mastodon = "mastodon_exp12"
+
+	// diaspora1 = "diaspora_10000"
+
+
+	// exp8LogFile := "diaspora_100K_dataset"
+
+	// stencilDB = "stencil_exp11"
+	// diaspora = "diaspora_100k_exp11"
+	// mastodon = "mastodon_exp11"
+
+	// diaspora1 = "diaspora_100000"
+
+
+	// exp8LogFile := "diaspora_1M_dataset"
+
+	// stencilDB = "stencil_exp10"
+	// diaspora = "diaspora_1m_exp10"
+	// mastodon = "mastodon_exp10"
+
+	// diaspora1 = "diaspora_1000000"
+
+	// allowedDBName := map[string]string {
+	// 	"diaspora_1k_exp13", "diaspora_10k_exp12",
+	// 	"diaspora_100k_exp11", "diaspora_1m_exp10",
+	// }
+
+	evalConfig := InitializeEvalConfig()
+	defer closeDBConns(evalConfig)
+
+	preExp1(evalConfig)
+
+	userIDsWithCounters := getUserIDsWithSameNodesAcrossDatasets(evalConfig, diaspora)
+
+	log.Println(userIDsWithCounters)
+
+	for i := 0; i < migrationNum; i++ {
+
+		data1 := userIDsWithCounters[i]
+		
+		userID := data1["person_id"]
+		nodes := data1["nodes"]
+		edges := data1["edges"]
+
+		SA1StencilDB, SA1SrcDB, SA1DstDB := stencilDB, diaspora, mastodon
+
+		SA1MigrationType := "d"
+
+		SA1EnableDisplay, SA1DisplayInFirstPhase := true, true
+
+		migrateUserFromDiasporaToMastodon1(
+			userID, SA1MigrationType, 
+			SA1StencilDB, SA1SrcDB, SA1DstDB, 
+			SA1EnableDisplay, SA1DisplayInFirstPhase,
+		)
+
+		log.Println("************ Calculate the Migration Size and Time ************")
+
+		logData := make(map[string]string)
+
+		refreshEvalConfigDBConnections(evalConfig)
+
+		migrationID := getMigrationIDBySrcUserIDMigrationType(evalConfig.StencilDBConn, 
+			userID, SA1MigrationType)
+
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		time := GetMigrationTime(
+			evalConfig.StencilDBConn,
+			migrationIDInt,
+		)
+
+		size := GetMigratedDataSizeBySrc(
+			evalConfig,
+			evalConfig.StencilDBConn,
+			evalConfig.DiasporaDBConn1,
+			migrationID,
+		)
+
+		logData["size"] = ConvertInt64ToString(size)
+		logData["time"] = ConvertSingleDurationToString(time)	
+		logData["userID"] = userID
+		logData["nodes"] = nodes
+		logData["edges"] = edges
+
+		WriteStrToLog(
+			exp8LogFile,
+			ConvertMapStringToJSONString(logData),
+		)
+
+	}
+}
+
+func Exp8SA2() {
+
+	log.Println("===================================")
+	log.Println("Starting Exp8 for SA2: Dataset Test")
+	log.Println("===================================")
+
+	seq := ""
+
+	migrationNum := 10
+
+	exp8LogFileBase := "diaspora_1K_dataset_sa2_" + seq
+
+	stencilDB = "stencil_exp_sa2_1k_exp" + seq
 	
 	// exp8LogFile := "diaspora_10K_dataset"
 
