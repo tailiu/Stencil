@@ -130,7 +130,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	}
 	prevUIDs[self.SrcAppConfig.AppID] = self.uid
 
-	self.Logger.Infof("@MergeBagDataWithMappedData: Prev User IDs: %v", prevUIDs)
+	self.Logger.Debugf("Prev User IDs: %v", prevUIDs)
 
 	for fromTable := range mappedData.srcTables {
 		if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
@@ -159,7 +159,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 			}
 		}
 		mappedData.Trim(",")
-		self.Logger.Trace("@MigrateNode > FetchDataFromBags > Data merged for: ", toTable.Table)
+		// self.Logger.Trace("@MigrateNode > FetchDataFromBags > Data merged for: ", toTable.Table)
 	}
 
 	return nil
@@ -195,6 +195,8 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 			return err
 		}
 		if bagRow != nil {
+
+			self.Logger.Tracef("@FetchDataFromBags > Processing Bag | ID: %v | PK: %v", bagRow["id"], bagRow["pk"])
 
 			bagData := make(map[string]interface{})
 			if err := json.Unmarshal(bagRow["data"].([]byte), &bagData); err != nil {
@@ -262,13 +264,13 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 						log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Deleted BAG"), bagRow["pk"]))
 					}
 				} else {
-					log.Println(fmt.Sprintf("%s | PK: %v", color.FgYellow.Render("BAG NOT EMPTY"), bagData))
+					log.Println(fmt.Sprintf("%s | %v", color.FgYellow.Render("BAG NOT EMPTY"), bagData))
 					if jsonData, err := json.Marshal(bagData); err == nil {
 						if err := db.UpdateBag(self.tx.StencilTx, fmt.Sprint(bagRow["pk"]), self.logTxn.Txn_id, jsonData); err != nil {
 							self.Logger.Fatal("@FetchDataFromBags: UNABLE TO UPDATE BAG ", bagRow, err)
 							return err
 						} else {
-							log.Println(fmt.Sprintf("%s | PK: %v", color.FgYellow.Render("Updated BAG"), bagRow["pk"]))
+							log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightYellow.Render("Updated BAG"), bagRow["pk"]))
 						}
 					} else {
 						self.Logger.Fatal("@FetchDataFromBags > len(bagData) != 0, Unable to marshall bag | ", bagData)
@@ -279,12 +281,12 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 				// self.Logger.Warnf("No mappings found from [%s:%s] to [%s:%s]", idRow.FromAppName, idRow.FromMember, self.DstAppConfig.AppName, dstMemberName)
 			}
 		} else {
-			log.Println("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id)
+			// log.Println("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMember, idRow.FromID, self.logTxn.Txn_id)
 		}
 
-		self.Logger.Tracef("@FetchDataFromBags > FetchDataFromBags: %s |\nFromAppID: %s FromMemberID: %s FromID: %v dstMemberID: %s dstMemberName: %s \ntoTableData: %v\nprevUIDs: %v\n ",
-			color.FgLightMagenta.Render("Recursive Traversal"), idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName,
-			toTableData, prevUIDs)
+		// self.Logger.Tracef("@FetchDataFromBags > FetchDataFromBags: %s |\nFromAppID: %s FromMemberID: %s FromID: %v dstMemberID: %s dstMemberName: %s \ntoTableData: %v\nprevUIDs: %v ",
+		// color.FgLightMagenta.Render("Recursive Traversal"), idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName,
+		// toTableData, prevUIDs)
 		if err := self.FetchDataFromBags(visitedRows, toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName, toTableName); err != nil {
 			self.Logger.Fatal("@FetchDataFromBags > FetchDataFromBags: Error while recursing | ", toTableData, idRow.FromAppID, idRow.FromMember, idRow.FromID)
 			return err
@@ -399,7 +401,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 
 	prevIDs[self.SrcAppConfig.AppID] = self.uid
 
-	self.Logger.Infof("@MigrateBags: Prev User IDs: %v", prevIDs)
+	self.Logger.Debugf("Prev User IDs: %v", prevIDs)
 
 	for bagAppID, userID := range prevIDs {
 
@@ -409,6 +411,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 
 		fmt.Println("########################################################################")
 		log.Println(fmt.Sprintf("Starting Bags for User: %s App: %s", userID, bagAppID))
+		fmt.Println("########################################################################")
 
 		bags, err := db.GetBagsV2(self.logTxn.DBconn, bagAppID, userID, self.logTxn.Txn_id)
 
@@ -427,6 +430,9 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 
 			bagPK := fmt.Sprint(bag["pk"])
 
+			fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+			self.Logger.Tracef("@MigrateBags > Processing Bag | ID: %v | PK: %v | %s", bag["id"], bag["pk"], bagPK)
+
 			if _, ok := processedBags[bagPK]; ok {
 				continue
 			}
@@ -440,8 +446,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 				bagWorker.Logger.Fatal("@MigrateBags > Table Name: ", err)
 			}
 
-			fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-			log.Println(fmt.Sprintf("Current Bag: { %s } | PK: %s, App: %s ", color.FgLightYellow.Render(bagMemberName), bagPK, bagAppID))
+			log.Println(fmt.Sprintf("Current Bag: { %s } | PK: %s, App: %s ", color.FgLightCyan.Render(bagMemberName), bagPK, bagAppID))
 
 			if bagNode, err := bagWorker.ConstructBagNode(bagMemberName, bagMemberID, bagRowID); err == nil {
 
@@ -467,7 +472,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 								bagWorker.Logger.Debug(bagNode)
 								bagWorker.Logger.Fatal(fmt.Sprintf("@MigrateBags > SendNodeToBagWithOwnerID | { %s } | PK: %s", bagNode.Tag.Name, bagPK))
 							} else {
-								log.Println(fmt.Sprintf("%s { %s } | PK: %s | Owner: %s", color.FgYellow.Render("BAGGED LEFTOVER DATA"), bagNode.Tag.Name, bagPK, bagUserID))
+								log.Println(fmt.Sprintf("%s { %s } | PK: %s | Owner: %s", color.FgLightYellow.Render("BAGGED LEFTOVER DATA"), bagNode.Tag.Name, bagPK, bagUserID))
 							}
 						}
 					} else {

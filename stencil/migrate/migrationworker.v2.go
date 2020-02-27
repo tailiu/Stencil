@@ -398,7 +398,7 @@ func (self *MigrationWorkerV2) FetchFromMapping(nodeData map[string]interface{},
 	args := strings.Split(fromAttr, ",")
 	cleanedFromAttr = args[0]
 	// fmt.Println(color.FgLightRed.Render("#############################################################################################################"))
-	self.Logger.Debugf("\n#FETCH: fromAttr: [%s] | cleanedFromAttr: [%s]", fromAttr, cleanedFromAttr)
+	// self.Logger.Debugf("\n#FETCH: fromAttr: [%s] | cleanedFromAttr: [%s]", fromAttr, cleanedFromAttr)
 
 	if nodeVal, ok := nodeData[args[2]]; ok {
 		targetTabCol := strings.Split(args[0], ".")
@@ -428,7 +428,7 @@ func (self *MigrationWorkerV2) FetchFromMapping(nodeData map[string]interface{},
 		fmt.Println(nodeData)
 		self.Logger.Fatal("@FetchFromMapping: unable to #FETCH ", args[2])
 	}
-	self.Logger.Debugf("\n#FETCH EXIT: fromAttr: [%s] | cleanedFromAttr: [%s] | FromTable: [%s], val: [%v]", fromAttr, cleanedFromAttr, fromTable, mappedVal)
+	// self.Logger.Debugf("\n#FETCH EXIT: fromAttr: [%s] | cleanedFromAttr: [%s] | FromTable: [%s], val: [%v]", fromAttr, cleanedFromAttr, fromTable, mappedVal)
 	// fmt.Println(color.FgLightRed.Render("#############################################################################################################"))
 	return mappedVal, fromTable, cleanedFromAttr, ref, nil
 }
@@ -444,8 +444,8 @@ func (self *MigrationWorkerV2) RemoveMappedDataFromNodeData(mappedData MappedDat
 }
 
 func (self *MigrationWorkerV2) IsNodeDataEmpty(data map[string]interface{}) bool {
-	for key := range data {
-		if !(strings.Contains(key, ".id") || strings.Contains(key, ".display_flag")) {
+	for key, val := range data {
+		if !(strings.Contains(key, ".id") || strings.Contains(key, ".display_flag")) && val != nil {
 			return false
 		}
 	}
@@ -816,13 +816,14 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 	var allMappedData []MappedData
 
 	for _, toTable := range mapping.ToTables {
-		fmt.Println(".........................................")
+
 		if !self.ValidateMappingConditions(toTable, node) {
 			// self.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Not Validated", toTable.Table)
 			continue
 		} else {
 			// self.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Validated", toTable.Table)
 		}
+		fmt.Println(".........................................")
 		if mappedData, mappedDataErr := self.GetMappedData(toTable, node); mappedDataErr != nil {
 			self.Logger.Debug(node.Data)
 			self.Logger.Debug(mappedData)
@@ -881,7 +882,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 						self.Logger.Fatal("@MigrateNode > toTable.Media: Path not found in map!")
 					}
 				}
-				self.Logger.Infof("Inserted into: %s with ID: %v", toTable.Table, id)
+				self.Logger.Infof("Inserted into '%s' with ID '%v'", toTable.Table, id)
 				allMappedData = append(allMappedData, mappedData)
 			} else {
 				self.Logger.Debugf("@Args | [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s], [srcCols: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables, mappedData.orgCols)
