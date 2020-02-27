@@ -5,6 +5,8 @@ import (
 	"log"
 	"stencil/db"
 	"strconv"
+	"database/sql"
+	"strings"
 )
 
 func getEdgesCounter(evalConfig *EvalConfig,
@@ -243,7 +245,17 @@ func insertDataIntoCounterTableIfNotExist(evalConfig *EvalConfig,
 
 }
 
-func getUserIDsWithSameNodesAcrossDatasets(evalConfig *EvalConfig,
+func is1KDatasetForSA2(table string) bool {
+
+	if strings.Contains(table, "stencil_exp_sa2_1k_") {
+		return true
+	} else {
+		return false
+	}
+
+}
+
+func getUserIDsWithSameNodesAcrossDatasets(dbConn *sql.DB, 
 	databaseName string) []map[string]string {
 
 	counterTables := map[string]string {
@@ -255,7 +267,12 @@ func getUserIDsWithSameNodesAcrossDatasets(evalConfig *EvalConfig,
 
 	tableAlias, ok := counterTables[databaseName]
 	if !ok {
-		log.Fatal("Cannot get data by the provided database name:", databaseName)
+		if is1KDatasetForSA2(databaseName) {
+			tableAlias = "a"
+		} else {
+			log.Fatal("Cannot get data by the provided database name:", databaseName)
+		}
+		
 	}
 
 	query := fmt.Sprintf(
@@ -269,7 +286,7 @@ func getUserIDsWithSameNodesAcrossDatasets(evalConfig *EvalConfig,
 
 	log.Println(query)
 
-	data, err := db.DataCall(evalConfig.StencilDBConn, query)
+	data, err := db.DataCall(dbConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

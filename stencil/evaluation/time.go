@@ -51,6 +51,25 @@ func getMigrationAndDisplayTimeBySrcUserID(dbConn *sql.DB,
 
 }
 
+func getMigrationTimeBySrcUserID(dbConn *sql.DB, 
+	userID string) time.Duration {
+
+	migrationID := getMigrationIDBySrcUserID1(dbConn, userID)
+		
+	migrationIDInt, err := strconv.Atoi(migrationID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mTime := GetMigrationTime(
+		dbConn,
+		migrationIDInt,
+	)
+
+	return mTime
+
+}
+
 func GetMigrationTime(stencilDBConn *sql.DB, 
 	migrationID int) time.Duration {
 	

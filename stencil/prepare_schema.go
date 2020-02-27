@@ -126,14 +126,14 @@ func test9() {
 
 func test10() {
 
-	dbName := "stencil_exp10"
+	dbName := "stencil_exp_sa2_1k_backup"
 
 	isBladeServer := false
 
 	dbConn := db.GetDBConn(dbName, isBladeServer)
 	defer dbConn.Close()
 
-	evaluation.CreateDagCounter(dbConn, "dag_counter_1M")
+	evaluation.CreateDagCounter(dbConn, "dag_counter_1K")
 	
 }
 
