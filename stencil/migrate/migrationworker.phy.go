@@ -93,7 +93,7 @@ func (self *MigrationWorker) RenewDBConn() {
 func (self *MigrationWorker) CloseDBConns() {
 
 	self.DBConn.Close()
-	self.logTxn.DBconn.Close()
+	// self.logTxn.DBconn.Close()
 	self.SrcAppConfig.CloseDBConns()
 	self.DstAppConfig.CloseDBConns()
 }

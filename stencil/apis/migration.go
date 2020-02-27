@@ -98,6 +98,7 @@ func StartMigrationSA2(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, en
 		if msize, err := mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD, enableBags); err == nil {
 			transaction.LogOutcome(logTxn, "COMMIT")
 			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, msize)
+			logTxn.DBconn.Close()
 		} else {
 			transaction.LogOutcome(logTxn, "ABORT")
 			log.Println("Transaction aborted:", logTxn.Txn_id)
