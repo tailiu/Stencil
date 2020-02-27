@@ -54,6 +54,12 @@ func main() {
 
 	// SA2_db_populating.DropPrimaryKeysOfSA2Tables()
 
-	SA2_db_populating.PupulatingControllerForAllTables()
+	// SA2_db_populating.DeleteRowsByDuplicateColumnsInMigrationTable()
+
+	// SA2_db_populating.AddPrimaryKeysToSA2TablesWithoutPartitions()
+
+	// SA2_db_populating.AddPrimaryKeysToBaseSupTables()
+
+	// SA2_db_populating.PupulatingControllerForAllTables()
 
 }

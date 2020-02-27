@@ -2,7 +2,7 @@ package SA2_db_populating
 
 /**
  *
- *										1K dataset (stencil_exp_sa2_1k) (Total Row Count: 393,308)
+ *						 1K dataset (stencil_exp_sa2_1k) (Total Row Count: 393,308) (Time used: 2h6m1.215291933s)
  *
  * 			{1, 7}, 		// 1. aspects						(4,000) (done) 
  *			{7, 9},			// 2. comments						(13,477) (done)
@@ -22,7 +22,7 @@ package SA2_db_populating
  *			{41, 52},		// 16. likes						(63,177) (done)
  *			{52, 198},		// 17. all other tables
  *
- *										10K dataset (stencil_exp_sa2_10k) (Total Row Count: 3,577,133)
+ *						10K dataset (stencil_exp_sa2_10k) (Total Row Count: 3,577,133) (Time used: 11m26.24976412s)
  *
  * 			{1, 7}, 		// 1. aspects						(40,000) (done) 
  *			{7, 9},			// 2. comments						(134,896) (done)

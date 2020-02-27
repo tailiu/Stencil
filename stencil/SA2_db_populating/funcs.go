@@ -626,6 +626,24 @@ func deleteRowsByDuplicateColumnsInMigrationTables(dbConn *sql.DB, uniqueCols []
 
 }
 
+func deleteRowsByDuplicateColumnsInMigrationTable(dbConn *sql.DB, uniqueCols []string) {
+
+	tables := getAllTablesInDB(dbConn)
+
+	for _, t := range tables {
+
+		table := t["tablename"]
+
+		if !isMigrationTable(table) {
+			continue
+		}
+
+		deleteRowsByDuplicateColumnsInATable(dbConn, uniqueCols, table)
+
+	}
+
+}
+
 func deleteRowsByDuplicateColumnsInBaseSupTables(dbConn *sql.DB, uniqueCols []string) {
 
 	tables := getAllTablesInDB(dbConn)
@@ -691,7 +709,7 @@ func isMigrationTable(table string) bool {
 
 }
 
-func dropPrimaryKeysOfSA2Tables(dbConn *sql.DB) {
+func dropPrimaryKeysOfSA2TablesWithoutPartitions(dbConn *sql.DB) {
 	
 	tables := getAllTablesInDB(dbConn)
 
