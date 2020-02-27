@@ -229,17 +229,65 @@ func (self *MigrationWorker) FetchRoot() error {
 }
 
 func (self *MigrationWorker) GetAdjNode(node *DependencyNode, threadID int) (*DependencyNode, error) {
+	if strings.EqualFold(node.Tag.Name, "root") {
+		return self.GetOwnedNode(threadID)
+	}
+	return self.GetDependentNode(node, threadID)
+}
+
+func (self *MigrationWorker) GetDependentNode(node *DependencyNode, threadID int) (*DependencyNode, error) {
 
 	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
-			log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, dep.Tag))
-			// if !strings.Contains(dep.Tag, "post"){continue}
+
+			// if strings.Contains(dep.Tag, "notification") {
+			// 	continue
+			// }
+			log.Println(fmt.Sprintf("x%dx | FETCHING Dependent tag  { %s } ", threadID, dep.Tag))
 			qs := self.SrcAppConfig.GetTagQS(child, map[string]string{"mflag": self.arg})
 			self.ResolveDependencyConditions(node, dep, child, qs)
 			qs.ExcludeRowIDs(strings.Join(self.VisitedPKs(dep.Tag), ","))
 			qs.OrderByFunction("random()")
 			sql := qs.GenSQLWithSize()
 			// fmt.Println(sql)
+			if data, err := db.DataCall1(self.DBConn, sql); err == nil {
+				if len(data) > 0 {
+					newNode := new(DependencyNode)
+					newNode.Tag = child
+					newNode.SQL = sql
+					newNode.Data = data
+					if !self.wList.IsAlreadyWaiting(*newNode) {
+						return newNode, nil
+					}
+				}
+			} else {
+				return nil, err
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (self *MigrationWorker) GetOwnedNode(threadID int) (*DependencyNode, error) {
+
+	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
+
+		// if strings.Contains(own.Tag, "notification") {
+		// 	continue
+		// }
+		log.Println(fmt.Sprintf("x%dx | FETCHING Owned tag  { %s } ", threadID, own.Tag))
+		if self.unmappedTags.Exists(own.Tag) {
+			log.Println(fmt.Sprintf("x%dx | UNMAPPED  tag  { %s } ", threadID, own.Tag))
+			continue
+		}
+		// if !strings.Contains(own.Tag, "post"){continue}
+		if child, err := self.SrcAppConfig.GetTag(own.Tag); err == nil {
+			qs := self.SrcAppConfig.GetTagQS(child, map[string]string{"mflag": self.arg})
+			self.ResolveOwnershipConditions(own, child, qs)
+			qs.ExcludeRowIDs(strings.Join(self.VisitedPKs(own.Tag), ","))
+			qs.OrderByFunction("random()")
+			sql := qs.GenSQLWithSize()
+			// log.Fatal(sql)
 			if data, err := db.DataCall1(self.DBConn, sql); err == nil {
 				if len(data) > 0 {
 					newNode := new(DependencyNode)
@@ -303,6 +351,10 @@ func (self *MigrationWorker) GetBagNodes(threadID, limit int) ([]*DependencyNode
 func (self *MigrationWorker) GetOwnedNodes(threadID, limit int) ([]*DependencyNode, error) {
 
 	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
+
+		if strings.Contains(own.Tag, "notification") {
+			continue
+		}
 		log.Println(fmt.Sprintf("x%dx | FETCHING  tag  { %s } ", threadID, own.Tag))
 		if self.unmappedTags.Exists(own.Tag) {
 			log.Println(fmt.Sprintf("x%dx | UNMAPPED  tag  { %s } ", threadID, own.Tag))
@@ -428,10 +480,56 @@ func (self *MigrationWorker) VerifyMappingConditions(toTable config.ToTable, nod
 	return true
 }
 
+func (self *MigrationWorker) FetchForMapping(fromAttr string, node *DependencyNode) (interface{}, error) {
+	args := strings.Split(fromAttr, ",")
+	if nodeVal, ok := node.Data[args[2]]; ok {
+		comparisonTabCol := strings.Split(args[1], ".")
+		if fetchTag, err := self.SrcAppConfig.GetTagByMember(comparisonTabCol[0]); err == nil {
+			qs := self.SrcAppConfig.GetTagQS(*fetchTag, map[string]string{"mflag": self.arg})
+			qs.AddWhereWithValue(args[1], "=", fmt.Sprint(nodeVal))
+			sql := qs.GenSQLWithSize()
+			if res, err := db.DataCall1(self.DBConn, sql); err != nil {
+				fmt.Println(args[0], comparisonTabCol[1], fmt.Sprint(nodeVal))
+				log.Fatal("@GetMappedData: FetchForMapping | ", err)
+				return "", err
+			} else {
+				// log.Fatal(fmt.Println(fmt.Sprintf("fromAttr: %s | args[0] : %v | Fetched data: %v", fromAttr, args[0], res[args[0]])))
+				return res[args[0]], nil
+			}
+
+			// if res, err := db.FetchForMapping(self.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
+			// 	fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
+			// 	log.Fatal("@GetMappedData: FetchForMapping | ", err)
+			// 	return "", err
+			// } else {
+			// 	fmt.Println(fmt.Println(fmt.Sprintf("fromAttr: %s | Fetched data: %v", fromAttr, res[targetTabCol[1]])))
+			// 	return fmt.Sprint(res[targetTabCol[1]]), nil
+			// }
+		} else {
+			fmt.Println(err)
+			log.Fatal("@GetMappedData: unable to fetch tag for ", comparisonTabCol[0])
+			return "", err
+		}
+	} else {
+		fmt.Println(node.Tag.Name, node.Data)
+		log.Fatal("@GetMappedData: unable to fetch ", args[2])
+		return "", errors.New((fmt.Sprintf("%s not found in data!", args[2])))
+	}
+}
+
 func (self *MigrationWorker) CreateMissingData(toTable config.ToTable, node *DependencyNode) map[string]string {
 	// log.Println(fmt.Sprintf("#%d# CreateMissingData { %s } From [%s] to [%s]", 0, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+
 	newRows := make(map[string]string)
+
 	for toCol, mappedTabCol := range toTable.Mapping {
+
+		cleanedFromAttr := strings.ReplaceAll(mappedTabCol, "(", "")
+		cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, ")", "")
+		cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#ASSIGN", "")
+		cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#FETCH", "")
+		cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#REF", "")
+
 		if mappedTabCol[:1] == "$" {
 			if inputVal, err := self.mappings.GetInput(mappedTabCol); err == nil {
 				newRows[toCol] = inputVal
@@ -440,31 +538,44 @@ func (self *MigrationWorker) CreateMissingData(toTable config.ToTable, node *Dep
 				log.Fatal("@CreateMissingData: input doesn't exist?")
 			}
 		} else if mappedTabCol[:1] == "#" {
-			if strings.Contains(mappedTabCol, "#ASSIGN") {
-				assignedTabCol := strings.Trim(mappedTabCol, "#ASSIGN()")
-				if nodeVal, ok := node.Data[assignedTabCol]; ok {
+			if strings.Contains(mappedTabCol, "#REF") {
+				if strings.Contains(mappedTabCol, "#FETCH") {
+					if fetchedVal, err := self.FetchForMapping(cleanedFromAttr, node); err == nil {
+						if fetchedVal != nil {
+							newRows[toCol] = fmt.Sprint(fetchedVal)
+						}
+					} else {
+						fmt.Println(mappedTabCol, cleanedFromAttr)
+						fmt.Println(node)
+						log.Fatal("@CreateMissingData: ", err)
+					}
+				} else if strings.Contains(mappedTabCol, "#ASSIGN") {
+					cleanedFromAttrTokens := strings.Split(cleanedFromAttr, ",")
+					cleanedFromAttr = cleanedFromAttrTokens[0]
+					if nodeVal, ok := node.Data[cleanedFromAttr]; ok && nodeVal != nil {
+						newRows[toCol] = fmt.Sprint(nodeVal)
+					} else {
+						fmt.Println(fmt.Sprintf("fromAttr: [%s], cleanedFromAttr: [%s], nodeData: %v", mappedTabCol, cleanedFromAttr, node.Data))
+						fmt.Println(fmt.Sprintf("#REF>#ASSIGN> Unable to CreateMissingData | value found = [%v]", ok))
+					}
+				}
+			} else if strings.Contains(mappedTabCol, "#ASSIGN") {
+				if nodeVal, ok := node.Data[cleanedFromAttr]; ok && nodeVal != nil {
 					newRows[toCol] = fmt.Sprint(nodeVal)
+				} else {
+					fmt.Println(fmt.Sprintf("fromAttr: [%s], cleanedFromAttr: [%s], nodeData: %v", mappedTabCol, cleanedFromAttr, node.Data))
+					fmt.Println(fmt.Sprintf("#REF>#ASSIGN> Unable to CreateMissingData | value found = [%v]", ok))
 				}
 			} else if strings.Contains(mappedTabCol, "#FETCH") {
-				assignedTabCol := strings.Trim(mappedTabCol, "#FETCH()")
-				args := strings.Split(assignedTabCol, ",")
-				if nodeVal, ok := node.Data[args[2]]; ok {
-					targetTabCol := strings.Split(args[0], ".")
-					comparisonTabCol := strings.Split(args[1], ".")
-					if res, err := db.FetchForMapping(self.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
-						fmt.Println(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
-						log.Fatal("@GetMappedData: FetchForMapping | ", err)
-					} else {
-						newRows[toCol] = fmt.Sprint(res[targetTabCol[1]])
+				if fetchedVal, err := self.FetchForMapping(cleanedFromAttr, node); err == nil {
+					if fetchedVal != nil {
+						newRows[toCol] = fmt.Sprint(fetchedVal)
 					}
 				} else {
-					fmt.Println(node.Tag.Name, node.Data)
-					log.Fatal("@GetMappedData: unable to fetch ", args[2])
+					fmt.Println(mappedTabCol, cleanedFromAttr)
+					fmt.Println(node)
+					log.Fatal("@CreateMissingData: ", err)
 				}
-				// fmt.Println(args)
-				// fmt.Println(newRows[toCol])
-				// fmt.Println(newRows)
-				// log.Fatal("check")
 			} else {
 				switch mappedTabCol {
 				case "#GUID":
@@ -484,6 +595,7 @@ func (self *MigrationWorker) CreateMissingData(toTable config.ToTable, node *Dep
 			}
 		}
 	}
+
 	return newRows
 }
 
@@ -506,10 +618,10 @@ func (self *MigrationWorker) UpdateMissingData(tx *sql.Tx, appTable, rowid strin
 					fmt.Println(qu)
 					log.Fatal(err)
 					return data, err
+				} else {
+					fmt.Println(fmt.Sprintf("@UpdateMissingData: Updated RowID: %s, Table: %s Update: %s ", rowid, ptab, update))
+					delete(data, col)
 				}
-				delete(data, col)
-				fmt.Println(col, data)
-				log.Fatal("check update case")
 			} else {
 				// fmt.Println("@UpdateMissingData: Row doesn't exist ", rowid, ptab)
 			}
@@ -737,6 +849,7 @@ func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping confi
 				}
 			}
 			if newRow := self.CreateMissingData(toTable, node); len(dst_rowid) > 0 && len(newRow) > 0 {
+				fmt.Println("@HandleMappedMembersOfNode > CreateMissingData | Created New Data |  ", newRow)
 				if newRows, err := self.UpdateMissingData(tx, toTable.Table, dst_rowid, newRow); err == nil {
 					if len(newRows) > 0 {
 						if err := self.InsertMissingData(tx, toTable.Table, dst_rowid, newRow); err == nil {
@@ -1000,6 +1113,10 @@ func (self *MigrationWorker) VisitedPKs(tag string) []string {
 
 func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID int) error {
 
+	fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
+	log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
+
 	if strings.EqualFold(node.Tag.Name, "root") && !db.CheckUserInApp(self.uid, self.DstAppConfig.AppID, self.DBConn) {
 		log.Println("++ Adding User from ", self.SrcAppConfig.AppName, " to ", self.DstAppConfig.AppName)
 		db.AddUserToApp(self.uid, self.DstAppConfig.AppID, self.DBConn)
@@ -1009,11 +1126,12 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 		if err != nil {
 			return err
 		}
-		fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-		nodeIDAttr, _ := node.Tag.ResolveTagAttr("id")
+
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
+
 		log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
 		log.Println(fmt.Sprintf("~%d~ Adjacent  Node: { %s } ID: %v", threadID, child.Tag.Name, child.Data[childIDAttr]))
+
 		if err := self.DeletionMigration(child, threadID); err != nil {
 			return err
 		}

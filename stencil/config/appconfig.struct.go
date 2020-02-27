@@ -26,7 +26,7 @@ func (self *AppConfig) GetTag(tagName string) (Tag, error) {
 			return tag, nil
 		}
 	}
-	return *new(Tag), nil
+	return *new(Tag), errors.New("Tag doesn't exist for: " + tagName)
 }
 
 func (self *AppConfig) GetTagMembers(tagName string) ([]string, error) {
