@@ -37,6 +37,7 @@ func ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *tr
 			defer wg.Done()
 			// log.Println(fmt.Sprintf("%s: Entering Migration Worker", helper.Trace()))
 			mWorker := migrate.CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, MaD, mappings)
+			defer mWorker.CloseDBConns()
 			// log.Println(fmt.Sprintf("%s: Created Migration Worker", helper.Trace()))
 			switch mWorker.MType() {
 			case migrate.DELETION:

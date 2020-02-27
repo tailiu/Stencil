@@ -90,6 +90,14 @@ func (self *MigrationWorker) RenewDBConn() {
 	self.DBConn = db.GetDBConn(db.STENCIL_DB)
 }
 
+func (self *MigrationWorker) CloseDBConns() {
+
+	self.DBConn.Close()
+	self.logTxn.DBconn.Close()
+	self.SrcAppConfig.CloseDBConns()
+	self.DstAppConfig.CloseDBConns()
+}
+
 func (self *MigrationWorker) Finish() {
 	self.DBConn.Close()
 }
