@@ -366,7 +366,7 @@ func DeleteBagsByRowIDS(dbConn *sql.DB, rowids string) error {
 
 func FetchForMapping(dbConn *sql.DB, targetTable, targetCol, conditionCol, conditionVal string) (map[string]interface{}, error) {
 	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s = '%s'", targetCol, targetTable, conditionCol, conditionVal)
-	// fmt.Println(q)
+	fmt.Println(q)
 	return DataCall1(dbConn, q)
 }
 
@@ -478,6 +478,7 @@ func TableID(dbConn *sql.DB, table, app string) (string, error) {
 		if pk, ok := res["pk"]; ok {
 			return fmt.Sprint(pk), nil
 		} else {
+			fmt.Println(fmt.Sprintf("@db.TableName | Args | table: %s| app: %s", table, app))
 			return "", errors.New("Something bad with the returned result!")
 		}
 	} else {
@@ -491,6 +492,7 @@ func TableName(dbConn *sql.DB, table, app string) (string, error) {
 		if pk, ok := res["table_name"]; ok {
 			return fmt.Sprint(pk), nil
 		} else {
+			fmt.Println(fmt.Sprintf("@db.TableName | Args | table: %s| app: %s", table, app))
 			return "", errors.New("Something bad with the returned result!")
 		}
 	} else {
