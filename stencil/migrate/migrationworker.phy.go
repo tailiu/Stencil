@@ -240,9 +240,9 @@ func (self *MigrationWorker) GetDependentNode(node *DependencyNode, threadID int
 	for _, dep := range self.SrcAppConfig.ShuffleDependencies(self.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := self.SrcAppConfig.GetTag(dep.Tag); err == nil {
 
-			if strings.Contains(dep.Tag, "notification") {
-				continue
-			}
+			// if strings.Contains(dep.Tag, "notification") {
+			// 	continue
+			// }
 			log.Println(fmt.Sprintf("x%dx | FETCHING Dependent tag  { %s } ", threadID, dep.Tag))
 			qs := self.SrcAppConfig.GetTagQS(child, map[string]string{"mflag": self.arg})
 			self.ResolveDependencyConditions(node, dep, child, qs)
@@ -272,9 +272,9 @@ func (self *MigrationWorker) GetOwnedNode(threadID int) (*DependencyNode, error)
 
 	for _, own := range self.SrcAppConfig.GetShuffledOwnerships() {
 
-		if strings.Contains(own.Tag, "notification") {
-			continue
-		}
+		// if strings.Contains(own.Tag, "notification") {
+		// 	continue
+		// }
 		log.Println(fmt.Sprintf("x%dx | FETCHING Owned tag  { %s } ", threadID, own.Tag))
 		if self.unmappedTags.Exists(own.Tag) {
 			log.Println(fmt.Sprintf("x%dx | UNMAPPED  tag  { %s } ", threadID, own.Tag))
