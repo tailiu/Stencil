@@ -1004,6 +1004,59 @@ func Exp3LoadUserIDsFromLog() {
 
 }
 
+func Exp3AndExp2LoadUserIDsFromLog1() {
+
+	log.Println("=================================================")
+	log.Println("Starting Independent Migrations for Exp2 and Exp3")
+	log.Println("=================================================")
+
+	diaspora = "diaspora_100000"
+
+	indepSizeFile := "SA1IndepSize"
+	indepTimeFile := "SA1IndepTime"
+
+	SA1MigrationFile := "SA1Size"
+
+	indepStencilDB, indepSrcDB, indepDstDB := 
+		"stencil_exp14", "diaspora_1000000_exp14", "mastodon_exp14"
+
+	indepMigrationType := "i"
+
+	indepEnableDisplay, indepDisplayInFirstPhase := true, true
+
+	migrationNum := 100
+
+	data := ReadStrLinesFromLog(SA1MigrationFile)
+
+	evalConfig := InitializeEvalConfig()
+	defer closeDBConns(evalConfig)
+
+	for i := 0; i < migrationNum; i++ {
+		
+		data1 := data[i]
+
+		var sizeData SA1SizeStruct
+
+		err := json.Unmarshal([]byte(data1), &sizeData)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		userID := sizeData.UserID
+
+		log.Println("UserID:", userID)
+
+		migrateUserFromDiasporaToMastodon(
+			evalConfig, indepStencilDB, diaspora, 
+			userID, indepMigrationType, 
+			indepStencilDB, indepSrcDB, indepDstDB,
+			indepSizeFile, indepTimeFile,
+			indepEnableDisplay, indepDisplayInFirstPhase,
+		)
+	}
+
+}
+
 func Exp3GetDatadowntime() {
 
 	evalConfig := InitializeEvalConfig()
@@ -1744,9 +1797,25 @@ func Exp8() {
 
 	migrationNum := 100
 
-	// seq := 0
+	exp8LogFile := "diaspora_1K_dataset"
 
-	// exp8LogFile := "diaspora_1M_dataset"
+	stencilDB = "stencil_exp13"
+	diaspora = "diaspora_1k_exp13"
+	mastodon = "mastodon_exp13"
+
+	diaspora1 = "diaspora_1000"
+
+	
+	// exp8LogFile := "diaspora_10K_dataset"
+
+	// stencilDB = "stencil_exp12"
+	// diaspora = "diaspora_10k_exp12"
+	// mastodon = "mastodon_exp12"
+
+	// diaspora1 = "diaspora_10000"
+
+
+	// exp8LogFile := "diaspora_100K_dataset"
 
 	// stencilDB = "stencil_exp11"
 	// diaspora = "diaspora_100k_exp11"
@@ -1754,21 +1823,18 @@ func Exp8() {
 
 	// diaspora1 = "diaspora_100000"
 
-	seq := 0
 
-	exp8LogFile := "diaspora_1M_dataset"
+	// exp8LogFile := "diaspora_1M_dataset"
 
-	stencilDB = "stencil_exp10"
-	diaspora = "diaspora_1m_exp10"
-	mastodon = "mastodon_exp10"
+	// stencilDB = "stencil_exp10"
+	// diaspora = "diaspora_1m_exp10"
+	// mastodon = "mastodon_exp10"
 
-	diaspora1 = "diaspora_1000000"
-	
-	// counterTables := []string {
-	// 	"dag_counter_1K", 
-	// 	"dag_counter_10K", 
-	// 	"dag_counter_100K",
-	// 	"dag_counter_1M",
+	// diaspora1 = "diaspora_1000000"
+
+	// allowedDBName := map[string]string {
+	// 	"diaspora_1k_exp13", "diaspora_10k_exp12",
+	// 	"diaspora_100k_exp11", "diaspora_1m_exp10",
 	// }
 
 	evalConfig := InitializeEvalConfig()
@@ -1776,7 +1842,7 @@ func Exp8() {
 
 	preExp1(evalConfig)
 
-	userIDsWithCounters := getUserIDsWithSameNodesAcrossDatasets(evalConfig, seq)
+	userIDsWithCounters := getUserIDsWithSameNodesAcrossDatasets(evalConfig, diaspora)
 
 	log.Println(userIDsWithCounters)
 
@@ -1838,6 +1904,4 @@ func Exp8() {
 		)
 
 	}
-
-
 }

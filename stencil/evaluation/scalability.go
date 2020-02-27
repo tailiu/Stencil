@@ -244,21 +244,18 @@ func insertDataIntoCounterTableIfNotExist(evalConfig *EvalConfig,
 }
 
 func getUserIDsWithSameNodesAcrossDatasets(evalConfig *EvalConfig,
-	seq int) []map[string]string {
+	databaseName string) []map[string]string {
 
-	var tableAlias string
+	counterTables := map[string]string {
+		"diaspora_1k_exp13": "a", 
+		"diaspora_10k_exp12": "b", 
+		"diaspora_100k_exp11": "c",
+		"diaspora_1m_exp10": "d",
+	}
 
-	switch seq {
-	case 0:
-		tableAlias = "a"
-	case 1:
-		tableAlias = "b"
-	case 2:
-		tableAlias = "c"
-	case 3:
-		tableAlias = "d"
-	default:
-		log.Fatal("Cannot find a tableAlias")
+	tableAlias, ok := counterTables[databaseName]
+	if !ok {
+		log.Fatal("Cannot get data by the provided database name:", databaseName)
 	}
 
 	query := fmt.Sprintf(

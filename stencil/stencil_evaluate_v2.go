@@ -59,5 +59,7 @@ func main() {
 
 	// evaluation.Exp7()
 	
-	evaluation.Exp8()
+	// evaluation.Exp8()
+
+	evaluation.Exp3LoadUserIDsFromLog1()
 }
