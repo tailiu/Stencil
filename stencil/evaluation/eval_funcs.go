@@ -983,7 +983,7 @@ func getDBConnByName(evalConfig *EvalConfig,
 
 }
 
-func getMigratedUserID(evalConfig *EvalConfig, 
+func getMigratedUserID(dbConn *sql.DB, 
 	migrationID, dstAppID string) string {
 
 	query1 := fmt.Sprintf(
@@ -992,7 +992,7 @@ func getMigratedUserID(evalConfig *EvalConfig,
 		dstAppID,
 	)
 
-	data1, err := db.DataCall1(evalConfig.StencilDBConn, query1)
+	data1, err := db.DataCall1(dbConn, query1)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -1003,7 +1003,7 @@ func getMigratedUserID(evalConfig *EvalConfig,
 		migrationID, fmt.Sprint(data1["root_member_id"]), dstAppID,
 	)
 
-	data2, err := db.DataCall1(evalConfig.StencilDBConn, query2)
+	data2, err := db.DataCall1(dbConn, query2)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -1310,6 +1310,21 @@ func CreateDagCounter(dbConn *sql.DB, tableName string) {
 	err2 := db.TxnExecute1(dbConn, query)
 	if err2 != nil {
 		log.Fatal(err2)
+	}
+
+}
+
+func CreateFourDagCounterTables(dbConn *sql.DB) {
+
+	counterTables := []string {
+		"dag_counter_1K", 
+		"dag_counter_10K", 
+		"dag_counter_100K",
+		"dag_counter_1M",
+	}
+
+	for _, counterTable := range counterTables {
+		CreateDagCounter(dbConn, counterTable)
 	}
 
 }

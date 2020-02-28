@@ -481,10 +481,60 @@ func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB,
 
 }
 
+func getDanglingObjsIncludingMediaOfSystemV2(dbConn *sql.DB, 
+	toApp string, totalMediaInMigrations int64, 
+	enableBags bool, migrationID, 
+	migratedUserID , toAppID, srcUserID, 
+	fromAppID string) []map[string]interface{} {
+
+	// Dangling objects put by display threads
+	query1 := fmt.Sprintf(
+		`select * from data_bags where 
+		migration_id = %s and user_id = %s and app = %s`, 
+		migrationID, migratedUserID, toAppID,
+	)
+
+	// log.Println(query)
+
+	res1, err1 := db.DataCall(dbConn, query1)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	query2 := fmt.Sprintf(
+		`select * from data_bags where 
+		migration_id = %s and user_id != %s and app = %s`, 
+		migrationID, srcUserID, fromAppID,
+	)
+
+	// log.Println(query)
+
+	res2, err2 := db.DataCall(dbConn, query2)
+	if err1 != nil {
+		log.Fatal(err2)
+	}
+
+	res1 = append(res1, res2...)
+
+	return res1
+
+}
+
+func throughTwitter(migrationSeq []string) bool {
+
+	for i, app := range migrationSeq {
+		if app == "twitter" && i != len(migrationSeq) - 1{
+			return true
+		}
+	}
+
+	return false
+}
+
 func calculateDanglingAndTotalObjectsInExp7(
 	evalConfig *EvalConfig, enableBags bool,
 	totalMediaInMigrations, totalRemainingObjsInOriginalApp int64,
-	toApp string, seqNum, seqLen int) map[string]int64 {
+	toApp string, seqNum int, migrationSeq []string) map[string]int64 {
 
 	var stencilDBConn *sql.DB
 
@@ -497,19 +547,21 @@ func calculateDanglingAndTotalObjectsInExp7(
 	danglingObjs := getDanglingObjsIncludingMediaOfSystem(stencilDBConn,
 		toApp, totalMediaInMigrations, enableBags)
 	totalObjs := getTotalObjsIncludingMediaOfAppInExp7(evalConfig, 
-		toApp, enableBags, totalMediaInMigrations)
+		toApp, enableBags)
+
+	seqLen := len(migrationSeq)
 
 	// Only when the final application is Diaspora do we need to do this
 	if seqNum == seqLen - 2 && toApp == "diaspora" {
 
 		// If the option databags is not enabled and through *twitter*
 		// then the total objs should not include migrated media
-		if !enableBags {
+		if !enableBags && throughTwitter(migrationSeq) {
 			totalObjs -= totalMediaInMigrations
 		}
 
 		totalObjs -= totalRemainingObjsInOriginalApp
-		
+
 	}
 
 	objs := make(map[string]int64)
@@ -517,5 +569,40 @@ func calculateDanglingAndTotalObjectsInExp7(
 	objs["totalObjs"] = totalObjs
 
 	return objs
+
+}
+
+func calculateDanglingAndTotalObjectsInExp7v2(
+	evalConfig *EvalConfig, enableBags bool, 
+	totalRemainingObjsInOriginalApp int64,
+	toApp string, seqNum int, migrationSeq []string, migrationIDs, 
+	migratedUserID, toAppID, srcUserID,
+	fromAppID string) (map[string]interface{}, int64) {
+
+	var stencilDBConn *sql.DB
+
+	if enableBags {
+		stencilDBConn = evalConfig.StencilDBConn
+	} else {
+		stencilDBConn = evalConfig.StencilDBConn1
+	}
+
+	danglingObjs := getDanglingObjsIncludingMediaOfSystemV2(stencilDBConn,
+		toApp, enableBags, migrationID, 
+		migratedUserID, toAppID, srcUserID, fromAppID,
+	)
+	
+	totalObjs := getTotalRowCountsOfDB(dbConn)
+
+	seqLen := len(migrationSeq)
+
+	// Only when the final application is Diaspora do we need to do this
+	if seqNum == seqLen - 2 && toApp == "diaspora" {
+
+		totalObjs -= totalRemainingObjsInOriginalApp
+
+	}
+
+	return danglingObjs, totalObjs
 
 }

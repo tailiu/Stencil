@@ -255,6 +255,16 @@ func is1KDatasetForSA2(table string) bool {
 
 }
 
+func is10KDatasetForSA2(table string) bool {
+
+	if strings.Contains(table, "stencil_exp_sa2_10k_") {
+		return true
+	} else {
+		return false
+	}
+
+}
+
 func getUserIDsWithSameNodesAcrossDatasets(dbConn *sql.DB, 
 	databaseName string) []map[string]string {
 
@@ -269,6 +279,8 @@ func getUserIDsWithSameNodesAcrossDatasets(dbConn *sql.DB,
 	if !ok {
 		if is1KDatasetForSA2(databaseName) {
 			tableAlias = "a"
+		} else if is10KDatasetForSA2(databaseName) {
+			tableAlias = "b"
 		} else {
 			log.Fatal("Cannot get data by the provided database name:", databaseName)
 		}

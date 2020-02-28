@@ -1428,9 +1428,9 @@ func Exp4LoadCounterResToTable() {
 	// counterFile := "diaspora1MCounter"
 	// counterTable := "dag_counter"
 
-	stencilDB = "stencil_exp_sa2_1k_backup"
-	counterFile := "diaspora1KCounter"
-	counterTable := "dag_counter_1k"
+	stencilDB = "stencil_exp_sa2_100k_backup"
+	counterFile := "diaspora100KCounter"
+	counterTable := "dag_counter_100K"
 
 	evalConfig := InitializeEvalConfig()
 
@@ -1602,7 +1602,8 @@ func Exp6() {
 
 		migrationID := getMigrationIDBySrcUserID1(evalConfig.StencilDBConn, userID)
 
-		migratedUserID := getMigratedUserID(evalConfig, migrationID, dstAppID)
+		migratedUserID := getMigratedUserID(evalConfig.StencilDBConn,
+			 migrationID, dstAppID)
 
 		// Note that we need to replace the set db.MASTODON_DB here
 		db.STENCIL_DB = "stencil_100k_exp4"
@@ -1707,19 +1708,9 @@ func Exp7() {
 	log.Println("Starting Exp7: Databags Test")
 	log.Println("============================")
 
-	// migrationSeq := []string{"diaspora", "mastodon", "twitter", "gnusocial", "diaspora"}
-	
-	// migrationSeq := []string {
-	// 	"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
-	// }
-
-	// This can work without bugs
-	// migrationSeq := []string {
-	// 	"diaspora", "mastodon", "twitter",
-	// }
-
 	migrationSeq := []string {
 		"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
+		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1736,7 +1727,7 @@ func Exp7() {
 	twitter1 = "twitter_exp7"
 	gnusocial1 = "gnusocial_exp7"
 
-	edgeCounterRangeStart := 403
+	edgeCounterRangeStart := 407
 	edgeCounterRangeEnd := 1200
 	migrationNum := 1
 
@@ -1759,8 +1750,6 @@ func Exp7() {
 
 	log.Println(edgeCounter)
 	log.Println(len(edgeCounter))
-
-	seqLen := len(migrationSeq)
 
 	for j := 0; j < len(edgeCounter); j++ {
 
@@ -1838,7 +1827,7 @@ func Exp7() {
 			objs := calculateDanglingAndTotalObjectsInExp7(
 				evalConfig, enableBags,
 				totalMediaInMigrations, totalRemainingObjsInOriginalApp,
-				toApp, i, seqLen,
+				toApp, i, migrationSeq,
 			)
 
 			enableBags = false
@@ -1846,10 +1835,188 @@ func Exp7() {
 			objs1 := calculateDanglingAndTotalObjectsInExp7(
 				evalConfig, enableBags,
 				totalMediaInMigrations, totalRemainingObjsInOriginalApp,
-				toApp, i, seqLen,
+				toApp, i, migrationSeq,
 			)
 
 			objs["orgUserID"] = ConvertStringtoInt64(userID)
+			objs1["orgUserID"] = ConvertStringtoInt64(userID)
+
+			WriteStrToLog(
+				"dataBagsEnabled",
+				ConvertMapInt64ToJSONString(objs),
+			)
+
+			WriteStrToLog(
+				"dataBagsNotEnabled",
+				ConvertMapInt64ToJSONString(objs1),
+			)
+
+		}
+		
+	}
+
+}
+
+func Exp7v2() {
+
+	log.Println("==============================")
+	log.Println("Starting Exp7: Databags Test 1")
+	log.Println("==============================")
+
+	migrationSeq := []string {
+		"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
+		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
+	}
+
+	// Database setup for migrations enabled databags
+	stencilDB = "stencil_exp6"
+	diaspora = "diaspora_100k_exp6"
+	mastodon = "mastodon_exp6"
+	twitter = "twitter_exp6"
+	gnusocial = "gnusocial_exp6"
+
+	// Database setup for migrations not enabled databags
+	stencilDB1 = "stencil_exp7"
+	diaspora1 = "diaspora_100k_exp7"
+	mastodon1 = "mastodon_exp7"
+	twitter1 = "twitter_exp7"
+	gnusocial1 = "gnusocial_exp7"
+
+	edgeCounterRangeStart := 407
+	edgeCounterRangeEnd := 1200
+	migrationNum := 1
+
+	evalConfig := InitializeEvalConfig(false)
+
+	defer closeDBConns(evalConfig)
+
+	preExp7(evalConfig)
+
+	// userIDs := []string {
+	// 	"91",
+	// }
+	
+	edgeCounter := getEdgesCounterByRange(
+		evalConfig,
+		edgeCounterRangeStart, 
+		edgeCounterRangeEnd, 
+		migrationNum,
+	)
+
+	log.Println(edgeCounter)
+	log.Println(len(edgeCounter))
+
+	for j := 0; j < len(edgeCounter); j++ {
+
+		userID := edgeCounter[j]["person_id"]
+
+		userIDs := []string {
+			userID,
+		}
+
+		log.Println("Next User:", userID)
+
+		// preExp7(evalConfig)
+
+		var totalRemainingObjsInOriginalApp int64
+		var totalMediaBeforeAllMigrations int64
+		var totalMediaInMigrations int64
+
+		var migrationIDs []string
+		var migrationIDs1 []string
+
+		var totalDanglingObjs []map[string]interface{}
+		var totalDanglingObjs1 []map[string]interface{}
+
+		for i := 0; i < len(migrationSeq) - 1; i++ {
+			
+			fromApp := migrationSeq[i]
+			toApp := migrationSeq[i+1]
+			
+			fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
+			toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
+
+			if i == 0 && fromApp == "diaspora" {
+				totalMediaBeforeAllMigrations = 
+					getMediaCountsOfApp(evalConfig.DiasporaDBConn, fromApp)
+			}
+
+			enableBags := true
+
+			db.STENCIL_DB = stencilDB
+			db.DIASPORA_DB = diaspora
+			db.MASTODON_DB = mastodon
+			db.TWITTER_DB = twitter
+			db.GNUSOCIAL_DB = gnusocial
+
+			migrationIDs = migrateUsersInExp7(
+				evalConfig, stencilDB,
+				i, fromApp, toApp, fromAppID, toAppID,
+				migrationIDs, userIDs, enableBags,
+			)
+
+			enableBags = false
+
+			db.STENCIL_DB = stencilDB1
+			db.DIASPORA_DB = diaspora1
+			db.MASTODON_DB = mastodon1
+			db.TWITTER_DB = twitter1
+			db.GNUSOCIAL_DB = gnusocial1
+
+			migrationIDs1 = migrateUsersInExp7(
+				evalConfig, stencilDB1,
+				i, fromApp, toApp, fromAppID, toAppID,
+				migrationIDs1, userIDs, enableBags,
+			)
+
+			// Only when the start application is Diaspora do we need to do this
+			if i == 0 && fromApp == "diaspora" {
+
+				totalMediaInMigrations = totalMediaBeforeAllMigrations - 
+					getMediaCountsOfApp(evalConfig.DiasporaDBConn, fromApp)
+
+				totalRemainingObjsInOriginalApp = 
+					getTotalObjsIncludingMediaOfApp(evalConfig.DiasporaDBConn, fromApp)
+				
+			}
+
+			migratedUserID := getMigratedUserID(evalConfig.StencilDBConn, 
+				migrationIDs[0], toAppID)
+
+			enableBags = true
+
+			danglingObjs, totalObjs := calculateDanglingAndTotalObjectsInExp7v2(
+				evalConfig, enableBags, totalRemainingObjsInOriginalApp,
+				toApp, i, migrationSeq, migrationIDs[0], migratedUserID,
+				toAppID, userID, fromApp,
+			)
+
+			migratedUserID1 := getMigratedUserID(evalConfig.StencilDBConn1, 
+				migrationIDs1[0], toAppID)
+
+			enableBags = false
+
+			danglingObjs1, totalObjs1 := calculateDanglingAndTotalObjectsInExp7v2(
+				evalConfig, enableBags, totalRemainingObjsInOriginalApp,
+				toApp, i, migrationSeq, migrationIDs[0], migratedUserID1,
+				toAppID, userID, fromApp,
+			)
+
+
+			totalDanglingObjs = append(totalDanglingObjs, danglingObjs)
+			totalDanglingObjs1 = append(totalDanglingObjs1, danglingObjs1)
+
+			totalDanglingObjs = removeMigratedObjsFromDataBags(totalDanglingObjs)
+
+			objs := make(map[string]int64)
+			objs1 := make(map[string]int64)
+
+			objs["danglingObjs"] = int64(len(totalDanglingObjs))
+			objs["totalObjs"] = totalObjs
+			objs["orgUserID"] = ConvertStringtoInt64(userID)
+
+			objs1["danglingObjs"] = int64(len(totalDanglingObjs1))
+			objs1["totalObjs"] = totalObjs1
 			objs1["orgUserID"] = ConvertStringtoInt64(userID)
 
 			WriteStrToLog(
@@ -1992,13 +2159,13 @@ func Exp8SA2() {
 	log.Println("Starting Exp8 for SA2: Dataset Test")
 	log.Println("===================================")
 
-	seq := 9
+	seq := 0
 
-	migrationNum := 10
+	migrationNum := 5
 
-	exp8LogFile := "diaspora_1K_dataset_sa2_" + strconv.Itoa(seq)
+	exp8LogFile := "diaspora_100K_dataset_sa2_" + strconv.Itoa(seq)
 
-	db.STENCIL_DB = "stencil_exp_sa2_1k_exp" + strconv.Itoa(seq)
+	db.STENCIL_DB = "stencil_exp_sa2_100k_exp" + strconv.Itoa(seq)
 
 	var stencilDBConn *sql.DB
 
