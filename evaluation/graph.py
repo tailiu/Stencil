@@ -3,13 +3,13 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 25})
+plt.rcParams.update({'font.size': 32})
 
 colors = ['g', 'r', 'b', 'm', 'k', 'w', 'c', 'y']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center', 'center right']
 markers = ["o", "v", "s",  "<", "*", "+"]
-lineStyles = ["solid", "dashed", "dotted",""]
+lineStyles = ["solid", "dashed", "dotted", ""]
 
 def line(x, y, xlabel, ylabel, title):
     xs, ys = _sortX(x, y)
@@ -119,7 +119,7 @@ def cumulativeGraph(dataArr, labels, xlabel, ylabel):
 
     fig, ax = plt.subplots()
     for i, y1 in enumerate(y):
-        ax.plot(x[i], y1, colors[i] + lineStyles[i], lw=2, label = labels[i])
+        ax.plot(x[i], y1, color=colors[i], linestyle=lineStyles[i], lw=4, label=labels[i])
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -131,7 +131,7 @@ def cumulativeGraph(dataArr, labels, xlabel, ylabel):
     # I want to change location by coordinates
     # bbox_to_anchor = (x0, y0, width, height) 
     # (x0,y0) are the lower left corner coordinates of the bounding box.
-    legend = ax.legend(bbox_to_anchor=(1, 0.95), loc=legendLoc[1], fontsize=legendFontSize[4])
+    legend = ax.legend(bbox_to_anchor=(1, 0.95), loc=legendLoc[1], fontsize=32)
 
     plt.show()
 
@@ -175,7 +175,7 @@ def mulPoints(x, y, labels, xlabel, ylabel):
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[3], numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=20, numpoints=1)
     
     plt.show()
 
@@ -233,8 +233,8 @@ def mulPoints3(x, y, labels, xlabels, ylabels):
             y12 = np.array(y11)
             b, m = polyfit(x12, y12, 1)
 
-            ax.plot(x12, y12, marker=markers[j], color=colors[j], markersize=7, label=labels[j], linestyle=lineStyles[-1])
-            ax.plot(x12, m * x12 + b, linestyle=lineStyles[j], color=colors[j], linewidth=2)
+            ax.plot(x12, y12, marker=markers[j], color=colors[j], markersize=11, label=labels[j], linestyle=lineStyles[-1])
+            ax.plot(x12, m * x12 + b, linestyle=lineStyles[j], color=colors[j], linewidth=4)
 
         ax.grid(True)
         ax.set_xlabel(xlabels[i])

@@ -28,6 +28,7 @@ migratedTimeByDstFile = "migrationTimeByDst"
 anomaliesFile1 = "danglingData"
 anomaliesFile2 = "danglingObjects"
 scalabilityFile = "scalability"
+scalabilityWithIndepFile = "scalabilityWithIndependent"
 dataBagsEnabledFile = "dataBagsEnabled"
 dataBagsNotEnabledFile = "dataBagsNotEnabled"
 
@@ -296,7 +297,7 @@ def mul100(data):
 
     return res
 
-def dataDownTimeInPercentages():
+def dataDownTimeInPercentages(labels):
     
     data = []
     data.append(readFile2(logDir + dataDownTimeInPercentageInStencil))
@@ -305,13 +306,10 @@ def dataDownTimeInPercentages():
     data[0] = mul100(data[0])
     data[1] = mul100(data[1])
 
-    labels = [
-        "SA1",
-        "Naive system+"
-    ]
-
     xlabel = "Percentage of data downtime"
     ylabel = "Cumulative probability"
+
+    # print data
 
     g.cumulativeGraph(data, labels, xlabel, ylabel)
 
@@ -577,13 +575,14 @@ def scalabilityNode(labels):
 
 def scalability(labels):
 
-    data = readFile3(logDir + scalabilityFile)
+    data = readFile3(logDir + scalabilityWithIndepFile)
     
     edgesBeforeMigration = []
     nodesBeforeMigration = []
     edgesAfterMigration = []
     nodesAfterMigration = []
-    migrationTimes = []
+    deletionMigrationTimes = []
+    independentMigrationTimes = []
     displayTimes = []
 
     for data1 in data:
@@ -592,13 +591,16 @@ def scalability(labels):
         edgesBeforeMigration.append(int(data1["edges"]))
         edgesAfterMigration.append(int(data1["edgesAfterMigration"]))
         displayTimes.append(float(data1["displayTime"]))
-        migrationTimes.append(float(data1["migrationTime"]))
+        deletionMigrationTimes.append(float(data1["migrationTime"]))
+        independentMigrationTimes.append(float(data1["indepMigrationTime"]))
     
-    x = [[nodesBeforeMigration, nodesAfterMigration], 
-        [edgesBeforeMigration, edgesAfterMigration]]
+    x = [[nodesBeforeMigration, nodesBeforeMigration, nodesAfterMigration], 
+        [edgesBeforeMigration, edgesBeforeMigration, edgesAfterMigration]]
     
-    y = [[migrationTimes, displayTimes],
-        [migrationTimes, displayTimes]]
+    y = [[deletionMigrationTimes, independentMigrationTimes, displayTimes],
+        [deletionMigrationTimes, independentMigrationTimes, displayTimes]]
+
+    # print independentMigrationTimes
 
     xlabels = ["Nodes", "Edges"]
     ylabels = ['Migration time (s)', 'Migration time (s)']
@@ -878,10 +880,10 @@ def randomWalk1(apps, labels):
 # migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
 # dataDownTime()
-# dataDownTimeInPercentages()
+dataDownTimeInPercentages(["SA1 deletion", "Naive system+"])
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-# scalability(["SA1 migration algorithm", "SA1 display algorithm"])
+# scalability(["SA1 deletion", "SA1 independent", "SA1 display"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
 #     "logs_100K/", 
@@ -894,8 +896,8 @@ def randomWalk1(apps, labels):
 # compareTwoMigratedSizes(["Source", "Destination"])
 # danglingDataSizesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
 # danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
-migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
-    ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
-    ["SA1 deletion", "SA1 deletion without display", "SA1 independent", "Naive system"])
+# migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
+#     ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
+#     ["SA1 deletion", "SA1 deletion without display", "SA1 independent", "Naive system"])
 # randomWalk1(["diaspora", "mastodon", "diaspora"],
 #             ["Stencil with data bags", "Stencil without data bags"])
