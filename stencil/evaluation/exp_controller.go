@@ -1736,7 +1736,7 @@ func Exp7() {
 	twitter1 = "twitter_exp7"
 	gnusocial1 = "gnusocial_exp7"
 
-	edgeCounterRangeStart := 402
+	edgeCounterRangeStart := 403
 	edgeCounterRangeEnd := 1200
 	migrationNum := 1
 
@@ -1849,7 +1849,6 @@ func Exp7() {
 				toApp, i, seqLen,
 			)
 
-			objs["totalMediaInMigrations"] = totalMediaInMigrations
 			objs["orgUserID"] = ConvertStringtoInt64(userID)
 			objs1["orgUserID"] = ConvertStringtoInt64(userID)
 

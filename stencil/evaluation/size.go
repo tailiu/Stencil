@@ -376,29 +376,29 @@ func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig,
 
 	var totalObjs int64
 
-	var diasporaDBConn, mastodonDBConn, twitterDBConn, gnusocialDBConn *sql.DB
+	var dDBConn, mDBConn, tDBConn, gDBConn *sql.DB
 
 	if enableBags {
-		diasporaDBConn = evalConfig.DiasporaDBConn
-		mastodonDBConn = evalConfig.MastodonDBConn
-		twitterDBConn = evalConfig.TwitterDBConn
-		gnusocialDBConn = evalConfig.GnusocialDBConn
+		dDBConn = evalConfig.DiasporaDBConn
+		mDBConn = evalConfig.MastodonDBConn
+		tDBConn = evalConfig.TwitterDBConn
+		gDBConn = evalConfig.GnusocialDBConn
 	} else {
-		diasporaDBConn = evalConfig.DiasporaDBConn1
-		mastodonDBConn = evalConfig.MastodonDBConn1
-		twitterDBConn = evalConfig.TwitterDBConn1
-		gnusocialDBConn = evalConfig.GnusocialDBConn1
+		dDBConn = evalConfig.DiasporaDBConn1
+		mDBConn = evalConfig.MastodonDBConn1
+		tDBConn = evalConfig.TwitterDBConn1
+		gDBConn = evalConfig.GnusocialDBConn1
 	}
 
 	switch appName {
 	case "diaspora":
-		totalObjs = getTotalObjsIncludingMediaOfApp(diasporaDBConn, appName)
+		totalObjs = getTotalObjsIncludingMediaOfApp(dDBConn, appName)
 	case "mastodon":
-		totalObjs = getTotalObjsIncludingMediaOfApp(mastodonDBConn, appName)
+		totalObjs = getTotalObjsIncludingMediaOfApp(mDBConn, appName)
 	case "twitter":
-		totalObjs = getTotalObjsIncludingMediaOfApp(twitterDBConn, appName)
+		totalObjs = getTotalObjsIncludingMediaOfApp(tDBConn, appName)
 	case "gnusocial":
-		totalObjs = getTotalObjsIncludingMediaOfApp(gnusocialDBConn, appName)
+		totalObjs = getTotalObjsIncludingMediaOfApp(gDBConn, appName)
 	default:
 		log.Fatal("Cannot find a connection for the app:", appName)
 	}
@@ -452,7 +452,7 @@ func getDanglingObjectsOfApp(evalConfig *EvalConfig, appID string) int64 {
 }
 
 func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB, 
-	toApp string, totalMediaInMigrations int64) int64 {
+	toApp string, totalMediaInMigrations int64, enableBags bool) int64 {
 
 	query1 := fmt.Sprintf(`select count(*) as num from data_bags`)
 
@@ -469,7 +469,9 @@ func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB,
 		objsInDB = res1["num"].(int64)
 	}
 
-	if toApp == "twitter" {
+	// Media cannot be migrated to Twitter based on mappings 
+	// media cannot be migrated if option databags is not enabled 
+	if toApp == "twitter" || !enableBags {
 		mediaObjs = totalMediaInMigrations
 	}
 
@@ -493,12 +495,21 @@ func calculateDanglingAndTotalObjectsInExp7(
 	}
 
 	danglingObjs := getDanglingObjsIncludingMediaOfSystem(stencilDBConn,
-		toApp, totalMediaInMigrations)
-	totalObjs := getTotalObjsIncludingMediaOfAppInExp7(evalConfig, toApp, enableBags)
+		toApp, totalMediaInMigrations, enableBags)
+	totalObjs := getTotalObjsIncludingMediaOfAppInExp7(evalConfig, 
+		toApp, enableBags, totalMediaInMigrations)
 
 	// Only when the final application is Diaspora do we need to do this
-	if seqNum == seqLen - 1 && toApp == "diaspora" {
+	if seqNum == seqLen - 2 && toApp == "diaspora" {
+
+		// If the option databags is not enabled and through *twitter*
+		// then the total objs should not include migrated media
+		if !enableBags {
+			totalObjs -= totalMediaInMigrations
+		}
+
 		totalObjs -= totalRemainingObjsInOriginalApp
+		
 	}
 
 	objs := make(map[string]int64)
