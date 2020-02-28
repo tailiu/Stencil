@@ -159,7 +159,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 			}
 		}
 		mappedData.Trim(",")
-		// self.Logger.Trace("@MigrateNode > FetchDataFromBags > Data merged for: ", toTable.Table)
+		self.Logger.Tracef("@MigrateNode > FetchDataFromBags > Data merged for: %s\nData | %v", toTable.Table, toTableData)
 	}
 
 	return nil
@@ -312,6 +312,8 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 						fmt.Println(bagData)
 						self.Logger.Fatal("@SendMemberToBag: error in creating bag! ", err)
 						return err
+					} else {
+						self.Logger.Infof("Bag Created for Member '%s' with ID '%v' \nData | %v", member, srcID, bagData)
 					}
 					if self.mtype == BAGS {
 

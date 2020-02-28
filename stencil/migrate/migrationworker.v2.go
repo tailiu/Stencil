@@ -221,7 +221,7 @@ func (self *MigrationWorkerV2) PushData(tx *sql.Tx, dtable config.ToTable, pk st
 
 	undoActionSerialized, _ := json.Marshal(mappedData.undoAction)
 	transaction.LogChange(string(undoActionSerialized), self.logTxn)
-	if err := SA1_display.GenDisplayFlag(self.logTxn.DBconn, self.DstAppConfig.AppID, dtable.TableID, pk, fmt.Sprint(self.logTxn.Txn_id)); err != nil {
+	if err := SA1_display.GenDisplayFlagTx(self.tx.StencilTx, self.DstAppConfig.AppID, dtable.TableID, pk, fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 		fmt.Println(self.DstAppConfig.AppID, dtable.TableID, pk, fmt.Sprint(self.logTxn.Txn_id))
 		self.Logger.Fatal("## DISPLAY ERROR!", err)
 		return errors.New("0")
@@ -882,7 +882,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 						self.Logger.Fatal("@MigrateNode > toTable.Media: Path not found in map!")
 					}
 				}
-				self.Logger.Infof("Inserted into '%s' with ID '%v'", toTable.Table, id)
+				self.Logger.Infof("Inserted into '%s' with ID '%v' \ncols | %s\nvals | %v", toTable.Table, id, mappedData.cols, mappedData.ivals)
 				allMappedData = append(allMappedData, mappedData)
 			} else {
 				self.Logger.Debugf("@Args | [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s], [srcCols: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables, mappedData.orgCols)

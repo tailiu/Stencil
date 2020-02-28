@@ -176,11 +176,10 @@ func (self *MigrationWorkerV2) GetMemberDataFromNode(member string, nodeData map
 		colTokens := strings.Split(col, ".")
 		colMember := colTokens[0]
 		// colAttr := colTokens[1]
-		if strings.Contains(colMember, member) && val != nil {
+		if !strings.Contains(col, ".display_flag") && strings.Contains(colMember, member) && val != nil {
 			memberData[col] = val
 		}
 	}
-	delete(memberData, "display_flag")
 	return memberData
 }
 

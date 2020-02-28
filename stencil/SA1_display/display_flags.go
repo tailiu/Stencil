@@ -2,10 +2,10 @@ package SA1_display
 
 import (
 	"database/sql"
-	"stencil/db"
 	"errors"
 	"fmt"
 	"log"
+	"stencil/db"
 	"time"
 )
 
@@ -19,21 +19,37 @@ func CreateDisplayFlagsTable(dbConn *sql.DB) {
 			display_flag bool NOT NULL,
 			created_at TIMESTAMP NOT NULL,
 			updated_at TIMESTAMP NOT NULL);`
-	
+
 	if _, err := dbConn.Exec(op); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func GenDisplayFlag(dbConn *sql.DB, app_id, table_id, id, migration_id string) error {
+func GenDisplayFlagTx(tx *sql.Tx, app_id, table_id, id, migration_id string) error {
 
 	var op string
-	
+
 	op = fmt.Sprintf(`INSERT INTO display_flags 
 		(app_id, table_id, id, migration_id, display_flag, created_at, updated_at) 
 		VALUES ( %s, %s, %s, %s, true, now(), now());`,
 		app_id, table_id, id, migration_id)
-	
+
+	if _, err := tx.Exec(op); err != nil {
+		fmt.Println(op)
+		return err
+	}
+	return nil
+}
+
+func GenDisplayFlag(dbConn *sql.DB, app_id, table_id, id, migration_id string) error {
+
+	var op string
+
+	op = fmt.Sprintf(`INSERT INTO display_flags 
+		(app_id, table_id, id, migration_id, display_flag, created_at, updated_at) 
+		VALUES ( %s, %s, %s, %s, true, now(), now());`,
+		app_id, table_id, id, migration_id)
+
 	if _, err := dbConn.Exec(op); err != nil {
 		fmt.Println(op)
 		return err
@@ -47,12 +63,12 @@ func AddDisplayFlagToAllTables(dbConn *sql.DB) {
 		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
 
 	data := db.GetAllColsOfRows(dbConn, query1)
-	
+
 	// log.Println(data)
 
 	for _, data1 := range data {
-		
-		query2 := fmt.Sprintf(`ALTER TABLE %s ADD display_flag BOOLEAN DEFAULT FALSE;`, 
+
+		query2 := fmt.Sprintf(`ALTER TABLE %s ADD display_flag BOOLEAN DEFAULT FALSE;`,
 			data1["tablename"])
 
 		log.Println(query2)
@@ -60,7 +76,7 @@ func AddDisplayFlagToAllTables(dbConn *sql.DB) {
 		if _, err1 := dbConn.Exec(query2); err1 != nil {
 			log.Fatal(err1)
 		}
-		
+
 	}
 
 }
@@ -71,12 +87,12 @@ func RemoveDisplayFlagInAllTables(dbConn *sql.DB) {
 		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
 
 	data := db.GetAllColsOfRows(dbConn, query1)
-	
+
 	// log.Println(data)
 
 	for _, data1 := range data {
-		
-		query2 := fmt.Sprintf(`ALTER TABLE %s DROP COLUMN display_flag;;`, 
+
+		query2 := fmt.Sprintf(`ALTER TABLE %s DROP COLUMN display_flag;;`,
 			data1["tablename"])
 
 		log.Println(query2)
@@ -84,13 +100,13 @@ func RemoveDisplayFlagInAllTables(dbConn *sql.DB) {
 		if _, err1 := dbConn.Exec(query2); err1 != nil {
 			log.Fatal(err1)
 		}
-		
+
 	}
 
 }
 
 func oldGetDisplayFlag(dbConn *sql.DB, app, table string, id int) (bool, error) {
-	
+
 	op := fmt.Sprintf(`SELECT display_flag FROM display_flags 
 		WHERE app = '%s' and table_name = '%s' and id = %d LIMIT 1;`,
 		app, table, id)
@@ -101,7 +117,7 @@ func oldGetDisplayFlag(dbConn *sql.DB, app, table string, id int) (bool, error) 
 	}
 
 	var display_flag bool
-	
+
 	find := false
 
 	for row.Next() {
@@ -137,4 +153,3 @@ func oldUpdateDisplayFlag(dbConn *sql.DB, app, table string, id int, display_fla
 
 	return nil
 }
-
