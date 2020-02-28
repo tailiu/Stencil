@@ -1719,7 +1719,7 @@ func Exp7() {
 	// }
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
+		"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1736,9 +1736,9 @@ func Exp7() {
 	twitter1 = "twitter_exp7"
 	gnusocial1 = "gnusocial_exp7"
 
-	edgeCounterRangeStart := 300
+	edgeCounterRangeStart := 402
 	edgeCounterRangeEnd := 1200
-	migrationNum := 20
+	migrationNum := 1
 
 	evalConfig := InitializeEvalConfig(false)
 
@@ -1762,7 +1762,7 @@ func Exp7() {
 
 	seqLen := len(migrationSeq)
 
-	for j := 0; j < len(edgeCounter) - 1; j++ {
+	for j := 0; j < len(edgeCounter); j++ {
 
 		userID := edgeCounter[j]["person_id"]
 
@@ -1849,6 +1849,7 @@ func Exp7() {
 				toApp, i, seqLen,
 			)
 
+			objs["totalMediaInMigrations"] = totalMediaInMigrations
 			objs["orgUserID"] = ConvertStringtoInt64(userID)
 			objs1["orgUserID"] = ConvertStringtoInt64(userID)
 

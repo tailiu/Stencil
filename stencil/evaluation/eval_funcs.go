@@ -950,14 +950,6 @@ func getDBConnByName(evalConfig *EvalConfig,
 
 	var connection *sql.DB
 
-	log.Println("(*******")
-	log.Println(dbName)
-	log.Println("(*******")
-
-	log.Println("(*******")
-	log.Println(diaspora)
-	log.Println("(*******")
-
 	switch dbName {
 	case stencilDB:
 		connection = evalConfig.StencilDBConn

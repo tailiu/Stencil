@@ -17,7 +17,7 @@ func TruncateSA2Tables() {
 
 func GetTotalRowCountsOfDB() {
 
-	dbName := "diaspora_1000000"
+	dbName := "diaspora_10000"
 
 	dbConn := db.GetDBConn(dbName)
 
