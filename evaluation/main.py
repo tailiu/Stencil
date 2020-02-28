@@ -448,6 +448,8 @@ def getDataByKey1(data, keyName):
 
 def migrationRate2(sizeFiles, timeFiles, labels):
 
+    NUM = 100
+
     sizeData = []
     timeData = []
 
@@ -464,12 +466,12 @@ def migrationRate2(sizeFiles, timeFiles, labels):
 
     for group, size in enumerate(sizeData):
         for i, sizeData1 in enumerate(size):
-            if i < 100:
+            if i < NUM:
                 sizes[group].append(getDataByKey1(sizeData1, "size"))
 
     for group, time in enumerate(timeData):
         for i, timeData1 in enumerate(time):
-            if i < 100:
+            if i < NUM:
                 times[group].append(getDataByKey1(timeData1, "time")) 
     
     sizesMB = convertBytesToMB(sizes[0])
@@ -494,6 +496,15 @@ def getTimeFromData(data):
     for i, data1 in enumerate(data):
         for data2 in data1:
             times[i].append(float(data2["time"]))
+    
+    return times
+
+def getTimeFromData1(data):
+
+    times = []
+    
+    for data1 in data:
+        times.append(float(data1["time"]))
     
     return times
 
@@ -615,15 +626,24 @@ def calSum(data):
     res = []
 
     for data1 in data:
-
+        
         res1 = 0.0
-
+        
         for i in data1:
+            
             res1 += i
         
         res.append(res1)
 
     return res
+
+def calSum1(data):
+
+    res1 = 0.0
+    for data1 in data:
+        res1 += data1
+
+    return res1
 
 def migrationRateDatasetsTab(folders, labels):
 
@@ -671,6 +691,20 @@ def migrationRateDatasetsTab1(fileNames):
     for i, t in enumerate(timesSum):
         print fileNames[i] + ":"
         print "times:" + str(t) + "," + "sizes:" + str(sizesSum[i])
+
+def migrationRateDatasetsTab2(baseFileName):
+
+    data = []
+
+    for i in range(10):
+        data1 = readFile3(logDir + baseFileName + str(i))
+        data += data1
+
+    times = getTimeFromData1(data)
+
+    timesSum = calSum1(times)
+
+    print "times:" + str(timesSum)
 
 def compareTwoMigratedSizes(labels):
 
@@ -854,13 +888,14 @@ def randomWalk1(apps, labels):
 #     "logs_10K/", 
 #     "logs_1K/"], 
 #     ["1M", "100K", "10K", "1K"])
-migrationRateDatasetsTab1(["diaspora_1K_dataset", "diaspora_10K_dataset", 
-    "diaspora_100K_dataset", "diaspora_1M_dataset"])
+# migrationRateDatasetsTab1(["diaspora_1K_dataset", "diaspora_10K_dataset", 
+#     "diaspora_100K_dataset", "diaspora_1M_dataset"])
+# migrationRateDatasetsTab2("diaspora_1K_dataset_sa2_")
 # compareTwoMigratedSizes(["Source", "Destination"])
 # danglingDataSizesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
 # danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
-# migrationRate2(["SA1Size", "SA1WDSize", "naiveSize"], 
-#     ["SA1Time", "SA1WDTime", "naiveTime"], 
-#     ["SA1", "SA1 without display", "Naive system"])
+migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
+    ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
+    ["SA1 deletion", "SA1 deletion without display", "SA1 independent", "Naive system"])
 # randomWalk1(["diaspora", "mastodon", "diaspora"],
 #             ["Stencil with data bags", "Stencil without data bags"])

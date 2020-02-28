@@ -3,12 +3,12 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 28})
+plt.rcParams.update({'font.size': 25})
 
-colors = ['g', 'r', 'b', 'c', 'y', 'k', 'm', 'w']
+colors = ['g', 'r', 'b', 'm', 'k', 'w', 'c', 'y']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center', 'center right']
-markers = ["o", "v", "s", "*", "+", "<"]
+markers = ["o", "v", "s",  "<", "*", "+"]
 lineStyles = ["solid", "dashed", "dotted",""]
 
 def line(x, y, xlabel, ylabel, title):
@@ -169,7 +169,7 @@ def mulPoints(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
     
     for i in range(len(x)):
-        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=7, marker=markers[i], linestyle=lineStyles[-1])
+        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=11, marker=markers[i], linestyle=lineStyles[-1])
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
