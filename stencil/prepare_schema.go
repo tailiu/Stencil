@@ -137,6 +137,20 @@ func test10() {
 	
 }
 
+func test11() {
+
+
+	dbName := "stencil_exp_sa2_100k_backup"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
+
+	evaluation.CreateFourDagCounterTables(dbConn)
+
+}
+
 func main() {
 
 	// test1()
@@ -157,5 +171,8 @@ func main() {
 
 	// test9()
 
-	test10()
+	// test10()
+
+	test11()
+	
 }

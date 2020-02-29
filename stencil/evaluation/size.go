@@ -371,6 +371,42 @@ func getTotalObjsIncludingMediaOfApp(dbConn *sql.DB,
 
 }
 
+func getTotalObjsIncludingMediaOfAppInExp7V2(evalConfig *EvalConfig, 
+	appName string, enableBags bool) int64 {
+
+	var totalObjs int64
+
+	var dDBConn, mDBConn, tDBConn, gDBConn *sql.DB
+
+	if enableBags {
+		dDBConn = evalConfig.DiasporaDBConn
+		mDBConn = evalConfig.MastodonDBConn
+		tDBConn = evalConfig.TwitterDBConn
+		gDBConn = evalConfig.GnusocialDBConn
+	} else {
+		dDBConn = evalConfig.DiasporaDBConn1
+		mDBConn = evalConfig.MastodonDBConn1
+		tDBConn = evalConfig.TwitterDBConn1
+		gDBConn = evalConfig.GnusocialDBConn1
+	}
+
+	switch appName {
+	case "diaspora":
+		totalObjs = getTotalRowCountsOfDB(dDBConn)
+	case "mastodon":
+		totalObjs = getTotalRowCountsOfDB(mDBConn)
+	case "twitter":
+		totalObjs = getTotalRowCountsOfDB(tDBConn)
+	case "gnusocial":
+		totalObjs = getTotalRowCountsOfDB(gDBConn)
+	default:
+		log.Fatal("Cannot find a connection for the app:", appName)
+	}
+
+	return totalObjs
+
+}
+
 func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig, 
 	appName string, enableBags bool) int64 {
 
@@ -481,10 +517,59 @@ func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB,
 
 }
 
+func getDanglingObjsOfSystemV2(dbConn *sql.DB, 
+	toApp string, enableBags bool, migrationID, 
+	migratedUserID , toAppID, srcUserID, 
+	fromAppID string) []map[string]interface{} {
+
+	// Dangling objects put by display threads
+	query1 := fmt.Sprintf(
+		`select * from data_bags where 
+		migration_id = %s and user_id = %s and app = %s`, 
+		migrationID, migratedUserID, toAppID,
+	)
+
+	log.Println(query1)
+
+	res1, err1 := db.DataCall(dbConn, query1)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	query2 := fmt.Sprintf(
+		`select * from data_bags where 
+		migration_id = %s and user_id != %s and app = %s`, 
+		migrationID, srcUserID, fromAppID,
+	)
+
+	log.Println(query2)
+
+	res2, err2 := db.DataCall(dbConn, query2)
+	if err1 != nil {
+		log.Fatal(err2)
+	}
+
+	res1 = append(res1, res2...)
+
+	return res1
+
+}
+
+func throughTwitter(migrationSeq []string) bool {
+
+	for i, app := range migrationSeq {
+		if app == "twitter" && i != len(migrationSeq) - 1{
+			return true
+		}
+	}
+
+	return false
+}
+
 func calculateDanglingAndTotalObjectsInExp7(
 	evalConfig *EvalConfig, enableBags bool,
 	totalMediaInMigrations, totalRemainingObjsInOriginalApp int64,
-	toApp string, seqNum, seqLen int) map[string]int64 {
+	toApp string, seqNum int, migrationSeq []string) map[string]int64 {
 
 	var stencilDBConn *sql.DB
 
@@ -497,19 +582,21 @@ func calculateDanglingAndTotalObjectsInExp7(
 	danglingObjs := getDanglingObjsIncludingMediaOfSystem(stencilDBConn,
 		toApp, totalMediaInMigrations, enableBags)
 	totalObjs := getTotalObjsIncludingMediaOfAppInExp7(evalConfig, 
-		toApp, enableBags, totalMediaInMigrations)
+		toApp, enableBags)
+
+	seqLen := len(migrationSeq)
 
 	// Only when the final application is Diaspora do we need to do this
 	if seqNum == seqLen - 2 && toApp == "diaspora" {
 
 		// If the option databags is not enabled and through *twitter*
 		// then the total objs should not include migrated media
-		if !enableBags {
+		if !enableBags && throughTwitter(migrationSeq) {
 			totalObjs -= totalMediaInMigrations
 		}
 
 		totalObjs -= totalRemainingObjsInOriginalApp
-		
+
 	}
 
 	objs := make(map[string]int64)
@@ -517,5 +604,101 @@ func calculateDanglingAndTotalObjectsInExp7(
 	objs["totalObjs"] = totalObjs
 
 	return objs
+
+}
+
+func calculateDanglingAndTotalObjectsInExp7v2(
+	evalConfig *EvalConfig, enableBags bool, 
+	totalRemainingObjsInOriginalApp int64,
+	toApp string, seqNum int, migrationSeq []string, migrationID, 
+	migratedUserID, toAppID, srcUserID,
+	fromAppID string) ([]map[string]interface{}, int64) {
+
+	var stencilDBConn *sql.DB
+
+	if enableBags {
+		stencilDBConn = evalConfig.StencilDBConn
+	} else {
+		stencilDBConn = evalConfig.StencilDBConn1
+	}
+
+	danglingObjs := getDanglingObjsOfSystemV2(stencilDBConn,
+		toApp, enableBags, migrationID, 
+		migratedUserID, toAppID, srcUserID, fromAppID,
+	)
+	
+	totalObjs := getTotalObjsIncludingMediaOfAppInExp7V2(evalConfig, 
+		toApp, enableBags)
+
+	seqLen := len(migrationSeq)
+
+	// Only when the final application is Diaspora do we need to do this
+	if seqNum == seqLen - 2 && toApp == "diaspora" {
+
+		totalObjs -= totalRemainingObjsInOriginalApp
+
+	}
+
+	return danglingObjs, totalObjs
+
+}
+
+func removeMigratedDanglingObjsFromDataBags(
+	evalConfig *EvalConfig, 
+	totalDanglingObjs []map[string]interface{}) []map[string]interface{} {
+
+	query1 := fmt.Sprintf(`SELECT pk, migration_id FROM data_bags`)
+	
+	res, err2 := db.DataCall(evalConfig.StencilDBConn, query1)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	var deletedObjsIndex []int
+
+	for i, obj1 := range totalDanglingObjs {
+
+		pk2 := fmt.Sprint(obj1["pk"])
+		migrationID2 := fmt.Sprint(obj1["migration_id"])
+
+		foundObj := false
+		migratedPartially := false
+
+		for _, res1 := range res {
+
+			pk1 := fmt.Sprint(res1["pk"])
+			migrationID1 := fmt.Sprint(res1["migration_id"])
+	
+			if pk1 == pk2 {
+				
+				foundObj = true
+
+				if migrationID2 != migrationID1 {
+
+					log.Println("partially migrated!!!")	
+
+					migratedPartially = true
+
+				} 
+				
+				break
+			}
+		}
+
+		if !foundObj || migratedPartially {
+			deletedObjsIndex = append(deletedObjsIndex, i)
+		}
+
+	}
+
+	log.Println("delete objs index length:", len(deletedObjsIndex))
+
+	for m := len(deletedObjsIndex) - 1; m > -1; m-- {
+
+		totalDanglingObjs = append(totalDanglingObjs[:m], totalDanglingObjs[m+1:]...)
+
+	}
+
+	return totalDanglingObjs
 
 }

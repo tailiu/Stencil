@@ -603,7 +603,7 @@ def scalability(labels):
     # print independentMigrationTimes
 
     xlabels = ["Nodes", "Edges"]
-    ylabels = ['Migration time (s)', 'Migration time (s)']
+    ylabels = ['Time (s)', 'Time (s)']
 
     g.mulPoints3(x, y, labels, xlabels, ylabels)
 
@@ -880,10 +880,10 @@ def randomWalk1(apps, labels):
 # migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
 # dataDownTime()
-dataDownTimeInPercentages(["SA1 deletion", "Naive system+"])
+# dataDownTimeIsnPercentages(["SA1 deletion", "Naive system+"])
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-# scalability(["SA1 deletion", "SA1 independent", "SA1 display"])
+scalability(["SA1 deletion", "SA1 independent", "SA1 display"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
 #     "logs_100K/", 
