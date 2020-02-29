@@ -7,9 +7,11 @@ package helper
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -134,4 +136,27 @@ func Trace() string {
 
 	fn := runtime.FuncForPC(pc)
 	return fn.Name()
+}
+
+func ParseFloat(str string) (float64, error) {
+
+	//Some number is specifed in scientific notation
+	pos := strings.IndexAny(str, "eE")
+	if pos < 0 {
+		return strconv.ParseFloat(str, 64)
+	}
+
+	baseStr := str[0:pos]
+	baseVal, err := strconv.ParseFloat(baseStr, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	expStr := str[(pos + 1):]
+	expVal, err := strconv.ParseInt(expStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return baseVal * math.Pow10(int(expVal)), nil
 }
