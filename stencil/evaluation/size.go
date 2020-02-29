@@ -371,42 +371,6 @@ func getTotalObjsIncludingMediaOfApp(dbConn *sql.DB,
 
 }
 
-func getTotalObjsIncludingMediaOfAppInExp7V2(evalConfig *EvalConfig, 
-	appName string, enableBags bool) int64 {
-
-	var totalObjs int64
-
-	var dDBConn, mDBConn, tDBConn, gDBConn *sql.DB
-
-	if enableBags {
-		dDBConn = evalConfig.DiasporaDBConn
-		mDBConn = evalConfig.MastodonDBConn
-		tDBConn = evalConfig.TwitterDBConn
-		gDBConn = evalConfig.GnusocialDBConn
-	} else {
-		dDBConn = evalConfig.DiasporaDBConn1
-		mDBConn = evalConfig.MastodonDBConn1
-		tDBConn = evalConfig.TwitterDBConn1
-		gDBConn = evalConfig.GnusocialDBConn1
-	}
-
-	switch appName {
-	case "diaspora":
-		totalObjs = getTotalRowCountsOfDB(dDBConn)
-	case "mastodon":
-		totalObjs = getTotalRowCountsOfDB(mDBConn)
-	case "twitter":
-		totalObjs = getTotalRowCountsOfDB(tDBConn)
-	case "gnusocial":
-		totalObjs = getTotalRowCountsOfDB(gDBConn)
-	default:
-		log.Fatal("Cannot find a connection for the app:", appName)
-	}
-
-	return totalObjs
-
-}
-
 func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig, 
 	appName string, enableBags bool) int64 {
 
@@ -435,6 +399,42 @@ func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig,
 		totalObjs = getTotalObjsIncludingMediaOfApp(tDBConn, appName)
 	case "gnusocial":
 		totalObjs = getTotalObjsIncludingMediaOfApp(gDBConn, appName)
+	default:
+		log.Fatal("Cannot find a connection for the app:", appName)
+	}
+
+	return totalObjs
+
+}
+
+func getTotalObjsNotIncludingMediaOfAppInExp7V2(evalConfig *EvalConfig, 
+	appName string, enableBags bool) int64 {
+
+	var totalObjs int64
+
+	var dDBConn, mDBConn, tDBConn, gDBConn *sql.DB
+
+	if enableBags {
+		dDBConn = evalConfig.DiasporaDBConn
+		mDBConn = evalConfig.MastodonDBConn
+		tDBConn = evalConfig.TwitterDBConn
+		gDBConn = evalConfig.GnusocialDBConn
+	} else {
+		dDBConn = evalConfig.DiasporaDBConn1
+		mDBConn = evalConfig.MastodonDBConn1
+		tDBConn = evalConfig.TwitterDBConn1
+		gDBConn = evalConfig.GnusocialDBConn1
+	}
+
+	switch appName {
+	case "diaspora":
+		totalObjs = getTotalRowCountsOfDB(dDBConn)
+	case "mastodon":
+		totalObjs = getTotalRowCountsOfDB(mDBConn)
+	case "twitter":
+		totalObjs = getTotalRowCountsOfDB(tDBConn)
+	case "gnusocial":
+		totalObjs = getTotalRowCountsOfDB(gDBConn)
 	default:
 		log.Fatal("Cannot find a connection for the app:", appName)
 	}
@@ -627,13 +627,16 @@ func calculateDanglingAndTotalObjectsInExp7v2(
 		migratedUserID, toAppID, srcUserID, fromAppID,
 	)
 	
-	totalObjs := getTotalObjsIncludingMediaOfAppInExp7V2(evalConfig, 
+	totalObjs := getTotalObjsNotIncludingMediaOfAppInExp7V2(evalConfig, 
 		toApp, enableBags)
 
 	seqLen := len(migrationSeq)
 
 	// Only when the final application is Diaspora do we need to do this
 	if seqNum == seqLen - 2 && toApp == "diaspora" {
+
+		log.Println("total objects before deletion:", totalObjs)
+		log.Println("total Remaining Objs:", totalRemainingObjsInOriginalApp)
 
 		totalObjs -= totalRemainingObjsInOriginalApp
 
@@ -680,7 +683,7 @@ func removeMigratedDanglingObjsFromDataBags(
 					migratedPartially = true
 
 				} 
-				
+
 				break
 			}
 		}
@@ -696,6 +699,38 @@ func removeMigratedDanglingObjsFromDataBags(
 	for m := len(deletedObjsIndex) - 1; m > -1; m-- {
 
 		totalDanglingObjs = append(totalDanglingObjs[:m], totalDanglingObjs[m+1:]...)
+
+	}
+
+	return totalDanglingObjs
+
+}
+
+func mergeObjects(totalDanglingObjs []map[string]interface{}, 
+	danglingObjs []map[string]interface{}) []map[string]interface{} {
+
+	for i, obj1 := range danglingObjs {
+
+		pk1 := fmt.Sprint(obj1["pk"])
+
+		exists := false
+
+		for j, obj2 := range totalDanglingObjs {
+
+			pk2 := fmt.Sprint(obj2["pk"])
+			
+			if pk1 == pk2 {
+
+				exists = true
+				totalDanglingObjs[j] = danglingObjs[i]
+
+			}
+
+		}
+		
+		if !exists {
+			totalDanglingObjs = append(totalDanglingObjs, danglingObjs[i])
+		}
 
 	}
 

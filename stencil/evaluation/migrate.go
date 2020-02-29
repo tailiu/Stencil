@@ -94,7 +94,8 @@ func migrateUserFromDiasporaToMastodon1(
 
 func migrateUsersInExp7(evalConfig *EvalConfig, stencilDBConnName string, 
 	seqNum int, fromApp, toApp, fromAppID, toAppID string,
-	migrationIDs, userIDs []string, enableBagsOption bool) []string {
+	migrationIDs, userIDs []string, 
+	enableBagsOption, enableDisplayOption bool) []string {
 
 	var stencilDBConn *sql.DB
 
@@ -119,7 +120,7 @@ func migrateUsersInExp7(evalConfig *EvalConfig, stencilDBConnName string,
 		uid, migrationType, threadNum := userID, "d", 1
 
 		enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags := 
-			true, true, false, false, enableBagsOption
+			enableDisplayOption, true, false, false, enableBagsOption
 
 		SA1_migrate.Controller(uid, fromApp, fromAppID, 
 			toApp, toAppID, migrationType, threadNum,

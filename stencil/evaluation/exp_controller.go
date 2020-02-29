@@ -1795,7 +1795,8 @@ func Exp7() {
 			migrationIDs = migrateUsersInExp7(
 				evalConfig, stencilDB,
 				i, fromApp, toApp, fromAppID, toAppID,
-				migrationIDs, userIDs, enableBags,
+				migrationIDs, userIDs, 
+				enableBags, true,
 			)
 
 			enableBags = false
@@ -1809,7 +1810,8 @@ func Exp7() {
 			migrationIDs1 = migrateUsersInExp7(
 				evalConfig, stencilDB1,
 				i, fromApp, toApp, fromAppID, toAppID,
-				migrationIDs1, userIDs, enableBags,
+				migrationIDs1, userIDs,
+				enableBags, true,
 			)
 
 			// Only when the start application is Diaspora do we need to do this
@@ -1865,8 +1867,8 @@ func Exp7v2() {
 	log.Println("===============================")
 
 	migrationSeq := []string {
-		"diaspora", "mastodon",
-		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
+		// "diaspora", "mastodon",
+		"diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 	}
 
 	// Database setup for migrations enabled databags
@@ -1883,7 +1885,7 @@ func Exp7v2() {
 	twitter1 = "twitter_exp7"
 	gnusocial1 = "gnusocial_exp7"
 
-	edgeCounterRangeStart := 420
+	edgeCounterRangeStart := 427
 	edgeCounterRangeEnd := 1200
 	migrationNum := 1
 
@@ -1933,6 +1935,12 @@ func Exp7v2() {
 			fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
 			toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
 
+			enableDisplay := true
+
+			// if i == len(migrationSeq) - 2 {
+			// 	enableDisplay = false
+			// } 
+
 			enableBags := true
 
 			db.STENCIL_DB = stencilDB
@@ -1944,7 +1952,8 @@ func Exp7v2() {
 			migrationIDs = migrateUsersInExp7(
 				evalConfig, stencilDB,
 				i, fromApp, toApp, fromAppID, toAppID,
-				migrationIDs, userIDs, enableBags,
+				migrationIDs, userIDs, 
+				enableBags, enableDisplay,
 			)
 
 			enableBags = false
@@ -1958,35 +1967,37 @@ func Exp7v2() {
 			migrationIDs1 = migrateUsersInExp7(
 				evalConfig, stencilDB1,
 				i, fromApp, toApp, fromAppID, toAppID,
-				migrationIDs1, userIDs, enableBags,
+				migrationIDs1, userIDs,
+				enableBags, enableDisplay,
 			)
 
 			// Only when the start application is Diaspora do we need to do this
 			if i == 0 && fromApp == "diaspora" {
 
 				totalRemainingObjsInOriginalApp = 
-					getTotalObjsIncludingMediaOfApp(evalConfig.DiasporaDBConn, fromApp)
+					getTotalObjsNotIncludingMediaOfAppInExp7V2(
+						evalConfig, fromApp, true)
 				
 			}
 
 			if i != 0 {
 
-				userID = getSrcUserIDByMigrationID(evalConfig.StencilDBConn, migrationIDs[0])
-				userID1 = getSrcUserIDByMigrationID(evalConfig.StencilDBConn1, migrationIDs1[0])
+				userID = getSrcUserIDByMigrationID(evalConfig.StencilDBConn, migrationIDs[i])
+				userID1 = getSrcUserIDByMigrationID(evalConfig.StencilDBConn1, migrationIDs1[i])
 
 			}
 
 
 			migratedUserID := reference_resolution.GetNextUserID(
 				evalConfig.StencilDBConn, 
-				migrationIDs[0],
+				migrationIDs[i],
 			)
 
 			enableBags = true
 
 			danglingObjs, totalObjs := calculateDanglingAndTotalObjectsInExp7v2(
 				evalConfig, enableBags, totalRemainingObjsInOriginalApp,
-				toApp, i, migrationSeq, migrationIDs[0], migratedUserID,
+				toApp, i, migrationSeq, migrationIDs[i], migratedUserID,
 				toAppID, userID, fromAppID,
 			)
 
@@ -1994,21 +2005,23 @@ func Exp7v2() {
 
 			migratedUserID1 := reference_resolution.GetNextUserID(
 				evalConfig.StencilDBConn1, 
-				migrationIDs1[0],
+				migrationIDs1[i],
 			)
 
 			enableBags = false
 
 			danglingObjs1, totalObjs1 := calculateDanglingAndTotalObjectsInExp7v2(
 				evalConfig, enableBags, totalRemainingObjsInOriginalApp,
-				toApp, i, migrationSeq, migrationIDs1[0], migratedUserID1,
+				toApp, i, migrationSeq, migrationIDs1[i], migratedUserID1,
 				toAppID, userID, fromAppID,
 			)
 
 			
-
-			totalDanglingObjs = append(totalDanglingObjs, danglingObjs...)
-			totalDanglingObjs1 = append(totalDanglingObjs1, danglingObjs1...)
+			totalDanglingObjs = mergeObjects(totalDanglingObjs, danglingObjs)
+			totalDanglingObjs1 = mergeObjects(totalDanglingObjs1, danglingObjs1)
+			
+			// totalDanglingObjs = append(totalDanglingObjs, danglingObjs...)
+			// totalDanglingObjs1 = append(totalDanglingObjs1, danglingObjs1...)
 
 			totalDanglingObjs = removeMigratedDanglingObjsFromDataBags(
 				evalConfig, totalDanglingObjs,
@@ -2019,16 +2032,20 @@ func Exp7v2() {
 			// log.Println("total dangling objs:", totalDanglingObjs)
 			// log.Println("total dangling objs1:", totalDanglingObjs1)
 
+			for _, data11 := range totalDanglingObjs {
+				log.Println(data11)
+			} 
+
 			objs := make(map[string]int64)
 			objs1 := make(map[string]int64)
 
 			objs["danglingObjs"] = int64(len(totalDanglingObjs))
 			objs["totalObjs"] = totalObjs
-			objs["orgUserID"] = ConvertStringtoInt64(userID)
+			objs["userID"] = ConvertStringtoInt64(userID)
 
 			objs1["danglingObjs"] = int64(len(totalDanglingObjs1))
 			objs1["totalObjs"] = totalObjs1
-			objs1["orgUserID"] = ConvertStringtoInt64(userID1)
+			objs1["userID"] = ConvertStringtoInt64(userID1)
 
 			WriteStrToLog(
 				"dataBagsEnabled",
