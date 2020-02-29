@@ -1328,3 +1328,24 @@ func CreateFourDagCounterTables(dbConn *sql.DB) {
 	}
 
 }
+
+func getSrcUserIDByMigrationID(dbConn *sql.DB, migrationID string) string {
+
+	query := fmt.Sprintf(
+		`SELECT user_id from migration_registration 
+		WHERE migration_id = %s`,
+		migrationID,
+	)
+
+	res, err2 := db.DataCall1(dbConn, query)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	if res["user_id"] == nil {
+		log.Fatal("Cannot find user id!")
+	} 
+		
+	return fmt.Sprint(res["user_id"])
+
+}

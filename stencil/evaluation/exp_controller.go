@@ -2,6 +2,7 @@ package evaluation
 
 import (
 	"stencil/SA1_migrate"
+	"stencil/reference_resolution"
 	"stencil/apis"
 	"stencil/db"
 	"database/sql"
@@ -1859,12 +1860,12 @@ func Exp7() {
 
 func Exp7v2() {
 
-	log.Println("==============================")
-	log.Println("Starting Exp7: Databags Test 1")
-	log.Println("==============================")
+	log.Println("===============================")
+	log.Println("Starting Exp7: Databags Test V2")
+	log.Println("===============================")
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "twitter", "gnusocial", "diaspora",
+		"diaspora", "mastodon",
 		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 	}
 
@@ -1882,7 +1883,7 @@ func Exp7v2() {
 	twitter1 = "twitter_exp7"
 	gnusocial1 = "gnusocial_exp7"
 
-	edgeCounterRangeStart := 407
+	edgeCounterRangeStart := 420
 	edgeCounterRangeEnd := 1200
 	migrationNum := 1
 
@@ -1891,10 +1892,6 @@ func Exp7v2() {
 	defer closeDBConns(evalConfig)
 
 	preExp7(evalConfig)
-
-	// userIDs := []string {
-	// 	"91",
-	// }
 	
 	edgeCounter := getEdgesCounterByRange(
 		evalConfig,
@@ -1910,6 +1907,8 @@ func Exp7v2() {
 
 		userID := edgeCounter[j]["person_id"]
 
+		userID1 := userID
+
 		userIDs := []string {
 			userID,
 		}
@@ -1919,8 +1918,6 @@ func Exp7v2() {
 		// preExp7(evalConfig)
 
 		var totalRemainingObjsInOriginalApp int64
-		var totalMediaBeforeAllMigrations int64
-		var totalMediaInMigrations int64
 
 		var migrationIDs []string
 		var migrationIDs1 []string
@@ -1935,11 +1932,6 @@ func Exp7v2() {
 			
 			fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
 			toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
-
-			if i == 0 && fromApp == "diaspora" {
-				totalMediaBeforeAllMigrations = 
-					getMediaCountsOfApp(evalConfig.DiasporaDBConn, fromApp)
-			}
 
 			enableBags := true
 
@@ -1972,41 +1964,60 @@ func Exp7v2() {
 			// Only when the start application is Diaspora do we need to do this
 			if i == 0 && fromApp == "diaspora" {
 
-				totalMediaInMigrations = totalMediaBeforeAllMigrations - 
-					getMediaCountsOfApp(evalConfig.DiasporaDBConn, fromApp)
-
 				totalRemainingObjsInOriginalApp = 
 					getTotalObjsIncludingMediaOfApp(evalConfig.DiasporaDBConn, fromApp)
 				
 			}
 
-			migratedUserID := getMigratedUserID(evalConfig.StencilDBConn, 
-				migrationIDs[0], toAppID)
+			if i != 0 {
+
+				userID = getSrcUserIDByMigrationID(evalConfig.StencilDBConn, migrationIDs[0])
+				userID1 = getSrcUserIDByMigrationID(evalConfig.StencilDBConn1, migrationIDs1[0])
+
+			}
+
+
+			migratedUserID := reference_resolution.GetNextUserID(
+				evalConfig.StencilDBConn, 
+				migrationIDs[0],
+			)
 
 			enableBags = true
 
 			danglingObjs, totalObjs := calculateDanglingAndTotalObjectsInExp7v2(
 				evalConfig, enableBags, totalRemainingObjsInOriginalApp,
 				toApp, i, migrationSeq, migrationIDs[0], migratedUserID,
-				toAppID, userID, fromApp,
+				toAppID, userID, fromAppID,
 			)
 
-			migratedUserID1 := getMigratedUserID(evalConfig.StencilDBConn1, 
-				migrationIDs1[0], toAppID)
+
+
+			migratedUserID1 := reference_resolution.GetNextUserID(
+				evalConfig.StencilDBConn1, 
+				migrationIDs1[0],
+			)
 
 			enableBags = false
 
 			danglingObjs1, totalObjs1 := calculateDanglingAndTotalObjectsInExp7v2(
 				evalConfig, enableBags, totalRemainingObjsInOriginalApp,
-				toApp, i, migrationSeq, migrationIDs[0], migratedUserID1,
-				toAppID, userID, fromApp,
+				toApp, i, migrationSeq, migrationIDs1[0], migratedUserID1,
+				toAppID, userID, fromAppID,
 			)
 
+			
 
-			totalDanglingObjs = append(totalDanglingObjs, danglingObjs)
-			totalDanglingObjs1 = append(totalDanglingObjs1, danglingObjs1)
+			totalDanglingObjs = append(totalDanglingObjs, danglingObjs...)
+			totalDanglingObjs1 = append(totalDanglingObjs1, danglingObjs1...)
 
-			totalDanglingObjs = removeMigratedObjsFromDataBags(totalDanglingObjs)
+			totalDanglingObjs = removeMigratedDanglingObjsFromDataBags(
+				evalConfig, totalDanglingObjs,
+			)
+
+			log.Println("length of dangling objs:", len(danglingObjs))
+			log.Println("length of dangling objs1:", len(danglingObjs1))
+			// log.Println("total dangling objs:", totalDanglingObjs)
+			// log.Println("total dangling objs1:", totalDanglingObjs1)
 
 			objs := make(map[string]int64)
 			objs1 := make(map[string]int64)
@@ -2017,7 +2028,7 @@ func Exp7v2() {
 
 			objs1["danglingObjs"] = int64(len(totalDanglingObjs1))
 			objs1["totalObjs"] = totalObjs1
-			objs1["orgUserID"] = ConvertStringtoInt64(userID)
+			objs1["orgUserID"] = ConvertStringtoInt64(userID1)
 
 			WriteStrToLog(
 				"dataBagsEnabled",
@@ -2028,6 +2039,9 @@ func Exp7v2() {
 				"dataBagsNotEnabled",
 				ConvertMapInt64ToJSONString(objs1),
 			)
+
+			log.Println(migrationIDs)
+			log.Println(migrationIDs1)
 
 		}
 		

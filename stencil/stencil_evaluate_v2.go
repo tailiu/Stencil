@@ -67,4 +67,6 @@ func main() {
 
 	// evaluation.Exp7()
 
+	evaluation.Exp7v2()
+
 }

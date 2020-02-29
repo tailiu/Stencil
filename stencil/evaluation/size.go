@@ -371,6 +371,42 @@ func getTotalObjsIncludingMediaOfApp(dbConn *sql.DB,
 
 }
 
+func getTotalObjsIncludingMediaOfAppInExp7V2(evalConfig *EvalConfig, 
+	appName string, enableBags bool) int64 {
+
+	var totalObjs int64
+
+	var dDBConn, mDBConn, tDBConn, gDBConn *sql.DB
+
+	if enableBags {
+		dDBConn = evalConfig.DiasporaDBConn
+		mDBConn = evalConfig.MastodonDBConn
+		tDBConn = evalConfig.TwitterDBConn
+		gDBConn = evalConfig.GnusocialDBConn
+	} else {
+		dDBConn = evalConfig.DiasporaDBConn1
+		mDBConn = evalConfig.MastodonDBConn1
+		tDBConn = evalConfig.TwitterDBConn1
+		gDBConn = evalConfig.GnusocialDBConn1
+	}
+
+	switch appName {
+	case "diaspora":
+		totalObjs = getTotalRowCountsOfDB(dDBConn)
+	case "mastodon":
+		totalObjs = getTotalRowCountsOfDB(mDBConn)
+	case "twitter":
+		totalObjs = getTotalRowCountsOfDB(tDBConn)
+	case "gnusocial":
+		totalObjs = getTotalRowCountsOfDB(gDBConn)
+	default:
+		log.Fatal("Cannot find a connection for the app:", appName)
+	}
+
+	return totalObjs
+
+}
+
 func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig, 
 	appName string, enableBags bool) int64 {
 
@@ -481,9 +517,8 @@ func getDanglingObjsIncludingMediaOfSystem(dbConn *sql.DB,
 
 }
 
-func getDanglingObjsIncludingMediaOfSystemV2(dbConn *sql.DB, 
-	toApp string, totalMediaInMigrations int64, 
-	enableBags bool, migrationID, 
+func getDanglingObjsOfSystemV2(dbConn *sql.DB, 
+	toApp string, enableBags bool, migrationID, 
 	migratedUserID , toAppID, srcUserID, 
 	fromAppID string) []map[string]interface{} {
 
@@ -494,7 +529,7 @@ func getDanglingObjsIncludingMediaOfSystemV2(dbConn *sql.DB,
 		migrationID, migratedUserID, toAppID,
 	)
 
-	// log.Println(query)
+	log.Println(query1)
 
 	res1, err1 := db.DataCall(dbConn, query1)
 	if err1 != nil {
@@ -507,7 +542,7 @@ func getDanglingObjsIncludingMediaOfSystemV2(dbConn *sql.DB,
 		migrationID, srcUserID, fromAppID,
 	)
 
-	// log.Println(query)
+	log.Println(query2)
 
 	res2, err2 := db.DataCall(dbConn, query2)
 	if err1 != nil {
@@ -575,9 +610,9 @@ func calculateDanglingAndTotalObjectsInExp7(
 func calculateDanglingAndTotalObjectsInExp7v2(
 	evalConfig *EvalConfig, enableBags bool, 
 	totalRemainingObjsInOriginalApp int64,
-	toApp string, seqNum int, migrationSeq []string, migrationIDs, 
+	toApp string, seqNum int, migrationSeq []string, migrationID, 
 	migratedUserID, toAppID, srcUserID,
-	fromAppID string) (map[string]interface{}, int64) {
+	fromAppID string) ([]map[string]interface{}, int64) {
 
 	var stencilDBConn *sql.DB
 
@@ -587,12 +622,13 @@ func calculateDanglingAndTotalObjectsInExp7v2(
 		stencilDBConn = evalConfig.StencilDBConn1
 	}
 
-	danglingObjs := getDanglingObjsIncludingMediaOfSystemV2(stencilDBConn,
+	danglingObjs := getDanglingObjsOfSystemV2(stencilDBConn,
 		toApp, enableBags, migrationID, 
 		migratedUserID, toAppID, srcUserID, fromAppID,
 	)
 	
-	totalObjs := getTotalRowCountsOfDB(dbConn)
+	totalObjs := getTotalObjsIncludingMediaOfAppInExp7V2(evalConfig, 
+		toApp, enableBags)
 
 	seqLen := len(migrationSeq)
 
@@ -604,5 +640,65 @@ func calculateDanglingAndTotalObjectsInExp7v2(
 	}
 
 	return danglingObjs, totalObjs
+
+}
+
+func removeMigratedDanglingObjsFromDataBags(
+	evalConfig *EvalConfig, 
+	totalDanglingObjs []map[string]interface{}) []map[string]interface{} {
+
+	query1 := fmt.Sprintf(`SELECT pk, migration_id FROM data_bags`)
+	
+	res, err2 := db.DataCall(evalConfig.StencilDBConn, query1)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	var deletedObjsIndex []int
+
+	for i, obj1 := range totalDanglingObjs {
+
+		pk2 := fmt.Sprint(obj1["pk"])
+		migrationID2 := fmt.Sprint(obj1["migration_id"])
+
+		foundObj := false
+		migratedPartially := false
+
+		for _, res1 := range res {
+
+			pk1 := fmt.Sprint(res1["pk"])
+			migrationID1 := fmt.Sprint(res1["migration_id"])
+	
+			if pk1 == pk2 {
+				
+				foundObj = true
+
+				if migrationID2 != migrationID1 {
+
+					log.Println("partially migrated!!!")	
+
+					migratedPartially = true
+
+				} 
+				
+				break
+			}
+		}
+
+		if !foundObj || migratedPartially {
+			deletedObjsIndex = append(deletedObjsIndex, i)
+		}
+
+	}
+
+	log.Println("delete objs index length:", len(deletedObjsIndex))
+
+	for m := len(deletedObjsIndex) - 1; m > -1; m-- {
+
+		totalDanglingObjs = append(totalDanglingObjs[:m], totalDanglingObjs[m+1:]...)
+
+	}
+
+	return totalDanglingObjs
 
 }
