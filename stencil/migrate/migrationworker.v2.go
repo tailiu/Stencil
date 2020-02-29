@@ -454,7 +454,11 @@ func (self *MigrationWorkerV2) IsNodeDataEmpty(data map[string]interface{}) bool
 
 func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[string]interface{}, args ...bool) (interface{}, string, string, *MappingRef, bool, error) {
 
-	isBag := false
+	isBag, rawBag := false, false
+
+	if len(args) > 1 {
+		rawBag = args[1]
+	}
 
 	if len(args) > 0 {
 		isBag = args[0]
@@ -512,7 +516,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						fromTable = cleanedFromAttrTokens[0]
 						mappedVal = nodeVal
 
-						if !isBag {
+						if !isBag || rawBag {
 							var fromID interface{}
 							if val, ok := nodeData[cleanedFromAttrTokens[0]+".id"]; ok {
 								fromID = val
@@ -546,7 +550,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						mappedVal = nodeVal
 						fromTable = argsTokens[0]
 					}
-					if !isBag {
+					if !isBag || rawBag {
 						if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], nodeData); err == nil {
 							secondMemberTokens := strings.Split(args[1], ".")
 							firstMemberTokens := strings.Split(args[0], ".")
@@ -559,9 +563,13 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 								toAttr:     fmt.Sprint(secondMemberTokens[1]),
 							}
 						} else {
-							self.Logger.Debug("args[0]: '%v' \n", args[0])
-							self.Logger.Debug("toID: '%v' | fromID: '%v' \n", toID, fromID)
-							self.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
+							self.Logger.Debugf("args[0]: '%v' \n", args[0])
+							self.Logger.Debugf("toID: '%v' | fromID: '%v' \n", toID, fromID)
+							if !rawBag {
+								self.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
+							} else {
+								self.Logger.Warn("@DecodeMappingValue > GetIDs | ", err)
+							}
 						}
 					}
 				}
@@ -619,7 +627,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 	return mappedVal, fromTable, cleanedFromAttr, ref, found, nil
 }
 
-func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode) (MappedData, error) {
+func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *DependencyNode, isBag, rawBag bool) (MappedData, error) {
 
 	data := MappedData{
 		cols:        "",
@@ -648,7 +656,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					return data, err
 				}
 			}
-		} else if mappedValue, fromTable, cleanedFromAttr, ref, found, err := self.DecodeMappingValue(fromAttr, node.Data); err == nil {
+		} else if mappedValue, fromTable, cleanedFromAttr, ref, found, err := self.DecodeMappingValue(fromAttr, node.Data, isBag, rawBag); err == nil {
 			if found {
 				if mappedValue != nil {
 					data.UpdateData(toAttr, cleanedFromAttr, fromTable, mappedValue)
@@ -809,9 +817,46 @@ func (self *MigrationWorkerV2) DeleteRoot(threadID int) error {
 	return nil
 }
 
+func (self *MigrationWorkerV2) CheckRawBag(node *DependencyNode) (bool, error) {
+	for _, table := range node.Tag.Members {
+		if tableID, err := db.TableID(self.logTxn.DBconn, table, self.SrcAppConfig.AppID); err == nil {
+			if id, ok := node.Data[table+".id"]; ok {
+				if idRows, err := self.GetRowsFromIDTable(self.SrcAppConfig.AppID, tableID, id, true); err == nil {
+					if len(idRows) == 0 {
+						return true, nil
+					}
+				} else {
+					self.Logger.Debug(node.Data)
+					self.Logger.Fatal("@CheckRawBag > GetRowsFromIDTable > ", self.SrcAppConfig.AppID, tableID, id, err)
+				}
+			} else {
+				self.Logger.Debug(node.Data)
+				self.Logger.Warn("@CheckRawBag > id doesn't exist in table ", table+".id")
+			}
+		} else {
+			self.Logger.Fatal("@CheckRawBag > TableID, fromTable: error in getting table id for member! ", table, err)
+		}
+	}
+	return false, nil
+}
+
 func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *DependencyNode) (bool, error) {
 
-	migrated := false
+	migrated, rawBag, isBag := false, false, false
+
+	if self.mtype == BAGS {
+		isBag = true
+		if res, err := self.CheckRawBag(node); err == nil {
+			rawBag = res
+			if rawBag {
+				self.Logger.Info("{{{{{ RAW BAG }}}}}")
+			} else {
+				self.Logger.Info("{{{{{ NOT RAW BAG }}}}}")
+			}
+		} else {
+			self.Logger.Fatal("@MigrateNode > CheckRawBag > ", err)
+		}
+	}
 
 	var allMappedData []MappedData
 
@@ -824,7 +869,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 			// self.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Validated", toTable.Table)
 		}
 		fmt.Println(".........................................")
-		if mappedData, mappedDataErr := self.GetMappedData(toTable, node); mappedDataErr != nil {
+		if mappedData, mappedDataErr := self.GetMappedData(toTable, node, isBag, rawBag); mappedDataErr != nil {
 			self.Logger.Debug(node.Data)
 			self.Logger.Debug(mappedData)
 			self.Logger.Fatal("@MigrateNode > GetMappedData Error | ", mappedDataErr)
@@ -896,7 +941,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				return migrated, err
 			}
 
-			if self.mtype != BAGS {
+			if self.mtype != BAGS || rawBag {
 				if err := self.AddMappedReferences(mappedData.refs); err != nil {
 					log.Println(mappedData.refs)
 					self.Logger.Fatal("@MigrateNode > AddMappedReferences: ", err)

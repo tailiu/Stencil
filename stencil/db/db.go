@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"os/exec"
 	"reflect"
+	"stencil/helper"
 	"strings"
 
 	"github.com/gookit/color"
@@ -305,8 +306,18 @@ func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id interface{},
 }
 
 func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference interface{}) error {
-	query := "INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;"
-	_, err := tx.Exec(query, app, fromMember, fromID, fromReference, toMember, toID, toReference, migration_id)
+	fromIDInt, err := helper.ParseFloat(fmt.Sprint(fromID))
+	if err != nil {
+		log.Fatal("@CreateNewReference | ", err)
+	}
+
+	toIDInt, err := helper.ParseFloat(fmt.Sprint(toID))
+	if err != nil {
+		log.Fatal("@CreateNewReference | ", err)
+	}
+	// query := "INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;"
+	query := fmt.Sprintf("INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, int(fromIDInt), fromReference, toMember, int(toIDInt), toReference, migration_id)
+	_, err = tx.Exec(query)
 	return err
 }
 

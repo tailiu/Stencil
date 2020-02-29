@@ -130,7 +130,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	}
 	prevUIDs[self.SrcAppConfig.AppID] = self.uid
 
-	self.Logger.Debugf("Prev User IDs: %v", prevUIDs)
+	// self.Logger.Debugf("Prev User IDs: %v", prevUIDs)
 
 	for fromTable := range mappedData.srcTables {
 		if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
