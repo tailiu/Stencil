@@ -21,6 +21,8 @@ func main() {
 
 	// evaluation.Exp2GetMigratedDataRate()
 
+	// evaluation.Exp1GetDanglingObjectsV2()
+
 	// evaluation.Exp3()
 
 	// evaluation.Exp3GetDatadowntime()
@@ -68,5 +70,7 @@ func main() {
 	// evaluation.Exp7()
 
 	evaluation.Exp7v2()
+
+	// evaluation.Exp7v3()
 
 }

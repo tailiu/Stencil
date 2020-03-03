@@ -113,7 +113,7 @@ func test8() {
 
 func test9() {
 
-	dbName := "diaspora_100000_int8_template"
+	dbName := "diaspora_1m_exp6_0"
 
 	isBladeServer := false
 
@@ -169,10 +169,10 @@ func main() {
 
 	// test8()
 
-	// test9()
+	test9()
 
 	// test10()
 
-	test11()
+	// test11()
 	
 }

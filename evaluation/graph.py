@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 32})
+plt.rcParams.update({'font.size': 28})
 
 colors = ['g', 'r', 'b', 'm', 'k', 'w', 'c', 'y']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
@@ -175,7 +175,7 @@ def mulPoints(x, y, labels, xlabel, ylabel):
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[2], fontsize=20, numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=25, numpoints=1)
     
     plt.show()
 
@@ -324,7 +324,7 @@ def dataBag1(data, labels, apps, ylabel):
     # the width of the bar
     barWidth = 0.3
 
-    ax.bar(x - barWidth/2, data[0], width=barWidth, align="center", label=labels[0], color=colors[0])
+    ax.bar(x - barWidth/2, data[0], width=barWidth, align="center", label=labels[0], color=colors[0], hatch="//")
     ax.bar(x + barWidth/2, data[1], width=barWidth, align="center", label=labels[1], color=colors[1])
     
     ax.set_xticks(x)
@@ -332,7 +332,7 @@ def dataBag1(data, labels, apps, ylabel):
     ax.grid(True)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[1], fontsize=legendFontSize[4], numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[3], numpoints=1)
 
     plt.show()
 

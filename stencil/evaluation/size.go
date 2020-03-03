@@ -294,6 +294,39 @@ func getDanglingObjectsOfMigration(evalConfig *EvalConfig,
 
 }
 
+func getDanglingObjectsOfMigrationV2(evalConfig *EvalConfig,
+	migrationID, srcUserID string) (int64, int64) {
+
+	var size1, size2 int64
+
+	query1 := fmt.Sprintf(`
+		SELECT app, user_id FROM data_bags WHERE
+		migration_id = %s`, migrationID)
+	
+	result1, err := db.DataCall(evalConfig.StencilDBConn, query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range result1 {
+
+		appID := fmt.Sprint(data1["app"])
+		userID := fmt.Sprint(data1["user_id"])
+
+		if appID == "2" {
+			size2 += 1
+		} else {
+			if srcUserID != userID {
+				size1 += 1
+			}
+		}
+		
+	}
+
+	return size1, size2
+
+}
+
 func getTotalRowCountsOfDB(dbConn *sql.DB) int64 {
 
 	query1 := `SELECT tablename FROM pg_catalog.pg_tables WHERE 
@@ -698,7 +731,9 @@ func removeMigratedDanglingObjsFromDataBags(
 
 	for m := len(deletedObjsIndex) - 1; m > -1; m-- {
 
-		totalDanglingObjs = append(totalDanglingObjs[:m], totalDanglingObjs[m+1:]...)
+		index := deletedObjsIndex[m]
+
+		totalDanglingObjs = append(totalDanglingObjs[:index], totalDanglingObjs[index+1:]...)
 
 	}
 
@@ -727,7 +762,7 @@ func mergeObjects(totalDanglingObjs []map[string]interface{},
 			}
 
 		}
-		
+
 		if !exists {
 			totalDanglingObjs = append(totalDanglingObjs, danglingObjs[i])
 		}

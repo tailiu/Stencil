@@ -32,6 +32,9 @@ scalabilityWithIndepFile = "scalabilityWithIndependent"
 dataBagsEnabledFile = "dataBagsEnabled"
 dataBagsNotEnabledFile = "dataBagsNotEnabled"
 
+# dataBagsEnabledFile = "dataBagsEnabled1"
+# dataBagsNotEnabledFile = "dataBagsNotEnabled1"
+
 dataBags = "dataBags"
 cumNum = 1000
 apps = ['Diaspora','Mastodon', 'Twitter', 'GNU Social', 'Diaspora']
@@ -696,9 +699,11 @@ def migrationRateDatasetsTab1(fileNames):
 
 def migrationRateDatasetsTab2(baseFileName):
 
+    seqNum = 20
+
     data = []
 
-    for i in range(10):
+    for i in range(seqNum):
         data1 = readFile3(logDir + baseFileName + str(i))
         data += data1
 
@@ -805,9 +810,9 @@ def danglingObjsCumSum2(labels):
     # dstTotalObjs = 236766
 
     # Total objs count for the 1000 users migration
-    srcTotalObjs = 397001
+    srcTotalObjs = 393308
     # dstTotalObjs = 208942
-    dstTotalObjs = 123257
+    dstTotalObjs = 119564
 
     data = readFile3(logDir + anomaliesFile2)
 
@@ -825,7 +830,7 @@ def danglingObjsCumSum2(labels):
 
     xlabel = 'Percentage of users migrated'
     # ylabel = 'Percentage of dangling objects'
-    ylabel = 'Ratio of dangling objects to total objects'
+    ylabel = 'Percentage of dangling objects to total objects'
     
     g.mulLines(x, y, labels, xlabel, ylabel)
 
@@ -858,6 +863,51 @@ def randomWalk1(apps, labels):
 
     g.dataBag1(percentages, labels, apps, ylabel)
 
+def groupData(data, group):
+    
+    res = [0] * group
+
+    for i, data1 in enumerate(data):
+        res[i % group] += data1  
+
+    return res
+
+def randomWalk2(apps, labels):
+    
+    group = len(apps) - 1
+
+    data1 = readFile3(logDir + dataBagsEnabledFile)
+    data2 = readFile3(logDir + dataBagsNotEnabledFile)
+
+    print len(data1)
+    print len(data2)
+
+    totalObjs1 = getDataByKey(data1, "totalObjs")
+    danglingObjs1 = getDataByKey(data1, "danglingObjs")
+
+    totalObjs2 = getDataByKey(data2, "totalObjs")
+    danglingObjs2 = getDataByKey(data2, "danglingObjs")
+
+    totalObjsGrouped1 = groupData(totalObjs1, group)
+    totalObjsGrouped2 = groupData(totalObjs2, group)
+
+    danglingObjsGrouped1 = groupData(danglingObjs1, group)
+    danglingObjsGrouped2 = groupData(danglingObjs2, group)
+
+    percentages1 = getPercentagesOfData(danglingObjsGrouped1, totalObjsGrouped1)
+    percentages2 = getPercentagesOfData(danglingObjsGrouped2, totalObjsGrouped2)
+
+    percentages1.insert(0, 0.0)
+    percentages2.insert(0, 0.0)
+
+    ylabel = 'Percentage of dangling objects to total objects'
+    
+    percentages = [percentages1, percentages2]
+
+    print percentages
+
+    g.dataBag1(percentages, labels, apps, ylabel)
+
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
@@ -883,7 +933,7 @@ def randomWalk1(apps, labels):
 # dataDownTimeIsnPercentages(["SA1 deletion", "Naive system+"])
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-scalability(["SA1 deletion", "SA1 independent", "SA1 display"])
+# scalability(["SA1 deletion", "SA1 independent", "SA1 display"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
 #     "logs_100K/", 
@@ -892,12 +942,14 @@ scalability(["SA1 deletion", "SA1 independent", "SA1 display"])
 #     ["1M", "100K", "10K", "1K"])
 # migrationRateDatasetsTab1(["diaspora_1K_dataset", "diaspora_10K_dataset", 
 #     "diaspora_100K_dataset", "diaspora_1M_dataset"])
-# migrationRateDatasetsTab2("diaspora_1K_dataset_sa2_")
+# migrationRateDatasetsTab2("diaspora_10K_dataset_sa2_")
 # compareTwoMigratedSizes(["Source", "Destination"])
 # danglingDataSizesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
 # danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
 # migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
 #     ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
-#     ["SA1 deletion", "SA1 deletion without display", "SA1 independent", "Naive system"])
+#     ["SA1 deletion", "SA1 deletion without \n display", "SA1 independent", "Naive system"])
 # randomWalk1(["diaspora", "mastodon", "diaspora"],
 #             ["Stencil with data bags", "Stencil without data bags"])
+# randomWalk2(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"],
+#             ["Stencil enabling data bags", "Stencil not enabling data bags"])

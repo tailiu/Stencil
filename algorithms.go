@@ -119,8 +119,8 @@ func (t Thread) checkNextNode(node) {
 		// addToReferences(node, nextNode);
 		
 		if precedingNodes := GetAllPrecedingNodes(nextNode); len(precedingNodes) <= 1 && nextNode.Rules.DisplayOnlyIfPrecedingNodeExists {
-			acquirePredicateLock(nextNode);
 			checkNextNode(nextNode)
+			acquirePredicateLock(nextNode);
 			sendNodeToBag(nextNode, nextNode.Owner);
 			releasePredicateLock(nextNode);
 		}
