@@ -8,47 +8,50 @@ import (
 	"stencil/config"
 )
 
-const checkInterval = 200 * time.Millisecond
+const CHECK_INTERVAL = 200 * time.Millisecond
 
 func DisplayThread(migrationID int, deletionHoldEnable bool) {
 
+	defer closeDBConns(displayConfig)
+
 	startTime := time.Now()
 
-	log.Println("--------- Start of Display Check ---------")
+	log.Println("--------- Start of Display Check In One Thread ---------")
 
 	stencilDBConn, appConfig, threadID, userID, dstDAG := Initialize(migrationID)
 
-	defer stencilDBConn.Close()
-	defer appConfig.DBConn.Close()
-
 	// CreateDeletionHoldTable(stencilDBConn)
-
-	log.Println("Thread ID:", threadID)
-
-	log.Println("--------- First Phase --------")
 
 	secondRound := false
 
-	for migratedData := GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig); 
-		!CheckMigrationComplete(stencilDBConn, migrationID); 
-		migratedData = GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig) {
-		
-		var dhStack [][]int
+	if displayConfig.displayInFirstPhase {
 
-		for _, oneMigratedData := range migratedData {
-			_, dhStack, _ = checkDisplayOneMigratedData(
-				stencilDBConn, appConfig, oneMigratedData, 
-				secondRound, deletionHoldEnable, dhStack, threadID, userID, dstDAG,
-			)
+		log.Println("Thread ID:", threadID)
 
-			if deletionHoldEnable {
-				RemoveDeletionHold(stencilDBConn, dhStack, threadID)
+		log.Println("--------- First Phase --------")
+
+		for migratedData := GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig); 
+			!CheckMigrationComplete(stencilDBConn, migrationID); 
+			migratedData = GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig) {
+			
+			var dhStack [][]int
+
+			for _, oneMigratedData := range migratedData {
+				_, dhStack, _ = checkDisplayOneMigratedData(
+					stencilDBConn, appConfig, oneMigratedData, 
+					secondRound, deletionHoldEnable, dhStack, threadID, userID, dstDAG,
+				)
+
+				if deletionHoldEnable {
+					RemoveDeletionHold(stencilDBConn, dhStack, threadID)
+				}
+
 			}
+			time.Sleep(CHECK_INTERVAL)
 
 		}
-		time.Sleep(checkInterval)
 	}
-
+	
 	log.Println("--------- Second Phase ---------")
 
 	secondRound = true

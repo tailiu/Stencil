@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"stencil/common_funcs"
 	"stencil/config"
 	"stencil/db"
 	"strconv"
@@ -13,16 +14,113 @@ import (
 	"math"
 )
 
-const StencilDBName = "stencil"
+func CreateDisplayConfig(migrationID int, 
+	displayInFirstPhase bool) *displayConfig {
 
-func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string, *DAG) {
+	var displayConfig displayConfig
+
+	var srcAppConfig srcAppConfig
+
+	var dstAppConfig dstAppConfig
+
+	stencilDBConn := db.GetDBConn("stencil")
+
+	srcAppID, dstAppID, userID := 
+		common_funcs.GetSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
+
+	srcAppName := common_funcs.GetAppNameByAppID(stencilDBConn, srcAppID)
+	dstAppName := common_funcs.GetAppNameByAppID(stencilDBConn, dstAppID)
+
+	allMappings, err1 := config.LoadSchemaMappings()
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	mappingsFromSrcToDst, err2 := 
+		schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
+	
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	dstDAG, err4 := common_funcs.LoadDAG(dstAppName)
+	if err4 != nil {
+		log.Fatal(err4)
+	}
+
+	dstDBConn := db.GetDBConn(dstAppName)
+
+	dstAppTableIDNamePairs := make(map[string]string)
+	dstAppTableNameIDPairs := make(map[string]string)
+
+	dstRes := common_funcs.GetTableIDNamePairsInApp(stencilDBConn, dstAppID)
+
+	for _, dstRes1 := range dstRes {
+
+		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] = 
+			fmt.Sprint(dstRes1["table_name"])
+
+		dstAppTableNameIDPairs[fmt.Sprint(dstRes1["table_name"])] = 
+			fmt.Sprint(dstRes1["pk"])
+	}
+
+	srcAppTableNameIDPairs := make(map[string]string)
+
+	srcRes := common_funcs.GetTableIDNamePairsInApp(stencilDBConn, srcAppID)
+
+	for _, srcRes1 := range srcRes {
+
+		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = 
+			fmt.Sprint(srcRes1["pk"])
+
+	}
+
+	appIDNamePairs := common_funcs.GetAppIDNamePairs(stencilDBConn)
+	tableIDNamePairs := common_funcs.GetTableIDNamePairs(stencilDBConn)
+
+	srcAppConfig.appID = srcAppID
+	srcAppConfig.appName = srcAppName
+	srcAppConfig.tableNameIDPairs = srcAppTableNameIDPairs
+
+	dstAppConfig.appID = dstAppID
+	dstAppConfig.appName = dstAppName
+	dstAppConfig.tableNameIDPairs = dstAppTableNameIDPairs
+	dstAppConfig.dag = dstDAG
+	dstAppConfig.DBConn = dstDBConn
+	dstAppConfig.ownershipDisplaySettingsSatisfied = false
+
+	displayConfig.stencilDBConn = stencilDBConn
+	displayConfig.appIDNamePairs = appIDNamePairs
+	displayConfig.tableIDNamePairs = tableIDNamePairs
+	displayConfig.migrationID = migrationID
+	displayConfig.resolveReference = resolveReference
+	displayConfig.srcAppConfig = &srcAppConfig
+	displayConfig.dstAppConfig = &dstAppConfig
+	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
+	displayConfig.displayInFirstPhase = displayInFirstPhase
+	displayConfig.userID = userID
+
+	return &displayConfig
+
+}
+
+func closeDBConns(displayConfig *displayConfig) {
+
+	log.Println("Close db connections in the SA2 display thread")
+
+	closeDBConn(displayConfig.stencilDBConn)
+	closeDBConn(displayConfig.dstAppConfig.DBConn)
+
+}
+
+func oldInitialize(migrationID int) (*sql.DB, *config.AppConfig, int, string, *DAG) {
 	
 	stencilDBConn := db.GetDBConn(StencilDBName)
 
 	dstAppID, srcUserID := 
 		getDstAppIDUserIDByMigrationID(stencilDBConn, migrationID)
 
-	dstAppName := getAppNameByAppID(stencilDBConn, dstAppID)
+	dstAppName := common_funcs.GetAppNameByAppID(stencilDBConn, dstAppID)
 
 	isBladeServer := true
 
@@ -35,7 +133,7 @@ func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string, *DAG)
 
 	threadID := RandomNonnegativeInt()
 
-	dstDAG, err4 := loadDAG(dstAppName)
+	dstDAG, err4 := common_funcs.LoadDAG(dstAppName)
 	if err4 != nil {
 		log.Fatal(err4)
 	}
@@ -47,21 +145,6 @@ func Initialize(migrationID int) (*sql.DB, *config.AppConfig, int, string, *DAG)
 func RandomNonnegativeInt() int {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(math.MaxInt32)
-}
-
-func getAppNameByAppID(stencilDBConn *sql.DB, appID string) string {
-
-	query := fmt.Sprintf("select app_name from apps where pk = %s", appID)
-
-	// log.Println(query)
-
-	data, err := db.DataCall1(stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return fmt.Sprint(data["app_name"])
-
 }
 
 func getUserIDByMigrationID(stencilDBConn *sql.DB, 

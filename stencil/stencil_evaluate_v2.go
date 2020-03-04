@@ -69,7 +69,7 @@ func main() {
 
 	// evaluation.Exp7()
 
-	evaluation.Exp7v2()
+	// evaluation.Exp7v2()
 
 	// evaluation.Exp7v3()
 

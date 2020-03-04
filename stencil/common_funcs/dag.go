@@ -1,4 +1,4 @@
-package SA1_display
+package common_funcs
 
 import (
 	"stencil/config"
@@ -141,4 +141,37 @@ func GetDependsOnConditions(dag *DAG, tagName string, pTagName string) ([]config
 	}
 
 	return nil, errors.New("Error: No Conditions Found")
+}
+
+func LoadDAG(app string) (*DAG, error) {
+	
+	var dag DAG
+
+	var dconfig string
+
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if strings.Contains(dir, "/stencil/") {
+		dconfig = "../config/dependencies/" + app + ".json"
+	} else {
+		dconfig = "./config/dependencies/" + app + ".json"
+	}
+
+	jsonFile, err := os.Open(dconfig)
+
+	if err != nil {
+		fmt.Println("Some problem with the file: ")
+		fmt.Println(err)
+		return nil, errors.New("can't open file")
+	}
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	jsonFile.Close()
+	json.Unmarshal(byteValue, &dag)
+
+	return &dag, nil
+
 }
