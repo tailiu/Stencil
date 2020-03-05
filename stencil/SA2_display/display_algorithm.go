@@ -162,7 +162,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 		
 		log.Println("==================== Check Ownership ====================")
 
-		nodeTag := oneMigratedData.GetTagName(appConfig)
+		nodeTag := oneMigratedData.Tag
 
 		log.Println("Check data with tag:", nodeTag)
 		
@@ -174,13 +174,9 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 			log.Println("The checked data is a root node")
 
-			err15 := Display(stencilDBConn, 
-				appConfig.AppID, dataInNode, 
-				deletionHoldEnable, dhStack, threadID,
-			)
-
+			err15 := Display(displayConfig, dataInNode)
 			if err15 != nil {
-				log.Fatal(err15)
+				log.Println(err15)
 			} else {
 				log.Println("Display a root node when checking ownership")
 			}
@@ -192,7 +188,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 		// The check of sharing conditions for now is not implemented for now.
 		} else {
 			
-			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(dstDAG)
+			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(displayConfig)
 			
 			// Mastodon conversations have no ownership settings. In this case
 			// we cannot check ownership settings
@@ -229,54 +225,19 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 					}
 
-					var displayedDataInOwnerNode, notDisplayedDataInOwnerNode []HintStruct
-					for _, dataInOwnerNode1 := range dataInOwnerNode {
-
-						displayed := CheckDisplay(stencilDBConn, appConfig.AppID, dataInOwnerNode1)
-
-						if !displayed {
-
-							notDisplayedDataInOwnerNode = append(notDisplayedDataInOwnerNode, dataInOwnerNode1)
-
-						} else {
-
-							displayedDataInOwnerNode = append(displayedDataInOwnerNode, dataInOwnerNode1)
-						}
-					}
-
-					// Note: This will be changed when considering ongoing application services
-					// and the existence of other display threads !!
-					if len(displayedData) != 0 {
-
-						var err6 error
-
-						err6, dhStack = Display(stencilDBConn, 
-							appConfig.AppID, notDisplayedDataInOwnerNode, 
-							deletionHoldEnable, dhStack, threadID,
-						)
-
-						if err6 != nil {
-
-							return "", dhStack, err6
-
-						}
-					}
-
 				}
 
 				// If based on the ownership display settings this node is allowed to be displayed,
 				// then continue to check dependencies.
 				// Otherwise, no data in the node can be displayed.
-				if displayResultBasedOnOwnership := CheckOwnershipCondition(
-					dataOwnershipSpec.Display_setting, err13); !displayResultBasedOnOwnership {
+				if displayResultBasedOnOwnership := common_funcs.CheckOwnershipCondition(
+					dataOwnershipSpec.Display_setting, err13); 
+					!displayResultBasedOnOwnership {
 
 					log.Println(`Ownership display settings are not satisfied, 
 						so this node cannot be displayed`)
 
-					error16	:= chechPutIntoDataBag(stencilDBConn, appConfig.AppID, 
-						dataInNode, userID, secondRound)
-
-					return NoDataInNodeCanBeDisplayed, dhStack, error16
+					return chechPutIntoDataBag(displayConfig, secondRound, dataInNode)			
 
 				} else {
 
@@ -289,7 +250,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 		log.Println("==================== Check Inter-node dependencies ====================")
 		
-		pTags, err2 := oneMigratedData.GetParentTags(appConfig)
+		pTags, err2 := oneMigratedData.GetParentTags(displayConfig)
 		if err2 != nil {
 			log.Fatal(err2)
 		} else {
@@ -298,27 +259,22 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
 
-				// Need to change this Display function
-				var err3 error
-				err3, dhStack = Display(stencilDBConn, 
-					appConfig.AppID, dataInNode, deletionHoldEnable, dhStack, threadID)
-
-				// Found path conflicts
+				err3 := Display(displayConfig, dataInNode)
 				if err3 != nil {
-					return "", dhStack, err3
+					log.Println(err3)
 				}
 
-				return common_funcs.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+				return common_funcs.ReturnResultBasedOnNodeCompleteness(err1)
 
 			} else {
 				
 				pTagConditions := make(map[string]bool)
 
 				for _, pTag := range pTags {
-					log.Println(pTag)
+
+					log.Println("Check a Parent Tag:", pTag)
 					
-					dataInParentNode, err4 := GetdataFromParentNode(
-						stencilDBConn, appConfig, dataInNode, pTag)
+					dataInParentNode, err4 := GetdataFromParentNode(displayConfig, dataInNode, pTag)
 
 					log.Println(dataInParentNode, err4)
 

@@ -120,7 +120,8 @@ func GetDepDisplaySetting(dag *DAG, tag string, pTag string) (string, error) {
 	return "", CannotFindDependencyDisplaySetting
 }
 
-func GetDependsOnConditions(dag *DAG, tagName string, pTagName string) ([]config.DCondition, error) {
+func GetDependsOnConditionsInDeps(dag *DAG, tagName string, 
+	pTagName string) ([]config.DCondition, error) {
 	
 	for _, dp := range dag.Dependencies {
 

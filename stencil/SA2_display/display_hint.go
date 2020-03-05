@@ -20,7 +20,7 @@ type HintStruct struct {
 }
 
 func TransformRowToHint(displayConfig *displayConfig, 
-	data map[string]string) HintStruct {
+	data map[string]string) *HintStruct {
 
 	var rowIDs []int
 
@@ -48,18 +48,24 @@ func TransformRowToHint(displayConfig *displayConfig,
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
-func TransformRowToHint1(appConfig *config.AppConfig, data map[string]interface{}) HintStruct {
+func TransformRowToHint1(displayConfig *displayConfig, 
+	data map[string]interface{}) *HintStruct {
+	
 	hint := HintStruct{}
-	hint.Data = data
-	hint.RowIDs = GetRowIDsFromData(data)
+
 	for key := range data {
 		if strings.Contains(key, ".rowids_str") {
 			hint.TableName = strings.Split(key, ".")[0]
 			break
 		}
 	}
-	hint.TableID = appConfig.TableNameIDPairs[hint.TableName]
-	return hint
+	
+	hint.Data = data
+	hint.RowIDs = GetRowIDsFromData(data)
+	hint.TableID = displayConfig.dstAppConfig.tableNameIDPairs[hint.TableName]
+
+	return &hint
+
 }
 
 func (hint HintStruct) GetTagName(displayConfig *displayConfig) (string, error) {
@@ -166,16 +172,16 @@ func (hint *HintStruct) GetDependsOnTables(displayConfig *displayConfig,
 	return dependsOnTables
 }
 
-func (hint HintStruct) GetParentTags(appConfig *config.AppConfig) ([]string, error) {
-	tag, err := hint.GetTagName(appConfig)
-	if err != nil {
-		return nil, err
-	}
-
+func (hint *HintStruct) GetParentTags(displayConfig *displayConfig) ([]string, error) {
+	
 	var parentTags []string
-	for _, dependency := range appConfig.Dependencies {
+	
+	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
+
 		if dependency.Tag == tag {
+
 			for _, dependsOn := range dependency.DependsOn {
+
 				// Use As as the tag name to avoid adding duplicate tag names
 				if dependsOn.As != "" {
 					parentTags = append(parentTags, dependsOn.As)
@@ -189,19 +195,20 @@ func (hint HintStruct) GetParentTags(appConfig *config.AppConfig) ([]string, err
 	return parentTags, nil
 }
 
-func (hint HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig *config.AppConfig, 
+func (hint *HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(
+	displayConfig *displayConfig, 
 	alias string) (string, error) {
 	
-	tag, err := hint.GetTagName(appConfig)
-	if err != nil {
-		return "", err
-	}
+	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
 
-	for _, dependency := range appConfig.Dependencies {
-		if dependency.Tag == tag {
+		if dependency.Tag == hint.Tag {
+
 			for _, dependsOn := range dependency.DependsOn {
+
 				if dependsOn.As == alias {
+					
 					return dependsOn.Tag, nil
+
 				}
 			}
 		}
@@ -210,26 +217,33 @@ func (hint HintStruct) GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig 
 	return alias, errors.New("No Corresponding Tag for the Provided Alias Found!")
 }
 
-func (hint HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig, 
+func (hint *HintStruct) GetDisplayExistenceSetting(displayConfig *displayConfig, 
 	pTag string) (string, error) {
 	
-	tag, err := hint.GetTagName(appConfig)
-	if err != nil {
-		return "", err
-	}
+	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
 
-	for _, dependency := range appConfig.Dependencies {
-		if dependency.Tag == tag {
+		if dependency.Tag == hint.Tag {
+			
 			for _, dependsOn := range dependency.DependsOn {
+
 				if dependsOn.As != "" {
+
 					if dependsOn.As == pTag {
+
 						return dependsOn.DisplayExistence, nil
+
 					} else {
+
 						continue
+
 					}
+
 				} else {
+
 					if dependsOn.Tag == pTag {
+
 						return dependsOn.DisplayExistence, nil
+
 					}
 				}
 			}
@@ -237,6 +251,7 @@ func (hint HintStruct) GetDisplayExistenceSetting(appConfig *config.AppConfig,
 	}
 
 	return "", errors.New("Find display existence error!")
+
 }
 
 func (hint HintStruct) GetCombinedDisplaySettings(appConfig *config.AppConfig) (string, error) {
@@ -295,9 +310,9 @@ func (hint *HintStruct) GetAllRowIDs(displayConfig *displayConfig) []map[string]
 	return result
 }
 
-func (hint HintStruct) GetOwnershipSpec(dstDAG *DAG) (*config.Ownership, error) {
+func (hint *HintStruct) GetOwnershipSpec(displayConfig *displayConfig) (*config.Ownership, error) {
 
-	for _, ownership := range dstDAG.Ownerships {
+	for _, ownership := range displayConfig.dstAppConfig.dag.Ownerships {
 
 		if ownership.Tag == hint.Tag {
 

@@ -20,9 +20,10 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	// log.Println(key)
 	// log.Println(val)
 	
-	data := GetData1FromPhysicalSchema(displayConfig.stencilDBConn, 
-		appConfig.QR, table + ".*", 
-		table, table + "." + key, "=", val,
+	data := GetData1FromPhysicalSchema(
+		displayConfig, 
+		table + ".*", table, 
+		table + "." + key, "=", val,
 	)
 
 	if len(data) == 0 {

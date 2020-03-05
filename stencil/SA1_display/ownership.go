@@ -17,10 +17,10 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 	// so we only need the first condition here
 	condition := ownership.Conditions[0]
 	
-	tableAttr := ReplaceKey(displayConfig.dstAppConfig.dag, 
+	tableAttr := common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
 		ownership.Tag, condition.TagAttr)
 
-	dependsOnTableAttr := ReplaceKey(displayConfig.dstAppConfig.dag, 
+	dependsOnTableAttr := common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
 		ownership.OwnedBy, condition.DependsOnAttr)
 
 	table := strings.Split(tableAttr, ".")[0]
@@ -247,7 +247,7 @@ func oldHandleNonRootNode(displayConfig *displayConfig,
 		// If based on the ownership display settings this node is allowed to be displayed,
 		// then continue to check dependencies.
 		// Otherwise, no data in the node can be displayed.
-		if displayResultBasedOnOwnership := CheckOwnershipCondition(
+		if displayResultBasedOnOwnership := common_funcs.CheckOwnershipCondition(
 			dataOwnershipSpec.Display_setting, err13); !displayResultBasedOnOwnership {
 
 			log.Println(`Ownership display settings are not satisfied, 

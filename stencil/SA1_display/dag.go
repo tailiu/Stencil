@@ -11,37 +11,6 @@ import (
 	"io/ioutil"
 )
 
-func ReplaceKey(dag *DAG, tag string, key string) string {
-
-	for _, tag1 := range dag.Tags {
-
-		if tag1.Name == tag {
-			// fmt.Println(tag)
-
-			for k, v := range tag1.Keys {
-
-				if k == key {
-
-					member := strings.Split(v, ".")[0]
-					
-					attr := strings.Split(v, ".")[1]
-					
-					for k1, table := range tag1.Members {
-
-						if k1 == member {
-
-							return table + "." + attr
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return ""
-
-}
-
 func getRootMemberAttr(dag *DAG) (string, string, error) {
 
 	for _, tag1 := range dag.Tags {
@@ -118,27 +87,4 @@ func GetDepDisplaySetting(dag *DAG, tag string, pTag string) (string, error) {
 	}
 
 	return "", CannotFindDependencyDisplaySetting
-}
-
-func GetDependsOnConditions(dag *DAG, tagName string, pTagName string) ([]config.DCondition, error) {
-	
-	for _, dp := range dag.Dependencies {
-
-		if dp.Tag == tagName {
-			
-			for _, dp1 := range dp.DependsOn {
-				
-				if dp1.As == pTagName {
-					
-					return dp1.Conditions, nil
-				
-				} else if dp1.Tag == pTagName {
-					
-					return dp1.Conditions, nil
-				}
-			}
-		}
-	}
-
-	return nil, errors.New("Error: No Conditions Found")
 }

@@ -10,9 +10,9 @@ import (
 	"strings"
 )
 
-func getHintsInParentNode(stencilDBConn *sql.DB, 
-	appConfig *config.AppConfig, hints []HintStruct, 
-	conditions []string) (HintStruct, error) {	
+func getHintInParentNode(displayConfig *displayConfig, 
+	hints []*HintStruct, conditions []string, 
+	pTag string) (*HintStruct, error) {
 	
 	// log.Println(".....Second check......")
 	// log.Println(GetData1FromPhysicalSchemaByRowID(
@@ -22,6 +22,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB,
 	// log.Println("...........")
 	
 	var data map[string]interface{}
+
 	hintID := -1
 
 	for i, condition := range conditions {
@@ -55,8 +56,7 @@ func getHintsInParentNode(stencilDBConn *sql.DB,
 
 				// In this case, since data may be incomplete, 
 				// we cannot get the data in the parent node
-				return HintStruct{}, 
-					errors.New("Fail To Get Any Data in the Parent Node")
+				return nil, CannotFindAnyDataInParent
 			
 			} else {
 
@@ -67,34 +67,33 @@ func getHintsInParentNode(stencilDBConn *sql.DB,
 				// which is actually necessary for each
 				// status in Mastodon.
 				if hints[hintID].Data[t1 + "." + a1] == nil {
-
-					return HintStruct{}, 
-						errors.New("Fail To Get Any Data in the Parent Node")
-
+					return nil, CannotFindAnyDataInParent
 				}
 
 				data = GetData1FromPhysicalSchema(
-					stencilDBConn, appConfig.QR, appConfig.AppID, 
-					t2 + ".*", t2, t2 + "." + a2, "=", fmt.Sprint(hints[hintID].Data[t1 + "." + a1]))
+					displayConfig,
+					t2 + ".*", t2, t2 + "." + a2, "=", 
+					fmt.Sprint(hints[hintID].Data[t1 + "." + a1]),
+				)
 				
 				// log.Println(".....first check......")
 				// log.Println(data)
 				// log.Println("...........")
 
 				if len(data) == 0 {
-					return HintStruct{}, 
-						errors.New("Fail To Get Any Data in the Parent Node")
+					return nil, CannotFindAnyDataInParent
 				}
 			}
 		} else {
 
 			data = GetData1FromPhysicalSchema(
-				stencilDBConn, appConfig.QR, appConfig.AppID, 
-				t2 + ".*", t2, t2 + "." + a2, "=", fmt.Sprint(data[t1 + "." + a1]) )
+				displayConfig,
+				t2 + ".*", t2, t2 + "." + a2, "=", 
+				fmt.Sprint(data[t1 + "." + a1]),
+			)
 
 			if len(data) == 0 {
-				return HintStruct{}, 
-					errors.New("Fail To Get Any Data in the Parent Node")
+				return nil, CannotFindAnyDataInParent
 			}
 
 		}
@@ -105,34 +104,14 @@ func getHintsInParentNode(stencilDBConn *sql.DB,
 	// log.Println(data)
 	// log.Println("...........")
 
-	return TransformRowToHint1(appConfig, data), nil
+	return TransformRowToHint1(displayConfig, data), nil
 
 }
 
-func replaceKey(appConfig *config.AppConfig, tag string, key string) string {
-	for _, tag1 := range appConfig.Tags {
-		if tag1.Name == tag {
-			// fmt.Println(tag)
-			for k, v := range tag1.Keys {
-				if k == key {
-					member := strings.Split(v, ".")[0]
-					attr := strings.Split(v, ".")[1]
-					for k1, table := range tag1.Members {
-						if k1 == member {
-							return table + "." + attr
-						}
-					}
-				}
-			}
-		}
-	}
-	return ""
-}
+func dataFromParentNodeExists(displayConfig *displayConfig,
+	hints []HintStruct, pTag string) (bool, error) {
 
-func dataFromParentNodeExists(stencilDBConn *sql.DB, 
-	appConfig *config.AppConfig, hints []HintStruct, pTag string) (bool, error) {
-
-	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(appConfig, pTag)
+	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(displayConfig, pTag)
 
 	// If display existence setting is not set, 
 	// then we have to try to get data in the parent node in any case
@@ -142,8 +121,8 @@ func dataFromParentNodeExists(stencilDBConn *sql.DB,
 
 	} else {
 
-		tag, _ := hints[0].GetTagName(appConfig)
-		tableCol := replaceKey(appConfig, tag, displayExistenceSetting)
+		tableCol := common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
+			hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 
 		for _, hint := range hints {
@@ -167,23 +146,12 @@ func dataFromParentNodeExists(stencilDBConn *sql.DB,
 	// In this case, since data may be incomplete, 
 	// we cannot find the existence of the data in a parent node
 	// This also implies that it cannot find any data in a parent node
-	return false, errors.New("Fail To Get Any Data in the Parent Node")
+	return false, CannotFindAnyDataInParent
 
 }
 
-// Note: this function may return multiple hints based on dependencies
-func GetdataFromParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig, 
-	hints []HintStruct, pTag string) (HintStruct, error) {
-
-	// Before getting data from a parent node, 
-	// we check the existence of the data based on the cols of a child node
-	if exists, err := dataFromParentNodeExists(stencilDBConn, appConfig, hints, pTag); !exists {
-		return HintStruct{}, err
-	}
-
-	tag, _ := hints[0].GetTagName(appConfig)
-	conditions, _ := appConfig.GetDependsOnConditions(tag, pTag)
-	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(appConfig, pTag)
+func getProcConditions(displayConfig *displayConfig, 
+	tag, pTag string, conditions []config.DCondition) []string {
 
 	var proConditions []string
 	var from, to string
@@ -193,8 +161,13 @@ func GetdataFromParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig,
 	if len(conditions) == 1 {
 
 		condition := conditions[0]
-		from = replaceKey(appConfig, tag, condition.TagAttr)
-		to = replaceKey(appConfig, pTag, condition.DependsOnAttr)
+
+		from = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
+			tag, condition.TagAttr)
+		
+		to = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
+			pTag, condition.DependsOnAttr)
+		
 		proConditions = append(proConditions, from+":"+to)
 
 	} else {
@@ -203,17 +176,28 @@ func GetdataFromParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig,
 
 			if i == 0 {
 
-				from = replaceKey(appConfig, tag, condition.TagAttr)
-				to = replaceKey(appConfig, strings.Split(
-					condition.DependsOnAttr, ".")[0], strings.Split(condition.DependsOnAttr, ".")[1])
+				from = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag,
+					tag, condition.TagAttr)
+
+				to = common_funcs.ReplaceKey(
+					displayConfig.dstAppConfig.dag, 
+					strings.Split(condition.DependsOnAttr, ".")[0], 
+					strings.Split(condition.DependsOnAttr, ".")[1],
+				)
 
 			} else if i == len(conditions)-1 {
 
-				from = replaceKey(
-					appConfig, 
+				from = common_funcs.ReplaceKey(
+					displayConfig.dstAppConfig.dag, 
 					strings.Split(condition.TagAttr, ".")[0], 
-					strings.Split(condition.TagAttr, ".")[1])
-				to = replaceKey(appConfig, pTag, condition.DependsOnAttr)
+					strings.Split(condition.TagAttr, ".")[1],
+				)
+
+				to = common_funcs.ReplaceKey(
+					displayConfig.dstAppConfig.dag, 
+					pTag, 
+					condition.DependsOnAttr,
+				)
 
 			}
 
@@ -222,5 +206,28 @@ func GetdataFromParentNode(stencilDBConn *sql.DB, appConfig *config.AppConfig,
 		}
 	}
 
-	return getHintsInParentNode(stencilDBConn, appConfig, hints, proConditions)
+	return proConditions
+
+}
+
+
+// Note: this function may return multiple hints based on dependencies
+func GetdataFromParentNode(displayConfig *displayConfig,
+	hints []*HintStruct, pTag string) (*HintStruct, error) {
+
+	// Before getting data from a parent node, 
+	// we check the existence of the data based on the cols of a child node
+	if exists, err := dataFromParentNodeExists(displayConfig, hints, pTag); !exists {
+		return nil, err
+	}
+
+	tag := hints[0].Tag
+	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
+
+	conditions, _ := common_funcs.GetDependsOnConditionsInDeps(displayConfig, tag, pTag)
+
+	procConditions := getProcConditions(displayConfig, tag, pTag, conditions)
+
+	return getHintInParentNode(displayConfig, hints, procConditions, pTag)
+
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func GetData1FromPhysicalSchema(displayConfig *displayConfig, 
-	QR *qr.QR, cols, from, col, op, val string) map[string]interface{}  {	
+	cols, from, col, op, val string) map[string]interface{}  {	
 	
 	qs := qr.CreateQS(displayConfig.dstAppConfig.qr)
 

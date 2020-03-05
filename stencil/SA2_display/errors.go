@@ -19,3 +19,5 @@ var PathConflictsWhenPuttingInBags =
 
 var PathConflictsWhenDisplayingData =
 	errors.New("Found that there is a path conflict!! When displaying data")
+
+var CannotFindAnyDataInParent = errors.New("Fail To Get Any Data in the Parent Node")
