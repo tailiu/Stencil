@@ -121,26 +121,6 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 		return chechPutIntoDataBag(displayConfig, 
 			secondRound, []*HintStruct{oneMigratedData})
 
-		// if secondRound {
-
-			// err10 := PutIntoDataBag(stencilDBConn, appConfig.AppID,
-			// 	[]HintStruct{oneMigratedData}, userID)
-
-			// // Found path conflicts
-			// if err10 != nil {
-
-			// 	return NoDataInNodeCanBeDisplayed, dhStack, err10
-
-			// } else {
-
-			// 	return NoDataInNodeCanBeDisplayed, dhStack, err1
-
-			// }
-		// } else {
-
-		// 	return NoDataInNodeCanBeDisplayed, dhStack, err1
-
-		// }
 	} else {
 
 		displayedData, notDisplayedData := checkDisplayConditionsInNode(
@@ -276,26 +256,33 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 					
 					dataInParentNode, err4 := GetdataFromParentNode(displayConfig, dataInNode, pTag)
 
-					log.Println(dataInParentNode, err4)
+					if err4 != nil {
+						log.Println(err4)
+					} else {
+						log.Println(*dataInParentNode)
+					}
 
-					displaySetting, err5 := GetDisplaySettingInDependencies(
-						appConfig, oneMigratedData, pTag)
+					displaySettingInDeps, err5 := oneMigratedData.GetDisplaySettingInDependencies(
+						displayConfig, pTag)
 
 					if err5 != nil {
 						log.Fatal(err5)
 					}
+
 					if err4 != nil {
 
-						switch err4.Error() {
+						switch err4 {
 
-						case "This Data Does not Depend on Any Data in the Parent Node":
+						case NotDependsOnAnyData:
 
 							pTagConditions[pTag] = true
 
-						case "Fail To Get Any Data in the Parent Node":
+						case CannotFindAnyDataInParent:
 
-							pTagConditions[pTag] = ReturnDisplayConditionWhenCannotGetDataFromParentNode(
-								displaySetting, secondRound)
+							pTagConditions[pTag] = 
+								common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+								displaySettingInDeps, secondRound,
+							)
 						}
 					} else {
 
@@ -304,42 +291,29 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 						// if len(dataInParentNode) != 1 {
 						// 	log.Fatal("Find more than one piece of data in a parent node!!")
 						// }
-						var result string
-						var err7 error
-
-						result, dhStack, err7 = checkDisplayOneMigratedData(
-							stencilDBConn, appConfig, dataInParentNode, 
-							secondRound, deletionHoldEnable, dhStack, threadID, userID, dstDAG,
-						)
+						
+						err7 := checkDisplayOneMigratedData(displayConfig, dataInParentNode, secondRound)
 						
 						if err7 != nil {
-
 							log.Println(err7)
-
-							// If there is path confilct, 
-							// just return until to the original layer 
-							// and remove the already added deletion hold
-							if err7.Error() == "Path conflict" {
-								return "", dhStack, err7
-							}
-
 						}
 
-						log.Println(result, err7)
-
-						switch result {
+						switch err7 {
 
 						case NoDataInNodeCanBeDisplayed:
+
 							pTagConditions[pTag] = 
-								ReturnDisplayConditionWhenCannotGetDataFromParentNode(
-									displaySetting, secondRound)
+								common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+									displaySettingInDeps, secondRound)
 
 						case PartiallyDisplayed:
+
 							pTagConditions[pTag] = 
-								ReturnDisplayConditionWhenGetPartialDataFromParentNode(
-									displaySetting)
+								common_funcs.ReturnDisplayConditionWhenGetPartialDataFromParentNode(
+									displaySettingInDeps)
 
 						case CompletelyDisplayed:
+
 							pTagConditions[pTag] = true
 						}
 					}
@@ -347,45 +321,20 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				// log.Println(pTagConditions)
 
 				if checkResult := CheckCombinedDisplayConditions(
-					appConfig, pTagConditions, oneMigratedData); 
-					checkResult {
+					displayConfig, pTagConditions, oneMigratedData); checkResult {
 
-					var err8 error
-
-					err8, dhStack = Display(
-						stencilDBConn, appConfig.AppID, 
-						dataInNode, deletionHoldEnable, dhStack, threadID)
-
+					err8 := Display(displayConfig, dataInNode)
 					// Found path conflicts
 					if err8 != nil {
-						return "", dhStack, err8
+						log.Println(err8)
 					}
-					return common_funcs.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+
+					return common_funcs.ReturnResultBasedOnNodeCompleteness(err1)
 
 				} else {
 
-					if secondRound {
-						
-						err9 := PutIntoDataBag(stencilDBConn, appConfig.AppID, dataInNode, userID)
-						
-						// Found path conflicts
-
-						if err9 != nil {
-							return NoDataInNodeCanBeDisplayed, 
-							dhStack, 
-							err9
-
-						} else {
-							return NoDataInNodeCanBeDisplayed, 
-							dhStack, 
-							errors.New("Display Setting does not allow the data in the node to be displayed")
-						}
-
-					} else {
-						return NoDataInNodeCanBeDisplayed, 
-						dhStack, 
-						errors.New("Display Setting does not allow the data in the node to be displayed")
-					}
+					return chechPutIntoDataBag(displayConfig, 
+						secondRound, dataInNode)
 				}
 			}
 		}

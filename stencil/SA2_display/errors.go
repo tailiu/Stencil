@@ -21,3 +21,6 @@ var PathConflictsWhenDisplayingData =
 	errors.New("Found that there is a path conflict!! When displaying data")
 
 var CannotFindAnyDataInParent = errors.New("Fail To Get Any Data in the Parent Node")
+
+var NotDependsOnAnyData = 
+	errors.New("This Data Does not Depend on Any Data in the Parent Node")

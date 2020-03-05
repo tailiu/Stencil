@@ -271,7 +271,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 							case CannotFindAnyDataInParent:
 
 								pTagConditions[pTag] = 
-									ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+									common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 										displaySettingInDeps, secondRound)
 							
 						}
@@ -295,13 +295,13 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 							case NoNodeCanBeDisplayed:
 
 								pTagConditions[pTag] = 
-									ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+									common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 										displaySettingInDeps, secondRound)
 
 							case PartiallyDisplayed:
 
 								pTagConditions[pTag] = 
-									ReturnDisplayConditionWhenGetPartialDataFromParentNode(
+									common_funcs.ReturnDisplayConditionWhenGetPartialDataFromParentNode(
 										displaySettingInDeps)
 
 							case CompletelyDisplayed:
@@ -323,7 +323,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 						log.Fatal(err8)
 					}
 
-					return ReturnResultBasedOnNodeCompleteness(err1)
+					return common_funcs.ReturnResultBasedOnNodeCompleteness(err1)
 
 				} else {
 

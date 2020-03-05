@@ -212,7 +212,7 @@ func oldCheckDisplayOneMigratedData(stencilDBConn *sql.DB,
 
 						case "Fail To Get Any Data in the Parent Node":
 
-							pTagConditions[pTag] = ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+							pTagConditions[pTag] = common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 								displaySetting, secondRound)
 						}
 					} else {
@@ -247,7 +247,7 @@ func oldCheckDisplayOneMigratedData(stencilDBConn *sql.DB,
 
 						case "No Data In a Node Can be Displayed":
 							pTagConditions[pTag] = 
-							ReturnDisplayConditionWhenCannotGetDataFromParentNode(
+							common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 								displaySetting, secondRound)
 
 						case "Data In a Node Can be partially Displayed":

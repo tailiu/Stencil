@@ -55,36 +55,3 @@ func GetTableByMemberID(dag *DAG, tagName string, checkedMemberID string) (strin
 
 	return "", NoTableFound
 }
-
-func GetDepDisplaySetting(dag *DAG, tag string, pTag string) (string, error) {
-
-	for _, dependency := range dag.Dependencies {
-
-		if dependency.Tag == tag {
-
-			for _, dependsOn := range dependency.DependsOn {
-
-				if dependsOn.As != "" {
-
-					if dependsOn.As == pTag {
-
-						return dependsOn.DisplaySetting, nil
-
-					} else {
-
-						continue
-
-					}
-				} else {
-
-					if dependsOn.Tag == pTag {
-
-						return dependsOn.DisplaySetting, nil
-					}
-				}
-			}
-		}
-	}
-
-	return "", CannotFindDependencyDisplaySetting
-}

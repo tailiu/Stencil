@@ -131,9 +131,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 
 				if hint.Data[tableCol] == nil {
 
-					return false, 
-						errors.New("This Data Does not Depend on Any Data in the Parent Node")
-				
+					return false, NotDependsOnAnyData				
 				} else {
 
 					return true, nil

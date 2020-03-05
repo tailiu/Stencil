@@ -312,7 +312,7 @@ func (hint *HintStruct) GetTagDisplaySetting(
 func (hint *HintStruct) GetDisplaySettingInDependencies(displayConfig *displayConfig, 
 	pTag string) (string, error) {
 
-	setting, err := GetDepDisplaySetting(displayConfig.dstAppConfig.dag, hint.Tag, pTag)
+	setting, err := common_funcs.GetDepDisplaySetting(displayConfig.dstAppConfig.dag, hint.Tag, pTag)
 
 	if err != nil {
 		return "", err

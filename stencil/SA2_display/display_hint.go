@@ -254,15 +254,11 @@ func (hint *HintStruct) GetDisplayExistenceSetting(displayConfig *displayConfig,
 
 }
 
-func (hint HintStruct) GetCombinedDisplaySettings(appConfig *config.AppConfig) (string, error) {
+func (hint *HintStruct) GetCombinedDisplaySettings(
+	displayConfig *displayConfig) (string, error) {
 	
-	tag, err := hint.GetTagName(appConfig)
-	if err != nil {
-		return "", err
-	}
-
 	for _, dependency := range appConfig.Dependencies {
-		if dependency.Tag == tag {
+		if dependency.Tag == hint.Tag {
 			if dependency.CombinedDisplaySetting == "" {
 				return "", errors.New("No combined display settings found!")
 			} else {
@@ -323,4 +319,20 @@ func (hint *HintStruct) GetOwnershipSpec(displayConfig *displayConfig) (*config.
 
 	return nil, errors.New("Error: No Ownership Tag Found For the Provided Data")
 
+}
+
+func (hint *HintStruct) GetDisplaySettingInDependencies(appConfig *config.AppConfig, 
+	pTag string) (string, error) {
+	
+	setting, err := common_funcs.GetDepDisplaySetting(tag, pTag)
+
+	if err != nil {
+		return "", err
+	}
+
+	if setting == "" {
+		return "parent_node_complete_displays", nil
+	} else {
+		return setting, nil
+	}
 }
