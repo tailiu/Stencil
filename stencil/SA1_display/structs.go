@@ -3,14 +3,9 @@ package SA1_display
 import (
 	"stencil/config"
 	"stencil/reference_resolution"
+	"stencil/common_funcs"
 	"database/sql"
 )
-
-type DAG struct {
-	Tags         	[]config.Tag        `json:"tags"`
-	Dependencies 	[]config.Dependency `json:"dependencies"`
-	Ownerships   	[]config.Ownership  `json:"ownership"`
-}
 
 type srcAppConfig struct {
 	appID 								string
@@ -26,7 +21,7 @@ type dstAppConfig struct {
 	rootAttr							string
 	userID								string
 	DBConn       						*sql.DB
-	dag									*DAG
+	dag									*common_funcs.DAG
 	tableNameIDPairs					map[string]string
 	ownershipDisplaySettingsSatisfied 	bool
 }
@@ -44,9 +39,4 @@ type displayConfig struct {
 	mappingsFromSrcToDst	*config.MappedApp
 	displayInFirstPhase		bool
 	markAsDelete			bool
-}
-
-type DataInDependencyNode struct {
-	Table 	string
-	Data	map[string]interface{}
 }

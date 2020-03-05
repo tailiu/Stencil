@@ -3,6 +3,7 @@ package SA1_display
 import (
 	"errors"
 	"stencil/config"
+	"stencil/common_funcs"
 	"stencil/reference_resolution"
 	"strconv"
 	"strings"
@@ -162,7 +163,7 @@ func (hint *HintStruct) GetDependsOnTables(displayConfig *displayConfig,
 
 					if memberID == strings.Split(member, ".")[0] {
 
-						table, _ := GetTableByMemberID(displayConfig.dstAppConfig.dag, 
+						table, _ := common_funcs.GetTableByMemberID(displayConfig.dstAppConfig.dag, 
 							hint.Tag, strings.Split(dependsOnMember, ".")[0])
 
 						dependsOnTables = append(dependsOnTables, table)

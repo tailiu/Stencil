@@ -11,7 +11,7 @@ func main() {
 	// 	"1017", "diaspora", "1", "mastodon", "2", "d", 1
 
 	uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, threadNum :=
-		"1017", "diaspora", "1", "twitter", "3", "d", 1
+		"879", "diaspora", "1", "mastodon", "2", "d", 1
 
 	// If enableDisplay is set to be true, then display threads will be started
 	// If displayInFirstPhase is set to be true,

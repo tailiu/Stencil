@@ -2,6 +2,7 @@ package SA1_display
 
 import (
 	"stencil/config"
+	"stencil/common_funcs"
 	"stencil/db"
 	"strings"
 	"log"
@@ -126,7 +127,7 @@ func getOwner(displayConfig *displayConfig, hints []*HintStruct,
 	
 }
 
-func isNodeMigratingUserRootNode(displayConfig *displayConfig, 
+func oldIsNodeMigratingUserRootNode(displayConfig *displayConfig, 
 	dataInRootNode []*HintStruct) (bool, error) {
 
 	for _, node := range dataInRootNode {
@@ -157,7 +158,7 @@ func oldHandleRootNode(displayConfig *displayConfig,
 	// by directly picking from migrated data since there are already ownership relationships
 	// between normal nodes with the migrating user's root node 
 	// and there are no dependencies defined there
-	isMigratingUserRootNode, err14 := isNodeMigratingUserRootNode(displayConfig, dataInRootNode)
+	isMigratingUserRootNode, err14 := oldIsNodeMigratingUserRootNode(displayConfig, dataInRootNode)
 	if err14 != nil {
 		log.Println(err14)
 	}
@@ -174,7 +175,7 @@ func oldHandleRootNode(displayConfig *displayConfig,
 			log.Fatal(err15)
 		}
 		
-		return ReturnResultBasedOnNodeCompleteness(err15)
+		return common_funcs.ReturnResultBasedOnNodeCompleteness(err15)
 
 	// If it is other user's root node, it must be arrived through the dependency relationship
 	// since the migrating user root node is only connected with the migrated data with ownership
@@ -187,7 +188,7 @@ func oldHandleRootNode(displayConfig *displayConfig,
 		// here the node should have no data able to be displayed
 		// since if there is some data already displayed in the checkDisplayConditionsInNode
 		// the function returns
-		return NoNodeCanBeDisplayed
+		return common_funcs.NoNodeCanBeDisplayed
 
 	}
 			
@@ -253,7 +254,7 @@ func oldHandleNonRootNode(displayConfig *displayConfig,
 			log.Println(`Ownership display settings are not satisfied, 
 				so this node cannot be displayed`)
 
-			return NoNodeCanBeDisplayed
+			return common_funcs.NoNodeCanBeDisplayed
 
 		} else {
 

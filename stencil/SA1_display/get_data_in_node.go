@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"stencil/db"
+	"stencil/common_funcs"
 	"stencil/reference_resolution"
 	"stencil/schema_mappings"
 	"strconv"
@@ -478,10 +479,12 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 
 	result = append(result, hint)
 
-	queue := []DataInDependencyNode{DataInDependencyNode{
-		Table: hint.Table,
-		Data:  hint.Data,
-	}}
+	queue := []common_funcs.DataInDependencyNode{
+		common_funcs.DataInDependencyNode{
+			Table: hint.Table,
+			Data:  hint.Data,
+		},
+	}
 
 	for len(queue) != 0 && len(procDependencies) != 0 {
 		
@@ -532,10 +535,13 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 						continue
 					}
 
-					queue = append(queue, DataInDependencyNode{
-						Table: table1,
-						Data:  data,
-					})
+					queue = append(
+						queue, 
+						common_funcs.DataInDependencyNode{
+							Table: table1,
+							Data:  data,
+						},
+					)
 					// fmt.Println(queue)
 
 					intPK, err2 := strconv.Atoi(fmt.Sprint(data["id"]))
@@ -586,7 +592,7 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 
 	} else {
 
-		return result, NodeIncomplete
+		return result, common_funcs.NodeIncomplete
 
 	}
 

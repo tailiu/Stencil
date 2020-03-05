@@ -146,7 +146,7 @@ func closeDBConns(displayConfig *displayConfig) {
 }
 
 func getDstRootMemberAttrID(stencilDBConn *sql.DB,
-	appID string, migrationID int, dstDAG *DAG) (string, string, string) {
+	appID string, migrationID int, dstDAG *common_funcs.DAG) (string, string, string) {
 
 	// log.Println(*dstDAG)
 
@@ -522,11 +522,11 @@ func chechPutIntoDataBag(displayConfig *displayConfig,
 			log.Fatal(err9)
 		}
 
-		return NoNodeCanBeDisplayed
+		return common_funcs.NoNodeCanBeDisplayed
 
 	} else {
 
-		return NoNodeCanBeDisplayed
+		return common_funcs.NoNodeCanBeDisplayed
 	}
 }
 

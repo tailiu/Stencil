@@ -1,17 +1,11 @@
 package SA1_display
 
 import (
-	"stencil/config"
-	"os"
+	"stencil/common_funcs"
 	"strings"
-	"fmt"
-	"log"
-	"errors"
-	"encoding/json"
-	"io/ioutil"
 )
 
-func getRootMemberAttr(dag *DAG) (string, string, error) {
+func getRootMemberAttr(dag *common_funcs.DAG) (string, string, error) {
 
 	for _, tag1 := range dag.Tags {
 		
@@ -37,21 +31,6 @@ func getRootMemberAttr(dag *DAG) (string, string, error) {
 		}
 	}
 	
-	return "", "", CannotFindRootMemberAttr
+	return "", "", common_funcs.CannotFindRootMemberAttr
 
-}
-
-func GetTableByMemberID(dag *DAG, tagName string, checkedMemberID string) (string, error) {
-
-	for _, tag := range dag.Tags {
-		if tag.Name == tagName {
-			for memberID, memberTable := range tag.Members {
-				if memberID == checkedMemberID {
-					return memberTable, nil
-				}
-			}
-		}
-	}
-
-	return "", NoTableFound
 }

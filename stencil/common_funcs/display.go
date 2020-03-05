@@ -1,6 +1,7 @@
 package common_funcs
 
 import (
+	"database/sql"
 	"stencil/db"
 	"fmt"
 	"log"

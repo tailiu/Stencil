@@ -1,10 +1,10 @@
 package common_funcs
 
-import (
-	"log"
-	"strconv"
-	"strings"
-)
+// import (
+// 	"log"
+// 	"strconv"
+// 	"strings"
+// )
 
 /**
  *
@@ -43,8 +43,8 @@ func CheckOwnershipCondition(displaySettingInOwnership string, err error) bool {
 	//		when the ownership node is partially displayed.
 	// err is nil, meaning that the ownership node is complete
 	if (displaySettingInOwnership == "" && err == nil) || 
-		(displaySettingInOwnership == "parent_node_partially_displays" 
-			&& err == NodeIncomplete) {
+		(displaySettingInOwnership == "parent_node_partially_displays" &&
+		 err == NodeIncomplete) {
 
 		return true
 

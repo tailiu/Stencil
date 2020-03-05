@@ -1,6 +1,7 @@
 package SA1_display
 
 import (
+	"stencil/common_funcs"
 	"log"
 	"time"
 )
@@ -118,7 +119,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				log.Fatal(err6)
 			}
 
-			return ReturnResultBasedOnNodeCompleteness(err1)
+			return common_funcs.ReturnResultBasedOnNodeCompleteness(err1)
 
 		}
 
@@ -141,7 +142,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				log.Println("Display a root node when checking ownership")
 			}
 			
-			return ReturnResultBasedOnNodeCompleteness(err1)
+			return common_funcs.ReturnResultBasedOnNodeCompleteness(err1)
 		
 		// If the tag of this node is not the root,
 		// we need to check the ownership and sharing relationships of this data.
@@ -231,7 +232,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 					log.Fatal(err3)
 				}
 				
-				return ReturnResultBasedOnNodeCompleteness(err1)
+				return common_funcs.ReturnResultBasedOnNodeCompleteness(err1)
 
 			} else {
 
@@ -292,19 +293,19 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 						switch err7 {
 
-							case NoNodeCanBeDisplayed:
+							case common_funcs.NoNodeCanBeDisplayed:
 
 								pTagConditions[pTag] = 
 									common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 										displaySettingInDeps, secondRound)
 
-							case PartiallyDisplayed:
+							case common_funcs.PartiallyDisplayed:
 
 								pTagConditions[pTag] = 
 									common_funcs.ReturnDisplayConditionWhenGetPartialDataFromParentNode(
 										displaySettingInDeps)
 
-							case CompletelyDisplayed:
+							case common_funcs.CompletelyDisplayed:
 
 								pTagConditions[pTag] = true
 
