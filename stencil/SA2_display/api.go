@@ -15,15 +15,12 @@ const CHECK_MIGRATION_COMPLETE_INTERVAL1 = time.Second
 const CHECK_MIGRATION_COMPLETE_INTERVAL2 = 500 * time.Millisecond
 
 func displayController(migrationID, threadNum int, wg *sync.WaitGroup, 
-	displayInFirstPhase, markAsDelete, useBladeServerAsDst bool) {
-	
-	deletionHoldEnable := false
-	
-	stencilDBConn := db.GetDBConn("stencil")
-	defer stencilDBConn.Close()
+	displayInFirstPhase bool) {
+
+	dConfig := CreateDisplayConfig(migrationID, displayInFirstPhase)
 
 	if !displayInFirstPhase {
-		for !CheckMigrationComplete(stencilDBConn) {
+		for !CheckMigrationComplete(dConfig) {
 			time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL2)
 		}
 	}
@@ -38,13 +35,13 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup,
 
 		log.Println("Start Display Thread:", i + 1)
 
-		go func(migrationID int, deletionHoldEnable bool) {
+		go func(dConfig *displayConfig) {
 
 			defer wg.Done()
 			
-			DisplayThread(migrationID, deletionHoldEnable)
+			DisplayThread(dConfig)
 		
-		} (migrationID, deletionHoldEnable)
+		} (dConfig)
 
 	}
 
@@ -98,10 +95,9 @@ func waitForMigrationComplete(migrationID int, wg *sync.WaitGroup) {
 
 }
 
-func handlArgs(args []bool) (bool, bool, bool, bool) {
+func handlArgs(args []bool) (bool, bool) {
 
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst :=
-		true, true, false, true
+	enableDisplay, displayInFirstPhase := true, true
 	
 	for i, arg := range args {
 		switch i {
@@ -109,17 +105,13 @@ func handlArgs(args []bool) (bool, bool, bool, bool) {
 			enableDisplay = arg
 		case 1:
 			displayInFirstPhase = arg
-		case 2:
-			markAsDelete = arg
-		case 3:
-			useBladeServerAsDst = arg
 		default:
 			log.Fatal(`The input args of the display controller 
 				do not satisfy requirements!`)
 		}
 	}
 
-	return enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst
+	return enableDisplay, displayInFirstPhase
 
 }
 
@@ -132,14 +124,10 @@ func StartDisplay(uid, srcAppID, dstAppID,
 
 	log.Println("Migration ID Found by Display:", migrationID)
 
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst := handlArgs(args)
+	enableDisplay, displayInFirstPhase := handlArgs(args)
 
 	if enableDisplay {
-		displayController(
-			migrationID, threadNum, wg, 
-			displayInFirstPhase, markAsDelete,
-			useBladeServerAsDst,
-		)
+		displayController(migrationID, threadNum, wg, displayInFirstPhase)
 	} else {
 		waitForMigrationComplete(migrationID, wg)
 	}

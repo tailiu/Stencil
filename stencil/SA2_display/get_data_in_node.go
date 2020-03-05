@@ -6,6 +6,7 @@ import (
 	"log"
 	"stencil/config"
 	// "strconv"
+	"stencil/common_funcs"
 	"strings"
 	"fmt"
 )
@@ -59,10 +60,12 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 
 	result = append(result, hint)
 
-	queue := []DataInDependencyNode{DataInDependencyNode{
-		Table: hint.TableName,
-		Data:  hint.Data,
-	}}
+	queue := []common_funcs.DataInDependencyNode {
+		common_funcs.DataInDependencyNode {
+			Table: hint.TableName,
+			Data:  hint.Data,
+		},
+	}
 
 	for len(queue) != 0 && len(procDependencies) != 0 {
 		// log.Println(queue)
@@ -97,10 +100,13 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 
 					table1 := strings.Split(dep, ".")[0]
 					key1 := strings.Split(dep, ".")[1]
-					queue = append(queue, DataInDependencyNode{
-						Table: table1,
-						Data:  data1,
-					})
+					queue = append(
+						queue, 
+						common_funcs.DataInDependencyNode{
+							Table: table1,
+							Data:  data1,
+						},
+					)
 
 					result = append(result, &HintStruct{
 						TableName: table1,

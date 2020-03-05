@@ -10,7 +10,7 @@ import (
 
 const CHECK_INTERVAL = 200 * time.Millisecond
 
-func DisplayThread(displayConfig *displayConfigl) {
+func DisplayThread(displayConfig *displayConfig) {
 
 	defer closeDBConns(displayConfig)
 
@@ -62,17 +62,7 @@ func DisplayThread(displayConfig *displayConfigl) {
 
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 
-		var dhStack [][]int
-		
-		_, dhStack, _ = checkDisplayOneMigratedData(
-			stencilDBConn, appConfig, oneSecondRoundMigratedData, 
-			secondRound, deletionHoldEnable, 
-			dhStack, threadID, userID, dstDAG,
-		)
-
-		if deletionHoldEnable {
-			RemoveDeletionHold(stencilDBConn, dhStack, threadID)
-		}
+		checkDisplayOneMigratedData(displayConfig, oneSecondRoundMigratedData, secondRound)
 
 	}
 

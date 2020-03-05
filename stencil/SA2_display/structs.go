@@ -2,17 +2,12 @@ package SA2_display
 
 import (
 	"stencil/config"
+	"stencil/common_funcs"
 )
 
 type DataInDependencyNode struct {
 	Table 	string
 	Data	map[string]interface{}
-}
-
-type DAG struct {
-	Tags         	[]config.Tag        `json:"tags"`
-	Dependencies 	[]config.Dependency `json:"dependencies"`
-	Ownerships   	[]config.Ownership  `json:"ownership"`
 }
 
 type srcAppConfig struct {
@@ -25,7 +20,7 @@ type dstAppConfig struct {
 	appID 								string
 	appName 							string
 	DBConn       						*sql.DB
-	dag									*DAG
+	dag									*common_funcs.DAG
 	tableNameIDPairs					map[string]string
 	ownershipDisplaySettingsSatisfied 	bool
 	qr									*qr.QR

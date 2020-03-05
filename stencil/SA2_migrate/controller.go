@@ -9,10 +9,9 @@ import (
 
 // By default, enableDisplay, displayInFirstPhase, markAsDelete
 // are true, true, false 
-func handleArgs(args []bool) (bool, bool, bool, bool, bool) {
+func handleArgs(args []bool) (bool, bool, bool) {
 
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags :=
-		true, true, false, true, false
+	enableDisplay, displayInFirstPhase, enableBags := true, true, false
 	
 	for i, arg := range args {
 		switch i {
@@ -21,10 +20,6 @@ func handleArgs(args []bool) (bool, bool, bool, bool, bool) {
 		case 1:
 			displayInFirstPhase = arg
 		case 2:
-			markAsDelete = arg
-		case 3:
-			useBladeServerAsDst = arg
-		case 4:
 			enableBags = arg
 		default:
 			log.Fatal(`The input args of the migration and display controller 
@@ -32,8 +27,7 @@ func handleArgs(args []bool) (bool, bool, bool, bool, bool) {
 		}
 	}
 
-	return enableDisplay, displayInFirstPhase, 
-		markAsDelete, useBladeServerAsDst, enableBags
+	return enableDisplay, displayInFirstPhase, enableBags
 
 }
 
@@ -41,7 +35,7 @@ func Controller(uid, srcAppName, srcAppID,
 	dstAppName, dstAppID, migrationType string,
 	threadNum int, args ...bool) {
 	
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags := handleArgs(args)
+	enableDisplay, displayInFirstPhase, enableBags := handleArgs(args)
 	
 	var wg sync.WaitGroup
 
@@ -55,12 +49,11 @@ func Controller(uid, srcAppName, srcAppID,
 	// we only need to wait for one display thread to finish
 	wg.Add(1)
 
-	go apis.StartMigration(uid, srcAppName, srcAppID,
-		dstAppName, dstAppID, migrationType, useBladeServerAsDst, enableBags)
+	go apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, enableBags)
 
 	go SA2_display.StartDisplay(
 		uid, srcAppID, dstAppID, migrationType, threadNum, &wg, 
-		enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst,
+		enableDisplay, displayInFirstPhase,
 	)
 
 	wg.Wait()
