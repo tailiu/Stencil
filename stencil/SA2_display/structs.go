@@ -28,6 +28,7 @@ type dstAppConfig struct {
 	dag									*DAG
 	tableNameIDPairs					map[string]string
 	ownershipDisplaySettingsSatisfied 	bool
+	qr									*qr.QR
 }
 
 type displayConfig struct {

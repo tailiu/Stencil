@@ -7,6 +7,7 @@ import (
 	"stencil/common_funcs"
 	"stencil/config"
 	"stencil/db"
+	"stencil/qr"
 	"strconv"
 	"time"
 	"errors"
@@ -88,6 +89,7 @@ func CreateDisplayConfig(migrationID int,
 	dstAppConfig.dag = dstDAG
 	dstAppConfig.DBConn = dstDBConn
 	dstAppConfig.ownershipDisplaySettingsSatisfied = false
+	dstAppConfig.qr = qr.NewQR(dstAppName, dstAppID)
 
 	displayConfig.stencilDBConn = stencilDBConn
 	displayConfig.appIDNamePairs = appIDNamePairs
@@ -185,30 +187,29 @@ func getDstAppIDUserIDByMigrationID(stencilDBConn *sql.DB,
 
 }
 
-func GetUndisplayedMigratedData(stencilDBConn *sql.DB, 
-	migrationID int, appConfig *config.AppConfig) []HintStruct {
+func GetUndisplayedMigratedData(displayConfig *displayConfig) []*HintStruct {
 	
-	var displayHints []HintStruct
-
-	appID, _ := strconv.Atoi(appConfig.AppID)
+	var displayHints []*HintStruct
 	
 	// This is important that table id / group id should also be used to get results in the new design
 	// For example, in the one-to-multiple mapping, the same row id has different group ids / table ids
 	// Those rows could be displayed differently
 	query := fmt.Sprintf(
 		`SELECT table_id, array_agg(row_id) as row_ids 
-		FROM migration_table where mflag = 1 and app_id = %d and migration_id = %d 
+		FROM migration_table where mflag = 1 and app_id = %s and migration_id = %d 
 		group by group_id, table_id;`,
-		appID, migrationID)
+		displayConfig.dstAppConfig.appID,
+		displayConfig.migrationID,
+	)
 	
-	data := db.GetAllColsOfRows(stencilDBConn, query)
+	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
 	// log.Println(data)
 
 	// If we don't use physical schema, both table_name and id are necessary to identify a piece of migratd data.
 	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
 	// We use table_name to optimize performance
 	for _, data1 := range data {
-		displayHints = append(displayHints, TransformRowToHint(appConfig, data1))
+		displayHints = append(displayHints, TransformRowToHint(displayConfig, data1))
 	}
 
 	// log.Println(displayHints)
@@ -216,15 +217,15 @@ func GetUndisplayedMigratedData(stencilDBConn *sql.DB,
 	return displayHints
 }
 
-func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
+func CheckMigrationComplete(displayConfig *displayConfig) bool {
 
 	query := fmt.Sprintf(
 		`SELECT 1 FROM txn_logs WHERE action_id = %d 
 		and action_type='COMMIT' LIMIT 1`,
-		migrationID,
+		displayConfig.migrationID,
 	)
 	
-	data := db.GetAllColsOfRows(stencilDBConn, query)
+	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
 	
 	if len(data) == 0 {
 		
@@ -236,30 +237,30 @@ func CheckMigrationComplete(stencilDBConn *sql.DB, migrationID int) bool {
 	}
 }
 
-func logDisplayStartTime(stencilDBConn *sql.DB, migrationID int) {
+func logDisplayStartTime(displayConfig *displayConfig) {
 
 	query := fmt.Sprintf(`
 		INSERT INTO display_registration (start_time, migration_id)
 		VALUES (now(), %d)`,
-		migrationID,
+		displayConfig.migrationID,
 	)
 
-	err1 := db.TxnExecute1(stencilDBConn, query); 
+	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
 
 }
 
-func logDisplayEndTime(stencilDBConn *sql.DB, migrationID int) {
+func logDisplayEndTime(displayConfig *displayConfig) {
 
 	query := fmt.Sprintf(`
 		UPDATE display_registration SET end_time = now()
 		WHERE migration_id = %d`,
-		migrationID,
+		displayConfig.migrationID,
 	)
 
-	err1 := db.TxnExecute1(stencilDBConn, query); 
+	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query)
 	if err1 != nil {
 		log.Fatal(err1)
 	}

@@ -16,12 +16,17 @@ type HintStruct struct {
 	TableName 	string
 	RowIDs		[]int
 	Data		map[string]interface{}
+	Tag			string
 }
 
-func TransformRowToHint(appConfig *config.AppConfig, data map[string]string) HintStruct {
+func TransformRowToHint(displayConfig *displayConfig, 
+	data map[string]string) HintStruct {
+
 	var rowIDs []int
+
 	s := data["row_ids"][1:len(data["row_ids"]) - 1]
 	s1 := strings.Split(s, ",")
+	
 	for _, strRowID := range s1 {
 		rowID, err1 := strconv.Atoi(strRowID)
 		if err1 != nil {
@@ -31,12 +36,15 @@ func TransformRowToHint(appConfig *config.AppConfig, data map[string]string) Hin
 	}
 
 	hint := HintStruct{}
-	hint.TableID = data["table_id"]
-	hint.TableName = appConfig.TableIDNamePairs[data["table_id"]]
-	hint.RowIDs = rowIDs
-	hint.Tag = 
 
-	return hint
+	hint.TableID = data["table_id"]
+	hint.TableName = displayConfig.tableIDNamePairs[data["table_id"]]
+
+	hint.RowIDs = rowIDs
+
+	hint.Tag = GetTagName1(displayConfig, hint.TableName)
+
+	return &hint
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
@@ -54,7 +62,7 @@ func TransformRowToHint1(appConfig *config.AppConfig, data map[string]interface{
 	return hint
 }
 
-func (hint HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) {
+func (hint HintStruct) GetTagName(displayConfig *displayConfig) (string, error) {
 	
 	for _, tag := range appConfig.Tags {
 		for _, member := range tag.Members {
@@ -67,19 +75,95 @@ func (hint HintStruct) GetTagName(appConfig *config.AppConfig) (string, error) {
 
 }
 
-func (hint HintStruct) GetMemberID(appConfig *config.AppConfig, 
-	tagName string) (string, error) {
+func GetTagName1(displayConfig *displayConfig, 
+	table string) (string, error) {
+
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
+
+		for _, member := range tag.Members {
+
+			if table == member {
+
+				return tag.Name, nil
+
+			}
+		}
+
+	}
+
+	return "", errors.New("No Corresponding Tag Found!")
+
+}
+
+func (hint *HintStruct) GetTagDisplaySetting(
+	displayConfig *displayConfig) (string, error) {
 	
-	for _, tag := range appConfig.Tags {
-		if tag.Name == tagName {
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
+
+		if tag.Name == hint.Tag {
+
+			if tag.Display_setting != "" {
+
+				return tag.Display_setting, nil
+
+			} else {
+
+				return "default_display_setting", nil
+			}
+		}
+	}
+
+	return "", errors.New("Error: No Tag Found For the Provided TagName")
+
+}
+
+func (hint *HintStruct) GetMemberID(displayConfig *displayConfig) (string, error) {
+	
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
+
+		if tag.Name == hint.Tag {
+
 			for memberID, memberTable := range tag.Members {
-				if memberTable == hint.TableName {
+
+				if memberTable == hint.Table {
+
 					return memberID, nil
+					
 				}
 			}
 		}
 	}
+	
 	return "", errors.New("No Corresponding Tag Found!")
+
+}
+
+func (hint *HintStruct) GetDependsOnTables(displayConfig *displayConfig, 
+	memberID string) []string {
+
+	var dependsOnTables []string
+
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
+
+		if tag.Name == hint.Tag {
+
+			for _, innerDependency := range tag.InnerDependencies {
+
+				for dependsOnMember, member := range innerDependency {
+
+					if memberID == strings.Split(member, ".")[0] {
+
+						table, _ := GetTableByMemberID(displayConfig.dstAppConfig.dag, 
+							hint.Tag, strings.Split(dependsOnMember, ".")[0])
+
+						dependsOnTables = append(dependsOnTables, table)
+
+					}
+				}
+			}
+		}
+	}
+	return dependsOnTables
 }
 
 func (hint HintStruct) GetParentTags(appConfig *config.AppConfig) ([]string, error) {
@@ -175,15 +259,11 @@ func (hint HintStruct) GetCombinedDisplaySettings(appConfig *config.AppConfig) (
 	return "", errors.New("No combined display settings found!")
 }
 
-func (hint HintStruct) GetRestrictionsInTag(appConfig *config.AppConfig) ([]map[string]string, error) {
-	
-	tagName, err := hint.GetTagName(appConfig)
-	if err != nil {
-		return nil, err
-	}
+func (hint *HintStruct) GetRestrictionsInTag(
+	displayConfig *displayConfig) ([]map[string]string, error) {
 
-	for _, tag := range appConfig.Tags {
-		if tag.Name == tagName {
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
+		if tag.Name == hint.Tag {
 			return tag.Restrictions, nil
 		}
 	}

@@ -446,8 +446,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 }
 
 func getRemainingDataInNode(displayConfig *displayConfig,
-	dependencies []map[string]string, 
-	members map[string]string, 
+	dependencies []map[string]string, members map[string]string, 
 	hint *HintStruct) ([]*HintStruct, error) {
 	
 	var result []*HintStruct

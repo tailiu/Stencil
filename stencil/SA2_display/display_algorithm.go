@@ -10,7 +10,7 @@ import (
 
 const CHECK_INTERVAL = 200 * time.Millisecond
 
-func DisplayThread(migrationID int, deletionHoldEnable bool) {
+func DisplayThread(displayConfig *displayConfigl) {
 
 	defer closeDBConns(displayConfig)
 
@@ -18,7 +18,7 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 
 	log.Println("--------- Start of Display Check In One Thread ---------")
 
-	stencilDBConn, appConfig, threadID, userID, dstDAG := Initialize(migrationID)
+	// stencilDBConn, appConfig, threadID, userID, dstDAG := Initialize(migrationID)
 
 	// CreateDeletionHoldTable(stencilDBConn)
 
@@ -30,34 +30,35 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 
 		log.Println("--------- First Phase --------")
 
-		for migratedData := GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig); 
-			!CheckMigrationComplete(stencilDBConn, migrationID); 
-			migratedData = GetUndisplayedMigratedData(stencilDBConn, migrationID, appConfig) {
+		for migratedData := GetUndisplayedMigratedData(displayConfig); 
+			!CheckMigrationComplete(displayConfig); 
+			migratedData = GetUndisplayedMigratedData(displayConfig) {
 			
 			var dhStack [][]int
 
 			for _, oneMigratedData := range migratedData {
-				_, dhStack, _ = checkDisplayOneMigratedData(
-					stencilDBConn, appConfig, oneMigratedData, 
-					secondRound, deletionHoldEnable, dhStack, threadID, userID, dstDAG,
-				)
+				// _, dhStack, _ = checkDisplayOneMigratedData(
+				// 	stencilDBConn, appConfig, oneMigratedData, 
+				// 	secondRound, deletionHoldEnable, dhStack, threadID, userID, dstDAG,
+				// )
 
-				if deletionHoldEnable {
-					RemoveDeletionHold(stencilDBConn, dhStack, threadID)
-				}
+				// if deletionHoldEnable {
+				// 	RemoveDeletionHold(stencilDBConn, dhStack, threadID)
+				// }
+				checkDisplayOneMigratedData(displayConfig, oneMigratedData, secondRound)
 
 			}
+
 			time.Sleep(CHECK_INTERVAL)
 
 		}
 	}
-	
+
 	log.Println("--------- Second Phase ---------")
 
 	secondRound = true
 
-	secondRoundMigratedData := GetUndisplayedMigratedData(
-		stencilDBConn, migrationID, appConfig)
+	secondRoundMigratedData := GetUndisplayedMigratedData(displayConfig)
 
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 
@@ -77,7 +78,7 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 
 	log.Println("--------- End of Display Check ---------")
 
-	logDisplayEndTime(stencilDBConn, migrationID)
+	logDisplayEndTime(displayConfig)
 
 	endTime := time.Now()
 
@@ -86,23 +87,26 @@ func DisplayThread(migrationID int, deletionHoldEnable bool) {
 }
 
 // Two-way display check
-func checkDisplayOneMigratedData(stencilDBConn *sql.DB, 
-	appConfig *config.AppConfig, oneMigratedData HintStruct, 
-	secondRound bool, deletionHoldEnable bool, dhStack [][]int, 
-	threadID int, userID string, dstDAG *DAG) (string, [][]int, error) {
+// func checkDisplayOneMigratedData(stencilDBConn *sql.DB, 
+// 	appConfig *config.AppConfig, oneMigratedData HintStruct, 
+// 	secondRound bool, deletionHoldEnable bool, dhStack [][]int, 
+// 	threadID int, userID string, dstDAG *DAG) (string, [][]int, error) {
+
+func checkDisplayOneMigratedData(displayConfig *displayConfig, 
+		oneMigratedData *HintStruct, secondRound bool) error {
 
 	// CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
-	log.Println("Check Data ", oneMigratedData)
+	log.Println("Check Data ", *oneMigratedData)
 	
 	log.Println("==================== Check Intra-node dependencies ====================")
 
-	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(appConfig, 
-		oneMigratedData, stencilDBConn)
+	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(
+		displayConfig, oneMigratedData)
 
 	log.Println("Data in Node:")
 
 	for _, oneDataInNode := range dataInNode {
-		log.Println(oneDataInNode)
+		log.Println(*oneDataInNode)
 	}
 
 	// Either this data is not in the destination application,

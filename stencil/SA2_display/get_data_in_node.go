@@ -10,17 +10,20 @@ import (
 	"fmt"
 )
 
-func getOneRowBasedOnDependency(appConfig *config.AppConfig, 
-	stencilDBConn *sql.DB, val string, 
-	dep string) (map[string]interface{}, error) {
+func getOneRowBasedOnDependency(displayConfig *displayConfig, 
+	val string, dep string) (map[string]interface{}, error) {
 	
 	table := strings.Split(dep, ".")[0]
 	key := strings.Split(dep, ".")[1]
+
 	// log.Println(table)
 	// log.Println(key)
 	// log.Println(val)
-	data := GetData1FromPhysicalSchema(stencilDBConn, appConfig.QR, appConfig.AppID, table + ".*", 
-		table, table + "." + key, "=", val)
+	
+	data := GetData1FromPhysicalSchema(displayConfig.stencilDBConn, 
+		appConfig.QR, table + ".*", 
+		table, table + "." + key, "=", val,
+	)
 
 	if len(data) == 0 {
 		return nil, errors.New("Error: Cannot Find One Remaining Data in the Node")
@@ -29,13 +32,14 @@ func getOneRowBasedOnDependency(appConfig *config.AppConfig,
 	}
 }
 
-func getRemainingDataInNode(appConfig *config.AppConfig, 
-	stencilDBConn *sql.DB, dependencies []map[string]string, 
-	members map[string]string, hint HintStruct) ([]HintStruct, error) {
+func getRemainingDataInNode(displayConfig *displayConfig, 
+	dependencies []map[string]string, members map[string]string, 
+	hint *HintStruct) ([]*HintStruct, error) {
 	
-	var result []HintStruct
+	var result []*HintStruct
 
 	procDependencies := make(map[string][]string)
+
 	for _, dependency := range dependencies {
 		for k, v := range dependency {
 			memberSeqInKey := strings.Split(k, ".")[0]
@@ -49,6 +53,8 @@ func getRemainingDataInNode(appConfig *config.AppConfig,
 		}
 	}
 	// log.Println(procDependencies)
+	
+	tag := hint.Tag
 
 	result = append(result, hint)
 
@@ -56,6 +62,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig,
 		Table: hint.TableName,
 		Data:  hint.Data,
 	}}
+
 	for len(queue) != 0 && len(procDependencies) != 0 {
 		// log.Println(queue)
 		// log.Println(procDependencies)
@@ -65,9 +72,12 @@ func getRemainingDataInNode(appConfig *config.AppConfig,
 
 		// table := dataInDependencyNode.Table
 		for tableCol, val := range dataInDependencyNode.Data {
+
 			if deps, ok := procDependencies[tableCol]; ok {
-				// We assume that this is an integer value otherwise we have to define it in dependency config
+				// We assume that this is an integer value 
+				// otherwise we have to define it in dependency config
 				for _, dep := range deps {
+
 					// log.Println(dep)
 					// log.Println(tableCol)
 					// log.Println(dataInDependencyNode.Data)
@@ -75,8 +85,8 @@ func getRemainingDataInNode(appConfig *config.AppConfig,
 						log.Println("Fail to get one data because the value of the relevant column is nil")
 						continue
 					}
-					data1, err1 := getOneRowBasedOnDependency(appConfig, 
-						stencilDBConn, fmt.Sprint(val), dep)
+					data1, err1 := getOneRowBasedOnDependency(displayConfig, 
+						fmt.Sprint(val), dep)
 					
 					if err1 != nil {
 						// log.Println(err1)
@@ -91,29 +101,35 @@ func getRemainingDataInNode(appConfig *config.AppConfig,
 						Data:  data1,
 					})
 
-					result = append(result, HintStruct{
+					result = append(result, &HintStruct{
 						TableName: table1,
-						TableID: appConfig.TableNameIDPairs[table1],
+						TableID: displayConfig.dstAppConfig.tableNameIDPairs[table1],
 						RowIDs: GetRowIDsFromData(data1),
 						Data: data1,
+						Tag: tag, 
 					})
 
 					deps1 := procDependencies[table1+"."+key1]
+
 					// log.Println("before delete: ", deps1)
 					// log.Println("to delete: ", tableCol)
+					
 					for i, val2 := range deps1 {
 						if val2 == tableCol {
 							deps1 = append(deps1[:i], deps1[i+1:]...)
 							break
 						}
 					}
+
 					// log.Println("after delete: ", deps1)
+					
 					if len(deps1) == 0 {
 						delete(procDependencies, table1+"."+key1)
 					} else {
 						procDependencies[table1+"."+key1] = deps1
 					}
 				}
+
 				delete(procDependencies, tableCol)
 			}
 		}
@@ -121,6 +137,7 @@ func getRemainingDataInNode(appConfig *config.AppConfig,
 
 	// log.Println(procDependencies)
 	// log.Println(result)
+
 	if len(procDependencies) == 0 {
 		return result, nil
 	} else {
@@ -128,16 +145,16 @@ func getRemainingDataInNode(appConfig *config.AppConfig,
 	}
 }
 
-func getOneRowBasedOnHint(appConfig *config.AppConfig, 
-	stencilDBConn *sql.DB, hint HintStruct) (map[string]interface{}, error) {
+func getOneRowBasedOnHint(displayConfig *displayConfig, 
+	hint *HintStruct) (map[string]interface{}, error) {
 	
 	restrictions, err := hint.GetRestrictionsInTag(appConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := GetData1FromPhysicalSchemaByRowID(stencilDBConn, 
-		appConfig.QR, appConfig.AppID, hint.TableName + ".*", hint.TableName, 
+	data := GetData1FromPhysicalSchemaByRowID(displayConfig, 
+		hint.TableName + ".*", hint.TableName, 
 		hint.RowIDs, restrictions,
 	)
 
@@ -148,52 +165,73 @@ func getOneRowBasedOnHint(appConfig *config.AppConfig,
 	}
 }
 
-func getDataInNode(appConfig *config.AppConfig, 
-	hint HintStruct, stencilDBConn *sql.DB) ([]HintStruct, error) {
+func getDataInNode(displayConfig *displayConfig, 
+	hint *HintStruct) ([]HintStruct, error) {
 	
 	// Get and cache hint.Data if it is not there
 	if len(hint.Data) == 0 {
-		data, err := getOneRowBasedOnHint(appConfig, stencilDBConn, hint)
+
+		data, err := getOneRowBasedOnHint(displayConfig, hint)
 		if err != nil {
 			return nil, err
 		}
+
 		hint.Data = data
+
 	}
 
-	for _, tag := range appConfig.Tags {
+	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
+
 		for _, member := range tag.Members {
+
 			if hint.TableName == member {
+
 				if len(tag.Members) == 1 {
-					return []HintStruct{hint}, nil
+
+					return []*HintStruct{hint}, nil
+
 				} else {
+
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					return getRemainingDataInNode(appConfig, stencilDBConn, 
-						tag.InnerDependencies, tag.Members, hint)
+					return getRemainingDataInNode(
+						displayConfig, 
+						tag.InnerDependencies, 
+						tag.Members, hint,
+					)
 				}
 			}
 		}
 	}
+
 	return nil, errors.New("Error: the hint does not match any tags")
 }
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func checkDependsOnExists(appConfig *config.AppConfig, 
-	allData []HintStruct, tagName string, data HintStruct) bool {
+func checkDependsOnExists(displayConfig *displayConfig,
+	allData []*HintStruct, data *HintStruct) bool {
 	
-	memberID, _ := data.GetMemberID(appConfig, tagName)
+	memberID, _ := data.GetMemberID(displayConfig)
 	// fmt.Println(memberID)
-	dependsOnTables := appConfig.GetDependsOnTables(tagName, memberID)
+	
+	dependsOnTables := appConfig.GetDependsOnTables(displayConfig, memberID)
 	// fmt.Println(dependsOnTables)
+
 	if len(dependsOnTables) == 0 {
+
 		return true
+	
 	} else {
 		for _, dependsOnTable := range dependsOnTables {
+
 			exists := false
+			
 			for _, oneData := range allData {
+				
 				if oneData.TableName == dependsOnTable {
-					if !checkDependsOnExists(appConfig, allData, tagName, oneData) {
+					
+					if !checkDependsOnExists(displayConfig, allData, oneData) {
 						return false
 					} else {
 						exists = true
@@ -209,13 +247,13 @@ func checkDependsOnExists(appConfig *config.AppConfig,
 	return true
 }
 
-func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig, 
-	allData []HintStruct, tagName string) []HintStruct {
+func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
+	allData []*HintStruct) []HintStruct {
 	
 	var trimmedData []HintStruct
 
 	for _, data := range allData {
-		if checkDependsOnExists(appConfig, allData, tagName, data) {
+		if checkDependsOnExists(displayConfig, allData, data) {
 			trimmedData = append(trimmedData, data)
 		}
 	}
@@ -223,38 +261,46 @@ func trimDataBasedOnInnerDependencies(appConfig *config.AppConfig,
 	return trimmedData
 }
 
-func GetDataInNodeBasedOnDisplaySetting(appConfig *config.AppConfig, 
-	hint HintStruct, stencilDBConn *sql.DB) ([]HintStruct, error) {
+func GetDataInNodeBasedOnDisplaySetting(displayConfig *displayConfig, 
+	hint *HintStruct) ([]*HintStruct, error) {
 	
-	var data []HintStruct
+	var data []*HintStruct
 	
-	tagName, err := hint.GetTagName(appConfig)
-	if err != nil {
-		return nil, err
-	}
+	// tagName, err := hint.GetTagName(appConfig)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
 
-	displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
+	displaySetting, _ := hint.GetTagDisplaySetting()
+
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err = getDataInNode(appConfig, hint, stencilDBConn); err != nil {
+	if data, err = getDataInNode(displayConfig, hint); err != nil {
+
 		// log.Println("++++++++++++")
 		// log.Println(data)
 		// log.Println("++++++++++++")
+		
 		// The setting "default_display_setting" means only display a node when the node is complete.
 		// Therefore, return nil and error message when node is not complete.
 		if displaySetting == "default_display_setting" {
+
 			return nil, err
-			// The setting "display_based_on_inner_dependencies" means display as much data in a node as possible
-			// based on inner dependencies.
-			// Note: if a piece of data in a node depends on some data not existing in the node,
-			// it needs to be deleted from the data set and cannot be displayed.
+			
+		// The setting "display_based_on_inner_dependencies" means display as much data in a node as possible
+		// based on inner dependencies.
+		// Note: if a piece of data in a node depends on some data not existing in the node,
+		// it needs to be deleted from the data set and cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {
-			return trimDataBasedOnInnerDependencies(appConfig, data, tagName), err
+			return trimDataBasedOnInnerDependencies(displayConfig, data), err
 		}
-		// If a node is complete, return all the data in the node regardless of the setting.
+
+	// If a node is complete, return all the data in the node regardless of the setting.
 	} else {
 		return data, nil
 	}
 
 	panic("Should never happen")
+
 }
