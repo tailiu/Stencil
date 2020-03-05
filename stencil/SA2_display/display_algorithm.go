@@ -118,61 +118,46 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 		log.Println(err1)
 
-		if secondRound {
+		return chechPutIntoDataBag(displayConfig, 
+			secondRound, []*HintStruct{oneMigratedData})
 
-			err10 := PutIntoDataBag(stencilDBConn, appConfig.AppID,
-				[]HintStruct{oneMigratedData}, userID)
+		// if secondRound {
 
-			// Found path conflicts
-			if err10 != nil {
+			// err10 := PutIntoDataBag(stencilDBConn, appConfig.AppID,
+			// 	[]HintStruct{oneMigratedData}, userID)
 
-				return NoDataInNodeCanBeDisplayed, dhStack, err10
+			// // Found path conflicts
+			// if err10 != nil {
 
-			} else {
+			// 	return NoDataInNodeCanBeDisplayed, dhStack, err10
 
-				return NoDataInNodeCanBeDisplayed, dhStack, err1
+			// } else {
 
-			}
-		} else {
+			// 	return NoDataInNodeCanBeDisplayed, dhStack, err1
 
-			return NoDataInNodeCanBeDisplayed, dhStack, err1
+			// }
+		// } else {
 
-		}
+		// 	return NoDataInNodeCanBeDisplayed, dhStack, err1
+
+		// }
 	} else {
 
-		var displayedData, notDisplayedData []HintStruct
-		for _, dataInNode1 := range dataInNode {
-
-			displayed := CheckDisplay(stencilDBConn, appConfig.AppID, dataInNode1)
-
-			if !displayed {
-
-				notDisplayedData = append(notDisplayedData, dataInNode1)
-
-			} else {
-
-				displayedData = append(displayedData, dataInNode1)
-			}
-		}
+		displayedData, notDisplayedData := checkDisplayConditionsInNode(
+			displayConfig, dataInNode)
 
 		// Note: This will be changed when considering ongoing application services
 		// and the existence of other display threads !!
 		if len(displayedData) != 0 {
 
-			var err6 error
+			log.Println("There is already some displayed data in the node")
 
-			err6, dhStack = Display(stencilDBConn, 
-				appConfig.AppID, notDisplayedData, 
-				deletionHoldEnable, dhStack, threadID,
-			)
-
+			err6 := Display(displayConfig, notDisplayedData)
 			if err6 != nil {
-
-				return "", dhStack, err6
-
+				log.Println(err6)
 			}
 
-			return ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+			return common_funcs.ReturnResultBasedOnNodeCompleteness(err1)
 		}
 		
 		log.Println("==================== Check Ownership ====================")
@@ -200,7 +185,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				log.Println("Display a root node when checking ownership")
 			}
 			
-			return ReturnResultBasedOnNodeCompleteness(err1)
+			return common_funcs.ReturnResultBasedOnNodeCompleteness(err1)
 		
 		// If the tag of this node is not the root,
 		// we need to check the ownership and sharing relationships of this data.
@@ -323,7 +308,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 					return "", dhStack, err3
 				}
 
-				return ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+				return common_funcs.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 
 			} else {
 				
@@ -419,7 +404,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 					if err8 != nil {
 						return "", dhStack, err8
 					}
-					return ReturnResultBasedOnNodeCompleteness(err1, dhStack)
+					return common_funcs.ReturnResultBasedOnNodeCompleteness(err1, dhStack)
 
 				} else {
 

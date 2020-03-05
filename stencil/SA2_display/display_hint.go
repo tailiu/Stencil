@@ -271,9 +271,10 @@ func (hint *HintStruct) GetRestrictionsInTag(
 	return nil, errors.New("No matched tag found!")
 }
 
-func (hint HintStruct) GetAllRowIDs(stencilDBConn *sql.DB, 
-	appID string) []map[string]interface{} {
+func (hint *HintStruct) GetAllRowIDs(displayConfig *displayConfig) []map[string]interface{} {
 	
+	appID := displayConfig.dstAppConfig.appID
+
 	query := fmt.Sprintf(
 		`select row_id from migration_table 
 		where app_id = %s and table_id = %s and 
@@ -286,7 +287,7 @@ func (hint HintStruct) GetAllRowIDs(stencilDBConn *sql.DB,
 	// log.Println(query)
 	// log.Println("++++++++")
 
-	result, err := db.DataCall(stencilDBConn, query)
+	result, err := db.DataCall(displayConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

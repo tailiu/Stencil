@@ -267,21 +267,15 @@ func logDisplayEndTime(displayConfig *displayConfig) {
 
 }
 
-func CheckDisplay(stencilDBConn *sql.DB, appID string, 
-	data HintStruct) bool {
-	
-	appID1, err1 := strconv.Atoi(appID)
-	if err1 != nil {
-		log.Fatal(err1)
-	}
+func CheckDisplay(displayConfig *displayConfig, data *HintStruct) bool {
 
 	// Here for one group, we only need to check 
 	// one row_id to see whether the group is displayed or not
 	// It should be noted that table_id / group_id should also be considered
 	query := fmt.Sprintf(
 		`SELECT mflag FROM migration_table 
-		WHERE row_id = %d and app_id = %d and table_id = %s`, 
-		data.RowIDs[0], appID1, data.TableID,
+		WHERE row_id = %d and app_id = %s and table_id = %s`, 
+		data.RowIDs[0], displayConfig.dstAppConfig.appID, data.TableID,
 	)
 	
 	// log.Println("==========")
@@ -289,7 +283,7 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string,
 	// log.Println(data)
 	// log.Println("==========")
 	
-	data1, err := db.DataCall1(stencilDBConn, query)
+	data1, err := db.DataCall1(displayConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -303,9 +297,7 @@ func CheckDisplay(stencilDBConn *sql.DB, appID string,
 
 }
 
-func Display(stencilDBConn *sql.DB, appID string, 
-	dataHints []HintStruct, deletionHoldEnable bool, 
-	dhStack [][]int, threadID int) (error, [][]int) {
+func Display(displayConfig *displayConfig, dataInNode []*HintStruct) error {
 	
 	var queries []string
 
@@ -313,10 +305,9 @@ func Display(stencilDBConn *sql.DB, appID string,
 
 		// This is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
-		if CheckDisplay(stencilDBConn, appID, dataHint) {
+		if CheckDisplay(displayConfig, dataHint) {
 
-			log.Println("Found that there is a path conflict!! When displaying data")
-			return errors.New("Path conflict"), dhStack
+			return PathConflictsWhenDisplayingData
 
 		}
 
@@ -330,14 +321,16 @@ func Display(stencilDBConn *sql.DB, appID string,
 			query := fmt.Sprintf(
 				`UPDATE migration_table SET mflag = 0, updated_at = now() 
 				WHERE row_id = %s and app_id = %s and table_id = %s`, 
-				rowID, appID, dataHint.TableID,
+				rowID, displayConfig.dstAppConfig.appID,
+				dataHint.TableID,
 			)
 			
 			query1 = fmt.Sprintf(
 				`UPDATE evaluation SET displayed_at = now()
 				WHERE migration_id = '%d' and dst_app = '%s' 
 				and dst_table = '%s' and dst_id = '%s'`,
-				displayConfig.migrationID, appID,
+				displayConfig.migrationID, 
+				displayConfig.dstAppConfig.appID,
 				dataHint.TableID, rowID,
 			)
 
@@ -346,14 +339,14 @@ func Display(stencilDBConn *sql.DB, appID string,
 		}
 	}
 	
-	if deletionHoldEnable {
+	// if deletionHoldEnable {
 		
-		var dhQueries []string
+	// 	var dhQueries []string
 		
-		dhQueries, dhStack = AddToDeletionHoldStack(dhStack, dataHints, threadID)
-		queries = append(queries, dhQueries...)
+	// 	dhQueries, dhStack = AddToDeletionHoldStack(dhStack, dataHints, threadID)
+	// 	queries = append(queries, dhQueries...)
 
-	}
+	// }
 
 	log.Println("**************************************")
 	log.Println("Display Data:")
@@ -363,35 +356,7 @@ func Display(stencilDBConn *sql.DB, appID string,
 	}
 	log.Println("**************************************")
 
-	return db.TxnExecute(stencilDBConn, queries), dhStack
-
-}
-
-func alreadyInBag(stencilDBConn *sql.DB, appID string, data HintStruct) bool {
-
-	appID1, err1 := strconv.Atoi(appID)
-	if err1 != nil {
-		log.Fatal(err1)
-	}
-	
-	// Here for one group, we only need to check one to see whether the group is displayed or not
-	// It should be noted that table_id / group_id should also be considered
-	query := fmt.Sprintf(
-		`SELECT bag FROM migration_table 
-		WHERE row_id = %d and app_id = %d and table_id = %s`, 
-		data.RowIDs[0], appID1, data.TableID,
-	)
-
-	// log.Println(query)
-	
-	data1, err := db.DataCall1(stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-	
-	// log.Println(data1)
-	
-	return data1["bag"].(bool)
+	return db.TxnExecute(displayConfig.stencilDBConn, queries)
 
 }
 
@@ -419,13 +384,12 @@ func checkDisplayConditionsInNode(displayConfig *displayConfig,
 
 }
 
-func chechPutIntoDataBag(stencilDBConn *sql.DB, 
-	appID string, dataHints []HintStruct, 
-	userID string, secondRound bool) error {
+func chechPutIntoDataBag(displayConfig *displayConfig,
+	secondRound bool, dataHints []*HintStruct) error {
 
 	if secondRound {
 
-		err9 := putIntoDataBag(stencilDBConn, appID, dataHints, userID)
+		err9 := putIntoDataBag(displayConfig, dataHints)
 		if err9 != nil {
 			log.Println(err9)
 		}
@@ -438,8 +402,32 @@ func chechPutIntoDataBag(stencilDBConn *sql.DB,
 	}
 }
 
-func PutIntoDataBag(stencilDBConn *sql.DB, 
-	appID string, dataHints []HintStruct, userID string) error {
+func alreadyInBag(displayConfig *displayConfig, data *HintStruct) bool {
+	
+	// Here for one group, we only need to check one to see whether the group is displayed or not
+	// It should be noted that table_id / group_id should also be considered
+	query := fmt.Sprintf(
+		`SELECT bag FROM migration_table 
+		WHERE row_id = %d and app_id = %s and table_id = %s`, 
+		data.RowIDs[0], 
+		displayConfig.dstAppConfig.appID,
+		data.TableID,
+	)
+
+	// log.Println(query)
+	
+	data1, err := db.DataCall1(displayConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	// log.Println(data1)
+	
+	return data1["bag"].(bool)
+
+}
+
+func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error {
 	
 	var queries []string
 
@@ -447,15 +435,17 @@ func PutIntoDataBag(stencilDBConn *sql.DB,
 		
 		// Similar to displaying data, this is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
-		if alreadyInBag(stencilDBConn, appID, dataHint) {
+		if alreadyInBag(displayConfig, dataHint) {
 
-			log.Println("Found that there is a path conflict!! When putting data in a databag")
+			// log.Println("Found that there is a path conflict!! When putting data in a databag")
 			
-			return errors.New("Path conflict")
+			// return errors.New("Path conflict")
+
+			return PathConflictsWhenPuttingInBags
 		
 		}
 
-		rowIDs := dataHint.GetAllRowIDs(stencilDBConn, appID)
+		rowIDs := dataHint.GetAllRowIDs(displayConfig)
 		
 		for _, rowID := range rowIDs {
 
@@ -465,17 +455,25 @@ func PutIntoDataBag(stencilDBConn *sql.DB,
 				user_id = %s, bag = true, mark_as_delete = true, 
 				mflag = 0, updated_at = now() 
 				WHERE row_id = %s and app_id = %s and table_id = %s`,
-				userID, fmt.Sprint(rowID["row_id"]), appID, dataHint.TableID)
-			
-			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-			log.Println(query)
-			log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+				userID, fmt.Sprint(rowID["row_id"]), 
+				displayConfig.dstAppConfig.appID, 
+				dataHint.TableID,
+			)
 			
 			queries = append(queries, query)
 		}
 	}
 
-	return db.TxnExecute(stencilDBConn, queries)
+	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+	log.Println("Put Data into Data Bags:")
+	for seq, q1 := range queries {
+		log.Println("Query", seq + 1)
+		log.Println(q1)
+	}
+	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+
+	return db.TxnExecute(displayConfig.stencilDBConn, queries)
+	
 }
 
 func GetTableNameByTableID(stencilDBConn *sql.DB, tableID string) string {

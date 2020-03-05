@@ -23,18 +23,6 @@ import (
  *
  */
 
-func ReturnResultBasedOnNodeCompleteness(err error) error {
-
-	if err != nil {
-
-		return PartiallyDisplayed
-	
-	} else {
-
-		return CompletelyDisplayed
-	}
-}
-
 func ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 	displaySetting string, secondRound bool) bool {
 		

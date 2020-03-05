@@ -7,19 +7,6 @@ import (
 	"strconv"
 )
 
-func ReturnResultBasedOnNodeCompleteness(err error, 
-	dhStack [][]int) (string, [][]int, error) {
-	
-	if err != nil {
-
-		return PartiallyDisplayed, dhStack, err
-
-	} else {
-
-		return CompletelyDisplayed, dhStack, nil
-	}
-}
-
 func ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting string, 
 	secondRound bool) bool {
 	
