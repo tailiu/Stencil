@@ -188,7 +188,7 @@ func oldHandleRootNode(displayConfig *displayConfig,
 		// here the node should have no data able to be displayed
 		// since if there is some data already displayed in the checkDisplayConditionsInNode
 		// the function returns
-		return common_funcs.NoNodeCanBeDisplayed
+		return common_funcs.NoDataInNodeCanBeDisplayed
 
 	}
 			
@@ -254,7 +254,7 @@ func oldHandleNonRootNode(displayConfig *displayConfig,
 			log.Println(`Ownership display settings are not satisfied, 
 				so this node cannot be displayed`)
 
-			return common_funcs.NoNodeCanBeDisplayed
+			return common_funcs.NoDataInNodeCanBeDisplayed
 
 		} else {
 

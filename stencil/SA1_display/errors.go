@@ -4,20 +4,6 @@ import (
 	"errors"
 )
 
-// Get data in a node
-var CannotFindRemainingData = 
-	errors.New("Error: Cannot Find One Remaining Data in the Node")
-
-var DataNotExists = 
-	errors.New("Error: the Data in a Data Hint Does Not Exist")
-
-// Get data in a parent node
-var CannotFindAnyDataInParent = 
-	errors.New("Fail To Get Any Data in the Parent Node")
-
-var NotDependsOnAnyData = 
-	errors.New("This Data Does not Depend on Any Data in the Parent Node")
-
 // Resolve reference when getting data in node or parent node
 var CannotResolveReferencesGetDataInParentNode =
 	errors.New("Fail to resolve references when getting data in a parent node")
@@ -37,12 +23,6 @@ var CannotGetPrevID = errors.New(`Cannot get previous ids because of the row has
 // Ownership
 var CannotFindDataInOwnership = 
 	errors.New("Fail to get any Data by the ownership relationship")
-
-var DataNotDisplayedDueToIncompleteOwnerNode = 
-	errors.New("Data is not displayed because the ownership node is not complete")
-
-var DataNotDisplayedDueToNoDataInOwnerNode = 
-	errors.New("Data is not displayed because no data can be displayed in the ownership node")
 
 var NotMigratingUserRootNode = errors.New("Not migrating user root node")
 

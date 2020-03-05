@@ -54,7 +54,7 @@ func getHintInParentNode(displayConfig *displayConfig,
 
 				// In this case, since data may be incomplete, 
 				// we cannot get the data in the parent node
-				return nil, CannotFindAnyDataInParent
+				return nil, common_funcs.CannotFindAnyDataInParent
 			
 			} else {
 
@@ -65,7 +65,7 @@ func getHintInParentNode(displayConfig *displayConfig,
 				// which is actually necessary for each
 				// status in Mastodon.
 				if hints[hintID].Data[t1 + "." + a1] == nil {
-					return nil, CannotFindAnyDataInParent
+					return nil, common_funcs.CannotFindAnyDataInParent
 				}
 
 				data = GetData1FromPhysicalSchema(
@@ -79,7 +79,7 @@ func getHintInParentNode(displayConfig *displayConfig,
 				// log.Println("...........")
 
 				if len(data) == 0 {
-					return nil, CannotFindAnyDataInParent
+					return nil, common_funcs.CannotFindAnyDataInParent
 				}
 			}
 		} else {
@@ -91,7 +91,7 @@ func getHintInParentNode(displayConfig *displayConfig,
 			)
 
 			if len(data) == 0 {
-				return nil, CannotFindAnyDataInParent
+				return nil, common_funcs.CannotFindAnyDataInParent
 			}
 
 		}
@@ -129,7 +129,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 
 				if hint.Data[tableCol] == nil {
 
-					return false, NotDependsOnAnyData				
+					return false, common_funcs.NotDependsOnAnyData				
 				} else {
 
 					return true, nil
@@ -142,7 +142,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 	// In this case, since data may be incomplete, 
 	// we cannot find the existence of the data in a parent node
 	// This also implies that it cannot find any data in a parent node
-	return false, CannotFindAnyDataInParent
+	return false, common_funcs.CannotFindAnyDataInParent
 
 }
 

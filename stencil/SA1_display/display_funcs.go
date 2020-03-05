@@ -522,11 +522,11 @@ func chechPutIntoDataBag(displayConfig *displayConfig,
 			log.Fatal(err9)
 		}
 
-		return common_funcs.NoNodeCanBeDisplayed
+		return common_funcs.NoDataInNodeCanBeDisplayed
 
 	} else {
 
-		return common_funcs.NoNodeCanBeDisplayed
+		return common_funcs.NoDataInNodeCanBeDisplayed
 	}
 }
 

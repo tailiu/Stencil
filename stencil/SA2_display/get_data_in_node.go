@@ -25,7 +25,7 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	)
 
 	if len(data) == 0 {
-		return nil, errors.New("Error: Cannot Find One Remaining Data in the Node")
+		return nil, common_funcs.CannotFindRemainingData
 	} else {
 		return data, nil
 	}
@@ -86,8 +86,11 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 						log.Println("Fail to get one data because the value of the relevant column is nil")
 						continue
 					}
-					data1, err1 := getOneRowBasedOnDependency(displayConfig, 
-						fmt.Sprint(val), dep)
+					data1, err1 := getOneRowBasedOnDependency(
+						displayConfig, 
+						fmt.Sprint(val), 
+						dep,
+					)
 					
 					if err1 != nil {
 						// log.Println(err1)
@@ -163,7 +166,7 @@ func getOneRowBasedOnHint(displayConfig *displayConfig,
 	)
 
 	if len(data) == 0 {
-		return nil, errors.New("Error: the Data in a Data Hint Does Not Exist")
+		return nil, common_funcs.DataNotExists
 	} else {
 		return data, nil
 	}
@@ -183,6 +186,8 @@ func getDataInNode(displayConfig *displayConfig,
 		hint.Data = data
 
 	}
+
+	log.Println("My data is:", hint.Data)
 
 	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
 

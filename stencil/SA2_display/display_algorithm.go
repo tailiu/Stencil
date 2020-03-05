@@ -242,11 +242,11 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 						switch err4 {
 
-						case NotDependsOnAnyData:
+						case common_funcs.NotDependsOnAnyData:
 
 							pTagConditions[pTag] = true
 
-						case CannotFindAnyDataInParent:
+						case common_funcs.CannotFindAnyDataInParent:
 
 							pTagConditions[pTag] = 
 								common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
@@ -269,19 +269,19 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 						switch err7 {
 
-						case NoDataInNodeCanBeDisplayed:
+						case common_funcs.NoDataInNodeCanBeDisplayed:
 
 							pTagConditions[pTag] = 
 								common_funcs.ReturnDisplayConditionWhenCannotGetDataFromParentNode(
 									displaySettingInDeps, secondRound)
 
-						case PartiallyDisplayed:
+						case common_funcs.PartiallyDisplayed:
 
 							pTagConditions[pTag] = 
 								common_funcs.ReturnDisplayConditionWhenGetPartialDataFromParentNode(
 									displaySettingInDeps)
 
-						case CompletelyDisplayed:
+						case common_funcs.CompletelyDisplayed:
 
 							pTagConditions[pTag] = true
 						}

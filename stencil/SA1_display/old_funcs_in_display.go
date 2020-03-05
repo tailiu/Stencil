@@ -7,6 +7,7 @@ import (
 	"stencil/db"
 	"stencil/reference_resolution"
 	"stencil/schema_mappings"
+	"stencil/common_funcs"
 	"strings"
 )
 
@@ -311,7 +312,7 @@ func oldGetHintsInParentNode(displayConfig *displayConfig,
 			// we cannot get the data in the parent node
 			if hintID == -1 {
 
-				return nil, CannotFindAnyDataInParent
+				return nil, common_funcs.CannotFindAnyDataInParent
 
 			} else {
 				
@@ -370,7 +371,7 @@ func oldGetHintsInParentNode(displayConfig *displayConfig,
 	// fmt.Println(data)
 	if len(data) == 0 {
 
-		return nil, CannotFindAnyDataInParent
+		return nil, common_funcs.CannotFindAnyDataInParent
 
 	} else {
 

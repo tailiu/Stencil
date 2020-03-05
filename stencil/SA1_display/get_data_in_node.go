@@ -39,7 +39,7 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	// fmt.Println(data)
 	if len(data) == 0 {
 
-		return nil, CannotFindRemainingData
+		return nil, common_funcs.CannotFindRemainingData
 
 	} else {
 
@@ -75,7 +75,7 @@ func getRowsBasedOnDependency(displayConfig *displayConfig,
 	// fmt.Println(data)
 	if len(data) == 0 {
 
-		return nil, CannotFindRemainingData
+		return nil, common_funcs.CannotFindRemainingData
 
 	} else {
 
@@ -622,7 +622,7 @@ func getOneRowBasedOnHint(displayConfig *displayConfig,
 
 	if len(data) == 0 {
 
-		return nil, DataNotExists
+		return nil, common_funcs.DataNotExists
 
 	} else {
 
