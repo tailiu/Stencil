@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"log"
 	"stencil/common_funcs"
+	"stencil/schema_mappings"
 	"stencil/config"
 	"stencil/db"
 	"stencil/qr"
-	"strconv"
 	"time"
-	"errors"
 	"math/rand"
 	"math"
 )
@@ -95,7 +94,6 @@ func CreateDisplayConfig(migrationID int,
 	displayConfig.appIDNamePairs = appIDNamePairs
 	displayConfig.tableIDNamePairs = tableIDNamePairs
 	displayConfig.migrationID = migrationID
-	displayConfig.resolveReference = resolveReference
 	displayConfig.srcAppConfig = &srcAppConfig
 	displayConfig.dstAppConfig = &dstAppConfig
 	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
@@ -106,41 +104,21 @@ func CreateDisplayConfig(migrationID int,
 
 }
 
+func closeDBConn(conn *sql.DB) {
+
+	err := conn.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func closeDBConns(displayConfig *displayConfig) {
 
 	log.Println("Close db connections in the SA2 display thread")
 
 	closeDBConn(displayConfig.stencilDBConn)
 	closeDBConn(displayConfig.dstAppConfig.DBConn)
-
-}
-
-func oldInitialize(migrationID int) (*sql.DB, *config.AppConfig, int, string, *DAG) {
-	
-	stencilDBConn := db.GetDBConn(StencilDBName)
-
-	dstAppID, srcUserID := 
-		getDstAppIDUserIDByMigrationID(stencilDBConn, migrationID)
-
-	dstAppName := common_funcs.GetAppNameByAppID(stencilDBConn, dstAppID)
-
-	isBladeServer := true
-
-	appConfig, err := config.CreateAppConfigDisplay(dstAppName, 
-		dstAppID, stencilDBConn, isBladeServer)
-	
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	threadID := RandomNonnegativeInt()
-
-	dstDAG, err4 := common_funcs.LoadDAG(dstAppName)
-	if err4 != nil {
-		log.Fatal(err4)
-	}
-
-	return stencilDBConn, &appConfig, threadID, srcUserID, dstDAG
 
 }
 
@@ -301,7 +279,9 @@ func Display(displayConfig *displayConfig, dataInNode []*HintStruct) error {
 	
 	var queries []string
 
-	for _, dataHint := range dataHints {
+	appID := displayConfig.dstAppConfig.appID
+
+	for _, dataHint := range dataInNode {
 
 		// This is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
@@ -311,7 +291,7 @@ func Display(displayConfig *displayConfig, dataInNode []*HintStruct) error {
 
 		}
 
-		data := dataHint.GetAllRowIDs(stencilDBConn, appID)
+		data := dataHint.GetAllRowIDs(displayConfig)
 
 		for _, data1 := range data {
 			
@@ -321,16 +301,14 @@ func Display(displayConfig *displayConfig, dataInNode []*HintStruct) error {
 			query := fmt.Sprintf(
 				`UPDATE migration_table SET mflag = 0, updated_at = now() 
 				WHERE row_id = %s and app_id = %s and table_id = %s`, 
-				rowID, displayConfig.dstAppConfig.appID,
-				dataHint.TableID,
+				rowID, appID, dataHint.TableID,
 			)
 			
-			query1 = fmt.Sprintf(
+			query1 := fmt.Sprintf(
 				`UPDATE evaluation SET displayed_at = now()
 				WHERE migration_id = '%d' and dst_app = '%s' 
 				and dst_table = '%s' and dst_id = '%s'`,
-				displayConfig.migrationID, 
-				displayConfig.dstAppConfig.appID,
+				displayConfig.migrationID, appID,
 				dataHint.TableID, rowID,
 			)
 
@@ -394,11 +372,11 @@ func chechPutIntoDataBag(displayConfig *displayConfig,
 			log.Println(err9)
 		}
 
-		return NoNodeCanBeDisplayed
+		return common_funcs.NoNodeCanBeDisplayed
 
 	} else {
 
-		return NoNodeCanBeDisplayed
+		return common_funcs.NoNodeCanBeDisplayed
 	}
 }
 
@@ -455,7 +433,7 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 				user_id = %s, bag = true, mark_as_delete = true, 
 				mflag = 0, updated_at = now() 
 				WHERE row_id = %s and app_id = %s and table_id = %s`,
-				userID, fmt.Sprint(rowID["row_id"]), 
+				displayConfig.userID, fmt.Sprint(rowID["row_id"]), 
 				displayConfig.dstAppConfig.appID, 
 				dataHint.TableID,
 			)
@@ -517,5 +495,27 @@ func getMigrationIDs(stencilDBConn *sql.DB,
 	}
 
 	return migrationIDs
+
+}
+
+func CheckMigrationComplete1(stencilDBConn *sql.DB, 
+	migrationID int) bool {
+
+	query := fmt.Sprintf(
+		`SELECT 1 FROM txn_logs 
+		WHERE action_id = %d and action_type='COMMIT' LIMIT 1`,
+		migrationID)
+
+	data := db.GetAllColsOfRows(stencilDBConn, query)
+
+	if len(data) == 0 {
+
+		return false
+
+	} else {
+
+		return true
+
+	}
 
 }

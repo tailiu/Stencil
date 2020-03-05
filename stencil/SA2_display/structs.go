@@ -1,14 +1,11 @@
 package SA2_display
 
 import (
+	"database/sql"
+	"stencil/qr"
 	"stencil/config"
 	"stencil/common_funcs"
 )
-
-type DataInDependencyNode struct {
-	Table 	string
-	Data	map[string]interface{}
-}
 
 type srcAppConfig struct {
 	appID 								string

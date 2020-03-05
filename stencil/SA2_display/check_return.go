@@ -2,7 +2,6 @@ package SA2_display
 
 import (
 	"log"
-	"stencil/config"
 	"strings"
 	"strconv"
 )

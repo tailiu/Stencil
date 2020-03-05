@@ -1,4 +1,4 @@
-package SA1_display
+package SA2_display
 
 import (
 	// "stencil/config"
@@ -29,7 +29,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup,
 
 	log.Println("Total Display Thread(s):", threadNum)
 	
-	logDisplayStartTime(stencilDBConn, migrationID)
+	logDisplayStartTime(dConfig)
 
 	for i := 0; i < threadNum; i++ {
 
@@ -87,7 +87,7 @@ func waitForMigrationComplete(migrationID int, wg *sync.WaitGroup) {
 	
 	stencilDBConn := db.GetDBConn("stencil")
 
-	for !CheckMigrationComplete(stencilDBConn, migrationID) {
+	for !CheckMigrationComplete1(stencilDBConn, migrationID) {
 		time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL1)
 	}
 

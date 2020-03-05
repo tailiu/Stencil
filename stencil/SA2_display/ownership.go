@@ -2,14 +2,10 @@ package SA2_display
 
 import (
 	"stencil/config"
-	"stencil/db"
-	"strings"
-	"log"
-	"fmt"
 )
 
-func getADataInOwner(displayConfig *displayConfig, hints []HintStruct,
-	ownership *config.Ownership) (HintStruct, error) {
+func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
+	ownership *config.Ownership) (*HintStruct, error) {
 
 	tag := hints[0].Tag
 
@@ -23,7 +19,7 @@ func getADataInOwner(displayConfig *displayConfig, hints []HintStruct,
 }
 
 func getOwner(displayConfig *displayConfig, hints []*HintStruct,
-	ownership *config.Ownership) ([]HintStruct, error) {
+	ownership *config.Ownership) ([]*HintStruct, error) {
 	
 	oneDataInOwnerNode, err := getADataInOwner(displayConfig, hints, ownership)
 	if err != nil {

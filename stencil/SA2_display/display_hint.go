@@ -1,13 +1,13 @@
 package SA2_display
 
 import (
-	"errors"
 	"log"
+	"errors"
+	"stencil/common_funcs"
 	"stencil/config"
 	"stencil/db"
 	"strconv"
 	"strings"
-	"database/sql"
 	"fmt"
 )
 
@@ -23,6 +23,7 @@ func TransformRowToHint(displayConfig *displayConfig,
 	data map[string]string) *HintStruct {
 
 	var rowIDs []int
+	var err2 error
 
 	s := data["row_ids"][1:len(data["row_ids"]) - 1]
 	s1 := strings.Split(s, ",")
@@ -42,9 +43,13 @@ func TransformRowToHint(displayConfig *displayConfig,
 
 	hint.RowIDs = rowIDs
 
-	hint.Tag = GetTagName1(displayConfig, hint.TableName)
+	hint.Tag, err2 = GetTagName(displayConfig, hint.TableName)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
 
 	return &hint
+
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
@@ -68,20 +73,7 @@ func TransformRowToHint1(displayConfig *displayConfig,
 
 }
 
-func (hint HintStruct) GetTagName(displayConfig *displayConfig) (string, error) {
-	
-	for _, tag := range appConfig.Tags {
-		for _, member := range tag.Members {
-			if hint.TableName == member {
-				return tag.Name, nil
-			}
-		}
-	}
-	return "", errors.New("No Corresponding Tag Found!")
-
-}
-
-func GetTagName1(displayConfig *displayConfig, 
+func GetTagName(displayConfig *displayConfig, 
 	table string) (string, error) {
 
 	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
@@ -131,7 +123,7 @@ func (hint *HintStruct) GetMemberID(displayConfig *displayConfig) (string, error
 
 			for memberID, memberTable := range tag.Members {
 
-				if memberTable == hint.Table {
+				if memberTable == hint.TableName {
 
 					return memberID, nil
 					
@@ -178,7 +170,7 @@ func (hint *HintStruct) GetParentTags(displayConfig *displayConfig) ([]string, e
 	
 	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
 
-		if dependency.Tag == tag {
+		if dependency.Tag == hint.Tag {
 
 			for _, dependsOn := range dependency.DependsOn {
 
@@ -257,7 +249,7 @@ func (hint *HintStruct) GetDisplayExistenceSetting(displayConfig *displayConfig,
 func (hint *HintStruct) GetCombinedDisplaySettings(
 	displayConfig *displayConfig) (string, error) {
 	
-	for _, dependency := range appConfig.Dependencies {
+	for _, dependency := range displayConfig.dstAppConfig.dag.Dependencies {
 		if dependency.Tag == hint.Tag {
 			if dependency.CombinedDisplaySetting == "" {
 				return "", errors.New("No combined display settings found!")
@@ -321,10 +313,11 @@ func (hint *HintStruct) GetOwnershipSpec(displayConfig *displayConfig) (*config.
 
 }
 
-func (hint *HintStruct) GetDisplaySettingInDependencies(appConfig *config.AppConfig, 
+func (hint *HintStruct) GetDisplaySettingInDependencies(displayConfig *displayConfig, 
 	pTag string) (string, error) {
 	
-	setting, err := common_funcs.GetDepDisplaySetting(tag, pTag)
+	setting, err := common_funcs.GetDepDisplaySetting(
+		displayConfig.dstAppConfig.dag, hint.Tag, pTag)
 
 	if err != nil {
 		return "", err

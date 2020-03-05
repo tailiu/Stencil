@@ -1,12 +1,10 @@
 package SA2_display
 
 import (
-	"errors"
 	"log"
 	"fmt"
 	"stencil/config"
-	"database/sql"
-	// "strconv"
+	"stencil/common_funcs"
 	"strings"
 )
 
@@ -109,7 +107,7 @@ func getHintInParentNode(displayConfig *displayConfig,
 }
 
 func dataFromParentNodeExists(displayConfig *displayConfig,
-	hints []HintStruct, pTag string) (bool, error) {
+	hints []*HintStruct, pTag string) (bool, error) {
 
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(displayConfig, pTag)
 
@@ -222,7 +220,8 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 	tag := hints[0].Tag
 	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
 
-	conditions, _ := common_funcs.GetDependsOnConditionsInDeps(displayConfig, tag, pTag)
+	conditions, _ := common_funcs.GetDependsOnConditionsInDeps(
+		displayConfig.dstAppConfig.dag, tag, pTag)
 
 	procConditions := getProcConditions(displayConfig, tag, pTag, conditions)
 

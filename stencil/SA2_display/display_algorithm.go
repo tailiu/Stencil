@@ -1,11 +1,9 @@
 package SA2_display
 
 import (
-	"database/sql"
-	"errors"
+	"stencil/common_funcs"
 	"log"
 	"time"
-	"stencil/config"
 )
 
 const CHECK_INTERVAL = 200 * time.Millisecond
@@ -18,35 +16,18 @@ func DisplayThread(displayConfig *displayConfig) {
 
 	log.Println("--------- Start of Display Check In One Thread ---------")
 
-	// stencilDBConn, appConfig, threadID, userID, dstDAG := Initialize(migrationID)
-
-	// CreateDeletionHoldTable(stencilDBConn)
-
 	secondRound := false
 
 	if displayConfig.displayInFirstPhase {
-
-		log.Println("Thread ID:", threadID)
 
 		log.Println("--------- First Phase --------")
 
 		for migratedData := GetUndisplayedMigratedData(displayConfig); 
 			!CheckMigrationComplete(displayConfig); 
 			migratedData = GetUndisplayedMigratedData(displayConfig) {
-			
-			var dhStack [][]int
 
 			for _, oneMigratedData := range migratedData {
-				// _, dhStack, _ = checkDisplayOneMigratedData(
-				// 	stencilDBConn, appConfig, oneMigratedData, 
-				// 	secondRound, deletionHoldEnable, dhStack, threadID, userID, dstDAG,
-				// )
-
-				// if deletionHoldEnable {
-				// 	RemoveDeletionHold(stencilDBConn, dhStack, threadID)
-				// }
 				checkDisplayOneMigratedData(displayConfig, oneMigratedData, secondRound)
-
 			}
 
 			time.Sleep(CHECK_INTERVAL)
@@ -61,9 +42,7 @@ func DisplayThread(displayConfig *displayConfig) {
 	secondRoundMigratedData := GetUndisplayedMigratedData(displayConfig)
 
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-
 		checkDisplayOneMigratedData(displayConfig, oneSecondRoundMigratedData, secondRound)
-
 	}
 
 	log.Println("--------- End of Display Check ---------")

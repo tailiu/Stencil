@@ -2,7 +2,6 @@ package SA2_display
 
 import (
 	"stencil/db"
-	"database/sql"
 	"stencil/qr"
 	"log"
 	"strings"

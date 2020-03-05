@@ -49,7 +49,7 @@ func Controller(uid, srcAppName, srcAppID,
 	// we only need to wait for one display thread to finish
 	wg.Add(1)
 
-	go apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, enableBags)
+	go apis.StartMigrationSA2(uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType, enableBags)
 
 	go SA2_display.StartDisplay(
 		uid, srcAppID, dstAppID, migrationType, threadNum, &wg, 

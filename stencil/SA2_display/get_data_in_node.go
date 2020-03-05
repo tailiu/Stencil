@@ -1,11 +1,8 @@
 package SA2_display
 
 import (
-	"database/sql"
 	"errors"
 	"log"
-	"stencil/config"
-	// "strconv"
 	"stencil/common_funcs"
 	"strings"
 	"fmt"
@@ -155,7 +152,7 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 func getOneRowBasedOnHint(displayConfig *displayConfig, 
 	hint *HintStruct) (map[string]interface{}, error) {
 	
-	restrictions, err := hint.GetRestrictionsInTag(appConfig)
+	restrictions, err := hint.GetRestrictionsInTag(displayConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -173,7 +170,7 @@ func getOneRowBasedOnHint(displayConfig *displayConfig,
 }
 
 func getDataInNode(displayConfig *displayConfig, 
-	hint *HintStruct) ([]HintStruct, error) {
+	hint *HintStruct) ([]*HintStruct, error) {
 	
 	// Get and cache hint.Data if it is not there
 	if len(hint.Data) == 0 {
@@ -222,7 +219,7 @@ func checkDependsOnExists(displayConfig *displayConfig,
 	memberID, _ := data.GetMemberID(displayConfig)
 	// fmt.Println(memberID)
 	
-	dependsOnTables := appConfig.GetDependsOnTables(displayConfig, memberID)
+	dependsOnTables := data.GetDependsOnTables(displayConfig, memberID)
 	// fmt.Println(dependsOnTables)
 
 	if len(dependsOnTables) == 0 {
@@ -255,9 +252,9 @@ func checkDependsOnExists(displayConfig *displayConfig,
 }
 
 func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
-	allData []*HintStruct) []HintStruct {
+	allData []*HintStruct) []*HintStruct {
 	
-	var trimmedData []HintStruct
+	var trimmedData []*HintStruct
 
 	for _, data := range allData {
 		if checkDependsOnExists(displayConfig, allData, data) {
@@ -270,20 +267,18 @@ func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
 
 func GetDataInNodeBasedOnDisplaySetting(displayConfig *displayConfig, 
 	hint *HintStruct) ([]*HintStruct, error) {
-	
-	var data []*HintStruct
-	
+		
 	// tagName, err := hint.GetTagName(appConfig)
 	// if err != nil {
 	// 	return nil, err
 	// }
 	// displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
 
-	displaySetting, _ := hint.GetTagDisplaySetting()
+	displaySetting, _ := hint.GetTagDisplaySetting(displayConfig)
 
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err = getDataInNode(displayConfig, hint); err != nil {
+	if data, err := getDataInNode(displayConfig, hint); err != nil {
 
 		// log.Println("++++++++++++")
 		// log.Println(data)
