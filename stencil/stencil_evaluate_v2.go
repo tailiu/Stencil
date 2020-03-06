@@ -73,4 +73,6 @@ func main() {
 
 	// evaluation.Exp7v3()
 
+	evaluation.Exp7Test()
+
 }

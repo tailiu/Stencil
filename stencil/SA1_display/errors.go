@@ -24,6 +24,7 @@ var CannotGetPrevID = errors.New(`Cannot get previous ids because of the row has
 var CannotFindDataInOwnership = 
 	errors.New("Fail to get any Data by the ownership relationship")
 
+// Ownership in old functions
 var NotMigratingUserRootNode = errors.New("Not migrating user root node")
 
 var CannotFindRootTable = errors.New("Cannot find root table")
