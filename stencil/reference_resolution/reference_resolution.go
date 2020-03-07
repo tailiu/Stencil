@@ -105,16 +105,35 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 			for _, refIdentityRow := range refIdentityRows {
 
 				logRefIDRow(refResolutionConfig, refIdentityRow)
-				
-				oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow(
-					refResolutionConfig, refIdentityRow, procRef, orgID)
 
-				updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+				if procRef["app"] == refResolutionConfig.appID {
 
-				if len(oneUpdatedAttr) > 0 {
-					break
+					log.Println("The data has been migrated back to the dest app1")
+
+					if refIdentityRow.member == procRef["to_member"] {
+
+						oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow1(
+							refResolutionConfig, procRef, orgID, refIdentityRow.id)
+			
+						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+
+					} else {
+						log.Println("The migrated data is not in the desired reference table1")
+					}
+
+				} else {
+
+					oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow(
+						refResolutionConfig, refIdentityRow, procRef, orgID)
+	
+					updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+	
+					if len(oneUpdatedAttr) > 0 {
+						break
+					}
+
 				}
-
+				
 			}
 		
 		// If we cannot get any refIdentityRows which means the referenced row has not been migrated
@@ -172,14 +191,33 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 				logRefIDRow(refResolutionConfig, refIdentityRow)
 
-				oneUpdatedAttr := updateRefOnRightBasedOnMappingsUsingRefIDRow(
-					refResolutionConfig, refIdentityRow, procRef, orgID)
+				if procRef["app"] == refResolutionConfig.appID {
 
-				updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
-				
-				if len(oneUpdatedAttr) > 0 {
-					break
+					log.Println("The data has been migrated back to the dest app2")
+	
+					if refIdentityRow.member == procRef["from_member"] {
+	
+						oneUpdatedAttr := updateRefOnRightBasedOnMappingsUsingRefIDRow1(
+							refResolutionConfig, procRef, orgID, refIdentityRow.id)
+			
+						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+	
+					} else {
+						log.Println("The migrated data is not in the desired reference table2")
+					}
+	
+				} else {
+
+					oneUpdatedAttr := updateRefOnRightBasedOnMappingsUsingRefIDRow(
+						refResolutionConfig, refIdentityRow, procRef, orgID)
+
+					updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+					
+					if len(oneUpdatedAttr) > 0 {
+						break
+					}
 				}
+				
 			}
 
 		} else if procRef["app"] == refResolutionConfig.appID {

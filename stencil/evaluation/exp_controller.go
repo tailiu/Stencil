@@ -1958,7 +1958,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 200
+	edgeCounterRangeStart := 290
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -1976,11 +1976,13 @@ func Exp7Test() {
 	)
 
 	log.Println(edgeCounter)
-	log.Println(len(edgeCounter))
+	// log.Println(len(edgeCounter))
+
+	// log.Println("start from:", edgeCounterRangeStart)
 
 	// for j := 0; j < len(edgeCounter); j++ {
 
-	for j := seq * migrationNum; j < (seq + 1) * migrationNum; j++ {
+	for j := 0; j < migrationNum; j++ {
 
 		userID := edgeCounter[j]["person_id"]
 
