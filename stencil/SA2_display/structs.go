@@ -3,7 +3,6 @@ package SA2_display
 import (
 	"database/sql"
 	"stencil/qr"
-	"stencil/config"
 	"stencil/common_funcs"
 )
 
@@ -30,7 +29,6 @@ type displayConfig struct {
 	migrationID				int
 	srcAppConfig			*srcAppConfig
 	dstAppConfig			*dstAppConfig
-	mappingsFromSrcToDst	*config.MappedApp
 	displayInFirstPhase		bool
 	userID					string
 }

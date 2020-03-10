@@ -1958,7 +1958,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 290
+	edgeCounterRangeStart := 291
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -2103,9 +2103,9 @@ func Exp7Test() {
 			// log.Println("total dangling objs:", totalDanglingObjs)
 			// log.Println("total dangling objs1:", totalDanglingObjs1)
 
-			for _, data11 := range totalDanglingObjs {
-				log.Println(data11)
-			} 
+			// for _, data11 := range totalDanglingObjs {
+			// 	log.Println(data11)
+			// } 
 
 			objs := make(map[string]int64)
 			objs["danglingObjs"] = int64(len(totalDanglingObjs))

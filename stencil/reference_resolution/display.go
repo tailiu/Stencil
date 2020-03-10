@@ -35,6 +35,34 @@ func NeedToResolveReference(refResolutionConfig *RefResolutionConfig,
 	}
 }
 
+func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolutionConfig, 
+	toTable, toAttr string) bool {
+	
+	if exists, err := schema_mappings.REFExists(
+		refResolutionConfig.mappingsFromSrcToDst, toTable, toAttr);
+		
+		err != nil {
+
+		// This can happen when there is no mapping
+		// For example: 
+		// When migrating from Diaspora to Mastodon:
+		// there is no mapping to stream_entries.activity_id.
+		log.Println(err)
+
+		return false
+
+	} else {
+		if exists {
+
+			return true
+
+		} else {
+
+			return false
+		}
+	}
+}
+
 // For now, when we are checking reference resolved, we use the current migration id
 // This should be fine in the case of migration from Diaspora to Mastodon, but
 // in more complex cases, like back and forth migration, this may not be correct

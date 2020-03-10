@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"stencil/common_funcs"
-	"stencil/schema_mappings"
-	"stencil/config"
 	"stencil/db"
 	"stencil/qr"
 	"time"
@@ -30,18 +28,6 @@ func CreateDisplayConfig(migrationID int,
 
 	srcAppName := common_funcs.GetAppNameByAppID(stencilDBConn, srcAppID)
 	dstAppName := common_funcs.GetAppNameByAppID(stencilDBConn, dstAppID)
-
-	allMappings, err1 := config.LoadSchemaMappings()
-	if err1 != nil {
-		log.Fatal(err1)
-	}
-
-	mappingsFromSrcToDst, err2 := 
-		schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
-	
-	if err2 != nil {
-		log.Fatal(err2)
-	}
 
 	dstDAG, err4 := common_funcs.LoadDAG(dstAppName)
 	if err4 != nil {
@@ -96,7 +82,6 @@ func CreateDisplayConfig(migrationID int,
 	displayConfig.migrationID = migrationID
 	displayConfig.srcAppConfig = &srcAppConfig
 	displayConfig.dstAppConfig = &dstAppConfig
-	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
 	displayConfig.displayInFirstPhase = displayInFirstPhase
 	displayConfig.userID = userID
 

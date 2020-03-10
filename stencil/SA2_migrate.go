@@ -18,7 +18,7 @@ func main() {
 	db.STENCIL_DB = "stencil_exp_sa2_1k_exp"
 
 	uid, srcApp, srcAppID, dstApp, dstAppID, migrationType, threadNum :=
-		"42", "diaspora", "1", "mastodon", "2", "d", 1
+		"44", "diaspora", "1", "mastodon", "2", "d", 1
 
 	enableDisplay, displayInFirstPhase, enableBags := true, true, true
 

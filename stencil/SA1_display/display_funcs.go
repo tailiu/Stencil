@@ -14,8 +14,7 @@ import (
 	"strings"
 )
 
-func CreateDisplayConfig(migrationID int,
-	resolveReference, useBladeServerAsDst, 
+func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst, 
 	displayInFirstPhase, markAsDelete bool) *displayConfig {
 
 	var displayConfig displayConfig
@@ -42,6 +41,24 @@ func CreateDisplayConfig(migrationID int,
 	
 	if err2 != nil {
 		log.Fatal(err2)
+	}
+
+	allApps := schema_mappings.GetAllApps(allMappings)
+
+	mappingsFromOtherAppsToDst := make(map[string]*config.MappedApp)
+
+	for _, app := range allApps {
+
+		if app != dstAppName {
+			
+			toDstMapping, err3 := schema_mappings.GetToAppMappings(allMappings, app, dstAppName)
+			if err3 != nil {
+				log.Fatal(err3)
+			}
+
+			mappingsFromOtherAppsToDst[app] = toDstMapping
+		}
+
 	}
 
 	dstDAG, err4 := common_funcs.LoadDAG(dstAppName)
@@ -93,7 +110,8 @@ func CreateDisplayConfig(migrationID int,
 	refResolutionConfig := reference_resolution.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
 		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
-		allMappings, mappingsFromSrcToDst)
+		allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
+	)
 
 	srcAppConfig.appID = srcAppID
 	srcAppConfig.appName = srcAppName
@@ -119,9 +137,10 @@ func CreateDisplayConfig(migrationID int,
 	displayConfig.srcAppConfig = &srcAppConfig
 	displayConfig.dstAppConfig = &dstAppConfig
 	displayConfig.refResolutionConfig = refResolutionConfig
-	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
 	displayConfig.displayInFirstPhase = displayInFirstPhase
 	displayConfig.markAsDelete = markAsDelete
+	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
+	displayConfig.mappingsFromOtherAppsToDst = mappingsFromOtherAppsToDst
 
 	return &displayConfig
 

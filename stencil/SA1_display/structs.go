@@ -27,16 +27,17 @@ type dstAppConfig struct {
 }
 
 type displayConfig struct {
-	stencilDBConn 			*sql.DB
-	appIDNamePairs			map[string]string
-	tableIDNamePairs		map[string]string
-	attrIDNamePairs			map[string]string
-	migrationID				int
-	refResolutionConfig		*reference_resolution.RefResolutionConfig
-	resolveReference		bool
-	srcAppConfig			*srcAppConfig
-	dstAppConfig			*dstAppConfig
-	mappingsFromSrcToDst	*config.MappedApp
-	displayInFirstPhase		bool
-	markAsDelete			bool
+	stencilDBConn 						*sql.DB
+	appIDNamePairs						map[string]string
+	tableIDNamePairs					map[string]string
+	attrIDNamePairs						map[string]string
+	migrationID							int
+	refResolutionConfig					*reference_resolution.RefResolutionConfig
+	resolveReference					bool
+	srcAppConfig						*srcAppConfig
+	dstAppConfig						*dstAppConfig
+	mappingsFromSrcToDst				*config.MappedApp
+	mappingsFromOtherAppsToDst			map[string]*config.MappedApp
+	displayInFirstPhase					bool
+	markAsDelete						bool
 }

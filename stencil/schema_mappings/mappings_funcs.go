@@ -73,6 +73,18 @@ func containREF(data string) bool {
 	}
 }
 
+func GetAllApps(allMappings *config.SchemaMappings) []string {
+
+	var allApps []string
+
+	for _, mappings := range allMappings.AllMappings {
+		allApps = append(allApps, mappings.FromApp)
+	}
+
+	return allApps
+	
+}
+
 func GetToAppMappings(allMappings *config.SchemaMappings, 
 	fromApp, toApp string) (*config.MappedApp, error) {
 

@@ -106,6 +106,10 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 				logRefIDRow(refResolutionConfig, refIdentityRow)
 
+				// If we can get refIdentityRows, but the app of the reference table is the same as 
+				// the destination application, this means that the data is migrated back
+				// Since there could be multiple pieces of data migrated back, we only update data
+				// based on the table of the reference row
 				if procRef["app"] == refResolutionConfig.appID {
 
 					log.Println("The data has been migrated back to the dest app1")
@@ -217,7 +221,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 						break
 					}
 				}
-				
+
 			}
 
 		} else if procRef["app"] == refResolutionConfig.appID {
@@ -289,7 +293,8 @@ func InitializeReferenceResolution(migrationID int,
 	appIDNamePairs map[string]string,
 	tableIDNamePairs map[string]string,
 	allMappings *config.SchemaMappings,
-	mappingsFromSrcToDst *config.MappedApp) *RefResolutionConfig {
+	mappingsFromSrcToDst *config.MappedApp,
+	mappingsFromOtherAppsToDst map[string]*config.MappedApp) *RefResolutionConfig {
 
 	var refResolutionConfig RefResolutionConfig
 
@@ -303,7 +308,8 @@ func InitializeReferenceResolution(migrationID int,
 	refResolutionConfig.appIDNamePairs = appIDNamePairs
 	refResolutionConfig.tableIDNamePairs = tableIDNamePairs
 	refResolutionConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
-	
+	refResolutionConfig.mappingsFromOtherAppsToDst = mappingsFromOtherAppsToDst
+
 	return &refResolutionConfig
 }
 

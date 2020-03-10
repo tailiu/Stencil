@@ -241,7 +241,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// log.Println("Check a from attribute:")
 
 			// If the first argument of the from attribute contains "id", this indicates 
-			// we need to get the original id as the value to get the data
+			// we need to get the *original id* as the value to get the data
 			// (the current id is the newly generated one)
 			if doesArgAttributeContainID(fromAttrfirstArg) {
 
