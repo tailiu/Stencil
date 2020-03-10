@@ -107,6 +107,8 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	appIDNamePairs := common_funcs.GetAppIDNamePairs(stencilDBConn)
 	tableIDNamePairs := common_funcs.GetTableIDNamePairs(stencilDBConn)
 
+	appTableNameTableIDPairs := getAppTableNameTableIDPairs(stencilDBConn, appIDNamePairs)
+
 	refResolutionConfig := reference_resolution.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
 		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
@@ -141,6 +143,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	displayConfig.markAsDelete = markAsDelete
 	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
 	displayConfig.mappingsFromOtherAppsToDst = mappingsFromOtherAppsToDst
+	displayConfig.appTableNameTableIDPairs = appTableNameTableIDPairs
 
 	return &displayConfig
 
@@ -195,52 +198,6 @@ func getDstRootMemberAttrID(stencilDBConn *sql.DB,
 	} else {
 		return dstRootMember, dstRootAttr, fmt.Sprint(data["id"])
 	}
-
-}
-
-func oldCreateDisplayConfig(migrationID int, resolveReference, newDB bool) *config.DisplayConfig {
-
-	var displayConfig config.DisplayConfig
-
-	stencilDBConn := db.GetDBConn(config.StencilDBName)
-
-	srcAppID, dstAppID, userID := 
-		common_funcs.GetSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
-
-	dstAppName := common_funcs.GetAppNameByAppID(stencilDBConn, dstAppID)
-	srcAppName := common_funcs.GetAppNameByAppID(stencilDBConn, srcAppID)
-
-	// app_id := db.GetAppIDByAppName(stencilDBConn, app)
-
-	appConfig, err := config.CreateAppConfigDisplay(dstAppName, dstAppID, stencilDBConn, newDB)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	allMappings, err1 := config.LoadSchemaMappings()
-	if err1 != nil {
-		log.Fatal(err1)
-	}
-
-	mappingsToDst, err2 := schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
-	if err2 != nil {
-		log.Fatal(err2)
-	}
-
-	displayConfig.ResolveReference = resolveReference
-	displayConfig.AllMappings = allMappings
-	displayConfig.MappingsToDst = mappingsToDst
-	displayConfig.SrcAppID = srcAppID
-	displayConfig.SrcAppName = srcAppName
-	displayConfig.AppConfig = &appConfig
-	displayConfig.AttrIDNamePairs = GetAttrIDNamePairs(stencilDBConn)
-	displayConfig.AppIDNamePairs = common_funcs.GetAppIDNamePairs(stencilDBConn)
-	displayConfig.TableIDNamePairs = common_funcs.GetTableIDNamePairs(stencilDBConn)
-	displayConfig.StencilDBConn = stencilDBConn
-	displayConfig.MigrationID = migrationID
-	displayConfig.UserID = userID
-
-	return &displayConfig
 
 }
 
@@ -322,6 +279,53 @@ func CheckMigrationComplete1(stencilDBConn *sql.DB,
 		return true
 
 	}
+
+}
+
+func getAppNameIDPairs(stencilDBConn *sql.DB) map[string]string {
+
+	query := fmt.Sprintf(`SELECT pk, app_name FROM apps`)
+	
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res := make(map[string]string)
+	
+	for _, data1 := range data {
+		res[fmt.Sprint(data1["app_name"])] = fmt.Sprint(data1["pk"])
+	}
+
+	return res
+
+}
+
+func getAppTableNameTableIDPairs(stencilDBConn *sql.DB, 
+	appIDNamePairs map[string]string) map[string]string {
+
+	query := fmt.Sprintf(`SELECT pk, app_id, table_name FROM app_tables`)
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res := make(map[string]string)
+
+	for _, data1 := range data {
+		
+		tableID := fmt.Sprint(data1["pk"])
+		appID := fmt.Sprint(data1["app_id"])
+		tableName := fmt.Sprint(data1["table_name"])
+
+		appName := appIDNamePairs[appID]
+
+		res[appName + ":" + tableName] = tableID
+
+	}
+
+	return res
 
 }
 
@@ -982,5 +986,22 @@ func CreateIDChangesTable(dbConn *sql.DB) {
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+
+}
+
+func getFirstArgsInREFByToTableToAttrInAllFromApps(displayConfig *displayConfig,
+	toTable, toAttr string) map[string][]string {
+
+	firstArgsFromApps := make(map[string][]string)
+
+	for fromApp, mapping := range displayConfig.mappingsFromOtherAppsToDst {
+
+		firstArgsFromApp := schema_mappings.GetFirstArgsInREFByToTableToAttr(mapping, toTable, toAttr)
+
+		firstArgsFromApps[fromApp] = firstArgsFromApp
+
+	}
+
+	return firstArgsFromApps
 
 }

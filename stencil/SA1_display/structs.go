@@ -31,6 +31,7 @@ type displayConfig struct {
 	appIDNamePairs						map[string]string
 	tableIDNamePairs					map[string]string
 	attrIDNamePairs						map[string]string
+	appTableNameTableIDPairs			map[string]string
 	migrationID							int
 	refResolutionConfig					*reference_resolution.RefResolutionConfig
 	resolveReference					bool

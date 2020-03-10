@@ -82,7 +82,7 @@ func GetAllApps(allMappings *config.SchemaMappings) []string {
 	}
 
 	return allApps
-	
+
 }
 
 func GetToAppMappings(allMappings *config.SchemaMappings, 
@@ -345,11 +345,13 @@ func GetMappedAttributesToBeUpdatedByFETCH(
 // For example, there are two #REFs in the mappings 
 // from Diaspora.Posts to Mastodon.Statuses, while there are three #REFs in 
 // the mappings from Diaspora.Comments to Mastodon.Statuses.
-// REFExists will check all these possiblities
+// This function will check all these possiblities
 func REFExists(mappings *config.MappedApp, 
 	toTable, toAttr string) (bool, error) {
 
 	// log.Println(toTable, toAttr)
+
+	foundMappings := false
 
 	for _, mapping := range mappings.Mappings {
 		
@@ -368,7 +370,7 @@ func REFExists(mappings *config.MappedApp,
 
 					} else {
 
-						return false, nil 
+						foundMappings = true
 					}
 				} 
 
@@ -380,16 +382,20 @@ func REFExists(mappings *config.MappedApp,
 		}
 	}
 
-	return false, NoMappedAttrFound
+	if foundMappings {
+		return false, nil
+	} else {
+		return false, NoMappedAttrFound
+	}
 
 }
 
 func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp, 
-	toTable, toAttr string) map[string]bool {
+	toTable, toAttr string) []string {
 
 	// log.Println(toTable, toAttr)
 	
-	firstArgs := make(map[string]bool) 
+	var firstArgs []string
 
 	for _, mapping := range mappings.Mappings {
 		
@@ -422,8 +428,10 @@ func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp,
 
 						firstArg = RemoveASSIGNAllRightParenthesesIfExists(firstArg)
 						
-						firstArgs[firstArg] = true
-
+						if !existsInSlice {
+							firstArgs = append(firstArgs, firstArg)
+						}
+						
 					} 
 				} 
 			}
@@ -431,6 +439,17 @@ func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp,
 	}
 
 	return firstArgs
+}
+
+func existsInSlice(s []string, e string) bool {
+
+	for _, s1 := range s {
+		if e == s1 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func GetAllMappedAttributesContainingREFInMappings(mappings *config.MappedApp,

@@ -197,6 +197,31 @@ func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 
 }
 
+func GetPreviousIDByBackTraversal(refResolutionConfig *RefResolutionConfig,
+	ID *Identity, fromMember string) string {
+
+	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
+		WHERE from_member = %s and to_app = %s 
+		and to_member = %s and to_id = %s`,
+		fromMember, ID.app, ID.member, ID.id)
+
+	log.Println(query)
+
+	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(data)
+
+	if data["from_id"] == nil {
+		return ""
+	} else {
+		return fmt.Sprint(data["from_id"])
+	}
+
+}
+
 func getRootMembersOfApps(stencilDBConn *sql.DB) map[string]string {
 
 	query := `SELECT app_id, root_member_id from app_root_member`

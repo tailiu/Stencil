@@ -10,38 +10,34 @@ import (
 func NeedToResolveReference(refResolutionConfig *RefResolutionConfig, 
 	toTable, toAttr string) bool {
 	
-	if exists, err := schema_mappings.REFExists(
-		refResolutionConfig.mappingsFromSrcToDst, toTable, toAttr);
-		
-		err != nil {
+	for _, mapping := range refResolutionConfig.mappingsFromOtherAppsToDst {
 
-		// This can happen when there is no mapping
-		// For example: 
-		// When migrating from Diaspora to Mastodon:
-		// there is no mapping to stream_entries.activity_id.
-		log.Println(err)
-
-		return false
-
-	} else {
-		if exists {
-
-			return true
-
+		if exists, err := schema_mappings.REFExists(
+			mapping, toTable, toAttr); err != nil {
+	
+			// This can happen when there is no mapping
+			// For example: 
+			// When migrating from Diaspora to Mastodon:
+			// there is no mapping to stream_entries.activity_id.
+			log.Println(err)
+	
 		} else {
-
-			return false
+			if exists {
+				return true
+			}
 		}
+
 	}
+
+	return false
+	
 }
 
 func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolutionConfig, 
 	toTable, toAttr string) bool {
 	
 	if exists, err := schema_mappings.REFExists(
-		refResolutionConfig.mappingsFromSrcToDst, toTable, toAttr);
-		
-		err != nil {
+		refResolutionConfig.mappingsFromSrcToDst, toTable, toAttr); err != nil {
 
 		// This can happen when there is no mapping
 		// For example: 
@@ -53,11 +49,8 @@ func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolutionConf
 
 	} else {
 		if exists {
-
 			return true
-
 		} else {
-
 			return false
 		}
 	}
