@@ -2,6 +2,7 @@ package schema_mappings
 
 import (
 	"stencil/config"
+	"stencil/common_funcs"
 	"strings"
 	"log"
 	"os"
@@ -428,7 +429,7 @@ func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp,
 
 						firstArg = RemoveASSIGNAllRightParenthesesIfExists(firstArg)
 						
-						if !existsInSlice {
+						if !common_funcs.ExistsInSlice(firstArgs, firstArg) {
 							firstArgs = append(firstArgs, firstArg)
 						}
 						
@@ -441,21 +442,10 @@ func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp,
 	return firstArgs
 }
 
-func existsInSlice(s []string, e string) bool {
-
-	for _, s1 := range s {
-		if e == s1 {
-			return true
-		}
-	}
-
-	return false
-}
-
 func GetAllMappedAttributesContainingREFInMappings(mappings *config.MappedApp,
-	toTable string) map[string]bool {
+	toTable string) []string {
 
-	mappedAttrsWithREF := make(map[string]bool)
+	var  mappedAttrsWithREF []string
 	
 	for _, mapping := range mappings.Mappings {
 		
@@ -471,8 +461,12 @@ func GetAllMappedAttributesContainingREFInMappings(mappings *config.MappedApp,
 
 						// add only if there does not exist 
 						// to make sure mappedAttrsWithREF contains unique attrs
-						if _, ok := mappedAttrsWithREF[k]; !ok {
-							mappedAttrsWithREF[k] = true
+						// if _, ok := mappedAttrsWithREF[k]; !ok {
+						// 	mappedAttrsWithREF[k] = true
+						// }
+
+						if !common_funcs.ExistsInSlice(mappedAttrsWithREF, k) {
+							mappedAttrsWithREF = append(mappedAttrsWithREF, k)
 						}
 					}
 				}

@@ -175,10 +175,12 @@ func GetPreviousIDWithoutFromMember(refResolutionConfig *RefResolutionConfig,
 func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 	ID *Identity, fromMember string) string {
 
-	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
+	query := fmt.Sprintf(
+		`SELECT from_id FROM identity_table 
 		WHERE from_member = %s and to_app = %s 
 		and to_member = %s and to_id = %s`,
-		fromMember, ID.app, ID.member, ID.id)
+		fromMember, ID.app, ID.member, ID.id,
+	)
 
 	log.Println(query)
 
@@ -197,28 +199,42 @@ func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func GetPreviousIDByBackTraversal(refResolutionConfig *RefResolutionConfig,
+func GetPreIDByBackTraversal(refResolutionConfig *RefResolutionConfig,
 	ID *Identity, fromMember string) string {
 
-	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
-		WHERE from_member = %s and to_app = %s 
-		and to_member = %s and to_id = %s`,
-		fromMember, ID.app, ID.member, ID.id)
+	query := fmt.Sprintf(`
+		SELECT from_app, from_member, from_id FROM identity_table 
+		WHERE to_app = %s and to_member = %s and to_id = %s`,
+		ID.app, ID.member, ID.id,
+	)
 
 	log.Println(query)
 
-	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println(data)
+	for _, data1 := range data {
+		
+		from_app := fmt.Sprint(data1["from_app"])
+		from_member := fmt.Sprint(data1["from_member"])
+		from_id := fmt.Sprint(data1["from_id"])
 
-	if data["from_id"] == nil {
-		return ""
-	} else {
-		return fmt.Sprint(data["from_id"])
+		if data1["from_member"] == fromMember {
+			return from_id
+		}
+
+		prevID := CreateIdentity(from_app, from_member, from_id)
+
+		res := GetPreIDByBackTraversal(refResolutionConfig, prevID, fromMember)
+		if res != "" {
+			return res
+		}
+
 	}
+
+	return ""
 
 }
 

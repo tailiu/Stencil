@@ -201,21 +201,6 @@ func getDstRootMemberAttrID(stencilDBConn *sql.DB,
 
 }
 
-func oldInitialize(app string) (*sql.DB, *config.AppConfig) {
-
-	stencilDBConn := db.GetDBConn(config.StencilDBName)
-
-	app_id := db.GetAppIDByAppName(stencilDBConn, app)
-
-	appConfig, err := config.CreateAppConfigDisplay(app, app_id, stencilDBConn, false)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return stencilDBConn, &appConfig
-
-}
-
 func GetUndisplayedMigratedData(displayConfig *displayConfig) []*HintStruct {
 
 	var displayHints []*HintStruct
@@ -375,13 +360,13 @@ func Display(displayConfig *displayConfig, dataHints []*HintStruct) error {
 			ID,
 		)
 
-		attrsToBeUpdated := schema_mappings.GetAllMappedAttributesContainingREFInMappings(
-			displayConfig.mappingsFromSrcToDst,
-			dataHint.Table)
+		attrsToBeUpdated := getAllMappedAttributesContainingREFInMappingsFromAllApps(
+			displayConfig, dataHint.Table,
+		)
 
 		var attrsToBeSetToNULLs []string
 
-		for attr := range attrsToBeUpdated {
+		for _, attr := range attrsToBeUpdated {
 
 			if _, ok := updatedAttrs[attr]; !ok {
 				attrsToBeSetToNULLs = append(attrsToBeSetToNULLs, attr)
@@ -472,6 +457,29 @@ func CheckDisplay(displayConfig *displayConfig,
 	// log.Println(data1)
 
 	return !data1["display_flag"].(bool)
+
+}
+
+func getAllMappedAttributesContainingREFInMappingsFromAllApps(
+	displayConfig *displayConfig, table string) []string {
+
+	var attrs []string
+
+	for _, mapping := range displayConfig.mappingsFromOtherAppsToDst {
+
+		attrsInApp := schema_mappings.GetAllMappedAttributesContainingREFInMappings(
+			mapping, table,
+		)
+
+		for _, attrInApp := range attrsInApp {
+			if !common_funcs.ExistsInSlice(attrs, attrInApp) {
+				attrs = append(attrs, attrInApp)
+			}
+		}
+
+	}
+
+	return attrs
 
 }
 

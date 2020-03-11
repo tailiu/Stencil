@@ -7,7 +7,6 @@ import (
 	"stencil/db"
 	"stencil/common_funcs"
 	"stencil/reference_resolution"
-	"stencil/schema_mappings"
 	"strconv"
 	"strings"
 )
@@ -176,7 +175,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	// "statuses.id":"mentions.status_id"
 	// "statuses.id":"stream_entries.activity_id"
 	// force us to do in this way. Otherwise, we cannot get other data in a node through statuses.id
-	} else if fromAttrsfirstArgFromApps := schema_mappings.getFirstArgsInREFByToTableToAttrInAllFromApps(
+	} else if fromAttrsfirstArgFromApps := getFirstArgsInREFByToTableToAttrInAllFromApps(
 		displayConfig, table1, col1); len(fromAttrsfirstArgFromApps) != 0 {
 		
 		log.Println("Before checking reference2 resolved or not")
@@ -271,7 +270,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					
 					srcTableID := displayConfig.appTableNameTableIDPairs[app + ":" + tableInFirstArg]
 
-					prevID = reference_resolution.GetPreviousIDByBackTraversal(displayConfig.refResolutionConfig, 
+					prevID = reference_resolution.GetPreIDByBackTraversal(displayConfig.refResolutionConfig, 
 						dataID, srcTableID)
 					
 					log.Println("Previous id:", prevID)
