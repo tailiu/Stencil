@@ -1006,7 +1006,9 @@ func getFirstArgsInREFByToTableToAttrInAllFromApps(displayConfig *displayConfig,
 
 		firstArgsFromApp := schema_mappings.GetFirstArgsInREFByToTableToAttr(mapping, toTable, toAttr)
 
-		firstArgsFromApps[fromApp] = firstArgsFromApp
+		if len(firstArgsFromApp) != 0 {
+			firstArgsFromApps[fromApp] = firstArgsFromApp
+		}
 
 	}
 

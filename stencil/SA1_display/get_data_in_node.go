@@ -301,10 +301,15 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				log.Println(`The from attributes don't contain id`)
 
 				data2, err = getRowsBasedOnDependency(displayConfig, table1, col1, value)
+				
 				// This could happen when no data is migrated or there is no mappings.
 				// For example, statuses, id, mentions, status_id
+				// This could also happen when there is no data migrated from this app, so
+				// we continue to check other apps
 				if err != nil {
-					return nil, err
+					log.Println(err)
+					continue
+					// return nil, err
 				}
 
 			}
@@ -329,7 +334,6 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				// but not inserted into the identity table yet, the display thread can get and check
 				// the row in the display_flags table, but cannot find the previous id. 
 				if prevID == "" {
-
 					return nil, CannotGetPrevID
 				}
 				
@@ -341,9 +345,14 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 						so we try to get data with the current id value`)
 
 					data2, err = getRowsBasedOnDependency(displayConfig, table1, col1, value)
+					
 					// This could happen when the resolved and displayed data is deleted
+					// This could also happen when there is no data migrated from this app, so
+					// we continue to check other apps
 					if err != nil {
-						return nil, err
+						log.Println(err)
+						continue
+						// return nil, err
 					}
 				}
 				
@@ -433,14 +442,23 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					} else {
 						
 						// return nil, CannotFindResolvedAttributes
-						panic(`Does not find resolved attributes. Should not happen 
-							given one member corresponds to one row for now!`)
+						// panic(`Does not find resolved attributes. Should not happen 
+						// 	given one member corresponds to one row for now!`)
+						
+						// There could be a case where the data we got is from some other unrelated migrations because
+						// we use old value (in source app) to get data. In this case, this old value 
+						// can be used to get more than one piece of data including the one we want to get
+						log.Println(`Does not find resolved attributes after resolution during one check in`, app)
 					}
 				}
 			}
 		}
 
-		panic(`It should never happen since there should be one piece of data which is what we want!`)
+		// panic(`It should never happen since there should be one piece of data which is what we want!`)
+		// This could happen when no data is migrated, there is no mappings, 
+		// or the reference has been resolved and displayed data is deleted
+		// For example, statuses, id, mentions, status_id
+		return nil, CannotGetDataAfterResolvingRef2
 	
 	// Normally, there must exist one that needs to be resolved. 
 	// However, up to now there is a case breaking the above rule. 
@@ -449,7 +467,6 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	// When migrating from Diaspora to Mastodon, 
 	// there is no mapping to stream_entries.activity_id.
 	} else {
-
 		return nil, NoReferenceToResolve
 	}
 }
