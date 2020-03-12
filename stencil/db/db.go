@@ -296,13 +296,34 @@ func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id interface{}) ([]ma
 }
 
 func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[string]interface{}, error) {
-	query := "SELECT app, member, id, data, pk, user_id FROM data_bags WHERE user_id = $1 AND app = $2 AND migration_id != $3"
+	query := "SELECT app, member, id, data, pk, user_id FROM data_bags WHERE user_id = $1 AND app = $2 AND migration_id != $3 ORDER BY pk DESC"
 	return DataCall(dbConn, query, user_id, app_id, migration_id)
 }
 
 func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id interface{}, migration_id int) (map[string]interface{}, error) {
 	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND app = $2 AND member = $3 and id = $4 AND migration_id != $5"
 	return DataCall1(dbConn, query, user_id, app, member, id, migration_id)
+}
+
+func CheckIfReferenceExists(dbConn *sql.DB, app, fromMember, fromID, toMember, toID, fromReference, toReference interface{}) bool {
+	fromIDInt, err := helper.ParseFloat(fmt.Sprint(fromID))
+	if err != nil {
+		log.Fatal("@CheckIfReferenceExists | ", err)
+	}
+
+	toIDInt, err := helper.ParseFloat(fmt.Sprint(toID))
+	if err != nil {
+		log.Fatal("@CheckIfReferenceExists | ", err)
+	}
+	q := fmt.Sprintf("SELECT * FROM reference_table WHERE app = '%s' AND from_member = '%s' AND from_id = '%v' AND from_reference = '%s' AND to_member = '%s' AND to_id = '%v' AND to_reference = '%s'", app, fromMember, int(fromIDInt), fromReference, toMember, int(toIDInt), toReference)
+	if res, err := DataCall1(dbConn, q); err == nil {
+		if len(res) > 0 {
+			return true
+		}
+	} else {
+		log.Fatal(err)
+	}
+	return false
 }
 
 func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference interface{}) error {

@@ -1,41 +1,42 @@
 package SA2_display
 
 import (
+	"log"
 	"stencil/db"
 	"stencil/qr"
-	"log"
-	"strings"
 	"strconv"
+	"strings"
 )
 
-func GetData1FromPhysicalSchema(displayConfig *displayConfig, 
-	cols, from, col, op, val string) map[string]interface{}  {	
-	
+func GetData1FromPhysicalSchema(displayConfig *displayConfig,
+	cols, from, col, op, val string) map[string]interface{} {
+
 	qs := qr.CreateQS(displayConfig.dstAppConfig.qr)
 
-	qs.SelectColumns(cols)
-
+	log.Println("table | ", from)
 	// Note that we don't care about mflag here
-	qs.FromTable(map[string]string{"table":from, "mflag": "0,1"})
-
+	qs.FromTable(map[string]string{"table": from, "mflag": "0,1"})
+	log.Println("col, op, val | ", col, op, val)
+	log.Println("cols | ", cols)
+	qs.SelectColumns(cols)
 	qs.AddWhereWithValue(col, op, val)
 
 	physicalQuery := qs.GenSQL()
 	log.Println(physicalQuery)
 
-	result, err := db.DataCall1(displayConfig.stencilDBConn, 
+	result, err := db.DataCall1(displayConfig.stencilDBConn,
 		physicalQuery)
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	return result
 }
 
-func GetData1FromPhysicalSchemaByRowID(displayConfig *displayConfig, 
-	cols, from string, rowIDs []int, 
-	restrictions []map[string]string) map[string]interface{} {	
+func GetData1FromPhysicalSchemaByRowID(displayConfig *displayConfig,
+	cols, from string, rowIDs []int,
+	restrictions []map[string]string) map[string]interface{} {
 
 	qs := qr.CreateQS(displayConfig.dstAppConfig.qr)
 
@@ -48,7 +49,7 @@ func GetData1FromPhysicalSchemaByRowID(displayConfig *displayConfig,
 	// qs.AdditionalWhereWithValue("AND", "profiles.bio", "=", "student")
 	// qs.AdditionalWhereWithValue("OR", "profiles.bio", "=", "student")
 
-	var strRowIDs string 
+	var strRowIDs string
 
 	for i, rowID := range rowIDs {
 
@@ -68,18 +69,18 @@ func GetData1FromPhysicalSchemaByRowID(displayConfig *displayConfig,
 
 	log.Println(physicalQuery)
 
-	result, err := db.DataCall1(displayConfig.stencilDBConn, 
+	result, err := db.DataCall1(displayConfig.stencilDBConn,
 		physicalQuery)
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	return result
 }
 
-func GetRowIDsFromData(data map[string]interface{}) []int  {
-	var rowIDs []int 
+func GetRowIDsFromData(data map[string]interface{}) []int {
+	var rowIDs []int
 
 	for key, val := range data {
 
@@ -101,6 +102,6 @@ func GetRowIDsFromData(data map[string]interface{}) []int  {
 			return rowIDs
 		}
 	}
-	
+
 	return rowIDs
 }
