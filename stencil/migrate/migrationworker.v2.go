@@ -563,9 +563,11 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 							toAttr:     fmt.Sprint(secondMemberTokens[1]),
 						}
 					} else {
+						self.Logger.Debugf("fromAttr: '%v' \n", fromAttr)
 						self.Logger.Debugf("args[0]: '%v' \n", args[0])
 						self.Logger.Debugf("toID: '%v' | fromID: '%v' \n", toID, fromID)
-						if !rawBag {
+						fmt.Println(nodeData)
+						if !rawBag && !isBag {
 							self.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
 						} else {
 							self.Logger.Warn("@DecodeMappingValue > GetIDs | ", err)
@@ -653,6 +655,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 				} else {
 					fmt.Printf("args[0]: '%v' \n", args[0])
 					fmt.Printf("toID: '%v' | fromID: '%v' \n", toID, fromID)
+					fmt.Printf("data: [%v] \n", node.Data)
 					self.Logger.Fatal("@GetMappedData > id > GetIDs | ", err)
 					return data, err
 				}
@@ -716,6 +719,9 @@ func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
 }
 
 func (self *MigrationWorkerV2) TransferMedia(filePath string) error {
+
+	color.Red.Println("File transfer is turned off!")
+	return nil
 
 	file, err := os.Open(filePath)
 	if err != nil {
