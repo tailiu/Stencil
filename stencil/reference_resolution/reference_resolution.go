@@ -114,7 +114,10 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 					log.Println("The data has been migrated back to the dest app1")
 
-					if refIdentityRow.member == procRef["to_member"] {
+					// Up to now it seems that refIdentityRow.member == procRef["to_member"] is enough,
+					// but procRef["from_member"] == orgID.member is added in case 
+					if refIdentityRow.member == procRef["to_member"] &&
+						procRef["from_member"] == orgID.member {
 
 						oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow1(
 							refResolutionConfig, procRef, orgID, refIdentityRow.id)
@@ -143,7 +146,13 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		// If we cannot get any refIdentityRows which means the referenced row has not been migrated
 		// and the application of that row is exactly the destination app, then we can directly
 		// use the id in the reference row to update attributes
-		} else if procRef["app"] == refResolutionConfig.appID {
+		// Checking the from member in the reference row is important because
+		// there could be cases where after back traversal there are multiple rows
+		// For example, when trying to update notification_actors and after back traversal,
+		// we get two reference rows for notifications and notification_actors, 
+		// then notifications should be igored
+		} else if procRef["app"] == refResolutionConfig.appID &&
+			procRef["from_member"] == orgID.member {
 
 			log.Println("The data has not been migrated and is in the dest app1")
 
@@ -199,7 +208,8 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 					log.Println("The data has been migrated back to the dest app2")
 	
-					if refIdentityRow.member == procRef["from_member"] {
+					if refIdentityRow.member == procRef["from_member"] && 
+						procRef["to_member"] == orgID.member {
 	
 						oneUpdatedAttr := updateRefOnRightBasedOnMappingsUsingRefIDRow1(
 							refResolutionConfig, procRef, orgID, refIdentityRow.id)
@@ -224,7 +234,8 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 			}
 
-		} else if procRef["app"] == refResolutionConfig.appID {
+		} else if procRef["app"] == refResolutionConfig.appID &&
+			procRef["to_member"] == orgID.member {
 
 			log.Println("The data has not been migrated and is in the dest app2")
 
