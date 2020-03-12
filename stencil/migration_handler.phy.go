@@ -6,7 +6,7 @@ package main
 
 import (
 	"os"
-	"stencil/apis"
+	"stencil/SA2_migrate"
 )
 
 func main() {
@@ -21,7 +21,16 @@ func main() {
 
 	enableBags := false
 
-	apis.StartMigrationSA2(uid, srcApp, srcAppID, dstApp, dstAppID, mtype, enableBags)
+	// apis.StartMigrationSA2(uid, srcApp, srcAppID, dstApp, dstAppID, mtype, enableBags)
+	threads := 1
+
+	enableDisplay, displayInFirstPhase, enableBags := true, true, true
+
+	SA2_migrate.Controller(
+		uid, srcApp, srcAppID, dstApp, dstAppID,
+		mtype, threads, enableDisplay,
+		displayInFirstPhase, enableBags,
+	)
 }
 
 // func main() {

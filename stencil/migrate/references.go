@@ -7,35 +7,57 @@ import (
 	"strings"
 )
 
-func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
-
+func (self *MigrationWorkerV2) AddMappedReferencesIfNotExist(refs []MappingRef) error {
 	for _, ref := range refs {
-
-		dependeeMemberID, err := db.TableID(self.logTxn.DBconn, ref.fromMember, self.SrcAppConfig.AppID)
-		if err != nil {
-			log.Fatal("@AddMappedReferences: Unable to resolve id for dependeeMember ", ref.fromMember)
-			return err
-		}
-
-		depOnMemberID, err := db.TableID(self.logTxn.DBconn, ref.toMember, self.SrcAppConfig.AppID)
-		if err != nil {
-			log.Fatal("@AddMappedReferences: Unable to resolve id for depOnMember ", ref.toMember)
-			return err
-		}
-
-		if ref.toID == nil {
-			log.Println("@AddMappedReferences: Unable to CreateNewReference | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
-			continue
-		}
-
-		if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
-			fmt.Println(refs)
-			fmt.Println("#Args: ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
-			log.Fatal("@AddMappedReferences: Unable to CreateNewReference: ", err)
+		if err := self._CreateMappedReference(ref, true); err != nil {
 			return err
 		}
 	}
+	return nil
+}
 
+func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
+
+	for _, ref := range refs {
+		if err := self._CreateMappedReference(ref, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForExistence bool) error {
+	dependeeMemberID, err := db.TableID(self.logTxn.DBconn, ref.fromMember, self.SrcAppConfig.AppID)
+	if err != nil {
+		log.Fatal("@_CreateMappedReference: Unable to resolve id for dependeeMember ", ref.fromMember)
+		return err
+	}
+
+	depOnMemberID, err := db.TableID(self.logTxn.DBconn, ref.toMember, self.SrcAppConfig.AppID)
+	if err != nil {
+		log.Fatal("@_CreateMappedReference: Unable to resolve id for depOnMember ", ref.toMember)
+		return err
+	}
+
+	if ref.toID == nil {
+		log.Println("@_CreateMappedReference: Unable to CreateNewReference | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		return nil
+	}
+
+	if checkForExistence {
+		if db.CheckIfReferenceExists(self.logTxn.DBconn, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, ref.fromAttr, ref.toAttr) {
+			log.Println("@_CreateMappedReference: Reference Already Exists | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+			return nil
+		}
+		log.Println("@_CreateMappedReference: Reference Doesn't Already Exist | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+	}
+
+	if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
+		fmt.Println(ref)
+		fmt.Println("#Args: ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		log.Fatal("@_CreateMappedReference: Unable to CreateNewReference: ", err)
+		return err
+	}
 	return nil
 }
 

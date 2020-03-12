@@ -2,10 +2,10 @@ package qr
 
 import (
 	"fmt"
+	"log"
+	"stencil/db"
 	"stencil/helper"
 	"strings"
-	"stencil/db"
-	"log"
 )
 
 func CreateQS(QR *QR) *QS {
@@ -17,8 +17,8 @@ func CreateQS(QR *QR) *QS {
 	return qs
 }
 
-func (self *QS) SelectColumns(columns string){
-	for _, col := range strings.Split(columns, ","){
+func (self *QS) SelectColumns(columns string) {
+	for _, col := range strings.Split(columns, ",") {
 		parts := strings.Split(col, ".")
 		self.Columns = append(self.Columns, fmt.Sprintf("\"%s\".%s", parts[0], parts[1]))
 	}
@@ -41,7 +41,7 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 		fmt.Println("Can't get Table ID for table ", args["table"])
 		log.Fatal(err)
 	}
-	
+
 	if _, ok := args["alias"]; !ok {
 		args["alias"] = args["table"]
 	}
@@ -64,7 +64,7 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(args["table"])
 	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
-
+	log.Println(phyTab)
 	for _, ptab := range phyTabKeys {
 		for _, pair := range phyTab[ptab] {
 			pColName := fmt.Sprintf("%s.%s as \"%s.%s\"", self.getTableAlias(args["alias"], ptab), pair[0], args["alias"], pair[1])
@@ -74,15 +74,15 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 		}
 		pTabAlias := self.getTableAlias(args["alias"], ptab)
 		from += fmt.Sprintf(" LEFT JOIN %s %s ON %s.pk = ANY(mt.rowids) ", ptab, pTabAlias, pTabAlias)
-		pkCols = append(pkCols, pTabAlias + ".pk")
+		pkCols = append(pkCols, pTabAlias+".pk")
 	}
 
 	cols = append(cols, fmt.Sprintf("uniq(sort(array_remove(array[%s]::int4[], null))) as \"%s.rowids\"", strings.Join(pkCols, ","), args["alias"]))
 	cols = append(cols, fmt.Sprintf("array_to_string(uniq(sort(array_remove(array[%s]::int4[], null))),',') as \"%s.rowids_str\"", strings.Join(pkCols, ","), args["alias"]))
 	tableQuery := fmt.Sprintf(" (SELECT %s FROM %s) \"%s\" ", strings.Join(cols, ","), from, args["alias"])
-	
+
 	if len(tableQuery) > 0 {
-		return tableQuery	
+		return tableQuery
 	}
 
 	log.Fatal("error resolving query for table: " + args["table"])
@@ -129,7 +129,7 @@ func (self *QS) AdditionalWhereWithValue(coop, col, op, val string) {
 	tokens := strings.Split(col, ".")
 	if len(self.Where) > 0 {
 		self.Where += fmt.Sprintf(" %s \"%s\".\"%s\" %s '%s'", coop, tokens[0], col, op, val)
-	}else{
+	} else {
 		self.Where = fmt.Sprintf(" \"%s\".\"%s\" %s '%s'", tokens[0], col, op, val)
 	}
 }
@@ -150,18 +150,22 @@ func (self *QS) AddWhereAsString(operator, condition string) { // AND, OR, NOT
 }
 
 func (self *QS) RowIDs(rowids string) {
-	if len(rowids) <= 0 {return}
+	if len(rowids) <= 0 {
+		return
+	}
 	for table := range self.TableAliases {
 		if len(self.Where) > 0 {
 			self.Where += " AND "
 		}
-		self.Where += fmt.Sprintf("array[%s] @> \"%s\".\"%s.rowids\"", rowids, table, table)	
+		self.Where += fmt.Sprintf("array[%s] @> \"%s\".\"%s.rowids\"", rowids, table, table)
 	}
 }
 
 func (self *QS) ExcludeRowIDs(rowids string) {
-	if len(rowids) <= 0 {return}
-	
+	if len(rowids) <= 0 {
+		return
+	}
+
 	var arrayRowIDCols []string
 	for table := range self.TableAliases {
 		arrayRowIDCols = append(arrayRowIDCols, fmt.Sprintf("\"%s\".\"%s.rowids\"", table, table))
@@ -170,13 +174,13 @@ func (self *QS) ExcludeRowIDs(rowids string) {
 	if len(self.Where) > 0 {
 		self.Where += " AND "
 	}
-	self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> %s", rowids, fmt.Sprintf("uniq(sort(array[%s]))", strings.Join(arrayRowIDCols, " || ")))	
+	self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> %s", rowids, fmt.Sprintf("uniq(sort(array[%s]))", strings.Join(arrayRowIDCols, " || ")))
 
 	// for table := range self.TableAliases {
 	// 	if len(self.Where) > 0 {
 	// 		self.Where += " AND "
 	// 	}
-	// 	self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> \"%s\".\"%s.rowids\"", rowids, table, table)	
+	// 	self.Where += fmt.Sprintf("NOT array[%s]::int4[] @> \"%s\".\"%s.rowids\"", rowids, table, table)
 	// }
 }
 
@@ -202,7 +206,7 @@ func (self *QS) OrderByFunction(f string) {
 	if strings.EqualFold(self.Order, "") {
 		self.Order = f
 	} else {
-		self.Order += ", "+f
+		self.Order += ", " + f
 	}
 }
 
@@ -233,9 +237,9 @@ func (self *QS) GenSQL() string {
 }
 
 func (self *QS) GenSQLSize() string {
-	
+
 	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(self.ColumnsWSize, ","), self.From)
-	
+
 	if len(self.Where) > 0 {
 		sql += fmt.Sprintf("WHERE %s ", self.Where)
 	}

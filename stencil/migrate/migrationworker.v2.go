@@ -516,24 +516,24 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						fromTable = cleanedFromAttrTokens[0]
 						mappedVal = nodeVal
 
-						if !isBag || rawBag {
-							var fromID interface{}
-							if val, ok := nodeData[cleanedFromAttrTokens[0]+".id"]; ok {
-								fromID = val
-							} else {
-								fmt.Println(cleanedFromAttrTokens[0], " | ", cleanedFromAttrTokens)
-								fmt.Println(nodeData)
-								self.Logger.Fatal("@DecodeMappingValue > #REF > #ASSIGN > fromID: Unable to find ref value in node data | ", cleanedFromAttrTokens[0])
-							}
-							ref = &MappingRef{
-								fromID:     fmt.Sprint(fromID),
-								fromMember: fmt.Sprint(cleanedFromAttrTokens[0]),
-								fromAttr:   fmt.Sprint(cleanedFromAttrTokens[1]),
-								toID:       fmt.Sprint(nodeVal),
-								toMember:   fmt.Sprint(referredTabColTokens[0]),
-								toAttr:     fmt.Sprint(referredTabColTokens[1]),
-							}
+						// if !isBag || rawBag {
+						var fromID interface{}
+						if val, ok := nodeData[cleanedFromAttrTokens[0]+".id"]; ok {
+							fromID = val
+						} else {
+							fmt.Println(cleanedFromAttrTokens[0], " | ", cleanedFromAttrTokens)
+							fmt.Println(nodeData)
+							self.Logger.Fatal("@DecodeMappingValue > #REF > #ASSIGN > fromID: Unable to find ref value in node data | ", cleanedFromAttrTokens[0])
 						}
+						ref = &MappingRef{
+							fromID:     fmt.Sprint(fromID),
+							fromMember: fmt.Sprint(cleanedFromAttrTokens[0]),
+							fromAttr:   fmt.Sprint(cleanedFromAttrTokens[1]),
+							toID:       fmt.Sprint(nodeVal),
+							toMember:   fmt.Sprint(referredTabColTokens[0]),
+							toAttr:     fmt.Sprint(referredTabColTokens[1]),
+						}
+						// }
 					} else {
 						self.Logger.Debugf("fromAttr: [%s], cleanedFromAttr: [%s], nodeData: %v", fromAttr, cleanedFromAttr, nodeData)
 						if isBag {
@@ -550,28 +550,30 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						mappedVal = nodeVal
 						fromTable = argsTokens[0]
 					}
-					if !isBag || rawBag {
-						if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], nodeData); err == nil {
-							secondMemberTokens := strings.Split(args[1], ".")
-							firstMemberTokens := strings.Split(args[0], ".")
-							ref = &MappingRef{
-								fromID:     fmt.Sprint(fromID),
-								fromMember: fmt.Sprint(firstMemberTokens[0]),
-								fromAttr:   fmt.Sprint(firstMemberTokens[1]),
-								toID:       fmt.Sprint(toID),
-								toMember:   fmt.Sprint(secondMemberTokens[0]),
-								toAttr:     fmt.Sprint(secondMemberTokens[1]),
-							}
+					// if !isBag || rawBag {
+					if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], nodeData); err == nil {
+						secondMemberTokens := strings.Split(args[1], ".")
+						firstMemberTokens := strings.Split(args[0], ".")
+						ref = &MappingRef{
+							fromID:     fmt.Sprint(fromID),
+							fromMember: fmt.Sprint(firstMemberTokens[0]),
+							fromAttr:   fmt.Sprint(firstMemberTokens[1]),
+							toID:       fmt.Sprint(toID),
+							toMember:   fmt.Sprint(secondMemberTokens[0]),
+							toAttr:     fmt.Sprint(secondMemberTokens[1]),
+						}
+					} else {
+						self.Logger.Debugf("fromAttr: '%v' \n", fromAttr)
+						self.Logger.Debugf("args[0]: '%v' \n", args[0])
+						self.Logger.Debugf("toID: '%v' | fromID: '%v' \n", toID, fromID)
+						fmt.Println(nodeData)
+						if !rawBag && !isBag {
+							self.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
 						} else {
-							self.Logger.Debugf("args[0]: '%v' \n", args[0])
-							self.Logger.Debugf("toID: '%v' | fromID: '%v' \n", toID, fromID)
-							if !rawBag {
-								self.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
-							} else {
-								self.Logger.Warn("@DecodeMappingValue > GetIDs | ", err)
-							}
+							self.Logger.Warn("@DecodeMappingValue > GetIDs | ", err)
 						}
 					}
+					// }
 				}
 			} else if strings.Contains(fromAttr, "#ASSIGN") {
 				if nodeVal, ok := nodeData[cleanedFromAttr]; ok {
@@ -642,7 +644,8 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 
 	for toAttr, fromAttr := range toTable.Mapping {
 		if strings.EqualFold("id", toAttr) {
-			if self.mtype != BAGS && strings.Contains(fromAttr, "#REF") {
+			// if self.mtype != BAGS && strings.Contains(fromAttr, "#REF") {
+			if strings.Contains(fromAttr, "#REF") {
 				assignedTabCol := strings.Trim(fromAttr, "(#REF)")
 				args := strings.Split(assignedTabCol, ",")
 				if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], node.Data); err == nil {
@@ -652,6 +655,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 				} else {
 					fmt.Printf("args[0]: '%v' \n", args[0])
 					fmt.Printf("toID: '%v' | fromID: '%v' \n", toID, fromID)
+					fmt.Printf("data: [%v] \n", node.Data)
 					self.Logger.Fatal("@GetMappedData > id > GetIDs | ", err)
 					return data, err
 				}
@@ -715,6 +719,9 @@ func (self *MigrationWorkerV2) DeleteRow(node *DependencyNode) error {
 }
 
 func (self *MigrationWorkerV2) TransferMedia(filePath string) error {
+
+	color.Red.Println("File transfer is turned off!")
+	return nil
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -945,6 +952,12 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				if err := self.AddMappedReferences(mappedData.refs); err != nil {
 					log.Println(mappedData.refs)
 					self.Logger.Fatal("@MigrateNode > AddMappedReferences: ", err)
+					return migrated, err
+				}
+			} else if self.mtype == BAGS {
+				if err := self.AddMappedReferencesIfNotExist(mappedData.refs); err != nil {
+					log.Println(mappedData.refs)
+					self.Logger.Fatal("@MigrateNode > AddMappedReferencesIfNotExist: ", err)
 					return migrated, err
 				}
 			}
