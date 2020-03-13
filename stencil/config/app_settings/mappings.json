@@ -280,7 +280,7 @@
                                     },
                                     "mapping": {
                                         "id":"notifications.id",
-                                        "notification_id":"#REF(#ASSIGN(notifications.id),notifications.id)",
+                                        "notification_id":"#REF(#ASSIGN(notifications.id),notifications.id,notifications)",
                                         "person_id":"#REF(notifications.from_account_id,accounts.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"
@@ -1635,7 +1635,7 @@
                                     },
                                     "mapping": {
                                         "id":"notifications.id",
-                                        "notification_id":"#REF(#ASSIGN(notifications.id),notifications.id)",
+                                        "notification_id":"#REF(#ASSIGN(notifications.id),notifications.id,notifications)",
                                         "person_id":"#REF(notifications.from_user,users.id)",
                                         "created_at":"notifications.created_at",
                                         "updated_at":"notifications.updated_at"

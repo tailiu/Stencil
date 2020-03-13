@@ -180,6 +180,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		
 		log.Println("Before checking reference2 resolved or not")
 		
+		log.Println("From attributes in different from apps:", fromAttrsfirstArgFromApps)
+
 		log.Println("##########")
 
 		for app, fromAttrsfirstArg := range fromAttrsfirstArgFromApps {
@@ -269,6 +271,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					// srcTableID := displayConfig.srcAppConfig.tableNameIDPairs[tableInFirstArg]
 					
 					srcTableID := displayConfig.appTableNameTableIDPairs[app + ":" + tableInFirstArg]
+					
+					log.Println("app and tableInFirstArg:", app + ":" + tableInFirstArg)
+					log.Println("srcTableID:", srcTableID)
 
 					prevID = reference_resolution.GetPreIDByBackTraversal(displayConfig.refResolutionConfig, 
 						dataID, srcTableID)
