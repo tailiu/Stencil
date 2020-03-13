@@ -314,6 +314,27 @@ func getAppTableNameTableIDPairs(stencilDBConn *sql.DB,
 
 }
 
+func isDataNotMigratedAndAlreadyDisplayed(displayConfig *displayConfig, 
+	dataHint *HintStruct) bool {
+
+	query := fmt.Sprintf(
+		`SELECT * FROM display_flags
+		WHERE app_id = %s and table_id = %s and id = %d`, 
+		displayConfig.dstAppConfig.appID,
+		dataHint.TableID,
+		dataHint.KeyVal["id"],
+	)
+
+	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
+	
+	if len(data) == 0 {
+		return true
+	} else {
+		return false
+	}
+
+}
+
 // Before displaying a piece of data, the unresolved references should be set to be NULLs
 // Setting those references to be NULLs does not influence how data behaves in the application,
 // but in the next migration it may influence how Stencil migrates data

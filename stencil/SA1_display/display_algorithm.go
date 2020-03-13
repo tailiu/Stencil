@@ -78,6 +78,11 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 	
 	log.Println("Check Data:", *oneMigratedData)
 
+	if isDataNotMigratedAndAlreadyDisplayed(displayConfig, oneMigratedData) {
+		log.Println("This data is not migrated and already displayed")
+		return common_funcs.CompletelyDisplayed
+	}
+
 	log.Println("==================== Check Intra-node dependencies ====================")
 
 	// Get data in the node based on intra-node data dependencies
