@@ -5,6 +5,8 @@ import (
 	"log"
 	"stencil/db"
 	"strings"
+
+	"github.com/gookit/color"
 )
 
 func (self *MigrationWorkerV2) AddMappedReferencesIfNotExist(refs []MappingRef) error {
@@ -57,6 +59,8 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 		fmt.Println("#Args: ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 		log.Fatal("@_CreateMappedReference: Unable to CreateNewReference: ", err)
 		return err
+	} else {
+		color.LightWhite.Printf("Ref | fromApp: %s, fromMember: %s, fromID: %s, toMember: %s, toID: %s, migrationID: %s, fromAttr: %s, toAttr: %s\n", self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 	return nil
 }
