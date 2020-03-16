@@ -1472,7 +1472,7 @@ func Exp4LoadCounterResToTable() {
 	// counterTable := "dag_counter"
 
 	stencilDB = "stencil_exp6_3"
-	counterFile := "diaspora1KCounter"
+	counterFile := "diaspora100KCounter"
 	counterTable := "dag_counter"
 
 	evalConfig := InitializeEvalConfig()
@@ -1929,8 +1929,8 @@ func Exp7Test() {
 	migrationSeq := []string {
 		// "diaspora", "mastodon",
 		// "diaspora", "mastodon", "gnusocial",
-		// "diaspora", "mastodon", "gnusocial", "twitter",
-		"diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
+		"diaspora", "mastodon", "gnusocial", "twitter",
+		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 		// "diaspora", "mastodon", "gnusocial", 
 	}
 
@@ -1944,7 +1944,7 @@ func Exp7Test() {
 	
 	// Database setup for migrations enabled databags
 	stencilDB = "stencil_exp6_" + seqStr
-	diaspora = "diaspora_1k_exp6"
+	diaspora = "diaspora_100k_exp6"
 	mastodon = "mastodon_exp6_" + seqStr
 	twitter = "twitter_exp6_" + seqStr
 	gnusocial = "gnusocial_exp6_" + seqStr
@@ -1961,7 +1961,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 520
+	edgeCounterRangeStart := 304
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 

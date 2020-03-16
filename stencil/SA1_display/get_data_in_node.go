@@ -275,7 +275,10 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					log.Println("app and tableInFirstArg:", app + ":" + tableInFirstArg)
 					log.Println("srcTableID:", srcTableID)
 
-					prevID = reference_resolution.GetPreIDByBackTraversal(displayConfig.refResolutionConfig, 
+					// prevID = reference_resolution.GetPreIDByBackTraversal(displayConfig.refResolutionConfig, 
+					// 	dataID, srcTableID)
+					
+					prevID = reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
 						dataID, srcTableID)
 					
 					log.Println("Previous id:", prevID)
@@ -338,8 +341,16 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				// I guess this is because the row is first inserted into display_flags table, 
 				// but not inserted into the identity table yet, the display thread can get and check
 				// the row in the display_flags table, but cannot find the previous id. 
+				// if prevID == "" {
+				// 	return nil, CannotGetPrevID
+				// }
 				if prevID == "" {
-					return nil, CannotGetPrevID
+					
+					log.Println(`The from attributes contain id but we cannot get data, 
+						but we cannot get the previous id`)
+		
+					continue
+
 				}
 				
 				// This could happen when another display thread had resolved the ref
@@ -355,8 +366,11 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					// This could also happen when there is no data migrated from this app, so
 					// we continue to check other apps
 					if err != nil {
+						
 						log.Println(err)
+						
 						continue
+						
 						// return nil, err
 					}
 				}
