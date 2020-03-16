@@ -677,7 +677,7 @@ func getDataInNode(displayConfig *displayConfig,
 		}
 	}
 
-	log.Println("My data is:", hint.Data)
+	// log.Println("My data is:", hint.Data)
 	
 	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
 

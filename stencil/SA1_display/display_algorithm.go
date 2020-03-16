@@ -78,6 +78,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 	
 	log.Println("Check Data:", *oneMigratedData)
 
+	// This can happen when we may check other users' roots after traversing inter-dependencies
 	if isDataNotMigratedAndAlreadyDisplayed(displayConfig, oneMigratedData) {
 		log.Println("This data is not migrated and already displayed")
 		return common_funcs.CompletelyDisplayed

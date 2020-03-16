@@ -636,6 +636,8 @@ func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error
 
 	var q1, q2, q3 string
 
+	log.Println("Going to put data into data bags")
+	
 	for _, dataHint := range dataHints {
 
 		// we try to avoid putting data into data bags if it is not in the
