@@ -305,15 +305,31 @@ func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id interface{},
 	return DataCall1(dbConn, query, user_id, app, member, id, migration_id)
 }
 
-func CheckIfReferenceExists(dbConn *sql.DB, app, fromMember, fromID, toMember, toID, fromReference, toReference interface{}) bool {
+func CheckIfReferenceExists(dbConn *sql.DB, app, fromMember, fromID, fromReference interface{}) bool {
 	fromIDInt, err := helper.ParseFloat(fmt.Sprint(fromID))
 	if err != nil {
 		log.Fatal("@CheckIfReferenceExists | ", err)
 	}
+	q := fmt.Sprintf("SELECT * FROM reference_table WHERE app = '%s' AND from_member = '%s' AND from_id = '%v' AND from_reference = '%s'", app, fromMember, int(fromIDInt), fromReference)
+	if res, err := DataCall1(dbConn, q); err == nil {
+		if len(res) > 0 {
+			return true
+		}
+	} else {
+		log.Fatal(err)
+	}
+	return false
+}
+
+func CheckIfCompleteReferenceExists(dbConn *sql.DB, app, fromMember, fromID, toMember, toID, fromReference, toReference interface{}) bool {
+	fromIDInt, err := helper.ParseFloat(fmt.Sprint(fromID))
+	if err != nil {
+		log.Fatal("@CheckIfCompleteReferenceExists | ", err)
+	}
 
 	toIDInt, err := helper.ParseFloat(fmt.Sprint(toID))
 	if err != nil {
-		log.Fatal("@CheckIfReferenceExists | ", err)
+		log.Fatal("@CheckIfCompleteReferenceExists | ", err)
 	}
 	q := fmt.Sprintf("SELECT * FROM reference_table WHERE app = '%s' AND from_member = '%s' AND from_id = '%v' AND from_reference = '%s' AND to_member = '%s' AND to_id = '%v' AND to_reference = '%s'", app, fromMember, int(fromIDInt), fromReference, toMember, int(toIDInt), toReference)
 	if res, err := DataCall1(dbConn, q); err == nil {

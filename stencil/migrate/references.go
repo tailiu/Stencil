@@ -5,6 +5,8 @@ import (
 	"log"
 	"stencil/db"
 	"strings"
+
+	"github.com/gookit/color"
 )
 
 func (self *MigrationWorkerV2) AddMappedReferencesIfNotExist(refs []MappingRef) error {
@@ -45,11 +47,36 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 	}
 
 	if checkForExistence {
-		if db.CheckIfReferenceExists(self.logTxn.DBconn, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, ref.fromAttr, ref.toAttr) {
-			log.Println("@_CreateMappedReference: Reference Already Exists | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
-			return nil
+		var err error
+		idRows := []IDRow{IDRow{
+			FromAppName:  self.SrcAppConfig.AppName,
+			FromAppID:    self.SrcAppConfig.AppID,
+			FromMemberID: dependeeMemberID,
+			FromMember:   ref.fromMember,
+			FromID:       ref.fromID}}
+
+		for {
+			if err == nil && len(idRows) > 0 {
+				for _, idRow := range idRows {
+					fmt.Println("@_CreateMappedReference: IDRow | ", idRow)
+					fmt.Printf("@_CreateMappedReference: Checking Reference for | App: %v, Member: %v, ID: %v, Attr: %v\n", idRow.FromAppID, idRow.FromMemberID, ref.fromID, ref.fromAttr)
+					if db.CheckIfReferenceExists(self.logTxn.DBconn, idRow.FromAppID, idRow.FromMemberID, ref.fromID, ref.fromAttr) {
+						log.Printf("@_CreateMappedReference: Reference Already Exists | App: %v, Member: %v, ID: %v, Attr: %v\n", idRow.FromAppID, idRow.FromMemberID, ref.fromID, ref.fromAttr)
+						return nil
+					}
+					fmt.Printf("@_CreateMappedReference: Reference doesn't exist | App: %v, Member: %v, ID: %v, Attr: %v\n", idRow.FromAppID, idRow.FromMemberID, ref.fromID, ref.fromAttr)
+				}
+				idRows, err = self.GetRowsFromIDTable(self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, false)
+			} else {
+				log.Println("@_CreateMappedReference: Break Loop")
+				log.Println("@_CreateMappedReference: err | ", err)
+				log.Println("@_CreateMappedReference: IDRows | ", idRows)
+				fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+				break
+			}
 		}
 		log.Println("@_CreateMappedReference: Reference Doesn't Already Exist | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		color.Red.Println("********** checkForExistence: stop **********")
 	}
 
 	if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
@@ -57,6 +84,8 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 		fmt.Println("#Args: ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 		log.Fatal("@_CreateMappedReference: Unable to CreateNewReference: ", err)
 		return err
+	} else {
+		color.LightWhite.Printf("Ref | fromApp: %s, fromMember: %s, fromID: %s, toMember: %s, toID: %s, migrationID: %s, fromAttr: %s, toAttr: %s\n", self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 	return nil
 }

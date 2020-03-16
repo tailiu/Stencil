@@ -906,6 +906,8 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 								fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
 								self.Logger.Fatal(err)
 								return migrated, err
+							} else {
+								color.LightWhite.Printf("IDRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %d, toID: %s, MigrationID: %s\n", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(self.logTxn.Txn_id))
 							}
 						} else {
 							fmt.Println(node.Data)
