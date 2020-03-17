@@ -286,8 +286,12 @@ func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id interface{}
 }
 
 func GetRowsFromIDTableByTo(dbConn *sql.DB, app, member, id interface{}) ([]map[string]interface{}, error) {
+	IDInt, err := helper.ParseFloat(fmt.Sprint(id))
+	if err != nil {
+		log.Fatal("@GetRowsFromIDTableByTo | ", err)
+	}
 	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
-	return DataCall(dbConn, query, app, member, id)
+	return DataCall(dbConn, query, app, member, int(IDInt))
 }
 
 func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id interface{}) ([]map[string]interface{}, error) {

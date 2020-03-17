@@ -389,6 +389,42 @@ func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dst
 	return appMappings, combinedMapping, mappingFound
 }
 
+func (self *MigrationWorkerV2) CleanMappingAttr(attr string) string {
+	cleanedAttr := strings.ReplaceAll(attr, "(", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, ")", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#ASSIGN", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#FETCH", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#REF", "")
+	return cleanedAttr
+}
+
+func (self *MigrationWorkerV2) FetchMappedAttribute(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember, dstAttr string) (string, bool) {
+
+	var appMappings config.MappedApp
+	if srcApp == dstApp {
+		appMappings = *config.GetSelfSchemaMappings(self.logTxn.DBconn, srcAppID, srcApp)
+	} else {
+		appMappings = *config.GetSchemaMappingsFor(srcApp, dstApp)
+	}
+	for _, mapping := range appMappings.Mappings {
+		if mappedTables := helper.IntersectString([]string{srcMember}, mapping.FromTables); len(mappedTables) > 0 {
+			for _, toTableMapping := range mapping.ToTables {
+				if strings.EqualFold(dstMember, toTableMapping.Table) {
+					for toAttr, fromAttr := range toTableMapping.Mapping {
+						if toAttr == dstAttr {
+							cleanedAttr := self.CleanMappingAttr(fromAttr)
+							cleanedAttrTokens := strings.Split(cleanedAttr, ",")
+							cleanedAttrTabCol := strings.Split(cleanedAttrTokens[0], ".")
+							return cleanedAttrTabCol[1], true
+						}
+					}
+				}
+			}
+		}
+	}
+	return "", false
+}
+
 func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (config.Mapping, bool) {
 	var combinedMapping config.Mapping
 	tagMembers := node.Tag.GetTagMembers()

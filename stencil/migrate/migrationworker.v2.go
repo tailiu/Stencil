@@ -489,11 +489,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 		}
 	case "#":
 		{
-			cleanedFromAttr = strings.ReplaceAll(fromAttr, "(", "")
-			cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, ")", "")
-			cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#ASSIGN", "")
-			cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#FETCH", "")
-			cleanedFromAttr = strings.ReplaceAll(cleanedFromAttr, "#REF", "")
+			cleanedFromAttr := self.CleanMappingAttr(fromAttr)
 			// cleanedFromAttr = strings.Trim(cleanedFromAttr, "#ASSIGNFETCHREF")
 			// self.Logger.Debug(color.FgLightYellow.Render(fmt.Sprintf("FromAttr: %s | Cleaned: %s", fromAttr, cleanedFromAttr)))
 			if strings.Contains(fromAttr, "#REF") {
@@ -907,7 +903,7 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 								self.Logger.Fatal(err)
 								return migrated, err
 							} else {
-								color.LightWhite.Printf("IDRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %d, toID: %s, MigrationID: %s\n", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(self.logTxn.Txn_id))
+								color.LightBlue.Printf("New IDRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, MigrationID: %s\n", self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(self.logTxn.Txn_id))
 							}
 						} else {
 							fmt.Println(node.Data)
@@ -950,13 +946,13 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				return migrated, err
 			}
 
-			if self.mtype != BAGS || rawBag {
+			if self.mtype != BAGS {
 				if err := self.AddMappedReferences(mappedData.refs); err != nil {
 					log.Println(mappedData.refs)
 					self.Logger.Fatal("@MigrateNode > AddMappedReferences: ", err)
 					return migrated, err
 				}
-			} else if self.mtype == BAGS {
+			} else if self.mtype == BAGS || rawBag {
 				if err := self.AddMappedReferencesIfNotExist(mappedData.refs); err != nil {
 					log.Println(mappedData.refs)
 					self.Logger.Fatal("@MigrateNode > AddMappedReferencesIfNotExist: ", err)
