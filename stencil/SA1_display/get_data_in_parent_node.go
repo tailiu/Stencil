@@ -76,6 +76,8 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
 
+				// checkAndLogUnresolvedRef(displayConfig, ID, col)
+
 				return "", CannotResolveReferencesGetDataInParentNode
 			}
 		}

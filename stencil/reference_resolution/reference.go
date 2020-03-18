@@ -2,6 +2,8 @@ package reference_resolution
 
 import (
 	"stencil/db"
+	"stencil/common_funcs"
+	"github.com/gookit/color"
 	"fmt"
 	"log"
 )
@@ -53,6 +55,28 @@ func getToReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
+func GetReferencesByFromIDFromAttrAndToMemberAndAttr(refResolutionConfig *RefResolutionConfig, 
+	fromIDRow *Identity, fromAttr string) []map[string]interface{} {
+
+	query := fmt.Sprintf(
+		`SELECT * FROM reference_table WHERE 
+		app = %s and from_member = %s and from_id = %s and from_reference = '%s'`, 
+		fromIDRow.app, fromIDRow.member, fromIDRow.id, fromAttr,
+	)
+
+	log.Println(query)
+	
+	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(data)
+
+	return data
+
+}
+
 func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, attr string) string {
 	
 	query := fmt.Sprintf(
@@ -72,6 +96,20 @@ func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, at
 		return ""
 	}
 	
+}
+
+func getRefByPK(refResolutionConfig *RefResolutionConfig, 
+	pk string) map[string]interface{} {
+
+	query := fmt.Sprintf("SELECT * FROM reference_table WHERE pk = %s", pk)
+	
+	data1, err1 := db.DataCall1(refResolutionConfig.stencilDBConn, query)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	return data1
+
 }
 
 func deleteRef(refID string) string {
@@ -183,7 +221,7 @@ func updateReferences(
 		if data != "" {
 
 			log.Println("---------------------------------------------")
-
+			
 			log.Println("Update references:")
 
 			var q0 []string
@@ -267,8 +305,25 @@ func updateReferences(
 			queries = append(queries, q2, q3)
 			queries = append(queries, q0...)
 
-			for _, updateQ := range queries {
-				log.Println(updateQ)
+			red := color.FgRed.Render
+
+			for j, updateQ := range queries {
+				
+				if j != 0 {
+					log.Println(updateQ)
+				} else {
+					
+					refToBeDeleted := getRefByPK(refResolutionConfig, refID)
+
+					if len(refToBeDeleted) == 0 {
+						log.Println(red("The reference has already been deleted"))
+					} else {
+						log.Println(red("The reference to be deleted:"))
+						profRefToBeDeleted := common_funcs.TransformInterfaceToString(refToBeDeleted)
+						refToBeDeletedLog := LogRefRow(refResolutionConfig, profRefToBeDeleted, true)
+						log.Println(red(refToBeDeletedLog))
+					}
+				}
 			}
 
 			err1 := db.TxnExecute(refResolutionConfig.stencilDBConn, queries)
@@ -290,6 +345,11 @@ func updateReferences(
 	} else {
 		
 		q1 := deleteRef(refID)
+
+		log.Println("---------------------------------------------")
+		log.Println("Already resolved and delete the reference:")
+		color.Red.Println(q1)
+		log.Println("---------------------------------------------")
 
 		err := db.TxnExecute1(refResolutionConfig.stencilDBConn, q1)
 		if err != nil {

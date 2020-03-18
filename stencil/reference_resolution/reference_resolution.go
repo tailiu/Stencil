@@ -3,6 +3,7 @@ package reference_resolution
 import (
 	"log"
 	"stencil/config"
+	"stencil/common_funcs"
 	"database/sql"
 )
 
@@ -85,9 +86,9 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 	for _, ref := range fromRefs {
 		
-		procRef := transformInterfaceToString(ref)
+		procRef := common_funcs.TransformInterfaceToString(ref)
 		
-		logRefRow(refResolutionConfig, procRef)
+		LogRefRow(refResolutionConfig, procRef)
 
 		data := CreateIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
 
@@ -183,9 +184,9 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 	for _, ref := range toRefs {
 
-		procRef := transformInterfaceToString(ref)
+		procRef := common_funcs.TransformInterfaceToString(ref)
 		
-		logRefRow(refResolutionConfig, procRef)
+		LogRefRow(refResolutionConfig, procRef)
 
 		data := CreateIdentity(procRef["app"], procRef["from_member"], procRef["from_id"])
 
@@ -266,7 +267,7 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 
 	for _, IDRow := range idRows {
 
-		procIDRow := transformInterfaceToString(IDRow)
+		procIDRow := common_funcs.TransformInterfaceToString(IDRow)
 		
 		logIDRow(refResolutionConfig, procIDRow)
 

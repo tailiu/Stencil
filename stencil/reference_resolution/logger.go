@@ -2,17 +2,19 @@ package reference_resolution
 
 import (
 	"log"
+	"fmt"
 )
 
-func logRefRow(refResolutionConfig *RefResolutionConfig, 
-	refRow map[string]string) {
+func LogRefRow(refResolutionConfig *RefResolutionConfig, 
+	refRow map[string]string, returnLogOnly ...bool) string {
 
 	fromMember := refResolutionConfig.tableIDNamePairs[refRow["from_member"]]
 	toMember := refResolutionConfig.tableIDNamePairs[refRow["to_member"]]
 
 	appName := refResolutionConfig.appIDNamePairs[refRow["app"]]
-
-	log.Println("ref_row - from_member:", fromMember, "|",
+	
+	output := fmt.Sprint(
+		"ref_row - from_member:", fromMember, "|",
 		"from_reference:", refRow["from_reference"], "|",
 		"from_id:", refRow["from_id"], "|",
 		"to_member:", toMember, "|",
@@ -22,6 +24,13 @@ func logRefRow(refResolutionConfig *RefResolutionConfig,
 		"migration_id:", refRow["migration_id"], "|",
 		"pk:", refRow["pk"],
 	)
+
+	if len(returnLogOnly) == 0 || !returnLogOnly[0] {
+		log.Println(output)
+		return ""
+	} else {
+		return output
+	}
 
 }
 

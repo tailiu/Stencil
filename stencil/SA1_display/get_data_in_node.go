@@ -128,7 +128,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			ID0 := hint0.TransformHintToIdenity(displayConfig)
 
 			reference_resolution.ResolveReference(
-				displayConfig.refResolutionConfig, ID0)
+				displayConfig.refResolutionConfig, 
+				ID0,
+			)
 			
 			// Here we check again to get updated attributes and values
 			// instead of using the returned values from the ResolveReference
@@ -163,6 +165,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
 
+				// checkAndLogUnresolvedRef(displayConfig, ID0, col0)
+
 				return nil, CannotResolveReferencesGetDataInNode
 			}
 		}
@@ -182,9 +186,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		
 		log.Println("From attributes in different from apps:", fromAttrsfirstArgFromApps)
 
-		log.Println("##########")
-
 		for app, fromAttrsfirstArg := range fromAttrsfirstArgFromApps {
+
+			log.Println("##########")
 
 			log.Println("Check from app:", app)	
 		
@@ -278,6 +282,8 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					// prevID = reference_resolution.GetPreIDByBackTraversal(displayConfig.refResolutionConfig, 
 					// 	dataID, srcTableID)
 					
+					// Here we only need to get the previous ID (one step backward)
+					// and we should not try to the get previous id by back traversal
 					prevID = reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
 						dataID, srcTableID)
 					
@@ -344,10 +350,11 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				// if prevID == "" {
 				// 	return nil, CannotGetPrevID
 				// }
+				
+				// This is probably because data0 (table0 and col0) does not come from the checked app
 				if prevID == "" {
 					
-					log.Println(`The from attributes contain id but we cannot get data, 
-						but we cannot get the previous id`)
+					log.Println(`The from attributes contain id, but we cannot get the previous id`)
 		
 					continue
 

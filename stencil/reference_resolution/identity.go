@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"stencil/db"
+	"stencil/common_funcs"
 )
 
 /*
@@ -74,7 +75,7 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 
 	for _, IDRow := range IDRows {
 
-		procIDRow := transformInterfaceToString(IDRow)
+		procIDRow := common_funcs.TransformInterfaceToString(IDRow)
 
 		nextData := CreateIdentity(
 			procIDRow["to_app"],

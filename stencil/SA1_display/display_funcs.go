@@ -10,6 +10,7 @@ import (
 	"stencil/reference_resolution"
 	"stencil/schema_mappings"
 	"stencil/common_funcs"
+	"github.com/gookit/color"
 	"strconv"
 	"strings"
 )
@@ -1036,5 +1037,36 @@ func getFirstArgsInREFByToTableToAttrInAllFromApps(displayConfig *displayConfig,
 	}
 
 	return firstArgsFromApps
+
+}
+
+func checkAndLogUnresolvedRef(displayConfig *displayConfig, 
+	fromID *reference_resolution.Identity, fromAttr string) {
+
+	unresolvedRef := reference_resolution.GetReferencesByFromIDFromAttrAndToMemberAndAttr(
+		displayConfig.refResolutionConfig, 
+		fromID, fromAttr,
+	)
+
+	green := color.FgGreen.Render
+
+	if len(unresolvedRef) == 0 {
+		log.Println(green("This reference has been resolved by other display threads"))
+	} else if len(unresolvedRef) != 1 {
+		panic("Should not have more than one unresolve references")
+	} else {
+		
+		procUnresolvedRef := common_funcs.TransformInterfaceToString(unresolvedRef[0])
+		
+		refLog := reference_resolution.LogRefRow(
+			displayConfig.refResolutionConfig, 
+			procUnresolvedRef,
+			true,
+		)
+
+		log.Println(green("Unresolved reference is:"))
+		log.Println(green(refLog))
+
+	}
 
 }
