@@ -413,6 +413,7 @@ func (self *MigrationWorkerV2) FetchFromMapping(nodeData map[string]interface{},
 			if len(args) > 3 {
 				toMemberTokens := strings.Split(args[3], ".")
 				ref = &MappingRef{
+					appID:      fmt.Sprint(self.SrcAppConfig.AppID),
 					fromID:     fmt.Sprint(res[targetTabCol[1]]),
 					fromMember: fmt.Sprint(targetTabCol[0]),
 					fromAttr:   fmt.Sprint(targetTabCol[1]),
@@ -522,6 +523,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 							self.Logger.Fatal("@DecodeMappingValue > #REF > #ASSIGN > fromID: Unable to find ref value in node data | ", cleanedFromAttrTokens[0])
 						}
 						ref = &MappingRef{
+							appID:      fmt.Sprint(self.SrcAppConfig.AppID),
 							fromID:     fmt.Sprint(fromID),
 							fromMember: fmt.Sprint(cleanedFromAttrTokens[0]),
 							fromAttr:   fmt.Sprint(cleanedFromAttrTokens[1]),
@@ -551,6 +553,7 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						secondMemberTokens := strings.Split(args[1], ".")
 						firstMemberTokens := strings.Split(args[0], ".")
 						ref = &MappingRef{
+							appID:      fmt.Sprint(self.SrcAppConfig.AppID),
 							fromID:     fmt.Sprint(fromID),
 							fromMember: fmt.Sprint(firstMemberTokens[0]),
 							fromAttr:   fmt.Sprint(firstMemberTokens[1]),
@@ -647,7 +650,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 				if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], node.Data); err == nil {
 					secondMemberTokens := strings.Split(args[1], ".")
 					firstMemberTokens := strings.Split(args[0], ".")
-					data.UpdateRefs(fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
+					data.UpdateRefs(self.SrcAppConfig.AppID, fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
 				} else {
 					fmt.Printf("args[0]: '%v' \n", args[0])
 					fmt.Printf("toID: '%v' | fromID: '%v' \n", toID, fromID)

@@ -69,12 +69,14 @@ type UnmappedTags struct {
 }
 
 type MappingRef struct {
-	fromID     interface{}
-	fromMember string
-	fromAttr   string
-	toID       interface{}
-	toMember   string
-	toAttr     string
+	appID         string
+	fromID        interface{}
+	fromMember    string
+	fromAttr      string
+	toID          interface{}
+	toMember      string
+	toAttr        string
+	mergedFromBag bool
 }
 
 type MappedData struct {

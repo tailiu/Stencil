@@ -202,7 +202,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 		}
 		if bagRow != nil {
 
-			self.Logger.Tracef("@FetchDataFromBags > Processing Bag | ID: %v | PK: %v", bagRow["id"], bagRow["pk"])
+			self.Logger.Tracef("@FetchDataFromBags > Processing Bag | ID: %v | PK: %v | App: %v | Member: %v", bagRow["id"], bagRow["pk"], bagRow["app"], bagRow["member"])
 
 			bagData := make(map[string]interface{})
 			if err := json.Unmarshal(bagRow["data"].([]byte), &bagData); err != nil {
@@ -211,6 +211,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 				self.Logger.Fatal("@FetchDataFromBags: UNABLE TO CONVERT BAG TO MAP ", bagRow, err)
 				return err
 			}
+			fmt.Printf("bag data | %v\n", bagData)
 
 			if bagMappedApp, mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
 				// self.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
@@ -237,7 +238,11 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 							cleanedFromAttr = decodedFromAttr
 							if found && bagVal != nil {
 								valueForNode = bagVal
-								refForNode = ref
+								if ref != nil {
+									ref.appID = fmt.Sprint(bagRow["app"])
+									ref.mergedFromBag = true
+									refForNode = ref
+								}
 							}
 						} else {
 							self.Logger.Debug(bagData)
@@ -419,9 +424,9 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 		// 	continue
 		// }
 
-		fmt.Println("########################################################################")
-		log.Println(fmt.Sprintf("Starting Bags for User: %s App: %s", userID, bagAppID))
-		fmt.Println("########################################################################")
+		color.Magenta.Println("########################################################################")
+		color.LightMagenta.Printf("Starting Bags for User: %s App: %s\n", userID, bagAppID)
+		color.Magenta.Println("########################################################################")
 
 		bags, err := db.GetBagsV2(self.logTxn.DBconn, bagAppID, userID, self.logTxn.Txn_id)
 

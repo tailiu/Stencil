@@ -530,7 +530,7 @@ func TableID(dbConn *sql.DB, table, app string) (string, error) {
 		if pk, ok := res["pk"]; ok {
 			return fmt.Sprint(pk), nil
 		} else {
-			fmt.Println(fmt.Sprintf("@db.TableName | Args | table: %s| app: %s", table, app))
+			fmt.Println(fmt.Sprintf("@db.TableID | Args | table: %s| app: %s", table, app))
 			return "", errors.New("Something bad with the returned result!")
 		}
 	} else {

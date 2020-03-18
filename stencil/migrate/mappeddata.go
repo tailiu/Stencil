@@ -25,13 +25,14 @@ func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface
 	}
 }
 
-func (self *MappedData) UpdateRefs(fromID, fromMember, fromAttr, toID, toMember, toAttr interface{}) {
+func (self *MappedData) UpdateRefs(appID, fromID, fromMember, fromAttr, toID, toMember, toAttr interface{}) {
 
 	if toID == nil || fromID == nil {
 		return
 	}
 
 	self.refs = append(self.refs, MappingRef{
+		appID:      fmt.Sprint(appID),
 		fromID:     fmt.Sprint(fromID),
 		fromMember: fmt.Sprint(fromMember),
 		fromAttr:   fmt.Sprint(fromAttr),

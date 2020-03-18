@@ -60,48 +60,52 @@ func (self *MigrationWorkerV2) _CheckReferenceExistsInPreviousMigrations(idRows 
 }
 
 func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForExistence bool) error {
-	dependeeMemberID, err := db.TableID(self.logTxn.DBconn, ref.fromMember, self.SrcAppConfig.AppID)
+	fmt.Println("@_CreateMappedReference: Enter ------------------------")
+	defer fmt.Println("@_CreateMappedReference: Exit ------------------------")
+	dependeeMemberID, err := db.TableID(self.logTxn.DBconn, ref.fromMember, ref.appID)
 	if err != nil {
+		fmt.Println(err)
+		fmt.Println(ref)
 		log.Fatal("@_CreateMappedReference: Unable to resolve id for dependeeMember ", ref.fromMember)
 		return err
 	}
 
-	depOnMemberID, err := db.TableID(self.logTxn.DBconn, ref.toMember, self.SrcAppConfig.AppID)
+	depOnMemberID, err := db.TableID(self.logTxn.DBconn, ref.toMember, ref.appID)
 	if err != nil {
+		fmt.Println(err)
+		fmt.Println(ref)
 		log.Fatal("@_CreateMappedReference: Unable to resolve id for depOnMember ", ref.toMember)
 		return err
 	}
 
 	if ref.toID == nil {
-		log.Println("@_CreateMappedReference: Unable to CreateNewReference | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		log.Println("@_CreateMappedReference: Unable to CreateNewReference | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 		return nil
 	}
 
-	if checkForExistence {
+	if checkForExistence || ref.mergedFromBag {
 		idRows := []IDRow{IDRow{
-			FromAppName:  self.SrcAppConfig.AppName,
-			FromAppID:    self.SrcAppConfig.AppID,
+			FromAppID:    ref.appID,
 			FromMemberID: dependeeMemberID,
 			FromMember:   ref.fromMember,
 			FromID:       ref.fromID}}
 
 		if exists, err := self._CheckReferenceExistsInPreviousMigrations(idRows, ref.fromAttr); err == nil && exists {
-			log.Println("@_CreateMappedReference: Reference Does Already Exist | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+			log.Println("@_CreateMappedReference: Reference Does Already Exist | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 			return nil
 		} else if err != nil {
 			log.Fatal("@_CreateMappedReference > _CheckReferenceExistsInPreviousMigrations | Err: ", err)
 		}
-		log.Println("@_CreateMappedReference: Reference Doesn't Already Exist | ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
-		color.Danger.Println("********** checkForExistence: stop **********")
+		log.Println("@_CreateMappedReference: Reference Doesn't Already Exist | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 
-	if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
+	if err := db.CreateNewReference(self.tx.StencilTx, ref.appID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
 		fmt.Println(ref)
-		fmt.Println("#Args: ", self.SrcAppConfig.AppID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		fmt.Println("#Args: ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 		log.Fatal("@_CreateMappedReference: Unable to CreateNewReference: ", err)
 		return err
 	} else {
-		color.Blue.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %s, toMember: %s, toID: %s, migrationID: %s, fromAttr: %s, toAttr: %s\n", self.SrcAppConfig.AppID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		color.Blue.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %s, toMember: %s, toID: %s, migrationID: %s, fromAttr: %s, toAttr: %s\n", ref.appID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 	return nil
 }
