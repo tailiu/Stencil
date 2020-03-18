@@ -122,7 +122,7 @@ func (self *MigrationWorkerV2) GetRowsFromIDTable(app, member, id interface{}, g
 
 func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData, node *DependencyNode, toTable config.ToTable) error {
 
-	toTableData := make(map[string]interface{})
+	toTableData := make(map[string]ValueWithReference)
 
 	prevUIDs := reference_resolution.GetPrevUserIDs(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.uid)
 	if prevUIDs == nil {
@@ -151,11 +151,17 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	if len(toTableData) > 0 {
 
 		mappedCols := strings.Split(mappedData.cols, ",")
-		for col, val := range toTableData {
+		for col, valWithRef := range toTableData {
 			if !helper.Contains(mappedCols, col) {
 				mappedData.cols += "," + col
-				mappedData.ivals = append(mappedData.ivals, val)
+				mappedData.ivals = append(mappedData.ivals, valWithRef.value)
 				mappedData.vals += fmt.Sprintf(",$%d", len(mappedData.ivals))
+				self.Logger.Tracef("@MigrateNode > FetchDataFromBags > Attr merged for: '%s.%s' = '%v'", toTable.Table, col, valWithRef.value)
+				if valWithRef.ref != nil {
+					mappedData.refs = append(mappedData.refs, *valWithRef.ref)
+					self.Logger.Tracef("@MigrateNode > FetchDataFromBags > Ref merged for: %s.%s\n", toTable.Table, col)
+				}
+
 			}
 		}
 		mappedData.Trim(",")
@@ -165,7 +171,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	return nil
 }
 
-func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, toTableData map[string]interface{}, prevUIDs map[string]string, app, member string, id interface{}, dstMemberID, dstMemberName, toTableName string) error {
+func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, toTableData map[string]ValueWithReference, prevUIDs map[string]string, app, member string, id interface{}, dstMemberID, dstMemberName, toTableName string) error {
 
 	currentRow := fmt.Sprintf("%s:%s:%s", app, member, id)
 
@@ -215,6 +221,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 					for toAttr, fromAttr := range toTable.Mapping {
 
 						var valueForNode interface{}
+						var refForNode *MappingRef
 						cleanedFromAttr := fromAttr
 
 						if strings.Contains(fromAttr, "#FETCH") {
@@ -226,10 +233,11 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 								self.Logger.Debugf("@FetchDataFromBags | fromAttr [%s]", fromAttr)
 								self.Logger.Fatal(err)
 							}
-						} else if bagVal, _, decodedFromAttr, _, found, err := self.DecodeMappingValue(fromAttr, bagData, true); err == nil {
+						} else if bagVal, _, decodedFromAttr, ref, found, err := self.DecodeMappingValue(fromAttr, bagData, true); err == nil {
 							cleanedFromAttr = decodedFromAttr
 							if found && bagVal != nil {
 								valueForNode = bagVal
+								refForNode = ref
 							}
 						} else {
 							self.Logger.Debug(bagData)
@@ -238,7 +246,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 
 						if _, ok := toTableData[toAttr]; !ok {
 							if valueForNode != nil {
-								toTableData[toAttr] = valueForNode
+								toTableData[toAttr] = ValueWithReference{value: valueForNode, ref: refForNode}
 								// self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Added New | toTable: [%s], fromAttr: [%s], cleanedFromAttr: [%s], toAttr: [%s], valueForNode: [%v], Found: [%v]", toTable.Table, fromAttr, cleanedFromAttr, toAttr, valueForNode, found)
 							} else {
 								// self.Logger.Tracef("@FetchDataFromBags > DecodeMappingValue | Decoded but not Added | toTable: [%s], fromAttr: [%s], cleanedFromAttr: [%s], toAttr: [%s], valueForNode: [%v], Found: [%v]", toTable.Table, fromAttr, cleanedFromAttr, toAttr, valueForNode, found)

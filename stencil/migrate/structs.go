@@ -18,6 +18,11 @@ const (
 	NAIVE       = "5"
 )
 
+type ValueWithReference struct {
+	value interface{}
+	ref   *MappingRef
+}
+
 type IDRow struct {
 	FromAppName  string
 	FromAppID    string
