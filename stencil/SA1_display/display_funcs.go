@@ -1041,32 +1041,56 @@ func getFirstArgsInREFByToTableToAttrInAllFromApps(displayConfig *displayConfig,
 }
 
 func checkAndLogUnresolvedRef(displayConfig *displayConfig, 
-	fromID *reference_resolution.Identity, fromAttr string) {
+	hint *HintStruct, fromAttr string) {
 
-	unresolvedRef := reference_resolution.GetReferencesByFromIDFromAttrAndToMemberAndAttr(
-		displayConfig.refResolutionConfig, 
-		fromID, fromAttr,
-	)
+	// unresolvedRef := reference_resolution.GetReferencesByFromIDFromAttrAndToMemberAndAttr(
+	// 	displayConfig.refResolutionConfig, 
+	// 	fromID, fromAttr,
+	// )
+
+	// green := color.FgGreen.Render
+
+	// if len(unresolvedRef) == 0 {
+	// 	log.Println(green("This reference has been resolved by other display threads"))
+	// } else if len(unresolvedRef) != 1 {
+	// 	panic("Should not have more than one unresolve references")
+	// } else {
+		
+	// 	procUnresolvedRef := common_funcs.TransformInterfaceToString(unresolvedRef[0])
+		
+	// 	refLog := reference_resolution.LogRefRow(
+	// 		displayConfig.refResolutionConfig, 
+	// 		procUnresolvedRef,
+	// 		true,
+	// 	)
+
+	// 	log.Println(green("Unresolved reference is:"))
+	// 	log.Println(green(refLog))
+
+	// }
 
 	green := color.FgGreen.Render
+	log.Println(green("Unresolved attribute is:"), green(fromAttr))
 
-	if len(unresolvedRef) == 0 {
-		log.Println(green("This reference has been resolved by other display threads"))
-	} else if len(unresolvedRef) != 1 {
-		panic("Should not have more than one unresolve references")
+	data, err := getOneRowBasedOnHint(displayConfig, hint)
+	if err != nil {
+		log.Println(green("The data has been deleted by application services"))
 	} else {
-		
-		procUnresolvedRef := common_funcs.TransformInterfaceToString(unresolvedRef[0])
-		
-		refLog := reference_resolution.LogRefRow(
-			displayConfig.refResolutionConfig, 
-			procUnresolvedRef,
-			true,
-		)
-
-		log.Println(green("Unresolved reference is:"))
-		log.Println(green(refLog))
-
+		log.Println(green("The data (node member) containing the unresolved attribute is:"))
+		log.Println(green(transformMapToString(data)))
 	}
+
+}
+
+func transformMapToString(data map[string]interface{}) string {
+
+	procData := "| "
+
+	for k, v := range data {
+
+		procData += k + ": " + fmt.Sprint(v) + " | "
+	}
+
+	return procData
 
 }
