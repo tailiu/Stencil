@@ -165,7 +165,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
 
-				// checkAndLogUnresolvedRef(displayConfig, ID0, col0)
+				checkAndLogUnresolvedRef(displayConfig, hint0, col0)
 
 				return nil, CannotResolveReferencesGetDataInNode
 			}

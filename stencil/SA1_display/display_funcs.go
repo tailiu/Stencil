@@ -1070,7 +1070,7 @@ func checkAndLogUnresolvedRef(displayConfig *displayConfig,
 	// }
 
 	green := color.FgGreen.Render
-	log.Println(green("Unresolved attribute is:"), green(fromAttr))
+	log.Println(green("Unresolved attribute is:"), green(hint.Table + ":" + fromAttr))
 
 	data, err := getOneRowBasedOnHint(displayConfig, hint)
 	if err != nil {
