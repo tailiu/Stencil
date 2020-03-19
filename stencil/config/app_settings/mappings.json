@@ -457,7 +457,7 @@
                                     "table": "user",
                                     "conditions":{},
                                     "mapping": {
-                                        "id":"#REF(users.id,accounts.id)",
+                                        "id":"#REFHARD(users.id,accounts.id)",
                                         "email":"users.email",
                                         "nickname":"accounts.username",
                                         "created":"users.created_at",
@@ -1071,7 +1071,7 @@
                                 {
                                     "table": "user",
                                     "mapping": {
-                                        "id": "#REF(users.id,people.id)",
+                                        "id": "#REFHARD(users.id,people.id)",
                                         "nickname": "users.username",
                                         "email":"users.email",
                                         "language":"users.language",
@@ -1655,7 +1655,7 @@
                                     "table": "user",
                                     "conditions":{},
                                     "mapping": {
-                                        "id": "#REF(credentials.id,users.id)",
+                                        "id": "#REFHARD(credentials.id,users.id)",
                                         "nickname":"users.name",
                                         "email":"credentials.email",
                                         "password":"credentials.password",

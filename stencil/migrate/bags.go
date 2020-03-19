@@ -221,6 +221,10 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 					}
 					for toAttr, fromAttr := range toTable.Mapping {
 
+						if strings.EqualFold("id", toAttr) {
+							continue
+						}
+
 						var valueForNode interface{}
 						var refForNode *MappingRef
 						cleanedFromAttr := fromAttr
@@ -449,6 +453,7 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 			self.Logger.Tracef("@MigrateBags > Processing Bag | ID: %v | PK: %v | %s", bag["id"], bag["pk"], bagPK)
 
 			if _, ok := processedBags[bagPK]; ok {
+				self.Logger.Tracef("@MigrateBags > Bag Already Processed | ID: %v | PK: %v | %s", bag["id"], bag["pk"], bagPK)
 				continue
 			}
 

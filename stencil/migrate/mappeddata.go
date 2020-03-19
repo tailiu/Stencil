@@ -3,7 +3,10 @@ package migrate
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
+
+	"github.com/gookit/color"
 )
 
 func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface{}) {
@@ -28,6 +31,8 @@ func (self *MappedData) UpdateData(col, orgCol, fromTable string, ival interface
 func (self *MappedData) UpdateRefs(appID, fromID, fromMember, fromAttr, toID, toMember, toAttr interface{}) {
 
 	if toID == nil || fromID == nil {
+		fmt.Println(appID, fromID, fromMember, fromAttr, toID, toMember, toAttr)
+		color.Yellow.Printf("@UpdateRefs | Returning | toID : '%v' | fromID: '%v' ", toID, fromID)
 		return
 	}
 
@@ -41,17 +46,24 @@ func (self *MappedData) UpdateRefs(appID, fromID, fromMember, fromAttr, toID, to
 		toAttr:     fmt.Sprint(toAttr)})
 }
 
-func GetIDsFromNodeData(firstMember string, secondMember string, nodeData map[string]interface{}) (interface{}, interface{}, error) {
+func GetIDsFromNodeData(firstMember, secondMember string, nodeData map[string]interface{}, hardRef bool) (interface{}, interface{}, error) {
 	var toID, fromID interface{}
 
-	if val, ok := nodeData[firstMember]; ok {
-		toID = val
-	} else {
-		return nil, nil, errors.New("Unable to find toID ref value in node data: " + firstMember)
-	}
+	log.Printf("@GetIDsFromNodeData | Args | firstMember : %s, secondMember : %s, hardRef : %v ", firstMember, secondMember, hardRef)
+	log.Printf("@GetIDsFromNodeData | Args | nodeData : %v ", nodeData)
 
-	if val, ok := nodeData[secondMember]; ok {
-		toID = val
+	if hardRef {
+		if val, ok := nodeData[secondMember]; ok {
+			toID = val
+		} else {
+			return nil, nil, errors.New("Unable to find toID ref value in node data: " + secondMember)
+		}
+	} else {
+		if val, ok := nodeData[firstMember]; ok {
+			toID = val
+		} else {
+			return nil, nil, errors.New("Unable to find toID ref value in node data: " + firstMember)
+		}
 	}
 
 	firstMemberTokens := strings.Split(firstMember, ".")
@@ -61,7 +73,7 @@ func GetIDsFromNodeData(firstMember string, secondMember string, nodeData map[st
 	} else {
 		return nil, nil, errors.New("Unable to find fromID ref value in node data: " + firstMemberTokens[0] + ".id")
 	}
-
+	log.Printf("@GetIDsFromNodeData | Returning | toID : %v, fromID : %v ", toID, fromID)
 	return toID, fromID, nil
 }
 

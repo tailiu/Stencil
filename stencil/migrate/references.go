@@ -54,14 +54,14 @@ func (self *MigrationWorkerV2) _CheckReferenceExistsInPreviousMigrations(idRows 
 		}
 	} else {
 		log.Println("@_CheckReferenceExistsInPreviousMigrations: IDRows | null | ", idRows)
-		fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 	}
 	return false, nil
 }
 
 func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForExistence bool) error {
-	fmt.Println("@_CreateMappedReference: Enter ------------------------")
-	defer fmt.Println("@_CreateMappedReference: Exit ------------------------")
+	fmt.Println("@_CreateMappedReference: Enter >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+	fmt.Printf("@_CreateMappedReference | Ref : %v | checkForExistence : %v \n", ref, checkForExistence)
+	defer fmt.Println("@_CreateMappedReference: Exit <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 	dependeeMemberID, err := db.TableID(self.logTxn.DBconn, ref.fromMember, ref.appID)
 	if err != nil {
 		fmt.Println(err)
@@ -105,7 +105,7 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 		log.Fatal("@_CreateMappedReference: Unable to CreateNewReference: ", err)
 		return err
 	} else {
-		color.Blue.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %s, toMember: %s, toID: %s, migrationID: %s, fromAttr: %s, toAttr: %s\n", ref.appID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		color.Yellow.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %s, toMember: %s, toID: %s, migrationID: %s, fromAttr: %s, toAttr: %s\n", ref.appID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 	return nil
 }

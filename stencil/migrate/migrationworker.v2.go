@@ -548,8 +548,12 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						mappedVal = nodeVal
 						fromTable = argsTokens[0]
 					}
+					hardRef := false
+					if strings.Contains(fromAttr, "#REFHARD") {
+						hardRef = true
+					}
 					// if !isBag || rawBag {
-					if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], nodeData); err == nil {
+					if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], nodeData, hardRef); err == nil {
 						secondMemberTokens := strings.Split(args[1], ".")
 						firstMemberTokens := strings.Split(args[0], ".")
 						ref = &MappingRef{
@@ -640,14 +644,23 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 
 	newRowId := db.GetNewRowIDForTable(self.DstDBConn, toTable.Table)
 	data.UpdateData("id", "", "", newRowId)
-
+	color.Red.Printf("Getting mapped data | %v | %v", toTable.Table, toTable.Mapping)
 	for toAttr, fromAttr := range toTable.Mapping {
+		// color.Red.Printf("Getting mapped data | toAttr : %v , fromAttr : %v  \n", toAttr, fromAttr)
 		if strings.EqualFold("id", toAttr) {
+			// fmt.Println("toAttr is id  ")
 			// if self.mtype != BAGS && strings.Contains(fromAttr, "#REF") {
 			if strings.Contains(fromAttr, "#REF") {
-				assignedTabCol := strings.Trim(fromAttr, "(#REF)")
+				// fmt.Println("fromAttr contains #REF  ")
+				assignedTabCol := self.CleanMappingAttr(fromAttr)
 				args := strings.Split(assignedTabCol, ",")
-				if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], node.Data); err == nil {
+				hardRef := false
+				if strings.Contains(fromAttr, "#REFHARD") {
+					// fmt.Println("fromAttr contains #REFHARD  ")
+					hardRef = true
+				}
+				// color.Red.Printf("Creating reference | args[0] : %v , args[1] : %v , node.Data : %v , hardRef : %v  \n", args[0], args[1], node.Data, hardRef)
+				if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], node.Data, hardRef); err == nil {
 					secondMemberTokens := strings.Split(args[1], ".")
 					firstMemberTokens := strings.Split(args[0], ".")
 					data.UpdateRefs(self.SrcAppConfig.AppID, fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
@@ -658,6 +671,8 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 					self.Logger.Fatal("@GetMappedData > id > GetIDs | ", err)
 					return data, err
 				}
+			} else {
+				// fmt.Println("fromAttr doesn't contain #REF  ")
 			}
 		} else if mappedValue, fromTable, cleanedFromAttr, ref, found, err := self.DecodeMappingValue(fromAttr, node.Data, isBag, rawBag); err == nil {
 			if found {

@@ -394,6 +394,7 @@ func (self *MigrationWorkerV2) CleanMappingAttr(attr string) string {
 	cleanedAttr = strings.ReplaceAll(cleanedAttr, ")", "")
 	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#ASSIGN", "")
 	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#FETCH", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#REFHARD", "")
 	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#REF", "")
 	return cleanedAttr
 }
