@@ -53,7 +53,7 @@ func OldGetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings
 							if !ignoreREF {
 
 								// If there exists #REF
-								if containREF(fAttr) {
+								if containREForREFHARD(fAttr) {
 									fAttr = getFirstArgFromREF(fAttr)
 
 									if fAttr == fromAttr {
@@ -64,7 +64,7 @@ func OldGetMappedAttributesFromSchemaMappings(allMappings *config.SchemaMappings
 							} else {
 
 								// If there does not exist #REF
-								if !containREF(fAttr) {
+								if !containREForREFHARD(fAttr) {
 
 									if fAttr == fromAttr {
 										uniqueAttrs[tAttr] = true
@@ -119,7 +119,7 @@ func OldGetMappedAttributesFromSchemaMappingsByFETCH(allMappings *config.SchemaM
 
 					// If there exists #REF
 					// #FETCH and #ASSIGN don't coexist, so we don't check #ASSIGN
-					if containREF(fAttr) {
+					if containREForREFHARD(fAttr) {
 
 						if containFETCH(fAttr) {
 

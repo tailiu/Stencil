@@ -95,7 +95,7 @@ func procMappingsByRows(toApp *config.MappedApp, isSourceApp bool) map[string]st
 					// PSM does not process mappings containing #REF
 					// because the function #REF is very complex and must be defined by app developers
 					// and should not be got by PSM
-					if containREF(fromTableAttr) {
+					if containREForREFHARD(fromTableAttr) {
 						continue
 					}
 
@@ -368,7 +368,7 @@ func satisfyConditions(conditions map[string]string,
 			// #REF could be used in conditions
 			// For example, retweets."reblog_of_id":"#REF(retweets.tweet_id,tweets.id)"
 			// indicate that retweets."reblog_of_id" is not NULL
-			if containREF(v1) {
+			if containREForREFHARD(v1) {
 				v1 = handleREF(v1)
 			}
 
@@ -466,7 +466,7 @@ func containFunction(data string) bool {
 func containFunctionExceptREF(data string) bool {
 
 	if strings.Contains(data, "#") {
-		if containREF(data) {
+		if containREForREFHARD(data) {
 			return false
 		} else {
 			return true
@@ -501,7 +501,7 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 		// media_attachments.status_id:#REF(#FETCH(posts.id,posts.guid,photos.status_message_guid),posts.id),
 		// file_to_post.post_id: #REF(media_attachments.status_id,statuses.id)",
 		// -> file_to_post.post_id: posts.id
-		if containREF(v1) {
+		if containREForREFHARD(v1) {
 			// log.Println(v1)
 			v1 = handleREF(v1)
 			// log.Println(v1)
@@ -535,7 +535,7 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 
 			// log.Println(v2)
 
-			if containREF(v2) {
+			if containREForREFHARD(v2) {
 				// log.Println("+++++S")
 				// log.Println(v2)
 				v2 = handleREF(v2)

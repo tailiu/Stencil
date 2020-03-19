@@ -13,9 +13,23 @@ import (
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
-func removeREFAndParatheses(data string) string {
+func removeREForREFHARDAndParatheses(data string) string {
 
-	tmp := strings.Replace(data, "#REF(", "", -1)
+	var tmp string
+
+	if containREF(data) {
+
+		tmp = strings.Replace(data, "#REF(", "", -1)
+	
+	} else if containREFHARD(data) {
+
+		tmp = strings.Replace(data, "#REFHARD(", "", -1)
+
+	} else {
+
+		panic("Does not contain #REF or #REFHARD")
+
+	}
 
 	tmp1 := strings.Replace(tmp, ")", "", -1)
 
@@ -48,7 +62,14 @@ func getThirdArgFromREFIfExists(ref string) string {
 // to get "statuses"
 func getThirdArgFromREFContainingFETCHIfExists(ref string) string {
 
-	tmp1 := strings.Replace(ref, "#REF(#FETCH(", "", -1)
+	var tmp1 string
+
+	if containREF(ref) {
+		tmp1 = strings.Replace(ref, "#REF(#FETCH(", "", -1)
+	} else {
+		// Actually this is not necessary, since #FETCH is never with #REFHARD
+		tmp1 = strings.Replace(ref, "#REFHARD(#FETCH(", "", -1)
+	}
 
 	tmp2 := strings.Replace(tmp1, ")", "", -1)
 	
@@ -65,6 +86,30 @@ func getThirdArgFromREFContainingFETCHIfExists(ref string) string {
 func containREF(data string) bool {
 
 	if strings.Contains(data, "#REF(") {
+		
+		return true
+
+	} else {
+
+		return false
+	}
+}
+
+func containREFHARD(data string) bool {
+
+	if strings.Contains(data, "#REFHARD(") {
+		
+		return true
+
+	} else {
+
+		return false
+	}
+}
+
+func containREForREFHARD(data string) bool {
+
+	if strings.Contains(data, "#REF(") || strings.Contains(data, "#REFHARD(") {
 		
 		return true
 
@@ -167,7 +212,7 @@ func GetMappedAttributesToUpdateOthers(
 							fAttr = RemoveASSIGNAllRightParenthesesIfExists(fAttr)
 
 							// If there does not exist #REF
-							if !containREF(fAttr) {
+							if !containREForREFHARD(fAttr) {
 
 								if fAttr == fromAttr {
 									uniqueAttrs[tAttr] = true
@@ -228,9 +273,9 @@ func GetMappedAttributesToBeUpdated(
 							fAttr = RemoveASSIGNAllRightParenthesesIfExists(fAttr)
 
 							// If there exists #REF
-							if containREF(fAttr) {
+							if containREForREFHARD(fAttr) {
 
-								fAttr = removeREFAndParatheses(fAttr)
+								fAttr = removeREForREFHARDAndParatheses(fAttr)
 
 								firstArg := getFirstArgFromREF(fAttr)
 
@@ -298,9 +343,9 @@ func GetMappedAttributesToBeUpdatedByFETCH(
 				for tAttr, fAttr := range tTable.Mapping {
 					// fromAttr
 
-					// If there exists #REF
+					// If there exists #REF or #REFHARD
 					// #FETCH and #ASSIGN don't coexist, so we don't check #ASSIGN
-					if containREF(fAttr) {
+					if containREForREFHARD(fAttr) {
 
 						if containFETCH(fAttr) {
 
@@ -364,8 +409,8 @@ func REFExists(mappings *config.MappedApp,
 				if mappedAttr, ok := tTable.Mapping[toAttr]; ok {
 					// log.Println(mappedAttr)
 
-					// If there exists #REF
-					if containREF(mappedAttr) {	
+					// If there exists #REF or 
+					if containREForREFHARD(mappedAttr) {	
 
 						return true, nil
 
@@ -409,11 +454,11 @@ func GetFirstArgsInREFByToTableToAttr(mappings *config.MappedApp,
 					// log.Println(mappedAttr)
 
 					// If there exists #REF
-					if containREF(mappedAttr) {	
+					if containREForREFHARD(mappedAttr) {	
 
 						var firstArg string
 
-						mappedAttr = removeREFAndParatheses(mappedAttr)
+						mappedAttr = removeREForREFHARDAndParatheses(mappedAttr)
 
 						// For example,
 						// "status_id":"#REF(#FETCH(posts.id,posts.guid,
@@ -457,7 +502,7 @@ func GetAllMappedAttributesContainingREFInMappings(mappings *config.MappedApp,
 				for k, v := range tTable.Mapping {
 					
 					// contain #REF
-					if containREF(v) {
+					if containREForREFHARD(v) {
 
 						// add only if there does not exist 
 						// to make sure mappedAttrsWithREF contains unique attrs
@@ -496,6 +541,12 @@ func getFirstArgFromFETCH(data string) string {
 	if containREF(data) {
 
 		tmp1 = strings.Split(data, "#REF(")
+
+		tmp2 = strings.Split(tmp1[1], "#FETCH(")
+
+	} else if containREFHARD(data) {
+
+		tmp1 = strings.Split(data, "#REFHARD(")
 
 		tmp2 = strings.Split(tmp1[1], "#FETCH(")
 

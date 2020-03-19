@@ -483,7 +483,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 		// panic(`It should never happen since there should be one piece of data which is what we want!`)
 		// This could happen when no data is migrated, there is no mappings, 
 		// or the reference has been resolved and displayed data is deleted
-		// For example, statuses, id, mentions, status_id
+		// For example, statuses, id, mentions, status_id (no data is migrated)
 		return nil, CannotGetDataAfterResolvingRef2
 	
 	// Normally, there must exist one that needs to be resolved. 

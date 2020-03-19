@@ -1043,32 +1043,6 @@ func getFirstArgsInREFByToTableToAttrInAllFromApps(displayConfig *displayConfig,
 func checkAndLogUnresolvedRef(displayConfig *displayConfig, 
 	hint *HintStruct, fromAttr string) {
 
-	// unresolvedRef := reference_resolution.GetReferencesByFromIDFromAttrAndToMemberAndAttr(
-	// 	displayConfig.refResolutionConfig, 
-	// 	fromID, fromAttr,
-	// )
-
-	// green := color.FgGreen.Render
-
-	// if len(unresolvedRef) == 0 {
-	// 	log.Println(green("This reference has been resolved by other display threads"))
-	// } else if len(unresolvedRef) != 1 {
-	// 	panic("Should not have more than one unresolve references")
-	// } else {
-		
-	// 	procUnresolvedRef := common_funcs.TransformInterfaceToString(unresolvedRef[0])
-		
-	// 	refLog := reference_resolution.LogRefRow(
-	// 		displayConfig.refResolutionConfig, 
-	// 		procUnresolvedRef,
-	// 		true,
-	// 	)
-
-	// 	log.Println(green("Unresolved reference is:"))
-	// 	log.Println(green(refLog))
-
-	// }
-
 	green := color.FgGreen.Render
 	log.Println(green("Unresolved attribute is:"), green(hint.Table + ":" + fromAttr))
 
@@ -1087,7 +1061,6 @@ func transformMapToString(data map[string]interface{}) string {
 	procData := "| "
 
 	for k, v := range data {
-
 		procData += k + ": " + fmt.Sprint(v) + " | "
 	}
 

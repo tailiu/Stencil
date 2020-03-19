@@ -316,7 +316,7 @@ func updateReferences(
 					refToBeDeleted := getRefByPK(refResolutionConfig, refID)
 
 					if len(refToBeDeleted) == 0 {
-						log.Println(red("The reference has already been deleted"))
+						log.Println(red("The reference has already been deleted by other display threads"))
 					} else {
 						log.Println(red("The reference to be deleted:"))
 						profRefToBeDeleted := common_funcs.TransformInterfaceToString(refToBeDeleted)
