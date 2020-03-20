@@ -94,7 +94,7 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 			FromID:       ref.fromID}}
 
 		if exists, err := self._CheckReferenceExistsInPreviousMigrations(idRows, ref.fromAttr); err == nil && exists {
-			log.Println("@_CreateMappedReference: Reference Does Already Exist | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+			log.Println("@_CreateMappedReference: Reference Indeed Already Exists | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 			return nil
 		} else if err != nil {
 			log.Fatal("@_CreateMappedReference > _CheckReferenceExistsInPreviousMigrations | Err: ", err)
