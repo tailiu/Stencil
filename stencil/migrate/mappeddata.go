@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"stencil/helper"
 	"strings"
 
 	"github.com/gookit/color"
@@ -38,43 +39,52 @@ func (self *MappedData) UpdateRefs(appID, fromID, fromMember, fromAttr, toID, to
 
 	self.refs = append(self.refs, MappingRef{
 		appID:      fmt.Sprint(appID),
-		fromID:     fmt.Sprint(fromID),
+		fromID:     fromID.(int64),
 		fromMember: fmt.Sprint(fromMember),
 		fromAttr:   fmt.Sprint(fromAttr),
-		toID:       fmt.Sprint(toID),
+		toID:       toID.(int64),
 		toMember:   fmt.Sprint(toMember),
 		toAttr:     fmt.Sprint(toAttr)})
 }
 
-func GetIDsFromNodeData(firstMember, secondMember string, nodeData map[string]interface{}, hardRef bool) (interface{}, interface{}, error) {
-	var toID, fromID interface{}
+func GetIDsFromNodeData(firstMember, secondMember string, nodeData map[string]interface{}, hardRef bool) (int64, int64, error) {
+	var toID, fromID int64
 
 	log.Printf("@GetIDsFromNodeData | Args | firstMember : %s, secondMember : %s, hardRef : %v ", firstMember, secondMember, hardRef)
 	log.Printf("@GetIDsFromNodeData | Args | nodeData : %v ", nodeData)
 
 	if hardRef {
 		if val, ok := nodeData[secondMember]; ok {
-			toID = val
+			if val != nil {
+				toID = helper.GetInt64(val)
+			}
 		} else {
-			return nil, nil, errors.New("Unable to find toID ref value in node data: " + secondMember)
+			return toID, fromID, errors.New("Unable to find toID ref value in node data: " + secondMember)
 		}
 	} else {
 		if val, ok := nodeData[firstMember]; ok {
-			toID = val
+			if val != nil {
+				toID = helper.GetInt64(val)
+			}
 		} else {
-			return nil, nil, errors.New("Unable to find toID ref value in node data: " + firstMember)
+			return toID, fromID, errors.New("Unable to find toID ref value in node data: " + firstMember)
 		}
 	}
 
 	firstMemberTokens := strings.Split(firstMember, ".")
 
 	if val, ok := nodeData[firstMemberTokens[0]+".id"]; ok {
-		fromID = val
+		if val != nil {
+			fromID = helper.GetInt64(val)
+		}
 	} else {
-		return nil, nil, errors.New("Unable to find fromID ref value in node data: " + firstMemberTokens[0] + ".id")
+		return toID, fromID, errors.New("Unable to find fromID ref value in node data: " + firstMemberTokens[0] + ".id")
 	}
 	log.Printf("@GetIDsFromNodeData | Returning | toID : %v, fromID : %v ", toID, fromID)
-	return toID, fromID, nil
+	if toID != 0 && fromID != 0 {
+		return toID, fromID, nil
+	}
+	return toID, fromID, fmt.Errorf("Nil reference(s) | firstMember : %s, secondMember : %s, hardRef : %v | fromID: %v | toID: %v", firstMember, secondMember, hardRef, fromID, toID)
 }
 
 func (self *MappedData) Trim(chars string) {

@@ -28,12 +28,12 @@ type IDRow struct {
 	FromAppID    string
 	FromMember   string
 	FromMemberID string
-	FromID       interface{}
+	FromID       int64
 	ToAppID      string
 	ToAppName    string
 	ToMember     string
 	ToMemberID   string
-	ToID         interface{}
+	ToID         int64
 }
 
 type Transactions struct {
@@ -70,10 +70,10 @@ type UnmappedTags struct {
 
 type MappingRef struct {
 	appID         string
-	fromID        interface{}
+	fromID        int64
 	fromMember    string
 	fromAttr      string
-	toID          interface{}
+	toID          int64
 	toMember      string
 	toAttr        string
 	mergedFromBag bool

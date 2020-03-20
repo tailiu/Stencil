@@ -12,7 +12,6 @@ import (
 	"math/rand"
 	"os/exec"
 	"reflect"
-	"stencil/helper"
 	"strings"
 
 	"github.com/gookit/color"
@@ -285,16 +284,13 @@ func CreateNewBag(tx *sql.Tx, app, member, id, user_id, migration_id interface{}
 	return err
 }
 
-func GetRowsFromIDTableByTo(dbConn *sql.DB, app, member, id interface{}) ([]map[string]interface{}, error) {
-	IDInt, err := helper.ParseFloat(fmt.Sprint(id))
-	if err != nil {
-		log.Fatal("@GetRowsFromIDTableByTo | ", err)
-	}
+func GetRowsFromIDTableByTo(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
+
 	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
-	return DataCall(dbConn, query, app, member, int(IDInt))
+	return DataCall(dbConn, query, app, member, id)
 }
 
-func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member, id interface{}) ([]map[string]interface{}, error) {
+func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
 	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
 	return DataCall(dbConn, query, app, member, id)
 }
@@ -304,61 +300,48 @@ func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[
 	return DataCall(dbConn, query, user_id, app_id, migration_id)
 }
 
-func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member, id interface{}, migration_id int) (map[string]interface{}, error) {
+func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member string, id int64, migration_id int) (map[string]interface{}, error) {
 	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND app = $2 AND member = $3 and id = $4 AND migration_id != $5"
 	return DataCall1(dbConn, query, user_id, app, member, id, migration_id)
 }
 
-func CheckIfReferenceExists(dbConn *sql.DB, app, fromMember, fromID, fromReference interface{}) bool {
-	fromIDInt, err := helper.ParseFloat(fmt.Sprint(fromID))
-	if err != nil {
-		log.Fatal("@CheckIfReferenceExists | ", err)
-	}
-	q := fmt.Sprintf("SELECT * FROM reference_table WHERE app = '%s' AND from_member = '%s' AND from_id = '%v' AND from_reference = '%s'", app, fromMember, int(fromIDInt), fromReference)
+func CheckIfReferenceExists(dbConn *sql.DB, app, fromMember string, fromID int64, fromReference string) bool {
+
+	q := fmt.Sprintf("SELECT * FROM reference_table WHERE app = '%s' AND from_member = '%s' AND from_id = '%v' AND from_reference = '%s'", app, fromMember, fromID, fromReference)
 	if res, err := DataCall1(dbConn, q); err == nil {
 		if len(res) > 0 {
 			return true
 		}
 	} else {
+		fmt.Println(q)
 		log.Fatal(err)
 	}
 	return false
 }
 
-func CheckIfCompleteReferenceExists(dbConn *sql.DB, app, fromMember, fromID, toMember, toID, fromReference, toReference interface{}) bool {
-	fromIDInt, err := helper.ParseFloat(fmt.Sprint(fromID))
-	if err != nil {
-		log.Fatal("@CheckIfCompleteReferenceExists | ", err)
-	}
+func CheckIfCompleteReferenceExists(dbConn *sql.DB, app, fromMember string, fromID int64, toMember string, toID int, fromReference, toReference string) bool {
 
-	toIDInt, err := helper.ParseFloat(fmt.Sprint(toID))
-	if err != nil {
-		log.Fatal("@CheckIfCompleteReferenceExists | ", err)
-	}
-	q := fmt.Sprintf("SELECT * FROM reference_table WHERE app = '%s' AND from_member = '%s' AND from_id = '%v' AND from_reference = '%s' AND to_member = '%s' AND to_id = '%v' AND to_reference = '%s'", app, fromMember, int(fromIDInt), fromReference, toMember, int(toIDInt), toReference)
+	q := fmt.Sprintf("SELECT * FROM reference_table WHERE app = '%s' AND from_member = '%s' AND from_id = '%v' AND from_reference = '%s' AND to_member = '%s' AND to_id = '%v' AND to_reference = '%s'", app, fromMember, fromID, fromReference, toMember, toID, toReference)
 	if res, err := DataCall1(dbConn, q); err == nil {
 		if len(res) > 0 {
 			return true
 		}
 	} else {
+		fmt.Println(q)
 		log.Fatal(err)
 	}
 	return false
 }
 
-func CreateNewReference(tx *sql.Tx, app, fromMember, fromID, toMember, toID, migration_id, fromReference, toReference interface{}) error {
-	fromIDInt, err := helper.ParseFloat(fmt.Sprint(fromID))
-	if err != nil {
-		log.Fatal("@CreateNewReference | ", err)
-	}
+func CreateNewReference(tx *sql.Tx, app, fromMember string, fromID int64, toMember string, toID int64, migration_id, fromReference, toReference string) error {
 
-	toIDInt, err := helper.ParseFloat(fmt.Sprint(toID))
-	if err != nil {
-		log.Fatal("@CreateNewReference | ", err)
-	}
 	// query := "INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;"
-	query := fmt.Sprintf("INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, int(fromIDInt), fromReference, toMember, int(toIDInt), toReference, migration_id)
-	_, err = tx.Exec(query)
+	query := fmt.Sprintf("INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromID, fromReference, toMember, toID, toReference, migration_id)
+
+	_, err := tx.Exec(query)
+	if err != nil {
+		fmt.Println(query)
+	}
 	return err
 }
 

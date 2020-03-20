@@ -160,3 +160,15 @@ func ParseFloat(str string) (float64, error) {
 
 	return baseVal * math.Pow10(int(expVal)), nil
 }
+
+func GetInt64(val interface{}) int64 {
+	if valInt, ok := val.(int64); ok {
+		return valInt
+	} else if valFloat, ok := val.(float64); ok {
+		valInt := int64(math.Ceil(valFloat))
+		fmt.Printf("Float64: %v converted to Int64: %v\n", valFloat, valInt)
+		return valInt
+	}
+	log.Fatal("@GetInt64: Neither int64 nor float64 | ", val)
+	return 0
+}

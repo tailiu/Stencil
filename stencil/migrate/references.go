@@ -31,7 +31,7 @@ func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
 func (self *MigrationWorkerV2) _CheckReferenceExistsInPreviousMigrations(idRows []IDRow, refAttr string) (bool, error) {
 	if len(idRows) > 0 {
 		for _, idRow := range idRows {
-			if idRow.ToID != nil {
+			if idRow.ToID != 0 {
 				if foundAttr, isFound := self.FetchMappedAttribute(idRow.FromAppName, idRow.FromAppID, idRow.ToAppName, idRow.ToAppID, idRow.FromMember, idRow.ToMember, refAttr); isFound {
 					self.Logger.Debugf("@_CheckReferenceExistsInPreviousMigrations: Mapped Attr Found | FromAttr: %s | FromApp: %s, FromMember: %s, ToApp: %s, ToMember: %s, ToAttr: %s \n", foundAttr, idRow.FromAppName, idRow.FromMember, idRow.ToAppName, idRow.ToMember, refAttr)
 					refAttr = foundAttr
@@ -46,14 +46,17 @@ func (self *MigrationWorkerV2) _CheckReferenceExistsInPreviousMigrations(idRows 
 				return true, nil
 			}
 			fmt.Printf("@_CheckReferenceExistsInPreviousMigrations: Reference doesn't exist | App: %v, Member: %v, ID: %v, Attr: %v\n", idRow.FromAppID, idRow.FromMemberID, idRow.FromID, refAttr)
+			fmt.Printf("@_CheckReferenceExistsInPreviousMigrations: Getting IDRows | App: %v, Member: %v, ID: %v, getFrom: %v\n", idRow.FromAppID, idRow.FromMemberID, idRow.FromID, false)
 			if newIDRows, err := self.GetRowsFromIDTable(idRow.FromAppID, idRow.FromMemberID, idRow.FromID, false); err == nil {
 				if exists, err := self._CheckReferenceExistsInPreviousMigrations(newIDRows, refAttr); err == nil && exists {
 					return exists, err
 				}
+			} else {
+				self.Logger.Fatal(err)
 			}
 		}
 	} else {
-		log.Println("@_CheckReferenceExistsInPreviousMigrations: IDRows | null | ", idRows)
+		log.Println("@_CheckReferenceExistsInPreviousMigrations: No More IDRows | ", idRows)
 	}
 	return false, nil
 }
@@ -78,7 +81,7 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 		return err
 	}
 
-	if ref.toID == nil {
+	if ref.toID == 0 {
 		log.Println("@_CreateMappedReference: Unable to CreateNewReference | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 		return nil
 	}
@@ -105,7 +108,7 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 		log.Fatal("@_CreateMappedReference: Unable to CreateNewReference: ", err)
 		return err
 	} else {
-		color.Yellow.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %s, toMember: %s, toID: %s, migrationID: %s, fromAttr: %s, toAttr: %s\n", ref.appID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		color.Yellow.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %v, toMember: %s, toID: %v, migrationID: %s, fromAttr: %s, toAttr: %s\n", ref.appID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 	return nil
 }
@@ -135,17 +138,17 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode, member s
 				}
 			}
 
-			var fromID, toID string
+			var fromID, toID int64
 
 			if val, ok := node.Data[dependeeMember+".id"]; ok {
-				fromID = fmt.Sprint(val)
+				fromID = val.(int64)
 			} else {
 				fmt.Println(node.Data)
 				log.Fatal("@AddInnerReferences:", dependeeMember+".id", " doesn't exist in node data? ", node.Tag.Name)
 			}
 
 			if val, ok := node.Data[depOnMember+".id"]; ok {
-				toID = fmt.Sprint(val)
+				toID = val.(int64)
 			} else {
 				fmt.Println(node.Data)
 				log.Fatal("@AddInnerReferences:", depOnMember+".id", " doesn't exist in node data? ", node.Tag.Name)
@@ -197,17 +200,17 @@ func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, refe
 				log.Fatal("@AddToReferences: Unable to resolve id for toMember ", toMember)
 			}
 
-			var fromID, toID string
+			var fromID, toID int64
 
 			if val, ok := currentNode.Data[fromMember+".id"]; ok {
-				fromID = fmt.Sprint(val)
+				fromID = val.(int64)
 			} else {
 				fmt.Println(currentNode.Data)
 				log.Fatal("@AddToReferences:", fromMember+".id", " doesn't exist in node data? ", currentNode.Tag.Name)
 			}
 
 			if val, ok := referencedNode.Data[toMember+".id"]; ok {
-				toID = fmt.Sprint(val)
+				toID = val.(int64)
 			} else {
 				fmt.Println(referencedNode.Data)
 				log.Fatal("@AddToReferences:", toMember+".id", " doesn't exist in node data? ", referencedNode.Tag.Name)

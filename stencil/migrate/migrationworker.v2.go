@@ -414,10 +414,10 @@ func (self *MigrationWorkerV2) FetchFromMapping(nodeData map[string]interface{},
 				toMemberTokens := strings.Split(args[3], ".")
 				ref = &MappingRef{
 					appID:      fmt.Sprint(self.SrcAppConfig.AppID),
-					fromID:     fmt.Sprint(res[targetTabCol[1]]),
+					fromID:     res[targetTabCol[1]].(int64),
 					fromMember: fmt.Sprint(targetTabCol[0]),
 					fromAttr:   fmt.Sprint(targetTabCol[1]),
-					toID:       fmt.Sprint(res[targetTabCol[1]]),
+					toID:       res[targetTabCol[1]].(int64),
 					toMember:   fmt.Sprint(toMemberTokens[0]),
 					toAttr:     fmt.Sprint(toMemberTokens[1])}
 			}
@@ -455,11 +455,12 @@ func (self *MigrationWorkerV2) IsNodeDataEmpty(data map[string]interface{}) bool
 
 func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[string]interface{}, args ...bool) (interface{}, string, string, *MappingRef, bool, error) {
 
-	isBag, rawBag := false, false
+	isBag := false
+	// rawBag := false
 
-	if len(args) > 1 {
-		rawBag = args[1]
-	}
+	// if len(args) > 1 {
+	// 	rawBag = args[1]
+	// }
 
 	if len(args) > 0 {
 		isBag = args[0]
@@ -524,10 +525,10 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						}
 						ref = &MappingRef{
 							appID:      fmt.Sprint(self.SrcAppConfig.AppID),
-							fromID:     fmt.Sprint(fromID),
+							fromID:     helper.GetInt64(fromID),
 							fromMember: fmt.Sprint(cleanedFromAttrTokens[0]),
 							fromAttr:   fmt.Sprint(cleanedFromAttrTokens[1]),
-							toID:       fmt.Sprint(nodeVal),
+							toID:       helper.GetInt64(nodeVal),
 							toMember:   fmt.Sprint(referredTabColTokens[0]),
 							toAttr:     fmt.Sprint(referredTabColTokens[1]),
 						}
@@ -558,10 +559,10 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						firstMemberTokens := strings.Split(args[0], ".")
 						ref = &MappingRef{
 							appID:      fmt.Sprint(self.SrcAppConfig.AppID),
-							fromID:     fmt.Sprint(fromID),
+							fromID:     fromID,
 							fromMember: fmt.Sprint(firstMemberTokens[0]),
 							fromAttr:   fmt.Sprint(firstMemberTokens[1]),
-							toID:       fmt.Sprint(toID),
+							toID:       toID,
 							toMember:   fmt.Sprint(secondMemberTokens[0]),
 							toAttr:     fmt.Sprint(secondMemberTokens[1]),
 						}
@@ -570,11 +571,11 @@ func (self *MigrationWorkerV2) DecodeMappingValue(fromAttr string, nodeData map[
 						self.Logger.Debugf("args[0]: '%v' \n", args[0])
 						self.Logger.Debugf("toID: '%v' | fromID: '%v' \n", toID, fromID)
 						fmt.Println(nodeData)
-						if !rawBag && !isBag {
-							self.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
-						} else {
-							self.Logger.Warn("@DecodeMappingValue > GetIDs | ", err)
-						}
+						// if !rawBag && !isBag {
+						// 	self.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
+						// } else {
+						self.Logger.Warn("@DecodeMappingValue > GetIDs | ", err)
+						// }
 					}
 					// }
 				}
@@ -644,7 +645,7 @@ func (self *MigrationWorkerV2) GetMappedData(toTable config.ToTable, node *Depen
 
 	newRowId := db.GetNewRowIDForTable(self.DstDBConn, toTable.Table)
 	data.UpdateData("id", "", "", newRowId)
-	color.Red.Printf("Getting mapped data | %v | %v", toTable.Table, toTable.Mapping)
+	// color.Red.Printf("Getting mapped data | %v | %v\n", toTable.Table, toTable.Mapping)
 	for toAttr, fromAttr := range toTable.Mapping {
 		// color.Red.Printf("Getting mapped data | toAttr : %v , fromAttr : %v  \n", toAttr, fromAttr)
 		if strings.EqualFold("id", toAttr) {

@@ -59,16 +59,16 @@ func (self *MigrationWorkerV2) ConstructBagNode(bagMember, bagMemberID, bagRowID
 	return nil, nil
 }
 
-func (self *MigrationWorkerV2) GetRowsFromIDTable(app, member, id interface{}, getFrom bool) ([]IDRow, error) {
+func (self *MigrationWorkerV2) GetRowsFromIDTable(app, member string, id interface{}, getFrom bool) ([]IDRow, error) {
 
 	var idRows []IDRow
 	var err error
 	var idRowsDB []map[string]interface{}
 
 	if !getFrom {
-		idRowsDB, err = db.GetRowsFromIDTableByTo(self.logTxn.DBconn, app, member, id)
+		idRowsDB, err = db.GetRowsFromIDTableByTo(self.logTxn.DBconn, app, member, helper.GetInt64(id))
 	} else {
-		idRowsDB, err = db.GetRowsFromIDTableByFrom(self.logTxn.DBconn, app, member, id)
+		idRowsDB, err = db.GetRowsFromIDTableByFrom(self.logTxn.DBconn, app, member, helper.GetInt64(id))
 	}
 
 	if err != nil {
@@ -110,12 +110,12 @@ func (self *MigrationWorkerV2) GetRowsFromIDTable(app, member, id interface{}, g
 			FromAppID:    fromAppID,
 			FromMemberID: fromMemberID,
 			FromMember:   fromMember,
-			FromID:       idRowDB["from_id"],
+			FromID:       idRowDB["from_id"].(int64),
 			ToAppName:    toAppName,
 			ToAppID:      toAppID,
 			ToMember:     toMember,
 			ToMemberID:   toMemberID,
-			ToID:         idRowDB["to_id"]})
+			ToID:         idRowDB["to_id"].(int64)})
 	}
 	return idRows, nil
 }
@@ -469,6 +469,8 @@ func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error 
 			log.Println(fmt.Sprintf("Current Bag: { %s } | PK: %s, App: %s ", color.FgLightCyan.Render(bagMemberName), bagPK, bagAppID))
 
 			if bagNode, err := bagWorker.ConstructBagNode(bagMemberName, bagMemberID, bagRowID); err == nil {
+
+				fmt.Printf("bag data | %v\n", bagNode.Data)
 
 				if err := bagWorker.InitTransactions(); err != nil {
 					return err
