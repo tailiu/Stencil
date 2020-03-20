@@ -1928,9 +1928,9 @@ func Exp7Test() {
 
 	migrationSeq := []string {
 		// "diaspora", "mastodon",
-		"diaspora", "mastodon", "gnusocial",
+		// "diaspora", "mastodon", "gnusocial",
 		// "diaspora", "mastodon", "gnusocial", "twitter",
-		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
+		"diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 		// "diaspora", "mastodon", "gnusocial", 
 	}
 
@@ -1961,7 +1961,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 324
+	edgeCounterRangeStart := 326
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 

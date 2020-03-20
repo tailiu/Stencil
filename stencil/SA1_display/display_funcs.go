@@ -802,7 +802,9 @@ func isNodeInCurrentMigration(displayConfig *displayConfig,
 
 func getIDChanges(displayConfig *displayConfig, hint *HintStruct) string {
 
-	log.Println("ok")
+	// log.Println("ok")
+
+	log.Println("Get ID changes:")
 
 	query := fmt.Sprintf(
 		`SELECT new_id FROM id_changes WHERE 

@@ -71,6 +71,15 @@ import (
  *
  */
  
+ /**
+ *
+ * Actually, for reference resolution, the handling of #REF and #REFHARD is the same, 
+ * because it assumes that when creating a reference row, the id (from_id) of the first arg refers to  
+ * the id (to_id) of the second arg, which is a general case. However, the migration algo does in a 
+ * different way, in #REF, it is convenient to directly uses the value of the first arg as the to_id, 
+ * while in #REFHARD, it actually uses the general way, i.e., using the id of the second arg, to set to_id.
+ * 
+ */
 
 // You are on the left/from part
 func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig, 

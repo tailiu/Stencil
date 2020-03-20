@@ -369,7 +369,7 @@ func satisfyConditions(conditions map[string]string,
 			// For example, retweets."reblog_of_id":"#REF(retweets.tweet_id,tweets.id)"
 			// indicate that retweets."reblog_of_id" is not NULL
 			if containREForREFHARD(v1) {
-				v1 = handleREF(v1)
+				v1 = handleREForREFHARD(v1)
 			}
 
 			if tableName + "." + k1 == k {
@@ -435,20 +435,28 @@ func getFirstArgInFETCH(data string) string {
 
 }
 
-func getFirstArgInREF(data string) string {
+func getFirstArgInREForREFHARD(data string) string {
+	
+	var tmp []string
 
-	tmp := strings.Split(data, "#REF(")
+	if containREF(data) {
+		tmp = strings.Split(data, "#REF(")
+	} else if containREFHARD(data) {
+		tmp = strings.Split(data, "#REFHARD(")
+	}
+	
 	tmp1 := strings.Split(tmp[1], ",")
+
 	return tmp1[0]
 
 }
 
-func handleREF(ref string) string {
+func handleREForREFHARD(ref string) string {
 
 	if containFETCH(ref) {
-		return getFirstArgInFETCH(getFirstArgInREF(ref))
+		return getFirstArgInFETCH(getFirstArgInREForREFHARD(ref))
 	} else {
-		return getFirstArgInREF(ref)
+		return getFirstArgInREForREFHARD(ref)
 	}
 
 }
@@ -503,7 +511,7 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 		// -> file_to_post.post_id: posts.id
 		if containREForREFHARD(v1) {
 			// log.Println(v1)
-			v1 = handleREF(v1)
+			v1 = handleREForREFHARD(v1)
 			// log.Println(v1)
 		}
 
@@ -538,7 +546,7 @@ func mergeTwoMappings(firstToTable, secondToTable *config.ToTable,
 			if containREForREFHARD(v2) {
 				// log.Println("+++++S")
 				// log.Println(v2)
-				v2 = handleREF(v2)
+				v2 = handleREForREFHARD(v2)
 				// log.Println(v2)
 				// log.Println(firstTableName + "." + k1, v2)
 				// log.Println("+++++S")
