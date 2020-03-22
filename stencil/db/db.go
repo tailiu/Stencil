@@ -507,6 +507,18 @@ func GetUnmigratedUsers() ([]map[string]interface{}, error) {
 	return DataCall(dbConn, sql)
 }
 
+func GetAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
+
+	query := fmt.Sprintf(`SELECT root_member_id from app_root_member where app_id = %s`, appID)
+	fmt.Printf("@db.GetAppRootMemberID | %s\n", query)
+	data, err := DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprint(data["root_member_id"])
+}
+
 func TableID(dbConn *sql.DB, table, app string) (string, error) {
 	sql := fmt.Sprintf("SELECT pk FROM app_tables WHERE app_id = '%s' and table_name = '%s'", app, table)
 	if res, err := DataCall1(dbConn, sql); err == nil {

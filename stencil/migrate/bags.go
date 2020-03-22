@@ -130,8 +130,6 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	}
 	prevUIDs[self.SrcAppConfig.AppID] = self.uid
 
-	// self.Logger.Debugf("Prev User IDs: %v", prevUIDs)
-
 	for fromTable := range mappedData.srcTables {
 		if fromTableID, err := db.TableID(self.logTxn.DBconn, fromTable, self.SrcAppConfig.AppID); err == nil {
 			if fromID, ok := node.Data[fromTable+".id"]; ok {
@@ -413,24 +411,20 @@ func (self *MigrationWorkerV2) UpdateProcessedBagIDs(bagNode *DependencyNode, pr
 
 func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error {
 
-	prevIDs := reference_resolution.GetPrevUserIDs(self.logTxn.DBconn, self.SrcAppConfig.AppID, self.uid)
-	if prevIDs == nil {
-		prevIDs = make(map[string]string)
-	}
+	bagAppID, userID := self.SrcAppConfig.AppID, self.uid
 
-	prevIDs[self.SrcAppConfig.AppID] = self.uid
-
-	self.Logger.Debugf("Prev User IDs: %v", prevIDs)
-
-	for bagAppID, userID := range prevIDs {
-
-		// if bagAppID != "2" {
-		// 	continue
-		// }
-
-		color.Magenta.Println("########################################################################")
-		color.LightMagenta.Printf("Starting Bags for User: %s App: %s\n", userID, bagAppID)
-		color.Magenta.Println("########################################################################")
+	for {
+		var prevIDErr error
+		if bagAppID, userID, prevIDErr = self.GetUserIDAppIDFromPreviousMigration(bagAppID, userID); prevIDErr != nil {
+			self.Logger.Fatal(prevIDErr)
+		} else if len(bagAppID) <= 0 && len(userID) <= 0 {
+			self.Logger.Info("Bag migration finished!")
+			break
+		} else {
+			color.Magenta.Println("########################################################################")
+			color.LightMagenta.Printf("Starting Bags for User: '%s' | App: '%s' \n", userID, bagAppID)
+			color.Magenta.Println("########################################################################")
+		}
 
 		bags, err := db.GetBagsV2(self.logTxn.DBconn, bagAppID, userID, self.logTxn.Txn_id)
 
