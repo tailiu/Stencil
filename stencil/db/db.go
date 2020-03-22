@@ -515,7 +515,7 @@ func GetAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	fmt.Printf("@db.GetAppRootMemberID | root_member_id: '%v' \n", data["root_member_id"])
 	return fmt.Sprint(data["root_member_id"])
 }
 

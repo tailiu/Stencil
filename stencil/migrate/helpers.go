@@ -443,30 +443,30 @@ func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (confi
 
 func (self *MigrationWorkerV2) GetUserIDAppIDFromPreviousMigration(currentAppID, currentUID string) (string, string, error) {
 
-	rootMemberID := db.GetAppRootMemberID(self.logTxn.DBconn, currentAppID)
+	currentRootMemberID := db.GetAppRootMemberID(self.logTxn.DBconn, currentAppID)
 
 	currentUIDInt, err := strconv.ParseInt(currentUID, 10, 64)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Getting previous migration | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, rootMemberID)
+	fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Getting previous migration | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
 
-	if IDRows, err := self.GetRowsFromIDTable(currentAppID, rootMemberID, currentUIDInt, false); err == nil {
+	if IDRows, err := self.GetRowsFromIDTable(currentAppID, currentRootMemberID, currentUIDInt, false); err == nil {
 		fmt.Println(IDRows)
 		if len(IDRows) > 0 {
 			for _, IDRow := range IDRows {
 				prevRootMemberID := db.GetAppRootMemberID(self.logTxn.DBconn, IDRow.FromAppID)
-				if IDRow.FromMemberID == prevRootMemberID {
-					fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", IDRows[0].FromAppID, IDRows[0].FromID, IDRows[0].FromMemberID)
-					return IDRows[0].FromAppID, fmt.Sprint(IDRows[0].FromID), nil
+				if strings.EqualFold(IDRow.FromMemberID, prevRootMemberID) {
+					fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", IDRow.FromAppID, IDRow.FromID, IDRow.FromMemberID)
+					return IDRow.FromAppID, fmt.Sprint(IDRow.FromID), nil
 				}
 			}
 		}
-		fmt.Printf("@GetUserIDAppIDFromPreviousMigration | No previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, rootMemberID)
+		fmt.Printf("@GetUserIDAppIDFromPreviousMigration | No previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
 		return "", "", nil
 	} else {
-		log.Fatalf("@GetUserIDAppIDFromPreviousMigration | App: '%s', UID: '%v', rootMemberID: '%s' | err => %v \n", currentAppID, currentUIDInt, rootMemberID, err)
+		log.Fatalf("@GetUserIDAppIDFromPreviousMigration | App: '%s', UID: '%v', rootMemberID: '%s' | err => %v \n", currentAppID, currentUIDInt, currentRootMemberID, err)
 		return "", "", fmt.Errorf("no previous migration user and app id found for => currentAppID: %s, currentUID: %v", currentAppID, currentUIDInt)
 	}
 }
