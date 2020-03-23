@@ -18,7 +18,7 @@ func (self *MigrationWorkerV2) ConstructBagNode(bagMember, bagMemberID, bagRowID
 
 	bagTag, err := self.SrcAppConfig.GetTagByMember(bagMember)
 	if err != nil {
-		self.Logger.Fatal(fmt.Sprintf("@MigrateBags: UNABLE TO GET BAG TAG BY MEMBER : %s | %s", bagMember, err))
+		self.Logger.Fatal(fmt.Sprintf("@ConstructBagNode: UNABLE TO GET BAG TAG BY MEMBER : %s | %s", bagMember, err))
 		return nil, err
 	}
 
@@ -409,103 +409,114 @@ func (self *MigrationWorkerV2) UpdateProcessedBagIDs(bagNode *DependencyNode, pr
 	}
 }
 
+func (self *MigrationWorkerV2) StartBagsMigration(userID, bagAppID string, threadID int, isBlade ...bool) error {
+	color.Magenta.Println("########################################################################")
+	color.LightMagenta.Printf("Starting Bags for User: '%s' | App: '%s' \n", userID, bagAppID)
+	color.Magenta.Println("########################################################################")
+
+	if bags, err := db.GetBagsV2(self.logTxn.DBconn, bagAppID, userID, self.logTxn.Txn_id); err != nil {
+		self.Logger.Fatal(fmt.Sprintf("UNABLE TO FETCH BAGS FOR USER: %s | %s", userID, err))
+		return err
+	} else if len(bags) > 0 {
+		log.Println("Bags fetched:  ", len(bags))
+
+		bagWorker := CreateBagWorkerV2(userID, bagAppID, self.DstAppConfig.AppID, self.logTxn, BAGS, threadID, isBlade...)
+
+		log.Println(fmt.Sprintf("Bag Worker Created | %s -> %s ", bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
+
+		processedBags := make(map[string]bool)
+
+		for _, bag := range bags {
+
+			if strings.EqualFold(bagAppID, "4") {
+				// break
+			}
+
+			bagPK := fmt.Sprint(bag["pk"])
+
+			fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+			self.Logger.Tracef("@StartBagsMigration > Processing Bag | ID: %v | PK: %v | %s", bag["id"], bag["pk"], bagPK)
+
+			if _, ok := processedBags[bagPK]; ok {
+				self.Logger.Tracef("@StartBagsMigration > Bag Already Processed | ID: %v | PK: %v | %s", bag["id"], bag["pk"], bagPK)
+				continue
+			}
+
+			bagRowID := fmt.Sprint(bag["id"])
+			bagUserID := fmt.Sprint(bag["user_id"])
+			bagMemberID := fmt.Sprint(bag["member"])
+			bagMemberName, err := db.TableName(bagWorker.logTxn.DBconn, bagMemberID, bagAppID)
+
+			if err != nil {
+				bagWorker.Logger.Fatal("@StartBagsMigration > Table Name: ", err)
+			}
+
+			log.Println(fmt.Sprintf("Current Bag: { %s } | PK: %s, App: %s ", color.FgLightCyan.Render(bagMemberName), bagPK, bagAppID))
+
+			if bagNode, err := bagWorker.ConstructBagNode(bagMemberName, bagMemberID, bagRowID); err == nil {
+
+				fmt.Printf("bag data | %v\n", bagNode.Data)
+
+				if err := bagWorker.InitTransactions(); err != nil {
+					return err
+				}
+
+				if migrated, err := bagWorker.HandleMigration(bagNode); err != nil {
+					log.Println(fmt.Sprintf("%s { %s } | PK: %s | Owner: %s | %s ", color.FgGreen.Render("BAG NOT MIGRATED"), bagNode.Tag.Name, bagPK, bagUserID, err))
+					if err := bagWorker.RollbackTransactions(); err != nil {
+						bagWorker.Logger.Fatal(fmt.Sprintf("UNABLE TO ROLLBACK bag { %s } | Owner: %s | %s | PK: %s", bagNode.Tag.Name, bagUserID, err, bagPK))
+					} else {
+						log.Println(fmt.Sprintf("ROLLBACK bag { %s } | PK: %s ", bagNode.Tag.Name, bagPK))
+					}
+				} else {
+					if migrated {
+						log.Println(fmt.Sprintf("%s { %s } | PK: %s", color.FgLightGreen.Render("BAG MIGRATED"), bagNode.Tag.Name, bagPK))
+
+						if !bagWorker.IsNodeDataEmpty(bagNode.Data) {
+							bagWorker.Logger.Tracef("LeftOver Bag Data =>\n%v\n", bagNode.Data)
+							log.Println(fmt.Sprintf("HANDLING LEFTOVER DATA { %s } | PK: %s | Owner: %s", bagNode.Tag.Name, bagPK, bagUserID))
+							if err := bagWorker.SendNodeToBagWithOwnerID(bagNode, bagUserID); err != nil {
+								bagWorker.Logger.Debug(bagNode)
+								bagWorker.Logger.Fatal(fmt.Sprintf("@StartBagsMigration > SendNodeToBagWithOwnerID | { %s } | PK: %s", bagNode.Tag.Name, bagPK))
+							} else {
+								log.Println(fmt.Sprintf("%s { %s } | PK: %s | Owner: %s", color.FgLightYellow.Render("BAGGED LEFTOVER DATA"), bagNode.Tag.Name, bagPK, bagUserID))
+							}
+						}
+					} else {
+						log.Println(fmt.Sprintf("%s { %s } | PK: %s", color.FgGreen.Render("BAG NOT MIGRATED; NO ERR"), bagNode.Tag.Name, bagPK))
+					}
+
+					if err := bagWorker.CommitTransactions(); err != nil {
+						bagWorker.Logger.Fatal(fmt.Sprintf("UNABLE TO COMMIT bag { %s } | %s ", bagNode.Tag.Name, err))
+					} else {
+						log.Println(fmt.Sprintf("COMMITTED bag { %s } | PK: %s", bagNode.Tag.Name, bagPK))
+					}
+
+					bagWorker.UpdateProcessedBagIDs(bagNode, processedBags)
+				}
+
+			} else {
+				bagWorker.Logger.Fatal(fmt.Sprintf("UNABLE TO CONSTRUCT bag node | bagMemberName:%s  bagMemberID:%s  bagRowID:%s | %s", bagMemberName, bagMemberID, bagRowID, err))
+			}
+		}
+
+		bagWorker.CloseDBConns()
+	} else {
+		self.Logger.Info("No Bags found!")
+	}
+	return nil
+}
+
 func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error {
 
 	bagAppID, userID := self.SrcAppConfig.AppID, self.uid
-	var prevIDErr error
 
 	for {
-
-		color.Magenta.Println("########################################################################")
-		color.LightMagenta.Printf("Starting Bags for User: '%s' | App: '%s' \n", userID, bagAppID)
-		color.Magenta.Println("########################################################################")
-
-		if bags, err := db.GetBagsV2(self.logTxn.DBconn, bagAppID, userID, self.logTxn.Txn_id); err != nil {
-			self.Logger.Fatal(fmt.Sprintf("UNABLE TO FETCH BAGS FOR USER: %s | %s", userID, err))
-			return err
-		} else if len(bags) > 0 {
-
-			bagWorker := CreateBagWorkerV2(userID, bagAppID, self.DstAppConfig.AppID, self.logTxn, BAGS, threadID, isBlade...)
-
-			log.Println(fmt.Sprintf("Bag Worker Created | %s -> %s ", bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
-
-			processedBags := make(map[string]bool)
-
-			for _, bag := range bags {
-
-				bagPK := fmt.Sprint(bag["pk"])
-
-				fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-				self.Logger.Tracef("@MigrateBags > Processing Bag | ID: %v | PK: %v | %s", bag["id"], bag["pk"], bagPK)
-
-				if _, ok := processedBags[bagPK]; ok {
-					self.Logger.Tracef("@MigrateBags > Bag Already Processed | ID: %v | PK: %v | %s", bag["id"], bag["pk"], bagPK)
-					continue
-				}
-
-				bagRowID := fmt.Sprint(bag["id"])
-				bagUserID := fmt.Sprint(bag["user_id"])
-				bagMemberID := fmt.Sprint(bag["member"])
-				bagMemberName, err := db.TableName(bagWorker.logTxn.DBconn, bagMemberID, bagAppID)
-
-				if err != nil {
-					bagWorker.Logger.Fatal("@MigrateBags > Table Name: ", err)
-				}
-
-				log.Println(fmt.Sprintf("Current Bag: { %s } | PK: %s, App: %s ", color.FgLightCyan.Render(bagMemberName), bagPK, bagAppID))
-
-				if bagNode, err := bagWorker.ConstructBagNode(bagMemberName, bagMemberID, bagRowID); err == nil {
-
-					fmt.Printf("bag data | %v\n", bagNode.Data)
-
-					if err := bagWorker.InitTransactions(); err != nil {
-						return err
-					}
-
-					if migrated, err := bagWorker.HandleMigration(bagNode); err != nil {
-						log.Println(fmt.Sprintf("%s { %s } | PK: %s | Owner: %s | %s ", color.FgGreen.Render("BAG NOT MIGRATED"), bagNode.Tag.Name, bagPK, bagUserID, err))
-						if err := bagWorker.RollbackTransactions(); err != nil {
-							bagWorker.Logger.Fatal(fmt.Sprintf("UNABLE TO ROLLBACK bag { %s } | Owner: %s | %s | PK: %s", bagNode.Tag.Name, bagUserID, err, bagPK))
-						} else {
-							log.Println(fmt.Sprintf("ROLLBACK bag { %s } | PK: %s ", bagNode.Tag.Name, bagPK))
-						}
-					} else {
-						if migrated {
-							log.Println(fmt.Sprintf("%s { %s } | PK: %s", color.FgLightGreen.Render("BAG MIGRATED"), bagNode.Tag.Name, bagPK))
-
-							if !bagWorker.IsNodeDataEmpty(bagNode.Data) {
-								bagWorker.Logger.Tracef("LeftOver Bag Data =>\n%v\n", bagNode.Data)
-								log.Println(fmt.Sprintf("HANDLING LEFTOVER DATA { %s } | PK: %s | Owner: %s", bagNode.Tag.Name, bagPK, bagUserID))
-								if err := bagWorker.SendNodeToBagWithOwnerID(bagNode, bagUserID); err != nil {
-									bagWorker.Logger.Debug(bagNode)
-									bagWorker.Logger.Fatal(fmt.Sprintf("@MigrateBags > SendNodeToBagWithOwnerID | { %s } | PK: %s", bagNode.Tag.Name, bagPK))
-								} else {
-									log.Println(fmt.Sprintf("%s { %s } | PK: %s | Owner: %s", color.FgLightYellow.Render("BAGGED LEFTOVER DATA"), bagNode.Tag.Name, bagPK, bagUserID))
-								}
-							}
-						} else {
-							log.Println(fmt.Sprintf("%s { %s } | PK: %s", color.FgGreen.Render("BAG NOT MIGRATED; NO ERR"), bagNode.Tag.Name, bagPK))
-						}
-
-						if err := bagWorker.CommitTransactions(); err != nil {
-							bagWorker.Logger.Fatal(fmt.Sprintf("UNABLE TO COMMIT bag { %s } | %s ", bagNode.Tag.Name, err))
-						} else {
-							log.Println(fmt.Sprintf("COMMITTED bag { %s } | PK: %s", bagNode.Tag.Name, bagPK))
-						}
-
-						bagWorker.UpdateProcessedBagIDs(bagNode, processedBags)
-					}
-
-				} else {
-					bagWorker.Logger.Fatal(fmt.Sprintf("UNABLE TO CONSTRUCT bag node | bagMemberName:%s  bagMemberID:%s  bagRowID:%s | %s", bagMemberName, bagMemberID, bagRowID, err))
-				}
-			}
-
-			bagWorker.CloseDBConns()
-		} else {
-			self.Logger.Info("No Bags found!")
+		if err := self.StartBagsMigration(userID, bagAppID, threadID, isBlade...); err != nil {
+			self.Logger.Fatal(err)
 		}
-
+		self.Logger.Infof("BagWorker finished | App: '%s', UID: '%s' \n", bagAppID, userID)
+		var prevIDErr error
 		if bagAppID, userID, prevIDErr = self.GetUserIDAppIDFromPreviousMigration(bagAppID, userID); prevIDErr != nil {
 			self.Logger.Fatal(prevIDErr)
 		} else if len(bagAppID) <= 0 && len(userID) <= 0 {

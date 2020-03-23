@@ -297,6 +297,7 @@ func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]m
 
 func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[string]interface{}, error) {
 	query := "SELECT app, member, id, data, pk, user_id FROM data_bags WHERE user_id = $1 AND app = $2 AND migration_id != $3 ORDER BY pk DESC"
+	fmt.Println(query, user_id, app_id, migration_id)
 	return DataCall(dbConn, query, user_id, app_id, migration_id)
 }
 
