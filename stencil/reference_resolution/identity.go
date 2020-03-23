@@ -102,9 +102,10 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 		// Before changing:
 		// if ID.app == refResolutionConfig.AppConfig.AppID &&
 		// 	ID.member != orginalID.member && ID.id != orginalID.id {
-		if ID.app == refResolutionConfig.appID &&
-			(ID.member != orginalID.member || ID.id != orginalID.id) {
-
+		// if ID.app == refResolutionConfig.appID &&
+		// 	(ID.member != orginalID.member || ID.id != orginalID.id) {
+		if ID.app == refResolutionConfig.appID {
+	
 			resData := CreateIdentity(ID.app, ID.member, ID.id)
 
 			res = append(res, resData)
