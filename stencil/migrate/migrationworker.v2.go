@@ -26,6 +26,7 @@ func (self *MigrationWorkerV2) FetchRoot(threadID int) error {
 		ql := self.GetTagQL(root)
 		sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 		sql += root.ResolveRestrictions()
+		// self.Logger.Debug(sql)
 		if data, err := db.DataCall1(self.SrcDBConn, sql); err == nil {
 			if len(data) > 0 {
 				self.root = &DependencyNode{Tag: root, SQL: sql, Data: data}
@@ -38,7 +39,7 @@ func (self *MigrationWorkerV2) FetchRoot(threadID int) error {
 			return err
 		}
 	} else {
-		self.Logger.Fatal("Can't fetch root tag:", err)
+		self.Logger.Fatalf("Can't fetch root tag '%s' | App => %s, %s | err: %v", tagName, self.SrcAppConfig.AppID, self.SrcAppConfig.AppName, err)
 		return err
 	}
 	return nil
@@ -1134,7 +1135,7 @@ func (self *MigrationWorkerV2) CheckNextNode(node *DependencyNode) error {
 		if len(nextNodes) > 0 {
 			for _, nextNode := range nextNodes {
 				// log.Println(fmt.Sprintf("CURRENT NEXT NODE { %s > %s } %d/%d", node.Tag.Name, nextNode.Tag.Name, i, len(nextNodes)))
-				self.AddToReferences(nextNode, node)
+				// self.AddToReferences(nextNode, node)
 				if precedingNodes, err := self.GetAllPreviousNodes(node); err != nil {
 					return err
 				} else if len(precedingNodes) <= 1 {
@@ -1172,15 +1173,15 @@ func (self *MigrationWorkerV2) CallMigration(node *DependencyNode, threadID int)
 			return err
 		}
 
-		log.Println(fmt.Sprintf("CHECKING PREVIOUS NODES { %s }", node.Tag.Name))
+		// log.Println(fmt.Sprintf("CHECKING PREVIOUS NODES { %s }", node.Tag.Name))
 
-		if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
-			for _, previousNode := range previousNodes {
-				self.AddToReferences(node, previousNode)
-			}
-		} else {
-			return err
-		}
+		// if previousNodes, err := self.GetAllPreviousNodes(node); err == nil {
+		// for _, previousNode := range previousNodes {
+		// self.AddToReferences(node, previousNode)
+		// }
+		// } else {
+		// return err
+		// }
 
 		log.Println(fmt.Sprintf("HANDLING MIGRATION { %s }", node.Tag.Name))
 

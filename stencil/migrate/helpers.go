@@ -99,13 +99,16 @@ func CreateMigrationWorkerV2(uid, srcApp, srcAppID, dstApp, dstAppID string, log
 		visitedNodes: make(map[string]map[string]bool),
 		Logger:       logg.New(os.Stderr)}
 
-	if err := mWorker.FetchRoot(threadID); err != nil {
-		mWorker.Logger.Fatal(err)
-	}
-	mWorker.FTPClient = GetFTPClient()
 	mWorker.Logger.WithTimestamp()
 	mWorker.Logger.WithColor()
 	mWorker.Logger.WithDebug()
+
+	if err := mWorker.FetchRoot(threadID); err != nil {
+		mWorker.Logger.Fatal(err)
+	}
+
+	mWorker.FTPClient = GetFTPClient()
+
 	mWorker.Logger.Infof("Worker Created for thread: %v", threadID)
 
 	fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
@@ -193,8 +196,12 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 		joinMap := tag.CreateInDepMap()
 		seenMap := make(map[string]bool)
 		joinStr := ""
+
 		for fromTable, toTablesMap := range joinMap {
 			if _, ok := seenMap[fromTable]; !ok {
+				if len(joinStr) > 0 {
+					joinStr += fmt.Sprintf(" FULL JOIN ")
+				}
 				joinStr += fmt.Sprintf("\"%s\"", fromTable)
 				_, colStr := db.GetColumnsForTable(self.SrcDBConn, fromTable)
 				cols += colStr + ","
@@ -205,7 +212,10 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 					if joinMap[toTable][fromTable] != nil {
 						joinMap[toTable][fromTable] = nil
 					}
-					joinStr += fmt.Sprintf(" FULL JOIN \"%s\" ON %s ", toTable, strings.Join(conditions, " AND "))
+					if _, ok := seenMap[toTable]; !ok {
+						joinStr += fmt.Sprintf(" FULL JOIN \"%s\" ", toTable)
+					}
+					joinStr += fmt.Sprintf("  ON %s ", strings.Join(conditions, " AND "))
 					_, colStr := db.GetColumnsForTable(self.SrcDBConn, toTable)
 					cols += colStr + ","
 					seenMap[toTable] = true
@@ -239,6 +249,9 @@ func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
 			for fromTable, toTablesMap := range joinMap {
 				// log.Print(fromTable, toTablesMap)
 				if _, ok := seenMap[fromTable]; !ok {
+					if len(joinStr) > 0 {
+						joinStr += fmt.Sprintf(" FULL JOIN ")
+					}
 					joinStr += fmt.Sprintf("data_bags %s", fromTable)
 					idCols += fmt.Sprintf("%s.pk,", fromTable)
 					cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", fromTable)
@@ -249,7 +262,10 @@ func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
 						if joinMap[toTable][fromTable] != nil {
 							joinMap[toTable][fromTable] = nil
 						}
-						joinStr += fmt.Sprintf(" FULL JOIN data_bags %s ON %s.member = %s AND %s.member = %s AND %s ", toTable, fromTable, tableIDs[fromTable], toTable, tableIDs[toTable], strings.Join(conditions, " AND "))
+						if _, ok := seenMap[toTable]; !ok {
+							joinStr += fmt.Sprintf(" FULL JOIN data_bags %s ", toTable)
+						}
+						joinStr += fmt.Sprintf(" ON %s.member = %s AND %s.member = %s AND %s ", fromTable, tableIDs[fromTable], toTable, tableIDs[toTable], strings.Join(conditions, " AND "))
 						cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", toTable)
 						idCols += fmt.Sprintf("%s.pk,", toTable)
 						seenMap[toTable] = true
