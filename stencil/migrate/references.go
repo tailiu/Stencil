@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"stencil/db"
+	"stencil/helper"
 	"strings"
 
 	"github.com/gookit/color"
@@ -113,8 +114,8 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 	return nil
 }
 
-func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode, member string) error {
-	log.Printf("@AddInnerReferences | nodeTag: %s | member: %s \n nodeData: %v \n", node.Tag.Name, member, node.Data)
+func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
+	log.Printf("@AddInnerReferences | nodeTag: %s | nodeData: %v \n", node.Tag.Name, node.Data)
 	for _, innerDependency := range node.Tag.InnerDependencies {
 		for dependsOn, dependee := range innerDependency {
 
@@ -136,16 +137,10 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode, member s
 				log.Fatal("@AddInnerReferences: Unable to resolve id for depOnMember ", depOnMember)
 			}
 
-			if member != "" {
-				if !strings.EqualFold(dependeeMember, member) && !strings.EqualFold(depOnMember, member) {
-					continue
-				}
-			}
-
 			var fromID, toID int64
 
 			if val, ok := node.Data[dependeeMember+".id"]; ok {
-				fromID = val.(int64)
+				fromID = helper.GetInt64(val)
 			} else {
 				fmt.Println(node.Data)
 				log.Fatalf("@AddInnerReferences | fromID | '%s.id' doesn't exist in node data? \n", dependeeMember)
@@ -154,12 +149,12 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode, member s
 			log.Printf("@AddInnerReferences | toID | Checking dependeeReferencedAttr: '%s' \n", dependeeReferencedAttr)
 
 			if val, ok := node.Data[dependeeReferencedAttr]; ok {
-				toID = val.(int64)
+				toID = helper.GetInt64(val)
 			} else {
 				log.Printf("@AddInnerReferences | toID | dependeeReferencedAttr: '%s' doesn't exist in node data? \n", dependeeReferencedAttr)
 				log.Printf("@AddInnerReferences | toID | Checking depOnReferencedAttr: '%s' \n", depOnReferencedAttr)
 				if val, ok := node.Data[depOnReferencedAttr]; ok {
-					toID = val.(int64)
+					toID = helper.GetInt64(val)
 				} else {
 					fmt.Println(node.Data)
 					log.Fatalf("@AddInnerReferences | toID | depOnReferencedAttr: '%s' doesn't exist in node data? \n", depOnReferencedAttr)
@@ -222,14 +217,14 @@ func (self *MigrationWorkerV2) AddToReferencesViaDependencies(node *DependencyNo
 					var fromID, toID int64
 
 					if val, ok := node.Data[fromMember+".id"]; ok {
-						fromID = val.(int64)
+						fromID = helper.GetInt64(val)
 					} else {
 						fmt.Println(node.Data)
 						log.Fatal("@AddToReferencesViaDependencies:", fromMember+".id", " doesn't exist in node data? ", node.Tag.Name)
 					}
 
 					if val, ok := node.Data[fromReferencedAttr]; ok {
-						toID = val.(int64)
+						toID = helper.GetInt64(val)
 					} else {
 						fmt.Println(node.Data)
 						log.Fatal("@AddToReferencesViaDependencies: '", fromReferencedAttr, "' doesn't exist in node data? ", referencedTag.Name)
@@ -239,6 +234,8 @@ func (self *MigrationWorkerV2) AddToReferencesViaDependencies(node *DependencyNo
 						fmt.Println("#Args: ", self.SrcAppConfig.AppID, fromMemberID, fromID, toMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), fromReference, toReference)
 						log.Fatal("@AddToReferencesViaDependencies: Unable to CreateNewReference: ", err)
 						return err
+					} else {
+						color.Yellow.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %v, toMember: %s, toID: %v, migrationID: %s, fromAttr: %s, toAttr: %s\n", self.SrcAppConfig.AppID, fromMemberID, fromID, toMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), fromReference, toReference)
 					}
 				}
 			} else {
@@ -287,14 +284,14 @@ func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, refe
 			var fromID, toID int64
 
 			if val, ok := currentNode.Data[fromMember+".id"]; ok {
-				fromID = val.(int64)
+				fromID = helper.GetInt64(val)
 			} else {
 				fmt.Println(currentNode.Data)
 				log.Fatal("@AddToReferences:", fromMember+".id", " doesn't exist in node data? ", currentNode.Tag.Name)
 			}
 
 			if val, ok := referencedNode.Data[toMember+".id"]; ok {
-				toID = val.(int64)
+				toID = helper.GetInt64(val)
 			} else {
 				fmt.Println(referencedNode.Data)
 				log.Fatal("@AddToReferences:", toMember+".id", " doesn't exist in node data? ", referencedNode.Tag.Name)

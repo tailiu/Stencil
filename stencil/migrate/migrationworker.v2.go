@@ -975,10 +975,23 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 					return migrated, err
 				}
 			} else if self.mtype == BAGS || rawBag {
-				if err := self.AddMappedReferencesIfNotExist(mappedData.refs); err != nil {
-					log.Println(mappedData.refs)
-					self.Logger.Fatal("@MigrateNode > AddMappedReferencesIfNotExist: ", err)
-					return migrated, err
+				if self.SrcAppConfig.AppID == self.DstAppConfig.AppID {
+					if err := self.AddInnerReferences(node); err != nil {
+						log.Println(node)
+						self.Logger.Fatal("@MigrateNode > AddInnerReferences: ", err)
+						return migrated, err
+					}
+					if err := self.AddToReferencesViaDependencies(node); err != nil {
+						log.Println(node)
+						self.Logger.Fatal("@MigrateNode > AddToReferencesViaDependencies: ", err)
+						return migrated, err
+					}
+				} else {
+					if err := self.AddMappedReferencesIfNotExist(mappedData.refs); err != nil {
+						log.Println(mappedData.refs)
+						self.Logger.Fatal("@MigrateNode > AddMappedReferencesIfNotExist: ", err)
+						return migrated, err
+					}
 				}
 			}
 		} else {
