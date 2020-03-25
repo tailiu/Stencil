@@ -35,15 +35,16 @@ func CreateAppConfig(app, app_id string, isBlade ...bool) (AppConfig, error) {
 	}
 
 	jsonFile, err := os.Open(dconfig)
+	defer jsonFile.Close()
 
 	if err != nil {
 		fmt.Println("Some problem with the file: ")
-		fmt.Println(err)
+		log.Fatal(err)
 		return appConfig, errors.New("can't open file")
 	}
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-	jsonFile.Close()
+
 	json.Unmarshal(byteValue, &appConfig)
 
 	appConfig.AppName = app
@@ -84,6 +85,7 @@ func CreateAppConfigDisplay(
 	}
 
 	jsonFile, err := os.Open(dconfig)
+	defer jsonFile.Close()
 
 	if err != nil {
 		fmt.Println("Some problem with the file: ")
@@ -92,7 +94,7 @@ func CreateAppConfigDisplay(
 	}
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-	jsonFile.Close()
+
 	json.Unmarshal(byteValue, &appConfig)
 
 	appConfig.AppName = app

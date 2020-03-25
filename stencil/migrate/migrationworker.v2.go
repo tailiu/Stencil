@@ -976,22 +976,36 @@ func (self *MigrationWorkerV2) MigrateNode(mapping config.Mapping, node *Depende
 				}
 			} else if self.mtype == BAGS || rawBag {
 				if self.SrcAppConfig.AppID == self.DstAppConfig.AppID {
-					if err := self.AddInnerReferences(node); err != nil {
+					if inDepRefs, err := CreateInnerDependencyReferences(self.SrcAppConfig, node.Tag, node.Data, ""); err != nil {
 						log.Println(node)
-						self.Logger.Fatal("@MigrateNode > AddInnerReferences: ", err)
+						self.Logger.Fatal("@MigrateNode > CreateInnerDependencyReferences: ", err)
 						return migrated, err
+					} else if len(inDepRefs) > 0 {
+						mappedData.refs = append(mappedData.refs, inDepRefs...)
 					}
-					if err := self.AddToReferencesViaDependencies(node); err != nil {
+
+					if depRefs, err := CreateReferencesViaDependencies(self.SrcAppConfig, node.Tag, node.Data, ""); err != nil {
 						log.Println(node)
-						self.Logger.Fatal("@MigrateNode > AddToReferencesViaDependencies: ", err)
+						self.Logger.Fatal("@MigrateNode > CreateReferencesViaDependencies: ", err)
 						return migrated, err
+					} else if len(depRefs) > 0 {
+						mappedData.refs = append(mappedData.refs, depRefs...)
 					}
-				} else {
-					if err := self.AddMappedReferencesIfNotExist(mappedData.refs); err != nil {
-						log.Println(mappedData.refs)
-						self.Logger.Fatal("@MigrateNode > AddMappedReferencesIfNotExist: ", err)
-						return migrated, err
+
+					if node.Tag.Name != "root" {
+						if ownRefs, err := CreateReferencesViaOwnerships(self.SrcAppConfig, node.Tag, node.Data, ""); err != nil {
+							log.Println(node)
+							self.Logger.Fatal("@MigrateNode > CreateReferencesViaOwnerships: ", err)
+							return migrated, err
+						} else if len(ownRefs) > 0 {
+							mappedData.refs = append(mappedData.refs, ownRefs...)
+						}
 					}
+				}
+				if err := self.AddMappedReferencesIfNotExist(mappedData.refs); err != nil {
+					log.Println(mappedData.refs)
+					self.Logger.Fatal("@MigrateNode > AddMappedReferencesIfNotExist: ", err)
+					return migrated, err
 				}
 			}
 		} else {

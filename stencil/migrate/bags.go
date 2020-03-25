@@ -213,6 +213,10 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 
 			if bagMappedApp, mapping, found := self.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
 				// self.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, self.DstAppConfig.AppName, self.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
+				bagAppConfig, err := config.CreateAppConfig(idRow.FromAppName, idRow.FromAppID)
+				if err != nil {
+					log.Fatal("@FetchDataFromBags: ", err)
+				}
 				for _, toTable := range mapping.ToTables {
 					if !strings.EqualFold(toTable.Table, toTableName) {
 						continue
@@ -240,6 +244,31 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 							cleanedFromAttr = decodedFromAttr
 							if found && bagVal != nil {
 								valueForNode = bagVal
+								if bagAppConfig.AppID == self.DstAppConfig.AppID {
+									fromAttrTokens := strings.Split(cleanedFromAttr, ".")
+									if bagTag, err := bagAppConfig.GetTagByMember(fromAttrTokens[0]); err == nil {
+
+										if depRefs, err := CreateReferencesViaDependencies(bagAppConfig, *bagTag, bagData, cleanedFromAttr); err != nil {
+											log.Println(bagData)
+											self.Logger.Fatal("@FetchDataFromBags > CreateReferencesViaDependencies: ", err)
+										} else if len(depRefs) > 0 && ref == nil {
+											ref = &depRefs[0]
+										} else {
+											log.Println("@FetchDataFromBags > CreateReferencesViaDependencies > No reference created: ", cleanedFromAttr)
+										}
+
+										if bagTag.Name != "root" {
+											if ownRefs, err := CreateReferencesViaOwnerships(bagAppConfig, *bagTag, bagData, cleanedFromAttr); err != nil {
+												log.Println(bagData)
+												self.Logger.Fatal("@FetchDataFromBags > CreateReferencesViaOwnerships: ", err)
+											} else if len(ownRefs) > 0 && ref == nil {
+												ref = &ownRefs[0]
+											} else {
+												log.Println("@FetchDataFromBags > CreateReferencesViaOwnerships > No reference created: ", cleanedFromAttr)
+											}
+										}
+									}
+								}
 								if ref != nil {
 									ref.appID = fmt.Sprint(bagRow["app"])
 									ref.mergedFromBag = true
@@ -270,6 +299,8 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 						}
 					}
 				}
+
+				bagAppConfig.CloseDBConns()
 
 				if self.IsNodeDataEmpty(bagData) {
 					if err := db.DeleteBagV2(self.tx.StencilTx, fmt.Sprint(bagRow["pk"])); err != nil {

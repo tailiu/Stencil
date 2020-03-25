@@ -334,10 +334,10 @@ func CheckIfCompleteReferenceExists(dbConn *sql.DB, app, fromMember string, from
 	return false
 }
 
-func CreateNewReference(tx *sql.Tx, app, fromMember string, fromID int64, toMember string, toID int64, migration_id, fromReference, toReference string) error {
+func CreateNewReference(tx *sql.Tx, app, fromMember string, fromID int64, toMember string, toID interface{}, migration_id, fromReference, toReference string) error {
 
 	// query := "INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;"
-	query := fmt.Sprintf("INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromID, fromReference, toMember, toID, toReference, migration_id)
+	query := fmt.Sprintf("INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromID, fromReference, toMember, fmt.Sprint(toID), toReference, migration_id)
 
 	_, err := tx.Exec(query)
 	if err != nil {

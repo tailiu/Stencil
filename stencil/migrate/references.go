@@ -3,6 +3,7 @@ package migrate
 import (
 	"fmt"
 	"log"
+	"stencil/config"
 	"stencil/db"
 	"stencil/helper"
 	"strings"
@@ -63,9 +64,11 @@ func (self *MigrationWorkerV2) _CheckReferenceExistsInPreviousMigrations(idRows 
 }
 
 func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForExistence bool) error {
+
 	fmt.Println("@_CreateMappedReference: Enter >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 	fmt.Printf("@_CreateMappedReference | Ref : %v | checkForExistence : %v \n", ref, checkForExistence)
 	defer fmt.Println("@_CreateMappedReference: Exit <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+
 	dependeeMemberID, err := db.TableID(self.logTxn.DBconn, ref.fromMember, ref.appID)
 	if err != nil {
 		fmt.Println(err)
@@ -114,8 +117,254 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 	return nil
 }
 
+func CreateInnerDependencyReferences(appConfig config.AppConfig, tag config.Tag, nodeData map[string]interface{}, attr string) ([]MappingRef, error) {
+
+	log.Printf("@CreateInnerDependencyReferences | nodeTag: %s | nodeData: %v | attr: '%s' \n", tag.Name, nodeData, attr)
+
+	var refs []MappingRef
+
+	for _, innerDependency := range tag.InnerDependencies {
+		for dependsOn, dependee := range innerDependency {
+
+			depTokens := strings.Split(dependee, ".")
+			dependeeMember := tag.Members[depTokens[0]]
+			dependeeAttr := depTokens[1]
+			dependeeReferencedAttr := fmt.Sprintf("%s.%s", dependeeMember, dependeeAttr)
+
+			if len(attr) > 0 && dependeeReferencedAttr != attr {
+				log.Printf("@CreateInnerDependencyReferences | %s != %s \n", dependeeReferencedAttr, attr)
+				continue
+			} else if dependeeReferencedAttr == attr {
+				log.Printf("@CreateInnerDependencyReferences | %s == %s \n", dependeeReferencedAttr, attr)
+			}
+
+			depOnTokens := strings.Split(dependsOn, ".")
+			depOnMember := tag.Members[depOnTokens[0]]
+			depOnAttr := depOnTokens[1]
+			depOnReferencedAttr := fmt.Sprintf("%s.%s", depOnMember, depOnAttr)
+
+			var fromID, toID int64
+
+			if val, ok := nodeData[dependeeMember+".id"]; ok {
+				fromID = helper.GetInt64(val)
+			} else {
+				log.Printf("@CreateInnerDependencyReferences | fromID | '%s.id' doesn't exist in node data? \n", dependeeMember)
+			}
+
+			log.Printf("@CreateInnerDependencyReferences | toID | Checking dependeeReferencedAttr: '%s' \n", dependeeReferencedAttr)
+
+			if val, ok := nodeData[dependeeReferencedAttr]; ok {
+				toID = helper.GetInt64(val)
+			} else {
+				log.Printf("@CreateInnerDependencyReferences | toID | dependeeReferencedAttr: '%s' doesn't exist in node data? \n", dependeeReferencedAttr)
+				log.Printf("@CreateInnerDependencyReferences | toID | Checking depOnReferencedAttr: '%s' \n", depOnReferencedAttr)
+				if val, ok := nodeData[depOnReferencedAttr]; ok {
+					toID = helper.GetInt64(val)
+				} else {
+					fmt.Println(nodeData)
+					log.Printf("@CreateInnerDependencyReferences | toID | depOnReferencedAttr: '%s' doesn't exist in node data? \n", depOnReferencedAttr)
+					continue
+				}
+			}
+
+			if toID == 0 || fromID == 0 {
+				fmt.Println(appConfig.AppID, dependeeMember, fromID, depOnMember, toID, dependeeAttr, depOnAttr, dependeeReferencedAttr, depOnReferencedAttr)
+				log.Fatal("@CreateInnerDependencyReferences: Unable to CreateNewReference: toID == 0 || fromID == 0")
+			}
+
+			ref := MappingRef{
+				appID:      appConfig.AppID,
+				fromID:     fromID,
+				fromMember: dependeeMember,
+				fromAttr:   dependeeAttr,
+				toID:       toID,
+				toMember:   depOnMember,
+				toAttr:     depOnAttr,
+			}
+
+			log.Println("@CreateInnerDependencyReferences | Ref Created | ", ref)
+
+			refs = append(refs, ref)
+		}
+	}
+
+	return refs, nil
+}
+
+func CreateReferencesViaDependencies(appConfig config.AppConfig, tag config.Tag, nodeData map[string]interface{}, attr string) ([]MappingRef, error) {
+
+	log.Printf("@CreateReferencesViaDependencies | nodeTag: %s | nodeData: %v | attr: '%s' \n", tag.Name, nodeData, attr)
+
+	var refs []MappingRef
+
+	if dep, err := appConfig.GetDependency(tag.Name); err == nil {
+		for _, depOn := range dep.DependsOn {
+			if referencedTag, err := appConfig.GetTag(depOn.Tag); err == nil {
+
+				log.Printf("@CreateReferencesViaDependencies | referencedTag: %s  \n", referencedTag.Name)
+
+				for _, condition := range depOn.Conditions {
+					tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
+					if err != nil {
+						log.Println(err, tag.Name, condition.TagAttr)
+						log.Fatal("@CreateReferencesViaDependencies: tagAttr in condition doesn't exist? ", condition.TagAttr)
+						break
+					}
+					tagAttrTokens := strings.Split(tagAttr, ".")
+					fromMember := tagAttrTokens[0]
+					fromReference := tagAttrTokens[1]
+					fromReferencedAttr := fmt.Sprintf("%s.%s", fromMember, fromReference)
+
+					if len(attr) > 0 && fromReferencedAttr != attr {
+						log.Printf("@CreateReferencesViaDependencies | %s != %s \n", fromReferencedAttr, attr)
+						continue
+					} else if fromReferencedAttr == attr {
+						log.Printf("@CreateReferencesViaDependencies | %s == %s \n", fromReferencedAttr, attr)
+					}
+
+					depOnAttr, err := referencedTag.ResolveTagAttr(condition.DependsOnAttr)
+					if err != nil {
+						log.Println(err, referencedTag.Name, condition.DependsOnAttr)
+						log.Fatal("@CreateReferencesViaDependencies: depOnAttr in condition doesn't exist? ", condition.DependsOnAttr)
+						break
+					}
+					depOnAttrTokens := strings.Split(depOnAttr, ".")
+					toMember := depOnAttrTokens[0]
+					toReference := depOnAttrTokens[1]
+
+					var fromID int64
+					var toID string
+
+					if val, ok := nodeData[fromMember+".id"]; ok {
+						fromID = helper.GetInt64(val)
+					} else {
+						log.Println("@CreateReferencesViaDependencies | FromID | ", fromMember+".id", " doesn't exist in node data? NodeTagName: ", tag.Name)
+						continue
+					}
+
+					if val, ok := nodeData[fromReferencedAttr]; ok {
+						toID = fmt.Sprint(val)
+					} else {
+						log.Println("@CreateReferencesViaDependencies | toID | '", fromReferencedAttr, "' doesn't exist in node data? ReferencedTagName: ", referencedTag.Name)
+						continue
+					}
+
+					if len(toID) == 0 || fromID == 0 {
+						fmt.Println(appConfig.AppID, fromMember, fromID, toMember, toID, fromReference, toReference, fromReferencedAttr)
+						log.Fatal("@CreateReferencesViaDependencies: Unable to CreateNewReference: toID == 0 || fromID == 0")
+					}
+
+					ref := MappingRef{
+						appID:      appConfig.AppID,
+						fromID:     fromID,
+						fromMember: fromMember,
+						fromAttr:   fromReference,
+						toID:       toID,
+						toMember:   toMember,
+						toAttr:     toReference,
+					}
+
+					log.Println("@CreateReferencesViaDependencies | Ref Created | ", ref)
+
+					refs = append(refs, ref)
+				}
+			} else {
+				log.Fatal("@CreateReferencesViaDependencies: Unable to fetch referencedTag ", depOn.Tag)
+			}
+		}
+	} else {
+		log.Fatal("@CreateReferencesViaDependencies: Unable to fetch dependencies ", tag.Name)
+	}
+	return refs, nil
+}
+
+func CreateReferencesViaOwnerships(appConfig config.AppConfig, tag config.Tag, nodeData map[string]interface{}, attr string) ([]MappingRef, error) {
+
+	log.Printf("@CreateReferencesViaOwnerships | nodeTag: %s | nodeData: %v | attr: '%s'  \n", tag.Name, nodeData, attr)
+
+	var refs []MappingRef
+
+	if own := appConfig.GetOwnership(tag.Name, "root"); own != nil {
+		if rootTag, err := appConfig.GetTag("root"); err == nil {
+
+			log.Printf("@CreateReferencesViaOwnerships | referencedTag: %s  \n", rootTag.Name)
+
+			for _, condition := range own.Conditions {
+
+				tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
+				if err != nil {
+					log.Println(err, tag.Name, condition.TagAttr)
+					log.Fatal("@CreateReferencesViaOwnerships: tagAttr in condition doesn't exist? ", condition.TagAttr)
+					break
+				}
+				tagAttrTokens := strings.Split(tagAttr, ".")
+				fromMember := tagAttrTokens[0]
+				fromReference := tagAttrTokens[1]
+				fromReferencedAttr := fmt.Sprintf("%s.%s", fromMember, fromReference)
+
+				if len(attr) > 0 && fromReferencedAttr != attr {
+					log.Printf("@CreateReferencesViaOwnerships | %s != %s \n", fromReferencedAttr, attr)
+					continue
+				} else if fromReferencedAttr == attr {
+					log.Printf("@CreateReferencesViaOwnerships | %s == %s \n", fromReferencedAttr, attr)
+				}
+
+				rootAttr, err := rootTag.ResolveTagAttr(condition.DependsOnAttr)
+				if err != nil {
+					log.Println(err, rootTag.Name, condition.DependsOnAttr)
+					log.Fatal("@CreateReferencesViaOwnerships: depOnAttr in condition doesn't exist? ", condition.DependsOnAttr)
+					break
+				}
+				rootAttrTokens := strings.Split(rootAttr, ".")
+				rootMember := rootAttrTokens[0]
+				rootReference := rootAttrTokens[1]
+
+				var fromID, toID int64
+
+				if val, ok := nodeData[fromMember+".id"]; ok {
+					fromID = helper.GetInt64(val)
+				} else {
+					log.Println("@CreateReferencesViaOwnerships | FromID | ", fromMember+".id", " doesn't exist in node data? NodeTagName: ", tag.Name)
+				}
+
+				if val, ok := nodeData[fromReferencedAttr]; ok {
+					toID = helper.GetInt64(val)
+				} else {
+					log.Println("@CreateReferencesViaOwnerships | toID | '", fromReferencedAttr, "' doesn't exist in node data? ReferencedTagName: ", rootTag.Name)
+				}
+
+				if toID == 0 || fromID == 0 {
+					fmt.Println(appConfig.AppID, fromMember, fromID, rootMember, toID, fromReference, rootReference, fromReferencedAttr)
+					log.Fatal("@CreateReferencesViaOwnerships: Unable to CreateNewReference: toID == 0 || fromID == 0")
+				}
+
+				ref := MappingRef{
+					appID:      appConfig.AppID,
+					fromID:     fromID,
+					fromMember: fromMember,
+					fromAttr:   fromReference,
+					toID:       toID,
+					toMember:   rootMember,
+					toAttr:     rootReference,
+				}
+
+				log.Println("@CreateReferencesViaOwnerships | Ref Created | ", ref)
+
+				refs = append(refs, ref)
+			}
+		} else {
+			log.Fatal("@CreateReferencesViaOwnerships: Unable to fetch referencedTag ", own.Tag)
+		}
+	} else {
+		if tag.Name != "root" {
+			log.Fatal("@CreateReferencesViaOwnerships: Unable to fetch ownership ", tag.Name)
+		}
+	}
+	return refs, nil
+}
+
 func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
-	log.Printf("@AddInnerReferences | nodeTag: %s | nodeData: %v \n", node.Tag.Name, node.Data)
+	log.Fatal("Why are you in AddInnerReferences?")
 	for _, innerDependency := range node.Tag.InnerDependencies {
 		for dependsOn, dependee := range innerDependency {
 
@@ -125,7 +374,8 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
 			dependeeReferencedAttr := fmt.Sprintf("%s.%s", dependeeMember, dependeeAttr)
 			dependeeMemberID, err := db.TableID(self.logTxn.DBconn, dependeeMember, self.SrcAppConfig.AppID)
 			if err != nil {
-				log.Fatal("@AddInnerReferences: Unable to resolve id for dependeeMember ", dependeeMember)
+				log.Println("@AddInnerReferences: Unable to resolve id for dependeeMember ", dependeeMember)
+				continue
 			}
 
 			depOnTokens := strings.Split(dependsOn, ".")
@@ -134,7 +384,8 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
 			depOnReferencedAttr := fmt.Sprintf("%s.%s", depOnMember, depOnAttr)
 			depOnMemberID, err := db.TableID(self.logTxn.DBconn, depOnMember, self.SrcAppConfig.AppID)
 			if err != nil {
-				log.Fatal("@AddInnerReferences: Unable to resolve id for depOnMember ", depOnMember)
+				log.Println("@AddInnerReferences: Unable to resolve id for depOnMember ", depOnMember)
+				continue
 			}
 
 			var fromID, toID int64
@@ -142,8 +393,7 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
 			if val, ok := node.Data[dependeeMember+".id"]; ok {
 				fromID = helper.GetInt64(val)
 			} else {
-				fmt.Println(node.Data)
-				log.Fatalf("@AddInnerReferences | fromID | '%s.id' doesn't exist in node data? \n", dependeeMember)
+				log.Printf("@AddInnerReferences | fromID | '%s.id' doesn't exist in node data? \n", dependeeMember)
 			}
 
 			log.Printf("@AddInnerReferences | toID | Checking dependeeReferencedAttr: '%s' \n", dependeeReferencedAttr)
@@ -157,7 +407,8 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
 					toID = helper.GetInt64(val)
 				} else {
 					fmt.Println(node.Data)
-					log.Fatalf("@AddInnerReferences | toID | depOnReferencedAttr: '%s' doesn't exist in node data? \n", depOnReferencedAttr)
+					log.Printf("@AddInnerReferences | toID | depOnReferencedAttr: '%s' doesn't exist in node data? \n", depOnReferencedAttr)
+					continue
 				}
 			}
 
@@ -181,9 +432,16 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
 
 func (self *MigrationWorkerV2) AddToReferencesViaDependencies(node *DependencyNode) error {
 
-	for _, dep := range self.SrcAppConfig.GetSubDependencies(node.Tag.Name) {
+	log.Fatal("Why are you in AddToReferencesViaDependencies?")
+
+	log.Printf("@AddToReferencesViaDependencies | nodeTag: %s | nodeData: %v \n", node.Tag.Name, node.Data)
+
+	if dep, err := self.SrcAppConfig.GetDependency(node.Tag.Name); err == nil {
 		for _, depOn := range dep.DependsOn {
 			if referencedTag, err := self.SrcAppConfig.GetTag(depOn.Tag); err == nil {
+
+				log.Printf("@AddToReferencesViaDependencies | referencedTag: %s  \n", referencedTag.Name)
+
 				for _, condition := range depOn.Conditions {
 					tagAttr, err := node.Tag.ResolveTagAttr(condition.TagAttr)
 					if err != nil {
@@ -219,15 +477,13 @@ func (self *MigrationWorkerV2) AddToReferencesViaDependencies(node *DependencyNo
 					if val, ok := node.Data[fromMember+".id"]; ok {
 						fromID = helper.GetInt64(val)
 					} else {
-						fmt.Println(node.Data)
-						log.Fatal("@AddToReferencesViaDependencies:", fromMember+".id", " doesn't exist in node data? ", node.Tag.Name)
+						log.Println("@AddToReferencesViaDependencies | FromID | ", fromMember+".id", " doesn't exist in node data? NodeTagName: ", node.Tag.Name)
 					}
 
 					if val, ok := node.Data[fromReferencedAttr]; ok {
 						toID = helper.GetInt64(val)
 					} else {
-						fmt.Println(node.Data)
-						log.Fatal("@AddToReferencesViaDependencies: '", fromReferencedAttr, "' doesn't exist in node data? ", referencedTag.Name)
+						log.Println("@AddToReferencesViaDependencies | toID | '", fromReferencedAttr, "' doesn't exist in node data? ReferencedTagName: ", referencedTag.Name)
 					}
 
 					if err := db.CreateNewReference(self.tx.StencilTx, self.SrcAppConfig.AppID, fromMemberID, fromID, toMemberID, toID, fmt.Sprint(self.logTxn.Txn_id), fromReference, toReference); err != nil {
@@ -242,11 +498,14 @@ func (self *MigrationWorkerV2) AddToReferencesViaDependencies(node *DependencyNo
 				log.Fatal("@AddToReferencesViaDependencies: Unable to fetch referencedTag ", depOn.Tag)
 			}
 		}
+	} else {
+		log.Fatal("@AddToReferencesViaDependencies: Unable to fetch dependencies ", node.Tag.Name)
 	}
 	return nil
 }
 
 func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, referencedNode *DependencyNode) error {
+	log.Fatal("Why are you in AddToReferences?")
 	return nil
 	if dep, err := self.SrcAppConfig.CheckDependency(currentNode.Tag.Name, referencedNode.Tag.Name); err != nil {
 		fmt.Println(err)

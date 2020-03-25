@@ -65,15 +65,20 @@ func main() {
 			uid = getUID(apps[i][1])
 		}
 
-		srcAppID, srcAppName := apps[i][0], apps[i][1]
+		srcAppName, srcAppID := apps[i][0], apps[i][1]
 		var dstAppID, dstAppName string
 
 		if i == totalApps-1 {
-			dstAppID, dstAppName = apps[0][0], apps[0][1]
+			dstAppName, dstAppID = apps[0][0], apps[0][1]
 		} else {
-			dstAppID, dstAppName = apps[i+1][0], apps[i+1][1]
+			dstAppName, dstAppID = apps[i+1][0], apps[i+1][1]
 		}
 
-		SA1_migrate.Controller(uid, srcAppID, srcAppName, dstAppID, dstAppName, *mtype, *threads, *display, displayInFirstPhase, markAsDelete, *blade, *bags)
+		SA1_migrate.Controller(uid, srcAppName, srcAppID, dstAppName, dstAppID, *mtype, *threads, *display, displayInFirstPhase, markAsDelete, *blade, *bags)
+
+		// print spaces before new migration
+		for j := 1; j < 50; j++ {
+			fmt.Println()
+		}
 	}
 }

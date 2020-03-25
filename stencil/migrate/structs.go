@@ -73,7 +73,7 @@ type MappingRef struct {
 	fromID        int64
 	fromMember    string
 	fromAttr      string
-	toID          int64
+	toID          interface{}
 	toMember      string
 	toAttr        string
 	mergedFromBag bool
