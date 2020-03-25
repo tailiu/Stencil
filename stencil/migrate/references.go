@@ -325,12 +325,14 @@ func CreateReferencesViaOwnerships(appConfig config.AppConfig, tag config.Tag, n
 					fromID = helper.GetInt64(val)
 				} else {
 					log.Println("@CreateReferencesViaOwnerships | FromID | ", fromMember+".id", " doesn't exist in node data? NodeTagName: ", tag.Name)
+					continue
 				}
 
 				if val, ok := nodeData[fromReferencedAttr]; ok {
 					toID = helper.GetInt64(val)
 				} else {
 					log.Println("@CreateReferencesViaOwnerships | toID | '", fromReferencedAttr, "' doesn't exist in node data? ReferencedTagName: ", rootTag.Name)
+					continue
 				}
 
 				if toID == 0 || fromID == 0 {
