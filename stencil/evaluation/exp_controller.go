@@ -1961,7 +1961,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 1100
+	edgeCounterRangeStart := 800
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -1990,8 +1990,6 @@ func Exp7Test() {
 	for j := 0; j < migrationNum; j++ {
 
 		userID := edgeCounter[j]["person_id"]
-
-		// userID := "7871"
 
 		userID1 := userID
 

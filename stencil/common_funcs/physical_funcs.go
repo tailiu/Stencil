@@ -1,4 +1,4 @@
-package common_phy_funcs
+package common_funcs
 
 import (
 	"stencil/db"

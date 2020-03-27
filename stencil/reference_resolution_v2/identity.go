@@ -1,4 +1,4 @@
-package reference_resolution
+package reference_resolution_v2
 
 import (
 	"database/sql"
