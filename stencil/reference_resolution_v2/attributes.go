@@ -26,12 +26,26 @@ func CreateIdentity(app, member, id string) *Identity {
 	return ID
 }
 
-func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig,
-	ID *Identity) []map[string]interface{} {
+func CreateAttribute(app, member, attrName, val string) *Attribute {
 
-	query := fmt.Sprintf(`SELECT * FROM identity_table 
-		WHERE to_app = %s and to_member = %s and to_id = %s`,
-		ID.app, ID.member, ID.id)
+	attr := &Attribute{
+		app:    	  app,
+		member: 	  member,
+		attrName:     attrName,
+		val:		  val,
+	}
+
+	return attr
+}
+
+func getRowsFromAttrChangeTableByTo(refResolutionConfig *RefResolutionConfig,
+	attr *Attribute) []map[string]interface{} {
+
+	query := fmt.Sprintf(
+		`SELECT * FROM attribute_changes WHERE 
+		to_app = %s and to_member = %s and to_attr and to_val = %s`,
+		attr.app, attr.member, attr.attrName, attr.val,
+	)
 
 	log.Println(query)
 
@@ -43,7 +57,6 @@ func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig,
 	// log.Println(data)
 
 	return data
-
 }
 
 func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
@@ -440,5 +453,42 @@ func GetPrevUserIDs(stencilDBConn *sql.DB, appID, userID string) map[string]stri
 
 	return getPrevUserIDsByBackTraversal(stencilDBConn,
 		appID, rootMemberID, userID)
+
+}
+
+func CreateAttributeChangesTable(dbConn *sql.DB) {
+	
+	var queries []string
+
+	query1 := `CREATE TABLE attribute_changes (
+			from_app 		INT8	NOT NULL,
+			from_member 	INT8	NOT NULL,
+			from_attr 		INT8	NOT NULL,
+			from_val 		VARCHAR NOT NULL,
+			to_app 			INT8	NOT NULL,
+			to_member 		INT8	NOT NULL,
+			to_attr 		INT8	NOT NULL,
+			to_val 			VARCHAR NOT NULL,
+			migration_id	INT8	NOT NULL,
+			pk				SERIAL PRIMARY KEY,
+			FOREIGN KEY (from_member) REFERENCES app_tables (pk),
+			FOREIGN KEY (to_member) REFERENCES app_tables (pk),
+			FOREIGN KEY (from_app) REFERENCES apps (pk),
+			FOREIGN KEY (to_app) REFERENCES apps (pk),
+			FOREIGN KEY (from_attr) REFERENCES app_schemas (pk),
+			FOREIGN KEY (to_attr) REFERENCES app_schemas (pk))`
+
+	query2 := "CREATE INDEX ON attribute_changes(to_app, to_member, to_attr, to_val)"
+
+	query3 := "CREATE INDEX ON attribute_changes(from_app, from_member, from_attr, from_val)"
+
+	queries = append(queries, query1, query2, query3)
+
+	for _, query := range queries {
+		err := db.TxnExecute1(dbConn, query)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 }

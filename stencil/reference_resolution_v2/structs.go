@@ -6,10 +6,11 @@ import (
 )
 
 // app, member, id are all integers corresponding to names
-type Identity struct {
-	app 	string
-	member 	string
-	id 		string
+type Attribute struct {
+	app 		string
+	member 		string
+	attrName 	string
+	val 		string
 }
 
 type RefResolutionConfig struct {
@@ -21,6 +22,7 @@ type RefResolutionConfig struct {
 	appTableNameIDPairs 			map[string]string
 	appIDNamePairs					map[string]string
 	tableIDNamePairs				map[string]string
+	attrIDNamePairs					map[string]string
 	allMappings						*config.SchemaMappings
 	mappingsFromSrcToDst			*config.MappedApp
 	mappingsFromOtherAppsToDst		map[string]*config.MappedApp

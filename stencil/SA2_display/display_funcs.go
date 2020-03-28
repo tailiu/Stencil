@@ -12,8 +12,7 @@ import (
 	"math"
 )
 
-func CreateDisplayConfig(migrationID int, 
-	displayInFirstPhase bool) *displayConfig {
+func CreateDisplayConfig(migrationID int, displayInFirstPhase bool) *displayConfig {
 
 	var displayConfig displayConfig
 
@@ -42,7 +41,6 @@ func CreateDisplayConfig(migrationID int,
 	dstRes := common_funcs.GetTableIDNamePairsInApp(stencilDBConn, dstAppID)
 
 	for _, dstRes1 := range dstRes {
-
 		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] = 
 			fmt.Sprint(dstRes1["table_name"])
 
@@ -55,7 +53,6 @@ func CreateDisplayConfig(migrationID int,
 	srcRes := common_funcs.GetTableIDNamePairsInApp(stencilDBConn, srcAppID)
 
 	for _, srcRes1 := range srcRes {
-
 		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = 
 			fmt.Sprint(srcRes1["pk"])
 

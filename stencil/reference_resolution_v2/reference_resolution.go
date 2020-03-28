@@ -83,13 +83,13 @@ import (
 
 // You are on the left/from part
 func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig, 
-	IDRow map[string]string, orgID *Identity) map[string]string {
+	attrRow map[string]string, orgAttr *Attribute) map[string]string {
 	
 	log.Println("You are on the left/from part")
 
 	updatedAttrs := make(map[string]string)
 	
-	fromRefs := getFromReferences(refResolutionConfig, IDRow)
+	fromRefs := getFromReferences(refResolutionConfig, attrRow)
 
 	log.Println("Get", len(fromRefs), "from reference(s)")
 
@@ -99,7 +99,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		
 		LogRefRow(refResolutionConfig, procRef)
 
-		data := CreateIdentity(procRef["app"], procRef["to_member"], procRef["to_id"])
+		data := CreateAttribute(procRef["app"], procRef["to_member"], procRef["to_attr"], procRef["to_val"])
 
 		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID, false)
 		// log.Println("refIdentityRows: ", refIdentityRows)
@@ -262,7 +262,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 }
 
 func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig, 
-	ID *Identity, orgID *Identity) (map[string]string, map[string]string) {
+	attr, orgAttr *Attribute) (map[string]string, map[string]string) {
 	
 	log.Println("Resolve references by back traversal")
 
@@ -270,18 +270,18 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 	
 	othersUpdatedAttrs := make(map[string]string)
 	
-	idRows := getRowsFromIDTableByTo(refResolutionConfig, ID)
+	attrRows := getRowsFromAttrChangeTableByTo(refResolutionConfig, attr)
 
-	log.Println("Get", len(idRows), "id row(s)")
+	log.Println("Get", len(attrRows), "attribute row(s)")
 
-	for _, IDRow := range idRows {
+	for _, attrRow := range attrRows {
 
-		procIDRow := common_funcs.TransformInterfaceToString(IDRow)
+		procAttrRow := common_funcs.TransformInterfaceToString(attrRow)
 		
-		logIDRow(refResolutionConfig, procIDRow)
+		logAttrChangeRow(refResolutionConfig, procAttrRow)
 
 		// You are on the left/from part
-		currentMyupdatedAttrs := updateMyDataBasedOnReferences(refResolutionConfig, procIDRow, orgID)
+		currentMyupdatedAttrs := updateMyDataBasedOnReferences(refResolutionConfig, procAttrRow, orgAttr)
 
 		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, currentMyupdatedAttrs)
 
@@ -307,12 +307,12 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 
 }
 
-
 func InitializeReferenceResolution(migrationID int, 
 	appID, appName string, appDBConn, StencilDBConn *sql.DB, 
 	appTableNameIDPairs map[string]string,
 	appIDNamePairs map[string]string,
 	tableIDNamePairs map[string]string,
+	attrIDNamePairs map[string]string,
 	allMappings *config.SchemaMappings,
 	mappingsFromSrcToDst *config.MappedApp,
 	mappingsFromOtherAppsToDst map[string]*config.MappedApp) *RefResolutionConfig {
@@ -328,6 +328,7 @@ func InitializeReferenceResolution(migrationID int,
 	refResolutionConfig.appTableNameIDPairs = appTableNameIDPairs
 	refResolutionConfig.appIDNamePairs = appIDNamePairs
 	refResolutionConfig.tableIDNamePairs = tableIDNamePairs
+	refResolutionConfig.attrIDNamePairs = attrIDNamePairs
 	refResolutionConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
 	refResolutionConfig.mappingsFromOtherAppsToDst = mappingsFromOtherAppsToDst
 
@@ -341,8 +342,8 @@ func InitializeReferenceResolution(migrationID int,
 // but others' updated attributes may have some collision, 
 // so we use *id:updatedAttr*, which is unique, as the key in the second return value.
 func ResolveReference(refResolutionConfig *RefResolutionConfig, 
-	ID *Identity) (map[string]string, map[string]string) {
+	attr *Attribute) (map[string]string, map[string]string) {
 	
-	return resolveReferenceByBackTraversal(refResolutionConfig, ID, ID)
+	return resolveReferenceByBackTraversal(refResolutionConfig, attr, attr)
 
 }

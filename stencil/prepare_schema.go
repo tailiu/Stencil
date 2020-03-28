@@ -1,6 +1,7 @@
 package main
 
 import (
+	"stencil/reference_resolution_v2"
 	"stencil/SA1_display"
 	"stencil/evaluation"
 	"stencil/db"
@@ -139,7 +140,6 @@ func test10() {
 
 func test11() {
 
-
 	dbName := "stencil_exp_sa2_100k_backup"
 
 	isBladeServer := false
@@ -148,6 +148,32 @@ func test11() {
 	defer dbConn.Close()
 
 	evaluation.CreateFourDagCounterTables(dbConn)
+
+}
+
+func test12() {
+
+	dbName := "stencil_test"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
+
+	reference_resolution_v2.CreateAttributeChangesTable(dbConn)
+
+}
+
+func test13() {
+
+	dbName := "stencil_test"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
+
+	reference_resolution_v2.CreateReferenceTableV2(dbConn)
 
 }
 
@@ -169,10 +195,13 @@ func main() {
 
 	// test8()
 
-	test9()
+	// test9()
 
 	// test10()
 
 	// test11()
+
+	test12()
 	
+	// test13()
 }

@@ -3,6 +3,7 @@ package reference_resolution_v2
 import (
 	"fmt"
 	"log"
+	"database/sql"
 	"stencil/common_funcs"
 	"stencil/db"
 
@@ -14,13 +15,49 @@ import (
  * The functions here DO NOT consider migration id.
  */
 
+func CreateReferenceTableV2(dbConn *sql.DB) {
+
+	var queries []string
+
+	query1 := `CREATE TABLE reference_table_v2 (
+		app 			INT8	NOT NULL,
+		from_member 	INT8	NOT NULL,
+		from_attr 		INT8	NOT NULL,
+		from_val 		VARCHAR NOT NULL,
+		to_member 		INT8	NOT NULL,
+		to_attr 		INT8	NOT NULL,
+		to_val 			VARCHAR NOT NULL,
+		migration_id	INT8	NOT NULL,
+		pk				SERIAL PRIMARY KEY,
+		FOREIGN KEY (app) REFERENCES apps (pk),
+		FOREIGN KEY (from_member) REFERENCES app_tables (pk),
+		FOREIGN KEY (to_member) REFERENCES app_tables (pk),
+		FOREIGN KEY (from_attr) REFERENCES app_schemas (pk),
+		FOREIGN KEY (to_attr) REFERENCES app_schemas (pk))`
+	
+	query2 := "CREATE INDEX ON reference_table_v2(app, to_member, to_attr, to_val)"
+
+	query3 := "CREATE INDEX ON reference_table_v2(app, from_member, from_attr, from_val)"
+
+	queries = append(queries, query1, query2, query3)
+
+	for _, query := range queries {
+		err := db.TxnExecute1(dbConn, query)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+}
+
 func getFromReferences(refResolutionConfig *RefResolutionConfig,
-	IDRow map[string]string) []map[string]interface{} {
+	attrRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(
-		`SELECT * FROM reference_table 
-		WHERE app = %s and from_member = %s and from_id = %s;`,
-		IDRow["from_app"], IDRow["from_member"], IDRow["from_id"],
+		`SELECT * FROM reference_table_v2 WHERE
+		app = %s and from_member = %s and from_attr = %s and from_val = %s;`,
+		attrRow["from_app"], attrRow["from_member"], 
+		attrRow["from_attr"], attrRow["from_val"],
 	)
 
 	log.Println(query)
@@ -33,7 +70,6 @@ func getFromReferences(refResolutionConfig *RefResolutionConfig,
 	// fmt.Println(data)
 
 	return data
-
 }
 
 func getToReferences(refResolutionConfig *RefResolutionConfig,
