@@ -50,6 +50,38 @@ func CreateReferenceTableV2(dbConn *sql.DB) {
 
 }
 
+func CreateResolvedReferencesTable(dbConn *sql.DB) {
+
+	var queries []string
+
+	query1 := `CREATE TABLE resolved_references (
+		app 						INT8	NOT NULL,
+		id		 					INT8	NOT NULL,
+		member		 				INT8	NOT NULL,
+		attr	 					INT8	NOT NULL,
+		attr_val_before_changes		varchar	NOT NULL,
+		attr_val_after_changes		varchar	NOT NULL,
+		migration_id				INT8	NOT NULL,
+		pk							SERIAL PRIMARY KEY,
+		FOREIGN KEY (app) REFERENCES apps (pk),
+		FOREIGN KEY (member) REFERENCES app_tables (pk),
+		FOREIGN KEY (attr) REFERENCES app_schemas (pk))`
+	
+	// query2 := "CREATE INDEX ON resolved_references(app, id, member, attr, attr_val)"
+
+	// query3 := "CREATE INDEX ON resolved_references(app, member, attr, attr_val)"
+
+	queries = append(queries, query1, query2)
+
+	for _, query := range queries {
+		err := db.TxnExecute1(dbConn, query)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+}
+
 func getFromReferences(refResolutionConfig *RefResolutionConfig,
 	attrRow map[string]string) []map[string]interface{} {
 
@@ -216,10 +248,28 @@ func checkExistsInResolvedReference(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func updateReferences(
-	refResolutionConfig *RefResolutionConfig, refID,
-	member, id, attr,
-	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated string) (string, error) {
+func getIDsOfDataToBeUpdated(refResolutionConfig *RefResolutionConfig,
+	memberToBeUpdated, attrValToBeUpdated, 
+	attrToBeUpdated string) []map[string]interface{} {
+	
+	query := fmt.Sprintf(
+		"SELECT id FROM %s WHERE %s = '%s'",
+		memberToBeUpdated, attrToBeUpdated, attrValToBeUpdated,
+	)
+
+	log.Println(query)
+
+	data, err := db.DataCall(refResolutionConfig.appDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data
+
+}
+
+func updateReferences(refResolutionConfig *RefResolutionConfig, refID,
+	member, val, attr, memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) (string, error) {
 
 	if attr == "" && attrToBeUpdated == "" {
 
@@ -227,7 +277,7 @@ func updateReferences(
 
 	} else if attr != "" && attrToBeUpdated != "" {
 
-		// Checking ReferenceResolved is avoid updating references again
+		// Checking ReferenceResolved is to avoid updating references again
 		// in the case of non-unique references
 		// For example,
 		// id_row - from_app: diaspora | from_member: posts |
@@ -241,13 +291,27 @@ func updateReferences(
 		// After resolving and updating one reference like status_id,
 		// due to the same id and reference rows, we may try to resolve and
 		// update status_id again. Therefore, we check ReferenceResolved here
-		newVal := ReferenceResolved(refResolutionConfig,
-			refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
-			attrToBeUpdated, IDToBeUpdated)
+		dataIDsToBeUpdated := getIDsOfDataToBeUpdated(refResolutionConfig)
 
-		log.Println("resolved value:", newVal)
+		if len(dataIDsToBeUpdated) == 0 {
+			return "", alreadySolved
+		}
 
-		if newVal != "" {
+		unresolvedDataIDToBeUpdated := ""
+	
+		for _, dataIDToBeUpdated := range dataIDsToBeUpdated {
+
+			newVal := ReferenceResolved(refResolutionConfig,
+				refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
+				attrToBeUpdated, dataIDToBeUpdated)
+			
+			if newVal == "" {
+				unresolvedDataIDToBeUpdated = dataIDToBeUpdated
+				break
+			}
+		}
+
+		if unresolvedDataIDToBeUpdated == "" {
 			return "", alreadySolved
 		}
 

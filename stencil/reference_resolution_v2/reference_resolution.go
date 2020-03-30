@@ -101,20 +101,22 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 		data := CreateAttribute(procRef["app"], procRef["to_member"], procRef["to_attr"], procRef["to_val"])
 
-		refIdentityRows := forwardTraverseIDTable(refResolutionConfig, data, orgID, false)
+		refAttributeRows := forwardTraverseAttrChangesTable(refResolutionConfig, data, orgAttr, false)
 		// log.Println("refIdentityRows: ", refIdentityRows)
 
-		log.Println("After traversing forward the ID table:")
-		log.Println("Get", len(refIdentityRows), "refIdentity row(s)")
+		log.Println("After traversing forward the attribute_changes table:")
+		log.Println("Get", len(refAttributeRows), "refAttribute row(s)")
 
-		log.Println("procRef['app']:", procRef["app"], 
-			"refResolutionConfig.appID:", refResolutionConfig.appID)
+		log.Println(
+			"procRef['app']:", procRef["app"], 
+			"refResolutionConfig.appID:", refResolutionConfig.appID,
+		)
 
-		if len(refIdentityRows) > 0 {
+		if len(refAttributeRows) > 0 {
 			
-			for _, refIdentityRow := range refIdentityRows {
+			for _, refAttributeRow := range refAttributeRows {
 
-				logRefIDRow(refResolutionConfig, refIdentityRow)
+				logRefAttrRow(refResolutionConfig, refAttributeRow)
 
 				// If we can get refIdentityRows, but the app of the reference table is the same as 
 				// the destination application, this means that the data is migrated back
@@ -126,11 +128,13 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 					// Up to now it seems that refIdentityRow.member == procRef["to_member"] is enough,
 					// but procRef["from_member"] == orgID.member is added in case 
-					if refIdentityRow.member == procRef["to_member"] &&
-						procRef["from_member"] == orgID.member {
+					if refAttributeRow.member == procRef["to_member"] &&
+						refAttributeRow.attrName == procRef["to_attr"] &&
+						procRef["from_member"] == orgAttr.member &&
+						procRef["from_attr"] == orgAttr.attrName {
 
-						oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow1(
-							refResolutionConfig, procRef, orgID, refIdentityRow.id)
+						oneUpdatedAttr := updateRefOnLeftByRefAttrRow1(
+							refResolutionConfig, procRef, orgAttr, refAttributeRow.val)
 			
 						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
@@ -221,7 +225,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 					if refIdentityRow.member == procRef["from_member"] && 
 						procRef["to_member"] == orgID.member {
 	
-						oneUpdatedAttr := updateRefOnRightBasedOnMappingsUsingRefIDRow1(
+						oneUpdatedAttr := updateRefOnRightByRefAttrRow1(
 							refResolutionConfig, procRef, orgID, refIdentityRow.id)
 			
 						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
@@ -270,7 +274,7 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 	
 	othersUpdatedAttrs := make(map[string]string)
 	
-	attrRows := getRowsFromAttrChangeTableByTo(refResolutionConfig, attr)
+	attrRows := getRowsFromAttrChangesTableByTo(refResolutionConfig, attr)
 
 	log.Println("Get", len(attrRows), "attribute row(s)")
 

@@ -14,18 +14,6 @@ import (
  * from app and from member
  */
 
-// app, member, id are all integer corresponding to names
-func CreateIdentity(app, member, id string) *Identity {
-
-	ID := &Identity{
-		app:    app,
-		member: member,
-		id:     id,
-	}
-
-	return ID
-}
-
 func CreateAttribute(app, member, attrName, val string) *Attribute {
 
 	attr := &Attribute{
@@ -38,12 +26,24 @@ func CreateAttribute(app, member, attrName, val string) *Attribute {
 	return attr
 }
 
-func getRowsFromAttrChangeTableByTo(refResolutionConfig *RefResolutionConfig,
+func createAttributeByRefRowToPart(procAttrRow map[string]string) *Attribute {
+
+	attr := CreateAttribute(
+		procAttrRow["to_app"],
+		procAttrRow["to_member"],
+		procAttrRow["to_attr"],
+		procAttrRow["to_val"],
+	)
+
+	return attr
+}
+
+func getRowsFromAttrChangesTableByTo(refResolutionConfig *RefResolutionConfig,
 	attr *Attribute) []map[string]interface{} {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM attribute_changes WHERE 
-		to_app = %s and to_member = %s and to_attr and to_val = %s`,
+		to_app = %s and to_member = %s and to_attr and to_val = '%s'`,
 		attr.app, attr.member, attr.attrName, attr.val,
 	)
 
@@ -59,13 +59,14 @@ func getRowsFromAttrChangeTableByTo(refResolutionConfig *RefResolutionConfig,
 	return data
 }
 
-func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
-	ID *Identity) []map[string]interface{} {
+func getRowsFromAttrChangesTableByFrom(refResolutionConfig *RefResolutionConfig,
+	attr *Attribute) []map[string]interface{} {
 
 	query := fmt.Sprintf(
-		`SELECT * FROM identity_table 
-		WHERE from_app = %s and from_member = %s and from_id = %s`,
-		ID.app, ID.member, ID.id)
+		`SELECT * FROM attribute_changes WHERE
+		from_app = %s and from_member = %s and from_attr = %s and from_val = '%s'`,
+		attr.app, attr.member, attr.attrName, attr.val,
+	)
 
 	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
 	if err != nil {
@@ -78,24 +79,21 @@ func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
-	ID, orginalID *Identity, inRecurrsion bool) []*Identity {
+func forwardTraverseAttrChangesTable(refResolutionConfig *RefResolutionConfig,
+	attr, orgAttr *Attribute, inRecurrsion bool) []*Attribute {
 
-	var res []*Identity
+	var res []*Attribute
 
-	IDRows := getRowsFromIDTableByFrom(refResolutionConfig, ID)
+	attrRows := getRowsFromAttrChangesTableByFrom(refResolutionConfig, attr)
 	// log.Println(IDRows)
 
-	for _, IDRow := range IDRows {
+	for _, attrRow := range attrRows {
 
-		procIDRow := common_funcs.TransformInterfaceToString(IDRow)
+		procAttrRow := common_funcs.TransformInterfaceToString(attrRow)
 
-		nextData := CreateIdentity(
-			procIDRow["to_app"],
-			procIDRow["to_member"],
-			procIDRow["to_id"])
+		nextData := createAttributeByRefRowToPart(procAttrRow)
 
-		res = append(res, forwardTraverseIDTable(refResolutionConfig, nextData, orginalID, true)...)
+		res = append(res, forwardTraverseAttrChangesTable(refResolutionConfig, nextData, orgAttr, true)...)
 
 	}
 
@@ -103,7 +101,7 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 	// we should directly return null result and 
 	// not execute the code in the if block since this could directly return
 	// the provided ID to us which is wrong!
-	if len(IDRows) == 0 && inRecurrsion {
+	if len(attrRows) == 0 && inRecurrsion {
 
 		// We don't need to test ID.id != orginalID.id becaseu as long as
 		// ID.member != orginalID.member, this means that
@@ -128,14 +126,9 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 		// we use the third argument in the #REF to point out which table we are referring to 
 		// (excluding Twitter.notifications.id -> Diaspora.notifications.id (same as the original data under check)
 		// in that example). 
-		if ID.app == refResolutionConfig.appID {
-	
-			resData := CreateIdentity(ID.app, ID.member, ID.id)
-
-			res = append(res, resData)
-
+		if attr.app == refResolutionConfig.appID {
+			res = append(res, attr)
 		}
-
 	}
 
 	return res

@@ -64,15 +64,17 @@ func logAttrChangeRow(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func logRefIDRow(refResolutionConfig *RefResolutionConfig, 
-	ID *Identity) {
+func logRefAttrRow(refResolutionConfig *RefResolutionConfig, 
+	attribute *Attribute) {
 	
-	app := refResolutionConfig.appIDNamePairs[ID.app]
+	app := refResolutionConfig.appIDNamePairs[attribute.app]
+	member := refResolutionConfig.tableIDNamePairs[attribute.member]
+	attrName := refResolutionConfig.attrIDNamePairs[attribute.attrName]
 
-	member := refResolutionConfig.tableIDNamePairs[ID.member]
-
-	log.Println("refIdentityRow - app:", app, "|",
+	log.Println(
+		"refIdentityRow - app:", app, "|",
 		"member:", member, "|",
-		"id:", ID.id,
+		"attrName:", attrName, "|",
+		"val:", attribute.val,
 	)
 }

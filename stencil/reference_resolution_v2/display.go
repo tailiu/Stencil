@@ -56,46 +56,14 @@ func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolutionConf
 	}
 }
 
-// For now, when we are checking reference resolved, we use the current migration id
-// This should be fine in the case of migration from Diaspora to Mastodon, but
-// in more complex cases, like back and forth migration, this may not be correct
-func ReferenceResolvedConsideringMigrationID(refResolutionConfig *RefResolutionConfig, 
-	member, reference, id string) string {
-
-	query := fmt.Sprintf(`select value from resolved_references where app = %s 
-		and member = %s and reference = '%s' 
-		and id = %s and migration_id = %d`,
-		refResolutionConfig.appID, 
-		member, reference, id, 
-		refResolutionConfig.migrationID,
-	)
-	
-	log.Println(query)
-	
-	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// fmt.Println(data)
-	if len(data) == 0 {
-
-		return ""
-
-	} else {
-
-		return fmt.Sprint(data["value"])
-
-	}
-}
-
 func ReferenceResolved(refResolutionConfig *RefResolutionConfig, 
-	member, reference, id string) string {
+	member, attr, id string) string {
 
-	query := fmt.Sprintf(`select value from resolved_references where app = %s 
-		and member = %s and reference = '%s' and id = %s`,
+	query := fmt.Sprintf(
+		`select attr_val_after_changes from resolved_references where app = %s 
+		and member = %s and attr = '%s' and id = %s`,
 		refResolutionConfig.appID, 
-		member, reference, id,
+		member, attr, id,
 	)
 	
 	log.Println(query)
@@ -107,13 +75,9 @@ func ReferenceResolved(refResolutionConfig *RefResolutionConfig,
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-
 		return ""
-
 	} else {
-
-		return fmt.Sprint(data["value"])
-
+		return fmt.Sprint(data["attr_val_after_changes"])
 	}
 }
 

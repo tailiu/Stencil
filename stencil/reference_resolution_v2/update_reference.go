@@ -177,11 +177,11 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 }
 
-func updateRefOnLeftBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResolutionConfig, 
-	procRef map[string]string, orgID *Identity, refIdentityRowID string) map[string]string {
+func updateRefOnLeftByRefAttrRow1(refResolutionConfig *RefResolutionConfig, 
+	procRef map[string]string, orgAttr *Attribute, refAttrRowVal string) map[string]string {
 
-	attr := procRef["to_reference"]
-	attrToUpdate := procRef["from_reference"]
+	attr := procRef["to_attr"]
+	attrToUpdate := procRef["from_attr"]
 
 	updatedAttr := make(map[string]string)
 
@@ -192,21 +192,17 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResolu
 		refResolutionConfig,
 		procRef["pk"],  
 		refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
-		refIdentityRowID, 
+		refAttrRowVal, 
 		attr, 
-		refResolutionConfig.tableIDNamePairs[orgID.member], 
-		orgID.id, 
+		refResolutionConfig.tableIDNamePairs[orgAttr.member], 
+		orgAttr.val, 
 		attrToUpdate,
 	)
 	
 	if err1 != nil {
-		
 		log.Println(err1)
-	
 	} else {
-		
 		updatedAttr[attrToUpdate] = updatedVal
-
 	}
 
 	return updatedAttr
@@ -373,7 +369,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 	
 }
 
-func updateRefOnRightBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnRightByRefAttrRow1(refResolutionConfig *RefResolutionConfig, 
 	procRef map[string]string, orgID *Identity, refIdentityRowID string) map[string]string {
 	
 	attr := procRef["to_reference"]
