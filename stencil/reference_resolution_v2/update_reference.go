@@ -26,9 +26,12 @@ import (
  */
 
 
-func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
-	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
+func updateRefOnLeftBasedOnMappingsUsingRefAttrRow(refResolutionConfig *RefResolutionConfig, 
+	refAttributeRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
 	
+	procRefAttrName := refResolutionConfig.attrIDNamePairs(procRef["to_attr"])
+	procRefAttrToUpdateName := refResolutionConfig.attrIDNamePairs(procRef["from_attr"])
+
 	updatedAttrs := make(map[string]string)
 
 	// For example, when trying to find
@@ -42,10 +45,9 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		refResolutionConfig.allMappings,
 		refResolutionConfig.appIDNamePairs[procRef["app"]], 
 		refResolutionConfig.tableIDNamePairs[procRef["to_member"]],
-		refResolutionConfig.tableIDNamePairs[procRef["to_member"]] + 
-			"." + procRef["to_reference"], 
+		refResolutionConfig.tableIDNamePairs[procRef["to_member"]] + "." + procRefAttrName, 
 		refResolutionConfig.appName,
-		refResolutionConfig.tableIDNamePairs[refIdentityRow.member],
+		refResolutionConfig.tableIDNamePairs[refAttributeRow.member],
 	)
 
 	if err != nil {
@@ -62,11 +64,8 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 	// For example: diaspora posts posts.id mastodon media_attachments. This is caused
 	// by wrong implementation.
 	if len(attrs) != 1 {
-		
 		log.Println(notOneAttributeFound)
-		
 		return nil
-
 	}
 
 	attrsToUpdateNotInFETCH := make(map[string]string)
@@ -85,9 +84,9 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		refResolutionConfig.appIDNamePairs[procRef["app"]], 
 		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
 		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
-			"." + procRef["from_reference"], 
+			"." + procRefAttrToUpdateName, 
 		refResolutionConfig.appName,
-		refResolutionConfig.tableIDNamePairs[orgID.member],
+		refResolutionConfig.tableIDNamePairs[orgAttr.member],
 	)
 
 	if err1 != nil {
@@ -107,9 +106,10 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		refResolutionConfig.allMappings,
 		refResolutionConfig.appIDNamePairs[procRef["app"]], 
 		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
-			"." + procRef["from_reference"], 
+			"." + procRefAttrToUpdateName, 
 		refResolutionConfig.appName,
-		refResolutionConfig.tableIDNamePairs[orgID.member])
+		refResolutionConfig.tableIDNamePairs[orgAttr.member],
+	)
 
 	if err2 != nil {
 		log.Println("Error in Getting attributes to be updated from schema mappings by #FETCH:")
@@ -121,7 +121,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 	attrsToUpdate := combineTwoMaps(attrsToUpdateNotInFETCH, attrsToUpdateInFETCH)
 
-	log.Println("total attrs to be updated:",attrsToUpdate)
+	log.Println("total attrs to be updated:", attrsToUpdate)
 
 	for attrToUpdate, thirdArgInREF := range attrsToUpdate {
 		
@@ -139,11 +139,11 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		// This error is caused by the one-to-multiple mappings like mappings from posts 
 		// to statuses, conversations, and status_stats
 		if thirdArgInREF != "" && thirdArgInREF != 
-			refResolutionConfig.tableIDNamePairs[refIdentityRow.member] {
+			refResolutionConfig.tableIDNamePairs[refAttributeRow.member] {
 			
 			log.Println("Third argument in #REF", 
 				thirdArgInREF, "is not equal to toTable", 
-				refResolutionConfig.tableIDNamePairs[refIdentityRow.member])
+				refResolutionConfig.tableIDNamePairs[refAttributeRow.member])
 			
 			continue
 		}
@@ -151,11 +151,11 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 		updatedVal, err3 := updateReferences(
 			refResolutionConfig,
 			procRef["pk"], 
-			refResolutionConfig.tableIDNamePairs[refIdentityRow.member], 
-			refIdentityRow.id, 
+			refResolutionConfig.tableIDNamePairs[refAttributeRow.member], 
+			refAttributeRow.val, 
 			attrs[0], 
-			refResolutionConfig.tableIDNamePairs[orgID.member], 
-			orgID.id, 
+			refResolutionConfig.tableIDNamePairs[orgAttr.member], 
+			orgAttr.val, 
 			attrToUpdate,
 		)
 
@@ -180,8 +180,8 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 func updateRefOnLeftByRefAttrRow1(refResolutionConfig *RefResolutionConfig, 
 	procRef map[string]string, orgAttr *Attribute, refAttrRowVal string) map[string]string {
 
-	attr := procRef["to_attr"]
-	attrToUpdate := procRef["from_attr"]
+	attr := refResolutionConfig.attrIDNamePairs(procRef["to_attr"])
+	attrToUpdate := refResolutionConfig.attrIDNamePairs(procRef["from_attr"])
 
 	updatedAttr := make(map[string]string)
 
@@ -208,11 +208,11 @@ func updateRefOnLeftByRefAttrRow1(refResolutionConfig *RefResolutionConfig,
 	return updatedAttr
 }
 
-func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
-	procRef map[string]string, orgID *Identity) map[string]string {
+func updateRefOnLeftNotUsingRefAttrRow(refResolutionConfig *RefResolutionConfig, 
+	procRef map[string]string, orgAttr *Attribute) map[string]string {
 
-	attr := procRef["to_reference"]
-	attrToUpdate := procRef["from_reference"]
+	attr := refResolutionConfig.attrIDNamePairs(procRef["to_attr"])
+	attrToUpdate := refResolutionConfig.attrIDNamePairs(procRef["from_attr"])
 
 	updatedAttr := make(map[string]string)
 
@@ -223,21 +223,17 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 		refResolutionConfig,
 		procRef["pk"],  
 		refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
-		procRef["to_id"], 
+		procRef["to_val"], 
 		attr, 
-		refResolutionConfig.tableIDNamePairs[orgID.member], 
-		orgID.id, 
+		refResolutionConfig.tableIDNamePairs[orgAttr.member], 
+		orgAttr.val, 
 		attrToUpdate,
 	)
 	
 	if err1 != nil {
-		
 		log.Println(err1)
-	
 	} else {
-		
 		updatedAttr[attrToUpdate] = updatedVal
-
 	}
 
 	return updatedAttr

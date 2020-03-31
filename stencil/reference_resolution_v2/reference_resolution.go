@@ -144,8 +144,8 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 				} else {
 
-					oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefIDRow(
-						refResolutionConfig, refIdentityRow, procRef, orgID)
+					oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefAttrRow(
+						refResolutionConfig, refAttributeRow, procRef, orgAttr)
 	
 					updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 	
@@ -166,12 +166,12 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		// we get two reference rows for notifications and notification_actors, 
 		// then notifications should be igored
 		} else if procRef["app"] == refResolutionConfig.appID &&
-			procRef["from_member"] == orgID.member {
+			procRef["from_member"] == orgAttr.member {
 
 			log.Println("The data has not been migrated and is in the dest app1")
 
-			oneUpdatedAttr := updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(
-				refResolutionConfig, procRef, orgID)
+			oneUpdatedAttr := updateRefOnLeftNotUsingRefAttrRow(
+				refResolutionConfig, procRef, orgAttr)
 
 			updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 

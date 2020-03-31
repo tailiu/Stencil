@@ -166,8 +166,7 @@ func checkDataToUpdateRefExists(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getRefByPK(refResolutionConfig *RefResolutionConfig,
-	pk string) map[string]interface{} {
+func getRefByPK(refResolutionConfig *RefResolutionConfig, pk string) map[string]interface{} {
 
 	query := fmt.Sprintf("SELECT * FROM reference_table_v2 WHERE pk = %s", pk)
 
@@ -399,7 +398,7 @@ func updateReferences(refResolutionConfig *RefResolutionConfig, refID,
 
 			log.Println("---------------------------------------------")
 
-			return data, nil
+			return val, nil
 
 		} else {
 

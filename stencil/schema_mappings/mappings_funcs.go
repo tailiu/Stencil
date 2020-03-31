@@ -176,10 +176,8 @@ func RemoveASSIGNAllRightParenthesesIfExists(data string) string {
 
 }
 
-func GetMappedAttributesToUpdateOthers(
-	allMappings *config.SchemaMappings,
-	fromApp, fromTable, fromAttr,
-	toApp, toTable string) ([]string, error) {
+func GetMappedAttributesToUpdateOthers(allMappings *config.SchemaMappings,
+	fromApp, fromTable, fromAttr, toApp, toTable string) ([]string, error) {
 
 	var attributes []string
 
@@ -243,10 +241,8 @@ func GetMappedAttributesToUpdateOthers(
 
 }
 
-func GetMappedAttributesToBeUpdated(
-	allMappings *config.SchemaMappings,
-	fromApp, fromTable, fromAttr,
-	toApp, toTable string) (map[string]string, error) {
+func GetMappedAttributesToBeUpdated(allMappings *config.SchemaMappings,
+	fromApp, fromTable, fromAttr, toApp, toTable string) (map[string]string, error) {
 
 	attributes := make(map[string]string)
 
@@ -319,10 +315,8 @@ func GetMappedAttributesToBeUpdated(
 	}
 }
 
-func GetMappedAttributesToBeUpdatedByFETCH(
-	allMappings *config.SchemaMappings,
-	fromApp, fromAttr, 
-	toApp, toTable string) (map[string]string, error) {
+func GetMappedAttributesToBeUpdatedByFETCH(allMappings *config.SchemaMappings,
+	fromApp, fromAttr, toApp, toTable string) (map[string]string, error) {
 	
 	attributes := make(map[string]string)
 
