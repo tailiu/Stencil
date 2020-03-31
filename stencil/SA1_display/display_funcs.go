@@ -99,21 +99,20 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	srcRes := common_funcs.GetTableIDNamePairsInApp(stencilDBConn, srcAppID)
 
 	for _, srcRes1 := range srcRes {
-
-		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = 
-			fmt.Sprint(srcRes1["pk"])
-
+		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = fmt.Sprint(srcRes1["pk"])
 	}
 
 	appIDNamePairs := common_funcs.GetAppIDNamePairs(stencilDBConn)
 	tableIDNamePairs := common_funcs.GetTableIDNamePairs(stencilDBConn)
 	attrIDNamePairs := GetAttrIDNamePairs(stencilDBConn)
+	dstAppAttrNameIDPairs := getAttrNameIDPairsInApp(stencilDBConn, dstAppID)
 
 	appTableNameTableIDPairs := getAppTableNameTableIDPairs(stencilDBConn, appIDNamePairs)
 
 	refResolutionConfig := reference_resolution.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
-		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs, attrIDNamePairs,
+		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
+		attrIDNamePairs, dstAppAttrNameIDPairs,
 		allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
 	)
 
@@ -538,7 +537,31 @@ func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	}
 
 	return attrIDNamePairs
+}
 
+func getAttrNameIDPairsInApp(stencilDBConn *sql.DB, appID string) map[string]string {
+
+	attrNameIDPairs := make(map[string]string)
+
+	query := fmt.Sprintf(
+		"SELECT t.table_name, s.column_name, s.pk FROM app_schemas as s JOIN app_tables as t ON
+		s.table_id = t.pk WHERE t.app_id = appID", 
+	)
+
+	// log.Println(query)
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+		tableNameColumnName := fmt.Sprint(data1["table_name"]) + ":" + fmt.Sprint(data1["column_name"])
+		columnID := fmt.Sprint(data1["pk"])
+		attrNameIDPairs[tableNameColumnName] = columnID
+	}
+
+	return attrNameIDPairs
 }
 
 func getTableIDByTableName(stencilDBConn *sql.DB, appID, tableName string) string {

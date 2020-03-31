@@ -134,33 +134,18 @@ func forwardTraverseAttrChangesTable(refResolutionConfig *RefResolutionConfig,
 	return res
 }
 
-func getInsertIntoIDChangesTableQuery(refResolutionConfig *RefResolutionConfig,
-	table, IDToBeUpdated, id string) string {
-
+func getUpdateToAttrInAttrChangesTableQuery(refResolutionConfig *RefResolutionConfig,
+	memberName, attrToBeUpdated, attrValToBeUpdated, newAttrVal string) string {
+		
 	query := fmt.Sprintf(
-		`INSERT INTO id_changes (app_id, table_id, old_id, new_id, migration_id)
-		VALUES (%s, %s, %s, %s, %d)`,
-		refResolutionConfig.appID, 
-		refResolutionConfig.appTableNameIDPairs[table],
-		IDToBeUpdated,
-		id,
-		refResolutionConfig.migrationID,
-	)
-
-	return query
-
-}
-
-func getUpdateToIDInIdentityTableQuery(refResolutionConfig *RefResolutionConfig,
-	table, IDToBeUpdated, id string) string {
-
-	query := fmt.Sprintf(
-		`UPDATE identity_table SET to_id = %s 
+		`UPDATE attribute_changes SET to_val = %s 
 		WHERE to_app = %s and to_member = %s 
-		and to_id = %s`,
-		id, refResolutionConfig.appID, 
-		refResolutionConfig.appTableNameIDPairs[table],
-		IDToBeUpdated,
+		and to_attr = %s and to_val = %s`,
+		newAttrVal, 
+		refResolutionConfig.appID, 
+		refResolutionConfig.appTableNameIDPairs[memberName],
+		refResolutionConfig.appAttrNameIDPairs[memberName + ":" + attrToBeUpdated],
+		attrValToBeUpdated,
 	)
 
 	return query

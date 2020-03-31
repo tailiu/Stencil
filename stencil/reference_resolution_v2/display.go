@@ -56,37 +56,13 @@ func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolutionConf
 	}
 }
 
-func ReferenceResolved(refResolutionConfig *RefResolutionConfig, 
-	member, attr, id string) string {
-
-	query := fmt.Sprintf(
-		`select attr_val_after_changes from resolved_references where app = %s 
-		and member = %s and attr = '%s' and id = %s`,
-		refResolutionConfig.appID, 
-		member, attr, id,
-	)
-	
-	log.Println(query)
-	
-	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// fmt.Println(data)
-	if len(data) == 0 {
-		return ""
-	} else {
-		return fmt.Sprint(data["attr_val_after_changes"])
-	}
-}
-
 func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig, 
 	ID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string) 
 
-	query := fmt.Sprintf(`select reference, value from resolved_references where app = %s 
+	query := fmt.Sprintf(
+		`select reference, value from resolved_references where app = %s 
 		and member = %s and id = %s ORDER BY pk`,
 		refResolutionConfig.appID, ID.member, ID.id)
 	
@@ -109,20 +85,4 @@ func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig,
 
 	return updatedAttrs
 	
-}
-
-func getUpdateIDInDisplayFlagsQuery(refResolutionConfig *RefResolutionConfig, 
-	table, IDToBeUpdated, id string) string {
-	
-	query := fmt.Sprintf(
-		`UPDATE display_flags SET id = %s, updated_at = now() 
-		WHERE app_id = %s and table_id = %s 
-		and id = %s and migration_id = %d;`,
-		id, refResolutionConfig.appID, 
-		refResolutionConfig.appTableNameIDPairs[table],
-		IDToBeUpdated, refResolutionConfig.migrationID,
-	)
-
-	return query
-
 }

@@ -23,6 +23,7 @@ type RefResolutionConfig struct {
 	appIDNamePairs					map[string]string
 	tableIDNamePairs				map[string]string
 	attrIDNamePairs					map[string]string
+	appAttrNameIDPairs				map[string]string
 	allMappings						*config.SchemaMappings
 	mappingsFromSrcToDst			*config.MappedApp
 	mappingsFromOtherAppsToDst		map[string]*config.MappedApp
