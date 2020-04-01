@@ -3,7 +3,7 @@ package migrate_v2
 import (
 	"fmt"
 	"log"
-	"stencil/config"
+	config "stencil/config/v2"
 	"stencil/db"
 	"stencil/helper"
 	"strings"
@@ -11,7 +11,7 @@ import (
 	"github.com/gookit/color"
 )
 
-func (self *MigrationWorkerV2) AddMappedReferencesIfNotExist(refs []MappingRef) error {
+func (self *MigrationWorker) AddMappedReferencesIfNotExist(refs []MappingRef) error {
 	for _, ref := range refs {
 		if err := self._CreateMappedReference(ref, true); err != nil {
 			return err
@@ -20,7 +20,7 @@ func (self *MigrationWorkerV2) AddMappedReferencesIfNotExist(refs []MappingRef) 
 	return nil
 }
 
-func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
+func (self *MigrationWorker) AddMappedReferences(refs []MappingRef) error {
 
 	for _, ref := range refs {
 		if err := self._CreateMappedReference(ref, false); err != nil {
@@ -30,7 +30,7 @@ func (self *MigrationWorkerV2) AddMappedReferences(refs []MappingRef) error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) _CheckReferenceExistsInPreviousMigrations(idRows []IDRow, refAttr string) (bool, error) {
+func (self *MigrationWorker) _CheckReferenceExistsInPreviousMigrations(idRows []IDRow, refAttr string) (bool, error) {
 	if len(idRows) > 0 {
 		for _, idRow := range idRows {
 			if idRow.ToID != 0 {
@@ -63,7 +63,7 @@ func (self *MigrationWorkerV2) _CheckReferenceExistsInPreviousMigrations(idRows 
 	return false, nil
 }
 
-func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForExistence bool) error {
+func (self *MigrationWorker) _CreateMappedReference(ref MappingRef, checkForExistence bool) error {
 
 	fmt.Println("@_CreateMappedReference: Enter >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 	fmt.Printf("@_CreateMappedReference | Ref : %v | checkForExistence : %v \n", ref, checkForExistence)
@@ -85,8 +85,8 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 		return err
 	}
 
-	if ref.toID == 0 {
-		log.Println("@_CreateMappedReference: Unable to CreateNewReference | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+	if len(ref.toVal) == 0 {
+		log.Println("@_CreateMappedReference: Unable to CreateNewReference | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromVal, ref.toMember, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 		return nil
 	}
 
@@ -95,24 +95,26 @@ func (self *MigrationWorkerV2) _CreateMappedReference(ref MappingRef, checkForEx
 			FromAppID:    ref.appID,
 			FromMemberID: dependeeMemberID,
 			FromMember:   ref.fromMember,
-			FromID:       ref.fromID}}
+			FromID:       0}}
+		// FromID:       ref.fromVal}}
 
 		if exists, err := self._CheckReferenceExistsInPreviousMigrations(idRows, ref.fromAttr); err == nil && exists {
-			log.Println("@_CreateMappedReference: Reference Indeed Already Exists | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+			log.Println("@_CreateMappedReference: Reference Indeed Already Exists | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromVal, ref.toMember, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 			return nil
 		} else if err != nil {
 			log.Fatal("@_CreateMappedReference > _CheckReferenceExistsInPreviousMigrations | Err: ", err)
 		}
-		log.Println("@_CreateMappedReference: Reference Doesn't Already Exist | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		log.Println("@_CreateMappedReference: Reference Doesn't Already Exist | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromVal, ref.toMember, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 
-	if err := db.CreateNewReference(self.tx.StencilTx, ref.appID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
+	// if err := db.CreateNewReference(self.tx.StencilTx, ref.appID, dependeeMemberID, ref.fromVal, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
+	if err := db.CreateNewReference(self.tx.StencilTx, ref.appID, dependeeMemberID, 0, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {
 		fmt.Println(ref)
-		fmt.Println("#Args: ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromID, ref.toMember, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		fmt.Println("#Args: ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromVal, ref.toMember, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 		log.Fatal("@_CreateMappedReference: Unable to CreateNewReference: ", err)
 		return err
 	} else {
-		color.Yellow.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %v, toMember: %s, toID: %v, migrationID: %s, fromAttr: %s, toAttr: %s\n", ref.appID, dependeeMemberID, ref.fromID, depOnMemberID, ref.toID, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
+		color.Yellow.Printf("New Ref | fromApp: %s, fromMember: %s, fromID: %v, toMember: %s, toID: %v, migrationID: %s, fromAttr: %s, toAttr: %s\n", ref.appID, dependeeMemberID, ref.fromVal, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 	return nil
 }
@@ -174,10 +176,10 @@ func CreateInnerDependencyReferences(appConfig config.AppConfig, tag config.Tag,
 
 			ref := MappingRef{
 				appID:      appConfig.AppID,
-				fromID:     fromID,
+				fromVal:    fmt.Sprint(fromID),
 				fromMember: dependeeMember,
 				fromAttr:   dependeeAttr,
-				toID:       toID,
+				toVal:      fmt.Sprint(toID),
 				toMember:   depOnMember,
 				toAttr:     depOnAttr,
 			}
@@ -256,10 +258,10 @@ func CreateReferencesViaDependencies(appConfig config.AppConfig, tag config.Tag,
 
 					ref := MappingRef{
 						appID:      appConfig.AppID,
-						fromID:     fromID,
+						fromVal:    fmt.Sprint(fromID),
 						fromMember: fromMember,
 						fromAttr:   fromReference,
-						toID:       toID,
+						toVal:      fmt.Sprint(toID),
 						toMember:   toMember,
 						toAttr:     toReference,
 					}
@@ -342,10 +344,10 @@ func CreateReferencesViaOwnerships(appConfig config.AppConfig, tag config.Tag, n
 
 				ref := MappingRef{
 					appID:      appConfig.AppID,
-					fromID:     fromID,
+					fromVal:    fmt.Sprint(fromID),
 					fromMember: fromMember,
 					fromAttr:   fromReference,
-					toID:       toID,
+					toVal:      fmt.Sprint(toID),
 					toMember:   rootMember,
 					toAttr:     rootReference,
 				}
@@ -365,7 +367,7 @@ func CreateReferencesViaOwnerships(appConfig config.AppConfig, tag config.Tag, n
 	return refs, nil
 }
 
-func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
+func (self *MigrationWorker) AddInnerReferences(node *DependencyNode) error {
 	log.Fatal("Why are you in AddInnerReferences?")
 	for _, innerDependency := range node.Tag.InnerDependencies {
 		for dependsOn, dependee := range innerDependency {
@@ -432,7 +434,7 @@ func (self *MigrationWorkerV2) AddInnerReferences(node *DependencyNode) error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) AddToReferencesViaDependencies(node *DependencyNode) error {
+func (self *MigrationWorker) AddToReferencesViaDependencies(node *DependencyNode) error {
 
 	log.Fatal("Why are you in AddToReferencesViaDependencies?")
 
@@ -506,7 +508,7 @@ func (self *MigrationWorkerV2) AddToReferencesViaDependencies(node *DependencyNo
 	return nil
 }
 
-func (self *MigrationWorkerV2) AddToReferences(currentNode *DependencyNode, referencedNode *DependencyNode) error {
+func (self *MigrationWorker) AddToReferences(currentNode *DependencyNode, referencedNode *DependencyNode) error {
 	log.Fatal("Why are you in AddToReferences?")
 	return nil
 	if dep, err := self.SrcAppConfig.CheckDependency(currentNode.Tag.Name, referencedNode.Tag.Name); err != nil {

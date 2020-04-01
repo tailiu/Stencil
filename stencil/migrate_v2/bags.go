@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"stencil/config"
+	config "stencil/config/v2"
 	"stencil/db"
 	"stencil/helper"
 	"stencil/reference_resolution"
@@ -14,7 +14,7 @@ import (
 	"github.com/gookit/color"
 )
 
-func (self *MigrationWorkerV2) ConstructBagNode(bagMember, bagMemberID, bagRowID string) (*DependencyNode, error) {
+func (self *MigrationWorker) ConstructBagNode(bagMember, bagMemberID, bagRowID string) (*DependencyNode, error) {
 
 	bagTag, err := self.SrcAppConfig.GetTagByMember(bagMember)
 	if err != nil {
@@ -59,7 +59,7 @@ func (self *MigrationWorkerV2) ConstructBagNode(bagMember, bagMemberID, bagRowID
 	return nil, nil
 }
 
-func (self *MigrationWorkerV2) GetRowsFromIDTable(app, member string, id interface{}, getFrom bool) ([]IDRow, error) {
+func (self *MigrationWorker) GetRowsFromIDTable(app, member string, id interface{}, getFrom bool) ([]IDRow, error) {
 
 	var idRows []IDRow
 	var err error
@@ -120,7 +120,7 @@ func (self *MigrationWorkerV2) GetRowsFromIDTable(app, member string, id interfa
 	return idRows, nil
 }
 
-func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData, node *DependencyNode, toTable config.ToTable) error {
+func (self *MigrationWorker) MergeBagDataWithMappedData(mappedData *MappedData, node *DependencyNode, toTable config.ToTable) error {
 
 	toTableData := make(map[string]ValueWithReference)
 
@@ -169,7 +169,7 @@ func (self *MigrationWorkerV2) MergeBagDataWithMappedData(mappedData *MappedData
 	return nil
 }
 
-func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, toTableData map[string]ValueWithReference, prevUIDs map[string]string, app, member string, id interface{}, dstMemberID, dstMemberName, toTableName string) error {
+func (self *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, toTableData map[string]ValueWithReference, prevUIDs map[string]string, app, member string, id interface{}, dstMemberID, dstMemberName, toTableName string) error {
 
 	currentRow := fmt.Sprintf("%s:%s:%s", app, member, id)
 
@@ -341,7 +341,7 @@ func (self *MigrationWorkerV2) FetchDataFromBags(visitedRows map[string]bool, to
 	return nil
 }
 
-func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, ownerID string) error {
+func (self *MigrationWorker) SendMemberToBag(node *DependencyNode, member, ownerID string) error {
 	if self.mtype != DELETION && self.mtype != BAGS {
 		return nil
 	}
@@ -387,7 +387,7 @@ func (self *MigrationWorkerV2) SendMemberToBag(node *DependencyNode, member, own
 	return nil
 }
 
-func (self *MigrationWorkerV2) SendNodeToBagWithOwnerID(node *DependencyNode, ownerID string) error {
+func (self *MigrationWorker) SendNodeToBagWithOwnerID(node *DependencyNode, ownerID string) error {
 	if self.mtype != DELETION && self.mtype != BAGS {
 		return nil
 	}
@@ -403,7 +403,7 @@ func (self *MigrationWorkerV2) SendNodeToBagWithOwnerID(node *DependencyNode, ow
 	return nil
 }
 
-func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
+func (self *MigrationWorker) SendNodeToBag(node *DependencyNode) error {
 	if self.mtype != DELETION {
 		return nil
 	}
@@ -419,7 +419,7 @@ func (self *MigrationWorkerV2) SendNodeToBag(node *DependencyNode) error {
 	return nil
 }
 
-func (bagWorker *MigrationWorkerV2) DeleteBag(bagNode *DependencyNode) error {
+func (bagWorker *MigrationWorker) DeleteBag(bagNode *DependencyNode) error {
 	for _, pk := range bagNode.PKs {
 		bagPK := fmt.Sprint(pk)
 		if err := db.DeleteBagV2(bagWorker.tx.StencilTx, bagPK); err != nil {
@@ -433,14 +433,14 @@ func (bagWorker *MigrationWorkerV2) DeleteBag(bagNode *DependencyNode) error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) UpdateProcessedBagIDs(bagNode *DependencyNode, processedBags map[string]bool) {
+func (self *MigrationWorker) UpdateProcessedBagIDs(bagNode *DependencyNode, processedBags map[string]bool) {
 	for _, pk := range bagNode.PKs {
 		pkStr := fmt.Sprint(pk)
 		processedBags[pkStr] = true
 	}
 }
 
-func (self *MigrationWorkerV2) StartBagsMigration(userID, bagAppID string, threadID int, isBlade ...bool) error {
+func (self *MigrationWorker) StartBagsMigration(userID, bagAppID string, threadID int, isBlade ...bool) error {
 	color.Magenta.Println("########################################################################")
 	color.LightMagenta.Printf("Starting Bags for User: '%s' | App: '%s' \n", userID, bagAppID)
 	color.Magenta.Println("########################################################################")
@@ -451,7 +451,7 @@ func (self *MigrationWorkerV2) StartBagsMigration(userID, bagAppID string, threa
 	} else if len(bags) > 0 {
 		log.Println("Bags fetched:  ", len(bags))
 
-		bagWorker := CreateBagWorkerV2(userID, bagAppID, self.DstAppConfig.AppID, self.logTxn, BAGS, threadID, isBlade...)
+		bagWorker := self.mThread.CreateBagWorker(userID, bagAppID, self.DstAppConfig.AppID, threadID)
 
 		log.Println(fmt.Sprintf("Bag Worker Created | %s -> %s ", bagWorker.SrcAppConfig.AppName, bagWorker.DstAppConfig.AppName))
 
@@ -538,7 +538,7 @@ func (self *MigrationWorkerV2) StartBagsMigration(userID, bagAppID string, threa
 	return nil
 }
 
-func (self *MigrationWorkerV2) MigrateBags(threadID int, isBlade ...bool) error {
+func (self *MigrationWorker) MigrateBags(threadID int, isBlade ...bool) error {
 
 	bagAppID, userID := self.SrcAppConfig.AppID, self.uid
 

@@ -1,17 +1,17 @@
 package main
 
-import "stencil/mthread_v2" mthread
+import migrate "stencil/migrate_v2"
 
-func main(){
+func main() {
 
-	mtController := mthread.MigrationThreadController{
-		uid: "129188",
-		totalThreads: 1,
-		mType: "d",
-		SrcAppInfo: mthread.App{Name: "Diaspora", ID: "1"},
-		DstAppInfo: mthread.App{Name: "Mastodon", ID: "2"}}
+	mtController := migrate.MigrationThreadController{
+		UID:        "54123",
+		MType:      "d",
+		SrcAppInfo: migrate.App{Name: "diaspora", ID: 1},
+		DstAppInfo: migrate.App{Name: "mastodon", ID: 2},
+	}
 
 	mtController.Init()
-	mtController.NewMigrationThread()
-
+	mtController.Run()
+	mtController.Stop()
 }

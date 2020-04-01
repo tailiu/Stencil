@@ -5,9 +5,9 @@ import (
 	"log"
 )
 
-func (self *MigrationWorkerV2) NaiveMigration(threadID int) error {
+func (self *MigrationWorker) NaiveMigration(threadID int) error {
 
-	if err := self.CallMigrationX(self.root, threadID); err != nil {
+	if err := self.CallMigrationX(self.Root, threadID); err != nil {
 		return err
 	}
 

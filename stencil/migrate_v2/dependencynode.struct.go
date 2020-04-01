@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"stencil/config"
+	config "stencil/config/v2"
 	"strings"
 	"time"
 

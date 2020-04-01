@@ -8,7 +8,7 @@ import (
 	"github.com/gookit/color"
 )
 
-func (self *MigrationWorkerV2) DeletionMigration(node *DependencyNode, threadID int) error {
+func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID int) error {
 
 	rootTagName := "root"
 

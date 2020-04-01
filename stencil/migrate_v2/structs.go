@@ -2,7 +2,7 @@ package migrate_v2
 
 import (
 	"database/sql"
-	"stencil/config"
+	config "stencil/config/v2"
 	"stencil/transaction"
 	"sync"
 
@@ -36,7 +36,7 @@ type AttrRow struct {
 	ToVal      string
 }
 
-type defunct__IDRow struct {
+type IDRow struct {
 	FromAppName  string
 	FromAppID    string
 	FromMember   string
@@ -111,12 +111,14 @@ type MigrationWorker struct {
 	refCreator   ReferenceCreator
 	SrcAppConfig config.AppConfig
 	DstAppConfig config.AppConfig
-	mappings     *config.MappedApp
-	root         *DependencyNode
+	mappings     config.MappedApp
+	Root         *DependencyNode
 	logTxn       *transaction.Log_txn
 	FTPClient    *ftp.ServerConn
 	tx           Transactions
 	Logger       *logg.Logger
+	Size         int
+	mThread      *MigrationThreadController
 }
 
 type VisitedNodes struct {
@@ -124,4 +126,34 @@ type VisitedNodes struct {
 }
 
 type ReferenceCreator struct {
+}
+
+// ThreadChannel : Channel for thread communication
+type ThreadChannel struct {
+	finished bool
+	threadID int
+	size     int
+}
+
+// MigrationThreadController : SrcAppInfo and DstAppInfo just contain strings of App ids and names.
+// Actual App Configs will be created separately for each migration thread.
+type MigrationThreadController struct {
+	UID            string
+	waitGroup      sync.WaitGroup
+	commitChannel  chan ThreadChannel
+	enableBags     bool
+	isBlade        bool
+	totalThreads   int
+	currentThreads int
+	txnID          int
+	stencilDB      *sql.DB
+	Logger         *logg.Logger
+	SrcAppInfo     App
+	DstAppInfo     App
+	MType          string
+	mappings       config.MappedApp
+	size           int
+}
+
+type MigrationThread struct {
 }

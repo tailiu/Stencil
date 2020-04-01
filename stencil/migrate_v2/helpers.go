@@ -3,136 +3,36 @@ package migrate_v2
 import (
 	"fmt"
 	"log"
-	"os"
-	"stencil/config"
+	config "stencil/config/v2"
 	"stencil/db"
 	"stencil/helper"
-	"stencil/transaction"
 	"strconv"
 	"strings"
-
-	logg "github.com/withmandala/go-log"
 )
 
-func CreateBagWorkerV2(uid, srcAppID, dstAppID string, logTxn *transaction.Log_txn, mtype string, threadID int, isBlade ...bool) MigrationWorkerV2 {
+func (self *MigrationWorker) CloseDBConns() {
 
-	srcApp, err := db.GetAppNameByAppID(logTxn.DBconn, srcAppID)
-	if err != nil {
-		log.Fatal(err)
-	}
-	dstApp, err := db.GetAppNameByAppID(logTxn.DBconn, dstAppID)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID)
-	if err != nil {
-		log.Fatal(err)
-	}
-	dstAppConfig, err := config.CreateAppConfig(dstApp, dstAppID, isBlade...)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var mappings *config.MappedApp
-
-	if srcAppID == dstAppID {
-		mappings = config.GetSelfSchemaMappings(logTxn.DBconn, srcAppID, srcApp)
-		// log.Fatal(mappings)
-	} else {
-		mappings = config.GetSchemaMappingsFor(srcAppConfig.AppName, dstAppConfig.AppName)
-		if mappings == nil {
-			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcAppConfig.AppName, dstAppConfig.AppName))
-		}
-	}
-
-	dstAppConfig.QR.Migration = true
-	srcAppConfig.QR.Migration = true
-	mWorker := MigrationWorkerV2{
-		uid:          uid,
-		SrcAppConfig: srcAppConfig,
-		DstAppConfig: dstAppConfig,
-		mappings:     mappings,
-		wList:        WaitingList{},
-		unmappedTags: CreateUnmappedTags(),
-		SrcDBConn:    db.GetDBConn(srcAppConfig.AppName),
-		DstDBConn:    db.GetDBConn(dstAppConfig.AppName, isBlade...),
-		logTxn:       &transaction.Log_txn{DBconn: logTxn.DBconn, Txn_id: logTxn.Txn_id},
-		mtype:        mtype,
-		visitedNodes: make(map[string]map[string]bool),
-		Logger:       logg.New(os.Stderr)}
-	// if err := mWorker.FetchRoot(threadID); err != nil {
-	// 	log.Fatal(err)
-	// }
-	mWorker.FTPClient = GetFTPClient()
-	mWorker.Logger.WithTimestamp()
-	mWorker.Logger.WithColor()
-	mWorker.Logger.WithDebug()
-	mWorker.Logger.Infof("Bag Worker Created for thread: %v", threadID)
-	fmt.Println("************************************************************************")
-	return mWorker
-}
-
-func (self *MigrationWorkerV2) CloseDBConns() {
-
-	self.SrcDBConn.Close()
-	self.DstDBConn.Close()
 	self.SrcAppConfig.CloseDBConns()
 	self.DstAppConfig.CloseDBConns()
 }
 
-func (self *MigrationWorkerV2) RenewDBConn(isBlade ...bool) {
+func (self *MigrationWorker) RenewDBConn(isBlade ...bool) {
 	self.CloseDBConns()
 	self.logTxn.DBconn.Close()
 	self.logTxn.DBconn = db.GetDBConn(db.STENCIL_DB)
-	self.SrcDBConn = db.GetDBConn(self.SrcAppConfig.AppName)
-	self.DstDBConn = db.GetDBConn(self.DstAppConfig.AppName, isBlade...)
 	self.SrcAppConfig.DBConn = db.GetDBConn(self.SrcAppConfig.AppName)
 	self.SrcAppConfig.DBConn = db.GetDBConn(self.DstAppConfig.AppName, isBlade...)
 }
 
-func (self *MigrationWorkerV2) Finish() {
-	self.SrcDBConn.Close()
-	self.DstDBConn.Close()
-}
-
-func (self *MigrationWorkerV2) GetRoot() *DependencyNode {
-	return self.root
-}
-
-func (self *MigrationWorkerV2) MType() string {
-	return self.mtype
-}
-
-func (self *MigrationWorkerV2) UserID() string {
+func (self *MigrationWorker) UserID() string {
 	return self.uid
 }
 
-func (self *MigrationWorkerV2) MigrationID() int {
+func (self *MigrationWorker) MigrationID() int {
 	return self.logTxn.Txn_id
 }
 
-func (self *MigrationWorkerV2) ExcludeVisited(tag config.Tag) string {
-	visited := ""
-	for _, tagMember := range tag.Members {
-		if memberIDs, ok := self.visitedNodes[tagMember]; ok {
-			pks := ""
-			for pk := range memberIDs {
-				if len(pk) > 0 {
-					pks += pk + ","
-				}
-			}
-			if pks != "" {
-				pks = strings.Trim(pks, ",")
-				visited += fmt.Sprintf(" AND %s.id NOT IN (%s) ", tagMember, pks)
-			}
-
-		}
-	}
-	return visited
-}
-
-func (self *MigrationWorkerV2) GetMemberDataFromNode(member string, nodeData map[string]interface{}) map[string]interface{} {
+func (self *MigrationWorker) GetMemberDataFromNode(member string, nodeData map[string]interface{}) map[string]interface{} {
 	memberData := make(map[string]interface{})
 	for col, val := range nodeData {
 		colTokens := strings.Split(col, ".")
@@ -145,7 +45,7 @@ func (self *MigrationWorkerV2) GetMemberDataFromNode(member string, nodeData map
 	return memberData
 }
 
-func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
+func (self *MigrationWorker) GetTagQL(tag config.Tag) string {
 
 	sql := "SELECT %s FROM %s "
 
@@ -161,7 +61,7 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 					joinStr += fmt.Sprintf(" FULL JOIN ")
 				}
 				joinStr += fmt.Sprintf("\"%s\"", fromTable)
-				_, colStr := db.GetColumnsForTable(self.SrcDBConn, fromTable)
+				_, colStr := db.GetColumnsForTable(self.SrcAppConfig.DBConn, fromTable)
 				cols += colStr + ","
 			}
 			for toTable, conditions := range toTablesMap {
@@ -174,7 +74,7 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 						joinStr += fmt.Sprintf(" FULL JOIN \"%s\" ", toTable)
 					}
 					joinStr += fmt.Sprintf("  ON %s ", strings.Join(conditions, " AND "))
-					_, colStr := db.GetColumnsForTable(self.SrcDBConn, toTable)
+					_, colStr := db.GetColumnsForTable(self.SrcAppConfig.DBConn, toTable)
 					cols += colStr + ","
 					seenMap[toTable] = true
 				}
@@ -190,7 +90,7 @@ func (self *MigrationWorkerV2) GetTagQL(tag config.Tag) string {
 	return sql
 }
 
-func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
+func (self *MigrationWorker) GetTagQLForBag(tag config.Tag) string {
 
 	if tableIDs, err := tag.MemberIDs(self.logTxn.DBconn, self.SrcAppConfig.AppID); err != nil {
 		log.Fatal("@GetTagQLForBag: ", err)
@@ -245,14 +145,14 @@ func (self *MigrationWorkerV2) GetTagQLForBag(tag config.Tag) string {
 	return ""
 }
 
-func (self *MigrationWorkerV2) InitTransactions() error {
+func (self *MigrationWorker) InitTransactions() error {
 	var err error
-	self.tx.SrcTx, err = self.SrcDBConn.Begin()
+	self.tx.SrcTx, err = self.SrcAppConfig.DBConn.Begin()
 	if err != nil {
 		log.Fatal("Error creating Source DB Transaction! ", err)
 		return err
 	}
-	self.tx.DstTx, err = self.DstDBConn.Begin()
+	self.tx.DstTx, err = self.DstAppConfig.DBConn.Begin()
 	if err != nil {
 		log.Fatal("Error creating Dst DB Transaction! ", err)
 		return err
@@ -265,7 +165,7 @@ func (self *MigrationWorkerV2) InitTransactions() error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) CommitTransactions() error {
+func (self *MigrationWorker) CommitTransactions() error {
 	// log.Fatal("@CommitTransactions: About to Commit!")
 	if err := self.tx.SrcTx.Commit(); err != nil {
 		log.Fatal("Error committing Source DB Transaction! ", err)
@@ -282,7 +182,7 @@ func (self *MigrationWorkerV2) CommitTransactions() error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) RollbackTransactions() error {
+func (self *MigrationWorker) RollbackTransactions() error {
 	// log.Fatal("@CommitTransactions: About to Commit!")
 	if err := self.tx.SrcTx.Rollback(); err != nil {
 		log.Fatal("Error rolling back Source DB Transaction! ", err)
@@ -299,46 +199,7 @@ func (self *MigrationWorkerV2) RollbackTransactions() error {
 	return nil
 }
 
-func (self *MigrationWorkerV2) IsVisited(node *DependencyNode) bool {
-
-	for _, tagMember := range node.Tag.Members {
-		if _, ok := self.visitedNodes[tagMember]; !ok {
-			continue
-		}
-		idCol := fmt.Sprintf("%s.id", tagMember)
-		if _, ok := node.Data[idCol]; ok {
-			srcID := fmt.Sprint(node.Data[idCol])
-			if _, ok := self.visitedNodes[tagMember][srcID]; ok {
-				return true
-			}
-		} else {
-			log.Println("In: IsVisited | node.Data =>", node.Data)
-			log.Fatal(idCol, "NOT PRESENT IN NODE DATA")
-		}
-	}
-	return false
-}
-
-func (self *MigrationWorkerV2) MarkAsVisited(node *DependencyNode) {
-	for _, tagMember := range node.Tag.Members {
-		idCol := fmt.Sprintf("%s.id", tagMember)
-		if nodeVal, ok := node.Data[idCol]; ok {
-			if nodeVal == nil {
-				continue
-			}
-			if _, ok := self.visitedNodes[tagMember]; !ok {
-				self.visitedNodes[tagMember] = make(map[string]bool)
-			}
-			srcID := fmt.Sprint(node.Data[idCol])
-			self.visitedNodes[tagMember][srcID] = true
-		} else {
-			log.Println("In: MarkAsVisited | node.Data =>", node.Data)
-			log.Fatal(idCol, "NOT PRESENT IN NODE DATA")
-		}
-	}
-}
-
-func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.MappedApp, config.Mapping, bool) {
+func (self *MigrationWorker) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.MappedApp, config.Mapping, bool) {
 
 	var combinedMapping config.Mapping
 	var appMappings config.MappedApp
@@ -364,7 +225,7 @@ func (self *MigrationWorkerV2) FetchMappingsForBag(srcApp, srcAppID, dstApp, dst
 	return appMappings, combinedMapping, mappingFound
 }
 
-func (self *MigrationWorkerV2) CleanMappingAttr(attr string) string {
+func (self *MigrationWorker) CleanMappingAttr(attr string) string {
 	cleanedAttr := strings.ReplaceAll(attr, "(", "")
 	cleanedAttr = strings.ReplaceAll(cleanedAttr, ")", "")
 	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#ASSIGN", "")
@@ -374,7 +235,7 @@ func (self *MigrationWorkerV2) CleanMappingAttr(attr string) string {
 	return cleanedAttr
 }
 
-func (self *MigrationWorkerV2) FetchMappedAttribute(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember, dstAttr string) (string, bool) {
+func (self *MigrationWorker) FetchMappedAttribute(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember, dstAttr string) (string, bool) {
 
 	var appMappings config.MappedApp
 	if srcApp == dstApp {
@@ -401,7 +262,7 @@ func (self *MigrationWorkerV2) FetchMappedAttribute(srcApp, srcAppID, dstApp, ds
 	return "", false
 }
 
-func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (config.Mapping, bool) {
+func (self *MigrationWorker) FetchMappingsForNode(node *DependencyNode) (config.Mapping, bool) {
 	var combinedMapping config.Mapping
 	tagMembers := node.Tag.GetTagMembers()
 	mappingFound := false
@@ -415,7 +276,7 @@ func (self *MigrationWorkerV2) FetchMappingsForNode(node *DependencyNode) (confi
 	return combinedMapping, mappingFound
 }
 
-func (self *MigrationWorkerV2) GetUserIDAppIDFromPreviousMigration(currentAppID, currentUID string) (string, string, error) {
+func (self *MigrationWorker) GetUserIDAppIDFromPreviousMigration(currentAppID, currentUID string) (string, string, error) {
 
 	currentRootMemberID := db.GetAppRootMemberID(self.logTxn.DBconn, currentAppID)
 

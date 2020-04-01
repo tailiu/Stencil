@@ -39,10 +39,10 @@ func (self *MappedData) UpdateRefs(appID, fromID, fromMember, fromAttr, toID, to
 
 	self.refs = append(self.refs, MappingRef{
 		appID:      fmt.Sprint(appID),
-		fromID:     fromID.(int64),
+		fromVal:    fmt.Sprint(fromID),
 		fromMember: fmt.Sprint(fromMember),
 		fromAttr:   fmt.Sprint(fromAttr),
-		toID:       toID.(int64),
+		toVal:      fmt.Sprint(toID),
 		toMember:   fmt.Sprint(toMember),
 		toAttr:     fmt.Sprint(toAttr)})
 }

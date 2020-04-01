@@ -117,6 +117,14 @@ func CreateMigrationTransaction(dbConn *sql.DB) (int, error) {
 	return txnID, nil
 }
 
+func MigrationTransactionLogOutcome(dbConn *sql.DB, txnID int, outcome string) error {
+	q := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, '%s', now());", txnID, outcome)
+	if _, err := dbConn.Exec(q); err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetRowCount(dbConn *sql.DB, table string) (int64, error) {
 	sql := fmt.Sprintf("SELECT COUNT(*) as total_rows from %s", table)
 	if result, err := DataCall1(dbConn, sql); err == nil {
