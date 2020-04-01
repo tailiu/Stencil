@@ -105,14 +105,20 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	appIDNamePairs := common_funcs.GetAppIDNamePairs(stencilDBConn)
 	tableIDNamePairs := common_funcs.GetTableIDNamePairs(stencilDBConn)
 	attrIDNamePairs := GetAttrIDNamePairs(stencilDBConn)
-	dstAppAttrNameIDPairs := getAttrNameIDPairsInApp(stencilDBConn, dstAppID)
+	// dstAppAttrNameIDPairs := getAttrNameIDPairsInApp(stencilDBConn, dstAppID)
 
 	appTableNameTableIDPairs := getAppTableNameTableIDPairs(stencilDBConn, appIDNamePairs)
+
+	// refResolutionConfig := reference_resolution.InitializeReferenceResolution(
+	// 	migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
+	// 	dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
+	// 	attrIDNamePairs, dstAppAttrNameIDPairs,
+	// 	allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
+	// )
 
 	refResolutionConfig := reference_resolution.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
 		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
-		attrIDNamePairs, dstAppAttrNameIDPairs,
 		allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
 	)
 
@@ -544,8 +550,8 @@ func getAttrNameIDPairsInApp(stencilDBConn *sql.DB, appID string) map[string]str
 	attrNameIDPairs := make(map[string]string)
 
 	query := fmt.Sprintf(
-		"SELECT t.table_name, s.column_name, s.pk FROM app_schemas as s JOIN app_tables as t ON
-		s.table_id = t.pk WHERE t.app_id = appID", 
+		`SELECT t.table_name, s.column_name, s.pk FROM app_schemas as s JOIN app_tables as t ON
+		s.table_id = t.pk WHERE t.app_id = appID`, 
 	)
 
 	// log.Println(query)
