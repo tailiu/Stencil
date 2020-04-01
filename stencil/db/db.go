@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/gookit/color"
 	_ "github.com/lib/pq" // postgres driver
@@ -99,6 +100,21 @@ func CloseDBConn(app string) {
 		delete(dbConns, app)
 		log.Println("DBConn closed for:", app)
 	}
+}
+
+func CreateMigrationTransaction(dbConn *sql.DB) (int, error) {
+
+	rand.Seed(time.Now().UnixNano())
+
+	txnID := rand.Intn(2147483647)
+
+	q := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, 'BEGIN_TRANSACTION', now());", txnID)
+
+	if _, err := dbConn.Exec(q); err != nil {
+		return 0, err
+	}
+
+	return txnID, nil
 }
 
 func GetRowCount(dbConn *sql.DB, table string) (int64, error) {
