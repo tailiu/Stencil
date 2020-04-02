@@ -26,154 +26,39 @@ import (
  */
 
 
-func updateRefOnLeftBasedOnMappingsUsingRefAttrRow(refResolutionConfig *RefResolutionConfig, 
+// It should be noted that since now we are using the attribute_changes table instead of identity tables,
+// we are sure about which attributes to update or to be updated,
+// and there is no need for us to use get attr or attrToUpdate by mappings.
+// But in the display algorithm, we have to check all the attributes to be updated based on mappings.  
+func updateRefOnLeftByRefAttrRow(refResolutionConfig *RefResolutionConfig, 
 	refAttributeRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
-	
-	procRefAttrName := refResolutionConfig.attrIDNamePairs(procRef["to_attr"])
-	procRefAttrToUpdateName := refResolutionConfig.attrIDNamePairs(procRef["from_attr"])
 
-	updatedAttrs := make(map[string]string)
+	updatedAttr := make(map[string]string)
 
-	// For example, when trying to find
-	// the mapped attribute from Diaspora Posts Posts.id to Mastodon Statuses,
-	// if we consider arguments in #REF, 
-	// there are two results: id and conversation_id which should not be included
-	// Basically, the attribute to update other atrributes should not contain #REF
-	// ignoreREF := true
+	attr := refResolutionConfig.attrIDNamePairs(refAttributeRow.attrName)
+	attrToUpdate := refResolutionConfig.attrIDNamePairs(orgAttr.attrName)
 
-	attrs, err := schema_mappings.GetMappedAttributesToUpdateOthers(
-		refResolutionConfig.allMappings,
-		refResolutionConfig.appIDNamePairs[procRef["app"]], 
-		refResolutionConfig.tableIDNamePairs[procRef["to_member"]],
-		refResolutionConfig.tableIDNamePairs[procRef["to_member"]] + "." + procRefAttrName, 
-		refResolutionConfig.appName,
-		refResolutionConfig.tableIDNamePairs[refAttributeRow.member],
-	)
+	log.Println("attr:", attr)
+	log.Println("attr to be updated:", attrToUpdate)
 
-	if err != nil {
-		log.Println("Error in Getting attributes to update other attributes from schema mappings:")
-		log.Println(err)
-
-		return nil
-
-	}
-
-	log.Println("attr:", attrs)
-
-	// If #FETCH is ignored, there could be cases in which no attribute can be found.
-	// For example: diaspora posts posts.id mastodon media_attachments. This is caused
-	// by wrong implementation.
-	if len(attrs) != 1 {
-		log.Println(notOneAttributeFound)
-		return nil
-	}
-
-	attrsToUpdateNotInFETCH := make(map[string]string)
-	attrsToUpdateInFETCH := make(map[string]string)
-
-	var err1, err2 error
-
-	// Basically, the attributes to be updated should always contain #REF
-	// Otherwise, the following inputs:
-	// "diaspora", "comments", "comments.commentable_id", "mastodon", "statuses", false
-	// will return both status_id and id which should not be contained
-	// ignoreREF = false 
-
-	attrsToUpdateNotInFETCH, err1 = schema_mappings.GetMappedAttributesToBeUpdated(
-		refResolutionConfig.allMappings,
-		refResolutionConfig.appIDNamePairs[procRef["app"]], 
-		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
-		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
-			"." + procRefAttrToUpdateName, 
-		refResolutionConfig.appName,
-		refResolutionConfig.tableIDNamePairs[orgAttr.member],
+	updatedVal, err1 := updateReferences(
+		refResolutionConfig,
+		procRef["pk"], 
+		refResolutionConfig.tableIDNamePairs[refAttributeRow.member], 
+		refAttributeRow.val, 
+		attr, 
+		refResolutionConfig.tableIDNamePairs[orgAttr.member], 
+		orgAttr.val, 
+		attrToUpdate,
 	)
 
 	if err1 != nil {
-
-		log.Println("Error in Getting attributes to be updated from schema mappings")
 		log.Println(err1)
-
+	} else {
+		updatedAttr[attrToUpdate] = updatedVal
 	}
 
-	// log.Println("total attrs to be updated:",attrsToUpdateNotInFETCH)
-
-	// #FETCH case is different from the normal cases.
-	// For example: diaspora posts posts.id mastodon media_attachments, 
-	// in this case, the mappings do not contain the posts table, and 
-	// the first argument (posts.id) of #FETCH is needed to be used to resolve photo.status_id
-	attrsToUpdateInFETCH, err2 = schema_mappings.GetMappedAttributesToBeUpdatedByFETCH(
-		refResolutionConfig.allMappings,
-		refResolutionConfig.appIDNamePairs[procRef["app"]], 
-		refResolutionConfig.tableIDNamePairs[procRef["from_member"]] +
-			"." + procRefAttrToUpdateName, 
-		refResolutionConfig.appName,
-		refResolutionConfig.tableIDNamePairs[orgAttr.member],
-	)
-
-	if err2 != nil {
-		log.Println("Error in Getting attributes to be updated from schema mappings by #FETCH:")
-		log.Println(err2)
-
-	}
-
-	// log.Println("attrsToUpdateInFETCH:", attrsToUpdateInFETCH)
-
-	attrsToUpdate := combineTwoMaps(attrsToUpdateNotInFETCH, attrsToUpdateInFETCH)
-
-	log.Println("total attrs to be updated:", attrsToUpdate)
-
-	for attrToUpdate, thirdArgInREF := range attrsToUpdate {
-		
-		log.Println("one attr to be checked and updated:", attrToUpdate)
-		log.Println("Third argument in #REF:", thirdArgInREF)
-
-		// For example,
-		// diaspora posts posts.id mastodon conversations
-		// attr:  [id]
-		// diaspora likes likes.target_id mastodon favourites
-		// total attrs to be updated: [status_id]
-		// Obviously, if there is no the third argument (statuses in this example) indicating that
-		// it is the statuses table not the conversations table that should update status_id,
-		// then there will be an error
-		// This error is caused by the one-to-multiple mappings like mappings from posts 
-		// to statuses, conversations, and status_stats
-		if thirdArgInREF != "" && thirdArgInREF != 
-			refResolutionConfig.tableIDNamePairs[refAttributeRow.member] {
-			
-			log.Println("Third argument in #REF", 
-				thirdArgInREF, "is not equal to toTable", 
-				refResolutionConfig.tableIDNamePairs[refAttributeRow.member])
-			
-			continue
-		}
-
-		updatedVal, err3 := updateReferences(
-			refResolutionConfig,
-			procRef["pk"], 
-			refResolutionConfig.tableIDNamePairs[refAttributeRow.member], 
-			refAttributeRow.val, 
-			attrs[0], 
-			refResolutionConfig.tableIDNamePairs[orgAttr.member], 
-			orgAttr.val, 
-			attrToUpdate,
-		)
-
-		if err3 != nil {
-
-			log.Println(err3)
-		
-		} else {
-
-			updatedAttrs[attrToUpdate] = updatedVal
-			
-			// This is an important break because one reference can only
-			// update one value
-			break
-		}
-	}
-
-	return updatedAttrs
+	return updatedAttr
 
 }
 

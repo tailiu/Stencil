@@ -322,54 +322,6 @@ func getAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
 
 }
 
-// func getPrevUserIDsByBackTraversal(stencilDBConn *sql.DB,
-// 	appID, rootMemberID, userID string) [][]string {
-
-// 	query := fmt.Sprintf(`SELECT * FROM identity_table
-// 		WHERE to_app = %s and to_member = %s and to_id = %s`,
-// 		appID, rootMemberID, userID)
-
-// 	// log.Println(query)
-
-// 	data, err := db.DataCall(stencilDBConn, query)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	// log.Println(data)
-
-// 	if len(data) == 0 {
-
-// 		return nil
-
-// 	} else {
-
-// 		prevAppID := fmt.Sprint(data[0]["from_app"])
-
-// 		prevRootMemberID := getAppRootMemberID(stencilDBConn, prevAppID)
-
-// 		var prevUserID string
-
-// 		for _, data1 := range data {
-// 			if fmt.Sprint(data1["from_member"]) == prevRootMemberID {
-// 				prevUserID = fmt.Sprint(data1["from_id"])
-// 			}
-// 		}
-
-// 		preUserData := [][]string{
-// 			[]string{
-// 				prevAppID, prevUserID,
-// 			}}
-
-// 		prevPrevUserData := getPrevUserIDsByBackTraversal(stencilDBConn,
-// 			prevAppID, prevRootMemberID, prevUserID)
-
-// 		return append(preUserData, prevPrevUserData...)
-
-// 	}
-
-// }
-
 func getPrevUserIDsByBackTraversal(stencilDBConn *sql.DB,
 	appID, rootMemberID, userID string) map[string]string {
 

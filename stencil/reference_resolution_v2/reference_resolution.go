@@ -144,7 +144,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 				} else {
 
-					oneUpdatedAttr := updateRefOnLeftBasedOnMappingsUsingRefAttrRow(
+					oneUpdatedAttr := updateRefOnLeftByRefAttrRow(
 						refResolutionConfig, refAttributeRow, procRef, orgAttr)
 	
 					updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
