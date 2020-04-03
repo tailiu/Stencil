@@ -227,7 +227,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 					log.Println("The data has been migrated back to the dest app2")
 					
-					if refIdentityRow.member == procRef["from_member"] && 
+					if refAttributeRow.member == procRef["from_member"] && 
 						refAttributeRow.attrName == procRef["from_attr"] &&
 						procRef["to_member"] == orgAttr.member &&
 						procRef["to_attr"] == orgAttr.attrName {

@@ -21,6 +21,7 @@ func CreateReferenceTableV2(dbConn *sql.DB) {
 
 	query1 := `CREATE TABLE reference_table_v2 (
 		app 			INT8	NOT NULL,
+		from_id 		INT8	NOT NULL,
 		from_member 	INT8	NOT NULL,
 		from_attr 		INT8	NOT NULL,
 		from_val 		VARCHAR NOT NULL,
@@ -39,7 +40,9 @@ func CreateReferenceTableV2(dbConn *sql.DB) {
 
 	query3 := "CREATE INDEX ON reference_table_v2(app, from_member, from_attr, from_val)"
 
-	queries = append(queries, query1, query2, query3)
+	query4 := "CREATE INDEX ON reference_table_v2(app, from_member, from_attr, from_id)"
+
+	queries = append(queries, query1, query2, query3, query4)
 
 	for _, query := range queries {
 		err := db.TxnExecute1(dbConn, query)
@@ -122,28 +125,6 @@ func getToReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func GetReferencesByFromIDFromAttrAndToMemberAndAttr(refResolutionConfig *RefResolutionConfig,
-	fromIDRow *Identity, fromAttr string) []map[string]interface{} {
-
-	query := fmt.Sprintf(
-		`SELECT * FROM reference_table WHERE 
-		app = %s and from_member = %s and from_id = %s and from_reference = '%s'`,
-		fromIDRow.app, fromIDRow.member, fromIDRow.id, fromAttr,
-	)
-
-	log.Println(query)
-
-	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(data)
-
-	return data
-
-}
-
 func checkDataToUpdateRefExists(refResolutionConfig *RefResolutionConfig, 
 	member, attr, attrVal string) bool {
 
@@ -159,7 +140,7 @@ func checkDataToUpdateRefExists(refResolutionConfig *RefResolutionConfig,
 		log.Fatal(err)
 	}
 
-	if len(data) != nil {
+	if len(data) != 0 {
 		return true
 	} else {
 		return false
@@ -289,7 +270,7 @@ func updateReferences(refResolutionConfig *RefResolutionConfig, refID,
 			newVal := ReferenceResolved(
 				refResolutionConfig,
 				refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
-				refResolutionConfig.appAttrNameIDPairs[attrToBeUpdated], 
+				refResolutionConfig.appAttrNameIDPairs[memberToBeUpdated + ":"+ attrToBeUpdated],
 				dataIDToBeUpdated,
 			)
 			

@@ -154,6 +154,7 @@ func test11() {
 func test12() {
 
 	dbName := "stencil_test"
+	// dbName := "stencil_exp6_3"
 
 	isBladeServer := false
 
@@ -167,6 +168,7 @@ func test12() {
 func test13() {
 
 	dbName := "stencil_test"
+	// dbName := "stencil_exp6_3"
 
 	isBladeServer := false
 

@@ -1,7 +1,6 @@
 package reference_resolution_v2
 
 import (
-	"stencil/schema_mappings"
 	"log"
 )
 
@@ -27,16 +26,19 @@ import (
 
 
 // It should be noted that since now we are using the attribute_changes table instead of identity tables,
-// we are sure about which attributes to update or to be updated,
-// and there is no need for us to use get attr or attrToUpdate by mappings.
-// But in the display algorithm, we have to check all the attributes to be updated based on mappings.  
+// When using identity tables, we are not sure about which attributes to update other attributes or 
+// which attributes to be updated, so we use fromApp, fromTable, fromAttr, toApp, and toTable to find
+// attr and attrToUpdate by virtual of schema mappings. 
+// But with the attribute_change table, we are sure about which attributes to update or to be updated.
+// It should also be noted that in the display algorithm, 
+// we have to check all the attributes to be updated based on mappings.  
 func updateRefOnLeftByRefAttrRow(refResolutionConfig *RefResolutionConfig, 
 	refAttributeRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
 
 	updatedAttr := make(map[string]string)
 
-	attr := refResolutionConfig.attrIDNamePairs(refAttributeRow.attrName)
-	attrToUpdate := refResolutionConfig.attrIDNamePairs(orgAttr.attrName)
+	attr := refResolutionConfig.attrIDNamePairs[refAttributeRow.attrName]
+	attrToUpdate := refResolutionConfig.attrIDNamePairs[orgAttr.attrName]
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
@@ -65,8 +67,8 @@ func updateRefOnLeftByRefAttrRow(refResolutionConfig *RefResolutionConfig,
 func updateRefOnLeftByRefAttrRow1(refResolutionConfig *RefResolutionConfig, 
 	procRef map[string]string, orgAttr *Attribute, refAttrRowVal string) map[string]string {
 
-	attr := refResolutionConfig.attrIDNamePairs(procRef["to_attr"])
-	attrToUpdate := refResolutionConfig.attrIDNamePairs(procRef["from_attr"])
+	attr := refResolutionConfig.attrIDNamePairs[procRef["to_attr"]]
+	attrToUpdate := refResolutionConfig.attrIDNamePairs[procRef["from_attr"]]
 
 	updatedAttr := make(map[string]string)
 
@@ -96,8 +98,8 @@ func updateRefOnLeftByRefAttrRow1(refResolutionConfig *RefResolutionConfig,
 func updateRefOnLeftNotUsingRefAttrRow(refResolutionConfig *RefResolutionConfig, 
 	procRef map[string]string, orgAttr *Attribute) map[string]string {
 
-	attr := refResolutionConfig.attrIDNamePairs(procRef["to_attr"])
-	attrToUpdate := refResolutionConfig.attrIDNamePairs(procRef["from_attr"])
+	attr := refResolutionConfig.attrIDNamePairs[procRef["to_attr"]]
+	attrToUpdate := refResolutionConfig.attrIDNamePairs[procRef["from_attr"]]
 
 	updatedAttr := make(map[string]string)
 
@@ -129,8 +131,8 @@ func updateRefOnRightByRefAttrRow(refResolutionConfig *RefResolutionConfig,
 
 	updatedAttrs := make(map[string]string)
 
-	attr := refResolutionConfig.attrIDNamePairs(orgAttr.attrName)
-	attrToUpdate := refResolutionConfig.attrIDNamePairs(refAttributeRow.attrName)
+	attr := refResolutionConfig.attrIDNamePairs[orgAttr.attrName]
+	attrToUpdate := refResolutionConfig.attrIDNamePairs[refAttributeRow.attrName]
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
@@ -158,8 +160,8 @@ func updateRefOnRightByRefAttrRow(refResolutionConfig *RefResolutionConfig,
 func updateRefOnRightByRefAttrRow1(refResolutionConfig *RefResolutionConfig, 
 	procRef map[string]string, orgAttr *Attribute, refAttrRowVal string) map[string]string {
 
-	attr := refResolutionConfig.attrIDNamePairs(procRef["to_attr"])
-	attrToUpdate := refResolutionConfig.attrIDNamePairs(procRef["from_attr"])
+	attr := refResolutionConfig.attrIDNamePairs[procRef["to_attr"]]
+	attrToUpdate := refResolutionConfig.attrIDNamePairs[procRef["from_attr"]]
 
 	updatedAttr := make(map[string]string)
 
@@ -190,8 +192,8 @@ func updateRefOnRightByRefAttrRow1(refResolutionConfig *RefResolutionConfig,
 func updateRefOnRightNotUsingRefAttrRow(refResolutionConfig *RefResolutionConfig, 
 	procRef map[string]string, orgAttr *Attribute) map[string]string {
 
-	attr := refResolutionConfig.attrIDNamePairs(procRef["to_attr"])
-	attrToUpdate := refResolutionConfig.attrIDNamePairs(procRef["from_attr"])
+	attr := refResolutionConfig.attrIDNamePairs[procRef["to_attr"]]
+	attrToUpdate := refResolutionConfig.attrIDNamePairs[procRef["from_attr"]]
 
 	updatedAttr := make(map[string]string)
 
