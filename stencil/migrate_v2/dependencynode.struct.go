@@ -224,3 +224,45 @@ func (root *DependencyNode) ResolveOwnershipConditions(own config.Ownership, tag
 	}
 	return where, nil
 }
+
+func (node *DependencyNode) DeleteMappedDataFromNode(mappedMemberData []MappedMemberData) {
+
+	for _, mappedMemberDatum := range mappedMemberData {
+		node.DeleteMappedDatumFromNode(mappedMemberDatum)
+	}
+}
+
+func (node *DependencyNode) DeleteMappedDatumFromNode(mappedMemberDatum MappedMemberData) {
+
+	for _, mmv := range mappedMemberDatum.Data {
+		for key := range node.Data {
+			if strings.Contains(key, ".id") {
+				continue
+			}
+			if strings.EqualFold(key, mmv.GetMemberAttr()) {
+				fmt.Printf("Deleting Data From Node | Key: '%v' \n", key)
+				delete(node.Data, key)
+			}
+		}
+	}
+}
+
+func (node *DependencyNode) IsEmptyExcept() {
+	exceptions := []string{".id", ".display_flag"}
+	for key, val := range node.Data {
+		if val == nil {
+			continue
+		}
+		isException := false
+		for _, exception := range exceptions {
+			if strings.Contains(key, exceptions) {
+				isException = true
+				break
+			}
+		}
+		if !isException {
+			return false
+		}
+	}
+	return true
+}

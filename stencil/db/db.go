@@ -102,11 +102,14 @@ func CloseDBConn(app string) {
 	}
 }
 
+func NewRandInt() int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(2147483647)
+}
+
 func CreateMigrationTransaction(dbConn *sql.DB) (int, error) {
 
-	rand.Seed(time.Now().UnixNano())
-
-	txnID := rand.Intn(2147483647)
+	txnID := NewRandInt()
 
 	q := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, 'BEGIN_TRANSACTION', now());", txnID)
 
@@ -204,6 +207,12 @@ func InsertRowIntoAppDB(tx *sql.Tx, table, cols, placeholders string, args ...in
 func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, migrationID interface{}) error {
 	query := "INSERT INTO identity_table (from_app, from_member, from_id, to_app, to_member, to_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
 	_, err := tx.Exec(query, srcApp, srcTable, srcID, dstApp, dstTable, dstID, migrationID)
+	return err
+}
+
+func InsertIntoAttrTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcAttr, dstAttr, srcVal, dstVal, migrationID interface{}) error {
+	query := "INSERT INTO identity_table (from_app, from_member, from_id, to_app, to_member, to_id, from_attr, to_attr, from_val, to_val, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);"
+	_, err := tx.Exec(query, srcApp, srcTable, srcID, dstApp, dstTable, dstID, srcAttr, dstAttr, srcVal, dstVal, migrationID)
 	return err
 }
 
@@ -362,6 +371,17 @@ func CreateNewReference(tx *sql.Tx, app, fromMember string, fromID int64, toMemb
 
 	// query := "INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;"
 	query := fmt.Sprintf("INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromID, fromReference, toMember, fmt.Sprint(toID), toReference, migration_id)
+
+	_, err := tx.Exec(query)
+	if err != nil {
+		fmt.Println(query)
+	}
+	return err
+}
+
+func CreateNewReferenceV2(tx *sql.Tx, app, fromMember string, fromID int64, fromVal string, toMember string, toVal string, migration_id, fromReference, toReference string) error {
+
+	query := fmt.Sprintf("INSERT INTO reference_table_v2 (app, from_member, from_id, from_val, from_reference, to_member, to_val, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromID, fromVal, fromReference, toMember, toVal, toReference, migration_id)
 
 	_, err := tx.Exec(query)
 	if err != nil {

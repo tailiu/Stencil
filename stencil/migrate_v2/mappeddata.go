@@ -1,10 +1,7 @@
 package migrate_v2
 
 import (
-	"errors"
 	"fmt"
-	"log"
-	"stencil/helper"
 	"strings"
 
 	"github.com/gookit/color"
@@ -45,46 +42,6 @@ func (self *MappedData) UpdateRefs(appID, fromID, fromMember, fromAttr, toID, to
 		toVal:      fmt.Sprint(toID),
 		toMember:   fmt.Sprint(toMember),
 		toAttr:     fmt.Sprint(toAttr)})
-}
-
-func GetIDsFromNodeData(firstMember, secondMember string, nodeData map[string]interface{}, hardRef bool) (int64, int64, error) {
-	var toID, fromID int64
-
-	log.Printf("@GetIDsFromNodeData | Args | firstMember : %s, secondMember : %s, hardRef : %v ", firstMember, secondMember, hardRef)
-	log.Printf("@GetIDsFromNodeData | Args | nodeData : %v ", nodeData)
-
-	if hardRef {
-		if val, ok := nodeData[secondMember]; ok {
-			if val != nil {
-				toID = helper.GetInt64(val)
-			}
-		} else {
-			return toID, fromID, errors.New("Unable to find toID ref value in node data: " + secondMember)
-		}
-	} else {
-		if val, ok := nodeData[firstMember]; ok {
-			if val != nil {
-				toID = helper.GetInt64(val)
-			}
-		} else {
-			return toID, fromID, errors.New("Unable to find toID ref value in node data: " + firstMember)
-		}
-	}
-
-	firstMemberTokens := strings.Split(firstMember, ".")
-
-	if val, ok := nodeData[firstMemberTokens[0]+".id"]; ok {
-		if val != nil {
-			fromID = helper.GetInt64(val)
-		}
-	} else {
-		return toID, fromID, errors.New("Unable to find fromID ref value in node data: " + firstMemberTokens[0] + ".id")
-	}
-	log.Printf("@GetIDsFromNodeData | Returning | toID : %v, fromID : %v ", toID, fromID)
-	if toID != 0 && fromID != 0 {
-		return toID, fromID, nil
-	}
-	return toID, fromID, fmt.Errorf("Nil reference(s) | firstMember : %s, secondMember : %s, hardRef : %v | fromID: %v | toID: %v", firstMember, secondMember, hardRef, fromID, toID)
 }
 
 func (self *MappedData) Trim(chars string) {

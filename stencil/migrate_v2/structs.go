@@ -10,16 +10,22 @@ import (
 	logg "github.com/withmandala/go-log"
 )
 
+// DataMap : type representation of data fetched from db
+type DataMap map[string]interface{}
+
+// ValueWithReference : Stores fetched value and reference (if created)
 type ValueWithReference struct {
 	value interface{}
 	ref   *MappingRef
 }
 
+// App : Data struct
 type App struct {
 	Name string
 	ID   int64
 }
 
+// Member : Data struct
 type Member struct {
 	Name string
 	ID   int64
@@ -28,15 +34,17 @@ type Member struct {
 type AttrRow struct {
 	FromApp    App
 	FromMember Member
-	FromAttr   int64
+	FromID     int64
+	FromAttr   string
 	FromVal    string
 	ToApp      App
 	ToMember   Member
-	ToAttr     int64
+	ToID       int64
+	ToAttr     string
 	ToVal      string
 }
 
-type IDRow struct {
+type IDRow__defunct struct {
 	FromAppName  string
 	FromAppID    string
 	FromMember   string
@@ -83,16 +91,19 @@ type UnmappedTags struct {
 
 type MappingRef struct {
 	appID         string
+	fromMemberID  string
 	fromMember    string
 	fromAttr      string
+	fromID        int64
 	fromVal       string
 	toVal         string
+	toMemberID    string
 	toMember      string
 	toAttr        string
 	mergedFromBag bool
 }
 
-type MappedData struct {
+type MappedData__defunct struct {
 	cols        string
 	vals        string
 	orgCols     string
@@ -101,6 +112,31 @@ type MappedData struct {
 	ivals       []interface{}
 	undoAction  *transaction.UndoAction
 	refs        []MappingRef
+}
+
+type MappedMemberData struct {
+	ToID       string
+	AppID      string
+	ToMemberID string
+	ToMember   string
+	Data       map[string]MappedMemberValue
+	DBConn     *sql.DB
+}
+
+type MappedMemberValue struct {
+	ToID         string
+	FromID       string
+	IsInput      bool
+	IsMethod     bool
+	IsExpression bool
+	AppID        string
+	FromMemberID string
+	FromMember   string
+	FromAttr     string
+	Value        interface{}
+	Ref          *MappingRef
+	Logger       *logg.Logger
+	DBConn       *sql.DB
 }
 
 type MigrationWorker struct {
@@ -138,22 +174,20 @@ type ThreadChannel struct {
 // MigrationThreadController : SrcAppInfo and DstAppInfo just contain strings of App ids and names.
 // Actual App Configs will be created separately for each migration thread.
 type MigrationThreadController struct {
-	UID            string
-	waitGroup      sync.WaitGroup
-	commitChannel  chan ThreadChannel
-	enableBags     bool
-	isBlade        bool
-	totalThreads   int
-	currentThreads int
-	txnID          int
-	stencilDB      *sql.DB
-	Logger         *logg.Logger
-	SrcAppInfo     App
-	DstAppInfo     App
-	MType          string
-	mappings       config.MappedApp
-	size           int
-}
-
-type MigrationThread struct {
+	UID             string
+	waitGroup       sync.WaitGroup
+	commitChannel   chan ThreadChannel
+	enableBags      bool
+	isBlade         bool
+	totalThreads    int
+	currentThreads  int
+	txnID           int
+	stencilDB       *sql.DB
+	Logger          *logg.Logger
+	SrcAppInfo      App
+	DstAppInfo      App
+	MType           string
+	mappings        config.MappedApp
+	size            int
+	LoggerDebugFlag bool
 }

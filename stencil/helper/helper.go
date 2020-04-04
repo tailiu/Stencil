@@ -9,11 +9,14 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"os"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	logg "github.com/withmandala/go-log"
 )
 
 func Linebreak(ch string, times ...int) {
@@ -171,4 +174,15 @@ func GetInt64(val interface{}) int64 {
 	}
 	log.Fatal("@GetInt64: Neither int64 nor float64 | ", val)
 	return 0
+}
+
+func CreateLogger(debug bool) *logg.Logger {
+	logger := logg.New(os.Stderr)
+
+	logger.WithTimestamp()
+	logger.WithColor()
+	if debug {
+		logger.WithDebug()
+	}
+	return logger
 }

@@ -12,6 +12,7 @@ import (
 	"stencil/db"
 	"stencil/helper"
 	"stencil/transaction"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -230,11 +231,6 @@ func (mWorker *MigrationWorker) PushData(tx *sql.Tx, dtable config.ToTable, pk s
 		if _, ok := node.Data[fmt.Sprintf("%s.id", fromTable)]; ok {
 			srcID := node.Data[fmt.Sprintf("%s.id", fromTable)]
 			if fromTableID, err := db.TableID(mWorker.logTxn.DBconn, fromTable, mWorker.SrcAppConfig.AppID); err == nil {
-				// if err := db.InsertIntoIdentityTable(tx, mWorker.SrcAppConfig.AppID, mWorker.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, fmt.Sprint(mWorker.logTxn.Txn_id)); err != nil {
-				// 	log.Println("@PushData:db.InsertIntoIdentityTable: ", mWorker.SrcAppConfig.AppID, mWorker.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, fmt.Sprint(mWorker.logTxn.Txn_id))
-				// 	mWorker.Logger.Fatal(err)
-				// 	return errors.New("0")
-				// }
 				if serr := db.SaveForLEvaluation(tx, mWorker.SrcAppConfig.AppID, mWorker.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, strings.Join(fromCols, ","), mappedData.cols, fmt.Sprint(mWorker.logTxn.Txn_id)); serr != nil {
 					log.Println("@PushData:db.SaveForLEvaluation: ", mWorker.SrcAppConfig.AppID, mWorker.DstAppConfig.AppID, fromTableID, dtable.TableID, srcID, pk, strings.Join(fromCols, ","), mappedData.cols, fmt.Sprint(mWorker.logTxn.Txn_id))
 					mWorker.Logger.Fatal(serr)
@@ -247,99 +243,6 @@ func (mWorker *MigrationWorker) PushData(tx *sql.Tx, dtable config.ToTable, pk s
 		}
 	}
 	return nil
-}
-
-func (mWorker *MigrationWorker) ValidateMappingConditions(toTable config.ToTable, node *DependencyNode) bool {
-	if len(toTable.Conditions) > 0 {
-		for conditionKey, conditionVal := range toTable.Conditions {
-			// mWorker.Logger.Debugf("Checking Condition | conditionKey [%s] conditionVal [%s]", conditionKey, conditionVal)
-			if nodeVal, ok := node.Data[conditionKey]; ok {
-				// mWorker.Logger.Debugf("Checking Condition | nodeVal [%v]", nodeVal)
-				if conditionVal[:1] == "#" {
-					// fmt.Println("VerifyMappingConditions: conditionVal[:1] == #")
-					// fmt.Println(conditionKey, conditionVal, nodeVal)
-					// fmt.Scanln()
-					switch conditionVal {
-					case "#NULL":
-						{
-							if nodeVal != nil {
-								// log.Println("Case #NULL | ", nodeVal, "!=", conditionVal)
-								// fmt.Println(conditionKey, conditionVal, nodeVal)
-								// mWorker.Logger.Fatal("@VerifyMappingConditions: return false, from case #NULL:")
-								return false
-							} else {
-								// log.Println("Case #NULL | ", nodeVal, "==", conditionVal)
-							}
-						}
-					case "#NOTNULL":
-						{
-							if nodeVal == nil {
-								// log.Println("Case #NOTNULL | ", nodeVal, "!=", conditionVal)
-								// fmt.Println(conditionKey, conditionVal, nodeVal)
-								// mWorker.Logger.Fatal("@VerifyMappingConditions: return false, from case #NOTNULL:")
-								return false
-							} else {
-								// log.Println("Case #NOTNULL | ", nodeVal, "==", conditionVal)
-							}
-						}
-					default:
-						{
-							fmt.Println(toTable.Table, conditionKey, conditionVal)
-							mWorker.Logger.Fatal("@ValidateMappingConditions: Case not found:" + conditionVal)
-						}
-					}
-				} else if conditionVal[:1] == "$" {
-					// fmt.Println("VerifyMappingConditions: conditionVal[:1] == $")
-					// fmt.Println(conditionKey, conditionVal, nodeVal)
-					// fmt.Scanln()
-					if inputVal, err := mWorker.mappings.GetInput(conditionVal); err == nil {
-						if !strings.EqualFold(fmt.Sprint(nodeVal), inputVal) {
-							log.Println(nodeVal, "!=", inputVal)
-							fmt.Println(conditionKey, conditionVal, inputVal, nodeVal)
-							mWorker.Logger.Fatal("@ValidateMappingConditions: return false, from conditionVal[:1] == $")
-							return false
-						}
-					} else {
-						fmt.Println("node data:", node.Data)
-						fmt.Println(conditionKey, conditionVal)
-						mWorker.Logger.Fatal("@ValidateMappingConditions: input doesn't exist?", err)
-					}
-				} else if !strings.EqualFold(fmt.Sprint(nodeVal), conditionVal) {
-					// log.Println(conditionKey, conditionVal, "!=", nodeVal)
-					return false
-				} else {
-					// fmt.Println(*nodeVal, "==", conditionVal)
-				}
-			} else {
-				// log.Println("Condition Key", conditionKey, "doesn't exist!")
-				// fmt.Println("node data:", node.Data)
-				// fmt.Println("node sql:", node.SQL)
-				// mWorker.Logger.Fatal("@ValidateMappingConditions: stop here and check")
-				mWorker.Logger.Warnf("Checking Condition | nodeVal doesn't exist | [%s]", conditionKey)
-				return false
-			}
-		}
-	} else {
-		// mWorker.Logger.Debugf("No mapping conditions exist for table: %s", toTable.Table)
-	}
-
-	return true
-}
-
-func (mWorker *MigrationWorker) ValidateMappedTableData(toTable config.ToTable, mappedData MappedData) bool {
-	for mappedCol, srcMappedCol := range toTable.Mapping {
-		if srcMappedCol[0:1] == "$" || mappedCol == "id" {
-			continue
-		}
-		for i, mCol := range strings.Split(mappedData.cols, ",") {
-			if strings.EqualFold(mappedCol, mCol) {
-				if mappedData.ivals[i] != nil {
-					return true
-				}
-			}
-		}
-	}
-	return false
 }
 
 func (mWorker *MigrationWorker) GetNodeOwner(node *DependencyNode) (string, bool) {
@@ -387,324 +290,285 @@ func (mWorker *MigrationWorker) GetNodeOwner(node *DependencyNode) (string, bool
 	return "", false
 }
 
-func (mWorker *MigrationWorker) FetchFromMapping(nodeData map[string]interface{}, fromAttr string) (interface{}, string, string, *MappingRef, error) {
+func (mWorker *MigrationWorker) ValidateMappingConditions(conditions map[string]string, data DataMap) bool {
 
-	var mappedVal interface{}
-	var ref *MappingRef
-
-	fromTable, cleanedFromAttr := "", ""
-
-	args := strings.Split(fromAttr, ",")
-	cleanedFromAttr = args[0]
-	// fmt.Println(color.FgLightRed.Render("#############################################################################################################"))
-	// mWorker.Logger.Debugf("\n#FETCH: fromAttr: [%s] | cleanedFromAttr: [%s]", fromAttr, cleanedFromAttr)
-
-	if nodeVal, ok := nodeData[args[2]]; ok {
-		targetTabCol := strings.Split(args[0], ".")
-		comparisonTabCol := strings.Split(args[1], ".")
-		if res, err := db.FetchForMapping(mWorker.SrcAppConfig.DBConn, targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal)); err != nil {
-			mWorker.Logger.Debug(targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
-			mWorker.Logger.Fatal("@FetchFromMapping: FetchForMapping | ", err)
-		} else if len(res) > 0 {
-			mappedVal = res[targetTabCol[1]]
-			fromTable = targetTabCol[0]
-			nodeData[args[0]] = res[targetTabCol[1]]
-			if len(args) > 3 {
-				toMemberTokens := strings.Split(args[3], ".")
-				ref = &MappingRef{
-					appID:      fmt.Sprint(mWorker.SrcAppConfig.AppID),
-					fromVal:    fmt.Sprint(res[targetTabCol[1]]),
-					fromMember: fmt.Sprint(targetTabCol[0]),
-					fromAttr:   fmt.Sprint(targetTabCol[1]),
-					toVal:      fmt.Sprint(res[targetTabCol[1]]),
-					toMember:   fmt.Sprint(toMemberTokens[0]),
-					toAttr:     fmt.Sprint(toMemberTokens[1])}
-			}
-		} else {
-			err = fmt.Errorf("@FetchFromMapping: FetchForMapping | Returned data is nil! Previous node already migrated? Args: [%s, %s, %s, %s]", targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
-			return mappedVal, fromTable, cleanedFromAttr, ref, nil
-		}
-	} else {
-		fmt.Println(nodeData)
-		mWorker.Logger.Fatal("@FetchFromMapping: unable to #FETCH ", args[2])
-	}
-	// mWorker.Logger.Debugf("\n#FETCH EXIT: fromAttr: [%s] | cleanedFromAttr: [%s] | FromTable: [%s], val: [%v]", fromAttr, cleanedFromAttr, fromTable, mappedVal)
-	// fmt.Println(color.FgLightRed.Render("#############################################################################################################"))
-	return mappedVal, fromTable, cleanedFromAttr, ref, nil
-}
-
-func (mWorker *MigrationWorker) RemoveMappedDataFromNodeData(mappedData MappedData, node *DependencyNode) {
-	fmt.Println("Deleting Cols | ", mappedData.orgCols)
-	for _, col := range strings.Split(mappedData.orgCols, ",") {
-		for key := range node.Data {
-			if strings.EqualFold(key, col) && !strings.Contains(key, ".id") {
-				fmt.Printf("Deleting Key | Key: '%v' | Col: '%v'\n", key, col)
-				delete(node.Data, key)
-			}
-		}
-	}
-}
-
-func (mWorker *MigrationWorker) IsNodeDataEmpty(data map[string]interface{}) bool {
-	for key, val := range data {
-		if !(strings.Contains(key, ".id") || strings.Contains(key, ".display_flag")) && val != nil {
-			return false
-		}
-	}
-	return true
-}
-
-func (mWorker *MigrationWorker) DecodeMappingValue(fromAttr string, nodeData map[string]interface{}, args ...bool) (interface{}, string, string, *MappingRef, bool, error) {
-
-	isBag := false
-	// rawBag := false
-
-	// if len(args) > 1 {
-	// 	rawBag = args[1]
-	// }
-
-	if len(args) > 0 {
-		isBag = args[0]
-	}
-
-	if mWorker.mtype == BAGS {
-		isBag = true
-	}
-
-	// mWorker.Logger.Tracef("@DecodeMappingValue | fromAttr [%s] | isBag: [%v] | args: [%v] | data: %v", fromAttr, isBag, args, nodeData)
-
-	var mappedVal interface{}
-	var ref *MappingRef
-
-	fromTable := ""
-	found := true
-	cleanedFromAttr := fromAttr
-
-	switch fromAttr[0:1] {
-	case "$":
-		{
-			if inputVal, err := mWorker.mappings.GetInput(fromAttr); err == nil {
-				mappedVal = inputVal
-			} else {
-				mWorker.Logger.Debugf("@DecodeMappingValue | fromAttr [%s] | isBag: [%v] | data: %v", fromAttr, isBag, nodeData)
-				mWorker.Logger.Fatal(err)
-			}
-		}
-	case "#":
-		{
-			cleanedFromAttr = mWorker.CleanMappingAttr(fromAttr)
-			// cleanedFromAttr = strings.Trim(cleanedFromAttr, "#ASSIGNFETCHREF")
-			// mWorker.Logger.Debug(color.FgLightYellow.Render(fmt.Sprintf("FromAttr: %s | Cleaned: %s", fromAttr, cleanedFromAttr)))
-			if strings.Contains(fromAttr, "#REF") {
-				if strings.Contains(fromAttr, "#FETCH") {
-					var err error
-					if !isBag {
-						if mappedVal, fromTable, cleanedFromAttr, ref, err = mWorker.FetchFromMapping(nodeData, cleanedFromAttr); err != nil {
-							mWorker.Logger.Fatal("@DecodeMappingValue > FetchFromMapping: ", cleanedFromAttr, err)
-						}
-					} else {
-						found = false
-					}
-				} else if strings.Contains(fromAttr, "#ASSIGN") {
-					cleanedFromAttrTokens := strings.Split(cleanedFromAttr, ",")
-					referredTabCol := cleanedFromAttrTokens[1]
-					cleanedFromAttr = strings.Trim(cleanedFromAttrTokens[0], "()")
-					if nodeVal, ok := nodeData[cleanedFromAttr]; ok && nodeVal != nil {
-						cleanedFromAttrTokens := strings.Split(cleanedFromAttr, ".")
-						referredTabColTokens := strings.Split(referredTabCol, ".")
-						fromTable = cleanedFromAttrTokens[0]
-						mappedVal = nodeVal
-
-						// if !isBag || rawBag {
-						var fromID interface{}
-						if val, ok := nodeData[cleanedFromAttrTokens[0]+".id"]; ok {
-							fromID = val
-						} else {
-							fmt.Println(cleanedFromAttrTokens[0], " | ", cleanedFromAttrTokens)
-							fmt.Println(nodeData)
-							mWorker.Logger.Fatal("@DecodeMappingValue > #REF > #ASSIGN > fromID: Unable to find ref value in node data | ", cleanedFromAttrTokens[0])
-						}
-						ref = &MappingRef{
-							appID:      fmt.Sprint(mWorker.SrcAppConfig.AppID),
-							fromVal:    fmt.Sprint(fromID),
-							fromMember: fmt.Sprint(cleanedFromAttrTokens[0]),
-							fromAttr:   fmt.Sprint(cleanedFromAttrTokens[1]),
-							toVal:      fmt.Sprint(nodeVal),
-							toMember:   fmt.Sprint(referredTabColTokens[0]),
-							toAttr:     fmt.Sprint(referredTabColTokens[1]),
-						}
-						// }
-					} else {
-						mWorker.Logger.Debugf("fromAttr: [%s], cleanedFromAttr: [%s], nodeData: %v", fromAttr, cleanedFromAttr, nodeData)
-						if isBag {
-							mWorker.Logger.Debugf("Unable to DecodeMappingValue | value found = [%v]", ok)
-						} else {
-							mWorker.Logger.Fatalf("Unable to DecodeMappingValue | value found = [%v]", ok)
-						}
-					}
-				} else {
-					args := strings.Split(cleanedFromAttr, ",")
-					cleanedFromAttr = args[0]
-					if nodeVal, ok := nodeData[args[0]]; ok {
-						argsTokens := strings.Split(args[0], ".")
-						mappedVal = nodeVal
-						fromTable = argsTokens[0]
-					}
-					hardRef := false
-					if strings.Contains(fromAttr, "#REFHARD") {
-						hardRef = true
-					}
-					// if !isBag || rawBag {
-					if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], nodeData, hardRef); err == nil {
-						secondMemberTokens := strings.Split(args[1], ".")
-						firstMemberTokens := strings.Split(args[0], ".")
-						ref = &MappingRef{
-							appID:      fmt.Sprint(mWorker.SrcAppConfig.AppID),
-							fromVal:    fmt.Sprint(fromID),
-							fromMember: fmt.Sprint(firstMemberTokens[0]),
-							fromAttr:   fmt.Sprint(firstMemberTokens[1]),
-							toVal:      fmt.Sprint(toID),
-							toMember:   fmt.Sprint(secondMemberTokens[0]),
-							toAttr:     fmt.Sprint(secondMemberTokens[1]),
-						}
-					} else {
-						mWorker.Logger.Debugf("fromAttr: '%v' \n", fromAttr)
-						mWorker.Logger.Debugf("args[0]: '%v' \n", args[0])
-						mWorker.Logger.Debugf("toID: '%v' | fromID: '%v' \n", toID, fromID)
-						fmt.Println(nodeData)
-						// if !rawBag && !isBag {
-						// 	mWorker.Logger.Fatal("@DecodeMappingValue > GetIDs | ", err)
-						// } else {
-						mWorker.Logger.Warn("@DecodeMappingValue > GetIDs | ", err)
-						// }
-					}
-					// }
-				}
-			} else if strings.Contains(fromAttr, "#ASSIGN") {
-				if nodeVal, ok := nodeData[cleanedFromAttr]; ok {
-					cleanedFromAttrTokens := strings.Split(cleanedFromAttr, ".")
-					mappedVal = nodeVal
-					fromTable = cleanedFromAttrTokens[0]
-				} else {
-					mWorker.Logger.Fatalf("@DecodeMappingValue > #ASSIGN > Can't find assigned attr in data | cleanedFromAttr:[%s]", cleanedFromAttr)
-				}
-			} else if strings.Contains(fromAttr, "#FETCH") {
-				if !isBag {
-					var err error
-					if mappedVal, fromTable, cleanedFromAttr, ref, err = mWorker.FetchFromMapping(nodeData, cleanedFromAttr); err != nil {
-						mWorker.Logger.Debug(nodeData)
-						mWorker.Logger.Debug(cleanedFromAttr)
-						mWorker.Logger.Fatal("@DecodeMappingValue > #FETCH > FetchFromMapping: Unable to fetch | ", err)
-					}
-				} else {
-					found = false
-				}
-			} else {
-				switch fromAttr {
-				case "#GUID":
+	for conditionKey, conditionVal := range conditions {
+		// mWorker.Logger.Debugf("Checking Condition | conditionKey [%s] conditionVal [%s]", conditionKey, conditionVal)
+		if nodeVal, ok := data[conditionKey]; ok {
+			// mWorker.Logger.Debugf("Checking Condition | nodeVal [%v]", nodeVal)
+			if conditionVal[:1] == "#" {
+				// fmt.Println("VerifyMappingConditions: conditionVal[:1] == #")
+				// fmt.Println(conditionKey, conditionVal, nodeVal)
+				// fmt.Scanln()
+				switch conditionVal {
+				case "#NULL":
 					{
-						mappedVal = uuid.New()
+						if nodeVal != nil {
+							// log.Println("Case #NULL | ", nodeVal, "!=", conditionVal)
+							// fmt.Println(conditionKey, conditionVal, nodeVal)
+							// mWorker.Logger.Fatal("@VerifyMappingConditions: return false, from case #NULL:")
+							return false
+						} else {
+							// log.Println("Case #NULL | ", nodeVal, "==", conditionVal)
+						}
 					}
-				case "#RANDINT":
+				case "#NOTNULL":
 					{
-						mappedVal = mWorker.SrcAppConfig.QR.NewRowId()
+						if nodeVal == nil {
+							// log.Println("Case #NOTNULL | ", nodeVal, "!=", conditionVal)
+							// fmt.Println(conditionKey, conditionVal, nodeVal)
+							// mWorker.Logger.Fatal("@VerifyMappingConditions: return false, from case #NOTNULL:")
+							return false
+						} else {
+							// log.Println("Case #NOTNULL | ", nodeVal, "==", conditionVal)
+						}
 					}
 				default:
 					{
-						mWorker.Logger.Fatal("@DecodeMappingValue: Case not found:" + fromAttr)
+						fmt.Println(conditionKey, conditionVal)
+						mWorker.Logger.Fatal("@ValidateMappingConditions: Case not found:" + conditionVal)
 					}
 				}
+			} else if conditionVal[:1] == "$" {
+				// fmt.Println("VerifyMappingConditions: conditionVal[:1] == $")
+				// fmt.Println(conditionKey, conditionVal, nodeVal)
+				// fmt.Scanln()
+				if inputVal, err := mWorker.mappings.GetInput(conditionVal); err == nil {
+					if !strings.EqualFold(fmt.Sprint(nodeVal), inputVal) {
+						log.Println(nodeVal, "!=", inputVal)
+						fmt.Println(conditionKey, conditionVal, inputVal, nodeVal)
+						mWorker.Logger.Fatal("@ValidateMappingConditions: return false, from conditionVal[:1] == $")
+						return false
+					}
+				} else {
+					fmt.Println("node data:", data)
+					fmt.Println(conditionKey, conditionVal)
+					mWorker.Logger.Fatal("@ValidateMappingConditions: input doesn't exist?", err)
+				}
+			} else if !strings.EqualFold(fmt.Sprint(nodeVal), conditionVal) {
+				// log.Println(conditionKey, conditionVal, "!=", nodeVal)
+				return false
+			} else {
+				// fmt.Println(*nodeVal, "==", conditionVal)
+			}
+		} else {
+			// log.Println("Condition Key", conditionKey, "doesn't exist!")
+			// fmt.Println("node sql:", node.SQL)
+			// mWorker.Logger.Fatal("@ValidateMappingConditions: stop here and check")
+			mWorker.Logger.Warnf("Checking Condition | nodeVal doesn't exist | [%s]", conditionKey)
+			return false
+		}
+	}
+
+	return true
+}
+
+func (mWorker *MigrationWorker) ResolveMappingMethodRef(cleanedMappedStmt string, data DataMap) (*MappedMemberValue, error) {
+
+	args := strings.Split(cleanedMappedStmt, ",")
+	fromAttr = args[0]
+
+	if nodeVal, ok := data[fromAttr]; ok {
+		mmv := &MappedMemberValue{
+			AppID:    mWorker.SrcAppConfig.AppID,
+			IsMethod: true,
+			Value:    nodeVal,
+			DBConn:   mWorker.logTxn.DBconn,
+		}
+		mmv.StoreMemberAndAttr(fromAttr)
+		return mmv, nil
+	}
+	return nil, nil
+}
+
+func (mWorker *MigrationWorker) ResolveMappingMethodAssign(cleanedMappedStmt string, data DataMap) (*MappedMemberValue, error) {
+	if nodeVal, ok := data[cleanedMappedStmt]; ok {
+		mmv := &MappedMemberValue{
+			AppID:    mWorker.SrcAppConfig.AppID,
+			IsMethod: true,
+			Value:    nodeVal,
+			DBConn:   mWorker.logTxn.DBconn,
+		}
+		mmv.StoreMemberAndAttr(cleanedMappedStmt)
+		return mmv, nil
+	} else {
+		fmt.Println(data)
+		mWorker.Logger.Fatalf("@ResolveMappingMethodAssign > Can't find assigned attr in data | cleanedMappedStmt:[%s]", cleanedMappedStmt)
+		return nil, nil
+	}
+}
+
+func (mWorker *MigrationWorker) ResolveMappingMethodFetch(cleanedMappedStmt string, data DataMap) (*MappedMemberValue, error) {
+	args := strings.Split(cleanedMappedStmt, ",")
+
+	attrToFetch := args[0]
+	attrToCompare := args[1]
+	attrToCompareWith := args[2]
+
+	if nodeVal, ok := data[attrToCompareWith]; ok {
+		targetAttrTokens := strings.Split(attrToFetch, ".")
+		comparisonAttrTokens := strings.Split(attrToCompare, ".")
+		if res, err := db.FetchForMapping(mWorker.SrcAppConfig.DBConn, targetAttrTokens[0], targetAttrTokens[1], comparisonAttrTokens[1], fmt.Sprint(nodeVal)); err != nil {
+			mWorker.Logger.Debug(argetAttrTokens[0], targetAttrTokens[1], comparisonAttrTokens[1], nodeVal)
+			mWorker.Logger.Fatal("@ResolveMappingMethodFetch: FetchForMapping | ", err)
+			return nil, err
+		} else if len(res) > 0 {
+			data[attrToFetch] = res[targetAttrTokens[1]]
+			mmv := &MappedMemberValue{
+				AppID:    mWorker.SrcAppConfig.AppID,
+				IsMethod: true,
+				Value:    data[attrToFetch],
+				DBConn:   mWorker.logTxn.DBconn,
+			}
+			mmv.StoreMemberAndAttr(attrToFetch)
+			return mmv, nil
+		} else {
+			return nil, fmt.Errorf("ResolveMappingMethodFetch | Returned data is nil. Previous node already migrated? | Args: '%s', '%s', '%s', '%s'", targetTabCol[0], targetTabCol[1], comparisonTabCol[1], fmt.Sprint(nodeVal))
+		}
+	} else {
+		err := fmt.Errorf("@ResolveMappingMethodFetch: unable to #FETCH '%s'", args[2])
+		mWorker.Logger.Debug(data)
+		mWorker.Logger.Fatal(err)
+		return nil, err
+	}
+}
+
+func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data DataMap) (*MappedMemberValue, error) {
+
+	// first character in the mappedStmt identifies the statment type.
+	// "$" and "#" identify special cases.
+	switch mappedStmt[0:1] {
+	case "$":
+		{
+			if inputVal, err := mWorker.mappings.GetInput(mappedStmt); err == nil {
+				mmv := &MappedMemberValue{
+					IsInput: true,
+					Value:   inputVal,
+					DBConn:  mWorker.logTxn.DBconn,
+				}
+				return mmv, nil
+			}
+			mWorker.Logger.Debugf("@ResolveMappedStatement | mappedStmt [%s] | data: %v", mappedStmt, data)
+			mWorker.Logger.Fatal(err)
+			return nil, err
+		}
+	case "#":
+		{
+			cleanedMappedStmt = mWorker.CleanMappingAttr(mappedStmt)
+			if strings.Contains(mappedStmt, "#REF") {
+
+				var mmv *MappedMemberValue
+				var err error
+
+				if strings.Contains(fromAttr, "#FETCH") {
+					mmv, err = mWorker.ResolveMappingMethodFetch(cleanedMappedStmt, data)
+					if mmv != nil && err == nil {
+						tokens := strings.Split(cleanedMappedStmt, ",")
+						if err := mmv.CreateReference(tokens[0], tokens[3], mappedStmt, data); err != nil {
+							mWorker.Logger.Debug(Err)
+						}
+					}
+				} else if strings.Contains(fromAttr, "#ASSIGN") {
+					mmv, err = mWorker.ResolveMappingMethodAssign(cleanedMappedStmt, data)
+					if mmv != nil && err == nil {
+						tokens := strings.Split(cleanedMappedStmt, ",")
+						if err := mmv.CreateReference(tokens[0], tokens[2], mappedStmt, data); err != nil {
+							mWorker.Logger.Debug(Err)
+						}
+					}
+				} else {
+					mmv, err = mWorker.ResolveMappingMethodRef(cleanedMappedStmt, data)
+					if mmv != nil && err == nil {
+						tokens := strings.Split(cleanedMappedStmt, ",")
+						if err := mmv.CreateReference(tokens[0], tokens[1], mappedStmt, data); err != nil {
+							mWorker.Logger.Debug(Err)
+						}
+					}
+				}
+
+				if err != nil {
+					mWorker.Logger.Debug(mappedStmt, cleanedMappedStmt)
+					mWorker.Logger.Debug(data)
+					mWorker.Logger.Fatal(err)
+				}
+
+				if mmv == nil {
+					err = fmt.Errorf("Value fetched is nil for mappedStmt: '%s', '%s'", mappedStmt, cleanedMappedStmt)
+					mWorker.Logger.Debug(data)
+					mWorker.Logger.Debug(errMsg)
+				}
+
+				return mmv, err
+
+			} else if strings.Contains(mappedStmt, "#ASSIGN") {
+				return mWorker.ResolveMappingMethodAssign(cleanedMappedStmt, data)
+			} else if strings.Contains(mappedStmt, "#FETCH") {
+				return mWorker.ResolveMappingMethodFetch(cleanedMappedStmt, data)
+			} else if strings.Contains(mappedStmt, "#GUID") {
+				mmv := &MappedMemberValue{
+					IsExpression: true,
+					Value:        uuid.New(),
+					DBConn:       mWorker.logTxn.DBconn,
+				}
+				return mmv, nil
+			} else if strings.Contains(mappedStmt, "#RANDINT") {
+				mmv := &MappedMemberValue{
+					IsExpression: true,
+					Value:        db.NewRandInt(),
+					DBConn:       mWorker.logTxn.DBconn,
+				}
+				return mmv, nil
+			} else {
+				errMsg := "Unidentified Mapping Method in mappedStmt: " + mappedStmt
+				mWorker.Logger.Fatal(errMsg)
+				return nil, errors.New(errMsg)
 			}
 		}
 	default:
 		{
-			if val, ok := nodeData[fromAttr]; ok {
-				mappedVal = val
-				fromTable = strings.Split(fromAttr, ".")[0]
-			} else {
-				found = false
+			if val, ok := data[mappedStmt]; ok {
+				mmv := &MappedMemberValue{
+					AppID:  mWorker.SrcAppConfig.AppID,
+					Value:  val,
+					DBConn: mWorker.logTxn.DBconn,
+				}
+				mmv.StoreMemberAndAttr(mappedStmt)
+				return mmv, nil
 			}
+			return nil, nil
 		}
 	}
-
-	// if isBag {
-	// mWorker.Logger.Debugf("@DecodeMappingValue | mappedVal: [%v], fromTable: [%s], cleanedFromAttr: [%s], fromAttr: [%s], found: [%v], isBag: [%v]", mappedVal, fromTable, cleanedFromAttr, fromAttr, found, isBag)
-	// }
-
-	return mappedVal, fromTable, cleanedFromAttr, ref, found, nil
 }
 
-func (mWorker *MigrationWorker) GetMappedData(toTable config.ToTable, node *DependencyNode, isBag, rawBag bool) (MappedData, error) {
+func (mWorker *MigrationWorker) GetMappedMemberData(toTable config.ToTable, node *DependencyNode) MappedMemberData {
 
-	data := MappedData{
-		cols:        "",
-		vals:        "",
-		orgCols:     "",
-		orgColsLeft: "",
-		srcTables:   make(map[string][]string),
-		undoAction:  new(transaction.UndoAction)}
+	newRowID := db.GetNewRowIDForTable(mWorker.DstDBConn, toTable.Table)
+	mappedMemberData := MappedMemberData{
+		ToID:   newRowID,
+		AppID:  mWorker.SrcAppConfig.AppID,
+		Data:   make(map[string]MappedMemberValue),
+		DBConn: mWorker.logTxn.DBconn,
+	}
+	mappedMemberData.SetMember(toTable.Table)
 
-	newRowId := db.GetNewRowIDForTable(mWorker.DstAppConfig.DBConn, toTable.Table)
-	data.UpdateData("id", "", "", newRowId)
-	// color.Red.Printf("Getting mapped data | %v | %v\n", toTable.Table, toTable.Mapping)
-	for toAttr, fromAttr := range toTable.Mapping {
-		// color.Red.Printf("Getting mapped data | toAttr : %v , fromAttr : %v  \n", toAttr, fromAttr)
-		if strings.EqualFold("id", toAttr) {
-			// fmt.Println("toAttr is id  ")
-			// if mWorker.mtype != BAGS && strings.Contains(fromAttr, "#REF") {
-			if strings.Contains(fromAttr, "#REF") {
-				// fmt.Println("fromAttr contains #REF  ")
-				assignedTabCol := mWorker.CleanMappingAttr(fromAttr)
-				args := strings.Split(assignedTabCol, ",")
-				hardRef := false
-				if strings.Contains(fromAttr, "#REFHARD") {
-					// fmt.Println("fromAttr contains #REFHARD  ")
-					hardRef = true
-				}
-				// color.Red.Printf("Creating reference | args[0] : %v , args[1] : %v , node.Data : %v , hardRef : %v  \n", args[0], args[1], node.Data, hardRef)
-				if toID, fromID, err := GetIDsFromNodeData(args[0], args[1], node.Data, hardRef); err == nil {
-					secondMemberTokens := strings.Split(args[1], ".")
-					firstMemberTokens := strings.Split(args[0], ".")
-					data.UpdateRefs(mWorker.SrcAppConfig.AppID, fromID, firstMemberTokens[0], firstMemberTokens[1], toID, secondMemberTokens[0], secondMemberTokens[1])
-				} else {
-					fmt.Printf("args[0]: '%v' \n", args[0])
-					fmt.Printf("toID: '%v' | fromID: '%v' \n", toID, fromID)
-					fmt.Printf("data: [%v] \n", node.Data)
-					mWorker.Logger.Fatal("@GetMappedData > id > GetIDs | ", err)
-					return data, err
-				}
-			} else {
-				// fmt.Println("fromAttr doesn't contain #REF  ")
+	for toMemberAttr, mappedStmt := range toTable.Mapping {
+		if mmv, err := mWorker.ResolveMappedStatement(mappedStmt, node.Data); err == nil && mmv != nil {
+			mmv.ToID = newRowID
+			if strings.EqualFold(toMemberAttr, "id") {
+				mmv.Value = mmv.ToID
 			}
-		} else if mappedValue, fromTable, cleanedFromAttr, ref, found, err := mWorker.DecodeMappingValue(fromAttr, node.Data, isBag, rawBag); err == nil {
-			if found {
-				if mappedValue != nil {
-					data.UpdateData(toAttr, cleanedFromAttr, fromTable, mappedValue)
-					if ref != nil {
-						data.refs = append(data.refs, *ref)
-					}
-					if len(fromTable) > 0 {
-						data.undoAction.AddOrgTable(fromTable)
-						data.undoAction.AddData(cleanedFromAttr, mappedValue)
-					}
-				} else {
-
-				}
-			} else {
-				data.orgColsLeft += fmt.Sprintf("%s,", cleanedFromAttr)
-			}
+			mappedMemberData.Data[toMemberAttr] = *mmv
+		} else if err != nil {
+			mWorker.Logger.Fatal(err)
 		} else {
-			mWorker.Logger.Fatalf("@DecodeMappingValue | fromAttr: %s | err: %s | Data: %v", fromAttr, err, node.Data)
+			mWorker.Logger.Tracef("%s.%s not resolved!", toTable.Table, toMemberAttr)
 		}
 	}
 
-	data.undoAction.AddDstTable(toTable.Table)
-	data.Trim(", ")
-
-	return data, nil
+	return mappedMemberData
 }
 
-func (mWorker *MigrationWorker) DeleteRow(node *DependencyNode) error {
+func (mWorker *MigrationWorker) DeleteNode(node *DependencyNode) error {
 	for _, tagMember := range node.Tag.Members {
 		idCol := fmt.Sprintf("%s.id", tagMember)
 		if nodeVal, ok := node.Data[idCol]; ok && nodeVal != nil {
@@ -712,25 +576,14 @@ func (mWorker *MigrationWorker) DeleteRow(node *DependencyNode) error {
 			if derr := db.ReallyDeleteRowFromAppDB(mWorker.tx.SrcTx, tagMember, srcID); derr != nil {
 				fmt.Println("@ERROR_DeleteRowFromAppDB", derr)
 				fmt.Println("@QARGS:", tagMember, srcID)
-				// mWorker.Logger.Fatal(derr)
+				mWorker.Logger.Fatal(derr)
 				return derr
 			}
-			if tagMemberID, err := db.TableID(mWorker.logTxn.DBconn, tagMember, mWorker.SrcAppConfig.AppID); err == nil {
-				if derr := db.UpdateLEvaluation(mWorker.logTxn.DBconn, tagMemberID, srcID, mWorker.logTxn.Txn_id); derr != nil {
-					fmt.Println("@ERROR_UpdateLEvaluation", derr)
-					fmt.Println("@QARGS:", tagMember, srcID, mWorker.logTxn.Txn_id)
-					mWorker.Logger.Fatal(derr)
-					return derr
-				}
-			} else {
-				mWorker.Logger.Fatal("@DeleteRow>TableID: ", err)
-			}
-
 		} else {
-			// log.Println("node.Data =>", node.Data)
 			mWorker.Logger.Tracef("@DeleteRow: '%v' not present or is null in node data! | %v", idCol, nodeVal)
 		}
 	}
+	log.Printf("%s node { %s } \n", color.FgRed.Render("Deleted"), node.Tag.Name)
 	return nil
 }
 
@@ -779,60 +632,19 @@ func (mWorker *MigrationWorker) HandleUnmappedMembersOfNode(mapping config.Mappi
 	return nil
 }
 
-func (mWorker *MigrationWorker) DeleteNode(mapping config.Mapping, node *DependencyNode) error {
-
-	if mWorker.mtype == DELETION {
-
-		if !mWorker.IsNodeDataEmpty(node.Data) {
-			if err := mWorker.SendNodeToBagWithOwnerID(node, mWorker.uid); err != nil {
-				fmt.Println(node.Tag.Name)
-				fmt.Println(node.Data)
-				mWorker.Logger.Fatal("@DeleteNode > SendNodeToBagWithOwnerID:", err)
-				return err
-			}
-		}
-
-		if err := mWorker.DeleteRow(node); err != nil {
-			fmt.Println(node.Tag.Name)
-			fmt.Println(node)
-			mWorker.Logger.Fatal("@DeleteNode > DeleteRow:", err)
-			return err
-		} else {
-			log.Println(fmt.Sprintf("%s node { %s }", color.FgRed.Render("Deleted"), node.Tag.Name))
-		}
-	}
-
-	return nil
-}
-
 func (mWorker *MigrationWorker) DeleteRoot(threadID int) error {
 
 	if err := mWorker.InitTransactions(); err != nil {
 		mWorker.Logger.Fatal("@DeleteRoot > InitTransactions", err)
 		return err
-	} else {
-		defer mWorker.tx.SrcTx.Rollback()
-		defer mWorker.tx.DstTx.Rollback()
-		defer mWorker.tx.StencilTx.Rollback()
 	}
-	if mapping, found := mWorker.FetchMappingsForNode(mWorker.Root); found {
-		if mWorker.mtype == NAIVE {
-			if err := mWorker.DeleteRow(mWorker.Root); err != nil {
-				mWorker.Logger.Fatal("@DeleteRoot:", err)
-				return err
-			}
-		} else if mWorker.mtype == DELETION {
-			if err := mWorker.DeleteNode(mapping, mWorker.Root); err != nil {
-				mWorker.Logger.Fatal("@DeleteRoot:", err)
-				return err
-			}
-		} else {
-			mWorker.Logger.Fatal("ATTEMPTED DELETION IN DISALLOWED MIGRATION TYPE!")
-		}
-	} else {
-		fmt.Println(mWorker.Root)
-		mWorker.Logger.Fatal("@DeleteRoot: Can't find mappings for root | ", mapping, found)
+	defer mWorker.RollbackTransactions()
+
+	if err := mWorker.DeleteNode(mWorker.Root); err != nil {
+		mWorker.Logger.Fatal("@DeleteRoot:", err)
+		return err
 	}
+
 	if err := mWorker.CommitTransactions(); err != nil {
 		mWorker.Logger.Fatal("@DeleteRoot: ERROR COMMITING TRANSACTIONS! ")
 		return err
@@ -863,7 +675,7 @@ func (mWorker *MigrationWorker) CheckRawBag(node *DependencyNode) (bool, error) 
 	return false, nil
 }
 
-func (mWorker *MigrationWorker) MigrateNode(mapping config.Mapping, node *DependencyNode) (bool, error) {
+func (mWorker *MigrationWorker) HandleBagsMigration(mapping config.Mapping, node *DependencyNode) (bool, error) {
 
 	migrated, rawBag, isBag := false, false, false
 
@@ -886,12 +698,12 @@ func (mWorker *MigrationWorker) MigrateNode(mapping config.Mapping, node *Depend
 	for _, toTable := range mapping.ToTables {
 
 		if !mWorker.ValidateMappingConditions(toTable, node) {
-			mWorker.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Not Validated", toTable.Table)
+			mWorker.Logger.Infof("toTable: %s | Mapping Conditions NOT Validated\n", toTable.Table)
 			continue
 		} else {
-			// mWorker.Logger.Infof("toTable: %s | ValidateMappingConditions | Mapping Conditions Validated", toTable.Table)
+			mWorker.Logger.Infof("toTable: %s | Mapping Conditions Validated\n", toTable.Table)
 		}
-		fmt.Println(".........................................")
+
 		if mappedData, mappedDataErr := mWorker.GetMappedData(toTable, node, isBag, rawBag); mappedDataErr != nil {
 			mWorker.Logger.Debug(node.Data)
 			mWorker.Logger.Debug(mappedData)
@@ -1070,7 +882,149 @@ func (mWorker *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 	}
 }
 
+func (mWorker *MigrationWorker) MigrateMemberData(mmd *MappedMemberData, node *DependencyNode) error {
+
+	colStr, phStr, valList := mmd.GetQueryArgs()
+
+	if id, err := db.InsertRowIntoAppDB(mWorker.tx.DstTx, mmd.Member, colStr, phStr, valList); err == nil {
+		mWorker.Logger.Infof("Inserted into '%s' with ID '%v', ToID: '%v' \ncols | %s\nvals | %v", mmd.ToMember, id, mmd.ToID, colStr, valList)
+		return nil
+	} else {
+		mWorker.Logger.Infof("Failed to insert new row into '%s' | err: %s \n", mmd.Member, err)
+		mWorker.Logger.Infof("Args | [%s], [%s], [%v]  \n", colStr, phStr, valList)
+		return err
+	}
+}
+
+func (mWorker *MigrationWorker) CreateAttributeRows(mmd *MappedMemberData) error {
+
+	for toAttr, mmv := range mmd.Data {
+		var fromValue interface{}
+		if strings.EqualFold(toAttr, "id") {
+			fromValue = mmv.FromID
+		} else if mmv.Ref != nil {
+			fromValue = mmv.Value
+		} else {
+			continue
+		}
+		if err := db.InsertIntoAttrTable(mWorker.tx.StencilTx, mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttr, toAttr, fromValue, mmv.Value, fmt.Sprint(mWorker.logTxn.Txn_id)); err != nil {
+			mWorker.Logger.Debug("Args | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttr, toAttr, fromValue, mmv.Value)
+			mWorker.Logger.Fatal("Unable to insert into attrTable")
+			return err
+		} else {
+			color.LightBlue.Printf("New AttrRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttr, toAttr, fromValue, mmv.Value)
+		}
+	}
+	return nil
+}
+
+func (mWorker *MigrationWorker) CreateReferenceRows(mmd *MappedMemberData) error {
+
+	for toAttr, mmv := range mmd.Data {
+		if mmv.Ref == nil {
+			continue
+		}
+		if err := db.CreateNewReferenceV2(mWorker.tx.StencilTx, mmv.Ref.appID, mmv.Ref.fromMember, mmv.Ref.fromID, mmv.Ref.fromVal, mmv.Ref.toMember, mmv.Ref.toVal, mWorker.logTxn.Txn_id, mmv.Ref.fromAttr, mmv.Ref.toAttr); err != nil {
+			mWorker.Logger.Debugf("App: %s, FromMember: %s, FromAttr: %s, FromID: %v, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", mmv.Ref.appID, mmv.Ref.fromMember, mmv.Ref.fromAttr, mmv.Ref.fromID, mmv.Ref.fromVal, mmv.Ref.toMember, mmv.Ref.toAttr, mmv.Ref.toVal)
+			mWorker.Logger.Debug(mmv.Ref)
+			mWorker.Logger.Fatal(err)
+		} else {
+			color.LightBlue.Printf("App: %s, FromMember: %s, FromAttr: %s, FromID: %v, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s", mmv.Ref.appID, mmv.Ref.fromMember, mmv.Ref.fromAttr, mmv.Ref.fromID, mmv.Ref.fromVal, mmv.Ref.toMember, mmv.Ref.toAttr, mmv.Ref.toVal)
+		}
+	}
+}
+
+func (mWorker *MigrationWorker) HandleNodeDeletion(node *DependencyNode, rootCheck bool) error {
+
+	if mWorker.mtype == INDEPENDENT || mWorker.mtype == CONSISTENT {
+		return nil
+	}
+
+	if rootCheck && strings.EqualFold(node.Tag.Name, "root") {
+		return nil
+	}
+
+	if mWorker.mtype == DELETION {
+		if !node.IsEmptyExcept() {
+			if err := mWorker.SendNodeToBagWithOwnerID(node, mWorker.uid); err != nil {
+				fmt.Println(node.Tag.Name)
+				fmt.Println(node.Data)
+				mWorker.Logger.Fatal("@DeleteNode > SendNodeToBagWithOwnerID:", err)
+				return err
+			}
+			log.Printf("%s { %s } | Owner ID: %v \n", color.FgLightYellow.Render("BAG"), node.Tag.Name, mWorker.uid)
+		}
+	}
+
+	if err := mWorker.DeleteNode(node); err != nil {
+		mWorker.Logger.Fatal("@MigrateNode > DeleteNode:", err)
+		return err
+	}
+
+	return nil
+}
+
 func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, error) {
+
+	if mapping, found := mWorker.FetchMappingsForNode(node); found {
+		tagMembers := node.Tag.GetTagMembers()
+		if helper.Sublist(tagMembers, mapping.FromTables) {
+
+			var mappedMemberData []MappedMemberData
+
+			for _, toTable := range mapping.ToTables {
+
+				// Merge data from bags
+				mappedMemberDatum := mWorker.GetMappedMemberData(toTable, node)
+
+				if !mappedMemberDatum.ValidateMappingConditions(toTable.Conditions, node.Data) {
+					mWorker.Logger.Info("Mapping conditions not validated!")
+					mWorker.Logger.Debug("mappedMemberDatum | ", mappedMemberDatum)
+					mWorker.Logger.Debug("toTable.Conditions | ", toTable.Conditions)
+					continue
+				}
+
+				if !mappedMemberDatum.ValidateMappedData() {
+					mWorker.Logger.Info("Mapped data not validated!")
+					mWorker.Logger.Debug("mappedMemberDatum | ", mappedMemberDatum)
+					continue
+				}
+
+				if err := mWorker.MigrateMemberData(mappedMemberDatum, node); err != nil {
+					mWorker.Logger.Fatal(err)
+				}
+
+				if err := mWorker.CreateAttributeRows(mappedMemberDatum); err != nil {
+					mWorker.Logger.Fatal(err)
+				}
+
+				// Check all different reference creation scenarios
+				if err := mWorker.CreateReferenceRows(mappedMemberDatum); err != nil {
+					mWorker.Logger.Fatal(err)
+				}
+
+				mappedMemberData = append(mappedMemberData, mappedMemberDatum)
+			}
+
+			node.DeleteMappedDataFromNode(mappedMemberData)
+
+			if err := mWorker.HandleNodeDeletion(node, true); err != nil {
+				mWorker.Logger.Fatal(err)
+			}
+
+		} else {
+			mWorker.Logger.Fatal("Waiting List Case!")
+			return false, errors.New("Waiting List Case")
+		}
+	} else {
+		if strings.EqualFold(mWorker.mtype, BAGS) || !strings.EqualFold(mWorker.mtype, DELETION) {
+			return false, fmt.Errorf("no mapping found for node: %s", node.Tag.Name)
+		}
+		return false, mWorker.HandleUnmappedNode(node)
+	}
+}
+
+func (mWorker *MigrationWorker) defunct__HandleMigration(node *DependencyNode) (bool, error) {
 
 	if mapping, found := mWorker.FetchMappingsForNode(node); found {
 		tagMembers := node.Tag.GetTagMembers()
@@ -1226,4 +1180,300 @@ func (mWorker *MigrationWorker) CallMigrationX(node *DependencyNode, threadID in
 	}
 	mWorker.visitedNodes.MarkAsVisited(node)
 	return nil
+}
+
+func (mWorker *MigrationWorker) CloseDBConns() {
+
+	mWorker.SrcAppConfig.CloseDBConns()
+	mWorker.DstAppConfig.CloseDBConns()
+}
+
+func (mWorker *MigrationWorker) RenewDBConn(isBlade ...bool) {
+	mWorker.CloseDBConns()
+	mWorker.logTxn.DBconn.Close()
+	mWorker.logTxn.DBconn = db.GetDBConn(db.STENCIL_DB)
+	mWorker.SrcAppConfig.DBConn = db.GetDBConn(mWorker.SrcAppConfig.AppName)
+	mWorker.SrcAppConfig.DBConn = db.GetDBConn(mWorker.DstAppConfig.AppName, isBlade...)
+}
+
+func (mWorker *MigrationWorker) UserID() string {
+	return mWorker.uid
+}
+
+func (mWorker *MigrationWorker) MigrationID() int {
+	return mWorker.logTxn.Txn_id
+}
+
+func (mWorker *MigrationWorker) GetMemberDataFromNode(member string, nodeData DataMap) DataMap {
+	memberData := make(DataMap)
+	for col, val := range nodeData {
+		colTokens := strings.Split(col, ".")
+		colMember := colTokens[0]
+		// colAttr := colTokens[1]
+		if !strings.Contains(col, ".display_flag") && strings.Contains(colMember, member) && val != nil {
+			memberData[col] = val
+		}
+	}
+	return memberData
+}
+
+func (mWorker *MigrationWorker) GetTagQL(tag config.Tag) string {
+
+	sql := "SELECT %s FROM %s "
+
+	if len(tag.InnerDependencies) > 0 {
+		cols := ""
+		joinMap := tag.CreateInDepMap()
+		seenMap := make(map[string]bool)
+		joinStr := ""
+
+		for fromTable, toTablesMap := range joinMap {
+			if _, ok := seenMap[fromTable]; !ok {
+				if len(joinStr) > 0 {
+					joinStr += fmt.Sprintf(" FULL JOIN ")
+				}
+				joinStr += fmt.Sprintf("\"%s\"", fromTable)
+				_, colStr := db.GetColumnsForTable(mWorker.SrcAppConfig.DBConn, fromTable)
+				cols += colStr + ","
+			}
+			for toTable, conditions := range toTablesMap {
+				if conditions != nil {
+					conditions = append(conditions, joinMap[toTable][fromTable]...)
+					if joinMap[toTable][fromTable] != nil {
+						joinMap[toTable][fromTable] = nil
+					}
+					if _, ok := seenMap[toTable]; !ok {
+						joinStr += fmt.Sprintf(" FULL JOIN \"%s\" ", toTable)
+					}
+					joinStr += fmt.Sprintf("  ON %s ", strings.Join(conditions, " AND "))
+					_, colStr := db.GetColumnsForTable(mWorker.SrcAppConfig.DBConn, toTable)
+					cols += colStr + ","
+					seenMap[toTable] = true
+				}
+			}
+			seenMap[fromTable] = true
+		}
+		sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr)
+	} else {
+		table := tag.Members["member1"]
+		_, cols := db.GetColumnsForTable(mWorker.SrcAppConfig.DBConn, table)
+		sql = fmt.Sprintf(sql, cols, table)
+	}
+	return sql
+}
+
+func (mWorker *MigrationWorker) GetTagQLForBag(tag config.Tag) string {
+
+	if tableIDs, err := tag.MemberIDs(mWorker.logTxn.DBconn, mWorker.SrcAppConfig.AppID); err != nil {
+		log.Fatal("@GetTagQLForBag: ", err)
+	} else {
+
+		sql := "SELECT array_to_json(array_remove(array[%s], NULL)) as pks_json, %s as json_data FROM %s "
+
+		if len(tag.InnerDependencies) > 0 {
+			idCols, cols := "", ""
+			joinMap := tag.CreateInDepMap(true)
+			// log.Fatalln(joinMap)
+			seenMap := make(map[string]bool)
+			joinStr := ""
+			for fromTable, toTablesMap := range joinMap {
+				// log.Print(fromTable, toTablesMap)
+				if _, ok := seenMap[fromTable]; !ok {
+					if len(joinStr) > 0 {
+						joinStr += fmt.Sprintf(" FULL JOIN ")
+					}
+					joinStr += fmt.Sprintf("data_bags %s", fromTable)
+					idCols += fmt.Sprintf("%s.pk,", fromTable)
+					cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", fromTable)
+				}
+				for toTable, conditions := range toTablesMap {
+					if conditions != nil {
+						conditions = append(conditions, joinMap[toTable][fromTable]...)
+						if joinMap[toTable][fromTable] != nil {
+							joinMap[toTable][fromTable] = nil
+						}
+						if _, ok := seenMap[toTable]; !ok {
+							joinStr += fmt.Sprintf(" FULL JOIN data_bags %s ", toTable)
+						}
+						joinStr += fmt.Sprintf(" ON %s.member = %s AND %s.member = %s AND %s ", fromTable, tableIDs[fromTable], toTable, tableIDs[toTable], strings.Join(conditions, " AND "))
+						cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", toTable)
+						idCols += fmt.Sprintf("%s.pk,", toTable)
+						seenMap[toTable] = true
+					}
+				}
+				seenMap[fromTable] = true
+			}
+			sql = fmt.Sprintf(sql, strings.Trim(idCols, ","), strings.Trim(cols, ",|"), joinStr)
+		} else {
+			table := tag.Members["member1"]
+			joinStr := fmt.Sprintf("data_bags %s", table)
+			idCols := fmt.Sprintf("%s.pk", table)
+			cols := fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ", table)
+			sql = fmt.Sprintf(sql, idCols, cols, joinStr)
+		}
+
+		return sql
+	}
+	return ""
+}
+
+func (mWorker *MigrationWorker) InitTransactions() error {
+	var err error
+	mWorker.tx.SrcTx, err = mWorker.SrcAppConfig.DBConn.Begin()
+	if err != nil {
+		log.Fatal("Error creating Source DB Transaction! ", err)
+		return err
+	}
+	mWorker.tx.DstTx, err = mWorker.DstAppConfig.DBConn.Begin()
+	if err != nil {
+		log.Fatal("Error creating Dst DB Transaction! ", err)
+		return err
+	}
+	mWorker.tx.StencilTx, err = mWorker.logTxn.DBconn.Begin()
+	if err != nil {
+		log.Fatal("Error creating Stencil DB Transaction! ", err)
+		return err
+	}
+	return nil
+}
+
+func (mWorker *MigrationWorker) CommitTransactions() error {
+	// log.Fatal("@CommitTransactions: About to Commit!")
+	if err := mWorker.tx.SrcTx.Commit(); err != nil {
+		log.Fatal("Error committing Source DB Transaction! ", err)
+		return err
+	}
+	if err := mWorker.tx.DstTx.Commit(); err != nil {
+		log.Fatal("Error committing Destination DB Transaction! ", err)
+		return err
+	}
+	if err := mWorker.tx.StencilTx.Commit(); err != nil {
+		log.Fatal("Error committing Stencil DB Transaction! ", err)
+		return err
+	}
+	return nil
+}
+
+func (mWorker *MigrationWorker) RollbackTransactions() error {
+	if err := mWorker.tx.SrcTx.Rollback(); err != nil {
+		log.Fatal("Error rolling back Source DB Transaction! ", err)
+		return err
+	}
+	if err := mWorker.tx.DstTx.Rollback(); err != nil {
+		log.Fatal("Error rolling back Dst DB Transaction! ", err)
+		return err
+	}
+	if err := mWorker.tx.StencilTx.Rollback(); err != nil {
+		log.Fatal("Error rolling back Stencil DB Transaction! ", err)
+		return err
+	}
+	mWorker.Logger.Warn("Transactions Rolled Back!")
+	return nil
+}
+
+func (mWorker *MigrationWorker) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.MappedApp, config.Mapping, bool) {
+
+	var combinedMapping config.Mapping
+	var appMappings config.MappedApp
+	if srcApp == dstApp {
+		appMappings = *config.GetSelfSchemaMappings(mWorker.logTxn.DBconn, srcAppID, srcApp)
+	} else {
+		appMappings = *config.GetSchemaMappingsFor(srcApp, dstApp)
+	}
+	mappingFound := false
+	for _, mapping := range appMappings.Mappings {
+		if mappedTables := helper.IntersectString([]string{srcMember}, mapping.FromTables); len(mappedTables) > 0 {
+			for _, toTableMapping := range mapping.ToTables {
+				if strings.EqualFold(dstMember, toTableMapping.Table) {
+					combinedMapping.FromTables = append(combinedMapping.FromTables, mapping.FromTables...)
+					combinedMapping.ToTables = append(combinedMapping.ToTables, mapping.ToTables...)
+					mappingFound = true
+				}
+			}
+
+		}
+	}
+	// fmt.Println(">>>>>>>>", srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember, " | Mappings | ", combinedMapping)
+	return appMappings, combinedMapping, mappingFound
+}
+
+func (mWorker *MigrationWorker) CleanMappingAttr(attr string) string {
+	cleanedAttr := strings.ReplaceAll(attr, "(", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, ")", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#ASSIGN", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#FETCH", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#REFHARD", "")
+	cleanedAttr = strings.ReplaceAll(cleanedAttr, "#REF", "")
+	return cleanedAttr
+}
+
+func (mWorker *MigrationWorker) FetchMappedAttribute(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember, dstAttr string) (string, bool) {
+
+	var appMappings config.MappedApp
+	if srcApp == dstApp {
+		appMappings = *config.GetSelfSchemaMappings(mWorker.logTxn.DBconn, srcAppID, srcApp)
+	} else {
+		appMappings = *config.GetSchemaMappingsFor(srcApp, dstApp)
+	}
+	for _, mapping := range appMappings.Mappings {
+		if mappedTables := helper.IntersectString([]string{srcMember}, mapping.FromTables); len(mappedTables) > 0 {
+			for _, toTableMapping := range mapping.ToTables {
+				if strings.EqualFold(dstMember, toTableMapping.Table) {
+					for toAttr, fromAttr := range toTableMapping.Mapping {
+						if toAttr == dstAttr {
+							cleanedAttr := mWorker.CleanMappingAttr(fromAttr)
+							cleanedAttrTokens := strings.Split(cleanedAttr, ",")
+							cleanedAttrTabCol := strings.Split(cleanedAttrTokens[0], ".")
+							return cleanedAttrTabCol[1], true
+						}
+					}
+				}
+			}
+		}
+	}
+	return "", false
+}
+
+func (mWorker *MigrationWorker) FetchMappingsForNode(node *DependencyNode) (config.Mapping, bool) {
+	var combinedMapping config.Mapping
+	tagMembers := node.Tag.GetTagMembers()
+	mappingFound := false
+	for _, mapping := range mWorker.mappings.Mappings {
+		if mappedTables := helper.IntersectString(tagMembers, mapping.FromTables); len(mappedTables) > 0 {
+			combinedMapping.FromTables = append(combinedMapping.FromTables, mapping.FromTables...)
+			combinedMapping.ToTables = append(combinedMapping.ToTables, mapping.ToTables...)
+			mappingFound = true
+		}
+	}
+	return combinedMapping, mappingFound
+}
+
+func (mWorker *MigrationWorker) GetUserIDAppIDFromPreviousMigration(currentAppID, currentUID string) (string, string, error) {
+
+	currentRootMemberID := db.GetAppRootMemberID(mWorker.logTxn.DBconn, currentAppID)
+
+	currentUIDInt, err := strconv.ParseInt(currentUID, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Getting previous migration | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
+
+	if IDRows, err := mWorker.GetRowsFromIDTable(currentAppID, currentRootMemberID, currentUIDInt, false); err == nil {
+		fmt.Println(IDRows)
+		if len(IDRows) > 0 {
+			for _, IDRow := range IDRows {
+				prevRootMemberID := db.GetAppRootMemberID(mWorker.logTxn.DBconn, IDRow.FromAppID)
+				if strings.EqualFold(IDRow.FromMemberID, prevRootMemberID) {
+					fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", IDRow.FromAppID, IDRow.FromID, IDRow.FromMemberID)
+					return IDRow.FromAppID, fmt.Sprint(IDRow.FromID), nil
+				}
+			}
+		}
+		fmt.Printf("@GetUserIDAppIDFromPreviousMigration | No previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
+		return "", "", nil
+	} else {
+		log.Fatalf("@GetUserIDAppIDFromPreviousMigration | App: '%s', UID: '%v', rootMemberID: '%s' | err => %v \n", currentAppID, currentUIDInt, currentRootMemberID, err)
+		return "", "", fmt.Errorf("no previous migration user and app id found for => currentAppID: %s, currentUID: %v", currentAppID, currentUIDInt)
+	}
 }

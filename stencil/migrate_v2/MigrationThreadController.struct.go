@@ -3,24 +3,18 @@ package migrate_v2
 import (
 	"fmt"
 	"log"
-	"os"
 	config "stencil/config/v2"
 	"stencil/db"
+	"stencil/helper"
 	"stencil/transaction"
 	"strings"
 	"time"
-
-	logg "github.com/withmandala/go-log"
 )
 
 // Init : Initializes the thread controller
 func (mThread *MigrationThreadController) Init() {
 
-	mThread.Logger = logg.New(os.Stderr)
-
-	mThread.Logger.WithTimestamp()
-	mThread.Logger.WithColor()
-	mThread.Logger.WithDebug()
+	mThread.Logger = helper.CreateLogger(mThread.LoggerDebugFlag)
 
 	if mThread.enableBags {
 		mThread.Logger.Info("Bags: Enabled")
@@ -101,10 +95,12 @@ func (mThread *MigrationThreadController) Init() {
 	}
 
 	mThread.Logger.Info("Migration thread controller intialized!")
+
+	fmt.Print("========================================================================\n\n")
 }
 
 // CreateMigrationWorker : Creates and returns a new migration worker
-func (mThread MigrationThreadController) CreateMigrationWorker(threadID int) MigrationWorker {
+func (mThread *MigrationThreadController) CreateMigrationWorker(threadID int) MigrationWorker {
 
 	mThread.Logger.Info("Creating a new migration worker for thread: ", threadID)
 
@@ -127,12 +123,9 @@ func (mThread MigrationThreadController) CreateMigrationWorker(threadID int) Mig
 		logTxn:       &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
 		mtype:        mThread.MType,
 		visitedNodes: VisitedNodes{},
-		Logger:       logg.New(os.Stderr)}
+		Logger:       helper.CreateLogger(mThread.LoggerDebugFlag)}
 
 	mWorker.visitedNodes.Init()
-	mWorker.Logger.WithTimestamp()
-	mWorker.Logger.WithColor()
-	mWorker.Logger.WithDebug()
 
 	if err := mWorker.FetchRoot(threadID); err != nil {
 		mWorker.Logger.Fatal(err)
@@ -140,11 +133,16 @@ func (mThread MigrationThreadController) CreateMigrationWorker(threadID int) Mig
 
 	mWorker.FTPClient = GetFTPClient()
 
+	mThread.Logger.Info("Migration worker created!")
+	fmt.Print("========================================================================\n\n")
+
 	return mWorker
 }
 
 // CreateBagWorker : Creates and returns a new migration worker for data bags
-func (mThread MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppID string, threadID int) MigrationWorker {
+func (mThread *MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppID string, threadID int) MigrationWorker {
+
+	mThread.Logger.Infof("Creating a new bag worker for thread: %d | uid: %s, srcApp: %s, dstApp: %s \n", threadID, uid, srcAppID, dstAppID)
 
 	srcApp, err := db.GetAppNameByAppID(mThread.stencilDB, srcAppID)
 	if err != nil {
@@ -186,14 +184,14 @@ func (mThread MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppID
 		logTxn:       &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
 		mtype:        BAGS,
 		visitedNodes: VisitedNodes{},
-		Logger:       logg.New(os.Stderr)}
+		Logger:       helper.CreateLogger(mThread.LoggerDebugFlag)}
 
 	mWorker.visitedNodes.Init()
-	mWorker.Logger.WithTimestamp()
-	mWorker.Logger.WithColor()
-	mWorker.Logger.WithDebug()
 
 	mWorker.FTPClient = GetFTPClient()
+
+	mThread.Logger.Info("Bag worker created!")
+	fmt.Print("========================================================================\n\n")
 
 	return mWorker
 }
@@ -306,7 +304,7 @@ func (mThread *MigrationThreadController) Run() error {
 	for threadResponse := range mThread.commitChannel {
 		finishedThreads = append(finishedThreads, fmt.Sprint(threadResponse.threadID))
 		mThread.Logger.Infof("THREAD # %v FINISHED WORKING!", threadResponse.threadID)
-		mThread.Logger.Info("Finished Threads | ", strings.Join(finishedThreads, ","))
+		mThread.Logger.Info("Finished Thread IDs | ", strings.Join(finishedThreads, ","))
 		mThread.size += threadResponse.size
 	}
 
@@ -322,4 +320,7 @@ func (mThread *MigrationThreadController) Stop() {
 		mThread.Logger.Fatal("DB error in FinishMigration")
 	}
 	mThread.stencilDB.Close()
+
+	mThread.Logger.Info("Migration Finished!")
+	fmt.Print("========================================================================\n\n")
 }
