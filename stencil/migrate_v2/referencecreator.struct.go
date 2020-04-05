@@ -11,15 +11,6 @@ import (
 	"github.com/gookit/color"
 )
 
-func (self *MigrationWorker) AddMappedReferencesIfNotExist(refs []MappingRef) error {
-	for _, ref := range refs {
-		if err := self._CreateMappedReference(ref, true); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (self *MigrationWorker) AddMappedReferences(refs []MappingRef) error {
 
 	for _, ref := range refs {
@@ -28,39 +19,6 @@ func (self *MigrationWorker) AddMappedReferences(refs []MappingRef) error {
 		}
 	}
 	return nil
-}
-
-func (self *MigrationWorker) _CheckReferenceExistsInPreviousMigrations(idRows []IDRow, refAttr string) (bool, error) {
-	if len(idRows) > 0 {
-		for _, idRow := range idRows {
-			if idRow.ToID != 0 {
-				if foundAttr, isFound := self.FetchMappedAttribute(idRow.FromAppName, idRow.FromAppID, idRow.ToAppName, idRow.ToAppID, idRow.FromMember, idRow.ToMember, refAttr); isFound {
-					self.Logger.Debugf("@_CheckReferenceExistsInPreviousMigrations: Mapped Attr Found | FromAttr: %s | FromApp: %s, FromMember: %s, ToApp: %s, ToMember: %s, ToAttr: %s \n", foundAttr, idRow.FromAppName, idRow.FromMember, idRow.ToAppName, idRow.ToMember, refAttr)
-					refAttr = foundAttr
-				} else {
-					self.Logger.Debugf("@_CheckReferenceExistsInPreviousMigrations: No Mapped Attr found | FromApp: %s, FromMember: %s, ToApp: %s, ToMember: %s, ToAttr: %s \n", idRow.FromAppName, idRow.FromMember, idRow.ToAppName, idRow.ToMember, refAttr)
-				}
-			}
-			fmt.Println("@_CheckReferenceExistsInPreviousMigrations: IDRow | ", idRow)
-			fmt.Printf("@_CheckReferenceExistsInPreviousMigrations: Checking Reference for | App: %v, Member: %v, ID: %v, Attr: %v\n", idRow.FromAppID, idRow.FromMemberID, idRow.FromID, refAttr)
-			if db.CheckIfReferenceExists(self.logTxn.DBconn, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, refAttr) {
-				log.Printf("@_CheckReferenceExistsInPreviousMigrations: Reference Already Exists | App: %v, Member: %v, ID: %v, Attr: %v\n", idRow.FromAppID, idRow.FromMemberID, idRow.FromID, refAttr)
-				return true, nil
-			}
-			fmt.Printf("@_CheckReferenceExistsInPreviousMigrations: Reference doesn't exist | App: %v, Member: %v, ID: %v, Attr: %v\n", idRow.FromAppID, idRow.FromMemberID, idRow.FromID, refAttr)
-			fmt.Printf("@_CheckReferenceExistsInPreviousMigrations: Getting IDRows | App: %v, Member: %v, ID: %v, getFrom: %v\n", idRow.FromAppID, idRow.FromMemberID, idRow.FromID, false)
-			if newIDRows, err := self.GetRowsFromIDTable(idRow.FromAppID, idRow.FromMemberID, idRow.FromID, false); err == nil {
-				if exists, err := self._CheckReferenceExistsInPreviousMigrations(newIDRows, refAttr); err == nil && exists {
-					return exists, err
-				}
-			} else {
-				self.Logger.Fatal(err)
-			}
-		}
-	} else {
-		log.Println("@_CheckReferenceExistsInPreviousMigrations: No More IDRows | ", idRows)
-	}
-	return false, nil
 }
 
 func (self *MigrationWorker) _CreateMappedReference(ref MappingRef, checkForExistence bool) error {
@@ -88,23 +46,6 @@ func (self *MigrationWorker) _CreateMappedReference(ref MappingRef, checkForExis
 	if len(ref.toVal) == 0 {
 		log.Println("@_CreateMappedReference: Unable to CreateNewReference | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromVal, ref.toMember, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 		return nil
-	}
-
-	if checkForExistence || ref.mergedFromBag {
-		idRows := []IDRow{IDRow{
-			FromAppID:    ref.appID,
-			FromMemberID: dependeeMemberID,
-			FromMember:   ref.fromMember,
-			FromID:       0}}
-		// FromID:       ref.fromVal}}
-
-		if exists, err := self._CheckReferenceExistsInPreviousMigrations(idRows, ref.fromAttr); err == nil && exists {
-			log.Println("@_CreateMappedReference: Reference Indeed Already Exists | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromVal, ref.toMember, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
-			return nil
-		} else if err != nil {
-			log.Fatal("@_CreateMappedReference > _CheckReferenceExistsInPreviousMigrations | Err: ", err)
-		}
-		log.Println("@_CreateMappedReference: Reference Doesn't Already Exist | ", ref.appID, ref.fromMember, dependeeMemberID, ref.fromVal, ref.toMember, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr)
 	}
 
 	// if err := db.CreateNewReference(self.tx.StencilTx, ref.appID, dependeeMemberID, ref.fromVal, depOnMemberID, ref.toVal, fmt.Sprint(self.logTxn.Txn_id), ref.fromAttr, ref.toAttr); err != nil {

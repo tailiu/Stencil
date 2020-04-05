@@ -37,16 +37,46 @@ func (mmd MappedMemberData) ValidateMappedData() bool {
 	return false
 }
 
-func (mmd MappedMemberData) SetMember(table string) {
+func (mmd *MappedMemberData) SetMember(table string) {
 	mmd.ToMember = table
 	if mmd.DBConn == nil {
 		log.Fatal("@mmd.SetMember: DBConn not set!")
 	} else {
-		if tableID, err := db.TableID(mmd.DBConn, mmd.ToMember, mmd.AppID); err == nil {
+		if tableID, err := db.TableID(mmd.DBConn, mmd.ToMember, mmd.ToAppID); err == nil {
 			mmd.ToMemberID = tableID
 		} else {
-			fmt.Println(mmd.ToMember, mmd.AppID)
+			fmt.Println(mmd.ToMember, mmd.ToAppID)
 			log.Fatal("@SetMember: ", err)
 		}
 	}
+}
+
+func (mmd MappedMemberData) SrcTables() []Member {
+	var srcTables []Member
+	added := make(map[string]bool)
+	for _, mmv := range mmd.Data {
+		if _, ok := added[mmv.FromMemberID]; !ok {
+			srcTables = append(srcTables, Member{ID: mmv.FromMemberID, Name: mmv.FromMember})
+		}
+		added[mmv.FromMemberID] = true
+	}
+	return srcTables
+}
+
+func (mmd MappedMemberData) ToCols() []string {
+	var toCols []string
+	for toCol := range mmd.Data {
+		toCols = append(toCols, toCol)
+	}
+	return toCols
+}
+
+func (mmd MappedMemberData) FromCols(table string) []string {
+	var fromCols []string
+	for _, mmv := range mmd.Data {
+		if strings.EqualFold(mmv.FromMember, table) {
+			fromCols = append(fromCols, mmv.FromAttr)
+		}
+	}
+	return fromCols
 }

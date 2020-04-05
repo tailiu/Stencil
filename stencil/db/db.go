@@ -211,9 +211,16 @@ func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, src
 }
 
 func InsertIntoAttrTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcAttr, dstAttr, srcVal, dstVal, migrationID interface{}) error {
-	query := "INSERT INTO identity_table (from_app, from_member, from_id, to_app, to_member, to_id, from_attr, to_attr, from_val, to_val, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);"
-	_, err := tx.Exec(query, srcApp, srcTable, srcID, dstApp, dstTable, dstID, srcAttr, dstAttr, srcVal, dstVal, migrationID)
-	return err
+	query := fmt.Sprintf(
+		"INSERT INTO attribute_changes (from_app, from_member, from_id, to_app, to_member, to_id, from_attr, to_attr, from_val, to_val, migration_id)"+
+			"VALUES ('%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v');",
+		srcApp, srcTable, srcID, dstApp, dstTable, dstID, srcAttr, dstAttr, srcVal, dstVal, migrationID)
+	if _, err := tx.Exec(query); err != nil {
+		log.Println(err)
+		log.Fatal(query)
+		return err
+	}
+	return nil
 }
 
 func _DropAndRecreateDB(dbConn *sql.DB, dbname string) error {
@@ -379,9 +386,9 @@ func CreateNewReference(tx *sql.Tx, app, fromMember string, fromID int64, toMemb
 	return err
 }
 
-func CreateNewReferenceV2(tx *sql.Tx, app, fromMember string, fromID int64, fromVal string, toMember string, toVal string, migration_id, fromReference, toReference string) error {
+func CreateNewReferenceV2(tx *sql.Tx, app, fromMember string, fromVal string, toMember string, toVal string, migration_id, fromReference, toReference string) error {
 
-	query := fmt.Sprintf("INSERT INTO reference_table_v2 (app, from_member, from_id, from_val, from_reference, to_member, to_val, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromID, fromVal, fromReference, toMember, toVal, toReference, migration_id)
+	query := fmt.Sprintf("INSERT INTO reference_table_v2 (app, from_member, from_val, from_attr, to_member, to_val, to_attr, migration_id) VALUES ('%s', '%s', '%s', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromVal, fromReference, toMember, toVal, toReference, migration_id)
 
 	_, err := tx.Exec(query)
 	if err != nil {
@@ -572,6 +579,20 @@ func TableID(dbConn *sql.DB, table, app string) (string, error) {
 		} else {
 			fmt.Println(fmt.Sprintf("@db.TableID | Args | table: %s| app: %s", table, app))
 			return "", errors.New("Something bad with the returned result!")
+		}
+	} else {
+		return "", err
+	}
+}
+
+func AttrID(dbConn *sql.DB, tableID, attrName string) (string, error) {
+	sql := fmt.Sprintf("SELECT pk FROM app_schemas WHERE table_id = '%s' and column_name = '%s'", tableID, attrName)
+	if res, err := DataCall1(dbConn, sql); err == nil {
+		if pk, ok := res["pk"]; ok {
+			return fmt.Sprint(pk), nil
+		} else {
+			fmt.Println(fmt.Sprintf("@db.AttrID | Args | table: %s |  attr: %s", tableID, attrName))
+			return "", errors.New("db.AttrID: Something bad with the returned result!")
 		}
 	} else {
 		return "", err

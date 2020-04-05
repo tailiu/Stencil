@@ -7,3 +7,5 @@ const (
 	BAGS        = "4"
 	NAIVE       = "5"
 )
+
+const STENCIL_NULL = "-1"

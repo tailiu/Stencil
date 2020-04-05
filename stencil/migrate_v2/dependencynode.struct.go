@@ -247,22 +247,6 @@ func (node *DependencyNode) DeleteMappedDatumFromNode(mappedMemberDatum MappedMe
 	}
 }
 
-func (node *DependencyNode) IsEmptyExcept() {
-	exceptions := []string{".id", ".display_flag"}
-	for key, val := range node.Data {
-		if val == nil {
-			continue
-		}
-		isException := false
-		for _, exception := range exceptions {
-			if strings.Contains(key, exceptions) {
-				isException = true
-				break
-			}
-		}
-		if !isException {
-			return false
-		}
-	}
-	return true
+func (node *DependencyNode) IsEmptyExcept() bool {
+	return node.Data.IsEmptyExcept()
 }

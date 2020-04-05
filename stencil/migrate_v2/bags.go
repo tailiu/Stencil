@@ -59,16 +59,16 @@ func (mWorker *MigrationWorker) ConstructBagNode(bagMember, bagMemberID, bagRowI
 	return nil, nil
 }
 
-func (mWorker *MigrationWorker) GetRowsFromIDTable(app, member string, id interface{}, getFrom bool) ([]IDRow, error) {
+func (mWorker *MigrationWorker) GetRowsFromIDTable(app, member string, id interface{}, getFrom bool) ([]AttrRow, error) {
 
-	var idRows []IDRow
+	var AttrRows []AttrRow
 	var err error
-	var idRowsDB []map[string]interface{}
+	var AttrRowsDB []map[string]interface{}
 
 	if !getFrom {
-		idRowsDB, err = db.GetRowsFromIDTableByTo(mWorker.logTxn.DBconn, app, member, helper.GetInt64(id))
+		AttrRowsDB, err = db.GetRowsFromIDTableByTo(mWorker.logTxn.DBconn, app, member, helper.GetInt64(id))
 	} else {
-		idRowsDB, err = db.GetRowsFromIDTableByFrom(mWorker.logTxn.DBconn, app, member, helper.GetInt64(id))
+		AttrRowsDB, err = db.GetRowsFromIDTableByFrom(mWorker.logTxn.DBconn, app, member, helper.GetInt64(id))
 	}
 
 	if err != nil {
@@ -76,51 +76,51 @@ func (mWorker *MigrationWorker) GetRowsFromIDTable(app, member string, id interf
 		return nil, err
 	}
 
-	for _, idRowDB := range idRowsDB {
-		fromAppID := fmt.Sprint(idRowDB["from_app"])
+	for _, AttrRowDB := range AttrRowsDB {
+		fromAppID := fmt.Sprint(AttrRowDB["from_app"])
 		fromAppName, err := db.GetAppNameByAppID(mWorker.logTxn.DBconn, fromAppID)
 		if err != nil {
 			mWorker.Logger.Fatal("@GetRowsFromIDTable > db.GetAppNameByAppID, Unable to get name | ", fromAppID, err)
 			return nil, err
 		}
 
-		toAppID := fmt.Sprint(idRowDB["to_app"])
+		toAppID := fmt.Sprint(AttrRowDB["to_app"])
 		toAppName, err := db.GetAppNameByAppID(mWorker.logTxn.DBconn, toAppID)
 		if err != nil {
 			mWorker.Logger.Fatal("@GetRowsFromIDTable > db.GetAppNameByAppID, Unable to get name | ", toAppID, err)
 			return nil, err
 		}
 
-		fromMemberID := fmt.Sprint(idRowDB["from_member"])
+		fromMemberID := fmt.Sprint(AttrRowDB["from_member"])
 		fromMember, err := db.TableName(mWorker.logTxn.DBconn, fromMemberID, fromAppID)
 		if err != nil {
 			mWorker.Logger.Fatal("@GetRowsFromIDTable > db.GetAppNameByAppID, Unable to get fromMember | ", fromMemberID, fromAppID, err)
 			return nil, err
 		}
 
-		toMemberID := fmt.Sprint(idRowDB["to_member"])
+		toMemberID := fmt.Sprint(AttrRowDB["to_member"])
 		toMember, err := db.TableName(mWorker.logTxn.DBconn, toMemberID, toAppID)
 		if err != nil {
 			mWorker.Logger.Fatal("@GetRowsFromIDTable > db.GetAppNameByAppID, Unable to get toMember | ", toMemberID, toAppID, err)
 			return nil, err
 		}
 
-		idRows = append(idRows, IDRow{
+		AttrRows = append(AttrRows, AttrRow{
 			FromAppName:  fromAppName,
 			FromAppID:    fromAppID,
 			FromMemberID: fromMemberID,
 			FromMember:   fromMember,
-			FromID:       idRowDB["from_id"].(int64),
+			FromID:       AttrRowDB["from_id"].(int64),
 			ToAppName:    toAppName,
 			ToAppID:      toAppID,
 			ToMember:     toMember,
 			ToMemberID:   toMemberID,
-			ToID:         idRowDB["to_id"].(int64)})
+			ToID:         AttrRowDB["to_id"].(int64)})
 	}
-	return idRows, nil
+	return AttrRows, nil
 }
 
-func (mWorker *MigrationWorker) MergeBagDataWithMappedData(mappedData *MappedData, node *DependencyNode, toTable config.ToTable) error {
+func (mWorker *MigrationWorker) MergeBagDataWithMappedData(mappedData *MappedMemberData, node *DependencyNode, toTable config.ToTable) error {
 
 	toTableData := make(map[string]ValueWithReference)
 
@@ -130,39 +130,35 @@ func (mWorker *MigrationWorker) MergeBagDataWithMappedData(mappedData *MappedDat
 	}
 	prevUIDs[mWorker.SrcAppConfig.AppID] = mWorker.uid
 
-	for fromTable := range mappedData.srcTables {
-		if fromTableID, err := db.TableID(mWorker.logTxn.DBconn, fromTable, mWorker.SrcAppConfig.AppID); err == nil {
-			if fromID, ok := node.Data[fromTable+".id"]; ok {
-				visitedRows := make(map[string]bool)
-				if err := mWorker.FetchDataFromBags(visitedRows, toTableData, prevUIDs, mWorker.SrcAppConfig.AppID, fromTableID, fromID, toTable.TableID, toTable.Table, toTable.Table); err != nil {
-					mWorker.Logger.Fatal("@MigrateNode > FetchDataFromBags | ", err)
-				}
-			} else {
-				mWorker.Logger.Debug(node.Data)
-				mWorker.Logger.Fatal("@MigrateNode > FetchDataFromBags > id doesn't exist in table ", fromTable)
+	for _, fromTable := range mappedData.SrcTables() {
+		if fromID, ok := node.Data[fromTable.Name+".id"]; ok {
+			visitedRows := make(map[string]bool)
+			if err := mWorker.FetchDataFromBags(visitedRows, toTableData, prevUIDs, mWorker.SrcAppConfig.AppID, fromTable.ID, fromID, toTable.TableID, toTable.Table, toTable.Table); err != nil {
+				mWorker.Logger.Fatal("@MigrateNode > FetchDataFromBags | ", err)
 			}
 		} else {
-			mWorker.Logger.Fatal("@MigrateNode > FetchDataFromBags > TableID, fromTable: error in getting table id for member! ", fromTable, err)
+			mWorker.Logger.Debug(node.Data)
+			mWorker.Logger.Fatal("@MigrateNode > FetchDataFromBags > id doesn't exist in table ", fromTable)
 		}
 	}
 
 	if len(toTableData) > 0 {
 
-		mappedCols := strings.Split(mappedData.cols, ",")
+		mappedCols := mappedData.ToCols()
 		for col, valWithRef := range toTableData {
 			if !helper.Contains(mappedCols, col) {
-				mappedData.cols += "," + col
-				mappedData.ivals = append(mappedData.ivals, valWithRef.value)
-				mappedData.vals += fmt.Sprintf(",$%d", len(mappedData.ivals))
-				mWorker.Logger.Tracef("@MigrateNode > FetchDataFromBags > Attr merged for: '%s.%s' = '%v'", toTable.Table, col, valWithRef.value)
+				mmv := MappedMemberValue{
+					Value:  valWithRef.value,
+					DBConn: mWorker.logTxn.DBconn,
+				}
 				if valWithRef.ref != nil {
-					mappedData.refs = append(mappedData.refs, *valWithRef.ref)
+					mmv.Ref = valWithRef.ref
 					mWorker.Logger.Tracef("@MigrateNode > FetchDataFromBags > Ref merged for: %s.%s\n", toTable.Table, col)
 				}
-
+				mappedData.Data[col] = mmv
+				mWorker.Logger.Tracef("@MigrateNode > FetchDataFromBags > Attr merged for: '%s.%s' = '%v'", toTable.Table, col, valWithRef.value)
 			}
 		}
-		mappedData.Trim(",")
 		mWorker.Logger.Tracef("@MigrateNode > FetchDataFromBags > Data merged for: %s\nData | %v", toTable.Table, toTableData)
 	}
 
@@ -179,30 +175,30 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, t
 		visitedRows[currentRow] = true
 	}
 
-	idRows, err := mWorker.GetRowsFromIDTable(app, member, id, false)
+	AttrRows, err := mWorker.GetRowsFromIDTable(app, member, id, false)
 
 	if err != nil {
-		mWorker.Logger.Fatal("@FetchDataFromBags > GetRowsFromIDTable, Unable to get IDRows | ", app, member, id, false, err)
+		mWorker.Logger.Fatal("@FetchDataFromBags > GetRowsFromIDTable, Unable to get AttrRows | ", app, member, id, false, err)
 		return err
-	} else if len(idRows) < 1 {
-		// mWorker.Logger.Trace("@FetchDataFromBags > GetRowsFromIDTable | No IDRows found | ", app, member, id, false)
+	} else if len(AttrRows) < 1 {
+		// mWorker.Logger.Trace("@FetchDataFromBags > GetRowsFromIDTable | No AttrRows found | ", app, member, id, false)
 		return nil
 	} else {
-		mWorker.Logger.Trace("@FetchDataFromBags > GetRowsFromIDTable | ", idRows)
+		mWorker.Logger.Trace("@FetchDataFromBags > GetRowsFromIDTable | ", AttrRows)
 	}
 
-	for _, idRow := range idRows {
+	for _, AttrRow := range AttrRows {
 
-		bagRow, err := db.GetBagByAppMemberIDV2(mWorker.logTxn.DBconn, prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMemberID, idRow.FromID, mWorker.logTxn.Txn_id)
+		bagRow, err := db.GetBagByAppMemberIDV2(mWorker.logTxn.DBconn, prevUIDs[AttrRow.FromAppID], AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, mWorker.logTxn.Txn_id)
 		if err != nil {
-			mWorker.Logger.Fatal("@FetchDataFromBags > GetBagByAppMemberIDV2, Unable to get bags | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMemberID, idRow.FromID, mWorker.logTxn.Txn_id, err)
+			mWorker.Logger.Fatal("@FetchDataFromBags > GetBagByAppMemberIDV2, Unable to get bags | ", prevUIDs[AttrRow.FromAppID], AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, mWorker.logTxn.Txn_id, err)
 			return err
 		}
 		if bagRow != nil {
 
 			mWorker.Logger.Tracef("@FetchDataFromBags > Processing Bag | ID: %v | PK: %v | App: %v | Member: %v", bagRow["id"], bagRow["pk"], bagRow["app"], bagRow["member"])
 
-			bagData := make(map[string]interface{})
+			bagData := make(DataMap)
 			if err := json.Unmarshal(bagRow["data"].([]byte), &bagData); err != nil {
 				mWorker.Logger.Debug(bagRow["data"])
 				mWorker.Logger.Debug(bagRow)
@@ -211,9 +207,9 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, t
 			}
 			fmt.Printf("bag data | %v\n", bagData)
 
-			if bagMappedApp, mapping, found := mWorker.FetchMappingsForBag(idRow.FromAppName, idRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, idRow.FromMember, dstMemberName); found {
-				// mWorker.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", idRow.FromAppName, idRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, idRow.FromMember, dstMemberName)
-				bagAppConfig, err := config.CreateAppConfig(idRow.FromAppName, idRow.FromAppID)
+			if bagMappedApp, mapping, found := mWorker.FetchMappingsForBag(AttrRow.FromAppName, AttrRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, AttrRow.FromMember, dstMemberName); found {
+				// mWorker.Logger.Trace("@FetchDataFromBags > FetchMappingsForBag, Mappings found for | ", AttrRow.FromAppName, AttrRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, AttrRow.FromMember, dstMemberName)
+				bagAppConfig, err := config.CreateAppConfig(AttrRow.FromAppName, AttrRow.FromAppID)
 				if err != nil {
 					log.Fatal("@FetchDataFromBags: ", err)
 				}
@@ -240,19 +236,17 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, t
 								mWorker.Logger.Debugf("@FetchDataFromBags | fromAttr [%s]", fromAttr)
 								mWorker.Logger.Fatal(err)
 							}
-						} else if bagVal, _, decodedFromAttr, ref, found, err := mWorker.DecodeMappingValue(fromAttr, bagData, true); err == nil {
-							cleanedFromAttr = decodedFromAttr
-							if found && bagVal != nil {
-								valueForNode = bagVal
+						} else if mmv, err := mWorker.ResolveMappedStatement(fromAttr, bagData); err == nil {
+							cleanedFromAttr = mmv.GetMemberAttr()
+							if mmv.Value != nil {
+								valueForNode = mmv.Value
 								if bagAppConfig.AppID == mWorker.DstAppConfig.AppID {
-									fromAttrTokens := strings.Split(cleanedFromAttr, ".")
-									if bagTag, err := bagAppConfig.GetTagByMember(fromAttrTokens[0]); err == nil {
-
+									if bagTag, err := bagAppConfig.GetTagByMember(mmv.FromMember); err == nil {
 										if depRefs, err := CreateReferencesViaDependencies(bagAppConfig, *bagTag, bagData, cleanedFromAttr); err != nil {
 											log.Println(bagData)
 											mWorker.Logger.Fatal("@FetchDataFromBags > CreateReferencesViaDependencies: ", err)
-										} else if len(depRefs) > 0 && ref == nil {
-											ref = &depRefs[0]
+										} else if len(depRefs) > 0 && mmv.Ref == nil {
+											mmv.Ref = &depRefs[0]
 										} else {
 											log.Println("@FetchDataFromBags > CreateReferencesViaDependencies > No reference created: ", cleanedFromAttr)
 										}
@@ -261,18 +255,18 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, t
 											if ownRefs, err := CreateReferencesViaOwnerships(bagAppConfig, *bagTag, bagData, cleanedFromAttr); err != nil {
 												log.Println(bagData)
 												mWorker.Logger.Fatal("@FetchDataFromBags > CreateReferencesViaOwnerships: ", err)
-											} else if len(ownRefs) > 0 && ref == nil {
-												ref = &ownRefs[0]
+											} else if len(ownRefs) > 0 && mmv.Ref == nil {
+												mmv.Ref = &ownRefs[0]
 											} else {
 												log.Println("@FetchDataFromBags > CreateReferencesViaOwnerships > No reference created: ", cleanedFromAttr)
 											}
 										}
 									}
 								}
-								if ref != nil {
-									ref.appID = fmt.Sprint(bagRow["app"])
-									ref.mergedFromBag = true
-									refForNode = ref
+								if mmv.Ref != nil {
+									mmv.Ref.appID = fmt.Sprint(bagRow["app"])
+									mmv.Ref.mergedFromBag = true
+									refForNode = mmv.Ref
 								}
 							}
 						} else {
@@ -302,7 +296,7 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, t
 
 				bagAppConfig.CloseDBConns()
 
-				if mWorker.IsNodeDataEmpty(bagData) {
+				if bagData.IsEmptyExcept() {
 					if err := db.DeleteBagV2(mWorker.tx.StencilTx, fmt.Sprint(bagRow["pk"])); err != nil {
 						mWorker.Logger.Fatal("@FetchDataFromBags > DeleteBagV2, Unable to delete bag | ", bagRow["pk"])
 						return err
@@ -324,17 +318,17 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, t
 					}
 				}
 			} else {
-				// mWorker.Logger.Warnf("No mappings found from [%s:%s] to [%s:%s]", idRow.FromAppName, idRow.FromMember, mWorker.DstAppConfig.AppName, dstMemberName)
+				// mWorker.Logger.Warnf("No mappings found from [%s:%s] to [%s:%s]", AttrRow.FromAppName, AttrRow.FromMember, mWorker.DstAppConfig.AppName, dstMemberName)
 			}
 		} else {
-			// log.Println("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[idRow.FromAppID], idRow.FromAppID, idRow.FromMember, idRow.FromID, mWorker.logTxn.Txn_id)
+			// log.Println("@FetchDataFromBags > GetBagByAppMemberIDV2, No bags found for | ", prevUIDs[AttrRow.FromAppID], AttrRow.FromAppID, AttrRow.FromMember, AttrRow.FromID, mWorker.logTxn.Txn_id)
 		}
 
 		// mWorker.Logger.Tracef("@FetchDataFromBags > FetchDataFromBags: %s |\nFromAppID: %s FromMemberID: %s FromID: %v dstMemberID: %s dstMemberName: %s \ntoTableData: %v\nprevUIDs: %v ",
-		// color.FgLightMagenta.Render("Recursive Traversal"), idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName,
+		// color.FgLightMagenta.Render("Recursive Traversal"), AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, dstMemberID, dstMemberName,
 		// toTableData, prevUIDs)
-		if err := mWorker.FetchDataFromBags(visitedRows, toTableData, prevUIDs, idRow.FromAppID, idRow.FromMemberID, idRow.FromID, dstMemberID, dstMemberName, toTableName); err != nil {
-			mWorker.Logger.Fatal("@FetchDataFromBags > FetchDataFromBags: Error while recursing | ", toTableData, idRow.FromAppID, idRow.FromMember, idRow.FromID)
+		if err := mWorker.FetchDataFromBags(visitedRows, toTableData, prevUIDs, AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, dstMemberID, dstMemberName, toTableName); err != nil {
+			mWorker.Logger.Fatal("@FetchDataFromBags > FetchDataFromBags: Error while recursing | ", toTableData, AttrRow.FromAppID, AttrRow.FromMember, AttrRow.FromID)
 			return err
 		}
 	}
@@ -502,7 +496,7 @@ func (mWorker *MigrationWorker) StartBagsMigration(userID, bagAppID string, thre
 					if migrated {
 						log.Println(fmt.Sprintf("%s { %s } | PK: %s", color.FgLightGreen.Render("BAG MIGRATED"), bagNode.Tag.Name, bagPK))
 
-						if !bagWorker.IsNodeDataEmpty(bagNode.Data) {
+						if !bagNode.IsEmptyExcept() {
 							bagWorker.Logger.Tracef("LeftOver Bag Data =>\n%v\n", bagNode.Data)
 							log.Println(fmt.Sprintf("HANDLING LEFTOVER DATA { %s } | PK: %s | Owner: %s", bagNode.Tag.Name, bagPK, bagUserID))
 							if err := bagWorker.SendNodeToBagWithOwnerID(bagNode, bagUserID); err != nil {

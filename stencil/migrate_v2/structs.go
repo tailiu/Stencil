@@ -28,20 +28,24 @@ type App struct {
 // Member : Data struct
 type Member struct {
 	Name string
-	ID   int64
+	ID   string
 }
 
 type AttrRow struct {
-	FromApp    App
-	FromMember Member
-	FromID     int64
-	FromAttr   string
-	FromVal    string
-	ToApp      App
-	ToMember   Member
-	ToID       int64
-	ToAttr     string
-	ToVal      string
+	FromAppName  string
+	FromAppID    string
+	FromMember   string
+	FromMemberID string
+	FromID       int64
+	FromAttr     string
+	FromVal      string
+	ToAppID      string
+	ToAppName    string
+	ToMember     string
+	ToMemberID   string
+	ToID         int64
+	ToAttr       string
+	ToVal        string
 }
 
 type IDRow__defunct struct {
@@ -66,7 +70,7 @@ type Transactions struct {
 type DependencyNode struct {
 	Tag  config.Tag
 	SQL  string
-	Data map[string]interface{}
+	Data DataMap
 	PKs  []int64
 }
 
@@ -94,12 +98,14 @@ type MappingRef struct {
 	fromMemberID  string
 	fromMember    string
 	fromAttr      string
+	fromAttrID    string
 	fromID        int64
 	fromVal       string
 	toVal         string
 	toMemberID    string
 	toMember      string
 	toAttr        string
+	toAttrID      string
 	mergedFromBag bool
 }
 
@@ -116,7 +122,7 @@ type MappedData__defunct struct {
 
 type MappedMemberData struct {
 	ToID       string
-	AppID      string
+	ToAppID    string
 	ToMemberID string
 	ToMember   string
 	Data       map[string]MappedMemberValue
@@ -124,15 +130,16 @@ type MappedMemberData struct {
 }
 
 type MappedMemberValue struct {
-	ToID         string
-	FromID       string
 	IsInput      bool
 	IsMethod     bool
 	IsExpression bool
 	AppID        string
+	FromID       string
 	FromMemberID string
 	FromMember   string
 	FromAttr     string
+	FromAttrID   string
+	ToID         string
 	Value        interface{}
 	Ref          *MappingRef
 	Logger       *logg.Logger

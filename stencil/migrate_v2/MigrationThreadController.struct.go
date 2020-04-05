@@ -204,7 +204,6 @@ func (mThread *MigrationThreadController) NewMigrationThread() {
 
 	mThread.Logger.Infof("Creating a new migration thread of type: %v, ID: %v \n", mThread.MType, newThreadID)
 
-	mThread.waitGroup.Add(1)
 	defer mThread.waitGroup.Done()
 
 	mWorker := mThread.CreateMigrationWorker(newThreadID)
@@ -291,7 +290,8 @@ func (mThread *MigrationThreadController) NewMigrationThread() {
 func (mThread *MigrationThreadController) Run() error {
 
 	for i := 0; i < mThread.totalThreads; i++ {
-		mThread.NewMigrationThread()
+		mThread.waitGroup.Add(1)
+		go mThread.NewMigrationThread()
 	}
 
 	go func() {
@@ -303,8 +303,8 @@ func (mThread *MigrationThreadController) Run() error {
 
 	for threadResponse := range mThread.commitChannel {
 		finishedThreads = append(finishedThreads, fmt.Sprint(threadResponse.threadID))
-		mThread.Logger.Infof("THREAD # %v FINISHED WORKING!", threadResponse.threadID)
-		mThread.Logger.Info("Finished Thread IDs | ", strings.Join(finishedThreads, ","))
+		mThread.Logger.Infof("MIGRATION THREAD # %v FINISHED WORKING!", threadResponse.threadID)
+		mThread.Logger.Info("Finished Migration Thread IDs | ", strings.Join(finishedThreads, ","))
 		mThread.size += threadResponse.size
 	}
 
