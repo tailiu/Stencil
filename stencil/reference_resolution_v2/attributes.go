@@ -14,13 +14,25 @@ import (
  * from app and from member
  */
 
-func CreateAttribute(app, member, attrName, val string) *Attribute {
+func CreateAttribute(app, member, attrName, val string, id ...string) *Attribute {
+
+	var idVal string
+
+	// "-2" indicates id is missing in an attribute
+	if len(id) == 0 {
+		idVal = "-2"
+	} else if len(id) == 1 {
+		idVal = id[0]
+	} else {
+		log.Fatal("Pass multiple ids to an attribute")
+	}
 
 	attr := &Attribute{
 		app:    	  app,
 		member: 	  member,
 		attrName:     attrName,
 		val:		  val,
+		id:			  idVal,
 	}
 
 	return attr
@@ -76,6 +88,7 @@ func createAttributeByRefRowToPart(procAttrRow map[string]string) *Attribute {
 		procAttrRow["to_member"],
 		procAttrRow["to_attr"],
 		procAttrRow["to_val"],
+		procAttrRow["to_id"],
 	)
 
 	return attr
@@ -86,8 +99,8 @@ func getRowsFromAttrChangesTableByTo(refResolutionConfig *RefResolutionConfig,
 
 	query := fmt.Sprintf(
 		`SELECT * FROM attribute_changes WHERE 
-		to_app = %s and to_member = %s and to_attr and to_val = '%s'`,
-		attr.app, attr.member, attr.attrName, attr.val,
+		to_app = %s and to_member = %s and to_attr = %s and to_id = '%s'`,
+		attr.app, attr.member, attr.attrName, attr.id,
 	)
 
 	log.Println(query)
@@ -122,12 +135,31 @@ func getRowsFromAttrChangesTableByFrom(refResolutionConfig *RefResolutionConfig,
 
 }
 
+func getRowsFromAttrChangesTableByFromUsingID(refResolutionConfig *RefResolutionConfig,
+	attr *Attribute) []map[string]interface{} {
+
+	query := fmt.Sprintf(
+		`SELECT * FROM attribute_changes WHERE
+		from_app = %s and from_member = %s and from_attr = %s and from_id = '%s'`,
+		attr.app, attr.member, attr.attrName, attr.id,
+	)
+
+	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println(data)
+
+	return data
+
+}
 func forwardTraverseAttrChangesTable(refResolutionConfig *RefResolutionConfig,
 	attr, orgAttr *Attribute, inRecurrsion bool) []*Attribute {
 
 	var res []*Attribute
 
-	attrRows := getRowsFromAttrChangesTableByFrom(refResolutionConfig, attr)
+	attrRows := getRowsFromAttrChangesTableByFromUsingID(refResolutionConfig, attr)
 	// log.Println(IDRows)
 
 	for _, attrRow := range attrRows {

@@ -11,6 +11,7 @@ type Attribute struct {
 	member 		string
 	attrName 	string
 	val 		string
+	id			string
 }
 
 type RefResolutionConfig struct {

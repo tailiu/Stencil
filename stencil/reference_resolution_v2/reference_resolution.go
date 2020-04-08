@@ -89,7 +89,10 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 	updatedAttrs := make(map[string]string)
 	
-	fromRefs := getFromReferences(refResolutionConfig, attrRow)
+	// Using ID in getting from references here is to remove possible duplicate reference rows
+	// Otherwise, all the references will be resolved and reference rows will be deleted
+	// For example, multiple comments reply to the same post, but only the attribute in one comment should be resolved
+	fromRefs := getFromReferencesUsingID(refResolutionConfig, attrRow)
 
 	log.Println("Get", len(fromRefs), "from reference(s)")
 
@@ -99,7 +102,13 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		
 		LogRefRow(refResolutionConfig, procRef)
 
-		data := CreateAttribute(procRef["app"], procRef["to_member"], procRef["to_attr"], procRef["to_val"])
+		data := CreateAttribute(
+			procRef["app"], 
+			procRef["to_member"], 
+			procRef["to_attr"], 
+			procRef["to_val"], 
+			procRef["to_id"],
+		)
 
 		refAttributeRows := forwardTraverseAttrChangesTable(refResolutionConfig, data, orgAttr, false)
 
@@ -203,7 +212,13 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		
 		LogRefRow(refResolutionConfig, procRef)
 
-		data := CreateAttribute(procRef["app"], procRef["to_member"], procRef["to_attr"], procRef["to_val"])
+		data := CreateAttribute(
+			procRef["app"], 
+			procRef["from_member"], 
+			procRef["from_attr"], 
+			procRef["from_val"],
+			procRef["from_id"],
+		)
 
 		refAttributeRows := forwardTraverseAttrChangesTable(refResolutionConfig, data, orgAttr, false)
 

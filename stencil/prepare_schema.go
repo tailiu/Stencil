@@ -167,6 +167,20 @@ func test12() {
 
 func test13() {
 
+	// dbName := "stencil_test"
+	dbName := "stencil_exp6_3"
+
+	isBladeServer := false
+
+	dbConn := db.GetDBConn(dbName, isBladeServer)
+	defer dbConn.Close()
+
+	reference_resolution_v2.CreateReferenceTableV2(dbConn)
+
+}
+
+func test14() {
+
 	dbName := "stencil_test"
 	// dbName := "stencil_exp6_3"
 
@@ -175,7 +189,7 @@ func test13() {
 	dbConn := db.GetDBConn(dbName, isBladeServer)
 	defer dbConn.Close()
 
-	reference_resolution_v2.CreateReferenceTableV2(dbConn)
+	reference_resolution_v2.CreateReferenceTableV2WithFromID(dbConn)
 
 }
 
@@ -203,7 +217,9 @@ func main() {
 
 	// test11()
 
-	test12()
+	// test12()
 	
 	// test13()
+
+	test14()
 }
