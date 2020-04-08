@@ -6,12 +6,12 @@ import (
 	"log"
 	"stencil/db"
 	"stencil/common_funcs"
-	"stencil/reference_resolution"
+	"stencil/reference_resolution_v2"
 	"strconv"
 	"strings"
 )
 
-func getOneRowBasedOnDependency(displayConfig *displayConfig,
+func (displayConfig *displayConfig) getOneRowBasedOnDependency(
 	table, col, value string) (map[string]interface{}, error) {
 
 	var query string
@@ -47,7 +47,7 @@ func getOneRowBasedOnDependency(displayConfig *displayConfig,
 	}
 }
 
-func getRowsBasedOnDependency(displayConfig *displayConfig,
+func (displayConfig *displayConfig) getRowsBasedOnDependency(
 	table, col, value string) ([]map[string]interface{}, error) {
 
 	var query string
@@ -83,7 +83,7 @@ func getRowsBasedOnDependency(displayConfig *displayConfig,
 	}
 }
 
-func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
+func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
 	// We use table0 and col0 to get table1 and col1
@@ -111,28 +111,20 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
-		newVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, 
-			table0ID, col0, id)
+		newVal := displayConfig.refResolutionConfig.ReferenceResolved(table0ID, col0ID, id)
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
-
 			log.Println("reference has been resolved")
-
-			return getOneRowBasedOnDependency(displayConfig, table1, col1, newVal)
+			return displayConfig.getOneRowBasedOnDependency(table1, col1, newVal)
 		
 		// Otherwise, we try to resolve the reference
 		} else {
 
-			hint0 := CreateHint(table0, table0ID, id)
-			log.Println("Before resolving reference1: ", hint0)
+			attr0 := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, table0ID, col0ID, id)
+			log.Println("Before resolving reference1: ", attr0)
 
-			ID0 := hint0.TransformHintToIdenity(displayConfig)
-
-			reference_resolution.ResolveReference(
-				displayConfig.refResolutionConfig, 
-				ID0,
-			)
+			displayConfig.refResolutionConfig.ResolveReference(attr0)
 			
 			// Here we check again to get updated attributes and values
 			// instead of using the returned values from the ResolveReference
@@ -141,10 +133,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// case, ResolveReference does not return the updated attribute and value
 			// Therefore, we check all updated attributes again here by calling 
 			// GetUpdatedAttributes
-			updatedAttrs := reference_resolution.GetUpdatedAttributes(
-				displayConfig.refResolutionConfig,
-				ID0,
-			)
+			updatedAttrs := displayConfig.refResolutionConfig.GetUpdatedAttributes(table0ID, id)
 
 			log.Println("Updated attributes and values:")
 			log.Println(updatedAttrs)
@@ -152,7 +141,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// We check whether the desired attr (col0) has been resolved
 			foundResolvedAttr := false
 			for attr, val := range updatedAttrs {
-				if attr == col0 {
+				if attr == col0ID {
 					newVal = val
 					foundResolvedAttr = true
 					break
@@ -162,14 +151,14 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// If we find that col0 has been resolved, then we can use it to get other data
 			if foundResolvedAttr {
 
-				return getOneRowBasedOnDependency(displayConfig, table1, col1, newVal)
+				return displayConfig.getOneRowBasedOnDependency(table1, col1, newVal)
 			
 			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
 
-				checkAndLogUnresolvedRef(displayConfig, hint0, col0)
-
+				displayConfig.logUnresolvedRefAndData(table0, table0ID, id, col0)
 				return nil, CannotResolveReferencesGetDataInNode
+
 			}
 		}
 
@@ -202,7 +191,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// then we cannot get data. Otherwise we just return the obtained data
 			// Note that if we first assume that it has not been resolved and get data using 
 			// prevID, then we could get wrong results
-			data1, err = getRowsBasedOnDependency(displayConfig, table1, col1, value)
+			data1, err = displayConfig.getRowsBasedOnDependency(table1, col1, value)
 			
 			// This could happen when table1 and col1 have been resolved
 			if err == nil {
@@ -212,8 +201,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 				// Now we have not encountered data1 with more than one piece of data
 				for _, data4 := range data1 {
 
-					resolvedVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, 
-						table1ID, col1, fmt.Sprint(data4["id"]))
+					resolvedVal := displayConfig.refResolutionConfig.ReferenceResolved(table1ID, col1, fmt.Sprint(data4["id"]))
 					
 					if resolvedVal == value {
 						log.Println("It was indeed resolved")
@@ -264,7 +252,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					// log.Println(table0)
 					// log.Println(table0ID)
 					
-					dataID := reference_resolution.CreateIdentity(
+					dataID := reference_resolution_v2.CreateIdentity(
 						displayConfig.dstAppConfig.appID,
 						table0ID,
 						id,
@@ -281,12 +269,12 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					log.Println("app and tableInFirstArg:", app + ":" + tableInFirstArg)
 					log.Println("srcTableID:", srcTableID)
 
-					// prevID = reference_resolution.GetPreIDByBackTraversal(displayConfig.refResolutionConfig, 
+					// prevID = reference_resolution_v2.GetPreIDByBackTraversal(displayConfig.refResolutionConfig, 
 					// 	dataID, srcTableID)
 					
 					// Here we only need to get the previous ID (one step backward)
 					// and we should not try to the get previous id by back traversal
-					prevID = reference_resolution.GetPreviousID(displayConfig.refResolutionConfig, 
+					prevID = reference_resolution_v2.GetPreviousID(displayConfig.refResolutionConfig, 
 						dataID, srcTableID)
 					
 					log.Println("Previous id:", prevID)
@@ -299,7 +287,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 						// value = prevID
 						// break
 
-						data2, err = getRowsBasedOnDependency(displayConfig, table1, col1, prevID)
+						data2, err = displayConfig.getRowsBasedOnDependency(table1, col1, prevID)
 						if err != nil {
 							log.Println("The first argument of the from attribute contains id, but")
 							log.Println(err)	
@@ -316,7 +304,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 				log.Println(`The from attributes don't contain id`)
 
-				data2, err = getRowsBasedOnDependency(displayConfig, table1, col1, value)
+				data2, err = displayConfig.getRowsBasedOnDependency(table1, col1, value)
 				
 				// This could happen when no data is migrated or there is no mappings.
 				// For example, statuses, id, mentions, status_id
@@ -369,7 +357,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 					log.Println(`The from attributes contain id but we cannot get data,
 						so we try to get data with the current id value`)
 
-					data2, err = getRowsBasedOnDependency(displayConfig, table1, col1, value)
+					data2, err = displayConfig.getRowsBasedOnDependency(table1, col1, value)
 					
 					// This could happen when the resolved and displayed data is deleted
 					// This could also happen when there is no data migrated from this app, so
@@ -396,8 +384,7 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 			// can be used to get more than one piece of data including the one we want to get
 			for _, data3 := range data2 {
 	
-				newVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, 
-					table1ID, col1, fmt.Sprint(data3["id"]))
+				newVal := displayConfig.refResolutionConfig.ReferenceResolved(table1ID, col1, fmt.Sprint(data3["id"]))
 
 				// The reference has been resolved
 				if newVal != "" {
@@ -424,10 +411,9 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 
 					ID1 := hint1.TransformHintToIdenity(displayConfig)
 
-					reference_resolution.ResolveReference(
-						displayConfig.refResolutionConfig, ID1)
+					displayConfig.refResolutionConfig.ResolveReference(ID1)
 					
-					updatedAttrs := reference_resolution.GetUpdatedAttributes(
+					updatedAttrs := reference_resolution_v2.GetUpdatedAttributes(
 						displayConfig.refResolutionConfig,
 						ID1,
 					)
@@ -569,15 +555,13 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 
 						// We assume that val is an integer value 
 						// otherwise we have to define it in dependency config
-						data, err1 = checkResolveReferenceInGetDataInNode(displayConfig, 
+						data, err1 = displayConfig.checkResolveReferenceInGetDataInNode(
 							fmt.Sprint(dataInDependencyNode.Data["id"]),
-							table, col, table1, key1, fmt.Sprint(val))
+							table, col, table1, key1, fmt.Sprint(val),
+						)
 
 					} else {
-
-						data, err1 = getOneRowBasedOnDependency(
-							displayConfig, table1, key1, fmt.Sprint(val))
-						
+						data, err1 = displayConfig.getOneRowBasedOnDependency(table1, key1, fmt.Sprint(val))
 					}
 
 					// fmt.Println(data)

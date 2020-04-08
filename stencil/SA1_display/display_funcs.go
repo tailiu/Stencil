@@ -1072,13 +1072,14 @@ func getFirstArgsInREFByToTableToAttrInAllFromApps(displayConfig *displayConfig,
 
 }
 
-func checkAndLogUnresolvedRef(displayConfig *displayConfig, 
-	hint *HintStruct, fromAttr string) {
+func (displayConfig *displayConfig) logUnresolvedRefAndData(tableName, tableID, id, unResolvedAttr string) {
 
 	green := color.FgGreen.Render
-	log.Println(green("Unresolved attribute is:"), green(hint.Table + ":" + fromAttr))
+	log.Println(green("Unresolved attribute is:"), green(hint.Table + ":" + unResolvedAttr))
 
+	hint := CreateHint(tableName, tableID, id)
 	data, err := getOneRowBasedOnHint(displayConfig, hint)
+
 	if err != nil {
 		log.Println(green("The data has been deleted by application services"))
 	} else {

@@ -43,8 +43,7 @@ func updateRefOnLeftByRefAttrRow(refResolutionConfig *RefResolutionConfig,
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := updateReferences(
-		refResolutionConfig,
+	updatedVal, err1 := refResolutionConfig.updateReferences(
 		procRef["pk"], 
 		refResolutionConfig.tableIDNamePairs[refAttributeRow.member], 
 		refAttributeRow.val, 
@@ -75,8 +74,7 @@ func updateRefOnLeftByRefAttrRow1(refResolutionConfig *RefResolutionConfig,
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := updateReferences(
-		refResolutionConfig,
+	updatedVal, err1 := refResolutionConfig.updateReferences(
 		procRef["pk"],  
 		refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
 		refAttrRowVal, 
@@ -106,8 +104,7 @@ func updateRefOnLeftNotUsingRefAttrRow(refResolutionConfig *RefResolutionConfig,
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := updateReferences(
-		refResolutionConfig,
+	updatedVal, err1 := refResolutionConfig.updateReferences(
 		procRef["pk"],  
 		refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
 		procRef["to_val"], 
@@ -137,8 +134,7 @@ func updateRefOnRightByRefAttrRow(refResolutionConfig *RefResolutionConfig,
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := updateReferences(
-		refResolutionConfig,
+	updatedVal, err1 := refResolutionConfig.updateReferences(
 		procRef["pk"],
 		refResolutionConfig.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
@@ -168,8 +164,7 @@ func updateRefOnRightByRefAttrRow1(refResolutionConfig *RefResolutionConfig,
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := updateReferences(
-		refResolutionConfig,
+	updatedVal, err1 := refResolutionConfig.updateReferences(
 		procRef["pk"],
 		refResolutionConfig.tableIDNamePairs[orgAttr.member],
 		orgAttr.val,
@@ -200,8 +195,7 @@ func updateRefOnRightNotUsingRefAttrRow(refResolutionConfig *RefResolutionConfig
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := updateReferences(
-		refResolutionConfig,
+	updatedVal, err1 := refResolutionConfig.updateReferences(
 		procRef["pk"],
 		refResolutionConfig.tableIDNamePairs[orgAttr.member],
 		orgAttr.val,

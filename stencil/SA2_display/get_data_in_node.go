@@ -8,8 +8,7 @@ import (
 	"fmt"
 )
 
-func getOneRowBasedOnDependency(displayConfig *displayConfig, 
-	val string, dep string) (map[string]interface{}, error) {
+func (displayConfig *displayConfig) getOneRowBasedOnDependency(val string, dep string) (map[string]interface{}, error) {
 	
 	table := strings.Split(dep, ".")[0]
 	key := strings.Split(dep, ".")[1]
@@ -86,8 +85,7 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 						log.Println("Fail to get one data because the value of the relevant column is nil")
 						continue
 					}
-					data1, err1 := getOneRowBasedOnDependency(
-						displayConfig, 
+					data1, err1 := displayConfig.getOneRowBasedOnDependency(
 						fmt.Sprint(val), 
 						dep,
 					)

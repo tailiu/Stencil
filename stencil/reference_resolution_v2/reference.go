@@ -246,8 +246,7 @@ func addToResolvedReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func ReferenceResolved(refResolutionConfig *RefResolutionConfig, 
-	member, attr, id string) string {
+func (refResolutionConfig *RefResolutionConfig) ReferenceResolved(member, attr, id string) string {
 
 	query := fmt.Sprintf(
 		`select updated_val from resolved_references where 
@@ -271,7 +270,7 @@ func ReferenceResolved(refResolutionConfig *RefResolutionConfig,
 	}
 }
 
-func updateReferences(refResolutionConfig *RefResolutionConfig, refID,
+func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 	member, val, attr, memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) (string, error) {
 
 	if attr == "" && attrToBeUpdated == "" {
@@ -320,8 +319,7 @@ func updateReferences(refResolutionConfig *RefResolutionConfig, refID,
 		unresolvedDataIDToBeUpdated := ""
 		for _, dataIDToBeUpdated := range dataIDsToBeUpdated {
 
-			newVal := ReferenceResolved(
-				refResolutionConfig,
+			newVal := refResolutionConfig.ReferenceResolved(
 				refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
 				refResolutionConfig.appAttrNameIDPairs[memberToBeUpdated + ":"+ attrToBeUpdated],
 				dataIDToBeUpdated,

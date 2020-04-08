@@ -30,8 +30,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 
 		// If favourites.status_id should be resolved (in this case, it should be),
 		// we check whether the reference has been resolved or not
-		newVal := reference_resolution.ReferenceResolved(displayConfig.refResolutionConfig, 
-			tableID, col, id)
+		newVal := displayConfig.refResolutionConfig.ReferenceResolved(tableID, col, id)
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
@@ -48,7 +47,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 
 			ID := hint.TransformHintToIdenity(displayConfig)
 
-			reference_resolution.ResolveReference(displayConfig.refResolutionConfig, ID)
+			displayConfig.refResolutionConfig.ResolveReference(ID)
 
 			updatedAttrs := reference_resolution.GetUpdatedAttributes(
 				displayConfig.refResolutionConfig,
@@ -76,7 +75,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 			// Otherwise we cannot use the unresolved reference to get other data in node
 			} else {
 
-				checkAndLogUnresolvedRef(displayConfig, hint, col)
+				displayConfig.logUnresolvedRefAndData(table, tableID, id, col)
 
 				return "", CannotResolveReferencesGetDataInParentNode
 			}
