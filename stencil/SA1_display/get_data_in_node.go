@@ -99,11 +99,13 @@ func checkResolveReferenceInGetDataInNode(displayConfig *displayConfig,
 	table0ID := displayConfig.dstAppConfig.tableNameIDPairs[table0]
 	table1ID := displayConfig.dstAppConfig.tableNameIDPairs[table1]
 
+	col0ID := displayConfig.dstAppConfig.colNameIDPairs[table0 + ":" + col0]
+	col1ID := displayConfig.dstAppConfig.colNameIDPairs[table1 + ":" + col1]
+
 	// First, we need to get the attribute that requires reference resolution
 	// For example, we have *account.id*, and we want to get *users.account_id*
 	// We check whether account.id needs to be resolved
-	if reference_resolution.NeedToResolveReference(displayConfig.refResolutionConfig, 
-		table0, col0) {
+	if displayConfig.needToResolveReference(table0, col0) {
 
 		log.Println("Before checking reference1 resolved or not")
 

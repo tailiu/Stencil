@@ -7,55 +7,6 @@ import (
 	"stencil/schema_mappings"
 )
 
-func NeedToResolveReference(refResolutionConfig *RefResolutionConfig, 
-	toTable, toAttr string) bool {
-	
-	for _, mapping := range refResolutionConfig.mappingsFromOtherAppsToDst {
-
-		if exists, err := schema_mappings.REFExists(
-			mapping, toTable, toAttr); err != nil {
-	
-			// This can happen when there is no mapping
-			// For example: 
-			// When migrating from Diaspora to Mastodon:
-			// there is no mapping to stream_entries.activity_id.
-			log.Println(err)
-	
-		} else {
-			if exists {
-				return true
-			}
-		}
-
-	}
-
-	return false
-	
-}
-
-func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolutionConfig, 
-	toTable, toAttr string) bool {
-	
-	if exists, err := schema_mappings.REFExists(
-		refResolutionConfig.mappingsFromSrcToDst, toTable, toAttr); err != nil {
-
-		// This can happen when there is no mapping
-		// For example: 
-		// When migrating from Diaspora to Mastodon:
-		// there is no mapping to stream_entries.activity_id.
-		log.Println(err)
-
-		return false
-
-	} else {
-		if exists {
-			return true
-		} else {
-			return false
-		}
-	}
-}
-
 // func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig, 
 // 	ID *Identity) map[string]string {
 	

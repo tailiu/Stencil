@@ -15,7 +15,42 @@ import (
  * The functions here DO NOT consider migration id.
  */
 
-func CreateReferenceTableV2(dbConn *sql.DB) {
+ func CreateReferenceTableV2(dbConn *sql.DB) {
+
+	var queries []string
+
+	query1 := `CREATE TABLE reference_table_v2 (
+		app 			INT8	NOT NULL,
+		from_id 		INT8	NOT NULL,
+		from_member 	INT8	NOT NULL,
+		from_attr 		INT8	NOT NULL,
+		from_val 		VARCHAR NOT NULL,
+		to_member 		INT8	NOT NULL,
+		to_attr 		INT8	NOT NULL,
+		to_val 			VARCHAR NOT NULL,
+		migration_id	INT8	NOT NULL,
+		pk				SERIAL PRIMARY KEY,
+		FOREIGN KEY (app) REFERENCES apps (pk),
+		FOREIGN KEY (from_member) REFERENCES app_tables (pk),
+		FOREIGN KEY (to_member) REFERENCES app_tables (pk),
+		FOREIGN KEY (from_attr) REFERENCES app_schemas (pk),
+		FOREIGN KEY (to_attr) REFERENCES app_schemas (pk))`
+	
+	query2 := "CREATE INDEX ON reference_table_v2(app, to_member, to_attr, to_val)"
+
+	query3 := "CREATE INDEX ON reference_table_v2(app, from_member, from_attr, from_val, from_id)"
+
+	queries = append(queries, query1, query2, query3)
+
+	for _, query := range queries {
+		err := db.TxnExecute1(dbConn, query)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func CreateReferenceTableV2WithoutFromID(dbConn *sql.DB) {
 
 	var queries []string
 
@@ -40,43 +75,6 @@ func CreateReferenceTableV2(dbConn *sql.DB) {
 	query3 := "CREATE INDEX ON reference_table_v2(app, from_member, from_attr, from_val)"
 
 	queries = append(queries, query1, query2, query3)
-
-	for _, query := range queries {
-		err := db.TxnExecute1(dbConn, query)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-}
-
-func CreateReferenceTableV2WithFromID(dbConn *sql.DB) {
-
-	var queries []string
-
-	query1 := `CREATE TABLE reference_table_v2 (
-		app 			INT8	NOT NULL,
-		from_id 		INT8	NOT NULL,
-		from_member 	INT8	NOT NULL,
-		from_attr 		INT8	NOT NULL,
-		from_val 		VARCHAR NOT NULL,
-		to_member 		INT8	NOT NULL,
-		to_attr 		INT8	NOT NULL,
-		to_val 			VARCHAR NOT NULL,
-		migration_id	INT8	NOT NULL,
-		pk				SERIAL PRIMARY KEY,
-		FOREIGN KEY (app) REFERENCES apps (pk),
-		FOREIGN KEY (from_member) REFERENCES app_tables (pk),
-		FOREIGN KEY (to_member) REFERENCES app_tables (pk),
-		FOREIGN KEY (from_attr) REFERENCES app_schemas (pk),
-		FOREIGN KEY (to_attr) REFERENCES app_schemas (pk))`
-	
-	query2 := "CREATE INDEX ON reference_table_v2(app, to_member, to_attr, to_val)"
-
-	query3 := "CREATE INDEX ON reference_table_v2(app, from_member, from_attr, from_val)"
-
-	query4 := "CREATE INDEX ON reference_table_v2(app, from_member, from_attr, from_id)"
-
-	queries = append(queries, query1, query2, query3, query4)
 
 	for _, query := range queries {
 		err := db.TxnExecute1(dbConn, query)

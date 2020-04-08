@@ -23,6 +23,7 @@ type dstAppConfig struct {
 	DBConn       						*sql.DB
 	dag									*common_funcs.DAG
 	tableNameIDPairs					map[string]string
+	colNameIDPairs						map[string]string
 	ownershipDisplaySettingsSatisfied 	bool
 }
 

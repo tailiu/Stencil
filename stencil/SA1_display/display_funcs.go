@@ -105,22 +105,22 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	appIDNamePairs := common_funcs.GetAppIDNamePairs(stencilDBConn)
 	tableIDNamePairs := common_funcs.GetTableIDNamePairs(stencilDBConn)
 	attrIDNamePairs := GetAttrIDNamePairs(stencilDBConn)
-	// dstAppAttrNameIDPairs := getAttrNameIDPairsInApp(stencilDBConn, dstAppID)
+	dstAppColNameIDPairs := getAttrNameIDPairsInApp(stencilDBConn, dstAppID)
 
 	appTableNameTableIDPairs := getAppTableNameTableIDPairs(stencilDBConn, appIDNamePairs)
-
-	// refResolutionConfig := reference_resolution.InitializeReferenceResolution(
-	// 	migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
-	// 	dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
-	// 	attrIDNamePairs, dstAppAttrNameIDPairs,
-	// 	allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
-	// )
 
 	refResolutionConfig := reference_resolution.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
 		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
+		attrIDNamePairs, dstAppColNameIDPairs,
 		allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
 	)
+
+	// refResolutionConfig := reference_resolution.InitializeReferenceResolution(
+	// 	migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
+	// 	dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
+	// 	allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
+	// )
 
 	srcAppConfig.appID = srcAppID
 	srcAppConfig.appName = srcAppName
@@ -130,6 +130,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	dstAppConfig.appID = dstAppID
 	dstAppConfig.appName = dstAppName
 	dstAppConfig.tableNameIDPairs = dstAppTableNameIDPairs
+	dstAppConfig.colNameIDPairs = dstAppAttrNameIDPairs
 	dstAppConfig.rootTable = dstRootMember
 	dstAppConfig.rootAttr = dstRootAttr
 	dstAppConfig.userID = dstUserID
@@ -179,7 +180,7 @@ func getDstRootMemberAttrID(stencilDBConn *sql.DB,
 
 	// log.Println(*dstDAG)
 
-	dstRootMember, dstRootAttr, err2 := getRootMemberAttr(dstDAG)
+	dstRootMember, dstRootAttr, err2 := dstDAG.GetRootMemberAttr()
 	if err2 != nil {
 		log.Fatal(err2)
 	}
@@ -1050,7 +1051,6 @@ func CreateIDChangesTable(dbConn *sql.DB) {
 	if err1 != nil {
 		log.Fatal(err1)
 	}
-
 }
 
 func getFirstArgsInREFByToTableToAttrInAllFromApps(displayConfig *displayConfig,
@@ -1098,4 +1098,31 @@ func transformMapToString(data map[string]interface{}) string {
 
 	return procData
 
+}
+
+func (displayConfig *displayConfig) needToResolveReference(table, attr string) bool {
+	
+	for _, mapping := range displayConfig.mappingsFromOtherAppsToDst {
+
+		if exists, err := schema_mappings.REFExists(
+			mapping, table, attr); err != nil {
+	
+			// This can happen when there is no mapping
+			// For example: 
+			// When migrating from Diaspora to Mastodon:
+			// there is no mapping to stream_entries.activity_id.
+			log.Println(err)
+	
+		} else {
+			if exists {
+				return true
+			}
+		}
+	}
+
+	if displayConfig.dstAppConfig.dag.IfDependsOn(table, attr) {
+		return true
+	}
+
+	return false
 }
