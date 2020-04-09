@@ -546,7 +546,7 @@ func (mWorker *MigrationWorker) GetMappedMemberData(toTable config.ToTable, node
 			}
 			mappedMemberData.Data[toMemberAttr] = *mmv
 		} else if err != nil {
-			mWorker.Logger.Fatal(err)
+			mWorker.Logger.Debug(err)
 		} else {
 			mWorker.Logger.Tracef("%s.%s not resolved!", toTable.Table, toMemberAttr)
 		}
@@ -576,8 +576,10 @@ func (mWorker *MigrationWorker) DeleteNode(node *DependencyNode) error {
 
 func (mWorker *MigrationWorker) TransferMedia(filePath string) error {
 
-	color.Red.Println("File transfer is turned off!")
-	return nil
+	if !mWorker.FTPFlag {
+		color.LightRed.Println("***  File transfer is turned off  ***")
+		return nil
+	}
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -639,224 +641,6 @@ func (mWorker *MigrationWorker) DeleteRoot(threadID int) error {
 	return nil
 }
 
-func (mWorker *MigrationWorker) CheckRawBag(node *DependencyNode) (bool, error) {
-	for _, table := range node.Tag.Members {
-		if tableID, err := db.TableID(mWorker.logTxn.DBconn, table, mWorker.SrcAppConfig.AppID); err == nil {
-			if id, ok := node.Data[table+".id"]; ok {
-				if idRows, err := mWorker.GetRowsFromIDTable(mWorker.SrcAppConfig.AppID, tableID, id, true); err == nil {
-					if len(idRows) == 0 {
-						return true, nil
-					}
-				} else {
-					mWorker.Logger.Debug(node.Data)
-					mWorker.Logger.Fatal("@CheckRawBag > GetRowsFromIDTable > ", mWorker.SrcAppConfig.AppID, tableID, id, err)
-				}
-			} else {
-				mWorker.Logger.Debug(node.Data)
-				mWorker.Logger.Warn("@CheckRawBag > id doesn't exist in table ", table+".id")
-			}
-		} else {
-			mWorker.Logger.Fatal("@CheckRawBag > TableID, fromTable: error in getting table id for member! ", table, err)
-		}
-	}
-	return false, nil
-}
-
-// func (mWorker *MigrationWorker) HandleBagsMigration(mapping config.Mapping, node *DependencyNode) (bool, error) {
-
-// 	migrated, rawBag, isBag := false, false, false
-
-// 	if mWorker.mtype == BAGS {
-// 		isBag = true
-// 		if res, err := mWorker.CheckRawBag(node); err == nil {
-// 			rawBag = res
-// 			if rawBag {
-// 				mWorker.Logger.Info("{{{{{ RAW BAG }}}}}")
-// 			} else {
-// 				mWorker.Logger.Info("{{{{{ NOT RAW BAG }}}}}")
-// 			}
-// 		} else {
-// 			mWorker.Logger.Fatal("@MigrateNode > CheckRawBag > ", err)
-// 		}
-// 	}
-
-// 	var allMappedData []MappedMemberData
-
-// 	for _, toTable := range mapping.ToTables {
-
-// 		if !mWorker.ValidateMappingConditions(toTable, node) {
-// 			mWorker.Logger.Infof("toTable: %s | Mapping Conditions NOT Validated\n", toTable.Table)
-// 			continue
-// 		} else {
-// 			mWorker.Logger.Infof("toTable: %s | Mapping Conditions Validated\n", toTable.Table)
-// 		}
-
-// 		if mappedData, mappedDataErr := mWorker.GetMappedData(toTable, node, isBag, rawBag); mappedDataErr != nil {
-// 			mWorker.Logger.Debug(node.Data)
-// 			mWorker.Logger.Debug(mappedData)
-// 			mWorker.Logger.Fatal("@MigrateNode > GetMappedData Error | ", mappedDataErr)
-// 		} else if len(mappedData.cols) > 0 && len(mappedData.vals) > 0 && len(mappedData.ivals) > 0 {
-// 			if !mWorker.ValidateMappedTableData(toTable, mappedData) {
-// 				mWorker.Logger.Tracef("toTable: %s | mappedData: %v", toTable.Table, mappedData)
-// 				mWorker.Logger.Warn("@MigrateNode > ValidateMappedTableData: All Nulls?")
-// 				continue
-// 			}
-
-// 			if mWorker.mtype == DELETION || mWorker.mtype == BAGS {
-// 				// mWorker.Logger.Tracef("Before Merging Data | %s\n%v | %v\n---", toTable.Table, mappedData.cols, mappedData.ivals)
-// 				if err := mWorker.MergeBagDataWithMappedData(&mappedData, node, toTable); err != nil {
-// 					mWorker.Logger.Fatal("@MigrateNode > MergeDataFromBagsWithMappedData | ", err)
-// 				}
-// 				// mWorker.Logger.Tracef("After Merging Data | %s\n%v | %v\n---", toTable.Table, mappedData.cols, mappedData.ivals)
-// 			}
-
-// 			if id, err := db.InsertRowIntoAppDB(mWorker.tx.DstTx, toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals...); err == nil {
-// 				for fromTable := range mappedData.srcTables {
-// 					if fromTableID, err := db.TableID(mWorker.logTxn.DBconn, fromTable, mWorker.SrcAppConfig.AppID); err == nil {
-// 						if fromID, ok := node.Data[fromTable+".id"]; ok {
-// 							// fromID := fmt.Sprint(val.(int))
-// 							if err := db.InsertIntoIdentityTable(mWorker.tx.StencilTx, mWorker.SrcAppConfig.AppID, mWorker.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(mWorker.logTxn.Txn_id)); err != nil {
-// 								fmt.Println("@MigrateNode: InsertIntoIdentityTable")
-// 								fmt.Println("@Args: ", mWorker.SrcAppConfig.AppID, mWorker.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(mWorker.logTxn.Txn_id))
-// 								fmt.Println("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
-// 								mWorker.Logger.Fatal(err)
-// 								return migrated, err
-// 							} else {
-// 								color.LightBlue.Printf("New IDRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, MigrationID: %s\n", mWorker.SrcAppConfig.AppID, mWorker.DstAppConfig.AppID, fromTableID, toTable.TableID, fromID, fmt.Sprint(id), fmt.Sprint(mWorker.logTxn.Txn_id))
-// 							}
-// 						} else {
-// 							fmt.Println(node.Data)
-// 							mWorker.Logger.Fatal("@MigrateNode: InsertIntoIdentityTable | " + fromTable + ".id doesn't exist")
-// 						}
-// 					} else {
-// 						mWorker.Logger.Fatal("@MigrateNode > TableID, fromTable: error in getting table id for member! ", fromTable, err)
-// 						return migrated, err
-// 					}
-// 				}
-
-// 				if err := mWorker.PushData(toTable, fmt.Sprint(id), mappedData, node); err != nil {
-// 					mWorker.Logger.Debug("@Params:", toTable.Table, fmt.Sprint(id), mappedData.orgCols, mappedData.cols, mappedData.undoAction, node)
-// 					mWorker.Logger.Fatal(err)
-// 					return migrated, err
-// 				}
-
-// 				if len(toTable.Media) > 0 {
-// 					if filePathCol, ok := toTable.Media["path"]; ok {
-// 						if filePath, ok := node.Data[filePathCol]; ok {
-// 							if err := mWorker.TransferMedia(fmt.Sprint(filePath)); err != nil {
-// 								mWorker.Logger.Fatal("@MigrateNode > TransferMedia: ", err)
-// 							}
-// 						}
-// 					} else {
-// 						mWorker.Logger.Fatal("@MigrateNode > toTable.Media: Path not found in map!")
-// 					}
-// 				}
-// 				mWorker.Logger.Infof("Inserted into '%s' with ID '%v' \ncols | %s\nvals | %v", toTable.Table, id, mappedData.cols, mappedData.ivals)
-// 				allMappedData = append(allMappedData, mappedData)
-// 			} else {
-// 				mWorker.Logger.Debugf("@Args | [toTable: %s], [cols: %s], [vals: %s], [ivals: %v], [srcTables: %s], [srcCols: %s]", toTable.Table, mappedData.cols, mappedData.vals, mappedData.ivals, mappedData.srcTables, mappedData.orgCols)
-// 				mWorker.Logger.Debugf("@NODE: %s | Data: %v", node.Tag.Name, node.Data)
-
-// 				if mWorker.mtype == DELETION {
-// 					mWorker.Logger.Fatal("@MigrateNode > InsertRowIntoAppDB: ", err)
-// 				} else if mWorker.mtype == BAGS {
-// 					mWorker.Logger.Error("@MigrateNode > InsertRowIntoAppDB: ", err)
-// 				}
-// 				return migrated, err
-// 			}
-
-// 			if mWorker.mtype != BAGS {
-// 				if err := mWorker.AddMappedReferences(mappedData.refs); err != nil {
-// 					log.Println(mappedData.refs)
-// 					mWorker.Logger.Fatal("@MigrateNode > AddMappedReferences: ", err)
-// 					return migrated, err
-// 				}
-// 			} else if mWorker.mtype == BAGS || rawBag {
-// 				if mWorker.SrcAppConfig.AppID == mWorker.DstAppConfig.AppID {
-// 					if inDepRefs, err := CreateInnerDependencyReferences(mWorker.SrcAppConfig, node.Tag, node.Data, ""); err != nil {
-// 						log.Println(node)
-// 						mWorker.Logger.Fatal("@MigrateNode > CreateInnerDependencyReferences: ", err)
-// 						return migrated, err
-// 					} else if len(inDepRefs) > 0 {
-// 						mappedData.refs = append(mappedData.refs, inDepRefs...)
-// 					}
-
-// 					if depRefs, err := CreateReferencesViaDependencies(mWorker.SrcAppConfig, node.Tag, node.Data, ""); err != nil {
-// 						log.Println(node)
-// 						mWorker.Logger.Fatal("@MigrateNode > CreateReferencesViaDependencies: ", err)
-// 						return migrated, err
-// 					} else if len(depRefs) > 0 {
-// 						mappedData.refs = append(mappedData.refs, depRefs...)
-// 					}
-
-// 					if node.Tag.Name != "root" {
-// 						if ownRefs, err := CreateReferencesViaOwnerships(mWorker.SrcAppConfig, node.Tag, node.Data, ""); err != nil {
-// 							log.Println(node)
-// 							mWorker.Logger.Fatal("@MigrateNode > CreateReferencesViaOwnerships: ", err)
-// 							return migrated, err
-// 						} else if len(ownRefs) > 0 {
-// 							mappedData.refs = append(mappedData.refs, ownRefs...)
-// 						}
-// 					}
-// 				}
-// 				if err := mWorker.AddMappedReferencesIfNotExist(mappedData.refs); err != nil {
-// 					log.Println(mappedData.refs)
-// 					mWorker.Logger.Fatal("@MigrateNode > AddMappedReferencesIfNotExist: ", err)
-// 					return migrated, err
-// 				}
-// 			}
-// 		} else {
-// 			// fmt.Println("cols:", mappedData.cols)
-// 			// fmt.Println("vals:", mappedData.vals)
-// 			// fmt.Println("ivals:", mappedData.ivals)
-// 			// fmt.Println("toTable.Table:", toTable.Table)
-// 			// fmt.Println("toTable.Mapping:", toTable.Mapping)
-// 			// fmt.Println("node.Data:", node.Data)
-// 			// log.Println("@MigrateNode > GetMappedData > If Conditions failed | ", node.Tag.Name, " -> ", toTable.Table)
-// 			// fmt.Println(node.Tag.Name, " -> ", toTable.Table)
-// 			// time.Sleep(time.Second * 5)
-// 			continue
-// 		}
-// 	}
-
-// 	if len(allMappedData) > 0 {
-// 		migrated = true
-// 		// mWorker.Logger.Tracef("Migrated Data:\n", allMappedData)
-// 		for _, mappedData := range allMappedData {
-// 			mWorker.RemoveMappedDataFromNodeData(mappedData, node)
-// 		}
-// 		if mWorker.mtype == BAGS {
-// 			if err := mWorker.DeleteBag(node); err != nil {
-// 				mWorker.Logger.Fatal("@MigrateNode > DeleteBag:", err)
-// 				return false, err
-// 			}
-// 		}
-// 	}
-
-// 	if !strings.EqualFold(node.Tag.Name, "root") {
-// 		switch mWorker.mtype {
-// 		case DELETION:
-// 			{
-// 				if err := mWorker.DeleteNode(mapping, node); err != nil {
-// 					mWorker.Logger.Fatal("@MigrateNode > DeleteNode:", err)
-// 					return false, err
-// 				}
-// 			}
-// 		case NAIVE:
-// 			{
-// 				if err := mWorker.DeleteRow(node); err != nil {
-// 					mWorker.Logger.Fatal("@MigrateNode > DeleteRow:", err)
-// 					return false, err
-// 				} else {
-// 					log.Println(fmt.Sprintf("%s node { %s }", color.FgRed.Render("Deleted"), node.Tag.Name))
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return migrated, nil
-// }
-
 func (mWorker *MigrationWorker) HandleUnmappedNode(node *DependencyNode) error {
 	if !strings.EqualFold(mWorker.mtype, DELETION) {
 		return errors.New("3")
@@ -912,20 +696,56 @@ func (mWorker *MigrationWorker) CreateAttributeRows(mmd MappedMemberData) error 
 func (mWorker *MigrationWorker) CreateReferenceRows(mmd MappedMemberData) error {
 
 	for _, mmv := range mmd.Data {
+
 		if mmv.Ref == nil {
 			continue
 		}
+
 		if mmv.Ref.fromVal == STENCIL_NULL || mmv.Ref.toVal == STENCIL_NULL {
-			color.Yellow.Printf("Ref Exists | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromAttrID, mmv.Ref.fromVal, mmv.Ref.toMemberID, mmv.Ref.toAttrID, mmv.Ref.toVal)
+			color.Yellow.Printf("Ref Exists | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, FromID: %v, ToMember: %s, ToAttr: %s, ToVal: %s\n", mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromAttrID, mmv.Ref.fromVal, mmv.Ref.fromID, mmv.Ref.toMemberID, mmv.Ref.toAttrID, mmv.Ref.toVal)
 			continue
 		}
-		if err := db.CreateNewReferenceV2(mWorker.tx.StencilTx, mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromVal, mmv.Ref.toMemberID, mmv.Ref.toVal, fmt.Sprint(mWorker.logTxn.Txn_id), mmv.Ref.fromAttrID, mmv.Ref.toAttrID); err != nil {
-			mWorker.Logger.Debugf("App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromAttrID, mmv.Ref.fromVal, mmv.Ref.toMemberID, mmv.Ref.toAttrID, mmv.Ref.toVal)
-			mWorker.Logger.Debug(mmv.Ref)
+
+		refs := []MappingRef{*mmv.Ref}
+
+		if mmv.AppID == mWorker.DstAppConfig.AppID {
+			if bagTag, err := mWorker.DstAppConfig.GetTagByMember(mmv.FromMember); err == nil {
+				if bagRefs, err := mmv.CreateSelfReferences(mWorker.DstAppConfig, *bagTag, mmd.GetDataMap(), mmv.FromAttr); err == nil {
+					refs = append(refs, bagRefs...)
+				} else {
+					mWorker.Logger.Fatal(err)
+				}
+			}
+		}
+
+		for _, ref := range refs {
+			if err := db.CreateNewReferenceV2(mWorker.tx.StencilTx, ref.appID, ref.fromMemberID, ref.fromVal, ref.fromID, ref.toMemberID, ref.toVal, fmt.Sprint(mWorker.logTxn.Txn_id), ref.fromAttrID, ref.toAttrID); err != nil {
+				mWorker.Logger.Debugf("App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", ref.appID, ref.fromMemberID, ref.fromAttrID, ref.fromVal, ref.toMemberID, ref.toAttrID, ref.toVal)
+				mWorker.Logger.Debug(ref)
+				mWorker.Logger.Fatal(err)
+				return err
+			} else {
+				color.Magenta.Printf("New Ref | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", ref.appID, ref.fromMemberID, ref.fromAttrID, ref.fromVal, ref.toMemberID, ref.toAttrID, mmv.Ref.toVal)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (mWorker *MigrationWorker) HandleNodeMedia(toTable config.ToTable, data DataMap) error {
+	if len(toTable.Media) > 0 {
+		if filePathCol, ok := toTable.Media["path"]; ok {
+			if filePath, ok := data[filePathCol]; ok {
+				if err := mWorker.TransferMedia(fmt.Sprint(filePath)); err != nil {
+					mWorker.Logger.Fatal("@MigrateNode > TransferMedia: ", err)
+					return err
+				}
+			}
+		} else {
+			err := errors.New("@HandleNodeMedia > toTable.Media: Path not found in map")
 			mWorker.Logger.Fatal(err)
 			return err
-		} else {
-			color.Magenta.Printf("New Ref | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromAttrID, mmv.Ref.fromVal, mmv.Ref.toMemberID, mmv.Ref.toAttrID, mmv.Ref.toVal)
 		}
 	}
 	return nil
@@ -949,7 +769,7 @@ func (mWorker *MigrationWorker) HandleNodeDeletion(node *DependencyNode, rootChe
 				mWorker.Logger.Fatal("@DeleteNode > SendNodeToBagWithOwnerID:", err)
 				return err
 			}
-			log.Printf("%s { %s } | Owner ID: %v \n", color.FgLightYellow.Render("BAG"), node.Tag.Name, mWorker.uid)
+			// log.Printf("%s { %s } | Owner ID: %v \n", color.FgLightYellow.Render("BAG"), node.Tag.Name, mWorker.uid)
 		}
 	}
 
@@ -972,13 +792,10 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 
 			for _, toTable := range mapping.ToTables {
 
-				// Merge data from bags
 				mappedMemberDatum := mWorker.GetMappedMemberData(toTable, node)
 
 				if !mWorker.ValidateMappingConditions(toTable.Conditions, node.Data) {
 					mWorker.Logger.Info("Mapping conditions not validated!")
-					mWorker.Logger.Debug("mappedMemberDatum | ", mappedMemberDatum)
-					mWorker.Logger.Debug("toTable.Conditions | ", toTable.Conditions)
 					continue
 				}
 
@@ -988,7 +805,18 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 					continue
 				}
 
+				mWorker.Logger.Infof("Cols before merging: %v\n", mappedMemberDatum.ToCols())
+				if err := mWorker.MergeBagDataWithMappedData(&mappedMemberDatum, node); err != nil {
+					mWorker.Logger.Fatal(err)
+				} else {
+					mWorker.Logger.Infof("Cols after merging: %v\n", mappedMemberDatum.ToCols())
+				}
+
 				if err := mWorker.MigrateMemberData(mappedMemberDatum, node); err != nil {
+					mWorker.Logger.Fatal(err)
+				}
+
+				if err := mWorker.HandleNodeMedia(toTable, node.Data); err != nil {
 					mWorker.Logger.Fatal(err)
 				}
 
@@ -996,7 +824,6 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 					mWorker.Logger.Fatal(err)
 				}
 
-				// Check all different reference creation scenarios
 				if err := mWorker.CreateReferenceRows(mappedMemberDatum); err != nil {
 					mWorker.Logger.Fatal(err)
 				}
@@ -1009,10 +836,8 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 				migrated = true
 			}
 
-			node.DeleteMappedDataFromNode(mappedMemberData)
-
-			if err := mWorker.HandleNodeDeletion(node, true); err != nil {
-				mWorker.Logger.Fatal(err)
+			if migrated {
+				node.DeleteMappedDataFromNode(mappedMemberData)
 			}
 
 			return migrated, nil
@@ -1021,7 +846,7 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 			return false, errors.New("Waiting List Case")
 		}
 	} else {
-		if strings.EqualFold(mWorker.mtype, BAGS) || !strings.EqualFold(mWorker.mtype, DELETION) {
+		if !strings.EqualFold(mWorker.mtype, DELETION) {
 			return false, fmt.Errorf("no mapping found for node: %s", node.Tag.Name)
 		}
 		return false, mWorker.HandleUnmappedNode(node)
@@ -1053,119 +878,6 @@ func (mWorker *MigrationWorker) CheckNextNode(node *DependencyNode) error {
 	} else {
 		return err
 	}
-}
-
-func (mWorker *MigrationWorker) CallMigration(node *DependencyNode, threadID int) error {
-
-	if ownerID, isRoot := mWorker.GetNodeOwner(node); isRoot && len(ownerID) > 0 {
-		log.Println(fmt.Sprintf("OWNED   node { %s } | root [%s] : owner [%s]", node.Tag.Name, mWorker.uid, ownerID))
-		if err := mWorker.InitTransactions(); err != nil {
-			return err
-		} else {
-			defer mWorker.tx.SrcTx.Rollback()
-			defer mWorker.tx.DstTx.Rollback()
-			defer mWorker.tx.StencilTx.Rollback()
-		}
-
-		log.Println(fmt.Sprintf("CHECKING NEXT NODES { %s }", node.Tag.Name))
-
-		if err := mWorker.CheckNextNode(node); err != nil {
-			return err
-		}
-
-		// log.Println(fmt.Sprintf("CHECKING PREVIOUS NODES { %s }", node.Tag.Name))
-
-		// if previousNodes, err := mWorker.GetAllPreviousNodes(node); err == nil {
-		// for _, previousNode := range previousNodes {
-		// mWorker.AddToReferences(node, previousNode)
-		// }
-		// } else {
-		// return err
-		// }
-
-		log.Println(fmt.Sprintf("HANDLING MIGRATION { %s }", node.Tag.Name))
-
-		if migrated, err := mWorker.HandleMigration(node); err == nil {
-			if migrated {
-				log.Println(fmt.Sprintf("%s  node { %s } ", color.FgLightGreen.Render("Migrated"), node.Tag.Name))
-			} else {
-				log.Println(fmt.Sprintf("%s  node { %s } ", color.FgGreen.Render("Not Migrated / No Err"), node.Tag.Name))
-			}
-		} else {
-			if strings.EqualFold(err.Error(), "3") {
-				log.Println(fmt.Sprintf("UNMAPPED  node { %s } ", node.Tag.Name))
-			} else if strings.EqualFold(err.Error(), "2") {
-				log.Println(fmt.Sprintf("Sent2Bag  node { %s } ", node.Tag.Name))
-			} else {
-				log.Println(fmt.Sprintf("FAILED    node { %s } ", node.Tag.Name))
-				if strings.EqualFold(err.Error(), "0") {
-					log.Println(err)
-					return err
-				}
-				return err
-				// if strings.Contains(err.Error(), "deadlock") {
-				// 	return err
-				// }
-			}
-		}
-
-		if err := mWorker.CommitTransactions(); err != nil {
-			return err
-		} else {
-			log.Println(fmt.Sprintf("COMMITTED node { %s } ", node.Tag.Name))
-		}
-	} else {
-		log.Println(fmt.Sprintf("VISITED  node { %s } | root [%s] : owner [%s]", node.Tag.Name, mWorker.uid, ownerID))
-		mWorker.visitedNodes.MarkAsVisited(node)
-	}
-	fmt.Println("------------------------------------------------------------------------")
-	return nil
-}
-
-func (mWorker *MigrationWorker) CallMigrationX(node *DependencyNode, threadID int) error {
-	if ownerID, isRoot := mWorker.GetNodeOwner(node); isRoot && len(ownerID) > 0 {
-		if err := mWorker.InitTransactions(); err != nil {
-			return err
-		} else {
-			defer mWorker.tx.SrcTx.Rollback()
-			defer mWorker.tx.DstTx.Rollback()
-			defer mWorker.tx.StencilTx.Rollback()
-		}
-		if migrated, err := mWorker.HandleMigration(node); err == nil {
-			if migrated {
-				log.Println(fmt.Sprintf("%s  node { %s } ", color.FgLightGreen.Render("Migrated"), node.Tag.Name))
-			} else {
-				log.Println(fmt.Sprintf("%s  node { %s } ", color.FgGreen.Render("Not Migrated / No Err"), node.Tag.Name))
-			}
-		} else {
-			log.Println(fmt.Sprintf("RCVD ERR  node { %s } ", node.Tag.Name), err)
-
-			if strings.EqualFold(err.Error(), "3") {
-				log.Println(fmt.Sprintf("IGNORED   node { %s } ", node.Tag.Name))
-			} else if strings.EqualFold(err.Error(), "2") {
-				log.Println(fmt.Sprintf("BAGGED?   node { %s } ", node.Tag.Name))
-			} else {
-				log.Println(fmt.Sprintf("FAILED    node { %s } ", node.Tag.Name), err)
-				if strings.EqualFold(err.Error(), "0") {
-					log.Println(err)
-					return err
-				}
-				if strings.Contains(err.Error(), "deadlock") {
-					return err
-				}
-			}
-		}
-		if err := mWorker.CommitTransactions(); err != nil {
-			mWorker.Logger.Fatal(fmt.Sprintf("UNABEL to COMMIT node { %s } ", node.Tag.Name))
-			return err
-		} else {
-			log.Println(fmt.Sprintf("COMMITTED node { %s } ", node.Tag.Name))
-		}
-	} else {
-		log.Println(fmt.Sprintf("VISITED  node { %s } | root [%s] : owner [%s]", node.Tag.Name, mWorker.uid, ownerID))
-	}
-	mWorker.visitedNodes.MarkAsVisited(node)
-	return nil
 }
 
 func (mWorker *MigrationWorker) CloseDBConns() {
@@ -1347,7 +1059,7 @@ func (mWorker *MigrationWorker) RollbackTransactions() error {
 	return nil
 }
 
-func (mWorker *MigrationWorker) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.MappedApp, config.Mapping, bool) {
+func (mWorker *MigrationWorker) FetchMappingsForBag(srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember string) (config.Mapping, bool) {
 
 	var combinedMapping config.Mapping
 	var appMappings config.MappedApp
@@ -1369,8 +1081,8 @@ func (mWorker *MigrationWorker) FetchMappingsForBag(srcApp, srcAppID, dstApp, ds
 
 		}
 	}
-	// fmt.Println(">>>>>>>>", srcApp, srcAppID, dstApp, dstAppID, srcMember, dstMember, " | Mappings | ", combinedMapping)
-	return appMappings, combinedMapping, mappingFound
+
+	return combinedMapping, mappingFound
 }
 
 func (mWorker *MigrationWorker) CleanMappingAttr(attr string) string {
@@ -1424,7 +1136,7 @@ func (mWorker *MigrationWorker) FetchMappingsForNode(node *DependencyNode) (conf
 	return combinedMapping, mappingFound
 }
 
-func (mWorker *MigrationWorker) GetUserIDAppIDFromPreviousMigration(currentAppID, currentUID string) (string, string, error) {
+func (mWorker *MigrationWorker) GetUserIDAppIDFromPreviousMigration(currentAppID, currentUID string) (*App, string, error) {
 
 	currentRootMemberID := db.GetAppRootMemberID(mWorker.logTxn.DBconn, currentAppID)
 
@@ -1433,23 +1145,27 @@ func (mWorker *MigrationWorker) GetUserIDAppIDFromPreviousMigration(currentAppID
 		panic(err)
 	}
 
-	fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Getting previous migration | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
+	mWorker.Logger.Infof("Getting previous migration | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
 
-	if IDRows, err := mWorker.GetRowsFromIDTable(currentAppID, currentRootMemberID, currentUIDInt, false); err == nil {
-		fmt.Println(IDRows)
+	if IDRows, err := mWorker.GetRowsFromAttrTable(currentAppID, currentRootMemberID, currentUIDInt, false); err == nil {
 		if len(IDRows) > 0 {
 			for _, IDRow := range IDRows {
 				prevRootMemberID := db.GetAppRootMemberID(mWorker.logTxn.DBconn, IDRow.FromAppID)
 				if strings.EqualFold(IDRow.FromMemberID, prevRootMemberID) {
 					fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", IDRow.FromAppID, IDRow.FromID, IDRow.FromMemberID)
-					return IDRow.FromAppID, fmt.Sprint(IDRow.FromID), nil
+					if appName, err := db.GetAppNameByAppID(mWorker.logTxn.DBconn, IDRow.FromAppID); err != nil {
+						mWorker.Logger.Fatal(err)
+					} else {
+						return &App{Name: appName, ID: IDRow.FromAppID}, fmt.Sprint(IDRow.FromID), nil
+					}
+
 				}
 			}
 		}
-		fmt.Printf("@GetUserIDAppIDFromPreviousMigration | No previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
-		return "", "", nil
+		mWorker.Logger.Infof("No previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
+		return nil, "", nil
 	} else {
-		log.Fatalf("@GetUserIDAppIDFromPreviousMigration | App: '%s', UID: '%v', rootMemberID: '%s' | err => %v \n", currentAppID, currentUIDInt, currentRootMemberID, err)
-		return "", "", fmt.Errorf("no previous migration user and app id found for => currentAppID: %s, currentUID: %v", currentAppID, currentUIDInt)
+		mWorker.Logger.Fatalf("@GetUserIDAppIDFromPreviousMigration | App: '%s', UID: '%v', rootMemberID: '%s' | err => %v \n", currentAppID, currentUIDInt, currentRootMemberID, err)
+		return nil, "", fmt.Errorf("no previous migration user and app id found for => currentAppID: %s, currentUID: %v", currentAppID, currentUIDInt)
 	}
 }

@@ -22,7 +22,17 @@ type ValueWithReference struct {
 // App : Data struct
 type App struct {
 	Name string
-	ID   int64
+	ID   string
+}
+
+type Bag struct {
+	AppID    string
+	ID       string
+	UID      string
+	PK       string
+	MemberID string
+	Member   string
+	Node     *DependencyNode
 }
 
 // Member : Data struct
@@ -147,25 +157,31 @@ type MappedMemberValue struct {
 }
 
 type MigrationWorker struct {
-	uid          string
-	mtype        string
-	threadID     int
-	visitedNodes VisitedNodes
-	refCreator   ReferenceCreator
-	SrcAppConfig config.AppConfig
-	DstAppConfig config.AppConfig
-	mappings     config.MappedApp
-	Root         *DependencyNode
-	logTxn       *transaction.Log_txn
-	FTPClient    *ftp.ServerConn
-	tx           Transactions
-	Logger       *logg.Logger
-	Size         int
-	mThread      *MigrationThreadController
+	uid           string
+	mtype         string
+	threadID      int
+	visitedNodes  VisitedNodes
+	processedBags ProcessedBags
+	refCreator    ReferenceCreator
+	SrcAppConfig  config.AppConfig
+	DstAppConfig  config.AppConfig
+	mappings      config.MappedApp
+	Root          *DependencyNode
+	logTxn        *transaction.Log_txn
+	FTPClient     *ftp.ServerConn
+	tx            Transactions
+	Logger        *logg.Logger
+	Size          int
+	mThread       *MigrationThreadController
+	FTPFlag       bool
 }
 
 type VisitedNodes struct {
 	Nodes map[string]map[string]bool
+}
+
+type ProcessedBags struct {
+	Bags map[string]bool
 }
 
 type ReferenceCreator struct {
@@ -184,9 +200,9 @@ type MigrationThreadController struct {
 	UID             string
 	waitGroup       sync.WaitGroup
 	commitChannel   chan ThreadChannel
-	enableBags      bool
-	isBlade         bool
-	totalThreads    int
+	EnableBags      bool
+	Blade           bool
+	Threads         int
 	currentThreads  int
 	txnID           int
 	stencilDB       *sql.DB
@@ -197,4 +213,5 @@ type MigrationThreadController struct {
 	mappings        config.MappedApp
 	size            int
 	LoggerDebugFlag bool
+	FTPFlag         bool
 }

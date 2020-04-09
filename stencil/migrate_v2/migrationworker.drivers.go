@@ -46,7 +46,7 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 		log.Println(fmt.Sprintf("PROCESS Node { %s } ", color.FgLightCyan.Render(node.Tag.Name)))
 
 		if strings.EqualFold(node.Tag.Name, rootTagName) {
-			return self.DeleteRoot(threadID)
+			// return self.DeleteRoot(threadID)
 		} else {
 			if err := self.CallMigration(node, threadID); err != nil {
 				return err
@@ -118,20 +118,24 @@ func (self *MigrationWorker) NaiveMigration(threadID int) error {
 	return nil
 }
 
-func (mWorker *MigrationWorker) MigrateBags(threadID int, isBlade ...bool) error {
+func (mWorker *MigrationWorker) BagsMigration(threadID int) error {
 
-	bagAppID, userID := mWorker.SrcAppConfig.AppID, mWorker.uid
+	bagUID := mWorker.uid
+	bagApp := &App{
+		Name: mWorker.SrcAppConfig.AppName,
+		ID:   mWorker.SrcAppConfig.AppID,
+	}
 
 	for {
-		if err := mWorker.StartBagsMigration(userID, bagAppID, threadID, isBlade...); err != nil {
+		if err := mWorker.CallBagsMigration(bagUID, bagApp.ID, threadID); err != nil {
 			mWorker.Logger.Fatal(err)
 		}
-		mWorker.Logger.Infof("BagWorker finished | App: '%s', UID: '%s' \n", bagAppID, userID)
+		mWorker.Logger.Infof("BagWorker finished | Thread # %v | App: '%s', UID: '%s' \n", threadID, bagApp.ID, bagUID)
 		var prevIDErr error
-		if bagAppID, userID, prevIDErr = mWorker.GetUserIDAppIDFromPreviousMigration(bagAppID, userID); prevIDErr != nil {
+		if bagApp, bagUID, prevIDErr = mWorker.GetUserIDAppIDFromPreviousMigration(bagApp.ID, bagUID); prevIDErr != nil {
 			mWorker.Logger.Fatal(prevIDErr)
-		} else if len(bagAppID) <= 0 && len(userID) <= 0 {
-			mWorker.Logger.Info("Bag migration finished!")
+		} else if len(bagApp.ID) <= 0 && len(bagUID) <= 0 {
+			mWorker.Logger.Info("Bag Migration Finished!")
 			break
 		}
 	}

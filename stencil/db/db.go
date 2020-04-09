@@ -335,9 +335,20 @@ func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]m
 	return DataCall(dbConn, query, app, member, id)
 }
 
+func GetRowsFromAttrTableByTo(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
+
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
+	return DataCall(dbConn, query, app, member, id)
+}
+
+func GetRowsFromAttrTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
+	return DataCall(dbConn, query, app, member, id)
+}
+
 func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[string]interface{}, error) {
 	query := "SELECT app, member, id, data, pk, user_id FROM data_bags WHERE user_id = $1 AND app = $2 AND migration_id != $3 ORDER BY pk DESC"
-	fmt.Println(query, user_id, app_id, migration_id)
+	// fmt.Println(query, user_id, app_id, migration_id)
 	return DataCall(dbConn, query, user_id, app_id, migration_id)
 }
 
@@ -386,9 +397,9 @@ func CreateNewReference(tx *sql.Tx, app, fromMember string, fromID int64, toMemb
 	return err
 }
 
-func CreateNewReferenceV2(tx *sql.Tx, app, fromMember string, fromVal string, toMember string, toVal string, migration_id, fromReference, toReference string) error {
+func CreateNewReferenceV2(tx *sql.Tx, app, fromMember string, fromVal string, fromID int64, toMember string, toVal string, migration_id, fromReference, toReference string) error {
 
-	query := fmt.Sprintf("INSERT INTO reference_table_v2 (app, from_member, from_val, from_attr, to_member, to_val, to_attr, migration_id) VALUES ('%s', '%s', '%s', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromVal, fromReference, toMember, toVal, toReference, migration_id)
+	query := fmt.Sprintf("INSERT INTO reference_table_v2 (app, from_member, from_val, from_id, from_attr, to_member, to_val, to_attr, migration_id) VALUES ('%s', '%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromVal, fromID, fromReference, toMember, toVal, toReference, migration_id)
 
 	_, err := tx.Exec(query)
 	if err != nil {
@@ -562,12 +573,12 @@ func GetUnmigratedUsers() ([]map[string]interface{}, error) {
 func GetAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
 
 	query := fmt.Sprintf(`SELECT root_member_id from app_root_member where app_id = %s`, appID)
-	fmt.Printf("@db.GetAppRootMemberID | %s\n", query)
+	// fmt.Printf("@db.GetAppRootMemberID | %s\n", query)
 	data, err := DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("@db.GetAppRootMemberID | root_member_id: '%v' \n", data["root_member_id"])
+	// fmt.Printf("@db.GetAppRootMemberID | root_member_id: '%v' \n", data["root_member_id"])
 	return fmt.Sprint(data["root_member_id"])
 }
 

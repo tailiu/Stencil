@@ -16,25 +16,31 @@ func (mThread *MigrationThreadController) Init() {
 
 	mThread.Logger = helper.CreateLogger(mThread.LoggerDebugFlag)
 
-	if mThread.enableBags {
+	if mThread.EnableBags {
 		mThread.Logger.Info("Bags: Enabled")
 	} else {
 		mThread.Logger.Info("Bags: Disabled")
 	}
 
-	if mThread.isBlade {
+	if mThread.FTPFlag {
+		mThread.Logger.Info("File Transfer: Enabled")
+	} else {
+		mThread.Logger.Info("File Transfer: Disabled")
+	}
+
+	if mThread.Blade {
 		mThread.Logger.Info("Destination App Server: Blade")
 	} else {
 		mThread.Logger.Info("Destination App Server:  Not Blade")
 	}
 
-	if len(mThread.DstAppInfo.Name) <= 0 || len(mThread.SrcAppInfo.Name) <= 0 || mThread.DstAppInfo.ID == 0 || mThread.SrcAppInfo.ID == 0 {
-		mThread.Logger.Debug("SrcAppInfo | ", mThread.SrcAppInfo)
-		mThread.Logger.Debug("DstAppInfo | ", mThread.DstAppInfo)
+	if len(mThread.DstAppInfo.Name) <= 0 || len(mThread.SrcAppInfo.Name) <= 0 || len(mThread.DstAppInfo.ID) == 0 || len(mThread.SrcAppInfo.ID) == 0 {
+		mThread.Logger.Debug("Src App | ", mThread.SrcAppInfo)
+		mThread.Logger.Debug("Dst App | ", mThread.DstAppInfo)
 		mThread.Logger.Fatal("App Info(s) not set!")
 	} else {
-		mThread.Logger.Trace("SrcAppInfo | ", mThread.SrcAppInfo)
-		mThread.Logger.Trace("DstAppInfo | ", mThread.DstAppInfo)
+		mThread.Logger.Info("Src App | ", mThread.SrcAppInfo)
+		mThread.Logger.Info("Dst App | ", mThread.DstAppInfo)
 	}
 
 	switch mThread.MType {
@@ -78,8 +84,8 @@ func (mThread *MigrationThreadController) Init() {
 		mThread.mappings = *mappings
 	}
 
-	if mThread.totalThreads == 0 {
-		mThread.totalThreads = 1
+	if mThread.Threads == 0 {
+		mThread.Threads = 1
 	}
 
 	if txnID, err := db.CreateMigrationTransaction(mThread.stencilDB); err == nil {
@@ -88,7 +94,7 @@ func (mThread *MigrationThreadController) Init() {
 		mThread.Logger.Fatal("Can't create migration transaction | ", err)
 	}
 
-	if !db.RegisterMigration(mThread.UID, fmt.Sprint(mThread.SrcAppInfo.ID), fmt.Sprint(mThread.DstAppInfo.ID), mThread.MType, mThread.txnID, mThread.totalThreads, mThread.stencilDB, false) {
+	if !db.RegisterMigration(mThread.UID, fmt.Sprint(mThread.SrcAppInfo.ID), fmt.Sprint(mThread.DstAppInfo.ID), mThread.MType, mThread.txnID, mThread.Threads, mThread.stencilDB, false) {
 		mThread.Logger.Fatal("Unable to register migration!")
 	} else {
 		mThread.Logger.Info("Migration Registered of Type: ", mThread.MType)
@@ -109,7 +115,7 @@ func (mThread *MigrationThreadController) CreateMigrationWorker(threadID int) Mi
 		log.Fatal(err)
 	}
 
-	dstAppConfig, err := config.CreateAppConfig(mThread.DstAppInfo.Name, fmt.Sprint(mThread.DstAppInfo.ID), mThread.isBlade)
+	dstAppConfig, err := config.CreateAppConfig(mThread.DstAppInfo.Name, fmt.Sprint(mThread.DstAppInfo.ID), mThread.Blade)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,6 +129,8 @@ func (mThread *MigrationThreadController) CreateMigrationWorker(threadID int) Mi
 		logTxn:       &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
 		mtype:        mThread.MType,
 		visitedNodes: VisitedNodes{},
+		mThread:      mThread,
+		FTPFlag:      mThread.FTPFlag,
 		Logger:       helper.CreateLogger(mThread.LoggerDebugFlag)}
 
 	mWorker.visitedNodes.Init()
@@ -131,7 +139,9 @@ func (mThread *MigrationThreadController) CreateMigrationWorker(threadID int) Mi
 		mWorker.Logger.Fatal(err)
 	}
 
-	mWorker.FTPClient = GetFTPClient()
+	if mWorker.FTPFlag {
+		mWorker.FTPClient = GetFTPClient()
+	}
 
 	mThread.Logger.Info("Migration worker created!")
 	fmt.Print("========================================================================\n\n")
@@ -148,6 +158,7 @@ func (mThread *MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppI
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	dstApp, err := db.GetAppNameByAppID(mThread.stencilDB, dstAppID)
 	if err != nil {
 		log.Fatal(err)
@@ -158,7 +169,7 @@ func (mThread *MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppI
 		log.Fatal(err)
 	}
 
-	dstAppConfig, err := config.CreateAppConfig(dstApp, dstAppID, mThread.isBlade)
+	dstAppConfig, err := config.CreateAppConfig(dstApp, dstAppID, mThread.Blade)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -177,20 +188,23 @@ func (mThread *MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppI
 	}
 
 	mWorker := MigrationWorker{
-		uid:          uid,
-		SrcAppConfig: srcAppConfig,
-		DstAppConfig: dstAppConfig,
-		mappings:     *mappings,
-		logTxn:       &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
-		mtype:        BAGS,
-		visitedNodes: VisitedNodes{},
-		Logger:       helper.CreateLogger(mThread.LoggerDebugFlag)}
+		uid:           uid,
+		SrcAppConfig:  srcAppConfig,
+		DstAppConfig:  dstAppConfig,
+		mappings:      *mappings,
+		logTxn:        &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
+		mtype:         BAGS,
+		processedBags: ProcessedBags{},
+		FTPFlag:       mThread.FTPFlag,
+		Logger:        helper.CreateLogger(mThread.LoggerDebugFlag)}
 
-	mWorker.visitedNodes.Init()
+	mWorker.processedBags.Init()
 
-	mWorker.FTPClient = GetFTPClient()
+	if mWorker.FTPFlag {
+		mWorker.FTPClient = GetFTPClient()
+	}
 
-	mThread.Logger.Info("Bag worker created!")
+	mThread.Logger.Infof("Bag worker created for thread: %d | uid: %s, srcApp: %s, dstApp: %s \n", threadID, uid, srcAppID, dstAppID)
 	fmt.Print("========================================================================\n\n")
 
 	return mWorker
@@ -213,7 +227,7 @@ func (mThread *MigrationThreadController) NewMigrationThread() {
 	case BAGS:
 		{
 			for {
-				if err := mWorker.MigrateBags(newThreadID, mThread.isBlade); err != nil {
+				if err := mWorker.BagsMigration(newThreadID); err != nil {
 					mWorker.Logger.Error("NewMigrationThread : MigrateBags | Crashed with error: ", err)
 					time.Sleep(time.Second * 5)
 					continue
@@ -226,18 +240,18 @@ func (mThread *MigrationThreadController) NewMigrationThread() {
 			for {
 				if err := mWorker.DeletionMigration(mWorker.Root, newThreadID); err != nil {
 					mWorker.Logger.Error("NewMigrationThread : DeletionMigration | Crashed with error: ", err)
-					mWorker.RenewDBConn(mThread.isBlade)
+					mWorker.RenewDBConn(mThread.Blade)
 					time.Sleep(time.Second * 5)
 					continue
 				}
 				break
 			}
 
-			if mThread.enableBags {
+			if mThread.EnableBags {
 				for {
-					if err := mWorker.MigrateBags(newThreadID, mThread.isBlade); err != nil {
+					if err := mWorker.BagsMigration(newThreadID); err != nil {
 						mWorker.Logger.Error("NewMigrationThread : DeletionMigration > MigrateBags | Crashed with error: ", err)
-						mWorker.RenewDBConn(mThread.isBlade)
+						mWorker.RenewDBConn(mThread.Blade)
 						time.Sleep(time.Second * 5)
 						continue
 					}
@@ -250,7 +264,7 @@ func (mThread *MigrationThreadController) NewMigrationThread() {
 			for {
 				if err := mWorker.ConsistentMigration(newThreadID); err != nil {
 					mWorker.Logger.Error("NewMigrationThread : ConsistentMigration | Crashed with error: ", err)
-					mWorker.RenewDBConn(mThread.isBlade)
+					mWorker.RenewDBConn(mThread.Blade)
 					time.Sleep(time.Second * 5)
 					continue
 				}
@@ -262,7 +276,7 @@ func (mThread *MigrationThreadController) NewMigrationThread() {
 			for {
 				if err := mWorker.IndependentMigration(newThreadID); err != nil {
 					mWorker.Logger.Error("NewMigrationThread : IndependentMigration | Crashed with error: ", err)
-					mWorker.RenewDBConn(mThread.isBlade)
+					mWorker.RenewDBConn(mThread.Blade)
 					time.Sleep(time.Second * 5)
 					continue
 				}
@@ -274,7 +288,7 @@ func (mThread *MigrationThreadController) NewMigrationThread() {
 			for {
 				if err := mWorker.NaiveMigration(newThreadID); err != nil {
 					mWorker.Logger.Error("NewMigrationThread : NaiveMigration | Crashed with error: ", err)
-					mWorker.RenewDBConn(mThread.isBlade)
+					mWorker.RenewDBConn(mThread.Blade)
 					time.Sleep(time.Second * 5)
 					continue
 				}
@@ -289,7 +303,7 @@ func (mThread *MigrationThreadController) NewMigrationThread() {
 // Run : Start migration threads
 func (mThread *MigrationThreadController) Run() error {
 
-	for i := 0; i < mThread.totalThreads; i++ {
+	for i := 0; i < mThread.Threads; i++ {
 		mThread.waitGroup.Add(1)
 		go mThread.NewMigrationThread()
 	}

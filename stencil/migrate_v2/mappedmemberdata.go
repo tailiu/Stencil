@@ -52,14 +52,21 @@ func (mmd *MappedMemberData) SetMember(table string) {
 }
 
 func (mmd MappedMemberData) SrcTables() []Member {
+
 	var srcTables []Member
+
 	added := make(map[string]bool)
+
 	for _, mmv := range mmd.Data {
+		if mmv.IsExpression || mmv.IsInput {
+			continue
+		}
 		if _, ok := added[mmv.FromMemberID]; !ok {
 			srcTables = append(srcTables, Member{ID: mmv.FromMemberID, Name: mmv.FromMember})
 		}
 		added[mmv.FromMemberID] = true
 	}
+
 	return srcTables
 }
 
@@ -79,4 +86,15 @@ func (mmd MappedMemberData) FromCols(table string) []string {
 		}
 	}
 	return fromCols
+}
+
+func (mmd MappedMemberData) GetDataMap() DataMap {
+
+	data := make(DataMap)
+
+	for col, mmv := range mmd.Data {
+		data[col] = mmv.Value
+	}
+
+	return data
 }
