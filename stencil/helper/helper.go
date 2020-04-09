@@ -9,11 +9,14 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"os"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	logg "github.com/withmandala/go-log"
 )
 
 func Linebreak(ch string, times ...int) {
@@ -166,9 +169,20 @@ func GetInt64(val interface{}) int64 {
 		return valInt
 	} else if valFloat, ok := val.(float64); ok {
 		valInt := int64(math.Ceil(valFloat))
-		fmt.Printf("Float64: %v converted to Int64: %v\n", valFloat, valInt)
+		// fmt.Printf("Float64: %v converted to Int64: %v\n", valFloat, valInt)
 		return valInt
 	}
 	log.Fatal("@GetInt64: Neither int64 nor float64 | ", val)
 	return 0
+}
+
+func CreateLogger(debug bool) *logg.Logger {
+	logger := logg.New(os.Stderr)
+
+	logger.WithTimestamp()
+	logger.WithColor()
+	if debug {
+		logger.WithDebug()
+	}
+	return logger
 }

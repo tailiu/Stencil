@@ -327,6 +327,12 @@ func (self *AppConfig) GetTagQS(tag Tag, params map[string]string) *qr.QS {
 }
 
 func (self *AppConfig) CloseDBConns() {
-	self.DBConn.Close()
-	self.QR.StencilDB.Close()
+	if self.DBConn != nil {
+		self.DBConn.Close()
+	}
+	if self.QR != nil {
+		if self.QR.StencilDB != nil {
+			self.QR.StencilDB.Close()
+		}
+	}
 }

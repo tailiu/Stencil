@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/gookit/color"
 	_ "github.com/lib/pq" // postgres driver
@@ -101,6 +102,32 @@ func CloseDBConn(app string) {
 	}
 }
 
+func NewRandInt() int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(2147483647)
+}
+
+func CreateMigrationTransaction(dbConn *sql.DB) (int, error) {
+
+	txnID := NewRandInt()
+
+	q := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, 'BEGIN_TRANSACTION', now());", txnID)
+
+	if _, err := dbConn.Exec(q); err != nil {
+		return 0, err
+	}
+
+	return txnID, nil
+}
+
+func MigrationTransactionLogOutcome(dbConn *sql.DB, txnID int, outcome string) error {
+	q := fmt.Sprintf("INSERT INTO txn_logs (action_id, action_type, created_at) VALUES (%d, '%s', now());", txnID, outcome)
+	if _, err := dbConn.Exec(q); err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetRowCount(dbConn *sql.DB, table string) (int64, error) {
 	sql := fmt.Sprintf("SELECT COUNT(*) as total_rows from %s", table)
 	if result, err := DataCall1(dbConn, sql); err == nil {
@@ -181,6 +208,19 @@ func InsertIntoIdentityTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, src
 	query := "INSERT INTO identity_table (from_app, from_member, from_id, to_app, to_member, to_id, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7);"
 	_, err := tx.Exec(query, srcApp, srcTable, srcID, dstApp, dstTable, dstID, migrationID)
 	return err
+}
+
+func InsertIntoAttrTable(tx *sql.Tx, srcApp, dstApp, srcTable, dstTable, srcID, dstID, srcAttr, dstAttr, srcVal, dstVal, migrationID interface{}) error {
+	query := fmt.Sprintf(
+		"INSERT INTO attribute_changes (from_app, from_member, from_id, to_app, to_member, to_id, from_attr, to_attr, from_val, to_val, migration_id)"+
+			"VALUES ('%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v');",
+		srcApp, srcTable, srcID, dstApp, dstTable, dstID, srcAttr, dstAttr, srcVal, dstVal, migrationID)
+	if _, err := tx.Exec(query); err != nil {
+		log.Println(err)
+		log.Fatal(query)
+		return err
+	}
+	return nil
 }
 
 func _DropAndRecreateDB(dbConn *sql.DB, dbname string) error {
@@ -295,9 +335,20 @@ func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]m
 	return DataCall(dbConn, query, app, member, id)
 }
 
+func GetRowsFromAttrTableByTo(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
+
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
+	return DataCall(dbConn, query, app, member, id)
+}
+
+func GetRowsFromAttrTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
+	return DataCall(dbConn, query, app, member, id)
+}
+
 func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[string]interface{}, error) {
 	query := "SELECT app, member, id, data, pk, user_id FROM data_bags WHERE user_id = $1 AND app = $2 AND migration_id != $3 ORDER BY pk DESC"
-	fmt.Println(query, user_id, app_id, migration_id)
+	// fmt.Println(query, user_id, app_id, migration_id)
 	return DataCall(dbConn, query, user_id, app_id, migration_id)
 }
 
@@ -338,6 +389,17 @@ func CreateNewReference(tx *sql.Tx, app, fromMember string, fromID int64, toMemb
 
 	// query := "INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;"
 	query := fmt.Sprintf("INSERT INTO reference_table (app, from_member, from_id, from_reference, to_member, to_id, to_reference, migration_id) VALUES ('%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromID, fromReference, toMember, fmt.Sprint(toID), toReference, migration_id)
+
+	_, err := tx.Exec(query)
+	if err != nil {
+		fmt.Println(query)
+	}
+	return err
+}
+
+func CreateNewReferenceV2(tx *sql.Tx, app, fromMember string, fromVal string, fromID int64, toMember string, toVal string, migration_id, fromReference, toReference string) error {
+
+	query := fmt.Sprintf("INSERT INTO reference_table_v2 (app, from_member, from_val, from_id, from_attr, to_member, to_val, to_attr, migration_id) VALUES ('%s', '%s', '%s', '%v', '%s', '%s', '%v', '%s', '%s') ON CONFLICT DO NOTHING;", app, fromMember, fromVal, fromID, fromReference, toMember, toVal, toReference, migration_id)
 
 	_, err := tx.Exec(query)
 	if err != nil {
@@ -511,12 +573,12 @@ func GetUnmigratedUsers() ([]map[string]interface{}, error) {
 func GetAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
 
 	query := fmt.Sprintf(`SELECT root_member_id from app_root_member where app_id = %s`, appID)
-	fmt.Printf("@db.GetAppRootMemberID | %s\n", query)
+	// fmt.Printf("@db.GetAppRootMemberID | %s\n", query)
 	data, err := DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("@db.GetAppRootMemberID | root_member_id: '%v' \n", data["root_member_id"])
+	// fmt.Printf("@db.GetAppRootMemberID | root_member_id: '%v' \n", data["root_member_id"])
 	return fmt.Sprint(data["root_member_id"])
 }
 
@@ -528,6 +590,20 @@ func TableID(dbConn *sql.DB, table, app string) (string, error) {
 		} else {
 			fmt.Println(fmt.Sprintf("@db.TableID | Args | table: %s| app: %s", table, app))
 			return "", errors.New("Something bad with the returned result!")
+		}
+	} else {
+		return "", err
+	}
+}
+
+func AttrID(dbConn *sql.DB, tableID, attrName string) (string, error) {
+	sql := fmt.Sprintf("SELECT pk FROM app_schemas WHERE table_id = '%s' and column_name = '%s'", tableID, attrName)
+	if res, err := DataCall1(dbConn, sql); err == nil {
+		if pk, ok := res["pk"]; ok {
+			return fmt.Sprint(pk), nil
+		} else {
+			fmt.Println(fmt.Sprintf("@db.AttrID | Args | table: %s |  attr: %s", tableID, attrName))
+			return "", errors.New("db.AttrID: Something bad with the returned result!")
 		}
 	} else {
 		return "", err

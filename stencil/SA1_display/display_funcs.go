@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"stencil/common_funcs"
 	"stencil/config"
 	"stencil/db"
 	"stencil/reference_resolution_v2"
 	"stencil/schema_mappings"
-	"stencil/common_funcs"
-	"github.com/gookit/color"
 	"strconv"
 	"strings"
+
+	"github.com/gookit/color"
 )
 
-func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst, 
+func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	displayInFirstPhase, markAsDelete bool) *displayConfig {
 
 	var displayConfig displayConfig
@@ -26,7 +27,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 
 	stencilDBConn := db.GetDBConn("stencil")
 
-	srcAppID, dstAppID, srcUserID := 
+	srcAppID, dstAppID, srcUserID :=
 		common_funcs.GetSrcDstAppIDsUserIDByMigrationID(stencilDBConn, migrationID)
 
 	srcAppName := common_funcs.GetAppNameByAppID(stencilDBConn, srcAppID)
@@ -37,9 +38,9 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 		log.Fatal(err1)
 	}
 
-	mappingsFromSrcToDst, err2 := 
+	mappingsFromSrcToDst, err2 :=
 		schema_mappings.GetToAppMappings(allMappings, srcAppName, dstAppName)
-	
+
 	if err2 != nil {
 		log.Fatal(err2)
 	}
@@ -51,7 +52,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	for _, app := range allApps {
 
 		if app != dstAppName {
-			
+
 			toDstMapping, err3 := schema_mappings.GetToAppMappings(allMappings, app, dstAppName)
 			if err3 != nil {
 				log.Fatal(err3)
@@ -87,10 +88,10 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 
 	for _, dstRes1 := range dstRes {
 
-		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] = 
+		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] =
 			fmt.Sprint(dstRes1["table_name"])
 
-		dstAppTableNameIDPairs[fmt.Sprint(dstRes1["table_name"])] = 
+		dstAppTableNameIDPairs[fmt.Sprint(dstRes1["table_name"])] =
 			fmt.Sprint(dstRes1["pk"])
 	}
 
@@ -216,7 +217,7 @@ func (displayConfig *displayConfig) GetUndisplayedMigratedData() []*HintStruct {
 
 	for _, data1 := range data {
 
-		displayHints = append(displayHints, 
+		displayHints = append(displayHints,
 			TransformDisplayFlagDataToHint(displayConfig, data1))
 
 	}
@@ -247,7 +248,7 @@ func (displayConfig *displayConfig) CheckMigrationComplete() bool {
 
 }
 
-func CheckMigrationComplete1(stencilDBConn *sql.DB, 
+func CheckMigrationComplete1(stencilDBConn *sql.DB,
 	migrationID int) bool {
 
 	query := fmt.Sprintf(
@@ -272,14 +273,14 @@ func CheckMigrationComplete1(stencilDBConn *sql.DB,
 func getAppNameIDPairs(stencilDBConn *sql.DB) map[string]string {
 
 	query := fmt.Sprintf(`SELECT pk, app_name FROM apps`)
-	
+
 	data, err := db.DataCall(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	res := make(map[string]string)
-	
+
 	for _, data1 := range data {
 		res[fmt.Sprint(data1["app_name"])] = fmt.Sprint(data1["pk"])
 	}
@@ -288,7 +289,7 @@ func getAppNameIDPairs(stencilDBConn *sql.DB) map[string]string {
 
 }
 
-func getAppTableNameTableIDPairs(stencilDBConn *sql.DB, 
+func getAppTableNameTableIDPairs(stencilDBConn *sql.DB,
 	appIDNamePairs map[string]string) map[string]string {
 
 	query := fmt.Sprintf(`SELECT pk, app_id, table_name FROM app_tables`)
@@ -301,14 +302,14 @@ func getAppTableNameTableIDPairs(stencilDBConn *sql.DB,
 	res := make(map[string]string)
 
 	for _, data1 := range data {
-		
+
 		tableID := fmt.Sprint(data1["pk"])
 		appID := fmt.Sprint(data1["app_id"])
 		tableName := fmt.Sprint(data1["table_name"])
 
 		appName := appIDNamePairs[appID]
 
-		res[appName + ":" + tableName] = tableID
+		res[appName+":"+tableName] = tableID
 
 	}
 
@@ -320,14 +321,14 @@ func (displayConfig *displayConfig) isDataNotMigratedAndAlreadyDisplayed(dataHin
 
 	query := fmt.Sprintf(
 		`SELECT * FROM display_flags
-		WHERE app_id = %s and table_id = %s and id = %d`, 
+		WHERE app_id = %s and table_id = %s and id = %d`,
 		displayConfig.dstAppConfig.appID,
 		dataHint.TableID,
 		dataHint.KeyVal["id"],
 	)
 
 	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
-	
+
 	if len(data) == 0 {
 		return true
 	} else {
@@ -415,7 +416,7 @@ func (displayConfig *displayConfig) Display(dataHints []*HintStruct) error {
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
 			displayConfig.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
-		
+
 		query3 = fmt.Sprintf(
 			`UPDATE evaluation SET
 			displayed_at = now() WHERE migration_id = '%d' and
@@ -437,7 +438,7 @@ func (displayConfig *displayConfig) Display(dataHints []*HintStruct) error {
 
 		queries1 = append(queries1, query1)
 		queries2 = append(queries2, query2, query3)
-		
+
 	}
 
 	if err1 := db.TxnExecute(displayConfig.dstAppConfig.DBConn, queries1); err1 != nil {
@@ -654,7 +655,7 @@ func (displayConfig *displayConfig) putIntoDataBag(dataHints []*HintStruct) erro
 	var q1, q2, q3 string
 
 	log.Println("Going to put data into data bags")
-	
+
 	for _, dataHint := range dataHints {
 
 		// we try to avoid putting data into data bags if it is not in the
@@ -715,7 +716,7 @@ func (displayConfig *displayConfig) putIntoDataBag(dataHints []*HintStruct) erro
 			`UPDATE display_flags SET 
 			display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
-			displayConfig.dstAppConfig.appID, 
+			displayConfig.dstAppConfig.appID,
 			dataHint.TableID, dataHint.KeyVal["id"],
 		)
 
@@ -860,12 +861,12 @@ func (displayConfig *displayConfig) refreshCachedDataHints(hints []*HintStruct) 
 		// hintID := strconv.Itoa(hints[i].KeyVal["id"])
 		// hintDataID := fmt.Sprint(hints[i].Data["id"])
 
-		// // Data id could change and the cached hint id could become stale and 
+		// // Data id could change and the cached hint id could become stale and
 		// // different from the got data id
 		// // for example, in profile, user.id could change.
-		// // There are two cases: 
+		// // There are two cases:
 		// // 1. hint.id is old but data id is new
-		// // so we use data id to update hint.id 
+		// // so we use data id to update hint.id
 		// // (this can only happen in the first phase since some attributes
 		// // are not resolved because other data has not come)
 		// // 2. hint.id is old and data id is old, then this does not cause problems
@@ -883,7 +884,7 @@ func (displayConfig *displayConfig) refreshCachedDataHints(hints []*HintStruct) 
 
 		hints[i].Data, err2 = displayConfig.getOneRowBasedOnHint(hints[i])
 		if err2 != nil {
-			
+
 			log.Println(err2)
 
 			// log.Println(hints[i])
@@ -895,7 +896,7 @@ func (displayConfig *displayConfig) refreshCachedDataHints(hints []*HintStruct) 
 			if newID == "" {
 				// Note that for now this case is not considered
 				panic("Since there is no application service, this data shoud not be deleted")
-			
+
 			} else {
 
 				newHint := CreateHint(hints[i].Table, hints[i].TableID, newID)
@@ -908,9 +909,9 @@ func (displayConfig *displayConfig) refreshCachedDataHints(hints []*HintStruct) 
 				hints[i] = newHint
 
 				log.Println(hints[i])
-				
+
 			}
-			
+
 		}
 
 	}
@@ -968,7 +969,7 @@ func (displayConfig *displayConfig) logDisplayStartTime() {
 		displayConfig.migrationID,
 	)
 
-	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query); 
+	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
@@ -983,7 +984,7 @@ func (displayConfig *displayConfig) logDisplayEndTime() {
 		displayConfig.migrationID,
 	)
 
-	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query); 
+	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
@@ -996,12 +997,12 @@ func AddMarkAsDeleteToAllTables(dbConn *sql.DB) {
 		schemaname != 'pg_catalog' AND schemaname != 'information_schema';`
 
 	data := db.GetAllColsOfRows(dbConn, query1)
-	
+
 	// log.Println(data)
 
 	for _, data1 := range data {
-		
-		query2 := fmt.Sprintf(`ALTER TABLE %s ADD mark_as_delete BOOLEAN DEFAULT FALSE;`, 
+
+		query2 := fmt.Sprintf(`ALTER TABLE %s ADD mark_as_delete BOOLEAN DEFAULT FALSE;`,
 			data1["tablename"])
 
 		log.Println(query2)
@@ -1009,7 +1010,7 @@ func AddMarkAsDeleteToAllTables(dbConn *sql.DB) {
 		if _, err1 := dbConn.Exec(query2); err1 != nil {
 			log.Fatal(err1)
 		}
-		
+
 	}
 
 }
@@ -1026,11 +1027,11 @@ func CreateIDChangesTable(dbConn *sql.DB) {
 
 	query2 := `CREATE INDEX ON id_changes (app_id, table_id, old_id);`
 
-	queries := []string {
+	queries := []string{
 		query1, query2,
 	}
 
-	err1 := db.TxnExecute(dbConn, queries); 
+	err1 := db.TxnExecute(dbConn, queries)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
