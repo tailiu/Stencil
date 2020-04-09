@@ -12,56 +12,32 @@ import (
 	"github.com/gookit/color"
 )
 
-func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBlade, enableBags bool) {
+func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBlade, enableBags bool, args ...bool) {
 
-	if logTxn, err := transaction.BeginTransaction(); err == nil {
+	enableFTP, debug := false, false
 
-		switch mtype {
-		case "d":
-			{
-				mtype = migrate.DELETION
-			}
-		case "i":
-			{
-				mtype = migrate.INDEPENDENT
-			}
-		case "c":
-			{
-				mtype = migrate.CONSISTENT
-			}
-		case "b":
-			{
-				mtype = migrate.BAGS
-			}
-		case "n":
-			{
-				mtype = migrate.NAIVE
-			}
-		}
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		mappings := config.GetSchemaMappingsFor(srcApp, dstApp)
-
-		if mappings == nil {
-			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
-		}
-
-		if mthread.ThreadControllerV2(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, 1, isBlade, enableBags) {
-			transaction.LogOutcome(logTxn, "COMMIT")
-			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, 0)
-			logTxn.DBconn.Close()
-		} else {
-			transaction.LogOutcome(logTxn, "ABORT")
-			log.Fatal("Migration transaction aborted!")
-		}
-
-	} else {
-		log.Fatal("Can't begin migration transaction: ", err)
+	if len(args) > 0 {
+		enableFTP = args[1]
 	}
-	color.Success.Println("End of Migration")
+
+	if len(args) > 1 {
+		debug = args[2]
+	}
+
+	mtController := migrate.MigrationThreadController{
+		UID:             uid,
+		MType:           mtype,
+		SrcAppInfo:      migrate.App{Name: srcApp, ID: srcAppID},
+		DstAppInfo:      migrate.App{Name: dstApp, ID: dstAppID},
+		Blade:           isBlade,
+		EnableBags:      enableBags,
+		FTPFlag:         enableFTP,
+		LoggerDebugFlag: debug,
+	}
+
+	mtController.Init()
+	mtController.Run()
+	mtController.Stop()
 }
 
 func StartMigrationSA2(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, enableBags bool) {
