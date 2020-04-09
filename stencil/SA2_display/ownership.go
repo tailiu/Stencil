@@ -14,7 +14,7 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 	procConditions := getProcConditions(displayConfig, tag, pTag, 
 		ownership.Conditions)
 
-	return getHintInParentNode(displayConfig, hints, procConditions, pTag)
+	return displayConfig.getHintInParentNode(hints, procConditions, pTag)
 
 }
 

@@ -862,8 +862,7 @@ func getIDChanges(displayConfig *displayConfig, hint *HintStruct) string {
 
 }
 
-func refreshCachedDataHints(displayConfig *displayConfig,
-	hints []*HintStruct) {
+func (displayConfig *displayConfig) refreshCachedDataHints(hints []*HintStruct) {
 
 	var err2, err3 error
 

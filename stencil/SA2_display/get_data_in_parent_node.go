@@ -8,9 +8,8 @@ import (
 	"strings"
 )
 
-func getHintInParentNode(displayConfig *displayConfig, 
-	hints []*HintStruct, conditions []string, 
-	pTag string) (*HintStruct, error) {
+func (displayConfig *displayConfig) getHintInParentNode( hints []*HintStruct,
+	conditions []string, pTag string) (*HintStruct, error) {
 	
 	// log.Println(".....Second check......")
 	// log.Println(GetData1FromPhysicalSchemaByRowID(
@@ -106,8 +105,7 @@ func getHintInParentNode(displayConfig *displayConfig,
 
 }
 
-func dataFromParentNodeExists(displayConfig *displayConfig,
-	hints []*HintStruct, pTag string) (bool, error) {
+func (displayConfig *displayConfig) dataFromParentNodeExists(hints []*HintStruct, pTag string) (bool, error) {
 
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(displayConfig, pTag)
 
@@ -198,12 +196,11 @@ func getProcConditions(displayConfig *displayConfig,
 
 
 // Note: this function may return multiple hints based on dependencies
-func GetdataFromParentNode(displayConfig *displayConfig,
-	hints []*HintStruct, pTag string) (*HintStruct, error) {
+func (displayConfig *displayConfig) GetdataFromParentNode(hints []*HintStruct, pTag string) (*HintStruct, error) {
 
 	// Before getting data from a parent node, 
 	// we check the existence of the data based on the cols of a child node
-	if exists, err := dataFromParentNodeExists(displayConfig, hints, pTag); !exists {
+	if exists, err := displayConfig.dataFromParentNodeExists(hints, pTag); !exists {
 		return nil, err
 	}
 
@@ -214,6 +211,6 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 
 	procConditions := getProcConditions(displayConfig, tag, pTag, conditions)
 
-	return getHintInParentNode(displayConfig, hints, procConditions, pTag)
+	return displayConfig.getHintInParentNode(hints, procConditions, pTag)
 
 }

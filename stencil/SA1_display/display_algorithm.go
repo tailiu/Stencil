@@ -247,8 +247,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 					
 					log.Println("Check a Parent Tag:", pTag)
 
-					dataInParentNode, err4 := GetdataFromParentNode(
-						displayConfig, dataInNode, pTag)
+					dataInParentNode, err4 := displayConfig.GetdataFromParentNode(dataInNode, pTag)
 					
 					// There could be cases where the display thread cannot get the data
 					// For example, follows require both migrating user's root node (ownership)

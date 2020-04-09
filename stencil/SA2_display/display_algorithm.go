@@ -222,7 +222,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 					log.Println("Check a Parent Tag:", pTag)
 					
-					dataInParentNode, err4 := GetdataFromParentNode(displayConfig, dataInNode, pTag)
+					dataInParentNode, err4 := displayConfig.GetdataFromParentNode(dataInNode, pTag)
 
 					if err4 != nil {
 						log.Println(err4)

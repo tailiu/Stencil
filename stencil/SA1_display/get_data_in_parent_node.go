@@ -9,93 +9,31 @@ import (
 	"strings"
 )
 
-// The only big difference between checkResolveReferenceInGetDataInParentNode 
-// and getOneRowBasedOnDependency is that it only needs to check one table and col
-func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
-	id, table, col string) (string, error) {
+func (displayConfig *displayConfig) checkResolveReferenceInGetDataInParentNode(table, col, id string) (string, error) {
 	
 	log.Println("+++++++++++++++++++")
 	log.Println(table)
 	log.Println(col)
 	log.Println("+++++++++++++++++++")
-	
+
+	log.Println("Parent Node: before checking reference resolved or not")
+
 	tableID := displayConfig.dstAppConfig.tableNameIDPairs[table]
+	colID := displayConfig.dstAppConfig.colNameIDPairs[table + ":" + col]
 
-	// First, we need to get the attribute that requires reference resolution
-	// For example, we have *favourites.status_id*, and we want to get *status*
-	// We check whether favourites.status_id needs to be resolved
-	if displayConfig.needToResolveReference(table, col) {
-
-		log.Println("Parent Node: before checking reference resolved or not")
-
-		// If favourites.status_id should be resolved (in this case, it should be),
-		// we check whether the reference has been resolved or not
-		newVal := displayConfig.refResolutionConfig.ReferenceResolved(tableID, col, id)
-		
-		// If the reference has been resolved, then use the new reference to get data
-		if newVal != "" {
-
-			log.Println("Parent Node: reference has been resolved")
-
-			return newVal, nil
-		
-		// Otherwise, we try to resolve the reference
-		} else {
-
-			hint := CreateHint(table, tableID, id)
-			log.Println("Parent Node: before resolving reference: ", hint)
-
-			ID := hint.TransformHintToIdenity(displayConfig)
-
-			displayConfig.refResolutionConfig.ResolveReference(ID)
-
-			updatedAttrs := reference_resolution.GetUpdatedAttributes(
-				displayConfig.refResolutionConfig,
-				ID,
-			)
-
-			log.Println("Updated attributes and values:")
-			log.Println(updatedAttrs)
-
-			// We check whether the desired attr (col) has been resolved
-			foundResolvedAttr := false
-			for attr, val := range updatedAttrs {
-				if attr == col {
-					newVal = val
-					foundResolvedAttr = true
-					break
-				}
-			}
-
-			// If we find that col has been resolved, then we can use it to get other data
-			if foundResolvedAttr {
-
-				return newVal, nil
-			
-			// Otherwise we cannot use the unresolved reference to get other data in node
-			} else {
-
-				displayConfig.logUnresolvedRefAndData(table, tableID, id, col)
-
-				return "", CannotResolveReferencesGetDataInParentNode
-			}
-		}
-	
 	// Normally, there must exist one that needs to be resolved. 
 	// But this could happen for example, in Diaspora, posts.id depends on aspects.shareable_id
-	// There is no need to resolve id here
+	// There is no need to resolve id here in the else case
+	if displayConfig.needToResolveReference(table, col) {
+		return displayConfig.checkResolveRefWithIDInData(table, col, tableID, colID, id)
 	} else {
-
-		// panic("Should not happen since there is always one to solve!")
-
 		return "", NoReferenceToResolve
-
 	}
+
 }
 
-func getHintInParentNode(displayConfig *displayConfig, 
-	hints []*HintStruct, conditions []string, 
-	pTag string) (*HintStruct, error) {
+func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct, 
+	conditions []string, pTag string) (*HintStruct, error) {
 	
 	// log.Println(hints[0])
 
@@ -157,21 +95,17 @@ func getHintInParentNode(displayConfig *displayConfig,
 
 				if displayConfig.resolveReference {
 
-					depVal, err0 = checkResolveReferenceInGetDataInParentNode(
-						displayConfig, 
-						fmt.Sprint(hints[hintID].Data["id"]),
-						t1, a1)
+					depVal, err0 = displayConfig.checkResolveReferenceInGetDataInParentNode(
+						t1, a1, hints[hintID].Data["id"],
+					)
 					
 					// no matter whether this attribute has been resolved before
 					// we need to refresh the cached data because this attribute might be
 					// resolved by other thread checking other data
-					refreshCachedDataHints(displayConfig, hints)
+					displayConfig.refreshCachedDataHints(hints)
 
-					// If there is an error, it means that the reference has not been resolved
 					if err0 != nil {
-						
 						log.Println(err0)
-
 						if err0 != NoReferenceToResolve {
 							return nil, common_funcs.CannotFindAnyDataInParent
 						} else {
@@ -180,9 +114,7 @@ func getHintInParentNode(displayConfig *displayConfig,
 					}
 
 				} else {
-
 					depVal = fmt.Sprint(hints[hintID].Data[a1])
-
 				}
 
 				var query string
@@ -224,33 +156,26 @@ func getHintInParentNode(displayConfig *displayConfig,
 
 			if displayConfig.resolveReference {
 
-				depVal, err0 = checkResolveReferenceInGetDataInParentNode(
-					displayConfig, 
-					fmt.Sprint(data["id"]),
-					t1, a1)
+				depVal, err0 = displayConfig.checkResolveReferenceInGetDataInParentNode(
+					t1, a1, fmt.Sprint(data["id"]),
+				)
 				
 				// no matter whether this attribute has been resolved before
 				// we need to refresh the cached data because this attribute might be
 				// resolved by other thread checking other data
-				refreshCachedDataHints(displayConfig, hints)
+				displayConfig.refreshCachedDataHints(hints)
 
-				// If there is an error, it means that the reference has not been resolved
-				// so it cannot be used to get data in the parent node
 				if err0 != nil {
-					
 					log.Println(err0)
-
 					if err0 != NoReferenceToResolve {
 						return nil, common_funcs.CannotFindAnyDataInParent
 					} else {
 						depVal = fmt.Sprint(data[a1])
 					}
 				}
-
+				
 			} else {
-
 				depVal = fmt.Sprint(data[a1])
-
 			}
 
 			var query string
@@ -289,8 +214,7 @@ func getHintInParentNode(displayConfig *displayConfig,
 
 }
 
-func dataFromParentNodeExists(displayConfig *displayConfig,
-	hints []*HintStruct, pTag string) (bool, error) {
+func (displayConfig *displayConfig) dataFromParentNodeExists(hints []*HintStruct, pTag string) (bool, error) {
 	
 	log.Println("check dataFromParentNodeExists")
 
@@ -340,12 +264,11 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 }
 
 // Note: this function may return multiple hints based on dependencies
-func GetdataFromParentNode(displayConfig *displayConfig,
-	hints []*HintStruct, pTag string) (*HintStruct, error) {
+func (displayConfig *displayConfig) GetdataFromParentNode(hints []*HintStruct, pTag string) (*HintStruct, error) {
 
 	// Before getting data from a parent node, 
 	// we check the existence of the data based on the cols of a child node
-	if exists, err := dataFromParentNodeExists(displayConfig, hints, pTag); !exists {
+	if exists, err := displayConfig.dataFromParentNodeExists(hints, pTag); !exists {
 		return nil, err
 	}
 
@@ -399,6 +322,5 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 	// fmt.Println(procConditions)
 	// fmt.Println(hints)
 
-	return getHintInParentNode(displayConfig, hints, procConditions, pTag)
-
+	return displayConfig.getHintInParentNode(hints, procConditions, pTag)
 }

@@ -70,15 +70,14 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 
 		// Here we must resolve reference first otherwise we cannot get the data in root
 		// For example, follows.account_id is still referring to the old id
-		depVal, err0 = checkResolveReferenceInGetDataInParentNode(displayConfig, 
-			id, table, attr)
+		depVal, err0 = displayConfig.checkResolveRefWithIDinData(id, table, attr)
 
 		// log.Println(depVal)
 		// log.Println(err0)
 		
 		// Refresh the cached results which could have changed due to
 		// reference resolution 
-		refreshCachedDataHints(displayConfig, hints)
+		displayConfig.refreshCachedDataHints(hints)
 
 		if err0 != nil {
 			return nil, err0

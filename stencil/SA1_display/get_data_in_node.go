@@ -126,6 +126,55 @@ func (displayConfig *displayConfig) checkReferenceIndeedResolved(
 	} 
 }
 
+func (displayConfig *displayConfig) checkResolveRefWithIDInData(table, col, tableID, colID, id string) (string, error) {
+
+	// If favourites.status_id should be resolved (in this case, it should be),
+	// we check whether the reference has been resolved or not
+	newVal := displayConfig.refResolutionConfig.ReferenceResolved(tableID, colID, id)
+	
+	// If the reference has been resolved, then use the new reference to get data
+	// Otherwise, we try to resolve the reference
+	if newVal != "" {
+		return newVal, nil	
+	} else {
+
+		attr0 := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, tableID, colID, id)
+		log.Println("Before resolving reference: ", attr0)
+
+		displayConfig.refResolutionConfig.ResolveReference(attr0)
+		
+		// Here we check again to get updated attributes and values
+		// instead of using the returned values from the ResolveReference
+		// because ResolveReference only returns the updated values in that
+		// function call. Values could be updated by other threads and in this
+		// case, ResolveReference does not return the updated attribute and value
+		// Therefore, we check all updated attributes again here by calling 
+		// GetUpdatedAttributes
+		updatedAttrs := displayConfig.refResolutionConfig.GetUpdatedAttributes(tableID, id)
+
+		log.Println("Updated attributes and values:")
+		log.Println(updatedAttrs)
+		
+		// We check whether the desired attr (col0) has been resolved
+		foundResolvedAttr := false
+		for attr, val := range updatedAttrs {
+			if attr == colID {
+				newVal = val
+				foundResolvedAttr = true
+				break
+			}
+		}
+
+		// If we find that col has been resolved, then we can use it to get other data
+		// Otherwise we cannot use the unresolved reference to get other data in node
+		if foundResolvedAttr {
+			return newVal, nil
+		} else {
+			return "", CannotResolveRefersWithIDInData
+		}
+	}
+}
+
 func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
@@ -152,57 +201,21 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 
 		log.Println("Before checking reference1 resolved or not")
 
+		newVal, err := checkResolveRefWithIDInData(table0, col0, table0ID, col0ID, id)
+
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
-		newVal := displayConfig.refResolutionConfig.ReferenceResolved(table0ID, col0ID, id)
+		// newVal := displayConfig.refResolutionConfig.ReferenceResolved(table0ID, col0ID, id)
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
-			log.Println("reference has been resolved")
+			log.Println("reference1 has been resolved")
 			return displayConfig.getOneRowBasedOnDependency(table1, col1, newVal)
 		
 		// Otherwise, we try to resolve the reference
 		} else {
-
-			attr0 := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, table0ID, col0ID, id)
-			log.Println("Before resolving reference1: ", attr0)
-
-			displayConfig.refResolutionConfig.ResolveReference(attr0)
-			
-			// Here we check again to get updated attributes and values
-			// instead of using the returned values from the ResolveReference
-			// because ResolveReference only returns the updated values in that
-			// function call. Values could be updated by other threads and in this
-			// case, ResolveReference does not return the updated attribute and value
-			// Therefore, we check all updated attributes again here by calling 
-			// GetUpdatedAttributes
-			updatedAttrs := displayConfig.refResolutionConfig.GetUpdatedAttributes(table0ID, id)
-
-			log.Println("Updated attributes and values:")
-			log.Println(updatedAttrs)
-			
-			// We check whether the desired attr (col0) has been resolved
-			foundResolvedAttr := false
-			for attr, val := range updatedAttrs {
-				if attr == col0ID {
-					newVal = val
-					foundResolvedAttr = true
-					break
-				}
-			}
-
-			// If we find that col0 has been resolved, then we can use it to get other data
-			if foundResolvedAttr {
-
-				return displayConfig.getOneRowBasedOnDependency(table1, col1, newVal)
-			
-			// Otherwise we cannot use the unresolved reference to get other data in node
-			} else {
-
-				displayConfig.logUnresolvedRefAndData(table0, table0ID, id, col0)
-				return nil, CannotResolveReferencesGetDataInNode
-
-			}
+			displayConfig.logUnresolvedRefAndData(table0, table0ID, id, col0)
+			return nil, err
 		}
 
 	// We check if users.account_id needs to be resolved (of course, in this case, it should be)
@@ -213,8 +226,6 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	// "statuses.id":"mentions.status_id"
 	// "statuses.id":"stream_entries.activity_id"
 	// force us to do in this way. Otherwise, we cannot get other data in a node through statuses.id
-	// } else if fromAttrsfirstArgFromApps := getFirstArgsInREFByToTableToAttrInAllFromApps(
-		// displayConfig, table1, col1); len(fromAttrsfirstArgFromApps) != 0 {
 	} else if displayConfig.needToResolveReference(table1, col1) {
 
 		log.Println("Before checking reference2 resolved or not")
@@ -466,7 +477,7 @@ func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStru
 					
 					// Refresh the cached results which could have changed due to
 					// reference resolution 
-					refreshCachedDataHints(displayConfig, hints)
+					displayConfig.refreshCachedDataHints(hints)
 
 					return hints, err1
 				}

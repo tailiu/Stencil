@@ -8,8 +8,8 @@ import (
 var CannotResolveReferencesGetDataInParentNode =
 	errors.New("Fail to resolve references when getting data in a parent node")
 
-var CannotResolveReferencesGetDataInNode = 
-	errors.New("Fail to resolve references when getting remaining data in a node")
+var CannotResolveRefersWithIDInData = 
+	errors.New("Fail to resolve references using ID in Data")
 
 var NoReferenceToResolve =
 	errors.New("There is no need to resolve reference")
