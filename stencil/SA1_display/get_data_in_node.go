@@ -211,10 +211,7 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 		if newVal != "" {
 			log.Println("reference1 has been resolved")
 			return displayConfig.getOneRowBasedOnDependency(table1, col1, newVal)
-		
-		// Otherwise, we try to resolve the reference
 		} else {
-			displayConfig.logUnresolvedRefAndData(table0, table0ID, id, col0)
 			return nil, err
 		}
 

@@ -95,7 +95,7 @@ func closeDBConn(conn *sql.DB) {
 
 }
 
-func closeDBConns(displayConfig *displayConfig) {
+func (displayConfig *displayConfig) closeDBConns() {
 
 	log.Println("Close db connections in the SA2 display thread")
 
@@ -147,7 +147,7 @@ func getDstAppIDUserIDByMigrationID(stencilDBConn *sql.DB,
 
 }
 
-func GetUndisplayedMigratedData(displayConfig *displayConfig) []*HintStruct {
+func (displayConfig *displayConfig) GetUndisplayedMigratedData() []*HintStruct {
 	
 	var displayHints []*HintStruct
 	
@@ -177,7 +177,7 @@ func GetUndisplayedMigratedData(displayConfig *displayConfig) []*HintStruct {
 	return displayHints
 }
 
-func CheckMigrationComplete(displayConfig *displayConfig) bool {
+func (displayConfig *displayConfig) CheckMigrationComplete() bool {
 
 	query := fmt.Sprintf(
 		`SELECT 1 FROM txn_logs WHERE action_id = %d 
@@ -197,7 +197,7 @@ func CheckMigrationComplete(displayConfig *displayConfig) bool {
 	}
 }
 
-func logDisplayStartTime(displayConfig *displayConfig) {
+func (displayConfig *displayConfig) logDisplayStartTime() {
 
 	query := fmt.Sprintf(`
 		INSERT INTO display_registration (start_time, migration_id)
@@ -212,7 +212,7 @@ func logDisplayStartTime(displayConfig *displayConfig) {
 
 }
 
-func logDisplayEndTime(displayConfig *displayConfig) {
+func (displayConfig *displayConfig) logDisplayEndTime() {
 
 	query := fmt.Sprintf(`
 		UPDATE display_registration SET end_time = now()
@@ -227,7 +227,7 @@ func logDisplayEndTime(displayConfig *displayConfig) {
 
 }
 
-func CheckDisplay(displayConfig *displayConfig, data *HintStruct) bool {
+func (displayConfig *displayConfig) CheckDisplay(data *HintStruct) bool {
 
 	// Here for one group, we only need to check 
 	// one row_id to see whether the group is displayed or not
@@ -257,7 +257,7 @@ func CheckDisplay(displayConfig *displayConfig, data *HintStruct) bool {
 
 }
 
-func Display(displayConfig *displayConfig, dataInNode []*HintStruct) error {
+func (displayConfig *displayConfig) Display(dataInNode []*HintStruct) error {
 	
 	var queries []string
 
@@ -320,14 +320,13 @@ func Display(displayConfig *displayConfig, dataInNode []*HintStruct) error {
 
 }
 
-func checkDisplayConditionsInNode(displayConfig *displayConfig,
-	dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
+func (displayConfig *displayConfig) checkDisplayConditionsInNode(dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
 
 	var displayedData, notDisplayedData []*HintStruct
 
 	for _, oneDataInNode := range dataInNode {
 
-		displayed := CheckDisplay(displayConfig, oneDataInNode)
+		displayed := displayConfig.CheckDisplay(oneDataInNode)
 
 		if !displayed {
 
@@ -344,12 +343,11 @@ func checkDisplayConditionsInNode(displayConfig *displayConfig,
 
 }
 
-func chechPutIntoDataBag(displayConfig *displayConfig,
-	secondRound bool, dataHints []*HintStruct) error {
+func (displayConfig *displayConfig) chechPutIntoDataBag(secondRound bool, dataHints []*HintStruct) error {
 
 	if secondRound {
 
-		err9 := putIntoDataBag(displayConfig, dataHints)
+		err9 := displayConfig.putIntoDataBag(dataHints)
 		if err9 != nil {
 			log.Println(err9)
 		}
@@ -387,7 +385,7 @@ func alreadyInBag(displayConfig *displayConfig, data *HintStruct) bool {
 
 }
 
-func putIntoDataBag(displayConfig *displayConfig, dataHints []*HintStruct) error {
+func (displayConfig *displayConfig) putIntoDataBag(dataHints []*HintStruct) error {
 	
 	var queries []string
 

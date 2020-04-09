@@ -372,8 +372,7 @@ func InitializeReferenceResolution(migrationID int,
 // duplicate attributes, 
 // but others' updated attributes may have some collision, 
 // so we use *id:updatedAttr*, which is unique, as the key in the second return value.
-func (refResolutionConfig *RefResolutionConfig) ResolveReference(
-	attr *Attribute) (map[string]string, map[string]string) {
+func (refResolutionConfig *RefResolutionConfig) ResolveReference(attr *Attribute) (map[string]string, map[string]string) {
 	
 	return resolveReferenceByBackTraversal(refResolutionConfig, attr, attr)
 

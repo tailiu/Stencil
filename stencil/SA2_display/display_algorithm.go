@@ -8,9 +8,9 @@ import (
 
 const CHECK_INTERVAL = 200 * time.Millisecond
 
-func DisplayThread(displayConfig *displayConfig) {
+func (displayConfig *displayConfig) DisplayThread() {
 
-	defer closeDBConns(displayConfig)
+	defer displayConfig.closeDBConns()
 
 	startTime := time.Now()
 
@@ -22,12 +22,12 @@ func DisplayThread(displayConfig *displayConfig) {
 
 		log.Println("--------- First Phase --------")
 
-		for migratedData := GetUndisplayedMigratedData(displayConfig); 
-			!CheckMigrationComplete(displayConfig); 
-			migratedData = GetUndisplayedMigratedData(displayConfig) {
+		for migratedData := displayConfig.GetUndisplayedMigratedData(); 
+			!displayConfig.CheckMigrationComplete(); 
+			migratedData = displayConfig.GetUndisplayedMigratedData() {
 
 			for _, oneMigratedData := range migratedData {
-				checkDisplayOneMigratedData(displayConfig, oneMigratedData, secondRound)
+				displayConfig.checkDisplayOneMigratedData(oneMigratedData, secondRound)
 			}
 
 			time.Sleep(CHECK_INTERVAL)
@@ -42,12 +42,12 @@ func DisplayThread(displayConfig *displayConfig) {
 	secondRoundMigratedData := GetUndisplayedMigratedData(displayConfig)
 
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-		checkDisplayOneMigratedData(displayConfig, oneSecondRoundMigratedData, secondRound)
+		displayConfig.checkDisplayOneMigratedData(oneSecondRoundMigratedData, secondRound)
 	}
 
 	log.Println("--------- End of Display Check ---------")
 
-	logDisplayEndTime(displayConfig)
+	displayConfig.logDisplayEndTime()
 
 	endTime := time.Now()
 
@@ -61,8 +61,7 @@ func DisplayThread(displayConfig *displayConfig) {
 // 	secondRound bool, deletionHoldEnable bool, dhStack [][]int, 
 // 	threadID int, userID string, dstDAG *DAG) (string, [][]int, error) {
 
-func checkDisplayOneMigratedData(displayConfig *displayConfig, 
-		oneMigratedData *HintStruct, secondRound bool) error {
+func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData *HintStruct, secondRound bool) error {
 
 	// CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
 	log.Println("Check Data ", *oneMigratedData)
@@ -86,13 +85,11 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 		log.Println(err1)
 
-		return chechPutIntoDataBag(displayConfig, 
-			secondRound, []*HintStruct{oneMigratedData})
+		return displayConfig.chechPutIntoDataBag(secondRound, []*HintStruct{oneMigratedData})
 
 	} else {
 
-		displayedData, notDisplayedData := checkDisplayConditionsInNode(
-			displayConfig, dataInNode)
+		displayedData, notDisplayedData := displayConfig.checkDisplayConditionsInNode(dataInNode)
 
 		// Note: This will be changed when considering ongoing application services
 		// and the existence of other display threads !!
@@ -100,7 +97,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 			log.Println("There is already some displayed data in the node")
 
-			err6 := Display(displayConfig, notDisplayedData)
+			err6 := displayConfig.Display(notDisplayedData)
 			if err6 != nil {
 				log.Println(err6)
 			}
@@ -122,7 +119,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 			log.Println("The checked data is a root node")
 
-			err15 := Display(displayConfig, dataInNode)
+			err15 := displayConfig.Display(dataInNode)
 			if err15 != nil {
 				log.Println(err15)
 			} else {
@@ -161,12 +158,11 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				// or other users' root nodes
 				if len(dataInOwnerNode) != 0 {
 
-					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
-						displayConfig, dataInOwnerNode)
+					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := displayConfig.checkDisplayConditionsInNode(dataInOwnerNode)
 					
 					if len(displayedDataInOwnerNode) != 0 {
 
-						err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
+						err6 := displayConfig.Display(notDisplayedDataInOwnerNode)
 						if err6 != nil {
 							log.Fatal(err6)
 						}
@@ -185,7 +181,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 					log.Println(`Ownership display settings are not satisfied, 
 						so this node cannot be displayed`)
 
-					return chechPutIntoDataBag(displayConfig, secondRound, dataInNode)			
+					return displayConfig.chechPutIntoDataBag(secondRound, dataInNode)			
 
 				} else {
 
@@ -207,7 +203,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
 
-				err3 := Display(displayConfig, dataInNode)
+				err3 := displayConfig.Display(dataInNode)
 				if err3 != nil {
 					log.Println(err3)
 				}
@@ -260,7 +256,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 						// 	log.Fatal("Find more than one piece of data in a parent node!!")
 						// }
 						
-						err7 := checkDisplayOneMigratedData(displayConfig, dataInParentNode, secondRound)
+						err7 := displayConfig.checkDisplayOneMigratedData(dataInParentNode, secondRound)
 						
 						if err7 != nil {
 							log.Println(err7)
@@ -291,7 +287,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				if checkResult := CheckCombinedDisplayConditions(
 					displayConfig, pTagConditions, oneMigratedData); checkResult {
 
-					err8 := Display(displayConfig, dataInNode)
+					err8 := displayConfig.Display(dataInNode)
 					// Found path conflicts
 					if err8 != nil {
 						log.Println(err8)
@@ -301,8 +297,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 				} else {
 
-					return chechPutIntoDataBag(displayConfig, 
-						secondRound, dataInNode)
+					return displayConfig.chechPutIntoDataBag(secondRound, dataInNode)
 				}
 			}
 		}

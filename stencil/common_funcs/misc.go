@@ -25,3 +25,19 @@ func TransformInterfaceToString(data map[string]interface{}) map[string]string {
 
 	return res
 }
+
+func RemoveDuplicateElementsInSlice(data []string) []string {
+
+	unique := make(map[string]bool)
+
+	for _, data1 := range data {
+		unique[data1] = true
+	}
+
+	var res []string
+	for k := range unique {
+		res = append(res, k)
+	}
+
+	return res
+}

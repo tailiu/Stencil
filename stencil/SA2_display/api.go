@@ -20,7 +20,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup,
 	dConfig := CreateDisplayConfig(migrationID, displayInFirstPhase)
 
 	if !displayInFirstPhase {
-		for !CheckMigrationComplete(dConfig) {
+		for !dConfig.CheckMigrationComplete() {
 			time.Sleep(CHECK_MIGRATION_COMPLETE_INTERVAL2)
 		}
 	}
@@ -29,7 +29,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup,
 
 	log.Println("Total Display Thread(s):", threadNum)
 	
-	logDisplayStartTime(dConfig)
+	dConfig.logDisplayStartTime()
 
 	for i := 0; i < threadNum; i++ {
 
@@ -39,7 +39,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup,
 
 			defer wg.Done()
 			
-			DisplayThread(dConfig)
+			dConfig.DisplayThread()
 		
 		} (dConfig)
 

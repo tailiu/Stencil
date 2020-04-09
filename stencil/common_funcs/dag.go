@@ -175,7 +175,68 @@ func (dag *DAG) GetRootMemberAttr() (string, string, error) {
 	return "", "", CannotFindRootMemberAttr
 }
 
-func (dag *DAG) IfDependsOn(table, attr string) bool {
+func (dag *DAG) GetAllAttrsDepsOnBasedOnDag(table string) []string {
+
+	var attrs []string
+	var tag, member string
+	
+	keys := make(map[string]string)
+
+	// Check inner-node dependencies
+	for _, tag1 := range dag.Tags {
+		for member1, table1 := range tag1.Members {
+			if table1 == table {
+				tag = tag1.Name
+				member = member1
+				for _, innerDependency := range tag1.InnerDependencies {
+					for _, dependsOn := range innerDependency {
+						if strings.Split(dependsOn, ".")[0] == member1 {
+							attrs = append(attrs, strings.Split(dependsOn, ".")[1])
+						}
+					}
+				}
+				for k, v := range tag1.Keys {
+					if member == strings.Split(v, ".")[0] {
+						keys[k] = strings.Split(v, ".")[1]
+					}
+				}
+			}
+		}
+	} 
+	
+	log.Println(tag, member, keys)
+
+	// Check inter-node dependencies
+	for _, dep := range dag.Dependencies {
+		if dep.Tag == tag {
+			for _, dependsOn := range dep.DependsOn {
+				// For now we only consider one condition in conditions
+				for i, condition := range dependsOn.Conditions {
+					if attr, ok := keys[condition.TagAttr]; ok && (i == 0) {
+						attrs = append(attrs, attr)
+					}
+				}
+			}
+		}
+	}
+
+	// Check ownership
+	for _, ownership := range dag.Ownerships {
+		if ownership.Tag == tag {
+			// For now we only consider one condition in conditions
+			for i, condition := range ownership.Conditions {
+				if attr, ok := keys[condition.TagAttr]; ok && (i == 0) {
+					attrs = append(attrs, attr)
+				}
+			}
+		}
+	}
+	
+	return RemoveDuplicateElementsInSlice(attrs)
+
+}
+
+func (dag *DAG) IfDependsOnBasedOnDag(table, attr string) bool {
 
 	var tag, member, key string
 
@@ -230,5 +291,4 @@ func (dag *DAG) IfDependsOn(table, attr string) bool {
 	}
 	
 	return false
-
 }

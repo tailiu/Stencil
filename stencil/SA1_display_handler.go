@@ -28,7 +28,7 @@ func test1() {
 
 	for i := 0; i < threadNum; i++ {
 
-		go SA1_display.DisplayThread(displayConfig)
+		go displayConfig.DisplayThread()
 
 	}
 

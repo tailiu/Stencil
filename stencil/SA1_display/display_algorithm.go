@@ -8,11 +8,11 @@ import (
 
 const CHECK_INTERVAL = 200 * time.Millisecond
 
-func DisplayThread(displayConfig *displayConfig) {
+func (displayConfig *displayConfig) DisplayThread() {
 
 	// After one thread is done, it is enough to say the display process is done,
 	// so it is safe to close database connections shared by all display threads
-	defer closeDBConns(displayConfig)
+	defer displayConfig.closeDBConns()
 
 	startTime := time.Now()
 
@@ -28,13 +28,13 @@ func DisplayThread(displayConfig *displayConfig) {
 		// where some data has already been displayed either by the current display thread or other threads 
 		// (this is difficult to know).
 		// For that data, we will continue to check it. This does not violate correctness
-		for migratedData := GetUndisplayedMigratedData(displayConfig); 
-			!CheckMigrationComplete(displayConfig); 
-			migratedData = GetUndisplayedMigratedData(displayConfig) {
+		for migratedData := displayConfig.GetUndisplayedMigratedData(); 
+			!displayConfig.CheckMigrationComplete(); 
+			migratedData = displayConfig.GetUndisplayedMigratedData() {
 			
 			for _, oneMigratedData := range migratedData {
 
-				checkDisplayOneMigratedData(displayConfig, oneMigratedData, secondRound)
+				displayConfig.checkDisplayOneMigratedData(oneMigratedData, secondRound)
 
 			}
 
@@ -47,17 +47,17 @@ func DisplayThread(displayConfig *displayConfig) {
 	
 	secondRound = true
 
-	secondRoundMigratedData := GetUndisplayedMigratedData(displayConfig)
+	secondRoundMigratedData := displayConfig.GetUndisplayedMigratedData()
 	
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 
-		checkDisplayOneMigratedData(displayConfig, oneSecondRoundMigratedData, secondRound)
+		displayConfig.checkDisplayOneMigratedData(oneSecondRoundMigratedData, secondRound)
 
 	}
 
 	log.Println("--------- End of Display Check In One Thread ---------")
 	
-	logDisplayEndTime(displayConfig)
+	displayConfig.logDisplayEndTime()
 
 	endTime := time.Now()
 	log.Println("Time used in this display thread: ", endTime.Sub(startTime))
@@ -73,13 +73,12 @@ func DisplayThread(displayConfig *displayConfig) {
 // Display can DISPLAY the migrating user's and other users' data 
 // (since data is connected and other users' data also could be checked),
 // but can ONLY put the migrating user's data into data bags.
-func checkDisplayOneMigratedData(displayConfig *displayConfig, 
-	oneMigratedData *HintStruct, secondRound bool) error {
+func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData *HintStruct, secondRound bool) error {
 	
 	log.Println("Check Data:", *oneMigratedData)
 
 	// This can happen when we may check other users' roots after traversing inter-dependencies
-	if isDataNotMigratedAndAlreadyDisplayed(displayConfig, oneMigratedData) {
+	if displayConfig.isDataNotMigratedAndAlreadyDisplayed(oneMigratedData) {
 		log.Println("This data is not migrated and already displayed")
 		return common_funcs.CompletelyDisplayed
 	}
@@ -104,13 +103,11 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 		log.Println(err1)
 		
-		return chechPutIntoDataBag(displayConfig, 
-			secondRound, []*HintStruct{oneMigratedData})
+		return displayConfig.chechPutIntoDataBag(secondRound, []*HintStruct{oneMigratedData})
 
 	} else {
 
-		displayedData, notDisplayedData := checkDisplayConditionsInNode(
-			displayConfig, dataInNode)
+		displayedData, notDisplayedData := displayConfig.checkDisplayConditionsInNode(dataInNode)
 
 		// This is to display data once there is any data already displayed in a node
 		// Note: This will be changed when considering ongoing application services
@@ -119,7 +116,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 			log.Println("There is already some displayed data in the node")
 
-			err6 := Display(displayConfig, notDisplayedData)
+			err6 := displayConfig.Display(notDisplayedData)
 			if err6 != nil {
 				log.Fatal(err6)
 			}
@@ -140,7 +137,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 			log.Println("The checked data is a root node")
 
-			err15 := Display(displayConfig, dataInNode)
+			err15 := displayConfig.Display(dataInNode)
 			if err15 != nil {
 				log.Fatal(err15)
 			} else {
@@ -179,12 +176,11 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				// or other users' root nodes
 				if len(dataInOwnerNode) != 0 {
 
-					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := checkDisplayConditionsInNode(
-						displayConfig, dataInOwnerNode)
+					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := displayConfig.checkDisplayConditionsInNode(dataInOwnerNode)
 					
 					if len(displayedDataInOwnerNode) != 0 {
 
-						err6 := Display(displayConfig, notDisplayedDataInOwnerNode)
+						err6 := displayConfig.Display(notDisplayedDataInOwnerNode)
 						if err6 != nil {
 							log.Fatal(err6)
 						}
@@ -203,8 +199,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 					log.Println(`Ownership display settings are not satisfied, 
 						so this node cannot be displayed`)
 
-					return chechPutIntoDataBag(displayConfig, 
-						secondRound, dataInNode)
+					return displayConfig.chechPutIntoDataBag(secondRound, dataInNode)
 
 				} else {
 
@@ -232,7 +227,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
 
-				err3 := Display(displayConfig, dataInNode)
+				err3 := displayConfig.Display(dataInNode)
 				if err3 != nil {
 					log.Fatal(err3)
 				}
@@ -288,8 +283,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 						// if len(dataInParentNode) != 1 {
 						// 	log.Fatal("Find more than one piece of data in a parent node!!")
 						// }
-						err7 := checkDisplayOneMigratedData(
-							displayConfig, dataInParentNode, secondRound)
+						err7 := displayConfig.checkDisplayOneMigratedData(dataInParentNode, secondRound)
 
 						if err7 != nil {
 							log.Println(err7)
@@ -323,7 +317,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 				if checkResult := CheckCombinedDisplayConditions(
 					displayConfig, pTagConditions, oneMigratedData); checkResult {
 					
-					err8 := Display(displayConfig, dataInNode)
+					err8 := displayConfig.Display(dataInNode)
 					if err8 != nil {
 						log.Fatal(err8)
 					}
@@ -332,8 +326,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 
 				} else {
 
-					return chechPutIntoDataBag(displayConfig, 
-						secondRound, dataInNode)
+					return displayConfig.chechPutIntoDataBag(secondRound, dataInNode)
 
 				}
 			}

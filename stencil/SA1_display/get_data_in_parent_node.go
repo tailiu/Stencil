@@ -25,11 +25,11 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInParentNode(t
 	// But this could happen for example, in Diaspora, posts.id depends on aspects.shareable_id
 	// There is no need to resolve id here in the else case
 	if displayConfig.needToResolveReference(table, col) {
+		displayConfig.logUnresolvedRefAndData(table, tableID, id, col)
 		return displayConfig.checkResolveRefWithIDInData(table, col, tableID, colID, id)
 	} else {
 		return "", NoReferenceToResolve
 	}
-
 }
 
 func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct, 
