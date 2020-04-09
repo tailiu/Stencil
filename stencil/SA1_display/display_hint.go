@@ -163,7 +163,7 @@ func (hint *HintStruct) GetDependsOnTables(displayConfig *displayConfig,
 
 					if memberID == strings.Split(member, ".")[0] {
 
-						table, _ := common_funcs.GetTableByMemberID(displayConfig.dstAppConfig.dag, 
+						table, _ := displayConfig.dstAppConfig.dag.GetTableByMemberID( 
 							hint.Tag, strings.Split(dependsOnMember, ".")[0])
 
 						dependsOnTables = append(dependsOnTables, table)
@@ -313,7 +313,7 @@ func (hint *HintStruct) GetTagDisplaySetting(
 func (hint *HintStruct) GetDisplaySettingInDependencies(displayConfig *displayConfig, 
 	pTag string) (string, error) {
 
-	setting, err := common_funcs.GetDepDisplaySetting(displayConfig.dstAppConfig.dag, hint.Tag, pTag)
+	setting, err := displayConfig.dstAppConfig.dag.GetDepDisplaySetting(hint.Tag, pTag)
 
 	if err != nil {
 		return "", err

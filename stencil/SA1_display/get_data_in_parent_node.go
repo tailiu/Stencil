@@ -24,7 +24,7 @@ func checkResolveReferenceInGetDataInParentNode(displayConfig *displayConfig,
 	// First, we need to get the attribute that requires reference resolution
 	// For example, we have *favourites.status_id*, and we want to get *status*
 	// We check whether favourites.status_id needs to be resolved
-	if reference_resolution.NeedToResolveReference(displayConfig.refResolutionConfig, table, col) {
+	if displayConfig.needToResolveReference(table, col) {
 
 		log.Println("Parent Node: before checking reference resolved or not")
 
@@ -305,8 +305,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 
 	} else {
 
-		tableCol := common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
-			hints[0].Tag, displayExistenceSetting)
+		tableCol := displayConfig.dstAppConfig.dag.ReplaceKey(hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 		col := strings.Split(tableCol, ".")[1]
 
@@ -352,7 +351,7 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 	}
 
 	tag := hints[0].Tag
-	conditions, _ := common_funcs.GetDependsOnConditionsInDeps(displayConfig.dstAppConfig.dag, tag, pTag)
+	conditions, _ := displayConfig.dstAppConfig.dag.GetDependsOnConditionsInDeps(tag, pTag)
 	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
 
 	// log.Println("conditions")
@@ -364,8 +363,8 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 	if len(conditions) == 1 {
 
 		condition := conditions[0]
-		from = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, tag, condition.TagAttr)
-		to = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, pTag, condition.DependsOnAttr)
+		from = displayConfig.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
+		to = displayConfig.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
 		procConditions = append(procConditions, from+":"+to)
 
 	} else {
@@ -374,19 +373,21 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 
 			if i == 0 {
 
-				from = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, tag, condition.TagAttr)
+				from = displayConfig.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
 
-				to = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag,
+				to = displayConfig.dstAppConfig.dag.ReplaceKey(
 					strings.Split(condition.DependsOnAttr, ".")[0], 
-					strings.Split(condition.DependsOnAttr, ".")[1])
+					strings.Split(condition.DependsOnAttr, ".")[1],
+				)
 
 			} else if i == len(conditions)-1 {
 
-				from = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
+				from = displayConfig.dstAppConfig.dag.ReplaceKey(
 					strings.Split(condition.TagAttr, ".")[0], 
-					strings.Split(condition.TagAttr, ".")[1])
+					strings.Split(condition.TagAttr, ".")[1],
+				)
 				
-				to = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, pTag, condition.DependsOnAttr)
+				to = displayConfig.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
 
 			}
 

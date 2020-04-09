@@ -119,8 +119,7 @@ func dataFromParentNodeExists(displayConfig *displayConfig,
 
 	} else {
 
-		tableCol := common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
-			hints[0].Tag, displayExistenceSetting)
+		tableCol := displayConfig.dstAppConfig.dag.ReplaceKey(hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 
 		for _, hint := range hints {
@@ -157,13 +156,8 @@ func getProcConditions(displayConfig *displayConfig,
 	if len(conditions) == 1 {
 
 		condition := conditions[0]
-
-		from = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
-			tag, condition.TagAttr)
-		
-		to = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
-			pTag, condition.DependsOnAttr)
-		
+		from = displayConfig.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
+		to = displayConfig.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
 		proConditions = append(proConditions, from+":"+to)
 
 	} else {
@@ -172,27 +166,23 @@ func getProcConditions(displayConfig *displayConfig,
 
 			if i == 0 {
 
-				from = common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag,
+				from = displayConfig.dstAppConfig.dag.ReplaceKey(
 					tag, condition.TagAttr)
 
-				to = common_funcs.ReplaceKey(
-					displayConfig.dstAppConfig.dag, 
+				to = displayConfig.dstAppConfig.dag.ReplaceKey(
 					strings.Split(condition.DependsOnAttr, ".")[0], 
 					strings.Split(condition.DependsOnAttr, ".")[1],
 				)
 
 			} else if i == len(conditions)-1 {
 
-				from = common_funcs.ReplaceKey(
-					displayConfig.dstAppConfig.dag, 
+				from = displayConfig.dstAppConfig.dag.ReplaceKey(
 					strings.Split(condition.TagAttr, ".")[0], 
 					strings.Split(condition.TagAttr, ".")[1],
 				)
 
-				to = common_funcs.ReplaceKey(
-					displayConfig.dstAppConfig.dag, 
-					pTag, 
-					condition.DependsOnAttr,
+				to = displayConfig.dstAppConfig.dag.ReplaceKey(
+					pTag, condition.DependsOnAttr,
 				)
 
 			}
@@ -220,8 +210,7 @@ func GetdataFromParentNode(displayConfig *displayConfig,
 	tag := hints[0].Tag
 	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
 
-	conditions, _ := common_funcs.GetDependsOnConditionsInDeps(
-		displayConfig.dstAppConfig.dag, tag, pTag)
+	conditions, _ := displayConfig.dstAppConfig.dag.GetDependsOnConditionsInDeps(tag, pTag)
 
 	procConditions := getProcConditions(displayConfig, tag, pTag, conditions)
 

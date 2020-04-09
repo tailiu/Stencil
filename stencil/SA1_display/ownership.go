@@ -18,11 +18,13 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 	// so we only need the first condition here
 	condition := ownership.Conditions[0]
 	
-	tableAttr := common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
-		ownership.Tag, condition.TagAttr)
+	tableAttr := displayConfig.dstAppConfig.dag.ReplaceKey( 
+		ownership.Tag, condition.TagAttr,
+	)
 
-	dependsOnTableAttr := common_funcs.ReplaceKey(displayConfig.dstAppConfig.dag, 
-		ownership.OwnedBy, condition.DependsOnAttr)
+	dependsOnTableAttr := displayConfig.dstAppConfig.dag.ReplaceKey( 
+		ownership.OwnedBy, condition.DependsOnAttr,
+	)
 
 	table := strings.Split(tableAttr, ".")[0]
 	attr := strings.Split(tableAttr, ".")[1]

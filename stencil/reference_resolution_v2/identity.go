@@ -38,7 +38,7 @@ func getInsertIntoIDChangesTableQuery(refResolutionConfig *RefResolutionConfig,
 }
 
 func getIDsOfDataToBeUpdated(refResolutionConfig *RefResolutionConfig,
-	memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) []map[string]interface{} {
+	memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) []string {
 	
 	query := fmt.Sprintf(
 		"SELECT id FROM %s WHERE %s = '%s'",
@@ -52,6 +52,11 @@ func getIDsOfDataToBeUpdated(refResolutionConfig *RefResolutionConfig,
 		log.Fatal(err)
 	}
 
-	return data
+	var res []string
+	for _, data1 := range data {
+		res = append(res, fmt.Sprint(data1["id"])) 
+	}
+
+	return res
 
 }

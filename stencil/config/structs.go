@@ -50,22 +50,6 @@ type App struct {
 	Tables []map[string]string `json:""`
 }
 
-type DisplayConfig struct {
-	AppConfig          *AppConfig
-	StencilDBConn      *sql.DB
-	AppIDNamePairs     map[string]string
-	TableIDNamePairs   map[string]string
-	AttrIDNamePairs    map[string]string
-	DstAttrNameIDPairs map[string]string
-	MigrationID        int
-	SrcAppName         string
-	SrcAppID           string
-	AllMappings        *SchemaMappings
-	MappingsToDst      *MappedApp
-	ResolveReference   bool
-	UserID             string
-}
-
 type AppConfig struct {
 	AppName          string
 	AppID            string
