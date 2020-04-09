@@ -410,11 +410,11 @@ func (mmv *MappedMemberValue) CreateReferencesViaOwnerships(appConfig config.App
 	return refs, nil
 }
 
-func (mmv *MappedMemberValue) CreateSelfReferences(bagAppConfig config.AppConfig, bagTag config.Tag, bagData DataMap, cleanedFromAttr string) ([]MappingRef, error) {
+func (mmv *MappedMemberValue) CreateSelfReferences(bagAppConfig config.AppConfig, bagTag config.Tag, bagData DataMap) ([]MappingRef, error) {
 
 	var bagRefs []MappingRef
 
-	if refs, err := mmv.CreateInnerDependencyReferences(bagAppConfig, bagTag, bagData, cleanedFromAttr); err != nil {
+	if refs, err := mmv.CreateInnerDependencyReferences(bagAppConfig, bagTag, bagData, mmv.FromAttr); err != nil {
 		fmt.Println(cleanedFromAttr)
 		fmt.Println(bagData)
 		log.Fatal(err)
@@ -422,7 +422,7 @@ func (mmv *MappedMemberValue) CreateSelfReferences(bagAppConfig config.AppConfig
 		bagRefs = append(bagRefs, refs...)
 	}
 
-	if refs, err := mmv.CreateReferencesViaDependencies(bagAppConfig, bagTag, bagData, cleanedFromAttr); err != nil {
+	if refs, err := mmv.CreateReferencesViaDependencies(bagAppConfig, bagTag, bagData, mmv.FromAttr); err != nil {
 		fmt.Println(cleanedFromAttr)
 		fmt.Println(bagData)
 		log.Fatal(err)
@@ -430,7 +430,7 @@ func (mmv *MappedMemberValue) CreateSelfReferences(bagAppConfig config.AppConfig
 		bagRefs = append(bagRefs, refs...)
 	}
 
-	if refs, err := mmv.CreateReferencesViaOwnerships(bagAppConfig, bagTag, bagData, cleanedFromAttr); err != nil {
+	if refs, err := mmv.CreateReferencesViaOwnerships(bagAppConfig, bagTag, bagData, mmv.FromAttr); err != nil {
 		fmt.Println(cleanedFromAttr)
 		fmt.Println(bagData)
 		log.Fatal(err)

@@ -710,7 +710,7 @@ func (mWorker *MigrationWorker) CreateReferenceRows(mmd MappedMemberData) error 
 
 		if mmv.AppID == mWorker.DstAppConfig.AppID {
 			if bagTag, err := mWorker.DstAppConfig.GetTagByMember(mmv.FromMember); err == nil {
-				if bagRefs, err := mmv.CreateSelfReferences(mWorker.DstAppConfig, *bagTag, mmd.GetDataMap(), mmv.FromAttr); err == nil {
+				if bagRefs, err := mmv.CreateSelfReferences(mWorker.DstAppConfig, *bagTag, mmd.GetDataMap()); err == nil {
 					refs = append(refs, bagRefs...)
 				} else {
 					mWorker.Logger.Fatal(err)
