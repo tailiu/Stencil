@@ -2,7 +2,7 @@ package SA1_display
 
 import (
 	"stencil/config"
-	"stencil/reference_resolution"
+	"stencil/reference_resolution_v2"
 	"stencil/common_funcs"
 	"database/sql"
 )
@@ -34,7 +34,7 @@ type displayConfig struct {
 	attrIDNamePairs						map[string]string
 	appTableNameTableIDPairs			map[string]string
 	migrationID							int
-	refResolutionConfig					*reference_resolution.RefResolutionConfig
+	refResolutionConfig					*reference_resolution_v2.RefResolutionConfig
 	resolveReference					bool
 	srcAppConfig						*srcAppConfig
 	dstAppConfig						*dstAppConfig

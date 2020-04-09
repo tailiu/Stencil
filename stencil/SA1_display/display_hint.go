@@ -3,8 +3,6 @@ package SA1_display
 import (
 	"errors"
 	"stencil/config"
-	"stencil/common_funcs"
-	"stencil/reference_resolution"
 	"strconv"
 	"strings"
 	"log"
@@ -83,29 +81,6 @@ func TransformDisplayFlagDataToHint(displayConfig *displayConfig,
 	hint.Tag = tag
 	
 	return &hint
-
-}
-
-// // By default, a member name is a table name 
-// func (hint *HintStruct) GetMemberName(appConfig *config.AppConfig) (string, error) {
-// 	for _, tag := range appConfig.Tags {
-
-// 		for _, member := range tag.Members {
-// 			if hint.Table == member {
-// 				return member, nil
-// 			}
-// 		}
-
-// 	}
-
-// 	return "", errors.New("No Corresponding Member Found!")  
-// }
-
-func (hint *HintStruct) TransformHintToIdenity(
-	displayConfig *displayConfig) *reference_resolution.Identity {
-
-	return reference_resolution.CreateIdentity(displayConfig.dstAppConfig.appID, 
-		hint.TableID, strconv.Itoa(hint.KeyVal["id"]))
 
 }
 

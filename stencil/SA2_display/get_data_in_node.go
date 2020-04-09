@@ -249,8 +249,7 @@ func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, 
 	return true
 }
 
-func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
-	allData []*HintStruct) []*HintStruct {
+func (displayConfig *displayConfig) trimDataBasedOnInnerDependencies(allData []*HintStruct) []*HintStruct {
 	
 	var trimmedData []*HintStruct
 
@@ -292,7 +291,7 @@ func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *Hin
 		// Note: if a piece of data in a node depends on some data not existing in the node,
 		// it needs to be deleted from the data set and cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {
-			return trimDataBasedOnInnerDependencies(displayConfig, data), err
+			return displayConfig.trimDataBasedOnInnerDependencies(data), err
 		}
 
 	// If a node is complete, return all the data in the node regardless of the setting.

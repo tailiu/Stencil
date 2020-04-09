@@ -201,7 +201,7 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 
 		log.Println("Before checking reference1 resolved or not")
 
-		newVal, err := checkResolveRefWithIDInData(table0, col0, table0ID, col0ID, id)
+		newVal, err := displayConfig.checkResolveRefWithIDInData(table0, col0, table0ID, col0ID, id)
 
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
@@ -562,7 +562,7 @@ func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *Hin
 		} else if displaySetting == "display_based_on_inner_dependencies" {
 
 			// fmt.Println(data)
-			return trimDataBasedOnInnerDependencies(displayConfig, data), err
+			return displayConfig.trimDataBasedOnInnerDependencies(data), err
 
 		}
 	

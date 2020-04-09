@@ -2,7 +2,6 @@ package SA1_display
 
 import (
 	"stencil/config"
-	"stencil/common_funcs"
 	"stencil/db"
 	"strings"
 	"log"

@@ -314,8 +314,8 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 
 				// Check the combined_display_setting from all parent nodes
 				// to decide whether to display the current node
-				if checkResult := CheckCombinedDisplayConditions(
-					displayConfig, pTagConditions, oneMigratedData); checkResult {
+				if checkResult := displayConfig.CheckCombinedDisplayConditions(
+					pTagConditions, oneMigratedData); checkResult {
 					
 					err8 := displayConfig.Display(dataInNode)
 					if err8 != nil {

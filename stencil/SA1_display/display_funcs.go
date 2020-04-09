@@ -7,7 +7,7 @@ import (
 	"log"
 	"stencil/config"
 	"stencil/db"
-	"stencil/reference_resolution"
+	"stencil/reference_resolution_v2"
 	"stencil/schema_mappings"
 	"stencil/common_funcs"
 	"github.com/gookit/color"
@@ -109,18 +109,12 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 
 	appTableNameTableIDPairs := getAppTableNameTableIDPairs(stencilDBConn, appIDNamePairs)
 
-	refResolutionConfig := reference_resolution.InitializeReferenceResolution(
+	refResolutionConfig := reference_resolution_v2.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
 		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
 		attrIDNamePairs, dstAppColNameIDPairs,
 		allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
 	)
-
-	// refResolutionConfig := reference_resolution.InitializeReferenceResolution(
-	// 	migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
-	// 	dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
-	// 	allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
-	// )
 
 	srcAppConfig.appID = srcAppID
 	srcAppConfig.appName = srcAppName
@@ -130,7 +124,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	dstAppConfig.appID = dstAppID
 	dstAppConfig.appName = dstAppName
 	dstAppConfig.tableNameIDPairs = dstAppTableNameIDPairs
-	dstAppConfig.colNameIDPairs = dstAppAttrNameIDPairs
+	dstAppConfig.colNameIDPairs = dstAppColNameIDPairs
 	dstAppConfig.rootTable = dstRootMember
 	dstAppConfig.rootAttr = dstRootAttr
 	dstAppConfig.userID = dstUserID
@@ -404,10 +398,9 @@ func (displayConfig *displayConfig) Display(dataHints []*HintStruct) error {
 
 		log.Println("Set unresolved attributes to be STENCIL_NULLs before displaying the data")
 
-		attrsToBeSetToNULLs := getAttributesToSetAsSTENCILNULLs(dataHint)
+		attrsToBeSetToNULLs := displayConfig.getAttributesToSetAsSTENCILNULLs(dataHint)
 
-		query1 = fmt.Sprintf(`UPDATE "%s" SET display_flag = false `)
-			dataHint.Table, dataHint.KeyVal["id"])
+		query1 = fmt.Sprintf(`UPDATE "%s" SET display_flag = false`, dataHint.Table)
 
 		for _, attr := range attrsToBeSetToNULLs {
 			query1 += ", " + attr + " = '-1'"
@@ -481,7 +474,7 @@ func (displayConfig *displayConfig) getAllAttributesToBeUpdated(table string) []
 	
 	attrsToBeUpdatedBasedOnMappings := displayConfig.getAllMappedAttributesContainingREFInMappingsFromAllApps(table)
 	
-	attrsToBeUpdatedBasedOnDag := displayConfig.dstAppConfig.dag.getAllAttrsDepsOnBasedOnDag(table)
+	attrsToBeUpdatedBasedOnDag := displayConfig.dstAppConfig.dag.GetAllAttrsDepsOnBasedOnDag(table)
 	
 	combinedAttrs := append(attrsToBeUpdatedBasedOnMappings, attrsToBeUpdatedBasedOnDag...)
 
@@ -1065,7 +1058,7 @@ func (displayConfig *displayConfig) getFirstArgsInREFByToTableToAttrInAllFromApp
 func (displayConfig *displayConfig) logUnresolvedRefAndData(tableName, tableID, id, unResolvedAttr string) {
 
 	green := color.FgGreen.Render
-	log.Println(green("Unresolved attribute is:"), green(hint.Table + ":" + unResolvedAttr))
+	log.Println(green("Unresolved attribute is:"), green(tableName + ":" + unResolvedAttr))
 
 	hint := CreateHint(tableName, tableID, id)
 	data, err := displayConfig.getOneRowBasedOnHint(hint)

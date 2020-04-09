@@ -5,7 +5,6 @@ import (
 	"log"
 	"stencil/db"
 	"stencil/common_funcs"
-	"stencil/reference_resolution"
 	"strings"
 )
 
@@ -96,7 +95,7 @@ func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct,
 				if displayConfig.resolveReference {
 
 					depVal, err0 = displayConfig.checkResolveReferenceInGetDataInParentNode(
-						t1, a1, hints[hintID].Data["id"],
+						t1, a1, fmt.Sprint(hints[hintID].Data["id"]),
 					)
 					
 					// no matter whether this attribute has been resolved before

@@ -124,11 +124,8 @@ func handlArgs(args []bool) (bool, bool, bool, bool) {
 
 }
 
-
-func StartDisplay(uid, srcAppID, dstAppID, 
-	migrationType string, 
-	threadNum int, wg *sync.WaitGroup, 
-	args ...bool) {
+func StartDisplay(uid, srcAppID, dstAppID, migrationType string, 
+	threadNum int, wg *sync.WaitGroup, args ...bool) {
 
 	migrationID := waitToGetMigrationID(uid, srcAppID, dstAppID, migrationType)
 

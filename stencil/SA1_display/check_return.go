@@ -6,8 +6,7 @@ import (
 	"strings"
 )
 
-func CheckCombinedDisplayConditions(displayConfig *displayConfig, 
-	pTagConditions map[string]bool, oneMigratedData *HintStruct) bool {	
+func (displayConfig *displayConfig) CheckCombinedDisplayConditions(pTagConditions map[string]bool, oneMigratedData *HintStruct) bool {	
 	
 	if len(pTagConditions) == 1 {
 

@@ -284,8 +284,8 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 				}
 				// log.Println(pTagConditions)
 
-				if checkResult := CheckCombinedDisplayConditions(
-					displayConfig, pTagConditions, oneMigratedData); checkResult {
+				if checkResult := displayConfig.CheckCombinedDisplayConditions(
+					pTagConditions, oneMigratedData); checkResult {
 
 					err8 := displayConfig.Display(dataInNode)
 					// Found path conflicts
