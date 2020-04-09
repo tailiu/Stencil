@@ -2,8 +2,8 @@ package counter
 
 import (
 	"database/sql"
-	"stencil/config"
-	"stencil/migrate"
+	config "stencil/config/v2"
+	migrate "stencil/migrate_v2"
 )
 
 type Counter struct {

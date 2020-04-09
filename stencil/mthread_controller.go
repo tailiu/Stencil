@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	migrate "stencil/migrate_v2"
+	"stencil/apis"
 )
 
 func main() {
@@ -13,7 +13,7 @@ func main() {
 	dstApp := flag.String("dstApp", "mastodon", "")
 	dstAppID := flag.String("dstAppID", "2", "")
 
-	threads := flag.Int("threads", 1, "")
+	// threads := flag.Int("threads", 1, "")
 	mtype := flag.String("mtype", "d", "")
 	uid := flag.String("uid", "", "")
 
@@ -25,19 +25,21 @@ func main() {
 
 	flag.Parse()
 
-	mtController := migrate.MigrationThreadController{
-		UID:             *uid,
-		MType:           *mtype,
-		SrcAppInfo:      migrate.App{Name: *srcApp, ID: *srcAppID},
-		DstAppInfo:      migrate.App{Name: *dstApp, ID: *dstAppID},
-		Threads:         *threads,
-		Blade:           *blade,
-		EnableBags:      *bags,
-		FTPFlag:         *ftp,
-		LoggerDebugFlag: *debug,
-	}
+	// mtController := migrate.MigrationThreadController{
+	// 	UID:             *uid,
+	// 	MType:           *mtype,
+	// 	SrcAppInfo:      migrate.App{Name: *srcApp, ID: *srcAppID},
+	// 	DstAppInfo:      migrate.App{Name: *dstApp, ID: *dstAppID},
+	// 	Threads:         *threads,
+	// 	Blade:           *blade,
+	// 	EnableBags:      *bags,
+	// 	FTPFlag:         *ftp,
+	// 	LoggerDebugFlag: *debug,
+	// }
 
-	mtController.Init()
-	mtController.Run()
-	mtController.Stop()
+	// mtController.Init()
+	// mtController.Run()
+	// mtController.Stop()
+
+	apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags, *ftp, *debug)
 }

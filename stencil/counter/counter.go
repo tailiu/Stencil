@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"stencil/config"
+	config "stencil/config/v2"
 	"stencil/db"
-	"stencil/migrate"
+	migrate "stencil/migrate_v2"
 	"strings"
 )
 
@@ -15,7 +15,7 @@ func CreateCounter(appName, appID string, isBlade ...bool) Counter {
 	if err != nil {
 		log.Fatal(err)
 	}
-	AppConfig.QR.Migration = true
+	// AppConfig.QR.Migration = true
 	counter := Counter{
 		AppConfig:     AppConfig,
 		StencilDBConn: db.GetDBConn(db.STENCIL_DB),
@@ -36,6 +36,7 @@ func (self *Counter) FetchUserNode(uid string) (*migrate.DependencyNode, error) 
 		if data, err := db.DataCall1(self.AppDBConn, sql); err == nil && len(data) > 0 {
 			return &migrate.DependencyNode{Tag: root, SQL: sql, Data: data}, nil
 		} else {
+			fmt.Println(sql)
 			if err == nil {
 				err = errors.New("no data returned for root node, doesn't exist?")
 			}
@@ -140,9 +141,13 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 		joinMap := tag.CreateInDepMap()
 		seenMap := make(map[string]bool)
 		joinStr := ""
+
 		for fromTable, toTablesMap := range joinMap {
 			if _, ok := seenMap[fromTable]; !ok {
-				joinStr += fromTable
+				if len(joinStr) > 0 {
+					joinStr += fmt.Sprintf(" FULL JOIN ")
+				}
+				joinStr += fmt.Sprintf("\"%s\"", fromTable)
 				_, colStr := db.GetColumnsForTable(self.AppDBConn, fromTable)
 				cols += colStr + ","
 			}
@@ -152,7 +157,10 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 					if joinMap[toTable][fromTable] != nil {
 						joinMap[toTable][fromTable] = nil
 					}
-					joinStr += fmt.Sprintf(" FULL JOIN %s ON %s ", toTable, strings.Join(conditions, " AND "))
+					if _, ok := seenMap[toTable]; !ok {
+						joinStr += fmt.Sprintf(" FULL JOIN \"%s\" ", toTable)
+					}
+					joinStr += fmt.Sprintf("  ON %s ", strings.Join(conditions, " AND "))
 					_, colStr := db.GetColumnsForTable(self.AppDBConn, toTable)
 					cols += colStr + ","
 					seenMap[toTable] = true
@@ -163,7 +171,7 @@ func (self *Counter) GetTagQL(tag config.Tag) string {
 		sql = fmt.Sprintf(sql, strings.Trim(cols, ","), joinStr)
 	} else {
 		table := tag.Members["member1"]
-		_, cols := db.GetColumnsForTable(self.AppConfig.DBConn, table)
+		_, cols := db.GetColumnsForTable(self.AppDBConn, table)
 		sql = fmt.Sprintf(sql, cols, table)
 	}
 	return sql
