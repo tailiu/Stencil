@@ -4,8 +4,7 @@ import (
 	"stencil/config"
 )
 
-func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
-	ownership *config.Ownership) (*HintStruct, error) {
+func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownership *config.Ownership) (*HintStruct, error) {
 
 	tag := hints[0].Tag
 
@@ -18,10 +17,9 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 
 }
 
-func getOwner(displayConfig *displayConfig, hints []*HintStruct,
-	ownership *config.Ownership) ([]*HintStruct, error) {
+func (displayConfig *displayConfig) getOwner(hints []*HintStruct, ownership *config.Ownership) ([]*HintStruct, error) {
 	
-	oneDataInOwnerNode, err := getADataInOwner(displayConfig, hints, ownership)
+	oneDataInOwnerNode, err := displayConfig.getADataInOwner(hints, ownership)
 	if err != nil {
 		return nil, err
 	}

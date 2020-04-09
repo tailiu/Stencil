@@ -9,8 +9,7 @@ import (
 	"fmt"
 )
 
-func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
-	ownership *config.Ownership) (*HintStruct, error) {
+func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownership *config.Ownership) (*HintStruct, error) {
 	
 	var hint *HintStruct
 
@@ -54,35 +53,30 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 		var err0 error
 
 		for _, hint1 := range hints {
-
 			if hint1.Table == table {
 				id = fmt.Sprint(hint1.KeyVal["id"])
 			}
-
 		}
 
 		if id == "" {
 			return nil, CannotFindDataInOwnership
 		}
 
-		// log.Println(dependsOnTable, dependsOnAttr)
-		// log.Println(table, attr, id)
-
-		// Here we must resolve reference first otherwise we cannot get the data in root
-		// For example, follows.account_id is still referring to the old id
-		depVal, err0 = displayConfig.checkResolveRefWithIDinData(id, table, attr)
-
-		// log.Println(depVal)
-		// log.Println(err0)
+		depVal, err0 = displayConfig.checkResolveReferenceInGetDataInParentNode(table, attr, id)
 		
-		// Refresh the cached results which could have changed due to
-		// reference resolution 
+		// no matter whether this attribute has been resolved before
+		// we need to refresh the cached data because this attribute might be
+		// resolved by other thread checking other data
 		displayConfig.refreshCachedDataHints(hints)
 
 		if err0 != nil {
-			return nil, err0
+			log.Println(err0)
+			if err0 != NoReferenceToResolve {
+				return nil, err0
+			} else {
+				depVal = fmt.Sprint(hint.Data[attr])
+			}
 		}
-
 	}
 
 	var query string
@@ -116,10 +110,9 @@ func getADataInOwner(displayConfig *displayConfig, hints []*HintStruct,
 
 }
 
-func getOwner(displayConfig *displayConfig, hints []*HintStruct,
-	ownership *config.Ownership) ([]*HintStruct, error) {
+func (displayConfig *displayConfig) getOwner(hints []*HintStruct, ownership *config.Ownership) ([]*HintStruct, error) {
 	
-	oneDataInOwnerNode, err := getADataInOwner(displayConfig, hints, ownership)
+	oneDataInOwnerNode, err := displayConfig.getADataInOwner(hints, ownership)
 	if err != nil {
 		return nil, err
 	}

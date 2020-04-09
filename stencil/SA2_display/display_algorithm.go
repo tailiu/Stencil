@@ -148,7 +148,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 			} else {
 				// log.Println(dataOwnershipSpec)
 
-				dataInOwnerNode, err13 := getOwner(displayConfig, dataInNode, dataOwnershipSpec)
+				dataInOwnerNode, err13 := displayConfig.getOwner(dataInNode, dataOwnershipSpec)
 
 				// The root node could be incomplete
 				if err13 != nil {
