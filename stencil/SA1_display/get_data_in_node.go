@@ -83,6 +83,49 @@ func (displayConfig *displayConfig) getRowsBasedOnDependency(
 	}
 }
 
+func (displayConfig *displayConfig) checkReferenceIndeedResolved(
+	table, col, tableID, colID, value string) (map[string]interface{}, error) {
+
+	// First we must assume that it has already been resolved. If it has not been resolved,
+	// then we cannot get data. Otherwise we just return the obtained data
+	// Note that if we first assume that it has not been resolved and get data using 
+	// prevID, then we could get wrong results
+	data, err := displayConfig.getRowsBasedOnDependency(table, col, value)
+	
+	// This could happen when table1 and col1 have been resolved
+	if err == nil {
+
+		log.Println("The reference seems to have already been resolved")
+		
+		// Now we have not encountered data1 with more than one piece of data
+		for _, data1 := range data {
+
+			resolvedVal := displayConfig.refResolutionConfig.ReferenceResolved(
+				tableID, colID, fmt.Sprint(data1["id"]),
+			)
+			
+			if resolvedVal == value {
+				log.Println("It was indeed resolved")
+				return data1, nil 
+			
+			// This could happen when there was some data happening to satisfy the condition,
+			// but that data actually does not have relationships with table0 and col0
+			// For example, table0: accounts, col0: id, table1: users, col1: account_id
+			// we can get a data with users.account_id pointing to accounts.id, but 
+			// the users.account_id of that data is actually old application value and the data
+			// may be from other migrations.
+			} else {
+				log.Println("There happened to be some data satisfying but that data is not what we want")
+			}
+		}
+
+		return nil, DataNotWanted
+
+	} else {
+		return nil, err
+	} 
+}
+
 func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
@@ -170,308 +213,29 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	// "statuses.id":"mentions.status_id"
 	// "statuses.id":"stream_entries.activity_id"
 	// force us to do in this way. Otherwise, we cannot get other data in a node through statuses.id
-	} else if fromAttrsfirstArgFromApps := getFirstArgsInREFByToTableToAttrInAllFromApps(
-		displayConfig, table1, col1); len(fromAttrsfirstArgFromApps) != 0 {
-		
+	// } else if fromAttrsfirstArgFromApps := getFirstArgsInREFByToTableToAttrInAllFromApps(
+		// displayConfig, table1, col1); len(fromAttrsfirstArgFromApps) != 0 {
+	} else if displayConfig.needToResolveReference(table1, col1) {
+
 		log.Println("Before checking reference2 resolved or not")
 		
-		log.Println("From attributes in different from apps:", fromAttrsfirstArgFromApps)
-
-		for app, fromAttrsfirstArg := range fromAttrsfirstArgFromApps {
-
-			log.Println("##########")
-
-			log.Println("Check from app:", app)	
-		
-			var data1, data2 []map[string]interface{}
-			
-			var err error
-
-			// First we must assume that it has already been resolved. If it has not been resolved,
-			// then we cannot get data. Otherwise we just return the obtained data
-			// Note that if we first assume that it has not been resolved and get data using 
-			// prevID, then we could get wrong results
-			data1, err = displayConfig.getRowsBasedOnDependency(table1, col1, value)
-			
-			// This could happen when table1 and col1 have been resolved
-			if err == nil {
-
-				log.Println("Before checking reference2, the reference seems to have already been resolved")
-				
-				// Now we have not encountered data1 with more than one piece of data
-				for _, data4 := range data1 {
-
-					resolvedVal := displayConfig.refResolutionConfig.ReferenceResolved(table1ID, col1, fmt.Sprint(data4["id"]))
-					
-					if resolvedVal == value {
-						log.Println("It was indeed resolved")
-						return data4, nil 
-					
-					// This could happen when there was some data happening to satisfy the condition,
-					// but that data actually does not have relationships with table0 and col0
-					// For example, table0: accounts, col0: id, table1: users, col1: account_id
-					// we can get a data with users.account_id pointing to accounts.id, but 
-					// the users.account_id of that data is actually old application value and the data
-					// may be from other migrations.
-					} else {
-						log.Println("There happened to be some data satisfying but that data is not what we want")
-					}
-
-				}
-
-			}
-			
-			// When we reach here, we have to resolve the reference
-			log.Println("From attributes:")
-			log.Println(fromAttrsfirstArg)
-
-			var prevID string
-
-			fromAttrfirstArgContainID := false
-
-			// Because we only use toTable and toAttr to get the first argument in fromAttrs,
-			// there could be multiple results. For example, 1. toTable = status_stats and
-			// toAttr = status_id, then fromAttr could be posts.id, comments.id, or messages.id
-			// 2. toTable = users and toAttr = accounts.id. then fromAttr is people.id
-			// We need to use from attr in the following check because
-			// otherwise the fromAttr could be profile, people, and users
-			for _, fromAttrfirstArg := range fromAttrsfirstArg {
-
-				log.Println("Check a from attribute:", fromAttrfirstArg)
-
-				// log.Println("Check a from attribute:")
-
-				// If the first argument of the from attribute contains "id", this indicates 
-				// we need to get the *original id* as the value to get the data
-				// (the current id is the newly generated one)
-				if doesArgAttributeContainID(fromAttrfirstArg) {
-
-					fromAttrfirstArgContainID = true
-
-					// log.Println(displayConfig.dstAppConfig.tableNameIDPairs)
-					// log.Println(table0)
-					// log.Println(table0ID)
-					
-					dataID := reference_resolution_v2.CreateIdentity(
-						displayConfig.dstAppConfig.appID,
-						table0ID,
-						id,
-					)
-					
-					log.Println("dataID:")
-					log.Println(dataID)
-
-					tableInFirstArg := getTableInArg(fromAttrfirstArg)
-					// srcTableID := displayConfig.srcAppConfig.tableNameIDPairs[tableInFirstArg]
-					
-					srcTableID := displayConfig.appTableNameTableIDPairs[app + ":" + tableInFirstArg]
-					
-					log.Println("app and tableInFirstArg:", app + ":" + tableInFirstArg)
-					log.Println("srcTableID:", srcTableID)
-
-					// prevID = reference_resolution_v2.GetPreIDByBackTraversal(displayConfig.refResolutionConfig, 
-					// 	dataID, srcTableID)
-					
-					// Here we only need to get the previous ID (one step backward)
-					// and we should not try to the get previous id by back traversal
-					prevID = reference_resolution_v2.GetPreviousID(displayConfig.refResolutionConfig, 
-						dataID, srcTableID)
-					
-					log.Println("Previous id:", prevID)
-
-					// since there is only one mapping to this toAttr, as long as we find one, 
-					// we can set the value as the prevID
-					if prevID == "" {
-						continue
-					} else {
-						// value = prevID
-						// break
-
-						data2, err = displayConfig.getRowsBasedOnDependency(table1, col1, prevID)
-						if err != nil {
-							log.Println("The first argument of the from attribute contains id, but")
-							log.Println(err)	
-						} 
-						break
-					}
-				}
-			}
-
-			// If the first argument of the from attribute does not contain "id", 
-			// this indicates we can use the current data and the relationship indicated
-			// by table0, col0, table1, col1, value to get data
-			if !fromAttrfirstArgContainID {
-
-				log.Println(`The from attributes don't contain id`)
-
-				data2, err = displayConfig.getRowsBasedOnDependency(table1, col1, value)
-				
-				// This could happen when no data is migrated or there is no mappings.
-				// For example, statuses, id, mentions, status_id
-				// This could also happen when there is no data migrated from this app, so
-				// we continue to check other apps
-				if err != nil {
-					log.Println(err)
-					continue
-					// return nil, err
-				}
-
-			}
-
-			// log.Println("fromAttrfirstArgContainID:", fromAttrfirstArgContainID)
-			// log.Println("data:", data)
-
-			// If the first argument of the from attribute contains id and
-			// we cannot get data, there could be two cases:
-			// 1. The reference has been resolved, so the data contains the up-to-date value
-			// 2. The reference has been resolved, but reference resolution crashes before
-			// inserting the reference into the resolution resolved table
-			// In both cases, try to get data with the new value 
-			// For 1, it will be checked afterwards
-			// For 2, do the reference resolution again since it does not matter and in the
-			// second time, we can remove the reference and add it to the resolved resolution table
-			// There is another case when prevID is "" mentioned below
-			if fromAttrfirstArgContainID {
-				
-				// This is the one of the most strange cases found in tests
-				// I guess this is because the row is first inserted into display_flags table, 
-				// but not inserted into the identity table yet, the display thread can get and check
-				// the row in the display_flags table, but cannot find the previous id. 
-				// if prevID == "" {
-				// 	return nil, CannotGetPrevID
-				// }
-				
-				// This is probably because data0 (table0 and col0) does not come from the checked app
-				if prevID == "" {
-					
-					log.Println(`The from attributes contain id, but we cannot get the previous id`)
-		
-					continue
-
-				}
-				
-				// This could happen when another display thread had resolved the ref
-				// before we tried to get the data using prevID
-				if data2 == nil {
-
-					log.Println(`The from attributes contain id but we cannot get data,
-						so we try to get data with the current id value`)
-
-					data2, err = displayConfig.getRowsBasedOnDependency(table1, col1, value)
-					
-					// This could happen when the resolved and displayed data is deleted
-					// This could also happen when there is no data migrated from this app, so
-					// we continue to check other apps
-					if err != nil {
-						
-						log.Println(err)
-						
-						continue
-						
-						// return nil, err
-					}
-				}
-				
-			}
-
-			// Now we have the id of the data, we should check whether it has been resolved before, 
-			// but actually if we can get one, it is highly likely that this is the one we want to get because
-			// otherwise there will be multiple rows corresponding to one member.
-			// There could be the case where ids are not changed. Even if references are not resolved, 
-			// we can still get the rows we want, but we need to resolve it.
-			// There could be a case where the data we got is from some other unrelated migrations because
-			// we use old value (in source app) to get data. In this case, this old value 
-			// can be used to get more than one piece of data including the one we want to get
-			for _, data3 := range data2 {
-	
-				newVal := displayConfig.refResolutionConfig.ReferenceResolved(table1ID, col1, fmt.Sprint(data3["id"]))
-
-				// The reference has been resolved
-				if newVal != "" {
-
-					// Theoretically, if it has been resolved, then it should be the value we have 
-					// given that one member corresponds to one row
-					if newVal == value {
-
-						log.Println("reference has been resolved")
-						log.Println(data3)
-
-						return data3, nil
-
-					} else {
-
-						log.Println("Found an unrelated data:")
-						log.Println(data3)
-					
-					}
-				} else {
-					
-					hint1 := CreateHint(table1, table1ID, fmt.Sprint(data3["id"]))
-					log.Println("Before resolving reference2:", hint1)
-
-					ID1 := hint1.TransformHintToIdenity(displayConfig)
-
-					displayConfig.refResolutionConfig.ResolveReference(ID1)
-					
-					updatedAttrs := reference_resolution_v2.GetUpdatedAttributes(
-						displayConfig.refResolutionConfig,
-						ID1,
-					)
-
-					log.Println("Updated attributes and values:")
-					log.Println(updatedAttrs)
-
-					// We check whether the desired attr (col1) has been resolved 
-					// (until this point, it should be resolved)
-					foundResolvedAttr := false
-					for attr, val := range updatedAttrs {
-						if attr == col1 {
-							newVal = val
-							foundResolvedAttr = true
-							break
-						}
-					}
-
-					// If we find that col0 has been resolved, then we can use it to get other data
-					if foundResolvedAttr {
-
-						if newVal == value {
-
-							return data3, nil
-						
-						// This can happen when we are trying to resolve the unrelated data
-						} else {
-							
-							log.Println(ID1)
-							log.Println("newVal", newVal)
-							log.Println("value", value)
-							// panic(`Find the resolved attribute, but the value is not what we want. 
-							// 	Should not happen given one member corresponds to one row for now!`)
-							log.Println(`Find the resolved attribute, but the value is not what we want. 
-								This is because we happened to get an unrelated but satisfying data`)
-							
-						}
-					
-					// This should not happen
-					} else {
-						
-						// return nil, CannotFindResolvedAttributes
-						// panic(`Does not find resolved attributes. Should not happen 
-						// 	given one member corresponds to one row for now!`)
-						
-						// There could be a case where the data we got is from some other unrelated migrations because
-						// we use old value (in source app) to get data. In this case, this old value 
-						// can be used to get more than one piece of data including the one we want to get
-						log.Println(`Does not find resolved attributes after resolution during one check in`, app)
-					}
-				}
-			}
+		data1, err1 := displayConfig.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
+		if err1 != nil {
+			return data1, nil
 		}
 
-		// panic(`It should never happen since there should be one piece of data which is what we want!`)
-		// This could happen when no data is migrated, there is no mappings, 
-		// or the reference has been resolved and displayed data is deleted
-		// For example, statuses, id, mentions, status_id (no data is migrated)
+		attr1 := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, table0ID, col0ID, id)
+		log.Println("Before resolving reference2: ", attr1)
+
+		displayConfig.refResolutionConfig.ResolveReference(attr1)
+		
+		data2, err2 := displayConfig.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
+		if err2 != nil {
+			return data2, nil
+		}
+
+		log.Println(`Cannot find data after resolving reference2`)
+
 		return nil, CannotGetDataAfterResolvingRef2
 	
 	// Normally, there must exist one that needs to be resolved. 
@@ -485,9 +249,8 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	}
 }
 
-func getRemainingDataInNode(displayConfig *displayConfig,
-	dependencies []map[string]string, members map[string]string, 
-	hint *HintStruct) ([]*HintStruct, error) {
+func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[string]string, 
+	members map[string]string, hint *HintStruct) ([]*HintStruct, error) {
 	
 	var result []*HintStruct
 
@@ -635,8 +398,7 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 
 }
 
-func getOneRowBasedOnHint(displayConfig *displayConfig, 
-	hint *HintStruct) (map[string]interface{}, error) {
+func (displayConfig *displayConfig) getOneRowBasedOnHint(hint *HintStruct) (map[string]interface{}, error) {
 	
 	var query string
 
@@ -669,12 +431,11 @@ func getOneRowBasedOnHint(displayConfig *displayConfig,
 
 }
 
-func getDataInNode(displayConfig *displayConfig, 
-	hint *HintStruct) ([]*HintStruct, error) {
+func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStruct, error) {
 
 	if hint.Data == nil {
 
-		data, err := getOneRowBasedOnHint(displayConfig, hint)
+		data, err := displayConfig.getOneRowBasedOnHint(hint)
 		if err != nil {
 			return nil, err
 		} else {
@@ -700,7 +461,7 @@ func getDataInNode(displayConfig *displayConfig,
 
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					hints, err1 := getRemainingDataInNode(displayConfig,
+					hints, err1 := displayConfig.getRemainingDataInNode(
 						 tag.InnerDependencies, tag.Members, hint)
 					
 					// Refresh the cached results which could have changed due to
@@ -719,8 +480,7 @@ func getDataInNode(displayConfig *displayConfig,
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func checkDependsOnExists(displayConfig *displayConfig, 
-	allData []*HintStruct, data *HintStruct) bool {
+func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, data *HintStruct) bool {
 	
 	memberID, _ := data.GetMemberID(displayConfig)
 	// fmt.Println(memberID)
@@ -742,22 +502,16 @@ func checkDependsOnExists(displayConfig *displayConfig,
 
 				if oneData.Table == dependsOnTable {
 
-					if !checkDependsOnExists(displayConfig, allData, oneData) {
-
+					if !displayConfig.checkDependsOnExists(allData, oneData) {
 						return false
-
 					} else {
-
 						exists = true
 						break
-
 					}
 				}
 			}
 			if !exists {
-
 				return false
-
 			}
 		}
 	}
@@ -766,33 +520,26 @@ func checkDependsOnExists(displayConfig *displayConfig,
 	
 }
 
-func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
-	 allData []*HintStruct) []*HintStruct {
+func (displayConfig *displayConfig) trimDataBasedOnInnerDependencies(allData []*HintStruct) []*HintStruct {
 	
 	var trimmedData []*HintStruct
 
 	for _, data := range allData {
-
-		if checkDependsOnExists(displayConfig, allData, data) {
-
+		if displayConfig.checkDependsOnExists(allData, data) {
 			trimmedData = append(trimmedData, data)
-			
 		}
-
 	}
 
 	return trimmedData
-
 }
 
-func GetDataInNodeBasedOnDisplaySetting(displayConfig *displayConfig, 
-	hint *HintStruct) ([]*HintStruct, error) {
+func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]*HintStruct, error) {
 	
 	displaySetting, _ := hint.GetTagDisplaySetting(displayConfig)
 
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err := getDataInNode(displayConfig, hint); err != nil {
+	if data, err := displayConfig.getDataInNode(hint); err != nil {
 
 		// The setting "default_display_setting" means only display a node 
 		// when the node is complete.

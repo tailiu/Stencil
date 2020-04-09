@@ -897,7 +897,7 @@ func refreshCachedDataHints(displayConfig *displayConfig,
 		// 	hints[i].KeyVal["id"] = intHintDataID
 		// }
 
-		hints[i].Data, err2 = getOneRowBasedOnHint(displayConfig, hints[i])
+		hints[i].Data, err2 = displayConfig.getOneRowBasedOnHint(hints[i])
 		if err2 != nil {
 			
 			log.Println(err2)
@@ -916,7 +916,7 @@ func refreshCachedDataHints(displayConfig *displayConfig,
 
 				newHint := CreateHint(hints[i].Table, hints[i].TableID, newID)
 
-				newHint.Data, err3 = getOneRowBasedOnHint(displayConfig, newHint)
+				newHint.Data, err3 = displayConfig.getOneRowBasedOnHint(newHint)
 				if err3 != nil {
 					log.Fatal(err3)
 				}
@@ -1078,7 +1078,7 @@ func (displayConfig *displayConfig) logUnresolvedRefAndData(tableName, tableID, 
 	log.Println(green("Unresolved attribute is:"), green(hint.Table + ":" + unResolvedAttr))
 
 	hint := CreateHint(tableName, tableID, id)
-	data, err := getOneRowBasedOnHint(displayConfig, hint)
+	data, err := displayConfig.getOneRowBasedOnHint(hint)
 
 	if err != nil {
 		log.Println(green("The data has been deleted by application services"))

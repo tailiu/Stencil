@@ -30,9 +30,8 @@ func (displayConfig *displayConfig) getOneRowBasedOnDependency(val string, dep s
 	}
 }
 
-func getRemainingDataInNode(displayConfig *displayConfig, 
-	dependencies []map[string]string, members map[string]string, 
-	hint *HintStruct) ([]*HintStruct, error) {
+func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[string]string, 
+	members map[string]string, hint *HintStruct) ([]*HintStruct, error) {
 	
 	var result []*HintStruct
 
@@ -150,8 +149,7 @@ func getRemainingDataInNode(displayConfig *displayConfig,
 	}
 }
 
-func getOneRowBasedOnHint(displayConfig *displayConfig, 
-	hint *HintStruct) (map[string]interface{}, error) {
+func (displayConfig *displayConfig) getOneRowBasedOnHint(hint *HintStruct) (map[string]interface{}, error) {
 	
 	restrictions, err := hint.GetRestrictionsInTag(displayConfig)
 	if err != nil {
@@ -170,13 +168,12 @@ func getOneRowBasedOnHint(displayConfig *displayConfig,
 	}
 }
 
-func getDataInNode(displayConfig *displayConfig, 
-	hint *HintStruct) ([]*HintStruct, error) {
+func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStruct, error) {
 	
 	// Get and cache hint.Data if it is not there
 	if len(hint.Data) == 0 {
 
-		data, err := getOneRowBasedOnHint(displayConfig, hint)
+		data, err := displayConfig.getOneRowBasedOnHint(hint)
 		if err != nil {
 			return nil, err
 		}
@@ -201,8 +198,7 @@ func getDataInNode(displayConfig *displayConfig,
 
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					return getRemainingDataInNode(
-						displayConfig, 
+					return displayConfig.getRemainingDataInNode(
 						tag.InnerDependencies, 
 						tag.Members, hint,
 					)
@@ -216,8 +212,7 @@ func getDataInNode(displayConfig *displayConfig,
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func checkDependsOnExists(displayConfig *displayConfig,
-	allData []*HintStruct, data *HintStruct) bool {
+func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, data *HintStruct) bool {
 	
 	memberID, _ := data.GetMemberID(displayConfig)
 	// fmt.Println(memberID)
@@ -238,7 +233,7 @@ func checkDependsOnExists(displayConfig *displayConfig,
 				
 				if oneData.TableName == dependsOnTable {
 					
-					if !checkDependsOnExists(displayConfig, allData, oneData) {
+					if !displayConfig.checkDependsOnExists(allData, oneData) {
 						return false
 					} else {
 						exists = true
@@ -260,7 +255,7 @@ func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
 	var trimmedData []*HintStruct
 
 	for _, data := range allData {
-		if checkDependsOnExists(displayConfig, allData, data) {
+		if displayConfig.checkDependsOnExists(allData, data) {
 			trimmedData = append(trimmedData, data)
 		}
 	}
@@ -268,8 +263,7 @@ func trimDataBasedOnInnerDependencies(displayConfig *displayConfig,
 	return trimmedData
 }
 
-func GetDataInNodeBasedOnDisplaySetting(displayConfig *displayConfig, 
-	hint *HintStruct) ([]*HintStruct, error) {
+func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]*HintStruct, error) {
 		
 	// tagName, err := hint.GetTagName(appConfig)
 	// if err != nil {
@@ -281,7 +275,7 @@ func GetDataInNodeBasedOnDisplaySetting(displayConfig *displayConfig,
 
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err := getDataInNode(displayConfig, hint); err != nil {
+	if data, err := displayConfig.getDataInNode(hint); err != nil {
 
 		// log.Println("++++++++++++")
 		// log.Println(data)

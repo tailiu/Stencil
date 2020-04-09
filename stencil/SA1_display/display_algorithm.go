@@ -87,8 +87,7 @@ func checkDisplayOneMigratedData(displayConfig *displayConfig,
 	log.Println("==================== Check Intra-node dependencies ====================")
 
 	// Get data in the node based on intra-node data dependencies
-	dataInNode, err1 := GetDataInNodeBasedOnDisplaySetting(
-		displayConfig, oneMigratedData)
+	dataInNode, err1 := displayConfig.GetDataInNodeBasedOnDisplaySetting(oneMigratedData)
 	
 	log.Println("Data in Node:")
 

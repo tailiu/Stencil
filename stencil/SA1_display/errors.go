@@ -22,6 +22,8 @@ var CannotGetPrevID = errors.New(`Cannot get previous ids because of the row has
 
 var CannotGetDataAfterResolvingRef2 = errors.New(`Cannot get data after resolving reference2`)
 
+var DataNotWanted = errors.New(`Get some data but it is not what we want`)
+
 // Ownership
 var CannotFindDataInOwnership = 
 	errors.New("Fail to get any Data by the ownership relationship")

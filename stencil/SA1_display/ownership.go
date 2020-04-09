@@ -125,6 +125,6 @@ func getOwner(displayConfig *displayConfig, hints []*HintStruct,
 		return nil, err
 	}
 
-	return GetDataInNodeBasedOnDisplaySetting(displayConfig, oneDataInOwnerNode)
+	return displayConfig.GetDataInNodeBasedOnDisplaySetting(oneDataInOwnerNode)
 	
 }
