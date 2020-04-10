@@ -10,8 +10,7 @@ func (display *display) getADataInOwner(hints []*HintStruct, ownership *config.O
 
 	pTag := "root"
 
-	procConditions := getProcConditions(display, tag, pTag, 
-		ownership.Conditions)
+	procConditions := getProcConditions(display, tag, pTag, ownership.Conditions)
 
 	return display.getHintInParentNode(hints, procConditions, pTag)
 
