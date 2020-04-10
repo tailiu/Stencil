@@ -343,7 +343,7 @@ func InitializeReferenceResolution(migrationID int,
 	mappingsFromSrcToDst *config.MappedApp,
 	mappingsFromOtherAppsToDst map[string]*config.MappedApp) *RefResolution {
 
-	var rr RefResolutionConfig
+	var rr RefResolution
 
 	rr.stencilDBConn = StencilDBConn
 	rr.appDBConn = appDBConn

@@ -12,7 +12,7 @@ type Identity struct {
 	id 		string
 }
 
-type RefResolutionConfig struct {
+type RefResolution struct {
 	stencilDBConn 					*sql.DB
 	appDBConn						*sql.DB
 	appID							string
