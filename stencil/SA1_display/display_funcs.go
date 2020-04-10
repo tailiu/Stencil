@@ -110,7 +110,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 
 	appTableNameTableIDPairs := getAppTableNameTableIDPairs(stencilDBConn, appIDNamePairs)
 
-	refResolutionConfig := reference_resolution_v2.InitializeReferenceResolution(
+	refResolution := reference_resolution_v2.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
 		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
 		attrIDNamePairs, dstAppColNameIDPairs,
@@ -141,7 +141,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	displayConfig.resolveReference = resolveReference
 	displayConfig.srcAppConfig = &srcAppConfig
 	displayConfig.dstAppConfig = &dstAppConfig
-	displayConfig.refResolutionConfig = refResolutionConfig
+	displayConfig.rr = refResolution
 	displayConfig.displayInFirstPhase = displayInFirstPhase
 	displayConfig.markAsDelete = markAsDelete
 	displayConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
@@ -350,10 +350,10 @@ func (displayConfig *displayConfig) getAttributesToSetAsSTENCILNULLs(dataHint *H
 	for _, attrToBeUpdated := range attrsToBeUpdated {
 		colID := displayConfig.dstAppConfig.colNameIDPairs[table + ":" + attrToBeUpdated]
 		attr := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, tableID, colID, id)
-		displayConfig.refResolutionConfig.ResolveReference(attr)
+		displayConfig.rr.ResolveReference(attr)
 	}
 
-	updatedAttrs := displayConfig.refResolutionConfig.GetUpdatedAttributes(tableID, id)
+	updatedAttrs := displayConfig.rr.GetUpdatedAttributes(tableID, id)
 
 	var attrsToBeSetToNULLs []string
 

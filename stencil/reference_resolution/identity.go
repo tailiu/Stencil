@@ -26,7 +26,7 @@ func CreateIdentity(app, member, id string) *Identity {
 	return ID
 }
 
-func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig,
+func getRowsFromIDTableByTo(refResolutionConfig *RefResolution,
 	ID *Identity) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM identity_table 
@@ -46,7 +46,7 @@ func getRowsFromIDTableByTo(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
+func getRowsFromIDTableByFrom(refResolutionConfig *RefResolution,
 	ID *Identity) []map[string]interface{} {
 
 	query := fmt.Sprintf(
@@ -65,7 +65,7 @@ func getRowsFromIDTableByFrom(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
+func forwardTraverseIDTable(refResolutionConfig *RefResolution,
 	ID, orginalID *Identity, inRecurrsion bool) []*Identity {
 
 	var res []*Identity
@@ -128,7 +128,7 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolutionConfig,
 	return res
 }
 
-func getInsertIntoIDChangesTableQuery(refResolutionConfig *RefResolutionConfig,
+func getInsertIntoIDChangesTableQuery(refResolutionConfig *RefResolution,
 	table, IDToBeUpdated, id string) string {
 
 	query := fmt.Sprintf(
@@ -145,7 +145,7 @@ func getInsertIntoIDChangesTableQuery(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getUpdateToIDInIdentityTableQuery(refResolutionConfig *RefResolutionConfig,
+func getUpdateToIDInIdentityTableQuery(refResolutionConfig *RefResolution,
 	table, IDToBeUpdated, id string) string {
 
 	query := fmt.Sprintf(
@@ -161,7 +161,7 @@ func getUpdateToIDInIdentityTableQuery(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func GetPreviousIDWithoutFromMember(refResolutionConfig *RefResolutionConfig,
+func GetPreviousIDWithoutFromMember(refResolutionConfig *RefResolution,
 	ID *Identity) string {
 
 	query := fmt.Sprintf(`SELECT from_id FROM identity_table 
@@ -185,7 +185,7 @@ func GetPreviousIDWithoutFromMember(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func GetPreviousID(refResolutionConfig *RefResolutionConfig,
+func GetPreviousID(refResolutionConfig *RefResolution,
 	ID *Identity, fromMember string) string {
 
 	query := fmt.Sprintf(
@@ -212,7 +212,7 @@ func GetPreviousID(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func GetPreIDByBackTraversal(refResolutionConfig *RefResolutionConfig,
+func GetPreIDByBackTraversal(refResolutionConfig *RefResolution,
 	ID *Identity, fromMember string) string {
 
 	query := fmt.Sprintf(`

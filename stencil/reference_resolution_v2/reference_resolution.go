@@ -82,8 +82,7 @@ import (
  */
 
 // You are on the left/from part
-func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig, 
-	attrRow map[string]string, orgAttr *Attribute) map[string]string {
+func (rr *RefResolution) updateMyDataBasedOnReferences(attrRow map[string]string, orgAttr *Attribute) map[string]string {
 	
 	log.Println("You are on the left/from part")
 
@@ -92,7 +91,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 	// Using ID in getting from references here is to remove possible duplicate reference rows
 	// Otherwise, all the references will be resolved and reference rows will be deleted
 	// For example, multiple comments reply to the same post, but only the attribute in one comment should be resolved
-	fromRefs := getFromReferencesUsingID(refResolutionConfig, attrRow)
+	fromRefs := rr.getFromReferencesUsingID(attrRow)
 
 	log.Println("Get", len(fromRefs), "from reference(s)")
 
@@ -100,7 +99,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		
 		procRef := common_funcs.TransformInterfaceToString(ref)
 		
-		LogRefRow(refResolutionConfig, procRef)
+		rr.LogRefRow(procRef)
 
 		data := CreateAttribute(
 			procRef["app"], 
@@ -110,21 +109,21 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 			procRef["to_id"],
 		)
 
-		refAttributeRows := forwardTraverseAttrChangesTable(refResolutionConfig, data, orgAttr, false)
+		refAttributeRows := rr.forwardTraverseAttrChangesTable(data, orgAttr, false)
 
 		log.Println("After traversing forward the attribute_changes table:")
 		log.Println("Get", len(refAttributeRows), "refAttribute row(s)")
 
 		log.Println(
 			"procRef['app']:", procRef["app"], 
-			"refResolutionConfig.appID:", refResolutionConfig.appID,
+			"rr.appID:", rr.appID,
 		)
 
 		if len(refAttributeRows) > 0 {
 			
 			for _, refAttributeRow := range refAttributeRows {
 
-				logRefAttrRow(refResolutionConfig, refAttributeRow)
+				rr.logRefAttrRow(refAttributeRow)
 
 				oneUpdatedAttr := make(map[string]string)
 
@@ -132,7 +131,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 				// the destination application, this means that the data is migrated back
 				// Since there could be multiple pieces of data migrated back, we only update data
 				// based on the table of the reference row
-				if procRef["app"] == refResolutionConfig.appID {
+				if procRef["app"] == rr.appID {
 
 					log.Println("The data has been migrated back to the dest app1")
 
@@ -144,7 +143,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 						procRef["from_attr"] == orgAttr.attrName {
 
 						oneUpdatedAttr = updateRefOnLeftByRefAttrRow1(
-							refResolutionConfig, procRef, orgAttr, refAttributeRow.val)
+							rr, procRef, orgAttr, refAttributeRow.val)
 			
 						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
@@ -155,7 +154,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 				} else {
 
 					oneUpdatedAttr = updateRefOnLeftByRefAttrRow(
-						refResolutionConfig, refAttributeRow, procRef, orgAttr)
+						rr, refAttributeRow, procRef, orgAttr)
 	
 					updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
@@ -175,14 +174,14 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 		// For example, when trying to update notification_actors and after back traversal,
 		// we get two reference rows for notifications and notification_actors, 
 		// then notifications should be igored
-		} else if procRef["app"] == refResolutionConfig.appID &&
+		} else if procRef["app"] == rr.appID &&
 			procRef["from_member"] == orgAttr.member &&
 			procRef["from_attr"] == orgAttr.attrName {
 
 			log.Println("The data has not been migrated and is in the dest app1")
 
 			oneUpdatedAttr := updateRefOnLeftNotUsingRefAttrRow(
-				refResolutionConfig, procRef, orgAttr)
+				rr, procRef, orgAttr)
 
 			updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
@@ -195,14 +194,13 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 }
 
 // You are on the right/to part
-func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig, 
-	attrRow map[string]string, orgAttr *Attribute) map[string]string {
+func (rr *RefResolution) updateOtherDataBasedOnReferences(attrRow map[string]string, orgAttr *Attribute) map[string]string {
 	
 	log.Println("You are on the right/to part")
 
 	updatedAttrs := make(map[string]string)
 	
-	toRefs := getToReferences(refResolutionConfig, attrRow)
+	toRefs := rr.getToReferences(attrRow)
 
 	log.Println("Get", len(toRefs), "to reference(s)")
 
@@ -210,7 +208,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 		procRef := common_funcs.TransformInterfaceToString(ref)
 		
-		LogRefRow(refResolutionConfig, procRef)
+		rr.LogRefRow(procRef)
 
 		data := CreateAttribute(
 			procRef["app"], 
@@ -220,25 +218,25 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 			procRef["from_id"],
 		)
 
-		refAttributeRows := forwardTraverseAttrChangesTable(refResolutionConfig, data, orgAttr, false)
+		refAttributeRows := rr.forwardTraverseAttrChangesTable(data, orgAttr, false)
 
 		log.Println("After traversing forward the attribute_changes table:")
 		log.Println("Get", len(refAttributeRows), "refAttribute row(s)")
 
 		log.Println(
 			"procRef['app']:", procRef["app"], 
-			"refResolutionConfig.appID:", refResolutionConfig.appID,
+			"rr.appID:", rr.appID,
 		)
 
 		if len(refAttributeRows) > 0 {
 
 			for _, refAttributeRow := range refAttributeRows {
 
-				logRefAttrRow(refResolutionConfig, refAttributeRow)
+				rr.logRefAttrRow(refAttributeRow)
 
 				oneUpdatedAttr := make(map[string]string)
 
-				if procRef["app"] == refResolutionConfig.appID {
+				if procRef["app"] == rr.appID {
 
 					log.Println("The data has been migrated back to the dest app2")
 					
@@ -248,7 +246,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 						procRef["to_attr"] == orgAttr.attrName {
 
 						oneUpdatedAttr = updateRefOnRightByRefAttrRow1(
-							refResolutionConfig, procRef, orgAttr, refAttributeRow.val)
+							rr, procRef, orgAttr, refAttributeRow.val)
 
 						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 	
@@ -259,7 +257,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 				} else {
 
 					oneUpdatedAttr = updateRefOnRightByRefAttrRow(
-						refResolutionConfig, refAttributeRow, procRef, orgAttr)
+						rr, refAttributeRow, procRef, orgAttr)
 
 					updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 					
@@ -270,14 +268,14 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 				}
 			}
 
-		} else if procRef["app"] == refResolutionConfig.appID &&
+		} else if procRef["app"] == rr.appID &&
 			procRef["to_member"] == orgAttr.member && 
 			procRef["to_attr"] == orgAttr.attrName {
 
 			log.Println("The data has not been migrated and is in the dest app2")
 
 			oneUpdatedAttr := updateRefOnRightNotUsingRefAttrRow(
-				refResolutionConfig, procRef, orgAttr)
+				rr, procRef, orgAttr)
 
 			updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
@@ -288,8 +286,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig, 
-	attr, orgAttr *Attribute) (map[string]string, map[string]string) {
+func (rr *RefResolution) resolveReferenceByBackTraversal(attr, orgAttr *Attribute) (map[string]string, map[string]string) {
 	
 	log.Println("Resolve references by back traversal")
 
@@ -297,7 +294,7 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 	
 	othersUpdatedAttrs := make(map[string]string)
 	
-	attrRows := getRowsFromAttrChangesTableByTo(refResolutionConfig, attr)
+	attrRows := rr.getRowsFromAttrChangesTableByTo(attr)
 
 	log.Println("Get", len(attrRows), "attribute row(s)")
 
@@ -305,15 +302,15 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 
 		procAttrRow := common_funcs.TransformInterfaceToString(attrRow)
 		
-		logAttrChangeRow(refResolutionConfig, procAttrRow)
+		rr.logAttrChangeRow(procAttrRow)
 
 		// You are on the left/from part
-		currentMyupdatedAttrs := updateMyDataBasedOnReferences(refResolutionConfig, procAttrRow, orgAttr)
+		currentMyupdatedAttrs := rr.updateMyDataBasedOnReferences(procAttrRow, orgAttr)
 
 		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, currentMyupdatedAttrs)
 
 		// You are on the right/to part
-		currentOthersUpdatedAttrs := updateOtherDataBasedOnReferences(refResolutionConfig, 
+		currentOthersUpdatedAttrs := rr.updateOtherDataBasedOnReferences(
 			procAttrRow, orgAttr)
 		
 		othersUpdatedAttrs = combineTwoMaps(othersUpdatedAttrs, currentOthersUpdatedAttrs)
@@ -324,8 +321,7 @@ func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig,
 			procAttrRow["from_attr"], procAttrRow["from_val"],
 		)
 
-		nextMyUpdatedAttrs, nextOthersUpdatedAttrs := 
-			resolveReferenceByBackTraversal(refResolutionConfig, preAttr, orgAttr)
+		nextMyUpdatedAttrs, nextOthersUpdatedAttrs := rr.resolveReferenceByBackTraversal(preAttr, orgAttr)
 		
 		myUpdatedAttrs = combineTwoMaps(myUpdatedAttrs, nextMyUpdatedAttrs)
 		othersUpdatedAttrs = combineTwoMaps(othersUpdatedAttrs, nextOthersUpdatedAttrs)
@@ -345,25 +341,25 @@ func InitializeReferenceResolution(migrationID int,
 	appAttrNameIDPairs map[string]string,
 	allMappings *config.SchemaMappings,
 	mappingsFromSrcToDst *config.MappedApp,
-	mappingsFromOtherAppsToDst map[string]*config.MappedApp) *RefResolutionConfig {
+	mappingsFromOtherAppsToDst map[string]*config.MappedApp) *RefResolution {
 
-	var refResolutionConfig RefResolutionConfig
+	var rr RefResolutionConfig
 
-	refResolutionConfig.stencilDBConn = StencilDBConn
-	refResolutionConfig.appDBConn = appDBConn
-	refResolutionConfig.migrationID = migrationID
-	refResolutionConfig.appID = appID
-	refResolutionConfig.appName = appName
-	refResolutionConfig.appTableNameIDPairs = appTableNameIDPairs
-	refResolutionConfig.appIDNamePairs = appIDNamePairs
-	refResolutionConfig.tableIDNamePairs = tableIDNamePairs
-	refResolutionConfig.attrIDNamePairs = attrIDNamePairs
-	refResolutionConfig.appAttrNameIDPairs = appAttrNameIDPairs
-	refResolutionConfig.allMappings = allMappings
-	refResolutionConfig.mappingsFromSrcToDst = mappingsFromSrcToDst
-	refResolutionConfig.mappingsFromOtherAppsToDst = mappingsFromOtherAppsToDst
+	rr.stencilDBConn = StencilDBConn
+	rr.appDBConn = appDBConn
+	rr.migrationID = migrationID
+	rr.appID = appID
+	rr.appName = appName
+	rr.appTableNameIDPairs = appTableNameIDPairs
+	rr.appIDNamePairs = appIDNamePairs
+	rr.tableIDNamePairs = tableIDNamePairs
+	rr.attrIDNamePairs = attrIDNamePairs
+	rr.appAttrNameIDPairs = appAttrNameIDPairs
+	rr.allMappings = allMappings
+	rr.mappingsFromSrcToDst = mappingsFromSrcToDst
+	rr.mappingsFromOtherAppsToDst = mappingsFromOtherAppsToDst
 
-	return &refResolutionConfig
+	return &rr
 }
 
 // In terms of the argument *ID*, the first return value is my updated attributes, and 
@@ -372,8 +368,8 @@ func InitializeReferenceResolution(migrationID int,
 // duplicate attributes, 
 // but others' updated attributes may have some collision, 
 // so we use *id:updatedAttr*, which is unique, as the key in the second return value.
-func (refResolutionConfig *RefResolutionConfig) ResolveReference(attr *Attribute) (map[string]string, map[string]string) {
+func (rr *RefResolution) ResolveReference(attr *Attribute) (map[string]string, map[string]string) {
 	
-	return resolveReferenceByBackTraversal(refResolutionConfig, attr, attr)
+	return rr.resolveReferenceByBackTraversal(attr, attr)
 
 }

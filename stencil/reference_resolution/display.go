@@ -7,7 +7,7 @@ import (
 	"stencil/schema_mappings"
 )
 
-func NeedToResolveReference(refResolutionConfig *RefResolutionConfig, 
+func NeedToResolveReference(refResolutionConfig *RefResolution, 
 	toTable, toAttr string) bool {
 	
 	for _, mapping := range refResolutionConfig.mappingsFromOtherAppsToDst {
@@ -33,7 +33,7 @@ func NeedToResolveReference(refResolutionConfig *RefResolutionConfig,
 	
 }
 
-func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolutionConfig, 
+func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolution, 
 	toTable, toAttr string) bool {
 	
 	if exists, err := schema_mappings.REFExists(
@@ -59,7 +59,7 @@ func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolutionConf
 // For now, when we are checking reference resolved, we use the current migration id
 // This should be fine in the case of migration from Diaspora to Mastodon, but
 // in more complex cases, like back and forth migration, this may not be correct
-func ReferenceResolvedConsideringMigrationID(refResolutionConfig *RefResolutionConfig, 
+func ReferenceResolvedConsideringMigrationID(refResolutionConfig *RefResolution, 
 	member, reference, id string) string {
 
 	query := fmt.Sprintf(`select value from resolved_references where app = %s 
@@ -89,7 +89,7 @@ func ReferenceResolvedConsideringMigrationID(refResolutionConfig *RefResolutionC
 	}
 }
 
-func ReferenceResolved(refResolutionConfig *RefResolutionConfig, 
+func ReferenceResolved(refResolutionConfig *RefResolution, 
 	member, reference, id string) string {
 
 	query := fmt.Sprintf(`select value from resolved_references where app = %s 
@@ -117,7 +117,7 @@ func ReferenceResolved(refResolutionConfig *RefResolutionConfig,
 	}
 }
 
-func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig, 
+func GetUpdatedAttributes(refResolutionConfig *RefResolution, 
 	ID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string) 
@@ -146,7 +146,7 @@ func GetUpdatedAttributes(refResolutionConfig *RefResolutionConfig,
 	
 }
 
-func getUpdateIDInDisplayFlagsQuery(refResolutionConfig *RefResolutionConfig, 
+func getUpdateIDInDisplayFlagsQuery(refResolutionConfig *RefResolution, 
 	table, IDToBeUpdated, id string) string {
 	
 	query := fmt.Sprintf(

@@ -26,7 +26,7 @@ import (
  */
 
 
-func oldUpdateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func oldUpdateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolution, 
 	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string)
@@ -154,7 +154,7 @@ func oldUpdateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefReso
 
 }
 
-func oldUpdateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func oldUpdateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolution, 
 	procRef map[string]string, orgID *Identity) map[string]string {
 
 	updatedAttrs := make(map[string]string)
@@ -239,7 +239,7 @@ func oldUpdateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefR
 	return updatedAttrs
 }
 
-func oldUpdateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func oldUpdateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolution, 
 	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
 
 	updatedAttrs := make(map[string]string)
@@ -347,7 +347,7 @@ func oldUpdateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefRes
 	
 }
 
-func oldUpdateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func oldUpdateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolution, 
 	procRef map[string]string, orgID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string)
@@ -430,7 +430,7 @@ func oldUpdateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *Ref
 	
 }
 
-func oldUpdateRefOnLeftBasedOnMappingsNotUsingRefIDRow1(refResolutionConfig *RefResolutionConfig, 
+func oldUpdateRefOnLeftBasedOnMappingsNotUsingRefIDRow1(refResolutionConfig *RefResolution, 
 	procRef map[string]string, orgID *Identity) map[string]string {
 
 	updatedAttrs := make(map[string]string)
@@ -535,7 +535,7 @@ func oldUpdateRefOnLeftBasedOnMappingsNotUsingRefIDRow1(refResolutionConfig *Ref
 }
 
 
-func oldUpdateRefOnRightBasedOnMappingsNotUsingRefIDRow2(refResolutionConfig *RefResolutionConfig, 
+func oldUpdateRefOnRightBasedOnMappingsNotUsingRefIDRow2(refResolutionConfig *RefResolution, 
 	procRef map[string]string, orgID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string)

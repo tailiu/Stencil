@@ -100,7 +100,7 @@ func (displayConfig *displayConfig) checkReferenceIndeedResolved(
 		// Now we have not encountered data1 with more than one piece of data
 		for _, data1 := range data {
 
-			resolvedVal := displayConfig.refResolutionConfig.ReferenceResolved(
+			resolvedVal := displayConfig.rr.ReferenceResolved(
 				tableID, colID, fmt.Sprint(data1["id"]),
 			)
 			
@@ -130,7 +130,7 @@ func (displayConfig *displayConfig) checkResolveRefWithIDInData(table, col, tabl
 
 	// If favourites.status_id should be resolved (in this case, it should be),
 	// we check whether the reference has been resolved or not
-	newVal := displayConfig.refResolutionConfig.ReferenceResolved(tableID, colID, id)
+	newVal := displayConfig.rr.ReferenceResolved(tableID, colID, id)
 	
 	// If the reference has been resolved, then use the new reference to get data
 	// Otherwise, we try to resolve the reference
@@ -141,7 +141,7 @@ func (displayConfig *displayConfig) checkResolveRefWithIDInData(table, col, tabl
 		attr0 := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, tableID, colID, id)
 		log.Println("Before resolving reference: ", attr0)
 
-		displayConfig.refResolutionConfig.ResolveReference(attr0)
+		displayConfig.rr.ResolveReference(attr0)
 		
 		// Here we check again to get updated attributes and values
 		// instead of using the returned values from the ResolveReference
@@ -150,7 +150,7 @@ func (displayConfig *displayConfig) checkResolveRefWithIDInData(table, col, tabl
 		// case, ResolveReference does not return the updated attribute and value
 		// Therefore, we check all updated attributes again here by calling 
 		// GetUpdatedAttributes
-		updatedAttrs := displayConfig.refResolutionConfig.GetUpdatedAttributes(tableID, id)
+		updatedAttrs := displayConfig.rr.GetUpdatedAttributes(tableID, id)
 
 		log.Println("Updated attributes and values:")
 		log.Println(updatedAttrs)
@@ -205,7 +205,7 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
-		// newVal := displayConfig.refResolutionConfig.ReferenceResolved(table0ID, col0ID, id)
+		// newVal := displayConfig.rr.ReferenceResolved(table0ID, col0ID, id)
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
@@ -235,7 +235,7 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 		attr1 := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, table0ID, col0ID, id)
 		log.Println("Before resolving reference2: ", attr1)
 
-		displayConfig.refResolutionConfig.ResolveReference(attr1)
+		displayConfig.rr.ResolveReference(attr1)
 		
 		data2, err2 := displayConfig.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
 		if err2 != nil {

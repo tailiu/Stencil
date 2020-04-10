@@ -14,7 +14,7 @@ import (
  * The functions here DO NOT consider migration id.
  */
 
-func getFromReferences(refResolutionConfig *RefResolutionConfig,
+func getFromReferences(refResolutionConfig *RefResolution,
 	IDRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(
@@ -36,7 +36,7 @@ func getFromReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getToReferences(refResolutionConfig *RefResolutionConfig,
+func getToReferences(refResolutionConfig *RefResolution,
 	IDRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(
@@ -56,7 +56,7 @@ func getToReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func GetReferencesByFromIDFromAttrAndToMemberAndAttr(refResolutionConfig *RefResolutionConfig,
+func GetReferencesByFromIDFromAttrAndToMemberAndAttr(refResolutionConfig *RefResolution,
 	fromIDRow *Identity, fromAttr string) []map[string]interface{} {
 
 	query := fmt.Sprintf(
@@ -78,7 +78,7 @@ func GetReferencesByFromIDFromAttrAndToMemberAndAttr(refResolutionConfig *RefRes
 
 }
 
-func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, attr string) string {
+func getDataToUpdateRef(refResolutionConfig *RefResolution, member, id, attr string) string {
 
 	query := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE id = %s",
@@ -99,7 +99,7 @@ func getDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, at
 
 }
 
-func getRefByPK(refResolutionConfig *RefResolutionConfig,
+func getRefByPK(refResolutionConfig *RefResolution,
 	pk string) map[string]interface{} {
 
 	query := fmt.Sprintf("SELECT * FROM reference_table WHERE pk = %s", pk)
@@ -141,7 +141,7 @@ func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, dat
 
 }
 
-func addToResolvedReferences(refResolutionConfig *RefResolutionConfig,
+func addToResolvedReferences(refResolutionConfig *RefResolution,
 	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated, data string) string {
 
 	return fmt.Sprintf(
@@ -158,7 +158,7 @@ func addToResolvedReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func checkExistsInResolvedReference(refResolutionConfig *RefResolutionConfig,
+func checkExistsInResolvedReference(refResolutionConfig *RefResolution,
 	memberToBeUpdated, IDToBeUpdated, id string) {
 
 	query1 := fmt.Sprintf(
@@ -181,7 +181,7 @@ func checkExistsInResolvedReference(refResolutionConfig *RefResolutionConfig,
 }
 
 func updateReferences(
-	refResolutionConfig *RefResolutionConfig, refID,
+	refResolutionConfig *RefResolution, refID,
 	member, id, attr,
 	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated string) (string, error) {
 

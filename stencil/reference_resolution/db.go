@@ -7,7 +7,7 @@ package reference_resolution
 // 	"stencil/schema_mappings"
 // )
 
-// func getDataFromDB1(refResolutionConfig *RefResolutionConfig,
+// func getDataFromDB1(refResolutionConfig *RefResolution,
 // 	dbConn *sql.DB, query) map[string]interface{} {
 
 // 	data, err := db.DataCall1(dbConn, query)
@@ -24,6 +24,6 @@ package reference_resolution
 
 // }
 
-// func reconnectToDB(refResolutionConfig *RefResolutionConfig) {
+// func reconnectToDB(refResolutionConfig *RefResolution) {
 
 // }

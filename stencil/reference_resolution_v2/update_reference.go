@@ -32,23 +32,23 @@ import (
 // But with the attribute_change table, we are sure about which attributes to update or to be updated.
 // It should also be noted that in the display algorithm, 
 // we have to check all the attributes to be updated based on mappings.  
-func updateRefOnLeftByRefAttrRow(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnLeftByRefAttrRow(rr *RefResolution, 
 	refAttributeRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
 
 	updatedAttr := make(map[string]string)
 
-	attr := refResolutionConfig.attrIDNamePairs[refAttributeRow.attrName]
-	attrToUpdate := refResolutionConfig.attrIDNamePairs[orgAttr.attrName]
+	attr := rr.attrIDNamePairs[refAttributeRow.attrName]
+	attrToUpdate := rr.attrIDNamePairs[orgAttr.attrName]
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := refResolutionConfig.updateReferences(
+	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"], 
-		refResolutionConfig.tableIDNamePairs[refAttributeRow.member], 
+		rr.tableIDNamePairs[refAttributeRow.member], 
 		refAttributeRow.val, 
 		attr, 
-		refResolutionConfig.tableIDNamePairs[orgAttr.member], 
+		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
 		attrToUpdate,
 	)
@@ -63,23 +63,23 @@ func updateRefOnLeftByRefAttrRow(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func updateRefOnLeftByRefAttrRow1(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnLeftByRefAttrRow1(rr *RefResolution, 
 	procRef map[string]string, orgAttr *Attribute, refAttrRowVal string) map[string]string {
 
-	attr := refResolutionConfig.attrIDNamePairs[procRef["to_attr"]]
-	attrToUpdate := refResolutionConfig.attrIDNamePairs[procRef["from_attr"]]
+	attr := rr.attrIDNamePairs[procRef["to_attr"]]
+	attrToUpdate := rr.attrIDNamePairs[procRef["from_attr"]]
 
 	updatedAttr := make(map[string]string)
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := refResolutionConfig.updateReferences(
+	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"],  
-		refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
+		rr.tableIDNamePairs[procRef["to_member"]], 
 		refAttrRowVal, 
 		attr, 
-		refResolutionConfig.tableIDNamePairs[orgAttr.member], 
+		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
 		attrToUpdate,
 	)
@@ -93,23 +93,23 @@ func updateRefOnLeftByRefAttrRow1(refResolutionConfig *RefResolutionConfig,
 	return updatedAttr
 }
 
-func updateRefOnLeftNotUsingRefAttrRow(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnLeftNotUsingRefAttrRow(rr *RefResolution, 
 	procRef map[string]string, orgAttr *Attribute) map[string]string {
 
-	attr := refResolutionConfig.attrIDNamePairs[procRef["to_attr"]]
-	attrToUpdate := refResolutionConfig.attrIDNamePairs[procRef["from_attr"]]
+	attr := rr.attrIDNamePairs[procRef["to_attr"]]
+	attrToUpdate := rr.attrIDNamePairs[procRef["from_attr"]]
 
 	updatedAttr := make(map[string]string)
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := refResolutionConfig.updateReferences(
+	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"],  
-		refResolutionConfig.tableIDNamePairs[procRef["to_member"]], 
+		rr.tableIDNamePairs[procRef["to_member"]], 
 		procRef["to_val"], 
 		attr, 
-		refResolutionConfig.tableIDNamePairs[orgAttr.member], 
+		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
 		attrToUpdate,
 	)
@@ -123,23 +123,23 @@ func updateRefOnLeftNotUsingRefAttrRow(refResolutionConfig *RefResolutionConfig,
 	return updatedAttr
 }
 
-func updateRefOnRightByRefAttrRow(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnRightByRefAttrRow(rr *RefResolution, 
 	refAttributeRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
 
 	updatedAttrs := make(map[string]string)
 
-	attr := refResolutionConfig.attrIDNamePairs[orgAttr.attrName]
-	attrToUpdate := refResolutionConfig.attrIDNamePairs[refAttributeRow.attrName]
+	attr := rr.attrIDNamePairs[orgAttr.attrName]
+	attrToUpdate := rr.attrIDNamePairs[refAttributeRow.attrName]
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := refResolutionConfig.updateReferences(
+	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"],
-		refResolutionConfig.tableIDNamePairs[orgAttr.member], 
+		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
 		attr, 
-		refResolutionConfig.tableIDNamePairs[refAttributeRow.member], 
+		rr.tableIDNamePairs[refAttributeRow.member], 
 		refAttributeRow.val, 
 		attrToUpdate,
 	)
@@ -153,23 +153,23 @@ func updateRefOnRightByRefAttrRow(refResolutionConfig *RefResolutionConfig,
 	return updatedAttrs
 }
 
-func updateRefOnRightByRefAttrRow1(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnRightByRefAttrRow1(rr *RefResolution, 
 	procRef map[string]string, orgAttr *Attribute, refAttrRowVal string) map[string]string {
 
-	attr := refResolutionConfig.attrIDNamePairs[procRef["to_attr"]]
-	attrToUpdate := refResolutionConfig.attrIDNamePairs[procRef["from_attr"]]
+	attr := rr.attrIDNamePairs[procRef["to_attr"]]
+	attrToUpdate := rr.attrIDNamePairs[procRef["from_attr"]]
 
 	updatedAttr := make(map[string]string)
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := refResolutionConfig.updateReferences(
+	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"],
-		refResolutionConfig.tableIDNamePairs[orgAttr.member],
+		rr.tableIDNamePairs[orgAttr.member],
 		orgAttr.val,
 		attr, 
-		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
+		rr.tableIDNamePairs[procRef["from_member"]], 
 		refAttrRowVal, 
 		attrToUpdate,
 	)
@@ -184,23 +184,23 @@ func updateRefOnRightByRefAttrRow1(refResolutionConfig *RefResolutionConfig,
 	
 }
 
-func updateRefOnRightNotUsingRefAttrRow(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnRightNotUsingRefAttrRow(rr *RefResolution, 
 	procRef map[string]string, orgAttr *Attribute) map[string]string {
 
-	attr := refResolutionConfig.attrIDNamePairs[procRef["to_attr"]]
-	attrToUpdate := refResolutionConfig.attrIDNamePairs[procRef["from_attr"]]
+	attr := rr.attrIDNamePairs[procRef["to_attr"]]
+	attrToUpdate := rr.attrIDNamePairs[procRef["from_attr"]]
 
 	updatedAttr := make(map[string]string)
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	updatedVal, err1 := refResolutionConfig.updateReferences(
+	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"],
-		refResolutionConfig.tableIDNamePairs[orgAttr.member],
+		rr.tableIDNamePairs[orgAttr.member],
 		orgAttr.val,
 		attr, 
-		refResolutionConfig.tableIDNamePairs[procRef["from_member"]], 
+		rr.tableIDNamePairs[procRef["from_member"]], 
 		procRef["from_val"], 
 		attrToUpdate,
 	)

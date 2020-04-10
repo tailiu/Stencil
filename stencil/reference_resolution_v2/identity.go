@@ -6,38 +6,37 @@ import (
 	"stencil/db"
 )
 
-func getUpdateIDInDisplayFlagsQuery(refResolutionConfig *RefResolutionConfig, 
+func (rr *RefResolution) getUpdateIDInDisplayFlagsQuery(
 	table, IDToBeUpdated, id string) string {
 	
 	query := fmt.Sprintf(
 		`UPDATE display_flags SET id = %s, updated_at = now() 
 		WHERE app_id = %s and table_id = %s 
 		and id = %s and migration_id = %d;`,
-		id, refResolutionConfig.appID, 
-		refResolutionConfig.appTableNameIDPairs[table],
-		IDToBeUpdated, refResolutionConfig.migrationID,
+		id, rr.appID, 
+		rr.appTableNameIDPairs[table],
+		IDToBeUpdated, rr.migrationID,
 	)
 
 	return query
 }
 
-func getInsertIntoIDChangesTableQuery(refResolutionConfig *RefResolutionConfig,
-	table, IDToBeUpdated, id string) string {
+func (rr *RefResolution) getInsertIntoIDChangesTableQuery(table, IDToBeUpdated, id string) string {
 
 	query := fmt.Sprintf(
 		`INSERT INTO id_changes (app_id, table_id, old_id, new_id, migration_id)
 		VALUES (%s, %s, %s, %s, %d)`,
-		refResolutionConfig.appID, 
-		refResolutionConfig.appTableNameIDPairs[table],
+		rr.appID, 
+		rr.appTableNameIDPairs[table],
 		IDToBeUpdated,
 		id,
-		refResolutionConfig.migrationID,
+		rr.migrationID,
 	)
 
 	return query
 }
 
-func getIDsOfDataToBeUpdated(refResolutionConfig *RefResolutionConfig,
+func (rr *RefResolution) getIDsOfDataToBeUpdated(
 	memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) []string {
 	
 	query := fmt.Sprintf(
@@ -47,7 +46,7 @@ func getIDsOfDataToBeUpdated(refResolutionConfig *RefResolutionConfig,
 
 	log.Println(query)
 
-	data, err := db.DataCall(refResolutionConfig.appDBConn, query)
+	data, err := db.DataCall(rr.appDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
