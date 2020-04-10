@@ -9,10 +9,10 @@ import (
 
 // By default, enableDisplay, displayInFirstPhase, markAsDelete
 // are true, true, false 
-func handleArgs(args []bool) (bool, bool, bool, bool, bool) {
+func handleArgs(args []bool) (bool, bool, bool, bool, bool, bool) {
 
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags :=
-		true, true, false, true, false
+	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags, enableFTP :=
+		true, true, false, true, false, true
 	
 	for i, arg := range args {
 		switch i {
@@ -26,14 +26,14 @@ func handleArgs(args []bool) (bool, bool, bool, bool, bool) {
 			useBladeServerAsDst = arg
 		case 4:
 			enableBags = arg
+		case 5:
+			enableBags = arg
 		default:
-			log.Fatal(`The input args of the migration and display controller 
-				do not satisfy requirements!`)
+			log.Fatal(`The input args of the migration and display controller do not satisfy requirements!`)
 		}
 	}
 
-	return enableDisplay, displayInFirstPhase, 
-		markAsDelete, useBladeServerAsDst, enableBags
+	return enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags, enableFTP
 
 }
 
@@ -41,7 +41,7 @@ func Controller(uid, srcAppName, srcAppID,
 	dstAppName, dstAppID, migrationType string,
 	threadNum int, args ...bool) {
 	
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags := handleArgs(args)
+	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags, enableFTP := handleArgs(args)
 	
 	var wg sync.WaitGroup
 
@@ -55,8 +55,10 @@ func Controller(uid, srcAppName, srcAppID,
 	// we only need to wait for one display thread to finish
 	wg.Add(1)
 
-	go apis.StartMigration(uid, srcAppName, srcAppID,
-		dstAppName, dstAppID, migrationType, useBladeServerAsDst, enableBags)
+	go apis.StartMigration(
+		uid, srcAppName, srcAppID, dstAppName, dstAppID, 
+		migrationType, useBladeServerAsDst, enableBags, enableFTP,
+	)
 
 	go SA1_display.StartDisplay(
 		uid, srcAppID, dstAppID, migrationType, threadNum, &wg, 

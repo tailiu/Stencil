@@ -1927,10 +1927,10 @@ func Exp7Test() {
 	log.Println("===============================")
 
 	migrationSeq := []string {
-		// "diaspora", "mastodon",
+		"diaspora", "mastodon",
 		// "diaspora", "mastodon", "gnusocial",
 		// "diaspora", "mastodon", "gnusocial", "twitter",
-		"diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
+		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 		// "diaspora", "mastodon", "gnusocial", 
 	}
 
@@ -1961,7 +1961,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 800
+	edgeCounterRangeStart := 600
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
