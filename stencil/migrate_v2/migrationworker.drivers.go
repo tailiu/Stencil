@@ -46,7 +46,7 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 		log.Println(fmt.Sprintf("PROCESS Node { %s } ", color.FgLightCyan.Render(node.Tag.Name)))
 
 		if strings.EqualFold(node.Tag.Name, rootTagName) {
-			// return self.DeleteRoot(threadID)
+			return self.DeleteRoot(threadID)
 		} else {
 			if err := self.CallMigration(node, threadID); err != nil {
 				return err
