@@ -113,8 +113,7 @@ func CreateResolvedReferencesTable(dbConn *sql.DB) {
 
 }
 
-func getFromReferencesUsingID(refResolutionConfig *RefResolutionConfig,
-	attrRow map[string]string) []map[string]interface{} {
+func (rr *RefResolution) getFromReferencesUsingID(attrRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM reference_table_v2 WHERE
@@ -125,7 +124,7 @@ func getFromReferencesUsingID(refResolutionConfig *RefResolutionConfig,
 
 	log.Println(query)
 
-	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,8 +134,7 @@ func getFromReferencesUsingID(refResolutionConfig *RefResolutionConfig,
 	return data
 }
 
-func getFromReferences(refResolutionConfig *RefResolutionConfig,
-	attrRow map[string]string) []map[string]interface{} {
+func (rr *RefResolution) getFromReferences(attrRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM reference_table_v2 WHERE
@@ -147,7 +145,7 @@ func getFromReferences(refResolutionConfig *RefResolutionConfig,
 
 	log.Println(query)
 
-	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -157,8 +155,7 @@ func getFromReferences(refResolutionConfig *RefResolutionConfig,
 	return data
 }
 
-func getToReferences(refResolutionConfig *RefResolutionConfig,
-	attrRow map[string]string) []map[string]interface{} {
+func (rr *RefResolution) getToReferences(attrRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM reference_table_v2 WHERE
@@ -167,7 +164,7 @@ func getToReferences(refResolutionConfig *RefResolutionConfig,
 		attrRow["from_attr"], attrRow["from_val"],
 	)
 
-	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -178,8 +175,7 @@ func getToReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func checkDataToUpdateRefExists(refResolutionConfig *RefResolutionConfig, 
-	member, attr, attrVal string) bool {
+func (rr *RefResolution) checkDataToUpdateRefExists(member, attr, attrVal string) bool {
 
 	query := fmt.Sprintf(
 		"SELECT 1 FROM %s WHERE %s = '%s'",
@@ -188,7 +184,7 @@ func checkDataToUpdateRefExists(refResolutionConfig *RefResolutionConfig,
 
 	log.Println(query)
 
-	data, err := db.DataCall1(refResolutionConfig.appDBConn, query)
+	data, err := db.DataCall1(rr.appDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -201,11 +197,11 @@ func checkDataToUpdateRefExists(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getRefByPK(refResolutionConfig *RefResolutionConfig, pk string) map[string]interface{} {
+func (rr *RefResolution) getRefByPK(pk string) map[string]interface{} {
 
 	query := fmt.Sprintf("SELECT * FROM reference_table_v2 WHERE pk = %s", pk)
 
-	data1, err1 := db.DataCall1(refResolutionConfig.stencilDBConn, query)
+	data1, err1 := db.DataCall1(rr.stencilDBConn, query)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
@@ -229,35 +225,35 @@ func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, attrVal, dataID st
 
 }
 
-func addToResolvedReferences(refResolutionConfig *RefResolutionConfig,
+func (rr *RefResolution) addToResolvedReferences(
 	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated, attrVal string) string {
 
 	return fmt.Sprintf(
 		`INSERT INTO resolved_references 
 		(app, member, id, migration_id, attr, updated_val)
 		VALUES (%s, %s, %s, %d, %s, %s)`,
-		refResolutionConfig.appID,
-		refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
+		rr.appID,
+		rr.appTableNameIDPairs[memberToBeUpdated],
 		IDToBeUpdated,
-		refResolutionConfig.migrationID,
-		refResolutionConfig.appAttrNameIDPairs[memberToBeUpdated + ":"+ attrToBeUpdated],
+		rr.migrationID,
+		rr.appAttrNameIDPairs[memberToBeUpdated + ":"+ attrToBeUpdated],
 		attrVal,
 	)
 
 }
 
-func (refResolutionConfig *RefResolutionConfig) ReferenceResolved(member, attr, id string) string {
+func (rr *RefResolution) ReferenceResolved(member, attr, id string) string {
 
 	query := fmt.Sprintf(
 		`select updated_val from resolved_references where 
 		app = %s and member = %s and attr = %s and id = %s`,
-		refResolutionConfig.appID, 
+		rr.appID, 
 		member, attr, id,
 	)
 	
 	log.Println(query)
 	
-	data, err := db.DataCall1(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall1(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -270,7 +266,7 @@ func (refResolutionConfig *RefResolutionConfig) ReferenceResolved(member, attr, 
 	}
 }
 
-func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
+func (rr *RefResolution) updateReferences(refID,
 	member, val, attr, memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) (string, error) {
 
 	if attr == "" && attrToBeUpdated == "" {
@@ -301,7 +297,7 @@ func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 		// rows and we will not update the second row if we consider it has been resolved before.
 		// Thus we must get id here for checking. There could be multiple pieces of data (multiple ids)
 		// in the case of multiple comments to the same posts with the same commentable_id
-		dataIDsToBeUpdated := getIDsOfDataToBeUpdated(refResolutionConfig,
+		dataIDsToBeUpdated := rr.getIDsOfDataToBeUpdated(
 			memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated,
 		)
 
@@ -319,9 +315,9 @@ func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 		unresolvedDataIDToBeUpdated := ""
 		for _, dataIDToBeUpdated := range dataIDsToBeUpdated {
 
-			newVal := refResolutionConfig.ReferenceResolved(
-				refResolutionConfig.appTableNameIDPairs[memberToBeUpdated],
-				refResolutionConfig.appAttrNameIDPairs[memberToBeUpdated + ":"+ attrToBeUpdated],
+			newVal := rr.ReferenceResolved(
+				rr.appTableNameIDPairs[memberToBeUpdated],
+				rr.appAttrNameIDPairs[memberToBeUpdated + ":"+ attrToBeUpdated],
 				dataIDToBeUpdated,
 			)
 			
@@ -335,7 +331,7 @@ func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 			return "", alreadySolved
 		}
 
-		dataExists := checkDataToUpdateRefExists(refResolutionConfig, member, attr, val)
+		dataExists := rr.checkDataToUpdateRefExists(member, attr, val)
 
 		if dataExists {
 
@@ -350,20 +346,20 @@ func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 			if attrToBeUpdated == "id" {
 
 				// This is to update id in the display_flags table
-				displayFlagsQ0 := getUpdateIDInDisplayFlagsQuery(
-					refResolutionConfig, memberToBeUpdated, attrValToBeUpdated, val,
+				displayFlagsQ0 := rr.getUpdateIDInDisplayFlagsQuery(
+					memberToBeUpdated, attrValToBeUpdated, val,
 				)
 
 				// This is to update to_id in the identity table
 				// There is no need to update id in the reference table
 				// since the reference table stores ids in the source app
-				updateToAttrQ0 := getUpdateToAttrInAttrChangesTableQuery(
-					refResolutionConfig, memberToBeUpdated, attrToBeUpdated, 
+				updateToAttrQ0 := rr.getUpdateToAttrInAttrChangesTableQuery(
+					memberToBeUpdated, attrToBeUpdated, 
 					attrValToBeUpdated, val,
 				)
 
-				insertIntoIDChanges := getInsertIntoIDChangesTableQuery(
-					refResolutionConfig, memberToBeUpdated, attrValToBeUpdated, val,
+				insertIntoIDChanges := rr.getInsertIntoIDChangesTableQuery(
+					memberToBeUpdated, attrValToBeUpdated, val,
 				)
 
 				// Note that this data must not be used to update other data, because
@@ -384,7 +380,7 @@ func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 
 			log.Println(q1)
 
-			err := db.TxnExecute1(refResolutionConfig.appDBConn, q1)
+			err := db.TxnExecute1(rr.appDBConn, q1)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -396,16 +392,14 @@ func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 			var q3 string
 
 			if attrToBeUpdated == "id" {
-				q3 = addToResolvedReferences(
-					refResolutionConfig,
+				q3 = rr.addToResolvedReferences(
 					memberToBeUpdated,
 					val,
 					attrToBeUpdated,
 					val,
 				)
 			} else {
-				q3 = addToResolvedReferences(
-					refResolutionConfig,
+				q3 = rr.addToResolvedReferences(
 					memberToBeUpdated,
 					unresolvedDataIDToBeUpdated,
 					attrToBeUpdated,
@@ -424,20 +418,20 @@ func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 					log.Println(updateQ)
 				} else {
 
-					refToBeDeleted := getRefByPK(refResolutionConfig, refID)
+					refToBeDeleted := rr.getRefByPK(refID)
 
 					if len(refToBeDeleted) == 0 {
 						log.Println(red("The reference has already been deleted by other display threads"))
 					} else {
 						log.Println(red("The reference to be deleted:"))
 						profRefToBeDeleted := common_funcs.TransformInterfaceToString(refToBeDeleted)
-						refToBeDeletedLog := LogRefRow(refResolutionConfig, profRefToBeDeleted, true)
+						refToBeDeletedLog := rr.LogRefRow(profRefToBeDeleted, true)
 						log.Println(red(refToBeDeletedLog))
 					}
 				}
 			}
 
-			err1 := db.TxnExecute(refResolutionConfig.stencilDBConn, queries)
+			err1 := db.TxnExecute(rr.stencilDBConn, queries)
 
 			if err1 != nil {
 				log.Fatal(err1)
@@ -462,7 +456,7 @@ func (refResolutionConfig *RefResolutionConfig) updateReferences(refID,
 		color.Red.Println(q1)
 		log.Println("---------------------------------------------")
 
-		err := db.TxnExecute1(refResolutionConfig.stencilDBConn, q1)
+		err := db.TxnExecute1(rr.stencilDBConn, q1)
 		if err != nil {
 			log.Fatal(err)
 		}

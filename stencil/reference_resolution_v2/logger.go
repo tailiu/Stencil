@@ -5,16 +5,15 @@ import (
 	"fmt"
 )
 
-func LogRefRow(refResolutionConfig *RefResolutionConfig, 
-	refRow map[string]string, returnLogOnly ...bool) string {
+func (rr *RefResolution) LogRefRow(refRow map[string]string, returnLogOnly ...bool) string {
 	
-	appName := refResolutionConfig.appIDNamePairs[refRow["app"]]
+	appName := rr.appIDNamePairs[refRow["app"]]
 
-	fromMember := refResolutionConfig.tableIDNamePairs[refRow["from_member"]]
-	toMember := refResolutionConfig.tableIDNamePairs[refRow["to_member"]]
+	fromMember := rr.tableIDNamePairs[refRow["from_member"]]
+	toMember := rr.tableIDNamePairs[refRow["to_member"]]
 
-	fromAttr := refResolutionConfig.attrIDNamePairs[refRow["from_attr"]]
-	toAttr := refResolutionConfig.attrIDNamePairs[refRow["to_attr"]]
+	fromAttr := rr.attrIDNamePairs[refRow["from_attr"]]
+	toAttr := rr.attrIDNamePairs[refRow["to_attr"]]
 	
 	output := fmt.Sprint(
 		"ref_row - from_member:", fromMember, "|",
@@ -37,17 +36,16 @@ func LogRefRow(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func logAttrChangeRow(refResolutionConfig *RefResolutionConfig, 
-	attrRow map[string]string) {
+func (rr *RefResolution) logAttrChangeRow(attrRow map[string]string) {
 	
-	fromApp := refResolutionConfig.appIDNamePairs[attrRow["from_app"]]
-	toApp := refResolutionConfig.appIDNamePairs[attrRow["to_app"]]
+	fromApp := rr.appIDNamePairs[attrRow["from_app"]]
+	toApp := rr.appIDNamePairs[attrRow["to_app"]]
 
-	fromMember := refResolutionConfig.tableIDNamePairs[attrRow["from_member"]]
-	toMember := refResolutionConfig.tableIDNamePairs[attrRow["to_member"]]
+	fromMember := rr.tableIDNamePairs[attrRow["from_member"]]
+	toMember := rr.tableIDNamePairs[attrRow["to_member"]]
 
-	fromAttr := refResolutionConfig.attrIDNamePairs[attrRow["from_attr"]]
-	toAttr := refResolutionConfig.attrIDNamePairs[attrRow["to_attr"]]
+	fromAttr := rr.attrIDNamePairs[attrRow["from_attr"]]
+	toAttr := rr.attrIDNamePairs[attrRow["to_attr"]]
 
 	log.Println(
 		"id_row - from_app:", fromApp, "|", 
@@ -66,12 +64,11 @@ func logAttrChangeRow(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func logRefAttrRow(refResolutionConfig *RefResolutionConfig, 
-	attribute *Attribute) {
+func (rr *RefResolution) logRefAttrRow(attribute *Attribute) {
 	
-	app := refResolutionConfig.appIDNamePairs[attribute.app]
-	member := refResolutionConfig.tableIDNamePairs[attribute.member]
-	attrName := refResolutionConfig.attrIDNamePairs[attribute.attrName]
+	app := rr.appIDNamePairs[attribute.app]
+	member := rr.tableIDNamePairs[attribute.member]
+	attrName := rr.attrIDNamePairs[attribute.attrName]
 
 	log.Println(
 		"refIdentityRow - app:", app, "|",

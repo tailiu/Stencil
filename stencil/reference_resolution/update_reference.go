@@ -26,7 +26,7 @@ import (
  */
 
 
-func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolution, 
 	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
 	
 	updatedAttrs := make(map[string]string)
@@ -177,7 +177,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolut
 
 }
 
-func updateRefOnLeftBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnLeftBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResolution, 
 	procRef map[string]string, orgID *Identity, refIdentityRowID string) map[string]string {
 
 	attr := procRef["to_reference"]
@@ -212,7 +212,7 @@ func updateRefOnLeftBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResolu
 	return updatedAttr
 }
 
-func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolution, 
 	procRef map[string]string, orgID *Identity) map[string]string {
 
 	attr := procRef["to_reference"]
@@ -247,7 +247,7 @@ func updateRefOnLeftBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefReso
 	return updatedAttr
 }
 
-func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolution, 
 	refIdentityRow *Identity, procRef map[string]string, orgID *Identity) map[string]string {
 
 	updatedAttrs := make(map[string]string)
@@ -373,7 +373,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow(refResolutionConfig *RefResolu
 	
 }
 
-func updateRefOnRightBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnRightBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResolution, 
 	procRef map[string]string, orgID *Identity, refIdentityRowID string) map[string]string {
 	
 	attr := procRef["to_reference"]
@@ -408,7 +408,7 @@ func updateRefOnRightBasedOnMappingsUsingRefIDRow1(refResolutionConfig *RefResol
 	
 }
 
-func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func updateRefOnRightBasedOnMappingsNotUsingRefIDRow(refResolutionConfig *RefResolution, 
 	procRef map[string]string, orgID *Identity) map[string]string {
 	
 	attr := procRef["to_reference"]

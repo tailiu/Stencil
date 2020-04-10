@@ -94,8 +94,7 @@ func createAttributeByRefRowToPart(procAttrRow map[string]string) *Attribute {
 	return attr
 }
 
-func getRowsFromAttrChangesTableByTo(refResolutionConfig *RefResolutionConfig,
-	attr *Attribute) []map[string]interface{} {
+func (rr *RefResolution) getRowsFromAttrChangesTableByTo(attr *Attribute) []map[string]interface{} {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM attribute_changes WHERE 
@@ -105,7 +104,7 @@ func getRowsFromAttrChangesTableByTo(refResolutionConfig *RefResolutionConfig,
 
 	log.Println(query)
 
-	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,8 +114,7 @@ func getRowsFromAttrChangesTableByTo(refResolutionConfig *RefResolutionConfig,
 	return data
 }
 
-func getRowsFromAttrChangesTableByFrom(refResolutionConfig *RefResolutionConfig,
-	attr *Attribute) []map[string]interface{} {
+func (rr *RefResolution) getRowsFromAttrChangesTableByFrom(attr *Attribute) []map[string]interface{} {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM attribute_changes WHERE
@@ -124,7 +122,7 @@ func getRowsFromAttrChangesTableByFrom(refResolutionConfig *RefResolutionConfig,
 		attr.app, attr.member, attr.attrName, attr.val,
 	)
 
-	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,8 +133,7 @@ func getRowsFromAttrChangesTableByFrom(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func getRowsFromAttrChangesTableByFromUsingID(refResolutionConfig *RefResolutionConfig,
-	attr *Attribute) []map[string]interface{} {
+func (rr *RefResolution) getRowsFromAttrChangesTableByFromUsingID(attr *Attribute) []map[string]interface{} {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM attribute_changes WHERE
@@ -144,7 +141,7 @@ func getRowsFromAttrChangesTableByFromUsingID(refResolutionConfig *RefResolution
 		attr.app, attr.member, attr.attrName, attr.id,
 	)
 
-	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -154,12 +151,11 @@ func getRowsFromAttrChangesTableByFromUsingID(refResolutionConfig *RefResolution
 	return data
 
 }
-func forwardTraverseAttrChangesTable(refResolutionConfig *RefResolutionConfig,
-	attr, orgAttr *Attribute, inRecurrsion bool) []*Attribute {
+func (rr *RefResolution) forwardTraverseAttrChangesTable(attr, orgAttr *Attribute, inRecurrsion bool) []*Attribute {
 
 	var res []*Attribute
 
-	attrRows := getRowsFromAttrChangesTableByFromUsingID(refResolutionConfig, attr)
+	attrRows := rr.getRowsFromAttrChangesTableByFromUsingID(attr)
 	// log.Println(IDRows)
 
 	for _, attrRow := range attrRows {
@@ -168,7 +164,7 @@ func forwardTraverseAttrChangesTable(refResolutionConfig *RefResolutionConfig,
 
 		nextData := createAttributeByRefRowToPart(procAttrRow)
 
-		res = append(res, forwardTraverseAttrChangesTable(refResolutionConfig, nextData, orgAttr, true)...)
+		res = append(res, rr.forwardTraverseAttrChangesTable(nextData, orgAttr, true)...)
 
 	}
 
@@ -186,9 +182,9 @@ func forwardTraverseAttrChangesTable(refResolutionConfig *RefResolutionConfig,
 		// We don't find the cases in which ID.member == orginalID.member but
 		// ID.id != orginalID.id, however this may happen..
 		// Before changing:
-		// if ID.app == refResolutionConfig.AppConfig.AppID &&
+		// if ID.app == rr.AppConfig.AppID &&
 		// 	ID.member != orginalID.member && ID.id != orginalID.id {
-		// if ID.app == refResolutionConfig.appID &&
+		// if ID.app == rr.appID &&
 		// 	(ID.member != orginalID.member || ID.id != orginalID.id) {
 		// We remove the conditions: ID.member != orginalID.member || ID.id != orginalID.id
 		// because there could be data referencing the same data
@@ -201,7 +197,7 @@ func forwardTraverseAttrChangesTable(refResolutionConfig *RefResolutionConfig,
 		// we use the third argument in the #REF to point out which table we are referring to 
 		// (excluding Twitter.notifications.id -> Diaspora.notifications.id (same as the original data under check)
 		// in that example). 
-		if attr.app == refResolutionConfig.appID {
+		if attr.app == rr.appID {
 			res = append(res, attr)
 		}
 	}
@@ -209,7 +205,7 @@ func forwardTraverseAttrChangesTable(refResolutionConfig *RefResolutionConfig,
 	return res
 }
 
-func getUpdateToAttrInAttrChangesTableQuery(refResolutionConfig *RefResolutionConfig,
+func (rr *RefResolution) getUpdateToAttrInAttrChangesTableQuery(
 	memberName, attrToBeUpdated, attrValToBeUpdated, newAttrVal string) string {
 		
 	query := fmt.Sprintf(
@@ -217,9 +213,9 @@ func getUpdateToAttrInAttrChangesTableQuery(refResolutionConfig *RefResolutionCo
 		WHERE to_app = %s and to_member = %s 
 		and to_attr = %s and to_val = %s`,
 		newAttrVal, 
-		refResolutionConfig.appID, 
-		refResolutionConfig.appTableNameIDPairs[memberName],
-		refResolutionConfig.appAttrNameIDPairs[memberName + ":" + attrToBeUpdated],
+		rr.appID, 
+		rr.appTableNameIDPairs[memberName],
+		rr.appAttrNameIDPairs[memberName + ":" + attrToBeUpdated],
 		attrValToBeUpdated,
 	)
 
@@ -227,19 +223,19 @@ func getUpdateToAttrInAttrChangesTableQuery(refResolutionConfig *RefResolutionCo
 
 }
 
-func (refResolutionConfig *RefResolutionConfig) GetUpdatedAttributes(member, id string) map[string]string {
+func (rr *RefResolution) GetUpdatedAttributes(member, id string) map[string]string {
 	
 	updatedAttrs := make(map[string]string) 
 
 	query := fmt.Sprintf(
 		`select attr, updated_val from resolved_references where
 		app = %s and member = %s and id = %s ORDER BY pk`,
-		refResolutionConfig.appID, member, id,
+		rr.appID, member, id,
 	)
 	
 	log.Println(query)
 
-	data, err := db.DataCall(refResolutionConfig.stencilDBConn, query)
+	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}

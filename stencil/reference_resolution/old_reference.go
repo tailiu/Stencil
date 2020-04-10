@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func oldGetFromReferences(refResolutionConfig *RefResolutionConfig, 
+func oldGetFromReferences(refResolutionConfig *RefResolution, 
 	IDRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and from_member = %s 
@@ -26,7 +26,7 @@ func oldGetFromReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func oldGetToReferences(refResolutionConfig *RefResolutionConfig, 
+func oldGetToReferences(refResolutionConfig *RefResolution, 
 	IDRow map[string]string) []map[string]interface{} {
 
 	query := fmt.Sprintf(`SELECT * FROM reference_table WHERE app = %s and to_member = %s 
@@ -44,7 +44,7 @@ func oldGetToReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func oldGetDataToUpdateRef(refResolutionConfig *RefResolutionConfig, member, id, attr string) string {
+func oldGetDataToUpdateRef(refResolutionConfig *RefResolution, member, id, attr string) string {
 	
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE id = %s",
 		attr, member, id)
@@ -86,7 +86,7 @@ func oldUpdateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, IDToBeUpdated, 
 
 }
 
-func oldAddToResolvedReferences(refResolutionConfig *RefResolutionConfig, 
+func oldAddToResolvedReferences(refResolutionConfig *RefResolution, 
 	memberToBeUpdated, IDToBeUpdated, attrToBeUpdated, data string) string {
 	
 	return fmt.Sprintf(`INSERT INTO resolved_references 
@@ -102,7 +102,7 @@ func oldAddToResolvedReferences(refResolutionConfig *RefResolutionConfig,
 }
 
 
-func oldUpdateReferences(refResolutionConfig *RefResolutionConfig, 
+func oldUpdateReferences(refResolutionConfig *RefResolution, 
 	refID, member, id, attr, memberToBeUpdated, 
 	IDToBeUpdated, attrToBeUpdated string) (string, error) {
 

@@ -8,9 +8,9 @@ import (
 
 const CHECK_INTERVAL = 200 * time.Millisecond
 
-func (displayConfig *displayConfig) DisplayThread() {
+func (display *display) DisplayThread() {
 
-	defer displayConfig.closeDBConns()
+	defer display.closeDBConns()
 
 	startTime := time.Now()
 
@@ -18,16 +18,16 @@ func (displayConfig *displayConfig) DisplayThread() {
 
 	secondRound := false
 
-	if displayConfig.displayInFirstPhase {
+	if display.displayInFirstPhase {
 
 		log.Println("--------- First Phase --------")
 
-		for migratedData := displayConfig.GetUndisplayedMigratedData(); 
-			!displayConfig.CheckMigrationComplete(); 
-			migratedData = displayConfig.GetUndisplayedMigratedData() {
+		for migratedData := display.GetUndisplayedMigratedData(); 
+			!display.CheckMigrationComplete(); 
+			migratedData = display.GetUndisplayedMigratedData() {
 
 			for _, oneMigratedData := range migratedData {
-				displayConfig.checkDisplayOneMigratedData(oneMigratedData, secondRound)
+				display.checkDisplayOneMigratedData(oneMigratedData, secondRound)
 			}
 
 			time.Sleep(CHECK_INTERVAL)
@@ -39,15 +39,15 @@ func (displayConfig *displayConfig) DisplayThread() {
 
 	secondRound = true
 
-	secondRoundMigratedData := GetUndisplayedMigratedData(displayConfig)
+	secondRoundMigratedData := GetUndisplayedMigratedData(display)
 
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-		displayConfig.checkDisplayOneMigratedData(oneSecondRoundMigratedData, secondRound)
+		display.checkDisplayOneMigratedData(oneSecondRoundMigratedData, secondRound)
 	}
 
 	log.Println("--------- End of Display Check ---------")
 
-	displayConfig.logDisplayEndTime()
+	display.logDisplayEndTime()
 
 	endTime := time.Now()
 
@@ -61,14 +61,14 @@ func (displayConfig *displayConfig) DisplayThread() {
 // 	secondRound bool, deletionHoldEnable bool, dhStack [][]int, 
 // 	threadID int, userID string, dstDAG *DAG) (string, [][]int, error) {
 
-func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData *HintStruct, secondRound bool) error {
+func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct, secondRound bool) error {
 
 	// CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
 	log.Println("Check Data ", *oneMigratedData)
 	
 	log.Println("==================== Check Intra-node dependencies ====================")
 
-	dataInNode, err1 := displayConfig.GetDataInNodeBasedOnDisplaySetting(oneMigratedData)
+	dataInNode, err1 := display.GetDataInNodeBasedOnDisplaySetting(oneMigratedData)
 
 	log.Println("Data in Node:")
 
@@ -85,11 +85,11 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 
 		log.Println(err1)
 
-		return displayConfig.chechPutIntoDataBag(secondRound, []*HintStruct{oneMigratedData})
+		return display.chechPutIntoDataBag(secondRound, []*HintStruct{oneMigratedData})
 
 	} else {
 
-		displayedData, notDisplayedData := displayConfig.checkDisplayConditionsInNode(dataInNode)
+		displayedData, notDisplayedData := display.checkDisplayConditionsInNode(dataInNode)
 
 		// Note: This will be changed when considering ongoing application services
 		// and the existence of other display threads !!
@@ -97,7 +97,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 
 			log.Println("There is already some displayed data in the node")
 
-			err6 := displayConfig.Display(notDisplayedData)
+			err6 := display.Display(notDisplayedData)
 			if err6 != nil {
 				log.Println(err6)
 			}
@@ -119,7 +119,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 
 			log.Println("The checked data is a root node")
 
-			err15 := displayConfig.Display(dataInNode)
+			err15 := display.Display(dataInNode)
 			if err15 != nil {
 				log.Println(err15)
 			} else {
@@ -133,7 +133,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 		// The check of sharing conditions for now is not implemented for now.
 		} else {
 			
-			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(displayConfig)
+			dataOwnershipSpec, err12 := oneMigratedData.GetOwnershipSpec(display)
 			
 			// Mastodon conversations have no ownership settings. In this case
 			// we cannot check ownership settings
@@ -145,7 +145,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 			} else {
 				// log.Println(dataOwnershipSpec)
 
-				dataInOwnerNode, err13 := displayConfig.getOwner(dataInNode, dataOwnershipSpec)
+				dataInOwnerNode, err13 := display.getOwner(dataInNode, dataOwnershipSpec)
 
 				// The root node could be incomplete
 				if err13 != nil {
@@ -158,11 +158,11 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 				// or other users' root nodes
 				if len(dataInOwnerNode) != 0 {
 
-					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := displayConfig.checkDisplayConditionsInNode(dataInOwnerNode)
+					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := display.checkDisplayConditionsInNode(dataInOwnerNode)
 					
 					if len(displayedDataInOwnerNode) != 0 {
 
-						err6 := displayConfig.Display(notDisplayedDataInOwnerNode)
+						err6 := display.Display(notDisplayedDataInOwnerNode)
 						if err6 != nil {
 							log.Fatal(err6)
 						}
@@ -181,7 +181,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 					log.Println(`Ownership display settings are not satisfied, 
 						so this node cannot be displayed`)
 
-					return displayConfig.chechPutIntoDataBag(secondRound, dataInNode)			
+					return display.chechPutIntoDataBag(secondRound, dataInNode)			
 
 				} else {
 
@@ -194,7 +194,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 
 		log.Println("==================== Check Inter-node dependencies ====================")
 		
-		pTags, err2 := oneMigratedData.GetParentTags(displayConfig)
+		pTags, err2 := oneMigratedData.GetParentTags(display)
 		if err2 != nil {
 			log.Fatal(err2)
 		} else {
@@ -203,7 +203,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 
 				log.Println("This Data's Tag Does not Depend on Any Other Tag!")
 
-				err3 := displayConfig.Display(dataInNode)
+				err3 := display.Display(dataInNode)
 				if err3 != nil {
 					log.Println(err3)
 				}
@@ -218,7 +218,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 
 					log.Println("Check a Parent Tag:", pTag)
 					
-					dataInParentNode, err4 := displayConfig.GetdataFromParentNode(dataInNode, pTag)
+					dataInParentNode, err4 := display.GetdataFromParentNode(dataInNode, pTag)
 
 					if err4 != nil {
 						log.Println(err4)
@@ -227,7 +227,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 					}
 
 					displaySettingInDeps, err5 := oneMigratedData.GetDisplaySettingInDependencies(
-						displayConfig, pTag)
+						display, pTag)
 
 					if err5 != nil {
 						log.Fatal(err5)
@@ -256,7 +256,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 						// 	log.Fatal("Find more than one piece of data in a parent node!!")
 						// }
 						
-						err7 := displayConfig.checkDisplayOneMigratedData(dataInParentNode, secondRound)
+						err7 := display.checkDisplayOneMigratedData(dataInParentNode, secondRound)
 						
 						if err7 != nil {
 							log.Println(err7)
@@ -284,10 +284,10 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 				}
 				// log.Println(pTagConditions)
 
-				if checkResult := displayConfig.CheckCombinedDisplayConditions(
+				if checkResult := display.CheckCombinedDisplayConditions(
 					pTagConditions, oneMigratedData); checkResult {
 
-					err8 := displayConfig.Display(dataInNode)
+					err8 := display.Display(dataInNode)
 					// Found path conflicts
 					if err8 != nil {
 						log.Println(err8)
@@ -297,7 +297,7 @@ func (displayConfig *displayConfig) checkDisplayOneMigratedData(oneMigratedData 
 
 				} else {
 
-					return displayConfig.chechPutIntoDataBag(secondRound, dataInNode)
+					return display.chechPutIntoDataBag(secondRound, dataInNode)
 				}
 			}
 		}

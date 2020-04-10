@@ -24,7 +24,7 @@ import (
  *
 **/
 
-func test1(displayConfig *config.DisplayConfig) {
+func test1(display *config.DisplayConfig) {
 
 	var hint = &app_display.HintStruct{
 		Table:		"favourites",
@@ -32,10 +32,10 @@ func test1(displayConfig *config.DisplayConfig) {
 		KeyVal:		map[string]int{"id":235970},
 	}
 
-	ID := hint.TransformHintToIdenity(displayConfig)
+	ID := hint.TransformHintToIdenity(display)
 
 	myUpdatedAttrs, othersUpdatedAttrs := 
-		reference_resolution.ResolveReference(displayConfig, ID)
+		reference_resolution.ResolveReference(display, ID)
 
 	log.Println(myUpdatedAttrs, othersUpdatedAttrs)
 
@@ -58,7 +58,7 @@ func test1(displayConfig *config.DisplayConfig) {
  *
 **/
 
-func test2(displayConfig *config.DisplayConfig) {
+func test2(display *config.DisplayConfig) {
 
 	var hint = &app_display.HintStruct{
 		Table:		"statuses",
@@ -66,10 +66,10 @@ func test2(displayConfig *config.DisplayConfig) {
 		KeyVal:		map[string]int{"id":21783},
 	}
 
-	ID := hint.TransformHintToIdenity(displayConfig)
+	ID := hint.TransformHintToIdenity(display)
 
 	myUpdatedAttrs, othersUpdatedAttrs := 
-		reference_resolution.ResolveReference(displayConfig, ID)
+		reference_resolution.ResolveReference(display, ID)
 
 	log.Println(myUpdatedAttrs, othersUpdatedAttrs)
 
@@ -91,6 +91,6 @@ func main() {
 
 	test1(referenceResolutionConfig)
 
-	// test2(displayConfig)
+	// test2(display)
 	
 }

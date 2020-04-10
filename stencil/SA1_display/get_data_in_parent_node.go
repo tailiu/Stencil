@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (displayConfig *displayConfig) checkResolveReferenceInGetDataInParentNode(table, col, id string) (string, error) {
+func (display *display) checkResolveReferenceInGetDataInParentNode(table, col, id string) (string, error) {
 	
 	log.Println("+++++++++++++++++++")
 	log.Println(table)
@@ -17,21 +17,21 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInParentNode(t
 
 	log.Println("Parent Node: before checking reference resolved or not")
 
-	tableID := displayConfig.dstAppConfig.tableNameIDPairs[table]
-	colID := displayConfig.dstAppConfig.colNameIDPairs[table + ":" + col]
+	tableID := display.dstAppConfig.tableNameIDPairs[table]
+	colID := display.dstAppConfig.colNameIDPairs[table + ":" + col]
 
 	// Normally, there must exist one that needs to be resolved. 
 	// But this could happen for example, in Diaspora, posts.id depends on aspects.shareable_id
 	// There is no need to resolve id here in the else case
-	if displayConfig.needToResolveReference(table, col) {
-		displayConfig.logUnresolvedRefAndData(table, tableID, id, col)
-		return displayConfig.checkResolveRefWithIDInData(table, col, tableID, colID, id)
+	if display.needToResolveReference(table, col) {
+		display.logUnresolvedRefAndData(table, tableID, id, col)
+		return display.checkResolveRefWithIDInData(table, col, tableID, colID, id)
 	} else {
 		return "", NoReferenceToResolve
 	}
 }
 
-func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct, 
+func (display *display) getHintInParentNode(hints []*HintStruct, 
 	conditions []string, pTag string) (*HintStruct, error) {
 	
 	// log.Println(hints[0])
@@ -92,16 +92,16 @@ func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct,
 					return nil, common_funcs.CannotFindAnyDataInParent
 				}
 
-				if displayConfig.resolveReference {
+				if display.resolveReference {
 
-					depVal, err0 = displayConfig.checkResolveReferenceInGetDataInParentNode(
+					depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(
 						t1, a1, fmt.Sprint(hints[hintID].Data["id"]),
 					)
 					
 					// no matter whether this attribute has been resolved before
 					// we need to refresh the cached data because this attribute might be
 					// resolved by other thread checking other data
-					displayConfig.refreshCachedDataHints(hints)
+					display.refreshCachedDataHints(hints)
 
 					if err0 != nil {
 						log.Println(err0)
@@ -118,7 +118,7 @@ func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct,
 
 				var query string
 
-				if !displayConfig.markAsDelete {
+				if !display.markAsDelete {
 					query = fmt.Sprintf(
 						`SELECT * FROM "%s" WHERE %s = '%s'`, 
 						t2, a2, depVal,
@@ -130,7 +130,7 @@ func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct,
 					)
 				}
 
-				data, err1 = db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
+				data, err1 = db.DataCall1(display.dstAppConfig.DBConn, query)
 				if err1 != nil {
 					log.Fatal(err1)
 				}
@@ -153,16 +153,16 @@ func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct,
 		// For now, there is always only one condition.
 		} else {
 
-			if displayConfig.resolveReference {
+			if display.resolveReference {
 
-				depVal, err0 = displayConfig.checkResolveReferenceInGetDataInParentNode(
+				depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(
 					t1, a1, fmt.Sprint(data["id"]),
 				)
 				
 				// no matter whether this attribute has been resolved before
 				// we need to refresh the cached data because this attribute might be
 				// resolved by other thread checking other data
-				displayConfig.refreshCachedDataHints(hints)
+				display.refreshCachedDataHints(hints)
 
 				if err0 != nil {
 					log.Println(err0)
@@ -179,7 +179,7 @@ func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct,
 
 			var query string
 
-			if !displayConfig.markAsDelete {
+			if !display.markAsDelete {
 				query = fmt.Sprintf(
 					`SELECT * FROM "%s" WHERE %s = '%s'`, 
 					t2, a2, depVal,
@@ -191,7 +191,7 @@ func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct,
 				)
 			}
 
-			data, err1 = db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
+			data, err1 = db.DataCall1(display.dstAppConfig.DBConn, query)
 			if err1 != nil {
 				log.Fatal(err1)
 			}
@@ -209,15 +209,15 @@ func (displayConfig *displayConfig) getHintInParentNode(hints []*HintStruct,
 	// log.Println(data)
 	// log.Println("...........")
 
-	return TransformRowToHint(displayConfig, data, table, pTag), nil
+	return TransformRowToHint(display, data, table, pTag), nil
 
 }
 
-func (displayConfig *displayConfig) dataFromParentNodeExists(hints []*HintStruct, pTag string) (bool, error) {
+func (display *display) dataFromParentNodeExists(hints []*HintStruct, pTag string) (bool, error) {
 	
 	log.Println("check dataFromParentNodeExists")
 
-	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(displayConfig, pTag)
+	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(display, pTag)
 
 	// If display existence setting is not set, 
 	// then we have to try to get data in the parent node in any case
@@ -227,7 +227,7 @@ func (displayConfig *displayConfig) dataFromParentNodeExists(hints []*HintStruct
 
 	} else {
 
-		tableCol := displayConfig.dstAppConfig.dag.ReplaceKey(hints[0].Tag, displayExistenceSetting)
+		tableCol := display.dstAppConfig.dag.ReplaceKey(hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 		col := strings.Split(tableCol, ".")[1]
 
@@ -263,17 +263,17 @@ func (displayConfig *displayConfig) dataFromParentNodeExists(hints []*HintStruct
 }
 
 // Note: this function may return multiple hints based on dependencies
-func (displayConfig *displayConfig) GetdataFromParentNode(hints []*HintStruct, pTag string) (*HintStruct, error) {
+func (display *display) GetdataFromParentNode(hints []*HintStruct, pTag string) (*HintStruct, error) {
 
 	// Before getting data from a parent node, 
 	// we check the existence of the data based on the cols of a child node
-	if exists, err := displayConfig.dataFromParentNodeExists(hints, pTag); !exists {
+	if exists, err := display.dataFromParentNodeExists(hints, pTag); !exists {
 		return nil, err
 	}
 
 	tag := hints[0].Tag
-	conditions, _ := displayConfig.dstAppConfig.dag.GetDependsOnConditionsInDeps(tag, pTag)
-	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
+	conditions, _ := display.dstAppConfig.dag.GetDependsOnConditionsInDeps(tag, pTag)
+	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(display, pTag)
 
 	// log.Println("conditions")
 	// log.Println(conditions)
@@ -284,8 +284,8 @@ func (displayConfig *displayConfig) GetdataFromParentNode(hints []*HintStruct, p
 	if len(conditions) == 1 {
 
 		condition := conditions[0]
-		from = displayConfig.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
-		to = displayConfig.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
+		from = display.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
+		to = display.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
 		procConditions = append(procConditions, from+":"+to)
 
 	} else {
@@ -294,21 +294,21 @@ func (displayConfig *displayConfig) GetdataFromParentNode(hints []*HintStruct, p
 
 			if i == 0 {
 
-				from = displayConfig.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
+				from = display.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
 
-				to = displayConfig.dstAppConfig.dag.ReplaceKey(
+				to = display.dstAppConfig.dag.ReplaceKey(
 					strings.Split(condition.DependsOnAttr, ".")[0], 
 					strings.Split(condition.DependsOnAttr, ".")[1],
 				)
 
 			} else if i == len(conditions)-1 {
 
-				from = displayConfig.dstAppConfig.dag.ReplaceKey(
+				from = display.dstAppConfig.dag.ReplaceKey(
 					strings.Split(condition.TagAttr, ".")[0], 
 					strings.Split(condition.TagAttr, ".")[1],
 				)
 				
-				to = displayConfig.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
+				to = display.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
 
 			}
 
@@ -321,5 +321,5 @@ func (displayConfig *displayConfig) GetdataFromParentNode(hints []*HintStruct, p
 	// fmt.Println(procConditions)
 	// fmt.Println(hints)
 
-	return displayConfig.getHintInParentNode(hints, procConditions, pTag)
+	return display.getHintInParentNode(hints, procConditions, pTag)
 }

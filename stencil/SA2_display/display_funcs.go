@@ -12,9 +12,9 @@ import (
 	"math"
 )
 
-func CreateDisplayConfig(migrationID int, displayInFirstPhase bool) *displayConfig {
+func CreateDisplayConfig(migrationID int, displayInFirstPhase bool) *display {
 
-	var displayConfig displayConfig
+	var display display
 
 	var srcAppConfig srcAppConfig
 
@@ -73,16 +73,16 @@ func CreateDisplayConfig(migrationID int, displayInFirstPhase bool) *displayConf
 	dstAppConfig.ownershipDisplaySettingsSatisfied = false
 	dstAppConfig.qr = qr.NewQR(dstAppName, dstAppID)
 
-	displayConfig.stencilDBConn = stencilDBConn
-	displayConfig.appIDNamePairs = appIDNamePairs
-	displayConfig.tableIDNamePairs = tableIDNamePairs
-	displayConfig.migrationID = migrationID
-	displayConfig.srcAppConfig = &srcAppConfig
-	displayConfig.dstAppConfig = &dstAppConfig
-	displayConfig.displayInFirstPhase = displayInFirstPhase
-	displayConfig.userID = userID
+	display.stencilDBConn = stencilDBConn
+	display.appIDNamePairs = appIDNamePairs
+	display.tableIDNamePairs = tableIDNamePairs
+	display.migrationID = migrationID
+	display.srcAppConfig = &srcAppConfig
+	display.dstAppConfig = &dstAppConfig
+	display.displayInFirstPhase = displayInFirstPhase
+	display.userID = userID
 
-	return &displayConfig
+	return &display
 
 }
 
@@ -95,12 +95,12 @@ func closeDBConn(conn *sql.DB) {
 
 }
 
-func (displayConfig *displayConfig) closeDBConns() {
+func (display *display) closeDBConns() {
 
 	log.Println("Close db connections in the SA2 display thread")
 
-	closeDBConn(displayConfig.stencilDBConn)
-	closeDBConn(displayConfig.dstAppConfig.DBConn)
+	closeDBConn(display.stencilDBConn)
+	closeDBConn(display.dstAppConfig.DBConn)
 
 }
 
@@ -147,7 +147,7 @@ func getDstAppIDUserIDByMigrationID(stencilDBConn *sql.DB,
 
 }
 
-func (displayConfig *displayConfig) GetUndisplayedMigratedData() []*HintStruct {
+func (display *display) GetUndisplayedMigratedData() []*HintStruct {
 	
 	var displayHints []*HintStruct
 	
@@ -158,18 +158,18 @@ func (displayConfig *displayConfig) GetUndisplayedMigratedData() []*HintStruct {
 		`SELECT table_id, array_agg(row_id) as row_ids 
 		FROM migration_table where mflag = 1 and app_id = %s and migration_id = %d 
 		group by group_id, table_id;`,
-		displayConfig.dstAppConfig.appID,
-		displayConfig.migrationID,
+		display.dstAppConfig.appID,
+		display.migrationID,
 	)
 	
-	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
+	data := db.GetAllColsOfRows(display.stencilDBConn, query)
 	// log.Println(data)
 
 	// If we don't use physical schema, both table_name and id are necessary to identify a piece of migratd data.
 	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
 	// We use table_name to optimize performance
 	for _, data1 := range data {
-		displayHints = append(displayHints, TransformRowToHint(displayConfig, data1))
+		displayHints = append(displayHints, TransformRowToHint(display, data1))
 	}
 
 	// log.Println(displayHints)
@@ -177,15 +177,15 @@ func (displayConfig *displayConfig) GetUndisplayedMigratedData() []*HintStruct {
 	return displayHints
 }
 
-func (displayConfig *displayConfig) CheckMigrationComplete() bool {
+func (display *display) CheckMigrationComplete() bool {
 
 	query := fmt.Sprintf(
 		`SELECT 1 FROM txn_logs WHERE action_id = %d 
 		and action_type='COMMIT' LIMIT 1`,
-		displayConfig.migrationID,
+		display.migrationID,
 	)
 	
-	data := db.GetAllColsOfRows(displayConfig.stencilDBConn, query)
+	data := db.GetAllColsOfRows(display.stencilDBConn, query)
 	
 	if len(data) == 0 {
 		
@@ -197,37 +197,37 @@ func (displayConfig *displayConfig) CheckMigrationComplete() bool {
 	}
 }
 
-func (displayConfig *displayConfig) logDisplayStartTime() {
+func (display *display) logDisplayStartTime() {
 
 	query := fmt.Sprintf(`
 		INSERT INTO display_registration (start_time, migration_id)
 		VALUES (now(), %d)`,
-		displayConfig.migrationID,
+		display.migrationID,
 	)
 
-	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query)
+	err1 := db.TxnExecute1(display.stencilDBConn, query)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
 
 }
 
-func (displayConfig *displayConfig) logDisplayEndTime() {
+func (display *display) logDisplayEndTime() {
 
 	query := fmt.Sprintf(`
 		UPDATE display_registration SET end_time = now()
 		WHERE migration_id = %d`,
-		displayConfig.migrationID,
+		display.migrationID,
 	)
 
-	err1 := db.TxnExecute1(displayConfig.stencilDBConn, query)
+	err1 := db.TxnExecute1(display.stencilDBConn, query)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
 
 }
 
-func (displayConfig *displayConfig) CheckDisplay(data *HintStruct) bool {
+func (display *display) CheckDisplay(data *HintStruct) bool {
 
 	// Here for one group, we only need to check 
 	// one row_id to see whether the group is displayed or not
@@ -235,7 +235,7 @@ func (displayConfig *displayConfig) CheckDisplay(data *HintStruct) bool {
 	query := fmt.Sprintf(
 		`SELECT mflag FROM migration_table 
 		WHERE row_id = %d and app_id = %s and table_id = %s`, 
-		data.RowIDs[0], displayConfig.dstAppConfig.appID, data.TableID,
+		data.RowIDs[0], display.dstAppConfig.appID, data.TableID,
 	)
 	
 	// log.Println("==========")
@@ -243,7 +243,7 @@ func (displayConfig *displayConfig) CheckDisplay(data *HintStruct) bool {
 	// log.Println(data)
 	// log.Println("==========")
 	
-	data1, err := db.DataCall1(displayConfig.stencilDBConn, query)
+	data1, err := db.DataCall1(display.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -257,23 +257,23 @@ func (displayConfig *displayConfig) CheckDisplay(data *HintStruct) bool {
 
 }
 
-func (displayConfig *displayConfig) Display(dataInNode []*HintStruct) error {
+func (display *display) Display(dataInNode []*HintStruct) error {
 	
 	var queries []string
 
-	appID := displayConfig.dstAppConfig.appID
+	appID := display.dstAppConfig.appID
 
 	for _, dataHint := range dataInNode {
 
 		// This is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
-		if CheckDisplay(displayConfig, dataHint) {
+		if CheckDisplay(display, dataHint) {
 
 			return PathConflictsWhenDisplayingData
 
 		}
 
-		data := dataHint.GetAllRowIDs(displayConfig)
+		data := dataHint.GetAllRowIDs(display)
 
 		for _, data1 := range data {
 			
@@ -290,7 +290,7 @@ func (displayConfig *displayConfig) Display(dataInNode []*HintStruct) error {
 				`UPDATE evaluation SET displayed_at = now()
 				WHERE migration_id = '%d' and dst_app = '%s' 
 				and dst_table = '%s' and dst_id = '%s'`,
-				displayConfig.migrationID, appID,
+				display.migrationID, appID,
 				dataHint.TableID, rowID,
 			)
 
@@ -316,17 +316,17 @@ func (displayConfig *displayConfig) Display(dataInNode []*HintStruct) error {
 	}
 	log.Println("**************************************")
 
-	return db.TxnExecute(displayConfig.stencilDBConn, queries)
+	return db.TxnExecute(display.stencilDBConn, queries)
 
 }
 
-func (displayConfig *displayConfig) checkDisplayConditionsInNode(dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
+func (display *display) checkDisplayConditionsInNode(dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
 
 	var displayedData, notDisplayedData []*HintStruct
 
 	for _, oneDataInNode := range dataInNode {
 
-		displayed := displayConfig.CheckDisplay(oneDataInNode)
+		displayed := display.CheckDisplay(oneDataInNode)
 
 		if !displayed {
 
@@ -343,11 +343,11 @@ func (displayConfig *displayConfig) checkDisplayConditionsInNode(dataInNode []*H
 
 }
 
-func (displayConfig *displayConfig) chechPutIntoDataBag(secondRound bool, dataHints []*HintStruct) error {
+func (display *display) chechPutIntoDataBag(secondRound bool, dataHints []*HintStruct) error {
 
 	if secondRound {
 
-		err9 := displayConfig.putIntoDataBag(dataHints)
+		err9 := display.putIntoDataBag(dataHints)
 		if err9 != nil {
 			log.Println(err9)
 		}
@@ -360,7 +360,7 @@ func (displayConfig *displayConfig) chechPutIntoDataBag(secondRound bool, dataHi
 	}
 }
 
-func alreadyInBag(displayConfig *displayConfig, data *HintStruct) bool {
+func alreadyInBag(display *display, data *HintStruct) bool {
 	
 	// Here for one group, we only need to check one to see whether the group is displayed or not
 	// It should be noted that table_id / group_id should also be considered
@@ -368,13 +368,13 @@ func alreadyInBag(displayConfig *displayConfig, data *HintStruct) bool {
 		`SELECT bag FROM migration_table 
 		WHERE row_id = %d and app_id = %s and table_id = %s`, 
 		data.RowIDs[0], 
-		displayConfig.dstAppConfig.appID,
+		display.dstAppConfig.appID,
 		data.TableID,
 	)
 
 	// log.Println(query)
 	
-	data1, err := db.DataCall1(displayConfig.stencilDBConn, query)
+	data1, err := db.DataCall1(display.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -385,7 +385,7 @@ func alreadyInBag(displayConfig *displayConfig, data *HintStruct) bool {
 
 }
 
-func (displayConfig *displayConfig) putIntoDataBag(dataHints []*HintStruct) error {
+func (display *display) putIntoDataBag(dataHints []*HintStruct) error {
 	
 	var queries []string
 
@@ -393,7 +393,7 @@ func (displayConfig *displayConfig) putIntoDataBag(dataHints []*HintStruct) erro
 		
 		// Similar to displaying data, this is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
-		if alreadyInBag(displayConfig, dataHint) {
+		if alreadyInBag(display, dataHint) {
 
 			// log.Println("Found that there is a path conflict!! When putting data in a databag")
 			
@@ -403,7 +403,7 @@ func (displayConfig *displayConfig) putIntoDataBag(dataHints []*HintStruct) erro
 		
 		}
 
-		rowIDs := dataHint.GetAllRowIDs(displayConfig)
+		rowIDs := dataHint.GetAllRowIDs(display)
 		
 		for _, rowID := range rowIDs {
 
@@ -413,8 +413,8 @@ func (displayConfig *displayConfig) putIntoDataBag(dataHints []*HintStruct) erro
 				user_id = %s, bag = true, mark_as_delete = true, 
 				mflag = 0, updated_at = now() 
 				WHERE row_id = %s and app_id = %s and table_id = %s`,
-				displayConfig.userID, fmt.Sprint(rowID["row_id"]), 
-				displayConfig.dstAppConfig.appID, 
+				display.userID, fmt.Sprint(rowID["row_id"]), 
+				display.dstAppConfig.appID, 
 				dataHint.TableID,
 			)
 			
@@ -430,7 +430,7 @@ func (displayConfig *displayConfig) putIntoDataBag(dataHints []*HintStruct) erro
 	}
 	log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
-	return db.TxnExecute(displayConfig.stencilDBConn, queries)
+	return db.TxnExecute(display.stencilDBConn, queries)
 	
 }
 

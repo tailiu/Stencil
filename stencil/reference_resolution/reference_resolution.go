@@ -82,7 +82,7 @@ import (
  */
 
 // You are on the left/from part
-func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig, 
+func updateMyDataBasedOnReferences(refResolutionConfig *RefResolution, 
 	IDRow map[string]string, orgID *Identity) map[string]string {
 	
 	log.Println("You are on the left/from part")
@@ -180,7 +180,7 @@ func updateMyDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 }
 
 // You are on the right/to part
-func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig, 
+func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolution, 
 	IDRow map[string]string, orgID *Identity) map[string]string {
 	
 	log.Println("You are on the right/to part")
@@ -261,7 +261,7 @@ func updateOtherDataBasedOnReferences(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func resolveReferenceByBackTraversal(refResolutionConfig *RefResolutionConfig, 
+func resolveReferenceByBackTraversal(refResolutionConfig *RefResolution, 
 	ID *Identity, orgID *Identity) (map[string]string, map[string]string) {
 	
 	log.Println("Resolve references by back traversal")
@@ -315,7 +315,7 @@ func InitializeReferenceResolution(migrationID int,
 	tableIDNamePairs map[string]string,
 	allMappings *config.SchemaMappings,
 	mappingsFromSrcToDst *config.MappedApp,
-	mappingsFromOtherAppsToDst map[string]*config.MappedApp) *RefResolutionConfig {
+	mappingsFromOtherAppsToDst map[string]*config.MappedApp) *RefResolution {
 
 	var refResolutionConfig RefResolutionConfig
 
@@ -340,7 +340,7 @@ func InitializeReferenceResolution(migrationID int,
 // duplicate attributes, 
 // but others' updated attributes may have some collision, 
 // so we use *id:updatedAttr*, which is unique, as the key in the second return value.
-func ResolveReference(refResolutionConfig *RefResolutionConfig, 
+func ResolveReference(refResolutionConfig *RefResolution, 
 	ID *Identity) (map[string]string, map[string]string) {
 	
 	return resolveReferenceByBackTraversal(refResolutionConfig, ID, ID)

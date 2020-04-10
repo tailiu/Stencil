@@ -21,14 +21,14 @@ func test1() {
 
 	displayInFirstPhase := true
 
-	displayConfig := SA1_display.CreateDisplayConfig(migrationID,
+	display := SA1_display.CreateDisplayConfig(migrationID,
 		resolveReference, newDB, displayInFirstPhase)
 
 	log.Println("Migration ID:", migrationID)
 
 	for i := 0; i < threadNum; i++ {
 
-		go displayConfig.DisplayThread()
+		go display.DisplayThread()
 
 	}
 

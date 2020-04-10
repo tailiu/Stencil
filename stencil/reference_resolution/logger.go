@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func LogRefRow(refResolutionConfig *RefResolutionConfig, 
+func LogRefRow(refResolutionConfig *RefResolution, 
 	refRow map[string]string, returnLogOnly ...bool) string {
 
 	fromMember := refResolutionConfig.tableIDNamePairs[refRow["from_member"]]
@@ -34,7 +34,7 @@ func LogRefRow(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func logIDRow(refResolutionConfig *RefResolutionConfig, 
+func logIDRow(refResolutionConfig *RefResolution, 
 	IDRow map[string]string) {
 	
 	fromApp := refResolutionConfig.appIDNamePairs[IDRow["from_app"]]
@@ -55,7 +55,7 @@ func logIDRow(refResolutionConfig *RefResolutionConfig,
 
 }
 
-func logRefIDRow(refResolutionConfig *RefResolutionConfig, 
+func logRefIDRow(refResolutionConfig *RefResolution, 
 	ID *Identity) {
 	
 	app := refResolutionConfig.appIDNamePairs[ID.app]
