@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (displayConfig *displayConfig) getHintInParentNode( hints []*HintStruct,
+func (display *display) getHintInParentNode( hints []*HintStruct,
 	conditions []string, pTag string) (*HintStruct, error) {
 	
 	// log.Println(".....Second check......")
@@ -68,7 +68,7 @@ func (displayConfig *displayConfig) getHintInParentNode( hints []*HintStruct,
 				}
 
 				data = GetData1FromPhysicalSchema(
-					displayConfig,
+					display,
 					t2 + ".*", t2, t2 + "." + a2, "=", 
 					fmt.Sprint(hints[hintID].Data[t1 + "." + a1]),
 				)
@@ -84,7 +84,7 @@ func (displayConfig *displayConfig) getHintInParentNode( hints []*HintStruct,
 		} else {
 
 			data = GetData1FromPhysicalSchema(
-				displayConfig,
+				display,
 				t2 + ".*", t2, t2 + "." + a2, "=", 
 				fmt.Sprint(data[t1 + "." + a1]),
 			)
@@ -101,13 +101,13 @@ func (displayConfig *displayConfig) getHintInParentNode( hints []*HintStruct,
 	// log.Println(data)
 	// log.Println("...........")
 
-	return TransformRowToHint1(displayConfig, data), nil
+	return TransformRowToHint1(display, data), nil
 
 }
 
-func (displayConfig *displayConfig) dataFromParentNodeExists(hints []*HintStruct, pTag string) (bool, error) {
+func (display *display) dataFromParentNodeExists(hints []*HintStruct, pTag string) (bool, error) {
 
-	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(displayConfig, pTag)
+	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(display, pTag)
 
 	// If display existence setting is not set, 
 	// then we have to try to get data in the parent node in any case
@@ -117,7 +117,7 @@ func (displayConfig *displayConfig) dataFromParentNodeExists(hints []*HintStruct
 
 	} else {
 
-		tableCol := displayConfig.dstAppConfig.dag.ReplaceKey(hints[0].Tag, displayExistenceSetting)
+		tableCol := display.dstAppConfig.dag.ReplaceKey(hints[0].Tag, displayExistenceSetting)
 		table := strings.Split(tableCol, ".")[0]
 
 		for _, hint := range hints {
@@ -143,7 +143,7 @@ func (displayConfig *displayConfig) dataFromParentNodeExists(hints []*HintStruct
 
 }
 
-func getProcConditions(displayConfig *displayConfig, 
+func getProcConditions(display *display, 
 	tag, pTag string, conditions []config.DCondition) []string {
 
 	var proConditions []string
@@ -154,8 +154,8 @@ func getProcConditions(displayConfig *displayConfig,
 	if len(conditions) == 1 {
 
 		condition := conditions[0]
-		from = displayConfig.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
-		to = displayConfig.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
+		from = display.dstAppConfig.dag.ReplaceKey(tag, condition.TagAttr)
+		to = display.dstAppConfig.dag.ReplaceKey(pTag, condition.DependsOnAttr)
 		proConditions = append(proConditions, from+":"+to)
 
 	} else {
@@ -164,22 +164,22 @@ func getProcConditions(displayConfig *displayConfig,
 
 			if i == 0 {
 
-				from = displayConfig.dstAppConfig.dag.ReplaceKey(
+				from = display.dstAppConfig.dag.ReplaceKey(
 					tag, condition.TagAttr)
 
-				to = displayConfig.dstAppConfig.dag.ReplaceKey(
+				to = display.dstAppConfig.dag.ReplaceKey(
 					strings.Split(condition.DependsOnAttr, ".")[0], 
 					strings.Split(condition.DependsOnAttr, ".")[1],
 				)
 
 			} else if i == len(conditions)-1 {
 
-				from = displayConfig.dstAppConfig.dag.ReplaceKey(
+				from = display.dstAppConfig.dag.ReplaceKey(
 					strings.Split(condition.TagAttr, ".")[0], 
 					strings.Split(condition.TagAttr, ".")[1],
 				)
 
-				to = displayConfig.dstAppConfig.dag.ReplaceKey(
+				to = display.dstAppConfig.dag.ReplaceKey(
 					pTag, condition.DependsOnAttr,
 				)
 
@@ -196,21 +196,21 @@ func getProcConditions(displayConfig *displayConfig,
 
 
 // Note: this function may return multiple hints based on dependencies
-func (displayConfig *displayConfig) GetdataFromParentNode(hints []*HintStruct, pTag string) (*HintStruct, error) {
+func (display *display) GetdataFromParentNode(hints []*HintStruct, pTag string) (*HintStruct, error) {
 
 	// Before getting data from a parent node, 
 	// we check the existence of the data based on the cols of a child node
-	if exists, err := displayConfig.dataFromParentNodeExists(hints, pTag); !exists {
+	if exists, err := display.dataFromParentNodeExists(hints, pTag); !exists {
 		return nil, err
 	}
 
 	tag := hints[0].Tag
-	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(displayConfig, pTag)
+	pTag, _ = hints[0].GetOriginalTagNameFromAliasOfParentTagIfExists(display, pTag)
 
-	conditions, _ := displayConfig.dstAppConfig.dag.GetDependsOnConditionsInDeps(tag, pTag)
+	conditions, _ := display.dstAppConfig.dag.GetDependsOnConditionsInDeps(tag, pTag)
 
-	procConditions := getProcConditions(displayConfig, tag, pTag, conditions)
+	procConditions := getProcConditions(display, tag, pTag, conditions)
 
-	return displayConfig.getHintInParentNode(hints, procConditions, pTag)
+	return display.getHintInParentNode(hints, procConditions, pTag)
 
 }

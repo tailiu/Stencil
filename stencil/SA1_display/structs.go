@@ -27,7 +27,7 @@ type dstAppConfig struct {
 	ownershipDisplaySettingsSatisfied 	bool
 }
 
-type displayConfig struct {
+type display struct {
 	stencilDBConn 						*sql.DB
 	appIDNamePairs						map[string]string
 	tableIDNamePairs					map[string]string

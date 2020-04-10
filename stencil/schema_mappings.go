@@ -7,7 +7,7 @@ import (
 )
 
 
-// func test1(displayConfig *DisplayConfig) {
+// func test1(display *DisplayConfig) {
 	
 // 	// fromApp, fromTable, fromAttr, toApp, toTable := 
 // 		// "diaspora", "posts", "posts.id", "mastodon", "statuses"
@@ -16,20 +16,20 @@ import (
 // 	fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF := 
 // 		"diaspora", "posts", "posts.id", "mastodon", "status_stats", false
 	
-// 	attr, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(displayConfig.AllMappings,
+// 	attr, _ := schema_mappings.GetMappedAttributesFromSchemaMappings(display.AllMappings,
 // 		fromApp, fromTable, fromAttr, toApp, toTable, ignoreREF)
 
 // 	log.Println(attr)
 
 // }
 
-// func test2(displayConfig *DisplayConfig) {
+// func test2(display *DisplayConfig) {
 
 // 	// toTable, toAttr := "accounts", "id"
 // 	// toTable, toAttr := "users", "account_id"
 // 	toTable, toAttr := "statuses", "in_reply_to_id"
 
-// 	exists, err := schema_mappings.REFExists(displayConfig.MappingsToDst, toTable, toAttr)
+// 	exists, err := schema_mappings.REFExists(display.MappingsToDst, toTable, toAttr)
 // 	if err != nil {
 // 		log.Println(err)
 // 	} else {
@@ -38,24 +38,24 @@ import (
 
 // }
 
-// func test3(displayConfig *DisplayConfig) {
+// func test3(display *DisplayConfig) {
 
 // 	toTable := "statuses"
 
 // 	attrs := schema_mappings.GetAllMappedAttributesContainingREFInMappings(
-// 		displayConfig.MappingsToDst, toTable)
+// 		display.MappingsToDst, toTable)
 	
 // 	log.Println(attrs)
 
 // }
 
-// func test4(displayConfig *config.DisplayConfig) {
+// func test4(display *config.DisplayConfig) {
 
 // 	fromApp, fromAttr, toApp, toTable := 
 // 		"diaspora", "posts.id", "mastodon", "media_attachments"
 
 // 	attrs, err := schema_mappings.GetMappedAttributesFromSchemaMappingsByFETCH(
-// 		displayConfig.AllMappings, fromApp, fromAttr, toApp, toTable)
+// 		display.AllMappings, fromApp, fromAttr, toApp, toTable)
 	
 // 	if err != nil {
 
@@ -104,15 +104,15 @@ func main() {
 
 	// resolveReference := true
 
-	// displayConfig := SA1_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
+	// display := SA1_display.CreateDisplayConfig(migrationID, resolveReference, newDB)
 
-	// test1(displayConfig)
+	// test1(display)
 
-	// test2(displayConfig)
+	// test2(display)
 
-	// test3(displayConfig)
+	// test3(display)
 
-	// test4(displayConfig)
+	// test4(display)
 
 	test5()
 

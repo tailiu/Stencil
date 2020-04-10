@@ -4,26 +4,26 @@ import (
 	"stencil/config"
 )
 
-func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownership *config.Ownership) (*HintStruct, error) {
+func (display *display) getADataInOwner(hints []*HintStruct, ownership *config.Ownership) (*HintStruct, error) {
 
 	tag := hints[0].Tag
 
 	pTag := "root"
 
-	procConditions := getProcConditions(displayConfig, tag, pTag, 
+	procConditions := getProcConditions(display, tag, pTag, 
 		ownership.Conditions)
 
-	return displayConfig.getHintInParentNode(hints, procConditions, pTag)
+	return display.getHintInParentNode(hints, procConditions, pTag)
 
 }
 
-func (displayConfig *displayConfig) getOwner(hints []*HintStruct, ownership *config.Ownership) ([]*HintStruct, error) {
+func (display *display) getOwner(hints []*HintStruct, ownership *config.Ownership) ([]*HintStruct, error) {
 	
-	oneDataInOwnerNode, err := displayConfig.getADataInOwner(hints, ownership)
+	oneDataInOwnerNode, err := display.getADataInOwner(hints, ownership)
 	if err != nil {
 		return nil, err
 	}
 
-	return displayConfig.GetDataInNodeBasedOnDisplaySetting(oneDataInOwnerNode)
+	return display.GetDataInNodeBasedOnDisplaySetting(oneDataInOwnerNode)
 	
 }

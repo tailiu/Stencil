@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-func (displayConfig *displayConfig) getOneRowBasedOnDependency(val string, dep string) (map[string]interface{}, error) {
+func (display *display) getOneRowBasedOnDependency(val string, dep string) (map[string]interface{}, error) {
 	
 	table := strings.Split(dep, ".")[0]
 	key := strings.Split(dep, ".")[1]
@@ -18,7 +18,7 @@ func (displayConfig *displayConfig) getOneRowBasedOnDependency(val string, dep s
 	// log.Println(val)
 	
 	data := GetData1FromPhysicalSchema(
-		displayConfig, 
+		display, 
 		table + ".*", table, 
 		table + "." + key, "=", val,
 	)
@@ -30,7 +30,7 @@ func (displayConfig *displayConfig) getOneRowBasedOnDependency(val string, dep s
 	}
 }
 
-func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[string]string, 
+func (display *display) getRemainingDataInNode(dependencies []map[string]string, 
 	members map[string]string, hint *HintStruct) ([]*HintStruct, error) {
 	
 	var result []*HintStruct
@@ -84,7 +84,7 @@ func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[st
 						log.Println("Fail to get one data because the value of the relevant column is nil")
 						continue
 					}
-					data1, err1 := displayConfig.getOneRowBasedOnDependency(
+					data1, err1 := display.getOneRowBasedOnDependency(
 						fmt.Sprint(val), 
 						dep,
 					)
@@ -107,7 +107,7 @@ func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[st
 
 					result = append(result, &HintStruct{
 						TableName: table1,
-						TableID: displayConfig.dstAppConfig.tableNameIDPairs[table1],
+						TableID: display.dstAppConfig.tableNameIDPairs[table1],
 						RowIDs: GetRowIDsFromData(data1),
 						Data: data1,
 						Tag: tag, 
@@ -149,14 +149,14 @@ func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[st
 	}
 }
 
-func (displayConfig *displayConfig) getOneRowBasedOnHint(hint *HintStruct) (map[string]interface{}, error) {
+func (display *display) getOneRowBasedOnHint(hint *HintStruct) (map[string]interface{}, error) {
 	
-	restrictions, err := hint.GetRestrictionsInTag(displayConfig)
+	restrictions, err := hint.GetRestrictionsInTag(display)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := GetData1FromPhysicalSchemaByRowID(displayConfig, 
+	data := GetData1FromPhysicalSchemaByRowID(display, 
 		hint.TableName + ".*", hint.TableName, 
 		hint.RowIDs, restrictions,
 	)
@@ -168,12 +168,12 @@ func (displayConfig *displayConfig) getOneRowBasedOnHint(hint *HintStruct) (map[
 	}
 }
 
-func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStruct, error) {
+func (display *display) getDataInNode(hint *HintStruct) ([]*HintStruct, error) {
 	
 	// Get and cache hint.Data if it is not there
 	if len(hint.Data) == 0 {
 
-		data, err := displayConfig.getOneRowBasedOnHint(hint)
+		data, err := display.getOneRowBasedOnHint(hint)
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +184,7 @@ func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStru
 
 	log.Println("My data is:", hint.Data)
 
-	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
+	for _, tag := range display.dstAppConfig.dag.Tags {
 
 		for _, member := range tag.Members {
 
@@ -198,7 +198,7 @@ func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStru
 
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					return displayConfig.getRemainingDataInNode(
+					return display.getRemainingDataInNode(
 						tag.InnerDependencies, 
 						tag.Members, hint,
 					)
@@ -212,12 +212,12 @@ func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStru
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, data *HintStruct) bool {
+func (display *display) checkDependsOnExists(allData []*HintStruct, data *HintStruct) bool {
 	
-	memberID, _ := data.GetMemberID(displayConfig)
+	memberID, _ := data.GetMemberID(display)
 	// fmt.Println(memberID)
 	
-	dependsOnTables := data.GetDependsOnTables(displayConfig, memberID)
+	dependsOnTables := data.GetDependsOnTables(display, memberID)
 	// fmt.Println(dependsOnTables)
 
 	if len(dependsOnTables) == 0 {
@@ -233,7 +233,7 @@ func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, 
 				
 				if oneData.TableName == dependsOnTable {
 					
-					if !displayConfig.checkDependsOnExists(allData, oneData) {
+					if !display.checkDependsOnExists(allData, oneData) {
 						return false
 					} else {
 						exists = true
@@ -249,12 +249,12 @@ func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, 
 	return true
 }
 
-func (displayConfig *displayConfig) trimDataBasedOnInnerDependencies(allData []*HintStruct) []*HintStruct {
+func (display *display) trimDataBasedOnInnerDependencies(allData []*HintStruct) []*HintStruct {
 	
 	var trimmedData []*HintStruct
 
 	for _, data := range allData {
-		if displayConfig.checkDependsOnExists(allData, data) {
+		if display.checkDependsOnExists(allData, data) {
 			trimmedData = append(trimmedData, data)
 		}
 	}
@@ -262,7 +262,7 @@ func (displayConfig *displayConfig) trimDataBasedOnInnerDependencies(allData []*
 	return trimmedData
 }
 
-func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]*HintStruct, error) {
+func (display *display) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]*HintStruct, error) {
 		
 	// tagName, err := hint.GetTagName(appConfig)
 	// if err != nil {
@@ -270,11 +270,11 @@ func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *Hin
 	// }
 	// displaySetting, _ := appConfig.GetTagDisplaySetting(tagName)
 
-	displaySetting, _ := hint.GetTagDisplaySetting(displayConfig)
+	displaySetting, _ := hint.GetTagDisplaySetting(display)
 
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err := displayConfig.getDataInNode(hint); err != nil {
+	if data, err := display.getDataInNode(hint); err != nil {
 
 		// log.Println("++++++++++++")
 		// log.Println(data)
@@ -291,7 +291,7 @@ func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *Hin
 		// Note: if a piece of data in a node depends on some data not existing in the node,
 		// it needs to be deleted from the data set and cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {
-			return displayConfig.trimDataBasedOnInnerDependencies(data), err
+			return display.trimDataBasedOnInnerDependencies(data), err
 		}
 
 	// If a node is complete, return all the data in the node regardless of the setting.

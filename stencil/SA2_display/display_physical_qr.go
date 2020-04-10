@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-func GetData1FromPhysicalSchema(displayConfig *displayConfig,
+func GetData1FromPhysicalSchema(display *display,
 	cols, from, col, op, val string) map[string]interface{} {
 
-	qs := qr.CreateQS(displayConfig.dstAppConfig.qr)
+	qs := qr.CreateQS(display.dstAppConfig.qr)
 
 	log.Println("table | ", from)
 	// Note that we don't care about mflag here
@@ -24,7 +24,7 @@ func GetData1FromPhysicalSchema(displayConfig *displayConfig,
 	physicalQuery := qs.GenSQL()
 	log.Println(physicalQuery)
 
-	result, err := db.DataCall1(displayConfig.stencilDBConn,
+	result, err := db.DataCall1(display.stencilDBConn,
 		physicalQuery)
 
 	if err != nil {
@@ -34,11 +34,11 @@ func GetData1FromPhysicalSchema(displayConfig *displayConfig,
 	return result
 }
 
-func GetData1FromPhysicalSchemaByRowID(displayConfig *displayConfig,
+func GetData1FromPhysicalSchemaByRowID(display *display,
 	cols, from string, rowIDs []int,
 	restrictions []map[string]string) map[string]interface{} {
 
-	qs := qr.CreateQS(displayConfig.dstAppConfig.qr)
+	qs := qr.CreateQS(display.dstAppConfig.qr)
 
 	// Note that we don't care about mflag here
 	qs.FromTable(map[string]string{"table": from, "mflag": "0,1"})
@@ -69,7 +69,7 @@ func GetData1FromPhysicalSchemaByRowID(displayConfig *displayConfig,
 
 	log.Println(physicalQuery)
 
-	result, err := db.DataCall1(displayConfig.stencilDBConn,
+	result, err := db.DataCall1(display.stencilDBConn,
 		physicalQuery)
 
 	if err != nil {

@@ -35,7 +35,7 @@ func displayController(migrationID, threadNum int, wg *sync.WaitGroup,
 
 		log.Println("Start Display Thread:", i + 1)
 
-		go func(dConfig *displayConfig) {
+		go func(dConfig *display) {
 
 			defer wg.Done()
 			

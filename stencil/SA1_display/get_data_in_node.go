@@ -11,12 +11,12 @@ import (
 	"strings"
 )
 
-func (displayConfig *displayConfig) getOneRowBasedOnDependency(
+func (display *display) getOneRowBasedOnDependency(
 	table, col, value string) (map[string]interface{}, error) {
 
 	var query string
 	
-	if !displayConfig.markAsDelete {
+	if !display.markAsDelete {
 		query = fmt.Sprintf(
 			`SELECT * FROM "%s" WHERE %s = '%s'`, 
 			table, col, value,
@@ -30,7 +30,7 @@ func (displayConfig *displayConfig) getOneRowBasedOnDependency(
 	
 	log.Println(query)
 
-	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
+	data, err := db.DataCall1(display.dstAppConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,12 +47,12 @@ func (displayConfig *displayConfig) getOneRowBasedOnDependency(
 	}
 }
 
-func (displayConfig *displayConfig) getRowsBasedOnDependency(
+func (display *display) getRowsBasedOnDependency(
 	table, col, value string) ([]map[string]interface{}, error) {
 
 	var query string
 
-	if !displayConfig.markAsDelete {
+	if !display.markAsDelete {
 		query = fmt.Sprintf(
 			`SELECT * FROM "%s" WHERE %s = '%s'`, 
 			table, col, value,
@@ -66,7 +66,7 @@ func (displayConfig *displayConfig) getRowsBasedOnDependency(
 	
 	// log.Println(query)
 
-	data, err := db.DataCall(displayConfig.dstAppConfig.DBConn, query)
+	data, err := db.DataCall(display.dstAppConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,14 +83,14 @@ func (displayConfig *displayConfig) getRowsBasedOnDependency(
 	}
 }
 
-func (displayConfig *displayConfig) checkReferenceIndeedResolved(
+func (display *display) checkReferenceIndeedResolved(
 	table, col, tableID, colID, value string) (map[string]interface{}, error) {
 
 	// First we must assume that it has already been resolved. If it has not been resolved,
 	// then we cannot get data. Otherwise we just return the obtained data
 	// Note that if we first assume that it has not been resolved and get data using 
 	// prevID, then we could get wrong results
-	data, err := displayConfig.getRowsBasedOnDependency(table, col, value)
+	data, err := display.getRowsBasedOnDependency(table, col, value)
 	
 	// This could happen when table1 and col1 have been resolved
 	if err == nil {
@@ -100,7 +100,7 @@ func (displayConfig *displayConfig) checkReferenceIndeedResolved(
 		// Now we have not encountered data1 with more than one piece of data
 		for _, data1 := range data {
 
-			resolvedVal := displayConfig.rr.ReferenceResolved(
+			resolvedVal := display.rr.ReferenceResolved(
 				tableID, colID, fmt.Sprint(data1["id"]),
 			)
 			
@@ -126,11 +126,11 @@ func (displayConfig *displayConfig) checkReferenceIndeedResolved(
 	} 
 }
 
-func (displayConfig *displayConfig) checkResolveRefWithIDInData(table, col, tableID, colID, id string) (string, error) {
+func (display *display) checkResolveRefWithIDInData(table, col, tableID, colID, id string) (string, error) {
 
 	// If favourites.status_id should be resolved (in this case, it should be),
 	// we check whether the reference has been resolved or not
-	newVal := displayConfig.rr.ReferenceResolved(tableID, colID, id)
+	newVal := display.rr.ReferenceResolved(tableID, colID, id)
 	
 	// If the reference has been resolved, then use the new reference to get data
 	// Otherwise, we try to resolve the reference
@@ -138,10 +138,10 @@ func (displayConfig *displayConfig) checkResolveRefWithIDInData(table, col, tabl
 		return newVal, nil	
 	} else {
 
-		attr0 := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, tableID, colID, id)
+		attr0 := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, tableID, colID, id)
 		log.Println("Before resolving reference: ", attr0)
 
-		displayConfig.rr.ResolveReference(attr0)
+		display.rr.ResolveReference(attr0)
 		
 		// Here we check again to get updated attributes and values
 		// instead of using the returned values from the ResolveReference
@@ -150,7 +150,7 @@ func (displayConfig *displayConfig) checkResolveRefWithIDInData(table, col, tabl
 		// case, ResolveReference does not return the updated attribute and value
 		// Therefore, we check all updated attributes again here by calling 
 		// GetUpdatedAttributes
-		updatedAttrs := displayConfig.rr.GetUpdatedAttributes(tableID, id)
+		updatedAttrs := display.rr.GetUpdatedAttributes(tableID, id)
 
 		log.Println("Updated attributes and values:")
 		log.Println(updatedAttrs)
@@ -175,7 +175,7 @@ func (displayConfig *displayConfig) checkResolveRefWithIDInData(table, col, tabl
 	}
 }
 
-func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
+func (display *display) checkResolveReferenceInGetDataInNode(
 	id, table0, col0, table1, col1, value string) (map[string]interface{}, error) {
 
 	// We use table0 and col0 to get table1 and col1
@@ -188,29 +188,29 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	log.Println(col1)
 	log.Println("+++++++++++++++++++")
 	
-	table0ID := displayConfig.dstAppConfig.tableNameIDPairs[table0]
-	table1ID := displayConfig.dstAppConfig.tableNameIDPairs[table1]
+	table0ID := display.dstAppConfig.tableNameIDPairs[table0]
+	table1ID := display.dstAppConfig.tableNameIDPairs[table1]
 
-	col0ID := displayConfig.dstAppConfig.colNameIDPairs[table0 + ":" + col0]
-	col1ID := displayConfig.dstAppConfig.colNameIDPairs[table1 + ":" + col1]
+	col0ID := display.dstAppConfig.colNameIDPairs[table0 + ":" + col0]
+	col1ID := display.dstAppConfig.colNameIDPairs[table1 + ":" + col1]
 
 	// First, we need to get the attribute that requires reference resolution
 	// For example, we have *account.id*, and we want to get *users.account_id*
 	// We check whether account.id needs to be resolved
-	if displayConfig.needToResolveReference(table0, col0) {
+	if display.needToResolveReference(table0, col0) {
 
 		log.Println("Before checking reference1 resolved or not")
 
-		newVal, err := displayConfig.checkResolveRefWithIDInData(table0, col0, table0ID, col0ID, id)
+		newVal, err := display.checkResolveRefWithIDInData(table0, col0, table0ID, col0ID, id)
 
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
-		// newVal := displayConfig.rr.ReferenceResolved(table0ID, col0ID, id)
+		// newVal := display.rr.ReferenceResolved(table0ID, col0ID, id)
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
 			log.Println("reference1 has been resolved")
-			return displayConfig.getOneRowBasedOnDependency(table1, col1, newVal)
+			return display.getOneRowBasedOnDependency(table1, col1, newVal)
 		} else {
 			return nil, err
 		}
@@ -223,21 +223,21 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	// "statuses.id":"mentions.status_id"
 	// "statuses.id":"stream_entries.activity_id"
 	// force us to do in this way. Otherwise, we cannot get other data in a node through statuses.id
-	} else if displayConfig.needToResolveReference(table1, col1) {
+	} else if display.needToResolveReference(table1, col1) {
 
 		log.Println("Before checking reference2 resolved or not")
 		
-		data1, err1 := displayConfig.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
+		data1, err1 := display.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
 		if err1 != nil {
 			return data1, nil
 		}
 
-		attr1 := reference_resolution_v2.CreateAttribute(displayConfig.dstAppConfig.appID, table0ID, col0ID, id)
+		attr1 := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, table0ID, col0ID, id)
 		log.Println("Before resolving reference2: ", attr1)
 
-		displayConfig.rr.ResolveReference(attr1)
+		display.rr.ResolveReference(attr1)
 		
-		data2, err2 := displayConfig.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
+		data2, err2 := display.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
 		if err2 != nil {
 			return data2, nil
 		}
@@ -257,7 +257,7 @@ func (displayConfig *displayConfig) checkResolveReferenceInGetDataInNode(
 	}
 }
 
-func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[string]string, 
+func (display *display) getRemainingDataInNode(dependencies []map[string]string, 
 	members map[string]string, hint *HintStruct) ([]*HintStruct, error) {
 	
 	var result []*HintStruct
@@ -322,17 +322,17 @@ func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[st
 					var err1 error
 
 					// If resolving reference is required
-					if displayConfig.resolveReference {
+					if display.resolveReference {
 
 						// We assume that val is an integer value 
 						// otherwise we have to define it in dependency config
-						data, err1 = displayConfig.checkResolveReferenceInGetDataInNode(
+						data, err1 = display.checkResolveReferenceInGetDataInNode(
 							fmt.Sprint(dataInDependencyNode.Data["id"]),
 							table, col, table1, key1, fmt.Sprint(val),
 						)
 
 					} else {
-						data, err1 = displayConfig.getOneRowBasedOnDependency(table1, key1, fmt.Sprint(val))
+						data, err1 = display.getOneRowBasedOnDependency(table1, key1, fmt.Sprint(val))
 					}
 
 					// fmt.Println(data)
@@ -362,7 +362,7 @@ func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[st
 
 					result = append(result, &HintStruct{
 						Table: table1,
-						TableID: displayConfig.dstAppConfig.tableNameIDPairs[table1],
+						TableID: display.dstAppConfig.tableNameIDPairs[table1],
 						KeyVal: keyVal,
 						Data: data,
 						Tag: tag,
@@ -406,11 +406,11 @@ func (displayConfig *displayConfig) getRemainingDataInNode(dependencies []map[st
 
 }
 
-func (displayConfig *displayConfig) getOneRowBasedOnHint(hint *HintStruct) (map[string]interface{}, error) {
+func (display *display) getOneRowBasedOnHint(hint *HintStruct) (map[string]interface{}, error) {
 	
 	var query string
 
-	if !displayConfig.markAsDelete {
+	if !display.markAsDelete {
 		query = fmt.Sprintf(
 			`SELECT * FROM "%s" WHERE id = %d`, 
 			hint.Table, hint.KeyVal["id"])
@@ -422,7 +422,7 @@ func (displayConfig *displayConfig) getOneRowBasedOnHint(hint *HintStruct) (map[
 	
 	// log.Println(query)
 	
-	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
+	data, err := db.DataCall1(display.dstAppConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -439,11 +439,11 @@ func (displayConfig *displayConfig) getOneRowBasedOnHint(hint *HintStruct) (map[
 
 }
 
-func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStruct, error) {
+func (display *display) getDataInNode(hint *HintStruct) ([]*HintStruct, error) {
 
 	if hint.Data == nil {
 
-		data, err := displayConfig.getOneRowBasedOnHint(hint)
+		data, err := display.getOneRowBasedOnHint(hint)
 		if err != nil {
 			return nil, err
 		} else {
@@ -455,7 +455,7 @@ func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStru
 
 	// log.Println("My data is:", hint.Data)
 	
-	for _, tag := range displayConfig.dstAppConfig.dag.Tags {
+	for _, tag := range display.dstAppConfig.dag.Tags {
 
 		for _, member := range tag.Members {
 
@@ -469,12 +469,12 @@ func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStru
 
 					// Note: we assume that one dependency represents that one row
 					// 		in one table depends on another row in another table
-					hints, err1 := displayConfig.getRemainingDataInNode(
+					hints, err1 := display.getRemainingDataInNode(
 						 tag.InnerDependencies, tag.Members, hint)
 					
 					// Refresh the cached results which could have changed due to
 					// reference resolution 
-					displayConfig.refreshCachedDataHints(hints)
+					display.refreshCachedDataHints(hints)
 
 					return hints, err1
 				}
@@ -488,12 +488,12 @@ func (displayConfig *displayConfig) getDataInNode(hint *HintStruct) ([]*HintStru
 
 // A recursive function checks whether all the data one data recursively depends on exists
 // We only checks whether the table depended on exists, which is sufficient for now
-func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, data *HintStruct) bool {
+func (display *display) checkDependsOnExists(allData []*HintStruct, data *HintStruct) bool {
 	
-	memberID, _ := data.GetMemberID(displayConfig)
+	memberID, _ := data.GetMemberID(display)
 	// fmt.Println(memberID)
 
-	dependsOnTables := data.GetDependsOnTables(displayConfig, memberID)
+	dependsOnTables := data.GetDependsOnTables(display, memberID)
 	// fmt.Println(dependsOnTables)
 	
 	if len(dependsOnTables) == 0 {
@@ -510,7 +510,7 @@ func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, 
 
 				if oneData.Table == dependsOnTable {
 
-					if !displayConfig.checkDependsOnExists(allData, oneData) {
+					if !display.checkDependsOnExists(allData, oneData) {
 						return false
 					} else {
 						exists = true
@@ -528,12 +528,12 @@ func (displayConfig *displayConfig) checkDependsOnExists(allData []*HintStruct, 
 	
 }
 
-func (displayConfig *displayConfig) trimDataBasedOnInnerDependencies(allData []*HintStruct) []*HintStruct {
+func (display *display) trimDataBasedOnInnerDependencies(allData []*HintStruct) []*HintStruct {
 	
 	var trimmedData []*HintStruct
 
 	for _, data := range allData {
-		if displayConfig.checkDependsOnExists(allData, data) {
+		if display.checkDependsOnExists(allData, data) {
 			trimmedData = append(trimmedData, data)
 		}
 	}
@@ -541,13 +541,13 @@ func (displayConfig *displayConfig) trimDataBasedOnInnerDependencies(allData []*
 	return trimmedData
 }
 
-func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]*HintStruct, error) {
+func (display *display) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]*HintStruct, error) {
 	
-	displaySetting, _ := hint.GetTagDisplaySetting(displayConfig)
+	displaySetting, _ := hint.GetTagDisplaySetting(display)
 
 	// Whether a node is complete or not, get all the data in a node.
 	// If the node is complete, err is nil, otherwise, err is "node is not complete".
-	if data, err := displayConfig.getDataInNode(hint); err != nil {
+	if data, err := display.getDataInNode(hint); err != nil {
 
 		// The setting "default_display_setting" means only display a node 
 		// when the node is complete.
@@ -562,7 +562,7 @@ func (displayConfig *displayConfig) GetDataInNodeBasedOnDisplaySetting(hint *Hin
 		} else if displaySetting == "display_based_on_inner_dependencies" {
 
 			// fmt.Println(data)
-			return displayConfig.trimDataBasedOnInnerDependencies(data), err
+			return display.trimDataBasedOnInnerDependencies(data), err
 
 		}
 	

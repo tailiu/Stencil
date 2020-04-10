@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (displayConfig *displayConfig) CheckCombinedDisplayConditions(pTagConditions map[string]bool, oneMigratedData *HintStruct) bool {	
+func (display *display) CheckCombinedDisplayConditions(pTagConditions map[string]bool, oneMigratedData *HintStruct) bool {	
 	
 	if len(pTagConditions) == 1 {
 
@@ -16,7 +16,7 @@ func (displayConfig *displayConfig) CheckCombinedDisplayConditions(pTagCondition
 
 	}
 
-	combinedSettings, err := oneMigratedData.GetCombinedDisplaySettings(displayConfig)
+	combinedSettings, err := oneMigratedData.GetCombinedDisplaySettings(display)
 	if err != nil {
 		log.Fatal(err)
 	}

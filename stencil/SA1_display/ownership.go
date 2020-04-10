@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownership *config.Ownership) (*HintStruct, error) {
+func (display *display) getADataInOwner(hints []*HintStruct, ownership *config.Ownership) (*HintStruct, error) {
 	
 	var hint *HintStruct
 
@@ -16,11 +16,11 @@ func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownersh
 	// so we only need the first condition here
 	condition := ownership.Conditions[0]
 	
-	tableAttr := displayConfig.dstAppConfig.dag.ReplaceKey( 
+	tableAttr := display.dstAppConfig.dag.ReplaceKey( 
 		ownership.Tag, condition.TagAttr,
 	)
 
-	dependsOnTableAttr := displayConfig.dstAppConfig.dag.ReplaceKey( 
+	dependsOnTableAttr := display.dstAppConfig.dag.ReplaceKey( 
 		ownership.OwnedBy, condition.DependsOnAttr,
 	)
 
@@ -32,7 +32,7 @@ func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownersh
 	
 	var depVal string
 
-	if !displayConfig.resolveReference {
+	if !display.resolveReference {
 		
 		for _, hint := range hints {
 
@@ -61,12 +61,12 @@ func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownersh
 			return nil, CannotFindDataInOwnership
 		}
 
-		depVal, err0 = displayConfig.checkResolveReferenceInGetDataInParentNode(table, attr, id)
+		depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(table, attr, id)
 		
 		// no matter whether this attribute has been resolved before
 		// we need to refresh the cached data because this attribute might be
 		// resolved by other thread checking other data
-		displayConfig.refreshCachedDataHints(hints)
+		display.refreshCachedDataHints(hints)
 
 		if err0 != nil {
 			log.Println(err0)
@@ -80,7 +80,7 @@ func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownersh
 
 	var query string
 
-	if !displayConfig.markAsDelete {
+	if !display.markAsDelete {
 		query = fmt.Sprintf(
 			`SELECT * FROM "%s" WHERE %s = '%s'`,
 			dependsOnTable, dependsOnAttr, depVal,
@@ -95,7 +95,7 @@ func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownersh
 	// log.Println("Get a data in the owner node")
 	// log.Println(query)
 
-	data, err := db.DataCall1(displayConfig.dstAppConfig.DBConn, query)
+	data, err := db.DataCall1(display.dstAppConfig.DBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -103,19 +103,19 @@ func (displayConfig *displayConfig) getADataInOwner(hints []*HintStruct, ownersh
 	log.Println("One data in the ownership node:")
 	log.Println(data)
 
-	hint = TransformRowToHint(displayConfig, data, dependsOnTable, "root")
+	hint = TransformRowToHint(display, data, dependsOnTable, "root")
 
 	return hint, nil
 
 }
 
-func (displayConfig *displayConfig) getOwner(hints []*HintStruct, ownership *config.Ownership) ([]*HintStruct, error) {
+func (display *display) getOwner(hints []*HintStruct, ownership *config.Ownership) ([]*HintStruct, error) {
 	
-	oneDataInOwnerNode, err := displayConfig.getADataInOwner(hints, ownership)
+	oneDataInOwnerNode, err := display.getADataInOwner(hints, ownership)
 	if err != nil {
 		return nil, err
 	}
 
-	return displayConfig.GetDataInNodeBasedOnDisplaySetting(oneDataInOwnerNode)
+	return display.GetDataInNodeBasedOnDisplaySetting(oneDataInOwnerNode)
 	
 }
