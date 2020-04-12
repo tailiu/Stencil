@@ -101,23 +101,19 @@ func (rr *RefResolution) updateMyDataBasedOnReferences(attrRow map[string]string
 
 		rr.LogRefRow(procRef)
 
+		// There is no to_id in the reference table, but to_val is enough here 
+		// since the to_val of the referenced data should not be STENCIL_NULL 
 		data := CreateAttribute(
 			procRef["app"],
 			procRef["to_member"],
 			procRef["to_attr"],
 			procRef["to_val"],
-			procRef["to_id"],
 		)
 
 		refAttributeRows := rr.forwardTraverseAttrChangesTable(data, orgAttr, false)
 
 		log.Println("After traversing forward the attribute_changes table:")
 		log.Println("Get", len(refAttributeRows), "refAttribute row(s)")
-
-		log.Println(
-			"procRef['app']:", procRef["app"],
-			"rr.appID:", rr.appID,
-		)
 
 		if len(refAttributeRows) > 0 {
 
@@ -222,11 +218,6 @@ func (rr *RefResolution) updateOtherDataBasedOnReferences(attrRow map[string]str
 
 		log.Println("After traversing forward the attribute_changes table:")
 		log.Println("Get", len(refAttributeRows), "refAttribute row(s)")
-
-		log.Println(
-			"procRef['app']:", procRef["app"],
-			"rr.appID:", rr.appID,
-		)
 
 		if len(refAttributeRows) > 0 {
 

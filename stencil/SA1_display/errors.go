@@ -20,9 +20,11 @@ var CannotFindResolvedAttributes = errors.New(`Does not find resolved attributes
 var CannotGetPrevID = errors.New(`Cannot get previous ids because of the row has 
 	not been inserted into the identity table`)
 
-var CannotGetDataAfterResolvingRef2 = errors.New(`Cannot get data after resolving reference2`)
+var CannotGetDataAfterResolvingRef2 = errors.New(`Cannot get data after trying to resolve reference2`)
 
 var DataNotWanted = errors.New(`Get some data but it is not what we want`)
+
+var DataNotFound = errors.New(`Cannot find data based on the reference`)
 
 // Ownership
 var CannotFindDataInOwnership = 

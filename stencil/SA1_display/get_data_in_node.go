@@ -11,8 +11,7 @@ import (
 	"strings"
 )
 
-func (display *display) getOneRowBasedOnDependency(
-	table, col, value string) (map[string]interface{}, error) {
+func (display *display) getOneRowBasedOnDependency(table, col, value string) (map[string]interface{}, error) {
 
 	var query string
 	
@@ -47,8 +46,7 @@ func (display *display) getOneRowBasedOnDependency(
 	}
 }
 
-func (display *display) getRowsBasedOnDependency(
-	table, col, value string) ([]map[string]interface{}, error) {
+func (display *display) getRowsBasedOnDependency(table, col, value string) ([]map[string]interface{}, error) {
 
 	var query string
 
@@ -83,8 +81,8 @@ func (display *display) getRowsBasedOnDependency(
 	}
 }
 
-func (display *display) checkReferenceIndeedResolved(
-	table, col, tableID, colID, value string) (map[string]interface{}, error) {
+func (display *display) checkReferenceIndeedResolved(table, col, 
+	tableID, colID, value string) (map[string]interface{}, error) {
 
 	// First we must assume that it has already been resolved. If it has not been resolved,
 	// then we cannot get data. Otherwise we just return the obtained data
@@ -100,9 +98,7 @@ func (display *display) checkReferenceIndeedResolved(
 		// Now we have not encountered data1 with more than one piece of data
 		for _, data1 := range data {
 
-			resolvedVal := display.rr.ReferenceResolved(
-				tableID, colID, fmt.Sprint(data1["id"]),
-			)
+			resolvedVal := display.rr.ReferenceResolved(tableID, colID, fmt.Sprint(data1["id"]))
 			
 			if resolvedVal == value {
 				log.Println("It was indeed resolved")
@@ -119,14 +115,19 @@ func (display *display) checkReferenceIndeedResolved(
 			}
 		}
 
+		log.Println("The reference has not been resolved")
+
 		return nil, DataNotWanted
 
 	} else {
-		return nil, err
+		
+		log.Println("The reference has not been resolved")
+
+		return nil, DataNotFound
 	} 
 }
 
-func (display *display) checkResolveRefWithIDInData(table, col, tableID, colID, id string) (string, error) {
+func (display *display) checkResolveRefWithIDInData(table, col, tableID, colID, id, attrVal string) (string, error) {
 
 	// If favourites.status_id should be resolved (in this case, it should be),
 	// we check whether the reference has been resolved or not
@@ -138,7 +139,7 @@ func (display *display) checkResolveRefWithIDInData(table, col, tableID, colID, 
 		return newVal, nil	
 	} else {
 
-		attr0 := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, tableID, colID, id)
+		attr0 := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, tableID, colID, attrVal, id)
 		log.Println("Before resolving reference: ", attr0)
 
 		display.rr.ResolveReference(attr0)
@@ -199,9 +200,9 @@ func (display *display) checkResolveReferenceInGetDataInNode(
 	// We check whether account.id needs to be resolved
 	if display.needToResolveReference(table0, col0) {
 
-		log.Println("Before checking reference1 resolved or not")
+		log.Println("Checking reference1 resolved or not")
 
-		newVal, err := display.checkResolveRefWithIDInData(table0, col0, table0ID, col0ID, id)
+		newVal, err := display.checkResolveRefWithIDInData(table0, col0, table0ID, col0ID, id, value)
 
 		// If account.id should be resolved (in this case, it should not),
 		// we check whether the reference has been resolved or not
@@ -225,26 +226,26 @@ func (display *display) checkResolveReferenceInGetDataInNode(
 	// force us to do in this way. Otherwise, we cannot get other data in a node through statuses.id
 	} else if display.needToResolveReference(table1, col1) {
 
-		log.Println("Before checking reference2 resolved or not")
+		log.Println("Checking reference2 resolved or not")
 		
 		data1, err1 := display.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
 		if err1 != nil {
+			log.Println(err1)
+		} else {
 			return data1, nil
 		}
-
-		attr1 := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, table0ID, col0ID, id)
-		log.Println("Before resolving reference2: ", attr1)
+		
+		attr1 := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, table0ID, col0ID, id, id)
+		log.Println("Resolving reference2: ", attr1)
 
 		display.rr.ResolveReference(attr1)
 		
 		data2, err2 := display.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
 		if err2 != nil {
+			return nil, CannotGetDataAfterResolvingRef2
+		} else {
 			return data2, nil
 		}
-
-		log.Println(`Cannot find data after resolving reference2`)
-
-		return nil, CannotGetDataAfterResolvingRef2
 	
 	// Normally, there must exist one that needs to be resolved. 
 	// However, up to now there is a case breaking the above rule. 

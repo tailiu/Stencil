@@ -38,6 +38,18 @@ func CreateAttribute(app, member, attrName, val string, id ...string) *Attribute
 	return attr
 }
 
+func createAttributeWithoutID(app, member, attrName, val string) *Attribute {
+
+	attr := &Attribute{
+		app:    	  app,
+		member: 	  member,
+		attrName:     attrName,
+		val:		  val,
+	}
+
+	return attr
+}
+
 func CreateAttributeChangesTable(dbConn *sql.DB) {
 	
 	var queries []string
@@ -114,7 +126,7 @@ func (rr *RefResolution) getRowsFromAttrChangesTableByTo(attr *Attribute) []map[
 	return data
 }
 
-func (rr *RefResolution) getRowsFromAttrChangesTableByFrom(attr *Attribute) []map[string]interface{} {
+func (rr *RefResolution) getRowsFromAttrChangesTableByFromByAttrVal(attr *Attribute) []map[string]interface{} {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM attribute_changes WHERE
@@ -154,8 +166,14 @@ func (rr *RefResolution) getRowsFromAttrChangesTableByFromUsingID(attr *Attribut
 func (rr *RefResolution) forwardTraverseAttrChangesTable(attr, orgAttr *Attribute, inRecurrsion bool) []*Attribute {
 
 	var res []*Attribute
+	var attrRows []map[string]interface{}
 
-	attrRows := rr.getRowsFromAttrChangesTableByFromUsingID(attr)
+	if attr.id != "-2" {
+		attrRows = rr.getRowsFromAttrChangesTableByFromUsingID(attr)
+	} else {
+		attrRows = rr.getRowsFromAttrChangesTableByFromByAttrVal(attr)
+	}
+	
 	// log.Println(IDRows)
 
 	for _, attrRow := range attrRows {

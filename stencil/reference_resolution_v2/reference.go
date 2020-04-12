@@ -117,7 +117,7 @@ func (rr *RefResolution) getFromReferencesUsingID(attrRow map[string]string) []m
 
 	query := fmt.Sprintf(
 		`SELECT * FROM reference_table_v2 WHERE
-		app = %s and from_member = %s and from_attr = %s and from_val = %s and from_id = %s;`,
+		app = %s and from_member = %s and from_attr = %s and from_val = '%s' and from_id = %s;`,
 		attrRow["from_app"], attrRow["from_member"], attrRow["from_attr"], 
 		attrRow["from_val"], attrRow["from_id"],
 	)
@@ -138,7 +138,7 @@ func (rr *RefResolution) getFromReferences(attrRow map[string]string) []map[stri
 
 	query := fmt.Sprintf(
 		`SELECT * FROM reference_table_v2 WHERE
-		app = %s and from_member = %s and from_attr = %s and from_val = %s;`,
+		app = %s and from_member = %s and from_attr = %s and from_val = '%s';`,
 		attrRow["from_app"], attrRow["from_member"], 
 		attrRow["from_attr"], attrRow["from_val"],
 	)

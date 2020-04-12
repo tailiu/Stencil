@@ -16,14 +16,14 @@ func (rr *RefResolution) LogRefRow(refRow map[string]string, returnLogOnly ...bo
 	toAttr := rr.attrIDNamePairs[refRow["to_attr"]]
 	
 	output := fmt.Sprint(
-		"ref_row - from_member:", fromMember, "|",
-		"from_attr:", fromAttr, "|",
-		"from_val:", refRow["from_val"], "|",
-		"to_member:", toMember, "|",
-		"to_attr:", toAttr, "|",
-		"to_val:", refRow["to_val"], "|",
-		"app:", appName, "|",
-		"migration_id:", refRow["migration_id"], "|",
+		"ref_row - from_member:", fromMember, " | ",
+		"from_attr:", fromAttr, " | ",
+		"from_val:", refRow["from_val"], " | ",
+		"to_member:", toMember, " | ",
+		"to_attr:", toAttr, " | ",
+		"to_val:", refRow["to_val"], " | ",
+		"app:", appName, " | ",
+		"migration_id:", refRow["migration_id"], " | ",
 		"pk:", refRow["pk"],
 	)
 
@@ -48,7 +48,7 @@ func (rr *RefResolution) logAttrChangeRow(attrRow map[string]string) {
 	toAttr := rr.attrIDNamePairs[attrRow["to_attr"]]
 
 	log.Println(
-		"id_row - from_app:", fromApp, "|", 
+		"attr_row - from_app:", fromApp, "|", 
 		"from_member:", fromMember, "|",
 		"from_attr:", fromAttr, "|",
 		"from_val:", attrRow["from_val"], "|",
@@ -71,7 +71,7 @@ func (rr *RefResolution) logRefAttrRow(attribute *Attribute) {
 	attrName := rr.attrIDNamePairs[attribute.attrName]
 
 	log.Println(
-		"refIdentityRow - app:", app, "|",
+		"refAttrRow - app:", app, "|",
 		"member:", member, "|",
 		"attrName:", attrName, "|",
 		"val:", attribute.val, "|",

@@ -48,12 +48,13 @@ func (display *display) getADataInOwner(hints []*HintStruct, ownership *config.O
 	
 	} else {
 
-		var id string
+		var id, attrVal string
 		var err0 error
 
 		for _, hint1 := range hints {
 			if hint1.Table == table {
 				id = fmt.Sprint(hint1.KeyVal["id"])
+				attrVal = fmt.Sprint(hint.Data[attr])
 			}
 		}
 
@@ -61,7 +62,7 @@ func (display *display) getADataInOwner(hints []*HintStruct, ownership *config.O
 			return nil, CannotFindDataInOwnership
 		}
 
-		depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(table, attr, id)
+		depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(table, attr, attrVal, id)
 		
 		// no matter whether this attribute has been resolved before
 		// we need to refresh the cached data because this attribute might be

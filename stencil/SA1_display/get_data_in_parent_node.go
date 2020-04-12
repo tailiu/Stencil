@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (display *display) checkResolveReferenceInGetDataInParentNode(table, col, id string) (string, error) {
+func (display *display) checkResolveReferenceInGetDataInParentNode(table, col, attrVal, id string) (string, error) {
 	
 	log.Println("+++++++++++++++++++")
 	log.Println(table)
@@ -25,7 +25,7 @@ func (display *display) checkResolveReferenceInGetDataInParentNode(table, col, i
 	// There is no need to resolve id here in the else case
 	if display.needToResolveReference(table, col) {
 		display.logUnresolvedRefAndData(table, tableID, id, col)
-		return display.checkResolveRefWithIDInData(table, col, tableID, colID, id)
+		return display.checkResolveRefWithIDInData(table, col, tableID, colID, id, attrVal)
 	} else {
 		return "", NoReferenceToResolve
 	}
@@ -95,7 +95,7 @@ func (display *display) getHintInParentNode(hints []*HintStruct,
 				if display.resolveReference {
 
 					depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(
-						t1, a1, fmt.Sprint(hints[hintID].Data["id"]),
+						t1, a1, fmt.Sprint(hints[hintID].Data[a1]), fmt.Sprint(hints[hintID].Data["id"]),  
 					)
 					
 					// no matter whether this attribute has been resolved before
@@ -156,7 +156,7 @@ func (display *display) getHintInParentNode(hints []*HintStruct,
 			if display.resolveReference {
 
 				depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(
-					t1, a1, fmt.Sprint(data["id"]),
+					t1, a1, fmt.Sprint(data[a1]), fmt.Sprint(data["id"]), 
 				)
 				
 				// no matter whether this attribute has been resolved before

@@ -349,7 +349,7 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 	// update reference the last time before displaying the data
 	for _, attrToBeUpdated := range attrsToBeUpdated {
 		colID := display.dstAppConfig.colNameIDPairs[table + ":" + attrToBeUpdated]
-		attr := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, tableID, colID, id)
+		attr := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, tableID, colID, id, id)
 		display.rr.ResolveReference(attr)
 	}
 
