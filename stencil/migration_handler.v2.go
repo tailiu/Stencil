@@ -6,11 +6,15 @@ package main
 
 import (
 	"flag"
-	"stencil/SA1_migrate"
+	"stencil/SA1_display"
 	"stencil/apis"
+	"sync"
 )
 
 func main() {
+
+	var wg sync.WaitGroup
+	displayInFirstPhase, markAsDelete := false, false
 
 	srcApp := flag.String("srcApp", "diaspora", "")
 	srcAppID := flag.String("srcAppID", "1", "")
@@ -25,16 +29,16 @@ func main() {
 	display := flag.Bool("display", false, "")
 	blade := flag.Bool("blade", false, "")
 	bags := flag.Bool("bags", false, "")
+	ftp := flag.Bool("ftp", false, "")
 
 	flag.Parse()
 
-	if *mtype == "b" || (*mtype == "d" && *display == false) {
-		apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags)
-	} else {
-		displayInFirstPhase, markAsDelete := false, false
-		SA1_migrate.Controller(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *threads,
-			*display, displayInFirstPhase, markAsDelete, *blade, *bags)
-	}
+	wg.Add(1)
+
+	go apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags, *ftp)
+	go SA1_display.StartDisplay(*uid, *srcAppID, *dstAppID, *mtype, *threads, &wg, *display, displayInFirstPhase, markAsDelete, *blade)
+
+	wg.Wait()
 }
 
 // func main2() {
