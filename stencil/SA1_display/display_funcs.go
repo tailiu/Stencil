@@ -544,7 +544,7 @@ func getAttrNameIDPairsInApp(stencilDBConn *sql.DB, appID string) map[string]str
 
 	query := fmt.Sprintf(
 		`SELECT t.table_name, s.column_name, s.pk FROM app_schemas as s JOIN app_tables as t ON
-		s.table_id = t.pk WHERE t.app_id = appID`, 
+		s.table_id = t.pk WHERE t.app_id = %s`, appID,
 	)
 
 	// log.Println(query)

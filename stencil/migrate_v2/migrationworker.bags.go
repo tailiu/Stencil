@@ -213,6 +213,7 @@ func (bagWorker *MigrationWorker) CreateBagStruct(bagInfo DataMap) (Bag, error) 
 	var bag Bag
 
 	bag.ID = fmt.Sprint(bagInfo["id"])
+	bag.PK = fmt.Sprint(bagInfo["pk"])
 	bag.UID = fmt.Sprint(bagInfo["user_id"])
 	bag.MemberID = fmt.Sprint(bagInfo["member"])
 	bag.AppID = fmt.Sprint(bagInfo["app"])

@@ -234,16 +234,20 @@ func (node *DependencyNode) DeleteMappedDataFromNode(mappedMemberData []MappedMe
 
 func (node *DependencyNode) DeleteMappedDatumFromNode(mappedMemberDatum MappedMemberData) {
 
+	var deletedCols []string
 	for _, mmv := range mappedMemberDatum.Data {
 		for key := range node.Data {
 			if strings.Contains(key, ".id") {
 				continue
 			}
 			if strings.EqualFold(key, mmv.GetMemberAttr()) {
-				fmt.Printf("Deleting Data From Node | Key: '%v' \n", key)
 				delete(node.Data, key)
+				deletedCols = append(deletedCols, key)
 			}
 		}
+	}
+	if len(deletedCols) > 0 {
+		fmt.Printf("Deleted Cols From Node | %v \n", deletedCols)
 	}
 }
 

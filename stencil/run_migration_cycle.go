@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"stencil/SA1_migrate"
+	"stencil/SA1_display"
+	"stencil/apis"
 	"stencil/db"
+	"sync"
 )
 
 func getUID(appID string) string {
@@ -43,15 +45,18 @@ func getUID(appID string) string {
 
 func main() {
 
-	displayInFirstPhase, markAsDelete := false, false
+	var wg sync.WaitGroup
 
 	threads := flag.Int("threads", 1, "")
 	mtype := flag.String("mtype", "d", "")
-	uidInput := flag.String("uid", "", "")
+	uidInput := flag.String("uid", "54123", "")
 
-	display := flag.Bool("display", false, "")
 	blade := flag.Bool("blade", false, "")
 	bags := flag.Bool("bags", false, "")
+	ftp := flag.Bool("ftp", false, "")
+	display := flag.Bool("display", false, "")
+	displayInFirstPhase := flag.Bool("firstphase", false, "")
+	markAsDelete := flag.Bool("dmad", false, "")
 
 	flag.Parse()
 
@@ -74,7 +79,12 @@ func main() {
 			dstAppName, dstAppID = apps[i+1][0], apps[i+1][1]
 		}
 
-		SA1_migrate.Controller(uid, srcAppName, srcAppID, dstAppName, dstAppID, *mtype, *threads, *display, displayInFirstPhase, markAsDelete, *blade, *bags)
+		wg.Add(1)
+
+		go apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, *mtype, *blade, *bags, *ftp)
+		go SA1_display.StartDisplay(uid, srcAppID, dstAppID, *mtype, *threads, &wg, *display, *displayInFirstPhase, *markAsDelete, *blade)
+
+		wg.Wait()
 
 		// print spaces before new migration
 		for j := 1; j < 50; j++ {
