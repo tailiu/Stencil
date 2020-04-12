@@ -134,7 +134,7 @@ func (mWorker *MigrationWorker) BagsMigration(threadID int) error {
 		var prevIDErr error
 		if bagApp, bagUID, prevIDErr = mWorker.GetUserIDAppIDFromPreviousMigration(bagApp.ID, bagUID); prevIDErr != nil {
 			mWorker.Logger.Fatal(prevIDErr)
-		} else if len(bagApp.ID) <= 0 && len(bagUID) <= 0 {
+		} else if bagApp == nil && len(bagUID) <= 0 {
 			mWorker.Logger.Info("Bag Migration Finished!")
 			break
 		}
