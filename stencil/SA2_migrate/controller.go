@@ -31,9 +31,7 @@ func handleArgs(args []bool) (bool, bool, bool) {
 
 }
 
-func Controller(uid, srcAppName, srcAppID,
-	dstAppName, dstAppID, migrationType string,
-	threadNum int, args ...bool) {
+func Controller(uid, srcAppName, srcAppID, dstAppName, dstAppID, migrationType string, threadNum int, args ...bool) {
 	
 	enableDisplay, displayInFirstPhase, enableBags := handleArgs(args)
 	
