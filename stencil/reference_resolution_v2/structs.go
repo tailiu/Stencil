@@ -3,6 +3,7 @@ package reference_resolution_v2
 import (
 	"database/sql"
 	"stencil/config"
+	"stencil/common_funcs"
 )
 
 // app, member, id are all integers corresponding to names
@@ -26,6 +27,5 @@ type RefResolution struct {
 	attrIDNamePairs					map[string]string
 	appAttrNameIDPairs				map[string]string
 	allMappings						*config.SchemaMappings
-	mappingsFromSrcToDst			*config.MappedApp
-	mappingsFromOtherAppsToDst		map[string]*config.MappedApp
+	dag 							*common_funcs.DAG
 }

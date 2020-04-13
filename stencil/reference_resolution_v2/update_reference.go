@@ -133,13 +133,20 @@ func updateRefOnLeftNotUsingRefAttrRow(rr *RefResolution,
 func updateRefOnRightByRefAttrRow(rr *RefResolution, 
 	refAttributeRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
 
-	updatedAttrs := make(map[string]string)
+	updatedAttr := make(map[string]string)
 
 	attr := rr.attrIDNamePairs[orgAttr.attrName]
 	attrToUpdate := rr.attrIDNamePairs[refAttributeRow.attrName]
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
+
+	attMember := orgAttr.member
+	attrToUpdateMember := refAttributeRow.member
+
+	if !rr.referenceExists(attr, attMember, attrToUpdate, attrToUpdateMember) {
+		return updatedAttr
+	}
 
 	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"],
@@ -154,10 +161,10 @@ func updateRefOnRightByRefAttrRow(rr *RefResolution,
 	if err1 != nil {
 		log.Println(err1)
 	} else {
-		updatedAttrs[refAttributeRow.val + ":" + attrToUpdate] = updatedVal
+		updatedAttr[refAttributeRow.val + ":" + attrToUpdate] = updatedVal
 	}
 
-	return updatedAttrs
+	return updatedAttr
 }
 
 func updateRefOnRightByRefAttrRow1(rr *RefResolution, 

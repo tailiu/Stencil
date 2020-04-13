@@ -113,8 +113,7 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	refResolution := reference_resolution_v2.InitializeReferenceResolution(
 		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
 		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
-		attrIDNamePairs, dstAppColNameIDPairs,
-		allMappings, mappingsFromSrcToDst, mappingsFromOtherAppsToDst,
+		attrIDNamePairs, dstAppColNameIDPairs, allMappings, dstDAG,
 	)
 
 	srcAppConfig.appID = srcAppID

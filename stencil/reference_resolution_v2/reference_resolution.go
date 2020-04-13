@@ -335,8 +335,7 @@ func InitializeReferenceResolution(migrationID int,
 	attrIDNamePairs map[string]string,
 	appAttrNameIDPairs map[string]string,
 	allMappings *config.SchemaMappings,
-	mappingsFromSrcToDst *config.MappedApp,
-	mappingsFromOtherAppsToDst map[string]*config.MappedApp) *RefResolution {
+	dag *common_funcs.DAG) *RefResolution {
 
 	var rr RefResolution
 
@@ -351,8 +350,7 @@ func InitializeReferenceResolution(migrationID int,
 	rr.attrIDNamePairs = attrIDNamePairs
 	rr.appAttrNameIDPairs = appAttrNameIDPairs
 	rr.allMappings = allMappings
-	rr.mappingsFromSrcToDst = mappingsFromSrcToDst
-	rr.mappingsFromOtherAppsToDst = mappingsFromOtherAppsToDst
+	rr.dag = dag
 
 	return &rr
 }

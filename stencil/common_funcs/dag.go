@@ -236,6 +236,95 @@ func (dag *DAG) GetAllAttrsDepsOnBasedOnDag(table string) []string {
 
 }
 
+func (dag *DAG) ReferenceExists(attr, attrTable, attrToUpdate, attrToUpdateTable string) bool {
+
+	var attrTag, attrMember, attrToUpdateTag, attrToUpdateMember, attrKey, attrToUpdateKey string
+
+	// Check inner-node dependencies
+	for _, tag1 := range dag.Tags {
+
+		var findAttrTable, findAttrToUpdateTable bool
+		
+		for member1, table1 := range tag1.Members {
+			if table1 == attrTable {
+				findAttrTable = true
+				attrMember = member1
+				attrTag = tag1.Name
+			} else if table1 == attrToUpdateTable {
+				findAttrToUpdateTable = true
+				attrToUpdateMember = member1
+				attrToUpdateTag = tag1.Name
+			}
+		}
+
+		if findAttrTable && findAttrToUpdateTable {
+			for _, innerDependency := range tag1.InnerDependencies {
+				for dependedOn, dependsOn := range innerDependency {
+					if dependedOn == attrMember + "." + attr && dependsOn == attrToUpdateMember + "." + attrToUpdate {
+						return true
+					}
+				}
+			}
+			// if the two tables of the two attributes are in the same tag but not depends on each other, 
+			// it is impossible for them to depend on each other in inter-depdencies or ownership 
+			return false
+		} 
+
+		if findAttrTable {
+			for k, v := range tag1.Keys {
+				if v == attrMember + "." + attr {
+					attrKey = k
+				}
+			}
+		}
+
+		if findAttrToUpdateTable {
+			for k, v := range tag1.Keys {
+				if v == attrToUpdateMember + "." + attrToUpdate {
+					attrToUpdateKey = k
+				}
+			}
+		}
+	}
+
+	// No keys are found indicating that the attributes are not used in dependencies or ownership
+	if attrKey == "" || attrToUpdateKey == "" {
+		return false
+	}
+
+	log.Println(attrTag, attrMember, attrToUpdateTag, attrToUpdateMember, attrKey, attrToUpdateKey)
+
+	// Check inter-node dependencies
+	for _, dep := range dag.Dependencies {
+		if dep.Tag == attrToUpdateTag {
+			for _, dependsOn := range dep.DependsOn {
+				if dependsOn.Tag == attrTag {
+					// For now we only consider one condition in conditions
+					for i, condition := range dependsOn.Conditions {
+						if condition.TagAttr == attrToUpdateKey && condition.DependsOnAttr == attrKey && i == 0 {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Check ownership
+	for _, ownership := range dag.Ownerships {
+		if ownership.Tag == attrToUpdateTag && ownership.OwnedBy == attrTag {
+			// For now we only consider one condition in conditions
+			for i, condition := range ownership.Conditions {
+				if condition.TagAttr == attrToUpdateKey && condition.DependsOnAttr == attrKey && i == 0 {
+					return true
+				}
+			}
+		}
+	}
+	
+	return false
+}
+
 func (dag *DAG) IfDependsOnBasedOnDag(table, attr string) bool {
 
 	var tag, member, key string
@@ -291,4 +380,5 @@ func (dag *DAG) IfDependsOnBasedOnDag(table, attr string) bool {
 	}
 	
 	return false
+
 }

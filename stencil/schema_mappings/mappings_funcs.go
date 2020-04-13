@@ -201,7 +201,7 @@ func getThirdArgInREForREFHARD(data string) string {
 	return res
 }
 
-func ReferenceExistsBasedOnMappings(allMappings *config.SchemaMappings,
+func ReferenceExists(allMappings *config.SchemaMappings,
 	app, attr, attrTable, attrToUpdate, attrToUpdateTable string) bool {
 
 	// 1. Get the second arg and third arg if exists in #REF or #REFHARD based on (attrToUpdate, attrToUpdateTable)

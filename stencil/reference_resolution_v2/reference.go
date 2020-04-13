@@ -228,21 +228,19 @@ func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, attrVal, dataID st
 
 func (rr *RefResolution) referenceExists(attr, attMember, attrToUpdate, attrToUpdateMember string) bool {
 	
+	app := rr.appName
+
 	log.Println("Checking if the reference exists:")
-	log.Println(app, attr, attrTable, attrToUpdate, attrToUpdateTable)
+	log.Println(app, attr, attMember, attrToUpdate, attrToUpdateMember)
 	
-	dag.ReferenceExistsBasedOnDag()
-
-	schema_mappings.ReferenceExistsBasedOnMappings(
-		rr.allMappings, 
-		rr.appName,
-		attr, 
-		attMember, 
-		attrToUpdate, 
-		attrToUpdateMember,
-	)
-
-	
+	if rr.dag.ReferenceExists(attr, attMember, attrToUpdate, attrToUpdateMember) {
+		return true
+	} else if schema_mappings.ReferenceExists(rr.allMappings, app, 
+		attr, attMember, attrToUpdate, attrToUpdateMember) {
+		return true
+	} else {
+		return false
+	}
 
 }
 

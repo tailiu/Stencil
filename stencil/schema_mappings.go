@@ -109,7 +109,7 @@ func test7() {
 
 	log.Println(app, attr, attrTable, attrToUpdate, attrToUpdateTable)
 
-	exists := schema_mappings.ReferenceExistsBasedOnMappings(
+	exists := schema_mappings.ReferenceExists(
 		allMappings, app, attr, attrTable, attrToUpdate, attrToUpdateTable,
 	)
 
