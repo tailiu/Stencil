@@ -32,18 +32,18 @@ import (
 // But with the attribute_change table, we are sure about which attributes to update or to be updated.
 // It should also be noted that in the display algorithm, 
 // we have to check all the attributes to be updated based on mappings.  
-func updateRefOnLeftByRefAttrRow(rr *RefResolution, refAttributeRow *Attribute,
+func updateRefOnLeftByRefAttrRow(rr *RefResolution, refAttrRow *Attribute,
 	procRef map[string]string, orgAttr *Attribute) map[string]string {
 
 	updatedAttr := make(map[string]string)
 
-	attr := rr.attrIDNamePairs[refAttributeRow.attrName]
+	attr := rr.attrIDNamePairs[refAttrRow.attrName]
 	attrToUpdate := rr.attrIDNamePairs[orgAttr.attrName]
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	attMember := rr.tableIDNamePairs[refAttributeRow.member]
+	attMember := rr.tableIDNamePairs[refAttrRow.member]
 	attrToUpdateMember := rr.tableIDNamePairs[orgAttr.member]
 
 	if !rr.referenceExists(attr, attMember, attrToUpdate, attrToUpdateMember) {
@@ -51,10 +51,12 @@ func updateRefOnLeftByRefAttrRow(rr *RefResolution, refAttributeRow *Attribute,
 		return updatedAttr
 	}
 
+	log.Println("Reference exists")
+
 	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"], 
-		rr.tableIDNamePairs[refAttributeRow.member], 
-		refAttributeRow.val, 
+		rr.tableIDNamePairs[refAttrRow.member], 
+		refAttrRow.val, 
 		attr, 
 		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
@@ -135,39 +137,41 @@ func updateRefOnLeftNotUsingRefAttrRow(rr *RefResolution,
 }
 
 func updateRefOnRightByRefAttrRow(rr *RefResolution, 
-	refAttributeRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
+	refAttrRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
 
 	updatedAttr := make(map[string]string)
 
 	attr := rr.attrIDNamePairs[orgAttr.attrName]
-	attrToUpdate := rr.attrIDNamePairs[refAttributeRow.attrName]
+	attrToUpdate := rr.attrIDNamePairs[refAttrRow.attrName]
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
 	attMember := rr.tableIDNamePairs[orgAttr.member]
-	attrToUpdateMember := rr.tableIDNamePairs[refAttributeRow.member]
+	attrToUpdateMember := rr.tableIDNamePairs[refAttrRow.member]
 
 	if !rr.referenceExists(attr, attMember, attrToUpdate, attrToUpdateMember) {
 		log.Println("Reference does not exist")
 		return updatedAttr
 	}
 
+	log.Println("Reference exists")
+
 	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"],
 		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
 		attr, 
-		rr.tableIDNamePairs[refAttributeRow.member], 
-		refAttributeRow.val, 
+		rr.tableIDNamePairs[refAttrRow.member], 
+		refAttrRow.val, 
 		attrToUpdate,
-		refAttributeRow.id,
+		refAttrRow.id,
 	)
 
 	if err1 != nil {
 		log.Println(err1)
 	} else {
-		updatedAttr[refAttributeRow.val + ":" + attrToUpdate] = updatedVal
+		updatedAttr[refAttrRow.id + ":" + attrToUpdate] = updatedVal
 	}
 
 	return updatedAttr
@@ -198,7 +202,7 @@ func updateRefOnRightByRefAttrRow1(rr *RefResolution,
 	if err1 != nil {
 		log.Println(err1)
 	} else {
-		updatedAttr[refAttrRow.val + ":" + attrToUpdate] = updatedVal
+		updatedAttr[refAttrRow.id + ":" + attrToUpdate] = updatedVal
 	}
 
 	return updatedAttr 
@@ -230,7 +234,7 @@ func updateRefOnRightNotUsingRefAttrRow(rr *RefResolution,
 	if err1 != nil {
 		log.Println(err1)
 	} else {
-		updatedAttr[procRef["from_val"] + ":" + attrToUpdate] = updatedVal
+		updatedAttr[procRef["from_id"] + ":" + attrToUpdate] = updatedVal
 	}
 
 	return updatedAttr

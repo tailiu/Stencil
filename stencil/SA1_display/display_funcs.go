@@ -1086,16 +1086,17 @@ func transformMapToString(data map[string]interface{}) string {
 
 func (display *display) needToResolveReference(table, attr string) bool {
 	
+	// log.Println("Checking the need to resolve reference:", table, attr)
+
 	for _, mapping := range display.mappingsFromOtherAppsToDst {
 
-		if exists, err := schema_mappings.REFExists(
-			mapping, table, attr); err != nil {
+		if exists, err := schema_mappings.REFExists(mapping, table, attr); err != nil {
 	
 			// This can happen when there is no mapping
 			// For example: 
 			// When migrating from Diaspora to Mastodon:
 			// there is no mapping to stream_entries.activity_id.
-			log.Println(err)
+			// log.Println(err)
 	
 		} else {
 			if exists {

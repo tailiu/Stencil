@@ -192,7 +192,8 @@ func (rr *RefResolution) updateMyDataBasedOnReferences(attrRow map[string]string
 }
 
 // You are on the right/to part
-func (rr *RefResolution) updateOtherDataBasedOnReferences(attrRow map[string]string, orgAttr *Attribute) map[string]string {
+func (rr *RefResolution) updateOtherDataBasedOnReferences(attrRow map[string]string, 
+	orgAttr *Attribute) map[string]string {
 
 	log.Println("You are on the right/to part")
 
@@ -314,6 +315,7 @@ func (rr *RefResolution) resolveReferenceByBackTraversal(attr, orgAttr *Attribut
 		preAttr := CreateAttribute(
 			procAttrRow["from_app"], procAttrRow["from_member"],
 			procAttrRow["from_attr"], procAttrRow["from_val"],
+			procAttrRow["from_id"],
 		)
 
 		nextMyUpdatedAttrs, nextOthersUpdatedAttrs := rr.resolveReferenceByBackTraversal(preAttr, orgAttr)

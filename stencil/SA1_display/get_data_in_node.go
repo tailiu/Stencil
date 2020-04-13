@@ -115,13 +115,13 @@ func (display *display) checkReferenceIndeedResolved(table, col,
 			}
 		}
 
-		log.Println("The reference has not been resolved")
+		log.Println("The reference has not been found in the resolved reference table")
 
 		return nil, DataNotWanted
 
 	} else {
 		
-		log.Println("The reference has not been resolved")
+		log.Println("The reference has not been found in the resolved reference table")
 
 		return nil, DataNotFound
 	} 
@@ -140,7 +140,7 @@ func (display *display) checkResolveRefWithIDInData(table, col, tableID, colID, 
 	} else {
 
 		attr0 := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, tableID, colID, attrVal, id)
-		log.Println("Before resolving reference: ", attr0)
+		log.Println("Before resolving reference:", display.rr.LogAttr(attr0))
 
 		display.rr.ResolveReference(attr0)
 		
@@ -236,10 +236,13 @@ func (display *display) checkResolveReferenceInGetDataInNode(
 		}
 		
 		attr1 := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, table0ID, col0ID, id, id)
-		log.Println("Resolving reference2: ", attr1)
+		
+		log.Println("Resolving reference2:", display.rr.LogAttr(attr1))
 
 		display.rr.ResolveReference(attr1)
 		
+		log.Println("After trying to resolving reference2:", display.rr.LogAttr(attr1))
+
 		data2, err2 := display.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
 		if err2 != nil {
 			return nil, CannotGetDataAfterResolvingRef2

@@ -37,6 +37,23 @@ func (rr *RefResolution) LogRefRow(refRow map[string]string, returnLogOnly ...bo
 
 }
 
+func (rr *RefResolution) LogAttr(attribute *Attribute) string {
+	
+	app := rr.appIDNamePairs[attribute.app]
+	member := rr.tableIDNamePairs[attribute.member]
+	attrName := rr.attrIDNamePairs[attribute.attrName]
+
+	output := fmt.Sprint(
+		"attribute - app:", app, " | ",
+		"member:", member, " | ",
+		"attrName:", attrName, " | ",
+		"val:", attribute.val, " | ",
+		"id:", attribute.id, 
+	)
+
+	return output
+}
+
 func (rr *RefResolution) logAttrChangeRow(attrRow map[string]string) {
 	
 	fromApp := rr.appIDNamePairs[attrRow["from_app"]]

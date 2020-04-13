@@ -1961,7 +1961,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 470
+	edgeCounterRangeStart := 480
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
