@@ -151,8 +151,10 @@ func (rr *RefResolution) updateMyDataBasedOnReferences(attrRow map[string]string
 
 					oneUpdatedAttr = updateRefOnLeftByRefAttrRow(
 						rr, refAttributeRow, procRef, orgAttr)
-
-					updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+					
+					if len(oneUpdatedAttr) > 0 {
+						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+					}
 
 				}
 
@@ -249,9 +251,11 @@ func (rr *RefResolution) updateOtherDataBasedOnReferences(attrRow map[string]str
 
 					oneUpdatedAttr = updateRefOnRightByRefAttrRow(
 						rr, refAttributeRow, procRef, orgAttr)
-
-					updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
-
+					
+					if len(oneUpdatedAttr) > 0 {
+						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
+					}
+				
 				}
 
 				if len(oneUpdatedAttr) > 0 {

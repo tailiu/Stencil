@@ -176,6 +176,87 @@ func RemoveASSIGNAllRightParenthesesIfExists(data string) string {
 
 }
 
+func getSecondArgInREForREFHARD(data string) string {
+
+	res := strings.Split(data, ",")[1]
+
+	if strings.Contains(res, ")") {
+		res = strings.Replace(res, ")", "", -1)
+	}
+
+	return res
+
+}
+
+func getThirdArgInREForREFHARD(data string) string {
+
+	var res string
+
+	tmp := strings.Split(data, ",")
+
+	if len(tmp) == 3 {
+		res = strings.Replace(tmp[2], ")", "", -1)
+	}
+
+	return res
+}
+
+func ReferenceExistsBasedOnMappings(allMappings *config.SchemaMappings,
+	app, attr, attrTable, attrToUpdate, attrToUpdateTable string) bool {
+
+	// 1. Get the second arg and third arg if exists in #REF or #REFHARD based on (attrToUpdate, attrToUpdateTable)
+	// 2. 1) Use the table in the second arg as the from table and the attrTable as the to table
+	// 	  2) Use the attr in the second arg as the from attr and the attr as the to attr
+	// 	  3) Compare the table in the third arg with the to table 
+	for _, mapping := range allMappings.AllMappings {
+		for _, toApp := range mapping.ToApps {
+			if toApp.Name == app {
+				for _, mapping := range toApp.Mappings {
+					for _, toTable := range mapping.ToTables {
+						if toTable.Table == attrToUpdateTable {
+							if fromAttr, ok := toTable.Mapping[attrToUpdate]; ok {
+								if containREForREFHARD(fromAttr) {
+									secondArg := getSecondArgInREForREFHARD(fromAttr)
+									thirdArg := getThirdArgInREForREFHARD(fromAttr)
+									fromTable := strings.Split(secondArg, ".")[0]
+
+									for _, mapping1 := range toApp.Mappings {
+										for _, fromTable1 := range mapping1.FromTables {
+											if fromTable1 == fromTable {
+												for _, toTable1 := range mapping1.ToTables {
+													if attrTable == toTable1.Table {
+
+														if fromAttr1, ok1 := toTable1.Mapping[attr]; ok1 {
+															if fromAttr1 == secondArg {
+																if thirdArg != "" {
+																	log.Println(fromAttr)
+																	log.Println(thirdArg)
+																	log.Println(toTable1.Table)
+																	if thirdArg == toTable1.Table {
+																		return true
+																	}
+																} else {
+																	return true
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 func GetMappedAttributesToUpdateOthers(allMappings *config.SchemaMappings,
 	fromApp, fromTable, fromAttr, toApp, toTable string) ([]string, error) {
 

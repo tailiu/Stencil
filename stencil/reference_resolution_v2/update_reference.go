@@ -32,8 +32,8 @@ import (
 // But with the attribute_change table, we are sure about which attributes to update or to be updated.
 // It should also be noted that in the display algorithm, 
 // we have to check all the attributes to be updated based on mappings.  
-func updateRefOnLeftByRefAttrRow(rr *RefResolution, 
-	refAttributeRow *Attribute, procRef map[string]string, orgAttr *Attribute) map[string]string {
+func updateRefOnLeftByRefAttrRow(rr *RefResolution, refAttributeRow *Attribute,
+	procRef map[string]string, orgAttr *Attribute) map[string]string {
 
 	updatedAttr := make(map[string]string)
 
@@ -42,6 +42,13 @@ func updateRefOnLeftByRefAttrRow(rr *RefResolution,
 
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
+
+	attMember := refAttributeRow.member
+	attrToUpdateMember := orgAttr.member
+
+	if !rr.referenceExists(attr, attMember, attrToUpdate, attrToUpdateMember) {
+		return updatedAttr
+	}
 
 	updatedVal, err1 := rr.updateReferences(
 		procRef["pk"], 
@@ -63,8 +70,8 @@ func updateRefOnLeftByRefAttrRow(rr *RefResolution,
 
 }
 
-func updateRefOnLeftByRefAttrRow1(rr *RefResolution, 
-	procRef map[string]string, orgAttr *Attribute, refAttrRowVal string) map[string]string {
+func updateRefOnLeftByRefAttrRow1(rr *RefResolution, procRef map[string]string,
+	orgAttr *Attribute, refAttrRowVal string) map[string]string {
 
 	attr := rr.attrIDNamePairs[procRef["to_attr"]]
 	attrToUpdate := rr.attrIDNamePairs[procRef["from_attr"]]

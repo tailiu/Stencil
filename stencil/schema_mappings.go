@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"stencil/config"
 	"stencil/schema_mappings"
 	// "stencil/SA1_display"
 )
@@ -95,6 +96,27 @@ func test6() {
 
 }
 
+func test7() {
+
+	allMappings, err1 := config.LoadSchemaMappings()
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	// app, attr, attrTable, attrToUpdate, attrToUpdateTable := "mastodon", "id", "accounts", "account_id", "statuses"
+
+	app, attr, attrTable, attrToUpdate, attrToUpdateTable := "mastodon", "id", "statuses", "conversation_id", "statuses"
+
+	log.Println(app, attr, attrTable, attrToUpdate, attrToUpdateTable)
+
+	exists := schema_mappings.ReferenceExistsBasedOnMappings(
+		allMappings, app, attr, attrTable, attrToUpdate, attrToUpdateTable,
+	)
+
+	log.Println(exists)
+	
+}
+
 func main() {
 
 	// migrationID := 955012936
@@ -114,7 +136,10 @@ func main() {
 
 	// test4(display)
 
-	test5()
+	// test5()
 
 	// test6()
+
+	test7()
+
 }

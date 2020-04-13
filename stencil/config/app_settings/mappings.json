@@ -1305,7 +1305,7 @@
                                         "in_reply_to_id":"#REF(tweets.reply_to_id,tweets.id,statuses)",
                                         "account_id":"#REF(tweets.user_id,users.id)",
                                         "visibility": "$visibility0",
-                                        "conversation_id": "#REF(tweets.id,tweets.id,statuses)"
+                                        "conversation_id": "#REF(tweets.id,tweets.id,conversations)"
                                     }
                                 },
                                 {
@@ -1340,7 +1340,7 @@
                                         "account_id":"#REF(retweets.user_id,users.id)",
                                         "reblog_of_id":"#REF(retweets.tweet_id,tweets.id,statuses)",
                                         "visibility": "$visibility0",
-                                        "conversation_id": "#REF(retweets.id,retweets.id,statuses)"
+                                        "conversation_id": "#REF(retweets.id,retweets.id,conversations)"
                                     }
                                 },
                                 {

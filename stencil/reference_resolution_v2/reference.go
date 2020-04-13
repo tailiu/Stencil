@@ -5,6 +5,7 @@ import (
 	"log"
 	"database/sql"
 	"stencil/common_funcs"
+	"stencil/schema_mappings"
 	"stencil/db"
 
 	"github.com/gookit/color"
@@ -222,6 +223,26 @@ func updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, attrVal, dataID st
 		`UPDATE "%s" SET %s = %s WHERE id = %s`,
 		memberToBeUpdated, attrToBeUpdated, attrVal, dataID,
 	)
+
+}
+
+func (rr *RefResolution) referenceExists(attr, attMember, attrToUpdate, attrToUpdateMember string) bool {
+	
+	log.Println("Checking if the reference exists:")
+	log.Println(app, attr, attrTable, attrToUpdate, attrToUpdateTable)
+	
+	dag.ReferenceExistsBasedOnDag()
+
+	schema_mappings.ReferenceExistsBasedOnMappings(
+		rr.allMappings, 
+		rr.appName,
+		attr, 
+		attMember, 
+		attrToUpdate, 
+		attrToUpdateMember,
+	)
+
+	
 
 }
 

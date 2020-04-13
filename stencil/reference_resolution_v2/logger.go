@@ -19,6 +19,7 @@ func (rr *RefResolution) LogRefRow(refRow map[string]string, returnLogOnly ...bo
 		"ref_row - from_member:", fromMember, " | ",
 		"from_attr:", fromAttr, " | ",
 		"from_val:", refRow["from_val"], " | ",
+		"from_id:", refRow["from_id"], " | ",
 		"to_member:", toMember, " | ",
 		"to_attr:", toAttr, " | ",
 		"to_val:", refRow["to_val"], " | ",
