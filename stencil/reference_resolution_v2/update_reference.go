@@ -43,10 +43,11 @@ func updateRefOnLeftByRefAttrRow(rr *RefResolution, refAttributeRow *Attribute,
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	attMember := refAttributeRow.member
-	attrToUpdateMember := orgAttr.member
+	attMember := rr.tableIDNamePairs[refAttributeRow.member]
+	attrToUpdateMember := rr.tableIDNamePairs[orgAttr.member]
 
 	if !rr.referenceExists(attr, attMember, attrToUpdate, attrToUpdateMember) {
+		log.Println("Reference does not exist")
 		return updatedAttr
 	}
 
@@ -141,10 +142,11 @@ func updateRefOnRightByRefAttrRow(rr *RefResolution,
 	log.Println("attr:", attr)
 	log.Println("attr to be updated:", attrToUpdate)
 
-	attMember := orgAttr.member
-	attrToUpdateMember := refAttributeRow.member
+	attMember := rr.tableIDNamePairs[orgAttr.member]
+	attrToUpdateMember := rr.tableIDNamePairs[refAttributeRow.member]
 
 	if !rr.referenceExists(attr, attMember, attrToUpdate, attrToUpdateMember) {
+		log.Println("Reference does not exist")
 		return updatedAttr
 	}
 

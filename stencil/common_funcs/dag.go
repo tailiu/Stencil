@@ -204,7 +204,7 @@ func (dag *DAG) GetAllAttrsDepsOnBasedOnDag(table string) []string {
 		}
 	} 
 	
-	log.Println(tag, member, keys)
+	// log.Println(tag, member, keys)
 
 	// Check inter-node dependencies
 	for _, dep := range dag.Dependencies {
@@ -292,7 +292,7 @@ func (dag *DAG) ReferenceExists(attr, attrTable, attrToUpdate, attrToUpdateTable
 		return false
 	}
 
-	log.Println(attrTag, attrMember, attrToUpdateTag, attrToUpdateMember, attrKey, attrToUpdateKey)
+	// log.Println(attrTag, attrMember, attrToUpdateTag, attrToUpdateMember, attrKey, attrToUpdateKey)
 
 	// Check inter-node dependencies
 	for _, dep := range dag.Dependencies {
@@ -327,14 +327,13 @@ func (dag *DAG) ReferenceExists(attr, attrTable, attrToUpdate, attrToUpdateTable
 
 func (dag *DAG) IfDependsOnBasedOnDag(table, attr string) bool {
 
-	var tag, member, key string
+	var tag, key string
 
 	// Check inner-node dependencies
 	for _, tag1 := range dag.Tags {
 		for member1, table1 := range tag1.Members {
 			if table1 == table {
 				tag = tag1.Name
-				member = member1
 				for _, innerDependency := range tag1.InnerDependencies {
 					for _, dependsOn := range innerDependency {
 						if dependsOn == member1 + "." + attr {
@@ -351,7 +350,7 @@ func (dag *DAG) IfDependsOnBasedOnDag(table, attr string) bool {
 		}
 	} 
 	
-	log.Println(tag, member, key)
+	// log.Println(tag, member, key)
 
 	// Check inter-node dependencies
 	for _, dep := range dag.Dependencies {

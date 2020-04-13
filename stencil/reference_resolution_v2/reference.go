@@ -230,8 +230,7 @@ func (rr *RefResolution) referenceExists(attr, attMember, attrToUpdate, attrToUp
 	
 	app := rr.appName
 
-	log.Println("Checking if the reference exists:")
-	log.Println(app, attr, attMember, attrToUpdate, attrToUpdateMember)
+	log.Println("Checking if the reference exists:", app, attr, attMember, attrToUpdate, attrToUpdateMember)
 	
 	if rr.dag.ReferenceExists(attr, attMember, attrToUpdate, attrToUpdateMember) {
 		return true
