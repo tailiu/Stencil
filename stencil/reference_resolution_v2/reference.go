@@ -284,8 +284,8 @@ func (rr *RefResolution) ReferenceResolved(member, attr, id string) string {
 	}
 }
 
-func (rr *RefResolution) updateReferences(refID,
-	member, val, attr, memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) (string, error) {
+func (rr *RefResolution) updateReferences(refID, member, val, attr, 
+	memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated, idToBeUpdated string) (string, error) {
 
 	if attr == "" && attrToBeUpdated == "" {
 
@@ -293,65 +293,17 @@ func (rr *RefResolution) updateReferences(refID,
 
 	} else if attr != "" && attrToBeUpdated != "" {
 
-		// 1. we must avoid updating references again
-		// in the case of non-unique references
-		// For example,
-		// id_row - from_app: diaspora | from_member: posts | from_id: 374593 | 
-		// to_app: mastodon | to_member: statuses | to_id: 103515700915521351 | 
-		// migration_id: 1741805562 | pk: 301
-		// There are two same reference rows because of
-		// the mappings to status_id and conversation_id.
-		// ref_row - from_member: posts | from_reference: id | from_id: 374593 | 
-		// to_member: posts | to_reference: id | to_id: 374593 | 
-		// app: diaspora | migration_id: 1741805562 | pk: 468
-		// After resolving and updating one reference like status_id,
-		// due to the same id and reference rows, we may try to resolve and
-		// update status_id again. Therefore, we have to check resolved_references.
-		// 2. When there are duplicate attribute rows, how to check resolved_references becomes a problem.
-		// For example, there are two comments to the same posts,
-		// so there will be two same reference rows based on attributes
-		// In this case, we cannot simply check resolved_references table by
-		// looking at (app, member, attr, updated_val) since they are the same for both
-		// rows and we will not update the second row if we consider it has been resolved before.
-		// Thus we must get id here for checking. There could be multiple pieces of data (multiple ids)
-		// in the case of multiple comments to the same posts with the same commentable_id
-		dataIDsToBeUpdated := rr.getIDsOfDataToBeUpdated(
-			memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated,
+		newVal := rr.ReferenceResolved(
+			rr.appTableNameIDPairs[memberToBeUpdated],
+			rr.appAttrNameIDPairs[memberToBeUpdated + ":"+ attrToBeUpdated],
+			idToBeUpdated,
 		)
 
-		if len(dataIDsToBeUpdated) == 0 {
+		if newVal != "" {
 			return "", alreadySolved
 		}
 
-		// 3. After getting the data IDs to be updated, we can use
-		// (app, member, attr, id) to check whether the attribute in this id
-		// has been resolved and updated before to solve the problem in 1.
-		// Actually, in most cases, the attributes in the got data should be unresolved
-		// except the cases where the resolved attributes have the same value
-		// as the unresolved or some concurrent display threads have just resolved the attributes,
-		// some attributes in the data IDs could be checked to have been resolved before.
-		unresolvedDataIDToBeUpdated := ""
-		for _, dataIDToBeUpdated := range dataIDsToBeUpdated {
-
-			newVal := rr.ReferenceResolved(
-				rr.appTableNameIDPairs[memberToBeUpdated],
-				rr.appAttrNameIDPairs[memberToBeUpdated + ":"+ attrToBeUpdated],
-				dataIDToBeUpdated,
-			)
-			
-			if newVal == "" {
-				unresolvedDataIDToBeUpdated = dataIDToBeUpdated
-				break
-			}
-		}
-
-		if unresolvedDataIDToBeUpdated == "" {
-			return "", alreadySolved
-		}
-
-		dataExists := rr.checkDataToUpdateRefExists(member, attr, val)
-
-		if dataExists {
+		if rr.checkDataToUpdateRefExists(member, attr, val) {
 
 			log.Println("---------------------------------------------")
 
@@ -394,7 +346,7 @@ func (rr *RefResolution) updateReferences(refID,
 			// the thread can still try to update it, which does not change the value actually.
 			// As long as q2 and q3 can be executed together, which are in the same transaction,
 			// the algorithm is still correct.
-			q1 := updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, val, unresolvedDataIDToBeUpdated)
+			q1 := updateDataBasedOnRef(memberToBeUpdated, attrToBeUpdated, val, idToBeUpdated)
 
 			log.Println(q1)
 
@@ -419,7 +371,7 @@ func (rr *RefResolution) updateReferences(refID,
 			} else {
 				q3 = rr.addToResolvedReferences(
 					memberToBeUpdated,
-					unresolvedDataIDToBeUpdated,
+					idToBeUpdated,
 					attrToBeUpdated,
 					val,
 				)

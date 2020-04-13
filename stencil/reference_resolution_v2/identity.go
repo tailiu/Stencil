@@ -6,8 +6,7 @@ import (
 	"stencil/db"
 )
 
-func (rr *RefResolution) getUpdateIDInDisplayFlagsQuery(
-	table, IDToBeUpdated, id string) string {
+func (rr *RefResolution) getUpdateIDInDisplayFlagsQuery(table, IDToBeUpdated, id string) string {
 	
 	query := fmt.Sprintf(
 		`UPDATE display_flags SET id = %s, updated_at = now() 
@@ -36,8 +35,7 @@ func (rr *RefResolution) getInsertIntoIDChangesTableQuery(table, IDToBeUpdated, 
 	return query
 }
 
-func (rr *RefResolution) getIDsOfDataToBeUpdated(
-	memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) []string {
+func (rr *RefResolution) getIDsOfDataToBeUpdated(memberToBeUpdated, attrValToBeUpdated, attrToBeUpdated string) []string {
 	
 	query := fmt.Sprintf(
 		"SELECT id FROM %s WHERE %s = '%s'",

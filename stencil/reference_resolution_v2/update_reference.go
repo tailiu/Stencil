@@ -59,6 +59,7 @@ func updateRefOnLeftByRefAttrRow(rr *RefResolution, refAttributeRow *Attribute,
 		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
 		attrToUpdate,
+		orgAttr.id,
 	)
 
 	if err1 != nil {
@@ -90,6 +91,7 @@ func updateRefOnLeftByRefAttrRow1(rr *RefResolution, procRef map[string]string,
 		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
 		attrToUpdate,
+		orgAttr.id,
 	)
 	
 	if err1 != nil {
@@ -120,6 +122,7 @@ func updateRefOnLeftNotUsingRefAttrRow(rr *RefResolution,
 		rr.tableIDNamePairs[orgAttr.member], 
 		orgAttr.val, 
 		attrToUpdate,
+		orgAttr.id,
 	)
 	
 	if err1 != nil {
@@ -158,6 +161,7 @@ func updateRefOnRightByRefAttrRow(rr *RefResolution,
 		rr.tableIDNamePairs[refAttributeRow.member], 
 		refAttributeRow.val, 
 		attrToUpdate,
+		refAttributeRow.id,
 	)
 
 	if err1 != nil {
@@ -170,7 +174,7 @@ func updateRefOnRightByRefAttrRow(rr *RefResolution,
 }
 
 func updateRefOnRightByRefAttrRow1(rr *RefResolution, 
-	procRef map[string]string, orgAttr *Attribute, refAttrRowVal string) map[string]string {
+	procRef map[string]string, orgAttr, refAttrRow *Attribute) map[string]string {
 
 	attr := rr.attrIDNamePairs[procRef["to_attr"]]
 	attrToUpdate := rr.attrIDNamePairs[procRef["from_attr"]]
@@ -186,14 +190,15 @@ func updateRefOnRightByRefAttrRow1(rr *RefResolution,
 		orgAttr.val,
 		attr, 
 		rr.tableIDNamePairs[procRef["from_member"]], 
-		refAttrRowVal, 
+		refAttrRow.val, 
 		attrToUpdate,
+		refAttrRow.id,
 	)
 
 	if err1 != nil {
 		log.Println(err1)
 	} else {
-		updatedAttr[refAttrRowVal + ":" + attrToUpdate] = updatedVal
+		updatedAttr[refAttrRow.val + ":" + attrToUpdate] = updatedVal
 	}
 
 	return updatedAttr 
@@ -219,6 +224,7 @@ func updateRefOnRightNotUsingRefAttrRow(rr *RefResolution,
 		rr.tableIDNamePairs[procRef["from_member"]], 
 		procRef["from_val"], 
 		attrToUpdate,
+		procRef["from_id"],
 	)
 
 	if err1 != nil {
@@ -228,4 +234,5 @@ func updateRefOnRightNotUsingRefAttrRow(rr *RefResolution,
 	}
 
 	return updatedAttr
+
 }

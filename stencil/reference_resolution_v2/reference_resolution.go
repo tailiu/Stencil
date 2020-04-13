@@ -239,7 +239,7 @@ func (rr *RefResolution) updateOtherDataBasedOnReferences(attrRow map[string]str
 						procRef["to_attr"] == orgAttr.attrName {
 
 						oneUpdatedAttr = updateRefOnRightByRefAttrRow1(
-							rr, procRef, orgAttr, refAttributeRow.val)
+							rr, procRef, orgAttr, refAttributeRow)
 
 						updatedAttrs = combineTwoMaps(updatedAttrs, oneUpdatedAttr)
 
