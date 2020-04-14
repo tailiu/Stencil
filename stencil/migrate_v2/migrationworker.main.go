@@ -800,14 +800,18 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 				mappedMemberDatum := mWorker.GetMappedMemberData(toTable, node)
 
 				if !mWorker.ValidateMappingConditions(toTable.Conditions, node.Data) {
-					mWorker.Logger.Info("Mapping conditions not validated!")
+					mWorker.Logger.Infof("%s: Mapping conditions not validated!\n", toTable.Table)
 					continue
+				} else {
+					mWorker.Logger.Infof("%s: Mapping conditions validated!\n", toTable.Table)
 				}
 
 				if !mappedMemberDatum.ValidateMappedData() {
-					mWorker.Logger.Info("Mapped data not validated!")
+					mWorker.Logger.Infof("%s: Mapped data not validated!\n", toTable.Table)
 					mWorker.Logger.Debug("mappedMemberDatum | ", mappedMemberDatum)
 					continue
+				} else {
+					mWorker.Logger.Infof("%s: Mapped data validated!\n", toTable.Table)
 				}
 
 				mWorker.Logger.Infof("Cols before merging: %v\n", mappedMemberDatum.ToCols())

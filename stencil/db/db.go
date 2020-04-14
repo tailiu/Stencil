@@ -337,12 +337,12 @@ func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]m
 
 func GetRowsFromAttrTableByTo(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
 
-	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM attribute_changes WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
+	query := "SELECT distinct from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM attribute_changes WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
 	return DataCall(dbConn, query, app, member, id)
 }
 
 func GetRowsFromAttrTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
-	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM attribute_changes WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
+	query := "SELECT distinct from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM attribute_changes WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
 	return DataCall(dbConn, query, app, member, id)
 }
 

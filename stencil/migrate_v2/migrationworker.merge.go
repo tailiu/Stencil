@@ -102,6 +102,8 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 
 			if mapping, found := mWorker.FetchMappingsForBag(AttrRow.FromAppName, AttrRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, AttrRow.FromMember, dstMemberName); found {
 
+				mWorker.Logger.Tracef("Mapping found | %s(%s) : %s -> %s(%s) : %s \n", AttrRow.FromAppName, AttrRow.FromAppID, AttrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
+
 				merged := false
 
 				for _, toTable := range mapping.ToTables {
@@ -121,11 +123,11 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 								if mmv.Ref != nil {
 									mmv.Ref.appID = fmt.Sprint(bagRow["app"])
 									mmv.Ref.mergedFromBag = true
-									mWorker.Logger.Tracef("@FetchDataFromBags > REF merged for: %s.%s | %s.%s \n", toTable.Table, toAttr, AttrRow.FromAppName, mmv.FromAttr)
+									mWorker.Logger.Tracef("REF merged for: %s.%s | %s.%s \n", toTable.Table, toAttr, AttrRow.FromAppName, mmv.FromAttr)
 								}
 								mmd.Data[toAttr] = *mmv
 								delete(bagData, mmv.FromAttr)
-								mWorker.Logger.Tracef("@FetchDataFromBags > ATTR merged for: %s.%s\n", toTable.Table, toAttr)
+								mWorker.Logger.Tracef("ATTR merged for: %s.%s\n", toTable.Table, toAttr)
 								merged = true
 							}
 						} else {
@@ -158,6 +160,8 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 						}
 					}
 				}
+			} else {
+				mWorker.Logger.Tracef("Mapping not found | %s(%s) : %s -> %s(%s) : %s \n", AttrRow.FromAppName, AttrRow.FromAppID, AttrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
 			}
 		}
 		if err := mWorker.FetchDataFromBags(visitedRows, prevUIDs, mmd, AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, dstMemberID, dstMemberName); err != nil {
