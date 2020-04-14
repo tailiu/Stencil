@@ -33,9 +33,7 @@ func (display *display) DisplayThread() {
 			migratedData = display.GetUndisplayedMigratedData() {
 			
 			for _, oneMigratedData := range migratedData {
-
-				display.checkDisplayOneMigratedData(oneMigratedData, secondRound)
-
+				display.checkDisplayOneMigratedData(oneMigratedData, secondRound, true)
 			}
 
 			time.Sleep(CHECK_INTERVAL)
@@ -50,9 +48,7 @@ func (display *display) DisplayThread() {
 	secondRoundMigratedData := display.GetUndisplayedMigratedData()
 	
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
-
-		display.checkDisplayOneMigratedData(oneSecondRoundMigratedData, secondRound)
-
+		display.checkDisplayOneMigratedData(oneSecondRoundMigratedData, secondRound, true)
 	}
 
 	log.Println("--------- End of Display Check In One Thread ---------")
@@ -73,9 +69,17 @@ func (display *display) DisplayThread() {
 // Display can DISPLAY the migrating user's and other users' data 
 // (since data is connected and other users' data also could be checked),
 // but can ONLY put the migrating user's data into data bags.
-func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct, secondRound bool) error {
+func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct, secondRound, firstCall bool) error {
 	
 	log.Println("Check Data:", *oneMigratedData)
+
+	// This is an optimization to avoid checking alreday checked and displayed data
+	// since this is the only the first call, there is no need to proceed to check the 
+	// completeness of a node
+	if display.isDataMigratedAndAlreadyDisplayed(oneMigratedData) && firstCall {
+		log.Println("This data has already been checked and displayed and it is also the first call in a recursion")
+		return common_funcs.DataAlreadyDisplayed
+	}
 
 	// This can happen when we may check other users' roots after traversing inter-dependencies
 	if display.isDataNotMigratedAndAlreadyDisplayed(oneMigratedData) {
@@ -283,7 +287,7 @@ func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct,
 						// if len(dataInParentNode) != 1 {
 						// 	log.Fatal("Find more than one piece of data in a parent node!!")
 						// }
-						err7 := display.checkDisplayOneMigratedData(dataInParentNode, secondRound)
+						err7 := display.checkDisplayOneMigratedData(dataInParentNode, secondRound, false)
 
 						if err7 != nil {
 							log.Println(err7)

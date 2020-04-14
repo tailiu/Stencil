@@ -316,6 +316,26 @@ func getAppTableNameTableIDPairs(stencilDBConn *sql.DB,
 
 }
 
+func (display *display) isDataMigratedAndAlreadyDisplayed(dataHint *HintStruct) bool {
+
+	query := fmt.Sprintf(
+		`SELECT * FROM display_flags WHERE
+		app_id = %s and table_id = %s and id = %d and display_flag = false`,
+		display.dstAppConfig.appID,
+		dataHint.TableID,
+		dataHint.KeyVal["id"],
+	)
+
+	data := db.GetAllColsOfRows(display.stencilDBConn, query)
+
+	if len(data) == 0 {
+		return true
+	} else {
+		return false
+	}
+
+}
+
 func (display *display) isDataNotMigratedAndAlreadyDisplayed(dataHint *HintStruct) bool {
 
 	query := fmt.Sprintf(
@@ -344,6 +364,8 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 	
 	attrsToBeUpdated := display.getAllAttributesToBeUpdated(table)
 	
+	log.Println("attributes to be updated:", attrsToBeUpdated)
+
 	// Even though references have been updated in checking dependencies and ownership,
 	// update reference the last time before displaying the data
 	for _, attrToBeUpdated := range attrsToBeUpdated {
@@ -353,6 +375,8 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 	}
 
 	updatedAttrs := display.rr.GetUpdatedAttributes(tableID, id)
+
+	log.Println("attributes has already been updated:", updatedAttrs)
 
 	var attrsToBeSetToNULLs []string
 

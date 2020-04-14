@@ -26,6 +26,9 @@ var CompletelyDisplayed =
 var NodeIncomplete = 
 	errors.New("Error: node is not complete")
 
+var DataAlreadyDisplayed = 
+	errors.New("Data has already been checked and displayed")
+
 // Get data in a node
 var CannotFindRemainingData = 
 	errors.New("Error: Cannot Find One Remaining Data in the Node")

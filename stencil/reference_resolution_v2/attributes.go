@@ -262,7 +262,7 @@ func (rr *RefResolution) GetUpdatedAttributes(member, id string) map[string]stri
 	// we don't consider migration_id here,
 	// the ORDER BY in the query will give us the latest resolved values
 	for _, data1 := range data {
-		updatedAttrs[fmt.Sprint(data1["attr"])] = fmt.Sprint(data1["updated_val"])
+		updatedAttrs[rr.attrIDNamePairs[fmt.Sprint(data1["attr"])]] = fmt.Sprint(data1["updated_val"])
 	}
 
 	return updatedAttrs

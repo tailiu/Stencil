@@ -149,8 +149,7 @@ func (display *display) checkResolveRefWithIDInData(table, col, tableID, colID, 
 		// because ResolveReference only returns the updated values in that
 		// function call. Values could be updated by other threads and in this
 		// case, ResolveReference does not return the updated attribute and value
-		// Therefore, we check all updated attributes again here by calling 
-		// GetUpdatedAttributes
+		// Therefore, we check all updated attributes again here
 		updatedAttrs := display.rr.GetUpdatedAttributes(tableID, id)
 
 		log.Println("Updated attributes and values:")
@@ -159,7 +158,7 @@ func (display *display) checkResolveRefWithIDInData(table, col, tableID, colID, 
 		// We check whether the desired attr (col0) has been resolved
 		foundResolvedAttr := false
 		for attr, val := range updatedAttrs {
-			if attr == colID {
+			if attr == col {
 				newVal = val
 				foundResolvedAttr = true
 				break
