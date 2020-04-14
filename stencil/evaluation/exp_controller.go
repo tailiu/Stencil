@@ -2,7 +2,6 @@ package evaluation
 
 import (
 	"stencil/SA1_migrate"
-	"stencil/reference_resolution"
 	"stencil/apis"
 	"stencil/db"
 	// "database/sql"
@@ -1927,8 +1926,8 @@ func Exp7Test() {
 	log.Println("===============================")
 
 	migrationSeq := []string {
-		"diaspora", "mastodon",
-		// "diaspora", "mastodon", "gnusocial",
+		// "diaspora", "mastodon",
+		"diaspora", "mastodon", "gnusocial",
 		// "diaspora", "mastodon", "gnusocial", "twitter",
 		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 		// "diaspora", "mastodon", "gnusocial", 
@@ -1961,7 +1960,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 497
+	edgeCounterRangeStart := 510
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -2061,15 +2060,13 @@ func Exp7Test() {
 			// Only when the start application is Diaspora do we need to do this
 			if i == 0 && fromApp == "diaspora" {
 
-				totalRemainingObjsInOriginalApp = 
-					getTotalObjsNotIncludingMediaOfAppInExp7V2(
-						evalConfig, fromApp, true)
+				totalRemainingObjsInOriginalApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+					evalConfig, fromApp, true)
 				
 				if compareWithDatabagsNotEnabled {
 
-					totalRemainingObjsInOriginalApp1 = 
-						getTotalObjsNotIncludingMediaOfAppInExp7V2(
-							evalConfig, fromApp, false)
+					totalRemainingObjsInOriginalApp1 = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+						evalConfig, fromApp, false)
 				}
 				
 			}
@@ -2085,10 +2082,7 @@ func Exp7Test() {
 			}
 
 
-			migratedUserID := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn, 
-				migrationIDs[i],
-			)
+			migratedUserID := evalConfig.getNextUserID(migrationIDs[i])
 
 			enableBags = true
 
@@ -2126,10 +2120,7 @@ func Exp7Test() {
 
 			if compareWithDatabagsNotEnabled {
 
-				migratedUserID1 := reference_resolution.GetNextUserID(
-					evalConfig.StencilDBConn1, 
-					migrationIDs1[i],
-				)
+				migratedUserID1 := evalConfig.getNextUserID(migrationIDs1[i])
 	
 				enableBags = false
 	
@@ -2339,10 +2330,7 @@ func Exp7v2() {
 			}
 
 
-			migratedUserID := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn, 
-				migrationIDs[i],
-			)
+			migratedUserID := evalConfig.getNextUserID(migrationIDs[i])
 
 			enableBags = true
 
@@ -2354,10 +2342,7 @@ func Exp7v2() {
 
 
 
-			migratedUserID1 := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn1, 
-				migrationIDs1[i],
-			)
+			migratedUserID1 := evalConfig.getNextUserID(migrationIDs1[i])
 
 			enableBags = false
 
@@ -2602,10 +2587,7 @@ func Exp7v3() {
 			}
 
 
-			migratedUserID := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn, 
-				migrationIDs[i],
-			)
+			migratedUserID := evalConfig.getNextUserID(migrationIDs[i])
 
 			enableBags = true
 
@@ -2615,12 +2597,7 @@ func Exp7v3() {
 				toAppID, userID, fromAppID,
 			)
 
-
-
-			migratedUserID1 := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn1, 
-				migrationIDs1[i],
-			)
+			migratedUserID1 := evalConfig.getNextUserID(migrationIDs1[i])
 
 			enableBags = false
 
@@ -2630,7 +2607,6 @@ func Exp7v3() {
 				toAppID, userID, fromAppID,
 			)
 
-			
 			totalDanglingObjs = mergeObjects(totalDanglingObjs, danglingObjs)
 			totalDanglingObjs1 = mergeObjects(totalDanglingObjs1, danglingObjs1)
 			

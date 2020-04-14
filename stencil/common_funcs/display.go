@@ -100,3 +100,48 @@ func GetTableIDNamePairs(stencilDBConn *sql.DB) map[string]string {
 	return tableIDNamePairs
 
 }
+
+func GetAttrIDNamePairs(stencilDBConn *sql.DB) map[string]string {
+
+	attrIDNamePairs := make(map[string]string)
+
+	query := fmt.Sprintf("select column_name, pk from app_schemas")
+
+	// log.Println(query)
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+		attrIDNamePairs[fmt.Sprint(data1["pk"])] = fmt.Sprint(data1["column_name"])
+	}
+
+	return attrIDNamePairs
+}
+
+func GetAttrNameIDPairsInApp(stencilDBConn *sql.DB, appID string) map[string]string {
+
+	attrNameIDPairs := make(map[string]string)
+
+	query := fmt.Sprintf(
+		`SELECT t.table_name, s.column_name, s.pk FROM app_schemas as s JOIN app_tables as t ON
+		s.table_id = t.pk WHERE t.app_id = %s`, appID,
+	)
+
+	// log.Println(query)
+
+	data, err := db.DataCall(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, data1 := range data {
+		tableNameColumnName := fmt.Sprint(data1["table_name"]) + ":" + fmt.Sprint(data1["column_name"])
+		columnID := fmt.Sprint(data1["pk"])
+		attrNameIDPairs[tableNameColumnName] = columnID
+	}
+
+	return attrNameIDPairs
+}

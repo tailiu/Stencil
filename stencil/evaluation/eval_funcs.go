@@ -4,6 +4,7 @@ import (
 	"stencil/db"
 	"stencil/config"
 	"stencil/transaction"
+	"stencil/common_funcs"
 	"fmt"
 	"database/sql"
 	"log"
@@ -35,28 +36,31 @@ func InitializeEvalConfig(isBladeServer ...bool) *EvalConfig {
 	mastodonTableNameIDPairs := make(map[string]string)
 	diasporaTableNameIDPairs := make(map[string]string)
 
-	mastodonRes := getTableIDNamePairsInApp(evalConfig.StencilDBConn,
-		 evalConfig.MastodonAppID)
+	mastodonRes := getTableIDNamePairsInApp(evalConfig.StencilDBConn, evalConfig.MastodonAppID)
 
 	for _, res1 := range mastodonRes {
-
-		mastodonTableNameIDPairs[fmt.Sprint(res1["table_name"])] = 
-			fmt.Sprint(res1["pk"])
+		mastodonTableNameIDPairs[fmt.Sprint(res1["table_name"])] = fmt.Sprint(res1["pk"])
 	}
 
 	evalConfig.MastodonTableNameIDPairs = mastodonTableNameIDPairs
 
-	diasporaRes := getTableIDNamePairsInApp(evalConfig.StencilDBConn,
-		evalConfig.DiasporaAppID)
+	diasporaRes := getTableIDNamePairsInApp(evalConfig.StencilDBConn, evalConfig.DiasporaAppID)
 
 	for _, res1 := range diasporaRes {
-
-		diasporaTableNameIDPairs[fmt.Sprint(res1["table_name"])] = 
-			fmt.Sprint(res1["pk"])
+		diasporaTableNameIDPairs[fmt.Sprint(res1["table_name"])] = fmt.Sprint(res1["pk"])
 	}
 
    	evalConfig.DiasporaTableNameIDPairs = diasporaTableNameIDPairs
 	
+	evalConfig.AllAppNameIDs = common_funcs.GetAppIDNamePairs(evalConfig.StencilDBConn)
+
+	attrNameIDPairsOfApps := make(map[string]map[string]string)
+	for appID := range evalConfig.AllAppNameIDs {
+		attrNameIDPairsInApp := common_funcs.GetAttrNameIDPairsInApp(evalConfig.StencilDBConn, appID)
+		attrNameIDPairsOfApps[appID] = attrNameIDPairsInApp
+	}
+	evalConfig.AttrNameIDPairsOfApps = attrNameIDPairsOfApps
+
 	// t := time.Now()
 	evalConfig.SrcAnomaliesVsMigrationSizeFile, 
 	evalConfig.DstAnomaliesVsMigrationSizeFile, 
@@ -1347,5 +1351,72 @@ func getSrcUserIDByMigrationID(dbConn *sql.DB, migrationID string) string {
 	} 
 		
 	return fmt.Sprint(res["user_id"])
+
+}
+
+func (eval *EvalConfig) getRootMembersOfApps() map[string]string {
+
+	query := `SELECT app_id, root_member_id from app_root_member`
+
+	data, err := db.DataCall(eval.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rootMembers := make(map[string]string)
+	
+	for _, data1 := range data {
+		rootMembers[fmt.Sprint(data1["app_id"])] = fmt.Sprint(data1["root_member_id"])
+	}
+
+	return rootMembers
+}
+
+func (eval *EvalConfig) getNextUserID(migrationID string) string {
+
+	appRootMembers := eval.getRootMembersOfApps()
+
+	query := fmt.Sprintf(
+		`SELECT user_id, src_app, dst_app FROM migration_registration
+		WHERE migration_id = %s`, migrationID,
+	)
+
+	log.Println(query)
+
+	data, err := db.DataCall1(eval.StencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	userID := fmt.Sprint(data["user_id"])
+	srcApp := fmt.Sprint(data["src_app"])
+	dstApp := fmt.Sprint(data["dst_app"])
+	srcRootMemberID := appRootMembers[srcApp]
+	dstRootMemberID := appRootMembers[dstApp]
+	srcRootMemberName := eval.TableIDNamePairs[srcRootMemberID]
+	dstRootMemberName := eval.TableIDNamePairs[dstRootMemberID]
+	idInSrcApp := eval.AttrNameIDPairsOfApps[srcApp][srcRootMemberName + ":id"]
+	idInDstApp := eval.AttrNameIDPairsOfApps[dstApp][dstRootMemberName + ":id"]
+
+	query1 := fmt.Sprintf(
+		`SELECT to_id FROM attribute_changes WHERE
+		from_app = %s and from_member = %s and from_id = %s and from_attr = %s and from_val = '%s' 
+		and to_app = %s and to_member = %s and to_attr = %s and migration_id = %s`,
+		srcApp, srcRootMemberID, userID, idInSrcApp, userID,
+		dstApp, dstRootMemberID, idInDstApp, migrationID, 
+	)
+
+	log.Println(query1)
+
+	data1, err1 := db.DataCall1(eval.StencilDBConn, query1)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	if data1["to_id"] == nil {
+		log.Fatal("Cannot get user ID in the destination application!")
+	}
+
+	return fmt.Sprint(data1["to_id"])
 
 }
