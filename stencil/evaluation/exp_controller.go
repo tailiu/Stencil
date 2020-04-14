@@ -2,7 +2,6 @@ package evaluation
 
 import (
 	"stencil/SA1_migrate"
-	"stencil/reference_resolution"
 	"stencil/apis"
 	"stencil/db"
 	// "database/sql"
@@ -1961,7 +1960,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 497
+	edgeCounterRangeStart := 506
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -2085,10 +2084,7 @@ func Exp7Test() {
 			}
 
 
-			migratedUserID := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn, 
-				migrationIDs[i],
-			)
+			migratedUserID := evalConfig.getNextUserID(migrationIDs[i])
 
 			enableBags = true
 
@@ -2126,10 +2122,7 @@ func Exp7Test() {
 
 			if compareWithDatabagsNotEnabled {
 
-				migratedUserID1 := reference_resolution.GetNextUserID(
-					evalConfig.StencilDBConn1, 
-					migrationIDs1[i],
-				)
+				migratedUserID1 := evalConfig.getNextUserID(migrationIDs1[i])
 	
 				enableBags = false
 	
@@ -2339,10 +2332,7 @@ func Exp7v2() {
 			}
 
 
-			migratedUserID := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn, 
-				migrationIDs[i],
-			)
+			migratedUserID := evalConfig.getNextUserID(migrationIDs[i])
 
 			enableBags = true
 
@@ -2354,10 +2344,7 @@ func Exp7v2() {
 
 
 
-			migratedUserID1 := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn1, 
-				migrationIDs1[i],
-			)
+			migratedUserID1 := evalConfig.getNextUserID(migrationIDs1[i])
 
 			enableBags = false
 
@@ -2602,10 +2589,7 @@ func Exp7v3() {
 			}
 
 
-			migratedUserID := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn, 
-				migrationIDs[i],
-			)
+			migratedUserID := evalConfig.getNextUserID(migrationIDs[i])
 
 			enableBags = true
 
@@ -2615,12 +2599,7 @@ func Exp7v3() {
 				toAppID, userID, fromAppID,
 			)
 
-
-
-			migratedUserID1 := reference_resolution.GetNextUserID(
-				evalConfig.StencilDBConn1, 
-				migrationIDs1[i],
-			)
+			migratedUserID1 := evalConfig.getNextUserID(migrationIDs1[i])
 
 			enableBags = false
 
@@ -2630,7 +2609,6 @@ func Exp7v3() {
 				toAppID, userID, fromAppID,
 			)
 
-			
 			totalDanglingObjs = mergeObjects(totalDanglingObjs, danglingObjs)
 			totalDanglingObjs1 = mergeObjects(totalDanglingObjs1, danglingObjs1)
 			

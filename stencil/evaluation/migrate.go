@@ -3,7 +3,6 @@ package evaluation
 import (
 	"stencil/db"
 	"stencil/SA1_migrate"
-	"stencil/reference_resolution"
 	"database/sql"
 	"log"
 	"strconv"
@@ -107,10 +106,7 @@ func migrateUsersInExp7(evalConfig *EvalConfig, stencilDBConnName string,
 
 			stencilDBConn = getDBConnByName(evalConfig, stencilDBConnName)
 
-			userID = reference_resolution.GetNextUserID(
-				stencilDBConn, 
-				migrationIDs[(seqNum - 1) * userNum + j],
-			)
+			userID = evalConfig.getNextUserID(migrationIDs[(seqNum - 1) * userNum + j])
 		}
 
 		log.Println("Migrating user ID:", userID)
