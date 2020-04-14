@@ -157,23 +157,24 @@ type MappedMemberValue struct {
 }
 
 type MigrationWorker struct {
-	uid           string
-	mtype         string
-	threadID      int
-	visitedNodes  VisitedNodes
-	processedBags ProcessedBags
-	refCreator    ReferenceCreator
-	SrcAppConfig  config.AppConfig
-	DstAppConfig  config.AppConfig
-	mappings      config.MappedApp
-	Root          *DependencyNode
-	logTxn        *transaction.Log_txn
-	FTPClient     *ftp.ServerConn
-	tx            Transactions
-	Logger        *logg.Logger
-	Size          int
-	mThread       *MigrationThreadController
-	FTPFlag       bool
+	uid            string
+	mtype          string
+	threadID       int
+	visitedNodes   VisitedNodes
+	processedBags  ProcessedBags
+	refCreator     ReferenceCreator
+	SrcAppConfig   config.AppConfig
+	DstAppConfig   config.AppConfig
+	mappings       config.MappedApp
+	Root           *DependencyNode
+	logTxn         *transaction.Log_txn
+	FTPClient      *ftp.ServerConn
+	tx             Transactions
+	Logger         *logg.Logger
+	Size           int
+	mThread        *MigrationThreadController
+	FTPFlag        bool
+	DeleteRootFlag bool
 }
 
 type VisitedNodes struct {
@@ -214,4 +215,5 @@ type MigrationThreadController struct {
 	size            int
 	LoggerDebugFlag bool
 	FTPFlag         bool
+	DeleteRootFlag  bool
 }

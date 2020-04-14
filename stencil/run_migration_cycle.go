@@ -15,15 +15,15 @@ func getUID(appID string) string {
 	switch appID {
 	case "2":
 		{
-			query = "SELECT to_id as id FROM identity_table it where to_app = 2 and to_member = 56 "
+			query = "SELECT to_id as id FROM attribute_changes it where to_app = 2 and to_member = 56 "
 		}
 	case "4":
 		{
-			query = "SELECT to_id as id FROM identity_table it where to_app = 4 and to_member = 155 "
+			query = "SELECT to_id as id FROM attribute_changes it where to_app = 4 and to_member = 155 "
 		}
 	case "3":
 		{
-			query = "SELECT to_id as id FROM identity_table it where to_app = 3 and to_member = 119 "
+			query = "SELECT to_id as id FROM attribute_changes it where to_app = 3 and to_member = 119 "
 		}
 	default:
 		{
@@ -57,34 +57,40 @@ func main() {
 	display := flag.Bool("display", false, "")
 	displayInFirstPhase := flag.Bool("firstphase", false, "")
 	markAsDelete := flag.Bool("dmad", false, "")
+	debug := flag.Bool("debug", false, "")
+	rootAlive := flag.Bool("dontkillroot", false, "")
 
 	flag.Parse()
 
-	apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}}
+	// apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}}
+	apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"twitter", "3"}}
 
 	totalApps := len(apps)
 
 	for i := 0; i < totalApps; i++ {
+
 		uid := *uidInput
-		if i != 0 {
+
+		if i > 0 {
 			uid = getUID(apps[i][1])
 		}
 
 		srcAppName, srcAppID := apps[i][0], apps[i][1]
-		var dstAppID, dstAppName string
 
+		var dstAppID, dstAppName string
 		if i == totalApps-1 {
 			dstAppName, dstAppID = apps[0][0], apps[0][1]
 		} else {
 			dstAppName, dstAppID = apps[i+1][0], apps[i+1][1]
 		}
 
-		wg.Add(1)
+		apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, *mtype, *blade, *bags, *ftp, *debug, *rootAlive)
 
-		go apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, *mtype, *blade, *bags, *ftp)
-		go SA1_display.StartDisplay(uid, srcAppID, dstAppID, *mtype, *threads, &wg, *display, *displayInFirstPhase, *markAsDelete, *blade)
-
-		wg.Wait()
+		if i == 0 && *display {
+			wg.Add(1)
+			go SA1_display.StartDisplay(uid, srcAppID, dstAppID, *mtype, *threads, &wg, *display, *displayInFirstPhase, *markAsDelete, *blade)
+			wg.Wait()
+		}
 
 		// print spaces before new migration
 		for j := 1; j < 50; j++ {

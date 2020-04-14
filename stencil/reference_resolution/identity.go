@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"stencil/db"
 	"stencil/common_funcs"
+	"stencil/db"
 )
 
 /*
@@ -87,7 +87,7 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolution,
 	}
 
 	// If recurrsion has not started yet and we cannot find IDRows, then
-	// we should directly return null result and 
+	// we should directly return null result and
 	// not execute the code in the if block since this could directly return
 	// the provided ID to us which is wrong!
 	if len(IDRows) == 0 && inRecurrsion {
@@ -106,17 +106,17 @@ func forwardTraverseIDTable(refResolutionConfig *RefResolution,
 		// 	(ID.member != orginalID.member || ID.id != orginalID.id) {
 		// We remove the conditions: ID.member != orginalID.member || ID.id != orginalID.id
 		// because there could be data referencing the same data
-		// For example, when resolving tweets.guid in the mapping Twitter.tweets -> Diaspora.posts, 
+		// For example, when resolving tweets.guid in the mapping Twitter.tweets -> Diaspora.posts,
 		// tweets.guid is referring to the id of its own tweets.
-		// In this case, we cannot use the condition to filter its own data. 
-		// If there are more than one mappings to different tables, 
+		// In this case, we cannot use the condition to filter its own data.
+		// If there are more than one mappings to different tables,
 		// for example, when resolving Diaspora.notification_actors.notification_id, there are two ids:
 		// Twitter.notifications.id -> Diaspora.notifications.id and Diaspora.notification_actors.id,
-		// we use the third argument in the #REF to point out which table we are referring to 
+		// we use the third argument in the #REF to point out which table we are referring to
 		// (excluding Twitter.notifications.id -> Diaspora.notifications.id (same as the original data under check)
-		// in that example). 
+		// in that example).
 		if ID.app == refResolutionConfig.appID {
-	
+
 			resData := CreateIdentity(ID.app, ID.member, ID.id)
 
 			res = append(res, resData)
@@ -134,7 +134,7 @@ func getInsertIntoIDChangesTableQuery(refResolutionConfig *RefResolution,
 	query := fmt.Sprintf(
 		`INSERT INTO id_changes (app_id, table_id, old_id, new_id, migration_id)
 		VALUES (%s, %s, %s, %s, %d)`,
-		refResolutionConfig.appID, 
+		refResolutionConfig.appID,
 		refResolutionConfig.appTableNameIDPairs[table],
 		IDToBeUpdated,
 		id,
@@ -152,7 +152,7 @@ func getUpdateToIDInIdentityTableQuery(refResolutionConfig *RefResolution,
 		`UPDATE identity_table SET to_id = %s 
 		WHERE to_app = %s and to_member = %s 
 		and to_id = %s`,
-		id, refResolutionConfig.appID, 
+		id, refResolutionConfig.appID,
 		refResolutionConfig.appTableNameIDPairs[table],
 		IDToBeUpdated,
 	)
@@ -229,7 +229,7 @@ func GetPreIDByBackTraversal(refResolutionConfig *RefResolution,
 	}
 
 	for _, data1 := range data {
-		
+
 		from_app := fmt.Sprint(data1["from_app"])
 		from_member := fmt.Sprint(data1["from_member"])
 		from_id := fmt.Sprint(data1["from_id"])
@@ -261,7 +261,7 @@ func getRootMembersOfApps(stencilDBConn *sql.DB) map[string]string {
 	}
 
 	rootMembers := make(map[string]string)
-	
+
 	for _, data1 := range data {
 		rootMembers[fmt.Sprint(data1["app_id"])] =
 			fmt.Sprint(data1["root_member_id"])
@@ -291,7 +291,7 @@ func GetNextUserID(stencilDBConn *sql.DB, migrationID string) string {
 	userID := fmt.Sprint(data["user_id"])
 	srcApp := fmt.Sprint(data["src_app"])
 	dstApp := fmt.Sprint(data["dst_app"])
-	
+
 	query1 := fmt.Sprintf(
 		`SELECT to_id FROM identity_table 
 		WHERE from_app = %s and from_member = %s and from_id = %s 
@@ -382,7 +382,7 @@ func getAppRootMemberID(stencilDBConn *sql.DB, appID string) string {
 func getPrevUserIDsByBackTraversal(stencilDBConn *sql.DB,
 	appID, rootMemberID, userID string) map[string]string {
 
-	query := fmt.Sprintf(`SELECT * FROM identity_table 
+	query := fmt.Sprintf(`SELECT * FROM attribute_changes 
 		WHERE to_app = %s and to_member = %s and to_id = %s`,
 		appID, rootMemberID, userID)
 

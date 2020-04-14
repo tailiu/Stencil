@@ -337,12 +337,12 @@ func GetRowsFromIDTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]m
 
 func GetRowsFromAttrTableByTo(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
 
-	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM attribute_changes WHERE to_app = $1 AND to_member = $2 AND to_id = $3;"
 	return DataCall(dbConn, query, app, member, id)
 }
 
 func GetRowsFromAttrTableByFrom(dbConn *sql.DB, app, member string, id int64) ([]map[string]interface{}, error) {
-	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM identity_table WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
+	query := "SELECT from_app, from_member, from_id, to_app, to_member, to_id, migration_id FROM attribute_changes WHERE from_app = $1 AND from_member = $2 AND from_id = $3;"
 	return DataCall(dbConn, query, app, member, id)
 }
 
@@ -705,6 +705,7 @@ func CheckMigrationRegistration(uid, src_app, dst_app string, dbConn *sql.DB) bo
 func RegisterMigration(uid, src_app, dst_app, mtype string, migrationID, number_of_threads int, dbConn *sql.DB, logical bool) bool {
 	query := "INSERT INTO migration_registration (migration_id, user_id, src_app, dst_app, migration_type, number_of_threads, is_logical) VALUES ($1, $2, $3, $4, $5, $6, $7)"
 	if _, err := dbConn.Exec(query, migrationID, uid, src_app, dst_app, mtype, number_of_threads, logical); err != nil {
+		fmt.Printf("Args | migrationID: '%v', uid: '%v', src_app: '%v', dst_app: '%v', mtype: '%v', threads: '%v', logical: '%v' \n", migrationID, uid, src_app, dst_app, mtype, number_of_threads, logical)
 		log.Fatal("Insert Error in RegisterMigration", err)
 		return false
 	}

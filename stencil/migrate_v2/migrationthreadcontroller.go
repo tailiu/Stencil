@@ -16,6 +16,8 @@ func (mThread *MigrationThreadController) Init() {
 
 	mThread.Logger = helper.CreateLogger(mThread.LoggerDebugFlag)
 
+	mThread.Logger.Info("UID: ", mThread.UID)
+
 	if mThread.EnableBags {
 		mThread.Logger.Info("Bags: Enabled")
 	} else {
@@ -121,17 +123,18 @@ func (mThread *MigrationThreadController) CreateMigrationWorker(threadID int) Mi
 	}
 
 	mWorker := MigrationWorker{
-		uid:          mThread.UID,
-		threadID:     threadID,
-		SrcAppConfig: srcAppConfig,
-		DstAppConfig: dstAppConfig,
-		mappings:     mThread.mappings,
-		logTxn:       &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
-		mtype:        mThread.MType,
-		visitedNodes: VisitedNodes{},
-		mThread:      mThread,
-		FTPFlag:      mThread.FTPFlag,
-		Logger:       helper.CreateLogger(mThread.LoggerDebugFlag)}
+		uid:            mThread.UID,
+		threadID:       threadID,
+		SrcAppConfig:   srcAppConfig,
+		DstAppConfig:   dstAppConfig,
+		mappings:       mThread.mappings,
+		logTxn:         &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
+		mtype:          mThread.MType,
+		visitedNodes:   VisitedNodes{},
+		mThread:        mThread,
+		FTPFlag:        mThread.FTPFlag,
+		DeleteRootFlag: mThread.DeleteRootFlag,
+		Logger:         helper.CreateLogger(mThread.LoggerDebugFlag)}
 
 	mWorker.visitedNodes.Init()
 
