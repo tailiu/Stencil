@@ -403,8 +403,6 @@ func (display *display) Display(dataHints []*HintStruct) error {
 
 	var queries1, queries2 []string
 
-	var query1, query2, query3 string
-
 	for _, dataHint := range dataHints {
 
 		// we try to display data in the UNIT of a node
@@ -419,6 +417,8 @@ func (display *display) Display(dataHints []*HintStruct) error {
 			log.Println(`This data is not migrated by the currently checked user,
 				but this display thread will also display this data`)
 		}
+
+		var query1, query2, query3 string
 
 		log.Println("Set unresolved attributes to be STENCIL_NULLs before displaying the data")
 
@@ -672,13 +672,14 @@ func (display *display) putIntoDataBag(dataHints []*HintStruct) error {
 
 	display.setDstUserIDIfNotSet()
 
+	log.Println("Going to put data into data bags")
+	
 	var queries1, queries2, queries3 []string
 
-	var q1, q2, q3 string
-
-	log.Println("Going to put data into data bags")
-
 	for _, dataHint := range dataHints {
+
+		var attrsToBeSetToNULLs []string
+		var q1, q2, q3 string
 
 		// we try to avoid putting data into data bags if it is not in the
 		// currently checked user's migration
@@ -694,7 +695,7 @@ func (display *display) putIntoDataBag(dataHints []*HintStruct) error {
 		// In both cases, there is no need to execute queries1 and queries2 again.
 		if dataHint.Data != nil {
 
-			attrsToBeSetToNULLs := display.getAttributesToSetAsSTENCILNULLs(dataHint)
+			attrsToBeSetToNULLs = display.getAttributesToSetAsSTENCILNULLs(dataHint)
 
 			var STENCIL_NULL interface{}
 
@@ -741,12 +742,14 @@ func (display *display) putIntoDataBag(dataHints []*HintStruct) error {
 		)
 
 		log.Println("^^^^^^^^^^^ Put Data Into Data Bags ^^^^^^^^^^^")
-		log.Println("Attributes need to be set as STENCIL_NULLs (-1):", attrsToBeSetToNULLs)
-		log.Println("INSERT INTO data_bags:", q1)
-		if !display.markAsDelete {
-			log.Println("DELETE FROM the application:", q2)
-		} else {
-			log.Println("MARK AS DELETE in the application:", q2)
+		if dataHint.Data != nil {
+			log.Println("Attributes need to be set as STENCIL_NULLs (-1):", attrsToBeSetToNULLs)
+			log.Println("INSERT INTO data_bags:", q1)
+			if !display.markAsDelete {
+				log.Println("DELETE FROM the application:", q2)
+			} else {
+				log.Println("MARK AS DELETE in the application:", q2)
+			}
 		}
 		log.Println("UPDATE display_flags:", q3)
 		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
