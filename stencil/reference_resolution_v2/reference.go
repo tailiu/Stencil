@@ -249,7 +249,7 @@ func (rr *RefResolution) addToResolvedReferences(
 	return fmt.Sprintf(
 		`INSERT INTO resolved_references 
 		(app, member, id, migration_id, attr, updated_val)
-		VALUES (%s, %s, %s, %d, %s, %s)`,
+		VALUES (%s, %s, %s, %d, %s, '%s')`,
 		rr.appID,
 		rr.appTableNameIDPairs[memberToBeUpdated],
 		IDToBeUpdated,

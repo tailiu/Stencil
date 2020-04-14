@@ -227,9 +227,8 @@ func (rr *RefResolution) getUpdateToAttrInAttrChangesTableQuery(
 	memberName, attrToBeUpdated, attrValToBeUpdated, newAttrVal string) string {
 		
 	query := fmt.Sprintf(
-		`UPDATE attribute_changes SET to_val = %s 
-		WHERE to_app = %s and to_member = %s 
-		and to_attr = %s and to_val = %s`,
+		`UPDATE attribute_changes SET to_val = '%s' WHERE
+		to_app = %s and to_member = %s and to_attr = %s and to_val = '%s'`,
 		newAttrVal, 
 		rr.appID, 
 		rr.appTableNameIDPairs[memberName],

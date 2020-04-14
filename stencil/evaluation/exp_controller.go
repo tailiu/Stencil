@@ -1926,8 +1926,8 @@ func Exp7Test() {
 	log.Println("===============================")
 
 	migrationSeq := []string {
-		"diaspora", "mastodon",
-		// "diaspora", "mastodon", "gnusocial",
+		// "diaspora", "mastodon",
+		"diaspora", "mastodon", "gnusocial",
 		// "diaspora", "mastodon", "gnusocial", "twitter",
 		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora",
 		// "diaspora", "mastodon", "gnusocial", 
@@ -1960,7 +1960,7 @@ func Exp7Test() {
 	migrationNum := 1
 
 	// edgeCounterRangeStart := 400
-	edgeCounterRangeStart := 506
+	edgeCounterRangeStart := 510
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -2060,15 +2060,13 @@ func Exp7Test() {
 			// Only when the start application is Diaspora do we need to do this
 			if i == 0 && fromApp == "diaspora" {
 
-				totalRemainingObjsInOriginalApp = 
-					getTotalObjsNotIncludingMediaOfAppInExp7V2(
-						evalConfig, fromApp, true)
+				totalRemainingObjsInOriginalApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+					evalConfig, fromApp, true)
 				
 				if compareWithDatabagsNotEnabled {
 
-					totalRemainingObjsInOriginalApp1 = 
-						getTotalObjsNotIncludingMediaOfAppInExp7V2(
-							evalConfig, fromApp, false)
+					totalRemainingObjsInOriginalApp1 = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+						evalConfig, fromApp, false)
 				}
 				
 			}
