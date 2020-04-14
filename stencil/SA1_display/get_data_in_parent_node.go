@@ -8,31 +8,7 @@ import (
 	"strings"
 )
 
-func (display *display) checkResolveReferenceInGetDataInParentNode(table, col, attrVal, id string) (string, error) {
-	
-	log.Println("+++++++++++++++++++")
-	log.Println(table)
-	log.Println(col)
-	log.Println("+++++++++++++++++++")
-
-	log.Println("Parent Node: before checking reference resolved or not")
-
-	tableID := display.dstAppConfig.tableNameIDPairs[table]
-	colID := display.dstAppConfig.colNameIDPairs[table + ":" + col]
-
-	// Normally, there must exist one that needs to be resolved. 
-	// But this could happen for example, in Diaspora, posts.id depends on aspects.shareable_id
-	// There is no need to resolve id here in the else case
-	if display.needToResolveReference(table, col) {
-		display.logUnresolvedRefAndData(table, tableID, id, col)
-		return display.checkResolveRefWithIDInData(table, col, tableID, colID, id, attrVal)
-	} else {
-		return "", NoReferenceToResolve
-	}
-}
-
-func (display *display) getHintInParentNode(hints []*HintStruct, 
-	conditions []string, pTag string) (*HintStruct, error) {
+func (display *display) getHintInParentNode(hints []*HintStruct, conditions []string, pTag string) (*HintStruct, error) {
 	
 	// log.Println(hints[0])
 
@@ -215,7 +191,7 @@ func (display *display) getHintInParentNode(hints []*HintStruct,
 
 func (display *display) dataFromParentNodeExists(hints []*HintStruct, pTag string) (bool, error) {
 	
-	log.Println("check dataFromParentNodeExists")
+	// log.Println("check if data from the parent node exists")
 
 	displayExistenceSetting, _ := hints[0].GetDisplayExistenceSetting(display, pTag)
 

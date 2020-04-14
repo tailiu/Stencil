@@ -229,9 +229,9 @@ func ReferenceExists(allMappings *config.SchemaMappings,
 														if fromAttr1, ok1 := toTable1.Mapping[attr]; ok1 {
 															if fromAttr1 == secondArg {
 																if thirdArg != "" {
-																	log.Println(fromAttr)
-																	log.Println(thirdArg)
-																	log.Println(toTable1.Table)
+																	// log.Println(fromAttr)
+																	// log.Println(thirdArg)
+																	// log.Println(toTable1.Table)
 																	if thirdArg == toTable1.Table {
 																		return true
 																	}

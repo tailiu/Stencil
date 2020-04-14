@@ -34,12 +34,10 @@ func (display *display) getADataInOwner(hints []*HintStruct, ownership *config.O
 
 	if !display.resolveReference {
 		
-		for _, hint := range hints {
-
-			if hint.Table == table {
-				depVal = fmt.Sprint(hint.Data[attr])
+		for _, hint1 := range hints {
+			if hint1.Table == table {
+				depVal = fmt.Sprint(hint1.Data[attr])
 			}
-
 		}
 
 		if depVal == "" {
@@ -54,7 +52,7 @@ func (display *display) getADataInOwner(hints []*HintStruct, ownership *config.O
 		for _, hint1 := range hints {
 			if hint1.Table == table {
 				id = fmt.Sprint(hint1.KeyVal["id"])
-				attrVal = fmt.Sprint(hint.Data[attr])
+				attrVal = fmt.Sprint(hint1.Data[attr])
 			}
 		}
 

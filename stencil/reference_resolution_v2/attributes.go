@@ -110,7 +110,7 @@ func (rr *RefResolution) getRowsFromAttrChangesTableByTo(attr *Attribute) []map[
 
 	query := fmt.Sprintf(
 		`SELECT * FROM attribute_changes WHERE 
-		to_app = %s and to_member = %s and to_attr = %s and to_id = '%s'`,
+		to_app = %s and to_member = %s and to_attr = %s and to_id = %s`,
 		attr.app, attr.member, attr.attrName, attr.id,
 	)
 

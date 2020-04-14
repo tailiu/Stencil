@@ -329,9 +329,9 @@ func (display *display) isDataMigratedAndAlreadyDisplayed(dataHint *HintStruct) 
 	data := db.GetAllColsOfRows(display.stencilDBConn, query)
 
 	if len(data) == 0 {
-		return true
-	} else {
 		return false
+	} else {
+		return true
 	}
 
 }
@@ -376,7 +376,7 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 
 	updatedAttrs := display.rr.GetUpdatedAttributes(tableID, id)
 
-	log.Println("attributes has already been updated:", updatedAttrs)
+	log.Println("attributes have already been updated:", updatedAttrs)
 
 	var attrsToBeSetToNULLs []string
 
@@ -448,16 +448,15 @@ func (display *display) Display(dataHints []*HintStruct) error {
 			display.migrationID, display.srcAppConfig.appID,
 			display.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
 
-		log.Println("**************************************")
+		log.Println("**************** Display Data ****************")
+		log.Println("Attributes need to be set as STENCIL_NULLs (-1):", attrsToBeSetToNULLs)
 		log.Println("Update the application table:")
 		log.Println(query1)
-		log.Println("Attributes need to be set as NULL:")
-		log.Println(attrsToBeSetToNULLs)
 		log.Println("Update the display_flags table:")
 		log.Println(query2)
 		log.Println("Update the evaluation table:")
 		log.Println(query3)
-		log.Println("**************************************")
+		log.Println("**********************************************")
 
 		queries1 = append(queries1, query1)
 		queries2 = append(queries2, query2, query3)
@@ -710,8 +709,7 @@ func (display *display) putIntoDataBag(dataHints []*HintStruct) error {
 			procData := addTableNameToDataAttibutes(dataHint.Data, dataHint.Table)
 
 			q1 = fmt.Sprintf(
-				`INSERT INTO data_bags 
-				(app, member, id, data, user_id, migration_id) VALUES 
+				`INSERT INTO data_bags (app, member, id, data, user_id, migration_id) VALUES 
 				(%s, %s, %d, '%s', %s, %d)`,
 				display.dstAppConfig.appID,
 				dataHint.TableID,
@@ -736,14 +734,14 @@ func (display *display) putIntoDataBag(dataHints []*HintStruct) error {
 		}
 
 		q3 = fmt.Sprintf(
-			`UPDATE display_flags SET 
-			display_flag = false, updated_at = now() 
+			`UPDATE display_flags SET display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
 			display.dstAppConfig.appID,
 			dataHint.TableID, dataHint.KeyVal["id"],
 		)
 
-		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+		log.Println("^^^^^^^^^^^ Put Data Into Data Bags ^^^^^^^^^^^")
+		log.Println("Attributes need to be set as STENCIL_NULLs (-1):", attrsToBeSetToNULLs)
 		log.Println("INSERT INTO data_bags:", q1)
 		if !display.markAsDelete {
 			log.Println("DELETE FROM the application:", q2)
@@ -751,7 +749,7 @@ func (display *display) putIntoDataBag(dataHints []*HintStruct) error {
 			log.Println("MARK AS DELETE in the application:", q2)
 		}
 		log.Println("UPDATE display_flags:", q3)
-		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+		log.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
 		queries1 = append(queries1, q1)
 		queries2 = append(queries2, q2)

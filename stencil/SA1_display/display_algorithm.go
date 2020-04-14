@@ -71,7 +71,15 @@ func (display *display) DisplayThread() {
 // but can ONLY put the migrating user's data into data bags.
 func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct, secondRound, firstCall bool) error {
 	
-	log.Println("Check Data:", *oneMigratedData)
+	log.Println("==================== Check Data ====================")
+
+	log.Println(*oneMigratedData)
+
+	// This can happen when we may check other users' roots after traversing inter-dependencies
+	if display.isDataNotMigratedAndAlreadyDisplayed(oneMigratedData) {
+		log.Println("This data is not migrated and already displayed")
+		return common_funcs.CompletelyDisplayed
+	}
 
 	// This is an optimization to avoid checking alreday checked and displayed data
 	// since this is the only the first call, there is no need to proceed to check the 
@@ -79,12 +87,6 @@ func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct,
 	if display.isDataMigratedAndAlreadyDisplayed(oneMigratedData) && firstCall {
 		log.Println("This data has already been checked and displayed and it is also the first call in a recursion")
 		return common_funcs.DataAlreadyDisplayed
-	}
-
-	// This can happen when we may check other users' roots after traversing inter-dependencies
-	if display.isDataNotMigratedAndAlreadyDisplayed(oneMigratedData) {
-		log.Println("This data is not migrated and already displayed")
-		return common_funcs.CompletelyDisplayed
 	}
 
 	log.Println("==================== Check Intra-node dependencies ====================")
@@ -180,7 +182,8 @@ func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct,
 				// or other users' root nodes
 				if len(dataInOwnerNode) != 0 {
 
-					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := display.checkDisplayConditionsInNode(dataInOwnerNode)
+					displayedDataInOwnerNode, notDisplayedDataInOwnerNode := display.checkDisplayConditionsInNode(
+						dataInOwnerNode)
 					
 					if len(displayedDataInOwnerNode) != 0 {
 
@@ -254,7 +257,7 @@ func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct,
 					if err4 != nil {
 						log.Println(err4)
 					} else {
-						log.Println(*dataInParentNode)
+						log.Println("One piece of data in a parent node:", *dataInParentNode)
 					}
 
 					displaySettingInDeps, err5 := oneMigratedData.GetDisplaySettingInDependencies(
