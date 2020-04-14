@@ -31,12 +31,14 @@ func main() {
 	display := flag.Bool("display", false, "")
 	displayInFirstPhase := flag.Bool("firstphase", false, "")
 	markAsDelete := flag.Bool("dmad", false, "")
+	debug := flag.Bool("debug", false, "")
+	rootAlive := flag.Bool("dontkillroot", false, "")
 
 	flag.Parse()
 
 	wg.Add(1)
 
-	go apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags, *ftp)
+	go apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags, *ftp, *debug, *rootAlive)
 	go SA1_display.StartDisplay(*uid, *srcAppID, *dstAppID, *mtype, *threads, &wg, *display, *displayInFirstPhase, *markAsDelete, *blade)
 
 	wg.Wait()

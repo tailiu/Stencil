@@ -116,16 +116,14 @@ func (mWorker *MigrationWorker) CallBagsMigration(userID, bagAppID string, threa
 		mWorker.Logger.Fatalf("UNABLE TO FETCH BAGS FOR USER: %s | %s", userID, err)
 		return err
 	} else if len(bagRows) > 0 {
-
-		mWorker.Logger.Infof("%s | User: '%s' | App: '%s' | Bags Count: '%v' \n", color.LightMagenta.Render("Starting Bag Migration"), userID, bagAppID, len(bagRows))
-
+		mWorker.Logger.Infof("\n\n%s | User: '%s' | App: '%s' | Bags Count: '%v' \n", color.LightMagenta.Render("Starting Bag Migration"), userID, bagAppID, len(bagRows))
 		bagWorker := mWorker.mThread.CreateBagWorker(userID, bagAppID, mWorker.DstAppConfig.AppID, threadID)
 
 		for _, bagRow := range bagRows {
 
 			fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 			if bagWorker.processedBags.Exists(fmt.Sprint(bagRow["pk"])) {
-				mWorker.Logger.Tracef("Bag Already Processed | ID: %v | PK: %v \n", bagRow["id"], bagRow["pk"])
+				mWorker.Logger.Infof("Bag Already Processed | ID: %v | PK: %v \n", bagRow["id"], bagRow["pk"])
 				continue
 			}
 
@@ -133,7 +131,7 @@ func (mWorker *MigrationWorker) CallBagsMigration(userID, bagAppID string, threa
 
 				bagWorker.processedBags.Update(bagStruct.Node)
 
-				bagWorker.Logger.Tracef("Processing Bag | ID: %v | PK: %v \n Data | %v \n", bagStruct.ID, bagStruct.PK, bagStruct.Node.Data)
+				bagWorker.Logger.Infof("Processing Bag | %s | ID: %v | PK: %v \n Data | %v \n", bagStruct.Node.Tag.Name, bagStruct.ID, bagStruct.PK, bagStruct.Node.Data)
 
 				if err := bagWorker.InitTransactions(); err != nil {
 					return err
@@ -157,12 +155,10 @@ func (mWorker *MigrationWorker) CallBagsMigration(userID, bagAppID string, threa
 					return err
 				}
 				log.Println(fmt.Sprintf("COMMITTED bag { %s } | PK: %s", bagStruct.Node.Tag.Name, bagStruct.PK))
-
 			} else {
 				bagWorker.Logger.Fatal(fmt.Sprintf("UNABLE TO CREATE bag struct | bagMemberID:%s  bagRowID:%s | %s", bagRow["member"], bagRow["id"], err))
 			}
 		}
-
 		bagWorker.CloseDBConns()
 	} else {
 		mWorker.Logger.Infof("%s | User: '%s' | App: '%s' \n", color.LightMagenta.Render("No Bags Found"), userID, bagAppID)

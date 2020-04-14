@@ -623,13 +623,18 @@ func (mWorker *MigrationWorker) HandleUnmappedMembersOfNode(mapping config.Mappi
 
 func (mWorker *MigrationWorker) DeleteRoot(threadID int) error {
 
+	if mWorker.DeleteRootFlag {
+		color.LightRed.Println("***  Root deletion is turned off  ***")
+		return nil
+	}
+
 	if err := mWorker.InitTransactions(); err != nil {
 		mWorker.Logger.Fatal("@DeleteRoot > InitTransactions", err)
 		return err
 	}
 	defer mWorker.RollbackTransactions()
 
-	if err := mWorker.DeleteNode(mWorker.Root); err != nil {
+	if err := mWorker.HandleNodeDeletion(mWorker.Root, false); err != nil {
 		mWorker.Logger.Fatal("@DeleteRoot:", err)
 		return err
 	}
@@ -795,14 +800,18 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 				mappedMemberDatum := mWorker.GetMappedMemberData(toTable, node)
 
 				if !mWorker.ValidateMappingConditions(toTable.Conditions, node.Data) {
-					mWorker.Logger.Info("Mapping conditions not validated!")
+					mWorker.Logger.Infof("%s: Mapping conditions not validated!\n", toTable.Table)
 					continue
+				} else {
+					mWorker.Logger.Infof("%s: Mapping conditions validated!\n", toTable.Table)
 				}
 
 				if !mappedMemberDatum.ValidateMappedData() {
-					mWorker.Logger.Info("Mapped data not validated!")
+					mWorker.Logger.Infof("%s: Mapped data not validated!\n", toTable.Table)
 					mWorker.Logger.Debug("mappedMemberDatum | ", mappedMemberDatum)
 					continue
+				} else {
+					mWorker.Logger.Infof("%s: Mapped data validated!\n", toTable.Table)
 				}
 
 				mWorker.Logger.Infof("Cols before merging: %v\n", mappedMemberDatum.ToCols())
@@ -1148,21 +1157,23 @@ func (mWorker *MigrationWorker) GetUserIDAppIDFromPreviousMigration(currentAppID
 	mWorker.Logger.Infof("Getting previous migration | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
 
 	if IDRows, err := mWorker.GetRowsFromAttrTable(currentAppID, currentRootMemberID, currentUIDInt, false); err == nil {
-		if len(IDRows) > 0 {
-			for _, IDRow := range IDRows {
-				prevRootMemberID := db.GetAppRootMemberID(mWorker.logTxn.DBconn, IDRow.FromAppID)
-				if strings.EqualFold(IDRow.FromMemberID, prevRootMemberID) {
-					fmt.Printf("@GetUserIDAppIDFromPreviousMigration | Previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", IDRow.FromAppID, IDRow.FromID, IDRow.FromMemberID)
-					if appName, err := db.GetAppNameByAppID(mWorker.logTxn.DBconn, IDRow.FromAppID); err != nil {
-						mWorker.Logger.Fatal(err)
-					} else {
-						return &App{Name: appName, ID: IDRow.FromAppID}, fmt.Sprint(IDRow.FromID), nil
-					}
-
+		// mWorker.Logger.Info("Fetched AttrRows: ", len(IDRows))
+		for _, IDRow := range IDRows {
+			// fmt.Println(IDRow)
+			prevRootMemberID := db.GetAppRootMemberID(mWorker.logTxn.DBconn, IDRow.FromAppID)
+			if strings.EqualFold(IDRow.FromMemberID, prevRootMemberID) {
+				mWorker.Logger.Infof("Previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", IDRow.FromAppID, IDRow.FromID, IDRow.FromMemberID)
+				if appName, err := db.GetAppNameByAppID(mWorker.logTxn.DBconn, IDRow.FromAppID); err != nil {
+					mWorker.Logger.Fatal(err)
+				} else {
+					return &App{Name: appName, ID: IDRow.FromAppID}, fmt.Sprint(IDRow.FromID), nil
 				}
+
 			}
 		}
+
 		mWorker.Logger.Infof("No previous migration found | App: '%v', UID: '%v', rootMemberID: '%v' \n", currentAppID, currentUIDInt, currentRootMemberID)
+
 		return nil, "", nil
 	} else {
 		mWorker.Logger.Fatalf("@GetUserIDAppIDFromPreviousMigration | App: '%s', UID: '%v', rootMemberID: '%s' | err => %v \n", currentAppID, currentUIDInt, currentRootMemberID, err)

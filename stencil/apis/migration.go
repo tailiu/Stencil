@@ -6,7 +6,7 @@ import (
 
 func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBlade, enableBags bool, args ...bool) {
 
-	enableFTP, debug := false, false
+	enableFTP, debug, rootAlive := false, false, false
 
 	if len(args) > 0 {
 		enableFTP = args[0]
@@ -14,6 +14,10 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBla
 
 	if len(args) > 1 {
 		debug = args[1]
+	}
+
+	if len(args) > 2 {
+		rootAlive = args[2]
 	}
 
 	mtController := migrate.MigrationThreadController{
@@ -25,6 +29,7 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBla
 		EnableBags:      enableBags,
 		FTPFlag:         enableFTP,
 		LoggerDebugFlag: debug,
+		DeleteRootFlag:  rootAlive,
 	}
 
 	mtController.Init()

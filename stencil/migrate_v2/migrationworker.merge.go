@@ -43,6 +43,7 @@ func (mWorker *MigrationWorker) MergeBagDataWithMappedData(mmd *MappedMemberData
 	if prevUIDs == nil {
 		prevUIDs = make(map[string]string)
 	}
+	mWorker.Logger.Info("Fetched previous UIDs | ", prevUIDs)
 	prevUIDs[mWorker.SrcAppConfig.AppID] = mWorker.uid
 
 	for _, fromTable := range mmd.SrcTables() {
@@ -101,6 +102,10 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 
 			if mapping, found := mWorker.FetchMappingsForBag(AttrRow.FromAppName, AttrRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, AttrRow.FromMember, dstMemberName); found {
 
+				mWorker.Logger.Tracef("Mapping found | %s(%s) : %s -> %s(%s) : %s \n", AttrRow.FromAppName, AttrRow.FromAppID, AttrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
+
+				merged := false
+
 				for _, toTable := range mapping.ToTables {
 					if !strings.EqualFold(toTable.Table, mmd.ToMember) {
 						continue
@@ -118,11 +123,12 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 								if mmv.Ref != nil {
 									mmv.Ref.appID = fmt.Sprint(bagRow["app"])
 									mmv.Ref.mergedFromBag = true
-									mWorker.Logger.Tracef("@FetchDataFromBags > REF merged for: %s.%s | %s.%s \n", toTable.Table, toAttr, AttrRow.FromAppName, mmv.FromAttr)
+									mWorker.Logger.Tracef("REF merged for: %s.%s | %s.%s \n", toTable.Table, toAttr, AttrRow.FromAppName, mmv.FromAttr)
 								}
 								mmd.Data[toAttr] = *mmv
 								delete(bagData, mmv.FromAttr)
-								mWorker.Logger.Tracef("@FetchDataFromBags > ATTR merged for: %s.%s\n", toTable.Table, toAttr)
+								mWorker.Logger.Tracef("ATTR merged for: %s.%s\n", toTable.Table, toAttr)
+								merged = true
 							}
 						} else {
 							mWorker.Logger.Debug(bagData)
@@ -131,27 +137,31 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 					}
 				}
 
-				if bagData.IsEmptyExcept() {
-					if err := db.DeleteBagV2(mWorker.tx.StencilTx, fmt.Sprint(bagRow["pk"])); err != nil {
-						mWorker.Logger.Fatal("@FetchDataFromBags > DeleteBagV2, Unable to delete bag | ", bagRow["pk"])
-						return err
-					} else {
-						log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Deleted BAG"), bagRow["pk"]))
-					}
-				} else {
-					log.Println(fmt.Sprintf("%s | %v", color.FgYellow.Render("BAG NOT EMPTY"), bagData))
-					if jsonData, err := json.Marshal(bagData); err == nil {
-						if err := db.UpdateBag(mWorker.tx.StencilTx, fmt.Sprint(bagRow["pk"]), mWorker.logTxn.Txn_id, jsonData); err != nil {
-							mWorker.Logger.Fatal("@FetchDataFromBags: UNABLE TO UPDATE BAG ", bagRow, err)
+				if merged {
+					if bagData.IsEmptyExcept() {
+						if err := db.DeleteBagV2(mWorker.tx.StencilTx, fmt.Sprint(bagRow["pk"])); err != nil {
+							mWorker.Logger.Fatal("@FetchDataFromBags > DeleteBagV2, Unable to delete bag | ", bagRow["pk"])
 							return err
 						} else {
-							log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightYellow.Render("Updated BAG"), bagRow["pk"]))
+							log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Deleted BAG"), bagRow["pk"]))
 						}
 					} else {
-						mWorker.Logger.Fatal("@FetchDataFromBags > len(bagData) != 0, Unable to marshall bag | ", bagData)
-						return err
+						log.Println(fmt.Sprintf("%s | %v", color.FgYellow.Render("BAG NOT EMPTY"), bagData))
+						if jsonData, err := json.Marshal(bagData); err == nil {
+							if err := db.UpdateBag(mWorker.tx.StencilTx, fmt.Sprint(bagRow["pk"]), mWorker.logTxn.Txn_id, jsonData); err != nil {
+								mWorker.Logger.Fatal("@FetchDataFromBags: UNABLE TO UPDATE BAG ", bagRow, err)
+								return err
+							} else {
+								log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightYellow.Render("Updated BAG"), bagRow["pk"]))
+							}
+						} else {
+							mWorker.Logger.Fatal("@FetchDataFromBags > len(bagData) != 0, Unable to marshall bag | ", bagData)
+							return err
+						}
 					}
 				}
+			} else {
+				mWorker.Logger.Tracef("Mapping not found | %s(%s) : %s -> %s(%s) : %s \n", AttrRow.FromAppName, AttrRow.FromAppID, AttrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
 			}
 		}
 		if err := mWorker.FetchDataFromBags(visitedRows, prevUIDs, mmd, AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, dstMemberID, dstMemberName); err != nil {

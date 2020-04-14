@@ -22,8 +22,9 @@ func main() {
 	bags := flag.Bool("bags", false, "")
 	debug := flag.Bool("debug", false, "")
 	ftp := flag.Bool("ftp", false, "")
+	rootAlive := flag.Bool("dontkillroot", false, "")
 
 	flag.Parse()
 
-	apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags, *ftp, *debug)
+	apis.StartMigration(*uid, *srcApp, *srcAppID, *dstApp, *dstAppID, *mtype, *blade, *bags, *ftp, *debug, *rootAlive)
 }
