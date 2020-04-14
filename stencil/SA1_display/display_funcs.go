@@ -1035,19 +1035,26 @@ func (display *display) getFirstArgsInREFByToTableToAttrInAllFromApps(
 
 }
 
-func (display *display) logUnresolvedRefAndData(tableName, tableID, id, unResolvedAttr string) {
+func (display *display) logUnresolvedRefAndData(tableName, tableID, unResolvedAttr string, id ...string) {
 
 	green := color.FgGreen.Render
-	log.Println(green("Unresolved attribute is:"), green(tableName + ":" + unResolvedAttr))
+	log.Println(green("Unresolved attribute is:"), green(tableName + "." + unResolvedAttr))
 
-	hint := CreateHint(tableName, tableID, id)
-	data, err := display.getOneRowBasedOnHint(hint)
+	if len(id) == 1 {
+		id1 := id[0]
+		hint := CreateHint(tableName, tableID, id1)
+		data, err := display.getOneRowBasedOnHint(hint)
 
-	if err != nil {
-		log.Println(green("The data has been deleted by application services"))
+		if err != nil {
+			log.Println(green("The data cannot be found"))
+		} else {
+			log.Println(green("The data (node member) containing the unresolved attribute is:"))
+			log.Println(green(transformMapToString(data)))
+		}
+	} else if len(id) == 0 {
+		log.Println(green("Since we do not have data id, we cannot get the data"))
 	} else {
-		log.Println(green("The data (node member) containing the unresolved attribute is:"))
-		log.Println(green(transformMapToString(data)))
+		log.Fatal("Only one id is allowed")
 	}
 
 }

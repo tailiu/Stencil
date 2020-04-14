@@ -223,13 +223,14 @@ func (rr *RefResolution) forwardTraverseAttrChangesTable(attr, orgAttr *Attribut
 	return res
 }
 
-func (rr *RefResolution) getUpdateToAttrInAttrChangesTableQuery(
+func (rr *RefResolution) getUpdateToAttrToIDInAttrChangesTableQuery(
 	memberName, attrToBeUpdated, attrValToBeUpdated, newAttrVal string) string {
 		
 	query := fmt.Sprintf(
-		`UPDATE attribute_changes SET to_val = '%s' WHERE
+		`UPDATE attribute_changes SET to_val = '%s' and to_id = %s WHERE
 		to_app = %s and to_member = %s and to_attr = %s and to_val = '%s'`,
 		newAttrVal, 
+		newAttrVal,
 		rr.appID, 
 		rr.appTableNameIDPairs[memberName],
 		rr.appAttrNameIDPairs[memberName + ":" + attrToBeUpdated],

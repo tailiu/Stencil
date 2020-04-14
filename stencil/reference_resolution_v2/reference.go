@@ -323,7 +323,7 @@ func (rr *RefResolution) updateReferences(refID, member, val, attr,
 				// This is to update to_id in the identity table
 				// There is no need to update id in the reference table
 				// since the reference table stores ids in the source app
-				updateToAttrQ0 := rr.getUpdateToAttrInAttrChangesTableQuery(
+				updateToAttrQ0 := rr.getUpdateToAttrToIDInAttrChangesTableQuery(
 					memberToBeUpdated, attrToBeUpdated, 
 					attrValToBeUpdated, val,
 				)

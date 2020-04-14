@@ -136,9 +136,9 @@ func (display *display) checkResolveReferenceInGetDataInNode(
 		
 		// If the reference has been resolved, then use the new reference to get data
 		if newVal != "" {
-			log.Println("reference1 has been resolved")
 			return display.getOneRowBasedOnDependency(table1, col1, newVal)
 		} else {
+			display.logUnresolvedRefAndData(table0, table0ID, col0, id)
 			return nil, err
 		}
 
@@ -171,6 +171,7 @@ func (display *display) checkResolveReferenceInGetDataInNode(
 
 		data2, err2 := display.checkReferenceIndeedResolved(table1, col1, table1ID, col1ID, value)
 		if err2 != nil {
+			display.logUnresolvedRefAndData(table1, table1ID, col1)
 			return nil, CannotGetDataAfterResolvingRef2
 		} else {
 			return data2, nil
@@ -204,7 +205,7 @@ func (display *display) checkResolveReferenceInGetDataInParentNode(table, col, a
 	// There is no need to resolve id here in the else case
 	if display.needToResolveReference(table, col) {
 		if newVal, err := display.checkResolveRefWithIDInData(table, col, tableID, colID, id, attrVal); err != nil {
-			display.logUnresolvedRefAndData(table, tableID, id, col)
+			display.logUnresolvedRefAndData(table, tableID, col, id)
 			return "", err
 		} else {
 			return newVal, nil
