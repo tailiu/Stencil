@@ -44,10 +44,11 @@ def execQuery(dbName, tableName, columns):
 
 if __name__ == "__main__":
     
-    for db in ["diaspora_test", "diaspora_10000", "diaspora_100000", "diaspora_1000000"]:
+    for db in ["gnusocial_test", "gnusocial", "gnusocial_template"]:
         diconnectOtherConns(db)
-        tables = getTables(db)
-        columns = ["commentable_id"]
+        # tables = getTables(db)
+        tables = ["profile"]
+        columns = ["nickname"]
         for table in tables:
             execQuery(db, table, columns)
         

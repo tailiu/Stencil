@@ -20,7 +20,8 @@ def getTables():
 def execQuery(tableName):
     conn, cur = getDBConn(dbName)
     with conn:
-        q = "ALTER TABLE \"%s\" ADD display_flag bool DEFAULT false;" %tableName
+        # q = "ALTER TABLE \"%s\" ADD display_flag bool DEFAULT false;" %tableName
+        q = "ALTER TABLE \"%s\" ADD COLUMN IF NOT EXISTS id int8;" %tableName
         print ">> %s STARTED!!!" % tableName
         cur.execute(q)
         conn.commit()
@@ -28,7 +29,7 @@ def execQuery(tableName):
 
 if __name__ == "__main__":
     
-    dbName  = "twitter_test"
+    dbName  = "gnusocial_template"
     threads = []
 
     for table in getTables():

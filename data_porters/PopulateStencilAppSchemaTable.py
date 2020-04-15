@@ -119,6 +119,7 @@ def addSchemaMappings(app_name):
                             if "$" not in mappedFromAttr:
                                 if "#" in mappedFromAttr:
                                     if "#REF" in mappedFromAttr:
+                                        mappedFromAttr = mappedFromAttr.replace("#REFHARD","")
                                         mappedFromAttr = mappedFromAttr.replace("#REF","")
                                         mappedFromAttr = mappedFromAttr.strip("()")
                                         if "#FETCH" in mappedFromAttr:

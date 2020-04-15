@@ -116,7 +116,8 @@ func (mWorker *MigrationWorker) CallBagsMigration(userID, bagAppID string, threa
 		mWorker.Logger.Fatalf("UNABLE TO FETCH BAGS FOR USER: %s | %s", userID, err)
 		return err
 	} else if len(bagRows) > 0 {
-		mWorker.Logger.Infof("\n\n%s | User: '%s' | App: '%s' | Bags Count: '%v' \n", color.LightMagenta.Render("Starting Bag Migration"), userID, bagAppID, len(bagRows))
+		fmt.Println("\n\n========================================================================")
+		mWorker.Logger.Infof("%s | User: '%s' | App: '%s' | Bags Count: '%v' \n", color.LightMagenta.Render("Starting Bag Migration"), userID, bagAppID, len(bagRows))
 		bagWorker := mWorker.mThread.CreateBagWorker(userID, bagAppID, mWorker.DstAppConfig.AppID, threadID)
 
 		for _, bagRow := range bagRows {

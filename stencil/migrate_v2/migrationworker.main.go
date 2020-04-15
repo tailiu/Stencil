@@ -354,14 +354,14 @@ func (mWorker *MigrationWorker) ValidateMappingConditions(conditions map[string]
 	return true
 }
 
-func (mWorker *MigrationWorker) ResolveMappingMethodRef(cleanedMappedStmt string, data DataMap) (*MappedMemberValue, error) {
+func (mWorker *MigrationWorker) ResolveMappingMethodRef(cleanedMappedStmt string, data DataMap, appID string) (*MappedMemberValue, error) {
 
 	args := strings.Split(cleanedMappedStmt, ",")
 	fromAttr := args[0]
 
 	if nodeVal, ok := data[fromAttr]; ok {
 		mmv := &MappedMemberValue{
-			AppID:    mWorker.SrcAppConfig.AppID,
+			AppID:    appID,
 			IsMethod: true,
 			Value:    nodeVal,
 			DBConn:   mWorker.logTxn.DBconn,
@@ -373,10 +373,10 @@ func (mWorker *MigrationWorker) ResolveMappingMethodRef(cleanedMappedStmt string
 	return nil, nil
 }
 
-func (mWorker *MigrationWorker) ResolveMappingMethodAssign(cleanedMappedStmt string, data DataMap) (*MappedMemberValue, error) {
+func (mWorker *MigrationWorker) ResolveMappingMethodAssign(cleanedMappedStmt string, data DataMap, appID string) (*MappedMemberValue, error) {
 	if nodeVal, ok := data[cleanedMappedStmt]; ok {
 		mmv := &MappedMemberValue{
-			AppID:    mWorker.SrcAppConfig.AppID,
+			AppID:    appID,
 			IsMethod: true,
 			Value:    nodeVal,
 			DBConn:   mWorker.logTxn.DBconn,
@@ -391,7 +391,7 @@ func (mWorker *MigrationWorker) ResolveMappingMethodAssign(cleanedMappedStmt str
 	}
 }
 
-func (mWorker *MigrationWorker) ResolveMappingMethodFetch(cleanedMappedStmt string, data DataMap) (*MappedMemberValue, error) {
+func (mWorker *MigrationWorker) ResolveMappingMethodFetch(cleanedMappedStmt string, data DataMap, appID string) (*MappedMemberValue, error) {
 	args := strings.Split(cleanedMappedStmt, ",")
 
 	attrToFetch := args[0]
@@ -409,7 +409,7 @@ func (mWorker *MigrationWorker) ResolveMappingMethodFetch(cleanedMappedStmt stri
 		} else if len(res) > 0 {
 			data[attrToFetch] = res[targetAttrTokens[1]]
 			mmv := &MappedMemberValue{
-				AppID:    mWorker.SrcAppConfig.AppID,
+				AppID:    appID,
 				IsMethod: true,
 				Value:    data[attrToFetch],
 				DBConn:   mWorker.logTxn.DBconn,
@@ -437,10 +437,11 @@ func (mWorker *MigrationWorker) ResolveMappingMethodExpression(value interface{}
 	return mmv, nil
 }
 
-func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data DataMap) (*MappedMemberValue, error) {
+func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data DataMap, appID string) (*MappedMemberValue, error) {
 
 	// first character in the mappedStmt identifies the statment type.
 	// "$" and "#" identify special cases.
+	mWorker.Logger.Trace("Resolving: ", mappedStmt)
 	switch mappedStmt[0:1] {
 	case "$":
 		{
@@ -470,13 +471,13 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 				tokens := strings.Split(cleanedMappedStmt, ",")
 
 				if strings.Contains(mappedStmt, "#FETCH") {
-					mmv, err = mWorker.ResolveMappingMethodFetch(cleanedMappedStmt, data)
+					mmv, err = mWorker.ResolveMappingMethodFetch(cleanedMappedStmt, data, appID)
 					fromAttr, toAttr = tokens[0], tokens[3]
 				} else if strings.Contains(mappedStmt, "#ASSIGN") {
-					mmv, err = mWorker.ResolveMappingMethodAssign(tokens[0], data)
+					mmv, err = mWorker.ResolveMappingMethodAssign(tokens[0], data, appID)
 					fromAttr, toAttr = tokens[0], tokens[1]
 				} else {
-					mmv, err = mWorker.ResolveMappingMethodRef(cleanedMappedStmt, data)
+					mmv, err = mWorker.ResolveMappingMethodRef(cleanedMappedStmt, data, appID)
 					fromAttr, toAttr = tokens[0], tokens[1]
 				}
 
@@ -497,9 +498,9 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 				return mmv, err
 
 			} else if strings.Contains(mappedStmt, "#ASSIGN") {
-				return mWorker.ResolveMappingMethodAssign(cleanedMappedStmt, data)
+				return mWorker.ResolveMappingMethodAssign(cleanedMappedStmt, data, appID)
 			} else if strings.Contains(mappedStmt, "#FETCH") {
-				return mWorker.ResolveMappingMethodFetch(cleanedMappedStmt, data)
+				return mWorker.ResolveMappingMethodFetch(cleanedMappedStmt, data, appID)
 			} else if strings.Contains(mappedStmt, "#GUID") {
 				return mWorker.ResolveMappingMethodExpression(uuid.New())
 			} else if strings.Contains(mappedStmt, "#RANDINT") {
@@ -514,7 +515,7 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 		{
 			if val, ok := data[mappedStmt]; ok {
 				mmv := &MappedMemberValue{
-					AppID:  mWorker.SrcAppConfig.AppID,
+					AppID:  appID,
 					Value:  val,
 					DBConn: mWorker.logTxn.DBconn,
 				}
@@ -539,7 +540,7 @@ func (mWorker *MigrationWorker) GetMappedMemberData(toTable config.ToTable, node
 	mappedMemberData.SetMember(toTable.Table)
 
 	for toMemberAttr, mappedStmt := range toTable.Mapping {
-		if mmv, err := mWorker.ResolveMappedStatement(mappedStmt, node.Data); err == nil && mmv != nil {
+		if mmv, err := mWorker.ResolveMappedStatement(mappedStmt, node.Data, mWorker.SrcAppConfig.AppID); err == nil && mmv != nil {
 			mmv.ToID = newRowID
 			if strings.EqualFold(toMemberAttr, "id") {
 				mmv.Value = mmv.ToID
@@ -678,7 +679,7 @@ func (mWorker *MigrationWorker) CreateAttributeRows(mmd MappedMemberData) error 
 		var fromValue interface{}
 		if strings.EqualFold(toAttr, "id") {
 			fromValue = mmv.FromID
-		} else if mmv.Ref != nil {
+		} else if mmv.Ref != nil && mmv.Ref.fromVal != STENCIL_NULL && mmv.Ref.toVal != STENCIL_NULL {
 			fromValue = mmv.Value
 		} else {
 			continue
@@ -822,6 +823,9 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 				}
 
 				if err := mWorker.MigrateMemberData(mappedMemberDatum, node); err != nil {
+					if mWorker.mtype == BAGS {
+						return false, err
+					}
 					mWorker.Logger.Fatal(err)
 				}
 

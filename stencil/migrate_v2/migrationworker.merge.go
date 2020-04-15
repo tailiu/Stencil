@@ -118,8 +118,8 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 							continue
 						}
 
-						if mmv, err := mWorker.ResolveMappedStatement(fromAttr, bagData); err == nil {
-							if mmv.Value != nil {
+						if mmv, err := mWorker.ResolveMappedStatement(fromAttr, bagData, fmt.Sprint(bagRow["app"])); err == nil {
+							if mmv != nil && mmv.Value != nil {
 								if mmv.Ref != nil {
 									mmv.Ref.appID = fmt.Sprint(bagRow["app"])
 									mmv.Ref.mergedFromBag = true

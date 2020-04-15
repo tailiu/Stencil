@@ -19,7 +19,7 @@ func getUID(appID string) string {
 		}
 	case "4":
 		{
-			query = "SELECT to_id as id FROM attribute_changes it where to_app = 4 and to_member = 155 "
+			query = "SELECT to_id as id FROM attribute_changes it where to_app = 4 and to_member = 164 "
 		}
 	case "3":
 		{
