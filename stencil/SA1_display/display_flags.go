@@ -68,8 +68,7 @@ func AddDisplayFlagToAllTables(dbConn *sql.DB) {
 
 	for _, data1 := range data {
 
-		query2 := fmt.Sprintf(`ALTER TABLE %s ADD display_flag BOOLEAN DEFAULT FALSE;`,
-			data1["tablename"])
+		query2 := fmt.Sprintf(`ALTER TABLE "%s" ADD display_flag BOOLEAN DEFAULT FALSE;`, data1["tablename"])
 
 		log.Println(query2)
 

@@ -9,7 +9,7 @@ import (
 
 func test1() {
 
-	dbName := "gnusocial_exp6"
+	dbName := "gnusocial_exp6_3"
 
 	isBladeServer := false
 
@@ -195,7 +195,7 @@ func test14() {
 
 func main() {
 
-	// test1()
+	test1()
 	
 	// test2()
 
@@ -219,7 +219,7 @@ func main() {
 
 	// test12()
 	
-	test13()
+	// test13()
 
 	// test14()
 }
