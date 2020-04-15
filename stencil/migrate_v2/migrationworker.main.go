@@ -386,7 +386,7 @@ func (mWorker *MigrationWorker) ResolveMappingMethodAssign(cleanedMappedStmt str
 		return mmv, nil
 	} else {
 		fmt.Println(data)
-		mWorker.Logger.Fatalf("@ResolveMappingMethodAssign > Can't find assigned attr in data | cleanedMappedStmt:[%s]", cleanedMappedStmt)
+		mWorker.Logger.Infof("@ResolveMappingMethodAssign > Can't find assigned attr in data | cleanedMappedStmt:[%s]", cleanedMappedStmt)
 		return nil, nil
 	}
 }
@@ -547,7 +547,7 @@ func (mWorker *MigrationWorker) GetMappedMemberData(toTable config.ToTable, node
 			}
 			mappedMemberData.Data[toMemberAttr] = *mmv
 		} else if err != nil {
-			mWorker.Logger.Debug(err)
+			mWorker.Logger.Debugf("%s.%s not resolved | %s", toTable.Table, toMemberAttr, err)
 		} else {
 			mWorker.Logger.Tracef("%s.%s not resolved!", toTable.Table, toMemberAttr)
 		}

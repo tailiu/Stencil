@@ -84,13 +84,12 @@ func main() {
 			dstAppName, dstAppID = apps[i+1][0], apps[i+1][1]
 		}
 
-		apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, *mtype, *blade, *bags, *ftp, *debug, *rootAlive)
+		wg.Add(1)
 
-		if i == 0 && *display {
-			wg.Add(1)
-			go SA1_display.StartDisplay(uid, srcAppID, dstAppID, *mtype, *threads, &wg, *display, *displayInFirstPhase, *markAsDelete, *blade)
-			wg.Wait()
-		}
+		go apis.StartMigration(uid, srcAppName, srcAppID, dstAppName, dstAppID, *mtype, *blade, *bags, *ftp, *debug, *rootAlive)
+		go SA1_display.StartDisplay(uid, srcAppID, dstAppID, *mtype, *threads, &wg, *display, *displayInFirstPhase, *markAsDelete, *blade)
+
+		wg.Wait()
 
 		// print spaces before new migration
 		for j := 1; j < 50; j++ {
