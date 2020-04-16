@@ -106,9 +106,9 @@ func (mmv *MappedMemberValue) SetFromID(dataMap DataMap) error {
 			return nil
 		}
 	}
-	err := fmt.Errorf("@mmv.SetFromID: Can't find it in: %s", mmv.FromMember)
+	err := fmt.Errorf("@mmv.SetFromID: Can't find from ID in: %s", mmv.FromMember)
 	fmt.Println(dataMap)
-	log.Fatal(err)
+	// log.Fatal(err)
 	return err
 }
 

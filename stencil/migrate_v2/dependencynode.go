@@ -251,6 +251,15 @@ func (node *DependencyNode) DeleteMappedDatumFromNode(mappedMemberDatum MappedMe
 	}
 }
 
+func (node *DependencyNode) DeleteNulls() {
+
+	for key, val := range node.Data {
+		if val == nil {
+			delete(node.Data, key)
+		}
+	}
+}
+
 func (node *DependencyNode) IsEmptyExcept() bool {
 	return node.Data.IsEmptyExcept()
 }

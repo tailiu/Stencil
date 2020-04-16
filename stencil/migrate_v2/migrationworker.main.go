@@ -164,6 +164,7 @@ func (mWorker *MigrationWorker) GetDependentNode(node *DependencyNode, threadID 
 						newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
 						// if !mWorker.wList.IsAlreadyWaiting(newNode) &&
 						if !mWorker.visitedNodes.IsVisited(&newNode) {
+							// newNode.DeleteNulls()
 							return &newNode, nil
 						}
 					}
@@ -198,6 +199,7 @@ func (mWorker *MigrationWorker) GetOwnedNode(threadID int) (*DependencyNode, err
 					if len(data) > 0 {
 						newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
 						// if !mWorker.wList.IsAlreadyWaiting(newNode) {
+						// newNode.DeleteNulls()
 						return &newNode, nil
 						// }
 					}
@@ -367,7 +369,9 @@ func (mWorker *MigrationWorker) ResolveMappingMethodRef(cleanedMappedStmt string
 			DBConn:   mWorker.logTxn.DBconn,
 		}
 		mmv.StoreMemberAndAttr(fromAttr)
-		mmv.SetFromID(data)
+		if err := mmv.SetFromID(data); err != nil {
+			return nil, err
+		}
 		return mmv, nil
 	}
 	return nil, nil
@@ -382,7 +386,9 @@ func (mWorker *MigrationWorker) ResolveMappingMethodAssign(cleanedMappedStmt str
 			DBConn:   mWorker.logTxn.DBconn,
 		}
 		mmv.StoreMemberAndAttr(cleanedMappedStmt)
-		mmv.SetFromID(data)
+		if err := mmv.SetFromID(data); err != nil {
+			return nil, err
+		}
 		return mmv, nil
 	} else {
 		fmt.Println(data)
@@ -415,7 +421,9 @@ func (mWorker *MigrationWorker) ResolveMappingMethodFetch(cleanedMappedStmt stri
 				DBConn:   mWorker.logTxn.DBconn,
 			}
 			mmv.StoreMemberAndAttr(attrToFetch)
-			mmv.SetFromID(data)
+			if err := mmv.SetFromID(data); err != nil {
+				return nil, err
+			}
 			return mmv, nil
 		} else {
 			return nil, fmt.Errorf("ResolveMappingMethodFetch | Returned data is nil. Previous node already migrated? | Args: '%s', '%s', '%s', '%s'", targetAttrTokens[0], targetAttrTokens[1], comparisonAttrTokens[1], fmt.Sprint(nodeVal))
@@ -488,7 +496,7 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 				} else if err != nil {
 					mWorker.Logger.Debug(mappedStmt, cleanedMappedStmt)
 					mWorker.Logger.Debug(data)
-					mWorker.Logger.Fatal(err)
+					mWorker.Logger.Warn(err)
 				} else {
 					mWorker.Logger.Warnf("Value fetched is nil for mappedStmt: '%s', '%s'", mappedStmt, cleanedMappedStmt)
 				}
@@ -518,7 +526,9 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 					DBConn: mWorker.logTxn.DBconn,
 				}
 				mmv.StoreMemberAndAttr(mappedStmt)
-				mmv.SetFromID(data)
+				if err := mmv.SetFromID(data); err != nil {
+					return nil, err
+				}
 				return mmv, nil
 			}
 			return nil, nil
