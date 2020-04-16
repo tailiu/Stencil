@@ -265,5 +265,9 @@ func (rr *RefResolution) GetUpdatedAttributes(member, id string) map[string]stri
 		updatedAttrs[rr.attrIDNamePairs[fmt.Sprint(data1["attr"])]] = fmt.Sprint(data1["updated_val"])
 	}
 
+	if newID := rr.getNewIDIfChanged(member, id); newID != "" {
+		updatedAttrs["id"] = newID
+	}
+
 	return updatedAttrs
 }

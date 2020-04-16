@@ -880,13 +880,15 @@ func (display *display) refreshCachedDataHints(hints []*HintStruct) {
 
 				newHint := CreateHint(hints[i].Table, hints[i].TableID, newID)
 
+				log.Println("New hint:", newHint)
+
 				newHint.Data, err3 = display.getOneRowBasedOnHint(newHint)
 				if err3 != nil {
 					log.Fatal(err3)
 				}
 
 				hints[i] = newHint
-
+				
 				log.Println(hints[i])
 
 			}

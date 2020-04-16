@@ -42,7 +42,7 @@ func (rr *RefResolution) getIDsOfDataToBeUpdated(memberToBeUpdated, attrValToBeU
 		memberToBeUpdated, attrToBeUpdated, attrValToBeUpdated,
 	)
 
-	log.Println(query)
+	// log.Println(query)
 
 	data, err := db.DataCall(rr.appDBConn, query)
 	if err != nil {
@@ -55,5 +55,27 @@ func (rr *RefResolution) getIDsOfDataToBeUpdated(memberToBeUpdated, attrValToBeU
 	}
 
 	return res
+
+}
+
+func (rr *RefResolution) getNewIDIfChanged(member, oldID string) string {
+
+	query := fmt.Sprintf(
+		"SELECT new_id from id_changes WHERE app_id = %s and table_id = %s and old_id = %s",
+		rr.appID, member, oldID,
+	)
+
+	// log.Println(query)
+
+	data, err := db.DataCall1(rr.stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(data) != 0 {
+		return fmt.Sprint(data["new_id"])
+	} else {
+		return ""
+	}
 
 }

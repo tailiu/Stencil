@@ -278,7 +278,14 @@ func (rr *RefResolution) ReferenceResolved(member, attr, id string) string {
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-		return ""
+		if rr.attrIDNamePairs[attr] == "id" {
+			// Checking resolved_references is not going to work because id there has already updated to newID 
+			// We need to avoid updating id again by
+			// checking whether id has been resolved and changed by other display threads
+			return rr.getNewIDIfChanged(member, id)
+		} else {
+			return ""
+		}
 	} else {
 		return fmt.Sprint(data["updated_val"])
 	}

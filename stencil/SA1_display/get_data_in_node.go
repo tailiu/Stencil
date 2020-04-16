@@ -251,13 +251,9 @@ func (display *display) getOneRowBasedOnHint(hint *HintStruct) (map[string]inter
 	}
 
 	if len(data) == 0 {
-
 		return nil, common_funcs.DataNotExists
-
 	} else {
-
 		return data, nil
-
 	}
 
 }
