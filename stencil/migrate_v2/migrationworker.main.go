@@ -677,7 +677,8 @@ func (mWorker *MigrationWorker) CreateAttributeRows(mmd MappedMemberData) error 
 		var fromValue interface{}
 		if strings.EqualFold(toAttr, "id") {
 			fromValue = mmv.FromID
-		} else if mmv.Ref != nil && mmv.Ref.fromVal != STENCIL_NULL && mmv.Ref.toVal != STENCIL_NULL {
+		} else if mmv.Ref != nil {
+			// && mmv.Ref.fromVal != STENCIL_NULL && mmv.Ref.toVal != STENCIL_NULL
 			fromValue = mmv.Value
 		} else {
 			continue
