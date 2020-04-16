@@ -243,7 +243,7 @@ func (display *display) getOneRowBasedOnHint(hint *HintStruct) (map[string]inter
 			hint.Table, hint.KeyVal["id"])
 	}
 	
-	// log.Println(query)
+	log.Println(query)
 	
 	data, err := db.DataCall1(display.dstAppConfig.DBConn, query)
 	if err != nil {
@@ -255,7 +255,6 @@ func (display *display) getOneRowBasedOnHint(hint *HintStruct) (map[string]inter
 	} else {
 		return data, nil
 	}
-
 }
 
 func (display *display) getDataInNode(hint *HintStruct) ([]*HintStruct, error) {
@@ -266,9 +265,7 @@ func (display *display) getDataInNode(hint *HintStruct) ([]*HintStruct, error) {
 		if err != nil {
 			return nil, err
 		} else {
-
 			hint.Data = data
-
 		}
 	}
 
