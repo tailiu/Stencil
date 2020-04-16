@@ -11,3 +11,5 @@ var notMigrated = errors.New("Data not migrated maybe due to the lack of schema 
 var alreadySolved = errors.New("Reference has probably been implicitly resolved")
 
 var notOneAttributeFound = errors.New("The number of attribute to update other attributes is not one")
+
+var referenceNotExists = errors.New("Reference does not exist")

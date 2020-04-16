@@ -361,9 +361,17 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 	table := dataHint.Table
 	tableID := dataHint.TableID
 	id := fmt.Sprint(dataHint.Data["id"])
+	data := dataHint.Data
 	
 	attrsToBeUpdated := display.getAllAttributesToBeUpdated(table)
 	
+	for i := len(attrsToBeUpdated) - 1; i > -1 ; i-- {
+		// If the attribute value is null, we will consider it as no need to resolve
+		if data[attrsToBeUpdated[i]] == nil {
+			attrsToBeUpdated = append(attrsToBeUpdated[:i], attrsToBeUpdated[i+1:]...) 
+		}
+	}
+
 	log.Println("attributes to be updated:", attrsToBeUpdated)
 
 	// Even though references have been updated in checking dependencies and ownership,
@@ -803,8 +811,7 @@ func (display *display) getIDChanges(hint *HintStruct) string {
 	log.Println("Get ID changes:")
 
 	query := fmt.Sprintf(
-		`SELECT new_id FROM id_changes WHERE 
-		app_id = %s and table_id = %s and old_id = %d`,
+		`SELECT new_id FROM id_changes WHERE app_id = %s and table_id = %s and old_id = %d`,
 		display.dstAppConfig.appID,
 		hint.TableID,
 		hint.KeyVal["id"],
