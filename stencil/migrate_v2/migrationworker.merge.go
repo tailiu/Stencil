@@ -110,29 +110,41 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 					if !strings.EqualFold(toTable.Table, mmd.ToMember) {
 						continue
 					}
-					for toAttr, fromAttr := range toTable.Mapping {
+					for toAttr, mappedStmt := range toTable.Mapping {
 
-						if strings.EqualFold("id", toAttr) || strings.Contains(fromAttr, "#FETCH") || fromAttr[0:1] == "$" {
-							continue
-						} else if _, ok := mmd.Data[toAttr]; ok {
+						if strings.EqualFold("id", toAttr) || strings.Contains(mappedStmt, "#FETCH") || mappedStmt[0:1] == "$" {
 							continue
 						}
 
-						if mmv, err := mWorker.ResolveMappedStatement(fromAttr, bagData, fmt.Sprint(bagRow["app"])); err == nil {
+						if mmv, err := mWorker.ResolveMappedStatement(mappedStmt, bagData, fmt.Sprint(bagRow["app"])); err == nil {
 							if mmv != nil && mmv.Value != nil {
+
+								merged = true
+
+								if !strings.EqualFold(mmv.FromAttr, "id") {
+									mWorker.Logger.Tracef("Deleting attr from bag data: '%s' \n", mmv.GetMemberAttr())
+									delete(bagData, mmv.GetMemberAttr())
+								}
+
+								if _, ok := mmd.Data[toAttr]; ok {
+									mWorker.Logger.Tracef("ATTR already exists in node: %s.%s | '%s' \n", toTable.Table, toAttr, mmv.GetMemberAttr())
+									continue
+								}
+
 								if mmv.Ref != nil {
 									mmv.Ref.appID = fmt.Sprint(bagRow["app"])
 									mmv.Ref.mergedFromBag = true
-									mWorker.Logger.Tracef("REF merged for: %s.%s | %s.%s \n", toTable.Table, toAttr, AttrRow.FromAppName, mmv.FromAttr)
+									mWorker.Logger.Tracef("REF merged for: %s.%s | %s.%s \n", toTable.Table, toAttr, AttrRow.FromAppName, mmv.GetMemberAttr())
+
 								}
 								mmd.Data[toAttr] = *mmv
-								delete(bagData, mmv.FromAttr)
-								mWorker.Logger.Tracef("ATTR merged for: %s.%s\n", toTable.Table, toAttr)
-								merged = true
+								mWorker.Logger.Tracef("ATTR merged for: %s.%s | '%s' \n", toTable.Table, toAttr, mmv.GetMemberAttr())
+
 							}
 						} else {
+							mWorker.Logger.Debug(err)
 							mWorker.Logger.Debug(bagData)
-							mWorker.Logger.Fatalf("Unable to ResolveMappedStatement | fromAttr: [%s], toAttr: [%s]", fromAttr, toAttr)
+							mWorker.Logger.Fatalf("Unable to ResolveMappedStatement | mappedStmt: [%s], toAttr: [%s]", mappedStmt, toAttr)
 						}
 					}
 				}
@@ -153,6 +165,7 @@ func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, p
 								return err
 							} else {
 								log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightYellow.Render("Updated BAG"), bagRow["pk"]))
+								fmt.Println("Updated Bag Data | ", bagData)
 							}
 						} else {
 							mWorker.Logger.Fatal("@FetchDataFromBags > len(bagData) != 0, Unable to marshall bag | ", bagData)

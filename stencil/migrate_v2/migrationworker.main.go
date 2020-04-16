@@ -441,7 +441,7 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 
 	// first character in the mappedStmt identifies the statment type.
 	// "$" and "#" identify special cases.
-	mWorker.Logger.Trace("Resolving: ", mappedStmt)
+	// mWorker.Logger.Trace("Resolving: ", mappedStmt)
 	switch mappedStmt[0:1] {
 	case "$":
 		{
@@ -490,9 +490,7 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 					mWorker.Logger.Debug(data)
 					mWorker.Logger.Fatal(err)
 				} else {
-					err = fmt.Errorf("Value fetched is nil for mappedStmt: '%s', '%s'", mappedStmt, cleanedMappedStmt)
-					mWorker.Logger.Debug(data)
-					mWorker.Logger.Debug(err)
+					mWorker.Logger.Warnf("Value fetched is nil for mappedStmt: '%s', '%s'", mappedStmt, cleanedMappedStmt)
 				}
 
 				return mmv, err
