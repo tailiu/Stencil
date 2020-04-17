@@ -511,11 +511,11 @@ func (display *display) getAllAttributesToBeUpdated(table string) []string {
 	
 	attrsToBeUpdatedBasedOnMappings := display.getAllMappedAttributesContainingREFInMappingsFromAllApps(table)
 	
-	log.Println("Get all attributes to be updated based on mappings:", attrsToBeUpdatedBasedOnMappings)
+	// log.Println("Get all attributes to be updated based on mappings:", attrsToBeUpdatedBasedOnMappings)
 
 	attrsToBeUpdatedBasedOnDag := display.dstAppConfig.dag.GetAllAttrsDepsOnBasedOnDag(table)
 
-	log.Println("Get all attributes to be updated based on deps:", attrsToBeUpdatedBasedOnDag)
+	// log.Println("Get all attributes to be updated based on deps:", attrsToBeUpdatedBasedOnDag)
 	
 	combinedAttrs := append(attrsToBeUpdatedBasedOnMappings, attrsToBeUpdatedBasedOnDag...)
 

@@ -202,7 +202,8 @@
                      "tag_attr":"post_guid",
                      "depends_on_attr":"guid"
                   }
-               ]
+               ],
+               "display_setting": "parent_node_partially_displays"
             }
          ]
        },
@@ -216,7 +217,8 @@
                       "tag_attr":"commentable_id",
                       "depends_on_attr":"id"
                    }
-                ]
+                ],
+                "display_setting": "parent_node_partially_displays"
              }
           ]
        },
@@ -244,7 +246,8 @@
                          }
                       ]
                    }
-                ]
+                ],
+                "display_setting": "parent_node_partially_displays"
 			},
 			{
 				"tag": "root",
@@ -268,7 +271,8 @@
                       "tag_attr":"post_id",
                       "depends_on_attr":"id"
                    }
-                ]
+                ],
+                "display_setting": "parent_node_partially_displays"
              }
           ]
        },
