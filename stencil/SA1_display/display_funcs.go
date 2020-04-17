@@ -372,7 +372,7 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 		}
 	}
 
-	log.Println("attributes to be updated:", attrsToBeUpdated)
+	log.Println("All attributes to be updated:", attrsToBeUpdated)
 
 	// Even though references have been updated in checking dependencies and ownership,
 	// update reference the last time before displaying the data
@@ -384,7 +384,7 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 
 	updatedAttrs := display.rr.GetUpdatedAttributes(tableID, id)
 
-	log.Println("attributes have already been updated:", updatedAttrs)
+	log.Println("All attributes have already been updated:", updatedAttrs)
 
 	var attrsToBeSetToNULLs []string
 
@@ -443,16 +443,14 @@ func (display *display) Display(dataHints []*HintStruct) error {
 		query1 += query1Where
 
 		query2 = fmt.Sprintf(
-			`UPDATE Display_flags SET 
-			display_flag = false, updated_at = now() 
+			`UPDATE Display_flags SET display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
 			display.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
 
 		query3 = fmt.Sprintf(
-			`UPDATE evaluation SET
-			displayed_at = now() WHERE migration_id = '%d' and
-			src_app = '%s' and dst_app = '%s' and
-			dst_table = '%s' and dst_id = '%d'`,
+			`UPDATE evaluation SET displayed_at = now() 
+			WHERE migration_id = '%d' and src_app = '%s' and dst_app = '%s'
+			and dst_table = '%s' and dst_id = '%d'`,
 			display.migrationID, display.srcAppConfig.appID,
 			display.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
 
@@ -505,7 +503,11 @@ func (display *display) getAllAttributesToBeUpdated(table string) []string {
 	
 	attrsToBeUpdatedBasedOnMappings := display.getAllMappedAttributesContainingREFInMappingsFromAllApps(table)
 	
+	log.Println("Get all attributes to be updated based on mappings:", attrsToBeUpdatedBasedOnMappings)
+
 	attrsToBeUpdatedBasedOnDag := display.dstAppConfig.dag.GetAllAttrsDepsOnBasedOnDag(table)
+
+	log.Println("Get all attributes to be updated based on deps:", attrsToBeUpdatedBasedOnDag)
 	
 	combinedAttrs := append(attrsToBeUpdatedBasedOnMappings, attrsToBeUpdatedBasedOnDag...)
 
