@@ -365,8 +365,8 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 	
 	attrsToBeUpdated := display.getAllAttributesToBeUpdated(table)
 	
+	// If the attribute value is null, we will consider it as no need to resolve
 	for i := len(attrsToBeUpdated) - 1; i > -1 ; i-- {
-		// If the attribute value is null, we will consider it as no need to resolve
 		if data[attrsToBeUpdated[i]] == nil {
 			attrsToBeUpdated = append(attrsToBeUpdated[:i], attrsToBeUpdated[i+1:]...) 
 		}
@@ -432,6 +432,8 @@ func (display *display) Display(dataHints []*HintStruct) error {
 
 		attrsToBeSetToNULLs := display.getAttributesToSetAsSTENCILNULLs(dataHint)
 
+		display.refreshCachedDataHint(dataHint)
+
 		query1 = fmt.Sprintf(`UPDATE "%s" SET display_flag = false`, dataHint.Table)
 
 		for _, attr := range attrsToBeSetToNULLs {
@@ -445,14 +447,16 @@ func (display *display) Display(dataHints []*HintStruct) error {
 		query2 = fmt.Sprintf(
 			`UPDATE Display_flags SET display_flag = false, updated_at = now() 
 			WHERE app_id = %s and table_id = %s and id = %d;`,
-			display.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
+			display.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"],
+		)
 
 		query3 = fmt.Sprintf(
 			`UPDATE evaluation SET displayed_at = now() 
 			WHERE migration_id = '%d' and src_app = '%s' and dst_app = '%s'
 			and dst_table = '%s' and dst_id = '%d'`,
 			display.migrationID, display.srcAppConfig.appID,
-			display.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"])
+			display.dstAppConfig.appID, dataHint.TableID, dataHint.KeyVal["id"],
+		)
 
 		log.Println("**************** Display Data ****************")
 		log.Println("Attributes need to be set as STENCIL_NULLs (-1):", attrsToBeSetToNULLs)
@@ -662,6 +666,8 @@ func (display *display) putIntoDataBag(dataHints []*HintStruct) error {
 
 			attrsToBeSetToNULLs = display.getAttributesToSetAsSTENCILNULLs(dataHint)
 
+			display.refreshCachedDataHint(dataHint)
+
 			var STENCIL_NULL interface{}
 
 			STENCIL_NULL = "-1"			
@@ -836,76 +842,72 @@ func (display *display) getIDChanges(hint *HintStruct) string {
 
 }
 
-func (display *display) refreshCachedDataHints(hints []*HintStruct) {
+func (display *display) refreshCachedDataHint(hint *HintStruct) *HintStruct {
 
 	var err2, err3 error
 
-	for i := range hints {
+	// // Data id could change and the cached hint id could become stale and
+	// // different from the got data id
+	// // for example, in profile, user.id could change.
+	// // There are two cases:
+	// // 1. hint.id is old but data id is new
+	// // so we use data id to update hint.id
+	// // (this can only happen in the first phase since some attributes
+	// // are not resolved because other data has not come)
+	// // 2. hint.id is old and data id is old, then this does not cause problems
+	// // display settings should be set to prevent this data from being displayed
+	// // and this data should wait other data this data depends on to come
+	// if hintID != hintDataID {
 
-		// log.Println("=====")
+	// 	intHintDataID, err1 := strconv.Atoi(hintDataID)
+	// 	if err1 != nil {
+	// 		log.Fatal(err1)
+	// 	}
+
+	// 	hints[i].KeyVal["id"] = intHintDataID
+	// }
+
+	hint.Data, err2 = display.getOneRowBasedOnHint(hint)
+
+	if err2 != nil {
+
+		log.Println(err2)
+
 		// log.Println(hints[i])
-		// log.Println("=====")
 
-		// hintID := strconv.Itoa(hints[i].KeyVal["id"])
-		// hintDataID := fmt.Sprint(hints[i].Data["id"])
+		newID := display.getIDChanges(hint)
 
-		// // Data id could change and the cached hint id could become stale and
-		// // different from the got data id
-		// // for example, in profile, user.id could change.
-		// // There are two cases:
-		// // 1. hint.id is old but data id is new
-		// // so we use data id to update hint.id
-		// // (this can only happen in the first phase since some attributes
-		// // are not resolved because other data has not come)
-		// // 2. hint.id is old and data id is old, then this does not cause problems
-		// // display settings should be set to prevent this data from being displayed
-		// // and this data should wait other data this data depends on to come
-		// if hintID != hintDataID {
+		log.Println("new id:", newID)
 
-		// 	intHintDataID, err1 := strconv.Atoi(hintDataID)
-		// 	if err1 != nil {
-		// 		log.Fatal(err1)
-		// 	}
+		if newID == "" {
+			// Note that for now this case is not considered
+			panic("Since there is no application service, this data shoud not be deleted")
 
-		// 	hints[i].KeyVal["id"] = intHintDataID
-		// }
+		} else {
 
-		hints[i].Data, err2 = display.getOneRowBasedOnHint(hints[i])
-		if err2 != nil {
+			newHint := CreateHint(hint.Table, hint.TableID, newID)
 
-			log.Println(err2)
+			log.Println("New hint:", newHint)
 
-			// log.Println(hints[i])
-
-			newID := display.getIDChanges(hints[i])
-
-			log.Println("new id:", newID)
-
-			if newID == "" {
-				// Note that for now this case is not considered
-				panic("Since there is no application service, this data shoud not be deleted")
-
-			} else {
-
-				newHint := CreateHint(hints[i].Table, hints[i].TableID, newID)
-
-				log.Println("New hint:", newHint)
-
-				newHint.Data, err3 = display.getOneRowBasedOnHint(newHint)
-				if err3 != nil {
-					log.Fatal(err3)
-				}
-
-				hints[i] = newHint
-				
-				log.Println(hints[i])
-
+			newHint.Data, err3 = display.getOneRowBasedOnHint(newHint)
+			if err3 != nil {
+				log.Fatal(err3)
 			}
 
+			hint = newHint
+			
+			log.Println(hint)
 		}
-
 	}
 
+	return hint
+
+}
+
+func (display *display) refreshCachedDataHints(hints []*HintStruct) {
+	for i := range hints {
+		hints[i] = display.refreshCachedDataHint(hints[i])
+	}
 }
 
 func getMigrationIDs(stencilDBConn *sql.DB, uid, srcAppID, dstAppID, migrationType string) []int {
