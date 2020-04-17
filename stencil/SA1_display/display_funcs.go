@@ -374,12 +374,16 @@ func (display *display) getAttributesToSetAsSTENCILNULLs(dataHint *HintStruct) [
 
 	log.Println("All attributes to be updated:", attrsToBeUpdated)
 
-	// Even though references have been updated in checking dependencies and ownership,
-	// update reference the last time before displaying the data
+	updatedAttrsBeforeResolving := display.rr.GetUpdatedAttributes(tableID, id)
+
+	// Unresolved references must be resolved for the last time 
+	// before displaying the data or putting the data into bags
 	for _, attrToBeUpdated := range attrsToBeUpdated {
-		colID := display.dstAppConfig.colNameIDPairs[table + ":" + attrToBeUpdated]
-		attr := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, tableID, colID, id, id)
-		display.rr.ResolveReference(attr)
+		if _, ok := updatedAttrsBeforeResolving[attrToBeUpdated]; !ok {
+			colID := display.dstAppConfig.colNameIDPairs[table + ":" + attrToBeUpdated]
+			attr := reference_resolution_v2.CreateAttribute(display.dstAppConfig.appID, tableID, colID, id, id)
+			display.rr.ResolveReference(attr)
+		}
 	}
 
 	updatedAttrs := display.rr.GetUpdatedAttributes(tableID, id)
