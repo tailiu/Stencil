@@ -697,7 +697,7 @@ func (mWorker *MigrationWorker) CreateAttributeRows(mmd MappedMemberData) error 
 			mWorker.Logger.Fatal(err)
 		} else {
 			if err := db.InsertIntoAttrTable(mWorker.tx.StencilTx, mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, fromValue, mmv.Value, fmt.Sprint(mWorker.logTxn.Txn_id)); err != nil {
-				mWorker.Logger.Debugf("Args |\nFromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, fromValue, mmv.Value)
+				mWorker.Logger.Debugf("Args |\nFromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, helper.ConvertScientificNotationToString(fromValue), helper.ConvertScientificNotationToString(mmv.Value))
 				mWorker.Logger.Fatal(err)
 				return err
 			} else {

@@ -176,6 +176,16 @@ func GetInt64(val interface{}) int64 {
 	return 0
 }
 
+func ConvertScientificNotationToString(val interface{}) string {
+	if valInt, ok := val.(int64); ok {
+		return fmt.Sprint(valInt)
+	} else if valFloat, ok := val.(float64); ok {
+		valInt := int64(math.Ceil(valFloat))
+		return fmt.Sprint(valInt)
+	}
+	return fmt.Sprint(val)
+}
+
 func CreateLogger(debug bool) *logg.Logger {
 	logger := logg.New(os.Stderr)
 
