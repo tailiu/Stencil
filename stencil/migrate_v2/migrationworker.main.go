@@ -449,7 +449,7 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 
 	// first character in the mappedStmt identifies the statment type.
 	// "$" and "#" identify special cases.
-	// mWorker.Logger.Trace("Resolving: ", mappedStmt)
+	mWorker.Logger.Trace("=> Resolving: ", mappedStmt)
 	switch mappedStmt[0:1] {
 	case "$":
 		{
@@ -529,6 +529,7 @@ func (mWorker *MigrationWorker) ResolveMappedStatement(mappedStmt string, data D
 				if err := mmv.SetFromID(data); err != nil {
 					return nil, err
 				}
+				mWorker.Logger.Tracef("=> Resolved | From Member : %s(%s)\n", mmv.FromMember, mmv.FromMemberID)
 				return mmv, nil
 			}
 			return nil, nil
@@ -685,14 +686,20 @@ func (mWorker *MigrationWorker) CreateAttributeRows(mmd MappedMemberData) error 
 
 	for toAttr, mmv := range mmd.Data {
 		var fromValue interface{}
+		// NEED TO CONSIDER SOMETHING HERE
+		// CURRENTLY, ONLY THE MEMBER AND ATTRIBUTE MAPPED TO THE TARGET ID ATTRIBUTE WILL BE STORED IN THE ATTRIBUTE TABLE
+		// ALONG WITH THE ATTRIBUTES THAT HAVE REFERENCES
+		// THAT'S WHY SOME MEMBERS ARE MISSED THAT ARE ACTUALLY MAPPED
+		// FOR EXAMPLE, PROFILE IN ROOT WILL NOT HAVE AN ATTRIBUTE ROW, BECAUSE IT ISN'T MAPPED TO ANY ID ATTRIBUTE IN MASTODON
+		// AND IT DOESN'T HAVE ANY REFERENCE
 		if strings.EqualFold(toAttr, "id") {
 			fromValue = mmv.FromID
 		} else if mmv.Ref != nil {
-			// && mmv.Ref.fromVal != STENCIL_NULL && mmv.Ref.toVal != STENCIL_NULL
 			fromValue = mmv.Value
 		} else {
 			continue
 		}
+
 		if toAttrID, err := db.AttrID(mWorker.logTxn.DBconn, mmd.ToMemberID, toAttr); err != nil {
 			mWorker.Logger.Fatal(err)
 		} else {
@@ -702,6 +709,43 @@ func (mWorker *MigrationWorker) CreateAttributeRows(mmd MappedMemberData) error 
 				return err
 			} else {
 				color.LightBlue.Printf("New AttrRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, fromValue, mmv.Value)
+			}
+		}
+	}
+	return nil
+}
+
+func (mWorker *MigrationWorker) CreateSelfReferenceRows(mmd MappedMemberData) error {
+
+	for srcAppID, srcMembers := range mmd.GetSourceAppsAndTables() {
+		if srcAppID == mWorker.DstAppConfig.AppID {
+			color.Red.Println("CREATING SELF REFERENCE!", srcAppID, srcMembers)
+			var visitedMembers []string
+			for _, srcMember := range srcMembers {
+				if !helper.Contains(visitedMembers, srcMember) {
+					if bagTag, err := mWorker.DstAppConfig.GetTagByMember(srcMember); err == nil {
+						visitedMembers = append(visitedMembers, bagTag.GetTagMembers()...)
+						if bagRefs, err := mmd.CreateSelfReferences(mWorker.DstAppConfig, *bagTag, mmd.GetDataMap()); err == nil {
+							for _, ref := range bagRefs {
+								if ref.fromVal == STENCIL_NULL || ref.toVal == STENCIL_NULL {
+									color.Yellow.Printf("SelfRef Exists | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, FromID: %v, ToMember: %s, ToAttr: %s, ToVal: %s\n", ref.appID, ref.fromMemberID, ref.fromAttrID, ref.fromVal, ref.fromID, ref.toMemberID, ref.toAttrID, ref.toVal)
+									continue
+								}
+								if err := db.CreateNewReferenceV2(mWorker.tx.StencilTx, ref.appID, ref.fromMemberID, ref.fromVal, ref.fromID, ref.toMemberID, ref.toVal, fmt.Sprint(mWorker.logTxn.Txn_id), ref.fromAttrID, ref.toAttrID); err != nil {
+									mWorker.Logger.Debugf("App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", ref.appID, ref.fromMemberID, ref.fromAttrID, ref.fromVal, ref.toMemberID, ref.toAttrID, ref.toVal)
+									mWorker.Logger.Debug(ref)
+									mWorker.Logger.Fatal(err)
+									return err
+								} else {
+									color.Magenta.Printf("New SelfRef | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", ref.appID, ref.fromMemberID, ref.fromAttrID, ref.fromVal, ref.toMemberID, ref.toAttrID, ref.toVal)
+								}
+							}
+						} else {
+							mWorker.Logger.Fatal(err)
+							return err
+						}
+					}
+				}
 			}
 		}
 	}
@@ -720,29 +764,15 @@ func (mWorker *MigrationWorker) CreateReferenceRows(mmd MappedMemberData) error 
 			color.Yellow.Printf("Ref Exists | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, FromID: %v, ToMember: %s, ToAttr: %s, ToVal: %s\n", mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromAttrID, mmv.Ref.fromVal, mmv.Ref.fromID, mmv.Ref.toMemberID, mmv.Ref.toAttrID, mmv.Ref.toVal)
 			continue
 		}
-
-		refs := []MappingRef{*mmv.Ref}
-
-		if mmv.AppID == mWorker.DstAppConfig.AppID {
-			if bagTag, err := mWorker.DstAppConfig.GetTagByMember(mmv.FromMember); err == nil {
-				if bagRefs, err := mmv.CreateSelfReferences(mWorker.DstAppConfig, *bagTag, mmd.GetDataMap()); err == nil {
-					refs = append(refs, bagRefs...)
-				} else {
-					mWorker.Logger.Fatal(err)
-				}
-			}
+		if err := db.CreateNewReferenceV2(mWorker.tx.StencilTx, mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromVal, mmv.Ref.fromID, mmv.Ref.toMemberID, mmv.Ref.toVal, fmt.Sprint(mWorker.logTxn.Txn_id), mmv.Ref.fromAttrID, mmv.Ref.toAttrID); err != nil {
+			mWorker.Logger.Debugf("App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromAttrID, mmv.Ref.fromVal, mmv.Ref.toMemberID, mmv.Ref.toAttrID, mmv.Ref.toVal)
+			mWorker.Logger.Debug(mmv.Ref)
+			mWorker.Logger.Fatal(err)
+			return err
+		} else {
+			color.Magenta.Printf("New Ref | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", mmv.Ref.appID, mmv.Ref.fromMemberID, mmv.Ref.fromAttrID, mmv.Ref.fromVal, mmv.Ref.toMemberID, mmv.Ref.toAttrID, mmv.Ref.toVal)
 		}
 
-		for _, ref := range refs {
-			if err := db.CreateNewReferenceV2(mWorker.tx.StencilTx, ref.appID, ref.fromMemberID, ref.fromVal, ref.fromID, ref.toMemberID, ref.toVal, fmt.Sprint(mWorker.logTxn.Txn_id), ref.fromAttrID, ref.toAttrID); err != nil {
-				mWorker.Logger.Debugf("App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", ref.appID, ref.fromMemberID, ref.fromAttrID, ref.fromVal, ref.toMemberID, ref.toAttrID, ref.toVal)
-				mWorker.Logger.Debug(ref)
-				mWorker.Logger.Fatal(err)
-				return err
-			} else {
-				color.Magenta.Printf("New Ref | App: %s, FromMember: %s, FromAttr: %s, FromVal: %s, ToMember: %s, ToAttr: %s, ToVal: %s\n", ref.appID, ref.fromMemberID, ref.fromAttrID, ref.fromVal, ref.toMemberID, ref.toAttrID, mmv.Ref.toVal)
-			}
-		}
 	}
 
 	return nil
@@ -847,6 +877,10 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 				}
 
 				if err := mWorker.CreateReferenceRows(mappedMemberDatum); err != nil {
+					mWorker.Logger.Fatal(err)
+				}
+
+				if err := mWorker.CreateSelfReferenceRows(mappedMemberDatum); err != nil {
 					mWorker.Logger.Fatal(err)
 				}
 

@@ -169,10 +169,15 @@ func GetInt64(val interface{}) int64 {
 		return valInt
 	} else if valFloat, ok := val.(float64); ok {
 		valInt := int64(math.Ceil(valFloat))
-		// fmt.Printf("Float64: %v converted to Int64: %v\n", valFloat, valInt)
 		return valInt
+	} else if valString, ok := val.(string); ok {
+		if v, err := strconv.ParseInt(valString, 10, 64); err != nil {
+			log.Fatalf("@GetInt64: Failed string conversion to int64 | %T | %v | %v", val, val, err)
+		} else {
+			return v
+		}
 	}
-	log.Fatal("@GetInt64: Neither int64 nor float64 | ", val)
+	log.Fatalf("@GetInt64: Neither int64 nor float64 nor valid stringInt | %T | %v", val, val)
 	return 0
 }
 
