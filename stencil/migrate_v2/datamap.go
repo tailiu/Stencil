@@ -26,8 +26,8 @@ func (dataMap DataMap) GetRefValsFromDataMap(fromAttr, toAttr string, hardRef bo
 
 	if val, ok := dataMap[fromAttr]; ok {
 		if val != nil {
-			toVal = fmt.Sprint(val)
-			fromVal = fmt.Sprint(val)
+			toVal = helper.ConvertScientificNotationToString(val)
+			fromVal = helper.ConvertScientificNotationToString(val)
 		}
 	} else {
 		return toVal, fromVal, fromID, fmt.Errorf("Unable to find fromAttr ref value in node data: %s", fromAttr)
@@ -37,7 +37,7 @@ func (dataMap DataMap) GetRefValsFromDataMap(fromAttr, toAttr string, hardRef bo
 		toVal = ""
 		if val, ok := dataMap[toAttr]; ok {
 			if val != nil {
-				toVal = fmt.Sprint(val)
+				toVal = helper.ConvertScientificNotationToString(val)
 			}
 		} else {
 			return toVal, fromVal, fromID, fmt.Errorf("Unable to find toVal ref value in node data: %s", toAttr)
