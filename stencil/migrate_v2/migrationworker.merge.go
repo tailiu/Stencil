@@ -50,9 +50,11 @@ func (mWorker *MigrationWorker) FetchDataFromBags(bagManager *BagManager, mmd *M
 							if mmv, err := mWorker.ResolveMappedStatement(mappedStmt, bag.Data, bag.AppID); err == nil {
 								if mmv != nil && mmv.Value != nil {
 									bag.AddAttrtoRemove(mmv.GetMemberAttr())
-									if _, ok := mmd.Data[toAttr]; ok {
-										mWorker.Logger.Tracef("ATTR exists in node: %s.%s | '%s' \n", toTable.Table, toAttr, mmv.GetMemberAttr())
-										continue
+									if existingMMV, ok := mmd.Data[toAttr]; ok {
+										if existingMMV.Value != nil {
+											mWorker.Logger.Tracef("ATTR exists in node: %s.%s | '%s' \n", toTable.Table, toAttr, mmv.GetMemberAttr())
+											continue
+										}
 									}
 									if mmv.Ref != nil {
 										mmv.Ref.appID = bag.AppID
