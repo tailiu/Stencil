@@ -1,185 +1,87 @@
 package migrate_v2
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"stencil/db"
-	"stencil/reference_resolution"
 	"strings"
-
-	"github.com/gookit/color"
 )
-
-// func (mWorker *MigrationWorker) MergeMemberDataWithBagsData(mmd *MappedMemberData, node *DependencyNode) error {
-
-// 	currUID := mWorker.uid
-// 	currApp := &App{
-// 		Name: mWorker.SrcAppConfig.AppName,
-// 		ID:   mWorker.SrcAppConfig.AppID,
-// 	}
-
-// 	for {
-// 		if prevApp, prevUID, err := mWorker.GetUserIDAppIDFromPreviousMigration(currApp.ID, currUID); err != nil {
-// 			mWorker.Logger.Fatal(err)
-// 		} else if len(prevApp.ID) <= 0 && len(prevUID) <= 0 {
-// 			break
-// 		} else {
-// 			for _, currMember := range mmd.SrcTables() {
-// 				if err := mWorker.FetchDataFromBags(mmd, *prevApp, prevUID, currMember, *currApp); err != nil {
-// 					mWorker.Logger.Fatal("@MergeMemberDataWithBagsData | ", err)
-// 				}
-// 			}
-// 			currApp, currUID = prevApp, prevUID
-// 		}
-// 	}
-
-// 	return nil
-// }
 
 func (mWorker *MigrationWorker) MergeBagDataWithMappedData(mmd *MappedMemberData, node *DependencyNode) error {
 
-	prevUIDs := reference_resolution.GetPrevUserIDs(mWorker.logTxn.DBconn, mWorker.SrcAppConfig.AppID, mWorker.uid)
-	if prevUIDs == nil {
-		prevUIDs = make(map[string]string)
-	}
-	mWorker.Logger.Info("Fetched previous UIDs | ", prevUIDs)
-	prevUIDs[mWorker.SrcAppConfig.AppID] = mWorker.uid
+	var bagManager BagManager
+	bagManager.Init(mWorker.logTxn.DBconn, mWorker.SrcAppConfig.AppID, mWorker.uid)
 
 	for _, fromTable := range mmd.SrcTables() {
 		if fromID, ok := node.Data[fromTable.Name+".id"]; ok {
-			visitedRows := make(map[string]bool)
-			if err := mWorker.FetchDataFromBags(visitedRows, prevUIDs, mmd, mWorker.SrcAppConfig.AppID, fromTable.ID, fromID, mmd.ToMemberID, mmd.ToMember); err != nil {
+			if err := mWorker.FetchDataFromBags(&bagManager, mmd, mWorker.SrcAppConfig.AppID, fromTable.ID, fromID, mmd.ToMemberID, mmd.ToMember); err != nil {
 				mWorker.Logger.Fatal("@MigrateNode > FetchDataFromBags | ", err)
 			}
+			bagManager.ClearVisitedRows()
 		} else {
 			mWorker.Logger.Debug(node.Data)
 			mWorker.Logger.Fatal("@MigrateNode > FetchDataFromBags > id doesn't exist in table ", fromTable)
 		}
 	}
 
+	bagManager.UpdateBags(mWorker.tx.StencilTx, mWorker.logTxn.Txn_id)
+
 	return nil
 }
 
-func (mWorker *MigrationWorker) FetchDataFromBags(visitedRows map[string]bool, prevUIDs map[string]string, mmd *MappedMemberData, app, member string, id interface{}, dstMemberID, dstMemberName string) error {
+func (mWorker *MigrationWorker) FetchDataFromBags(bagManager *BagManager, mmd *MappedMemberData, app, member string, id interface{}, dstMemberID, dstMemberName string) error {
 
-	currentRow := fmt.Sprintf("%s:%s:%s", app, member, id)
-	if _, ok := visitedRows[currentRow]; ok {
+	if bagManager.IsRowVisited(app, member, fmt.Sprint(id)) {
 		return nil
 	}
-	visitedRows[currentRow] = true
 
-	AttrRows, err := mWorker.GetRowsFromAttrTable(app, member, id, false)
-
-	if err != nil {
-		mWorker.Logger.Fatal("@FetchDataFromBags > GetRowsFromIDTable, Unable to get AttrRows | ", app, member, id, false, err)
+	if attrRows, err := mWorker.GetRowsFromAttrTable(app, member, id, false); err != nil {
+		mWorker.Logger.Fatal("@FetchDataFromBags > GetRowsFromIDTable, Unable to get attrRows | ", app, member, id, false, err)
 		return err
-	} else if len(AttrRows) < 1 {
-		return nil
 	} else {
-		mWorker.Logger.Trace("@FetchDataFromBags > GetRowsFromIDTable | ", AttrRows)
-	}
-
-	for _, AttrRow := range AttrRows {
-
-		bagRow, err := db.GetBagByAppMemberIDV2(mWorker.logTxn.DBconn, prevUIDs[AttrRow.FromAppID], AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, mWorker.logTxn.Txn_id)
-		if err != nil {
-			mWorker.Logger.Fatal("@FetchDataFromBags > GetBagByAppMemberIDV2, Unable to get bags | ", prevUIDs[AttrRow.FromAppID], AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, mWorker.logTxn.Txn_id, err)
-			return err
-		}
-		if bagRow != nil {
-
-			mWorker.Logger.Tracef("@FetchDataFromBags > Processing Bag | ID: %v | PK: %v | App: %v | Member: %v", bagRow["id"], bagRow["pk"], bagRow["app"], bagRow["member"])
-
-			bagData := make(DataMap)
-			if err := json.Unmarshal(bagRow["data"].([]byte), &bagData); err != nil {
-				mWorker.Logger.Debug(bagRow["data"])
-				mWorker.Logger.Debug(bagRow)
-				mWorker.Logger.Fatal("@FetchDataFromBags: UNABLE TO CONVERT BAG TO MAP ", bagRow, err)
-				return err
-			}
-			fmt.Printf("bag data | %v\n", bagData)
-
-			if mapping, found := mWorker.FetchMappingsForBag(AttrRow.FromAppName, AttrRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, AttrRow.FromMember, dstMemberName); found {
-
-				mWorker.Logger.Tracef("Mapping found | %s(%s) : %s -> %s(%s) : %s \n", AttrRow.FromAppName, AttrRow.FromAppID, AttrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
-
-				merged := false
-
-				for _, toTable := range mapping.ToTables {
-					if !strings.EqualFold(toTable.Table, mmd.ToMember) {
-						continue
-					}
-					for toAttr, mappedStmt := range toTable.Mapping {
-
-						if strings.EqualFold("id", toAttr) || strings.Contains(mappedStmt, "#FETCH") || mappedStmt[0:1] == "$" {
+		mWorker.Logger.Trace("Fetched AttrRows | ", attrRows)
+		for _, AttrRow := range attrRows {
+			mWorker.Logger.Trace("Current AttrRow | ", attrRows)
+			if bag := bagManager.GetBagsFromDB(AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, mWorker.logTxn.Txn_id); bag != nil {
+				mWorker.Logger.Tracef("Processing Bag | ID: %v | PK: %v | App: %v | Member: %v\nBag Data | %v\n", bag.ID, bag.PK, bag.AppID, bag.MemberID, bag.Data)
+				if mapping, found := mWorker.FetchMappingsForBag(AttrRow.FromAppName, AttrRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, AttrRow.FromMember, dstMemberName); found {
+					mWorker.Logger.Tracef("Mapping found | %s(%s) : %s -> %s(%s) : %s \n", AttrRow.FromAppName, AttrRow.FromAppID, AttrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
+					for _, toTable := range mapping.ToTables {
+						if !strings.EqualFold(toTable.Table, mmd.ToMember) {
 							continue
 						}
-
-						if mmv, err := mWorker.ResolveMappedStatement(mappedStmt, bagData, fmt.Sprint(bagRow["app"])); err == nil {
-							if mmv != nil && mmv.Value != nil {
-
-								merged = true
-
-								if !strings.EqualFold(mmv.FromAttr, "id") {
-									mWorker.Logger.Tracef("Deleting attr from bag data: '%s' \n", mmv.GetMemberAttr())
-									delete(bagData, mmv.GetMemberAttr())
-								}
-
-								if _, ok := mmd.Data[toAttr]; ok {
-									mWorker.Logger.Tracef("ATTR already exists in node: %s.%s | '%s' \n", toTable.Table, toAttr, mmv.GetMemberAttr())
-									continue
-								}
-
-								if mmv.Ref != nil {
-									mmv.Ref.appID = fmt.Sprint(bagRow["app"])
-									mmv.Ref.mergedFromBag = true
-									mWorker.Logger.Tracef("REF merged for: %s.%s | %s.%s \n", toTable.Table, toAttr, AttrRow.FromAppName, mmv.GetMemberAttr())
-
-								}
-								mmd.Data[toAttr] = *mmv
-								mWorker.Logger.Tracef("ATTR merged for: %s.%s | '%s' \n", toTable.Table, toAttr, mmv.GetMemberAttr())
-
+						for toAttr, mappedStmt := range toTable.Mapping {
+							if strings.EqualFold("id", toAttr) || strings.Contains(mappedStmt, "#FETCH") || mappedStmt[0:1] == "$" {
+								continue
 							}
-						} else {
-							mWorker.Logger.Debug(err)
-							mWorker.Logger.Debug(bagData)
-							mWorker.Logger.Fatalf("Unable to ResolveMappedStatement | mappedStmt: [%s], toAttr: [%s]", mappedStmt, toAttr)
-						}
-					}
-				}
-
-				if merged {
-					if bagData.IsEmptyExcept() {
-						if err := db.DeleteBagV2(mWorker.tx.StencilTx, fmt.Sprint(bagRow["pk"])); err != nil {
-							mWorker.Logger.Fatal("@FetchDataFromBags > DeleteBagV2, Unable to delete bag | ", bagRow["pk"])
-							return err
-						} else {
-							log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightRed.Render("Deleted BAG"), bagRow["pk"]))
-						}
-					} else {
-						log.Println(fmt.Sprintf("%s | %v", color.FgYellow.Render("BAG NOT EMPTY"), bagData))
-						if jsonData, err := json.Marshal(bagData); err == nil {
-							if err := db.UpdateBag(mWorker.tx.StencilTx, fmt.Sprint(bagRow["pk"]), mWorker.logTxn.Txn_id, jsonData); err != nil {
-								mWorker.Logger.Fatal("@FetchDataFromBags: UNABLE TO UPDATE BAG ", bagRow, err)
-								return err
+							if mmv, err := mWorker.ResolveMappedStatement(mappedStmt, bag.Data, bag.AppID); err == nil {
+								if mmv != nil && mmv.Value != nil {
+									bag.AddAttrtoRemove(mmv.GetMemberAttr())
+									if _, ok := mmd.Data[toAttr]; ok {
+										mWorker.Logger.Tracef("ATTR exists in node: %s.%s | '%s' \n", toTable.Table, toAttr, mmv.GetMemberAttr())
+										continue
+									}
+									if mmv.Ref != nil {
+										mmv.Ref.appID = bag.AppID
+										mmv.Ref.mergedFromBag = true
+										mWorker.Logger.Tracef("REF merged for: %s.%s | %s.%s \n", toTable.Table, toAttr, AttrRow.FromAppName, mmv.GetMemberAttr())
+									}
+									mmd.Data[toAttr] = *mmv
+									mWorker.Logger.Tracef("ATTR merged for: %s.%s | '%s' \n", toTable.Table, toAttr, mmv.GetMemberAttr())
+								}
 							} else {
-								log.Println(fmt.Sprintf("%s | PK: %v", color.FgLightYellow.Render("Updated BAG"), bagRow["pk"]))
-								fmt.Println("Updated Bag Data | ", bagData)
+								mWorker.Logger.Debug(err)
+								mWorker.Logger.Debug(bag.Data)
+								mWorker.Logger.Fatalf("Unable to ResolveMappedStatement | mappedStmt: [%s], toAttr: [%s]", mappedStmt, toAttr)
 							}
-						} else {
-							mWorker.Logger.Fatal("@FetchDataFromBags > len(bagData) != 0, Unable to marshall bag | ", bagData)
-							return err
 						}
 					}
+				} else {
+					mWorker.Logger.Tracef("Mapping not found | %s(%s) : %s -> %s(%s) : %s \n", AttrRow.FromAppName, AttrRow.FromAppID, AttrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
 				}
-			} else {
-				mWorker.Logger.Tracef("Mapping not found | %s(%s) : %s -> %s(%s) : %s \n", AttrRow.FromAppName, AttrRow.FromAppID, AttrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
 			}
-		}
-		if err := mWorker.FetchDataFromBags(visitedRows, prevUIDs, mmd, AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, dstMemberID, dstMemberName); err != nil {
-			mWorker.Logger.Fatal("@FetchDataFromBags > FetchDataFromBags: Error while recursing | ", AttrRow.FromAppID, AttrRow.FromMember, AttrRow.FromID)
-			return err
+			if err := mWorker.FetchDataFromBags(bagManager, mmd, AttrRow.FromAppID, AttrRow.FromMemberID, AttrRow.FromID, dstMemberID, dstMemberName); err != nil {
+				mWorker.Logger.Fatal("@FetchDataFromBags > FetchDataFromBags: Error while recursing | ", AttrRow.FromAppID, AttrRow.FromMember, AttrRow.FromID)
+				return err
+			}
 		}
 	}
 	return nil

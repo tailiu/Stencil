@@ -69,36 +69,6 @@ func (mWorker *MigrationWorker) GetAllNextNodes(node *DependencyNode) ([]*Depend
 		}
 	}
 
-	// for _, dep := range mWorker.SrcAppConfig.GetSubDependencies(node.Tag.Name) {
-	// 	if child, err := mWorker.SrcAppConfig.GetTag(dep.Tag); err == nil {
-	// 		if where, err := node.ResolveDependencyConditions(mWorker.SrcAppConfig, dep, child); err == nil {
-	// 			ql := mWorker.GetTagQL(child)
-	// 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-	// 			sql += child.ResolveRestrictions()
-	// 			// log.Println("@GetAllNextNodes | ", sql)
-	// 			if data, err := db.DataCall(mWorker.SrcAppConfig.DBConn, sql); err == nil {
-	// 				for _, datum := range data {
-	// 					newNode := new(DependencyNode)
-	// 					newNode.Tag = child
-	// 					newNode.SQL = sql
-	// 					newNode.Data = datum
-	// 					nodes = append(nodes, newNode)
-	// 				}
-	// 			} else {
-	// 				mWorker.Logger.Fatal("@GetAllNextNodes: Error while DataCall: ", err)
-	// 				return nil, err
-	// 			}
-	// 		} else {
-	// 			log.Println("@GetAllNextNodes > ResolveDependencyConditions | ", err)
-	// 		}
-	// 	} else {
-	// 		mWorker.Logger.Fatal("@GetAllNextNodes: Tag doesn't exist? ", dep.Tag)
-	// 	}
-	// }
-	// // if len(mWorker.SrcAppConfig.GetSubDependencies(node.Tag.Name)) > 0 {
-	// // 	log.Println("@GetAllNextNodes:", len(nodes))
-	// // 	mWorker.Logger.Fatal(nodes)
-	// // }
 	return nodes, nil
 }
 

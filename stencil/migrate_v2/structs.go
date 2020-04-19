@@ -185,6 +185,24 @@ type ProcessedBags struct {
 	Bags map[string]bool
 }
 
+type BagManager struct {
+	Bags        map[string]*DBBag
+	VisitedRows map[string]bool
+	PrevUIDs    map[string]string
+	DBConn      *sql.DB
+}
+
+type DBBag struct {
+	Data          DataMap
+	PK            string
+	ID            string
+	UID           string
+	AppID         string
+	MemberID      string
+	TxnID         string
+	AttrsToRemove []string
+}
+
 type ReferenceCreator struct {
 }
 

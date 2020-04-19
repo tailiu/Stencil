@@ -353,7 +353,7 @@ func GetBagsV2(dbConn *sql.DB, app_id, user_id string, migration_id int) ([]map[
 }
 
 func GetBagByAppMemberIDV2(dbConn *sql.DB, user_id, app, member string, id int64, migration_id int) (map[string]interface{}, error) {
-	query := "SELECT app, member, id, data, pk FROM data_bags WHERE user_id = $1 AND app = $2 AND member = $3 and id = $4 AND migration_id != $5"
+	query := "SELECT app, member, id, data, pk, user_id, migration_id FROM data_bags WHERE user_id = $1 AND app = $2 AND member = $3 and id = $4 AND migration_id != $5"
 	return DataCall1(dbConn, query, user_id, app, member, id, migration_id)
 }
 
