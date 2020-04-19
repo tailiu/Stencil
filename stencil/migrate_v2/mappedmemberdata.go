@@ -122,7 +122,7 @@ func (mmd MappedMemberData) GetDataMap() DataMap {
 
 func (mmd *MappedMemberData) CreateInnerDependencyReferences(appConfig config.AppConfig, tag config.Tag, nodeData DataMap) ([]MappingRef, error) {
 
-	log.Printf("@CreateInnerDependencyReferences | nodeTag: %s | nodeData: %v  \n", tag.Name, nodeData)
+	// log.Printf("@CreateInnerDependencyReferences | nodeTag: %s | nodeData: %v  \n", tag.Name, nodeData)
 
 	var refs []MappingRef
 
@@ -200,7 +200,7 @@ func (mmd *MappedMemberData) CreateInnerDependencyReferences(appConfig config.Ap
 
 func (mmd *MappedMemberData) CreateReferencesViaDependencies(appConfig config.AppConfig, tag config.Tag, nodeData DataMap) ([]MappingRef, error) {
 
-	log.Printf("@CreateReferencesViaDependencies | nodeTag: %s | nodeData: %v  \n", tag.Name, nodeData)
+	// log.Printf("@CreateReferencesViaDependencies | nodeTag: %s | nodeData: %v  \n", tag.Name, nodeData)
 
 	var refs []MappingRef
 
@@ -208,7 +208,7 @@ func (mmd *MappedMemberData) CreateReferencesViaDependencies(appConfig config.Ap
 		for _, depOn := range dep.DependsOn {
 			if referencedTag, err := appConfig.GetTag(depOn.Tag); err == nil {
 
-				log.Printf("@CreateReferencesViaDependencies | referencedTag: %s  \n", referencedTag.Name)
+				// log.Printf("@CreateReferencesViaDependencies | referencedTag: %s  \n", referencedTag.Name)
 
 				for _, condition := range depOn.Conditions {
 					tagAttr, err := tag.ResolveTagAttr(condition.TagAttr)
@@ -299,7 +299,7 @@ func (mmd *MappedMemberData) CreateReferencesViaDependencies(appConfig config.Ap
 
 func (mmd *MappedMemberData) CreateReferencesViaOwnerships(appConfig config.AppConfig, tag config.Tag, nodeData DataMap) ([]MappingRef, error) {
 
-	log.Printf("@CreateReferencesViaOwnerships | nodeTag: %s | nodeData: %v  \n", tag.Name, nodeData)
+	// log.Printf("@CreateReferencesViaOwnerships | nodeTag: %s | nodeData: %v  \n", tag.Name, nodeData)
 
 	var refs []MappingRef
 
@@ -310,7 +310,7 @@ func (mmd *MappedMemberData) CreateReferencesViaOwnerships(appConfig config.AppC
 	if own := appConfig.GetOwnership(tag.Name, "root"); own != nil {
 		if rootTag, err := appConfig.GetTag("root"); err == nil {
 
-			log.Printf("@CreateReferencesViaOwnerships | referencedTag: %s  \n", rootTag.Name)
+			// log.Printf("@CreateReferencesViaOwnerships | referencedTag: %s  \n", rootTag.Name)
 
 			for _, condition := range own.Conditions {
 

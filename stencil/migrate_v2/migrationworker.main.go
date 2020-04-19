@@ -16,6 +16,12 @@ import (
 	"github.com/gookit/color"
 )
 
+func (mWorker *MigrationWorker) CreateBagManager() *BagManager {
+	var bagManager BagManager
+	bagManager.Init(mWorker.logTxn.DBconn, mWorker.SrcAppConfig.AppID, mWorker.uid)
+	return &bagManager
+}
+
 func (mWorker *MigrationWorker) FetchRoot(threadID int) error {
 	tagName := "root"
 	if root, err := mWorker.SrcAppConfig.GetTag(tagName); err == nil {
@@ -839,6 +845,8 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 			var mappedMemberData []MappedMemberData
 			var migrated bool
 
+			bagManager := mWorker.CreateBagManager()
+
 			for _, toTable := range mapping.ToTables {
 
 				mappedMemberDatum := mWorker.GetMappedMemberData(toTable, node)
@@ -859,7 +867,7 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 				}
 
 				mWorker.Logger.Infof("Cols before merging: %v\n", mappedMemberDatum.ToCols())
-				if err := mWorker.MergeBagDataWithMappedData(&mappedMemberDatum, node); err != nil {
+				if err := mWorker.MergeBagDataWithMappedData(&mappedMemberDatum, node, bagManager); err != nil {
 					mWorker.Logger.Fatal(err)
 				} else {
 					mWorker.Logger.Infof("Cols after merging: %v\n", mappedMemberDatum.ToCols())
@@ -901,6 +909,7 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 			}
 
 			if migrated {
+				bagManager.UpdateBags(mWorker.tx.StencilTx, mWorker.logTxn.Txn_id)
 				node.DeleteMappedDataFromNode(mappedMemberData)
 			}
 

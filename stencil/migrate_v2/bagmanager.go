@@ -40,7 +40,7 @@ func (bm *BagManager) IsRowVisited(app, member, id string) bool {
 func (bm *BagManager) GetBagsFromDB(fromAppID, fromMemberID string, fromID int64, txnID int) *DBBag {
 	if bagRow, err := db.GetBagByAppMemberIDV2(bm.DBConn, bm.PrevUIDs[fromAppID], fromAppID, fromMemberID, fromID, txnID); err != nil {
 		log.Fatal("@GetBagsFromDB > GetBagByAppMemberIDV2, Unable to get bags | ", bm.PrevUIDs[fromAppID], fromAppID, fromMemberID, fromID, err)
-	} else {
+	} else if bagRow != nil {
 		if bag, ok := bm.Bags[fmt.Sprint(bagRow["pk"])]; ok {
 			return bag
 		} else {
@@ -52,7 +52,6 @@ func (bm *BagManager) GetBagsFromDB(fromAppID, fromMemberID string, fromID int64
 				MemberID: fmt.Sprint(bagRow["member"]),
 				TxnID:    fmt.Sprint(bagRow["migration_id"]),
 			}
-
 			bagData := make(DataMap)
 			if err := json.Unmarshal(bagRow["data"].([]byte), &bagData); err != nil {
 				fmt.Println(bag)
@@ -98,9 +97,9 @@ func (bag *DBBag) RemoveAttrs() bool {
 		return false
 	}
 	for _, attr := range bag.AttrsToRemove {
-		log.Println("Deleting attr from bag data: ", attr)
 		delete(bag.Data, attr)
 	}
+	log.Println("DELETED ATTRs From Bag |  ", bag.AttrsToRemove)
 	return true
 }
 
