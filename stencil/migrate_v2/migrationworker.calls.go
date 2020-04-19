@@ -19,10 +19,11 @@ func (mWorker *MigrationWorker) CallMigration(node *DependencyNode, threadID int
 			defer mWorker.RollbackTransactions()
 		}
 
-		log.Println(fmt.Sprintf("CHECKING NEXT NODES { %s }", node.Tag.Name))
-
-		if err := mWorker.CheckNextNode(node); err != nil {
-			return err
+		if !strings.EqualFold(node.Tag.Name, "root") {
+			log.Println(fmt.Sprintf("CHECKING NEXT NODES { %s }", node.Tag.Name))
+			if err := mWorker.CheckNextNode(node); err != nil {
+				return err
+			}
 		}
 
 		log.Println(fmt.Sprintf("HANDLING MIGRATION { %s }", node.Tag.Name))

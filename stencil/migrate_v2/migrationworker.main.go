@@ -45,68 +45,65 @@ func (mWorker *MigrationWorker) FetchRoot(threadID int) error {
 
 func (mWorker *MigrationWorker) GetAllNextNodes(node *DependencyNode) ([]*DependencyNode, error) {
 	var nodes []*DependencyNode
-	for _, dep := range mWorker.SrcAppConfig.GetSubDependencies(node.Tag.Name) {
+
+	for _, dep := range mWorker.SrcAppConfig.ShuffleDependencies(mWorker.SrcAppConfig.GetSubDependencies(node.Tag.Name)) {
 		if child, err := mWorker.SrcAppConfig.GetTag(dep.Tag); err == nil {
 			if where, err := node.ResolveDependencyConditions(mWorker.SrcAppConfig, dep, child); err == nil {
 				ql := mWorker.GetTagQL(child)
 				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 				sql += child.ResolveRestrictions()
-				// log.Println("@GetAllNextNodes | ", sql)
-				if data, err := db.DataCall(mWorker.SrcAppConfig.DBConn, sql); err == nil {
-					for _, datum := range data {
-						newNode := new(DependencyNode)
-						newNode.Tag = child
-						newNode.SQL = sql
-						newNode.Data = datum
-						nodes = append(nodes, newNode)
+				// sql += mWorker.visitedNodes.ExcludeVisited(child)
+				if res, err := db.DataCall(mWorker.SrcAppConfig.DBConn, sql); err == nil {
+					for _, data := range res {
+						newNode := DependencyNode{Tag: child, SQL: sql, Data: data}
+						nodes = append(nodes, &newNode)
 					}
 				} else {
-					mWorker.Logger.Fatal("@GetAllNextNodes: Error while DataCall: ", err)
+					fmt.Println("@GetAllNextNodes > GetDependentNode > DataCall1 | ", err)
+					mWorker.Logger.Fatal(sql)
 					return nil, err
 				}
 			} else {
-				log.Println("@GetAllNextNodes > ResolveDependencyConditions | ", err)
+				log.Println("@GetAllNextNodes > GetDependentNode > ResolveDependencyConditions | ", err)
 			}
-		} else {
-			mWorker.Logger.Fatal("@GetAllNextNodes: Tag doesn't exist? ", dep.Tag)
 		}
 	}
-	// if len(mWorker.SrcAppConfig.GetSubDependencies(node.Tag.Name)) > 0 {
-	// 	log.Println("@GetAllNextNodes:", len(nodes))
-	// 	mWorker.Logger.Fatal(nodes)
+
+	// for _, dep := range mWorker.SrcAppConfig.GetSubDependencies(node.Tag.Name) {
+	// 	if child, err := mWorker.SrcAppConfig.GetTag(dep.Tag); err == nil {
+	// 		if where, err := node.ResolveDependencyConditions(mWorker.SrcAppConfig, dep, child); err == nil {
+	// 			ql := mWorker.GetTagQL(child)
+	// 			sql := fmt.Sprintf("%s WHERE %s ", ql, where)
+	// 			sql += child.ResolveRestrictions()
+	// 			// log.Println("@GetAllNextNodes | ", sql)
+	// 			if data, err := db.DataCall(mWorker.SrcAppConfig.DBConn, sql); err == nil {
+	// 				for _, datum := range data {
+	// 					newNode := new(DependencyNode)
+	// 					newNode.Tag = child
+	// 					newNode.SQL = sql
+	// 					newNode.Data = datum
+	// 					nodes = append(nodes, newNode)
+	// 				}
+	// 			} else {
+	// 				mWorker.Logger.Fatal("@GetAllNextNodes: Error while DataCall: ", err)
+	// 				return nil, err
+	// 			}
+	// 		} else {
+	// 			log.Println("@GetAllNextNodes > ResolveDependencyConditions | ", err)
+	// 		}
+	// 	} else {
+	// 		mWorker.Logger.Fatal("@GetAllNextNodes: Tag doesn't exist? ", dep.Tag)
+	// 	}
 	// }
+	// // if len(mWorker.SrcAppConfig.GetSubDependencies(node.Tag.Name)) > 0 {
+	// // 	log.Println("@GetAllNextNodes:", len(nodes))
+	// // 	mWorker.Logger.Fatal(nodes)
+	// // }
 	return nodes, nil
 }
 
 func (mWorker *MigrationWorker) GetAllPreviousNodes(node *DependencyNode) ([]*DependencyNode, error) {
 	var nodes []*DependencyNode
-
-	if node.Tag.Name != "root" {
-		if ownership := mWorker.SrcAppConfig.GetOwnership(node.Tag.Name, "root"); ownership != nil {
-			if where, err := node.ResolveParentOwnershipConditions(ownership, mWorker.Root.Tag); err == nil {
-				ql := mWorker.GetTagQL(mWorker.Root.Tag)
-				sql := fmt.Sprintf("%s WHERE %s ", ql, where)
-				sql += mWorker.Root.Tag.ResolveRestrictions()
-				if data, err := db.DataCall(mWorker.SrcAppConfig.DBConn, sql); err == nil {
-					for _, datum := range data {
-						newNode := new(DependencyNode)
-						newNode.Tag = mWorker.Root.Tag
-						newNode.SQL = sql
-						newNode.Data = datum
-						nodes = append(nodes, newNode)
-					}
-				} else {
-					fmt.Println(sql)
-					mWorker.Logger.Fatal("@GetAllPreviousNodes: Error while DataCall: ", err)
-					return nil, err
-				}
-			} else {
-				log.Println("@GetAllPreviousNodes > ResolveParentOwnershipConditions: ", err)
-			}
-		} else {
-			mWorker.Logger.Fatal("@GetAllPreviousNodes: Ownership doesn't exist? ", node.Tag.Name, "root")
-		}
-	}
 
 	for _, dep := range mWorker.SrcAppConfig.GetParentDependencies(node.Tag.Name) {
 		for _, pdep := range dep.DependsOn {
@@ -644,6 +641,11 @@ func (mWorker *MigrationWorker) DeleteRoot(threadID int) error {
 	}
 	defer mWorker.RollbackTransactions()
 
+	log.Println(fmt.Sprintf("CHECKING NEXT NODES { %s }", mWorker.Root.Tag.Name))
+	if err := mWorker.CheckNextNode(mWorker.Root); err != nil {
+		return err
+	}
+
 	if err := mWorker.HandleNodeDeletion(mWorker.Root, false); err != nil {
 		mWorker.Logger.Fatal("@DeleteRoot:", err)
 		return err
@@ -685,30 +687,62 @@ func (mWorker *MigrationWorker) MigrateMemberData(mmd MappedMemberData, node *De
 func (mWorker *MigrationWorker) CreateAttributeRows(mmd MappedMemberData) error {
 
 	for toAttr, mmv := range mmd.Data {
-		var fromValue interface{}
-		// NEED TO CONSIDER SOMETHING HERE
-		// CURRENTLY, ONLY THE MEMBER AND ATTRIBUTE MAPPED TO THE TARGET ID ATTRIBUTE WILL BE STORED IN THE ATTRIBUTE TABLE
-		// ALONG WITH THE ATTRIBUTES THAT HAVE REFERENCES
-		// THAT'S WHY SOME MEMBERS ARE MISSED THAT ARE ACTUALLY MAPPED
-		// FOR EXAMPLE, PROFILE IN ROOT WILL NOT HAVE AN ATTRIBUTE ROW, BECAUSE IT ISN'T MAPPED TO ANY ID ATTRIBUTE IN MASTODON
-		// AND IT DOESN'T HAVE ANY REFERENCE
-		if strings.EqualFold(toAttr, "id") {
-			fromValue = mmv.FromID
-		} else if mmv.Ref != nil {
-			fromValue = mmv.Value
-		} else {
+
+		if mmv.Ref == nil {
 			continue
 		}
 
 		if toAttrID, err := db.AttrID(mWorker.logTxn.DBconn, mmd.ToMemberID, toAttr); err != nil {
 			mWorker.Logger.Fatal(err)
 		} else {
-			if err := db.InsertIntoAttrTable(mWorker.tx.StencilTx, mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, helper.ConvertScientificNotationToString(fromValue), helper.ConvertScientificNotationToString(mmv.Value), fmt.Sprint(mWorker.logTxn.Txn_id)); err != nil {
-				mWorker.Logger.Debugf("Args |\nFromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, helper.ConvertScientificNotationToString(fromValue), helper.ConvertScientificNotationToString(mmv.Value))
+			if err := db.InsertIntoAttrTable(mWorker.tx.StencilTx, mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, helper.ConvertScientificNotationToString(mmv.Value), helper.ConvertScientificNotationToString(mmv.Value), fmt.Sprint(mWorker.logTxn.Txn_id)); err != nil {
+				mWorker.Logger.Debugf("Args |\nFromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, helper.ConvertScientificNotationToString(mmv.Value), helper.ConvertScientificNotationToString(mmv.Value))
 				mWorker.Logger.Fatal(err)
 				return err
 			} else {
-				color.LightBlue.Printf("New AttrRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, fromValue, mmv.Value)
+				color.LightBlue.Printf("New AttrRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", mmv.AppID, mWorker.DstAppConfig.AppID, mmv.FromMemberID, mmd.ToMemberID, mmv.FromID, mmv.ToID, mmv.FromAttrID, toAttrID, mmv.Value, mmv.Value)
+			}
+		}
+	}
+	return nil
+}
+
+func (mWorker *MigrationWorker) CreateIDAttributeRows(mmd MappedMemberData, data DataMap) error {
+
+	for srcAppID, srcMembers := range mmd.GetSourceAppsAndTables() {
+		if srcAppID != mWorker.SrcAppConfig.AppID {
+			continue
+		}
+		for _, srcMember := range srcMembers {
+			var srcID int64
+			if val, ok := data[srcMember+".id"]; ok {
+				if val != nil {
+					srcID = helper.GetInt64(val)
+				}
+			} else {
+				fmt.Println(data)
+				mWorker.Logger.Fatal("Unable to get id for member: ", srcMember)
+			}
+
+			if srcMemberID, err := db.TableID(mmd.DBConn, srcMember, srcAppID); err != nil {
+				fmt.Println(srcMember, srcAppID)
+				log.Fatal("@CreateIDAttributeRows.TableID: ", err)
+			} else {
+				if srcAttrID, err := db.AttrID(mWorker.logTxn.DBconn, srcMemberID, "id"); err != nil {
+					mWorker.Logger.Fatal("@CreateIDAttributeRows.SrcAttrID: ", err)
+				} else {
+					if toAttrID, err := db.AttrID(mWorker.logTxn.DBconn, mmd.ToMemberID, "id"); err != nil {
+						mWorker.Logger.Fatal("@CreateIDAttributeRows.ToAttrID: ", err)
+					} else {
+						if err := db.InsertIntoAttrTable(mWorker.tx.StencilTx, srcAppID, mWorker.DstAppConfig.AppID, srcMemberID, mmd.ToMemberID, srcID, mmd.ToID, srcAttrID, toAttrID, srcID, mmd.ToID, fmt.Sprint(mWorker.logTxn.Txn_id)); err != nil {
+							mWorker.Logger.Debugf("Args |\nFromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", srcAppID, mWorker.DstAppConfig.AppID, srcMemberID, mmd.ToMemberID, srcID, mmd.ToID, srcAttrID, toAttrID, srcID, mmd.ToID)
+							mWorker.Logger.Fatal(err)
+							return err
+						} else {
+							color.LightBlue.Printf("New IDRow | FromApp: %s, DstApp: %s, FromTable: %s, ToTable: %s, FromID: %v, toID: %s, FromAttr: %s, ToAttr: %s, fromVal: %v, toVal: %v \n", srcAppID, mWorker.DstAppConfig.AppID, srcMemberID, mmd.ToMemberID, srcID, mmd.ToID, srcAttrID, toAttrID, srcID, mmd.ToID)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -872,6 +906,10 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 					mWorker.Logger.Fatal(err)
 				}
 
+				if err := mWorker.CreateIDAttributeRows(mappedMemberDatum, node.Data); err != nil {
+					mWorker.Logger.Fatal(err)
+				}
+
 				if err := mWorker.CreateAttributeRows(mappedMemberDatum); err != nil {
 					mWorker.Logger.Fatal(err)
 				}
@@ -912,23 +950,24 @@ func (mWorker *MigrationWorker) HandleMigration(node *DependencyNode) (bool, err
 func (mWorker *MigrationWorker) CheckNextNode(node *DependencyNode) error {
 
 	if nextNodes, err := mWorker.GetAllNextNodes(node); err == nil {
-		// log.Println(fmt.Sprintf("NEXT NODES FETCHED { %s } | nodes [%d]", node.Tag.Name, len(nextNodes)))
-		if len(nextNodes) > 0 {
-			for _, nextNode := range nextNodes {
-				// log.Println(fmt.Sprintf("CURRENT NEXT NODE { %s > %s } %d/%d", node.Tag.Name, nextNode.Tag.Name, i, len(nextNodes)))
-				// mWorker.AddToReferences(nextNode, node)
-				if precedingNodes, err := mWorker.GetAllPreviousNodes(node); err != nil {
+		log.Println(fmt.Sprintf("NEXT NODES FETCHED { %s } : %d", node.Tag.Name, len(nextNodes)))
+		for _, nextNode := range nextNodes {
+			// log.Println(fmt.Sprintf("CURRENT NEXT NODE { %s > %s } %d/%d", node.Tag.Name, nextNode.Tag.Name, i, len(nextNodes)))
+			// mWorker.AddToReferences(nextNode, node)
+			if precedingNodes, err := mWorker.GetAllPreviousNodes(nextNode); err != nil {
+				return err
+			} else if len(precedingNodes) <= 1 {
+				// log.Printf("precedingNodes <= 1 { %s } \n", node.Tag.Name)
+				if err := mWorker.CheckNextNode(nextNode); err != nil {
 					return err
-				} else if len(precedingNodes) <= 1 {
-					if err := mWorker.CheckNextNode(nextNode); err != nil {
-						return err
-					}
-					if err := mWorker.SendNodeToBag(nextNode); err != nil {
-						return err
-					}
 				}
+				log.Printf("SEND NEXT NODE TO BAG { %s } \n", nextNode.Tag.Name)
+				if err := mWorker.SendNodeToBag(nextNode); err != nil {
+					return err
+				}
+			} else {
+				// log.Printf("precedingNodes > 1 { %s } \n", node.Tag.Name)
 			}
-			// log.Println(fmt.Sprintf("NEXT NODES RETURNING %s", node.Tag.Name))
 		}
 		return nil
 	} else {
