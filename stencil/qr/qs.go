@@ -64,7 +64,7 @@ func (self *QS) GenCombinedTableQuery(args map[string]string) string {
 
 	phyTab := self.QR.GetPhyMappingForLogicalTable(args["table"])
 	phyTabKeys := helper.GetKeysOfPhyTabMap(phyTab)
-	log.Println(phyTab)
+	// log.Println(phyTab)
 	for _, ptab := range phyTabKeys {
 		for _, pair := range phyTab[ptab] {
 			pColName := fmt.Sprintf("%s.%s as \"%s.%s\"", self.getTableAlias(args["alias"], ptab), pair[0], args["alias"], pair[1])

@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/gookit/color"
 )
 
 func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, arg string, mappings *config.MappedApp) MigrationWorker {
@@ -214,7 +215,6 @@ func (self *MigrationWorker) FetchRoot() error {
 		rootTable, rootCol := self.SrcAppConfig.GetItemsFromKey(root, "root_id")
 		qs.AddWhereWithValue(rootTable+"."+rootCol, "=", self.uid)
 		sql := qs.GenSQLWithSize()
-		// log.Fatal(sql)
 		if data, err := db.DataCall1(self.DBConn, sql); err == nil && len(data) > 0 {
 			rootNode := new(DependencyNode)
 			rootNode.Tag = root
@@ -406,7 +406,7 @@ func (self *MigrationWorker) PushData(stable, dtable, pk string) error {
 	// 	log.Println("## DISPLAY ERROR!", err)
 	// 	return errors.New("0")
 	// }
-	if err := db.SaveForEvaluation(self.DBConn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, stable, dtable, pk, pk, "-", "-", fmt.Sprint(self.logTxn.Txn_id)); err != nil {
+	if err := db.SaveForEvaluationV1(self.DBConn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, stable, dtable, pk, pk, "-", "-", fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 		log.Println("## SaveForEvaluation ERROR!", err)
 		return errors.New("0")
 	}
@@ -846,7 +846,7 @@ func (self *MigrationWorker) HandleMappedMembersOfNode(tx *sql.Tx, mapping confi
 							return nil, err
 						}
 
-						if err := db.SaveForEvaluation(self.DBConn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, toTable.Table, src_rowid, dst_rowid, "-", "-", fmt.Sprint(self.logTxn.Txn_id)); err != nil {
+						if err := db.SaveForEvaluationV1(self.DBConn, self.SrcAppConfig.AppID, self.DstAppConfig.AppID, fromTable, toTable.Table, src_rowid, dst_rowid, "-", "-", fmt.Sprint(self.logTxn.Txn_id)); err != nil {
 							log.Println("## SaveForEvaluation ERROR!", err)
 							return nil, errors.New("0")
 						}
@@ -1137,8 +1137,8 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 
 		childIDAttr, _ := child.Tag.ResolveTagAttr("id")
 
-		log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", threadID, node.Tag.Name, node.Data[nodeIDAttr]))
-		log.Println(fmt.Sprintf("~%d~ Adjacent  Node: { %s } ID: %v", threadID, child.Tag.Name, child.Data[childIDAttr]))
+		log.Println(fmt.Sprintf("~%d~ Current   Node: { %s } ID: %v", threadID, color.FgCyan.Render(node.Tag.Name), node.Data[nodeIDAttr]))
+		log.Println(fmt.Sprintf("~%d~ Adjacent  Node: { %s } ID: %v", threadID, color.FgCyan.Render(child.Tag.Name), child.Data[childIDAttr]))
 
 		if err := self.DeletionMigration(child, threadID); err != nil {
 			return err
@@ -1149,13 +1149,13 @@ func (self *MigrationWorker) DeletionMigration(node *DependencyNode, threadID in
 
 	if self.IsNodeOwnedByRoot(node) || strings.Contains(node.Tag.Name, "root") {
 		if err := self.HandleMigration(node); err == nil {
-			log.Println(fmt.Sprintf("x%dx MIGRATED  node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+			log.Println(fmt.Sprintf("x%dx %s  node { %s } From [%s] to [%s]", threadID, color.FgLightGreen.Render("Migrated"), node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			self.UpdateMigrationSize(node)
 		} else {
 			if strings.EqualFold(err.Error(), "2") {
-				log.Println(fmt.Sprintf("x%dx BAGGED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
+				log.Println(fmt.Sprintf("x%dx %s    node { %s } From [%s] to [%s]", threadID, color.FgYellow.Render("BAG"), node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName))
 			} else {
-				log.Println(fmt.Sprintf("x%dx FAILED    node { %s } From [%s] to [%s]", threadID, node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
+				log.Println(fmt.Sprintf("x%dx %s    node { %s } From [%s] to [%s]", threadID, color.FgRed.Render("Failed"), node.Tag.Name, self.SrcAppConfig.AppName, self.DstAppConfig.AppName), err)
 				if strings.EqualFold(err.Error(), "0") {
 					log.Println(err)
 					return err
