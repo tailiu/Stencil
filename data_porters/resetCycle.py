@@ -27,8 +27,8 @@ def runQueries(dbname):
         "diaspora":[
             "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('diaspora_test') and pid <> pg_backend_pid(); ",
             "drop database diaspora_test; ",
-            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('diaspora_100000') and pid <> pg_backend_pid();",
-            "create database diaspora_test with template diaspora_100000 owner cow;"]
+            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('diaspora_1000') and pid <> pg_backend_pid();",
+            "create database diaspora_test with template diaspora_1000 owner cow;"]
     }
 
     for items in query_set.items():

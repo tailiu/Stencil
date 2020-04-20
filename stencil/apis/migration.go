@@ -1,7 +1,15 @@
 package apis
 
 import (
-	migrate "stencil/migrate_v2"
+	"fmt"
+	"log"
+	"stencil/config"
+	"stencil/db"
+	"stencil/migrate_v1"
+	"stencil/migrate_v2"
+	"stencil/transaction"
+
+	"github.com/gookit/color"
 )
 
 func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBlade, enableBags bool, args ...bool) {
@@ -20,11 +28,11 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBla
 		rootAlive = args[2]
 	}
 
-	mtController := migrate.MigrationThreadController{
+	mtController := migrate_v2.MigrationThreadController{
 		UID:             uid,
 		MType:           mtype,
-		SrcAppInfo:      migrate.App{Name: srcApp, ID: srcAppID},
-		DstAppInfo:      migrate.App{Name: dstApp, ID: dstAppID},
+		SrcAppInfo:      migrate_v2.App{Name: srcApp, ID: srcAppID},
+		DstAppInfo:      migrate_v2.App{Name: dstApp, ID: dstAppID},
 		Blade:           isBlade,
 		EnableBags:      enableBags,
 		FTPFlag:         enableFTP,
@@ -37,49 +45,49 @@ func StartMigration(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, isBla
 	mtController.Stop()
 }
 
-// func StartMigrationSA2(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, enableBags bool) {
+func StartMigrationSA2(uid, srcApp, srcAppID, dstApp, dstAppID, mtype string, enableBags bool) {
 
-// 	if logTxn, err := transaction.BeginTransaction(); err == nil {
-// 		MaD := "0"
-// 		threads := 1
+	if logTxn, err := transaction.BeginTransaction(); err == nil {
+		MaD := "0"
+		threads := 1
 
-// 		switch mtype {
-// 		case "d":
-// 			{
-// 				mtype = migrate.DELETION
-// 			}
-// 		case "i":
-// 			{
-// 				mtype = migrate.INDEPENDENT
-// 			}
-// 		case "c":
-// 			{
-// 				mtype = migrate.CONSISTENT
-// 			}
-// 		}
+		switch mtype {
+		case "d":
+			{
+				mtype = migrate_v1.DELETION
+			}
+		case "i":
+			{
+				mtype = migrate_v1.INDEPENDENT
+			}
+		case "c":
+			{
+				mtype = migrate_v1.CONSISTENT
+			}
+		}
 
-// 		if len(mtype) <= 0 {
-// 			log.Fatal("can't read migration type")
-// 		}
+		if len(mtype) <= 0 {
+			log.Fatal("can't read migration type")
+		}
 
-// 		mappings := config.GetSchemaMappingsFor(srcApp, dstApp)
+		mappings := config.GetSchemaMappingsFor(srcApp, dstApp)
 
-// 		if mappings == nil {
-// 			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
-// 		}
+		if mappings == nil {
+			log.Fatal(fmt.Sprintf("Can't find mappings from [%s] to [%s].", srcApp, dstApp))
+		}
 
-// 		if msize, err := mthread.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD, enableBags); err == nil {
-// 			transaction.LogOutcome(logTxn, "COMMIT")
-// 			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, msize)
-// 			logTxn.DBconn.Close()
-// 		} else {
-// 			transaction.LogOutcome(logTxn, "ABORT")
-// 			log.Println("Transaction aborted:", logTxn.Txn_id)
-// 		}
+		if msize, err := migrate_v1.ThreadController(uid, srcApp, srcAppID, dstApp, dstAppID, logTxn, mtype, mappings, threads, MaD, enableBags); err == nil {
+			transaction.LogOutcome(logTxn, "COMMIT")
+			db.FinishMigration(logTxn.DBconn, logTxn.Txn_id, msize)
+			logTxn.DBconn.Close()
+		} else {
+			transaction.LogOutcome(logTxn, "ABORT")
+			log.Println("Transaction aborted:", logTxn.Txn_id)
+		}
 
-// 	} else {
-// 		log.Fatal("Can't begin migration transaction", err)
-// 	}
+	} else {
+		log.Fatal("Can't begin migration transaction", err)
+	}
 
-// 	color.Success.Println("End of Migration")
-// }
+	color.Success.Println("End of Migration")
+}

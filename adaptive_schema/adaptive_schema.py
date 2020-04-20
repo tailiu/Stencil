@@ -339,7 +339,7 @@ if __name__ == "__main__":
 
     t = 0.5
 
-    db, cur = getDBConn("stencil", True)
+    db, cur = getDBConn("stencil_test", True)
     
     print "Reset Physical DB"
     truncatePhysicalTables()

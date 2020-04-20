@@ -129,7 +129,7 @@ func MigrationTransactionLogOutcome(dbConn *sql.DB, txnID int, outcome string) e
 }
 
 func GetRowCount(dbConn *sql.DB, table string) (int64, error) {
-	sql := fmt.Sprintf("SELECT COUNT(*) as total_rows from %s", table)
+	sql := fmt.Sprintf("SELECT COUNT(*) as total_rows from \"%s\"", table)
 	if result, err := DataCall1(dbConn, sql); err == nil {
 		if val, ok := result["total_rows"]; ok {
 			return val.(int64), nil

@@ -30,21 +30,21 @@ func runBulkTx(dbConn *sql.DB, QIs [][]*qr.QI) bool {
 
 	queries, args := qr.GenSQLBulk(QIs)
 
-	if queriesLen, argsLen := len(queries), len(args); queriesLen > 0 && argsLen > 0 && queriesLen == argsLen {
+	if queriesLen, argsLen := len(queries), len(args); queriesLen != argsLen {
+		success = false
+		color.Danger.Printf("Mismatched queries and args: %v | %v\n", queriesLen, argsLen)
+	} else if queriesLen > 0 && argsLen > 0 {
 		for i := 0; i < queriesLen; i++ {
-			color.LightMagenta.Println(queries[i])
-			fmt.Println(args[i])
+			// color.LightMagenta.Println(queries[i])
+			// fmt.Println(args[i])
 			if _, err := tx.Exec(queries[i], args[i]...); err != nil {
 				success = false
 				color.Danger.Print("Execution Failed: ")
 				log.Fatal(err)
 			} else {
-				color.Info.Println("Executed")
+				// color.Info.Println("Executed")
 			}
 		}
-	} else {
-		success = false
-		color.Danger.Printf("Mismatched queries and args: %s | %s\n", queriesLen, argsLen)
 	}
 
 	if success {
@@ -56,11 +56,9 @@ func runBulkTx(dbConn *sql.DB, QIs [][]*qr.QI) bool {
 		}
 	} else {
 		tx.Rollback()
-		fmt.Println(queries)
-		fmt.Println()
-		fmt.Println(args)
-		fmt.Println()
-		color.Danger.Print("Execution Halted! ")
+		fmt.Println("queries=> ", queries)
+		fmt.Println("args=> ", args)
+		color.Danger.Print("Execution Failed! ")
 		log.Fatal()
 	}
 
@@ -78,7 +76,7 @@ func runTx(dbConn *sql.DB, QIs []*qr.QI) bool {
 	for _, qi := range QIs {
 		query, args := qi.GenSQL()
 
-		fmt.Println(query)
+		// fmt.Println(query)
 		if _, err := tx.Exec(query, args...); err != nil {
 			success = false
 			fmt.Println("Some error:", err)
