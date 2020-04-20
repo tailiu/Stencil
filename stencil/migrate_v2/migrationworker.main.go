@@ -651,11 +651,10 @@ func (mWorker *MigrationWorker) MigrateMemberData(mmd MappedMemberData, node *De
 	colStr, phStr, valList := mmd.GetQueryArgs()
 
 	if id, err := db.InsertRowIntoAppDB(mWorker.tx.DstTx, mmd.ToMember, colStr, phStr, valList...); err == nil {
-		mWorker.Logger.Infof("Inserted into '%s' with ID '%v', ToID: '%v' \ncols | %s\nvals | %v", mmd.ToMember, id, mmd.ToID, colStr, valList)
+		mWorker.Logger.Infof("Inserted into '%s' with ID '%v', ToID: '%v' \ncols | %s\nvals | %v\n", mmd.ToMember, id, mmd.ToID, colStr, valList)
 		return nil
 	} else {
-		mWorker.Logger.Infof("Failed to insert new row into '%s' | err: %s \n", mmd.ToMember, err)
-		mWorker.Logger.Infof("Args | [%s], [%s], [%v]  \n", colStr, phStr, valList)
+		mWorker.Logger.Warnf("Failed to insert new row into '%s' | err: %s \ncols | %s \nplaceholders | %s \nvals | %v\n ", mmd.ToMember, err, colStr, phStr, valList)
 		return err
 	}
 }
