@@ -276,6 +276,63 @@ func (self *AppConfig) GetTagQS(tag Tag, params map[string]string) *qr.QS {
 	if len(tag.InnerDependencies) > 0 {
 		joinMap := tag.CreateInDepMapSA2()
 		seenMap := make(map[string]bool)
+		for _, fromTable := range tag.GetInDepMembersInOrder() {
+			toTablesMap := joinMap[fromTable]
+			if _, ok := seenMap[fromTable]; !ok {
+				args := map[string]string{"table": fromTable}
+				helper.ConcatMaps(args, params)
+				qs.FromTable(args)
+				qs.SelectColumns(fromTable + ".*")
+			}
+			for toTable, conditions := range toTablesMap {
+				if conditions != nil {
+					joinArgs := map[string]string{"table": toTable, "join": "FULL JOIN"}
+					helper.ConcatMaps(joinArgs, params)
+					conditions = append(conditions, joinMap[toTable][fromTable]...)
+					if joinMap[toTable][fromTable] != nil {
+						joinMap[toTable][fromTable] = nil
+					}
+					for i, condition := range conditions {
+						joinArgs[fmt.Sprintf("condition%d", i)] = condition
+					}
+					qs.JoinTable(joinArgs)
+
+					qs.SelectColumns(toTable + ".*")
+					seenMap[toTable] = true
+				}
+			}
+			seenMap[fromTable] = true
+		}
+	} else {
+		table := tag.Members["member1"]
+		qs = qr.CreateQS(self.QR)
+		args := map[string]string{"table": table}
+		helper.ConcatMaps(args, params)
+		qs.FromTable(args)
+		qs.SelectColumns(table + ".*")
+	}
+	if len(tag.Restrictions) > 0 {
+		restrictions := qr.CreateQS(self.QR)
+		for _, restriction := range tag.Restrictions {
+			if restrictionAttr, err := tag.ResolveTagAttr(restriction["col"]); err == nil {
+				restrictions.AdditionalWhereWithValue("OR", restrictionAttr, "=", restriction["val"])
+			}
+		}
+		if restrictions.Where == "" {
+			log.Fatal(tag.Restrictions)
+		}
+		qs.AddWhereAsString("AND", restrictions.Where)
+	}
+	// log.Fatal(qs.GenSQL())
+	return qs
+}
+
+func (self *AppConfig) __defunct__GetTagQS(tag Tag, params map[string]string) *qr.QS {
+
+	qs := qr.CreateQS(self.QR)
+	if len(tag.InnerDependencies) > 0 {
+		joinMap := tag.CreateInDepMapSA2()
+		seenMap := make(map[string]bool)
 		for fromTable, toTablesMap := range joinMap {
 			if _, ok := seenMap[fromTable]; !ok {
 				args := map[string]string{"table": fromTable}

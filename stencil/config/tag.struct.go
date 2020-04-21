@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"stencil/db"
+	"stencil/helper"
 	"strings"
 )
 
@@ -32,6 +33,43 @@ func (tag Tag) ResolveTagAttr(attr string) (string, error) {
 		}
 	}
 	return "", errors.New(fmt.Sprintf("Tag Not Resolved, Attr Not Found in Tag Keys: [%s].[%s] ;", tag.Name, attr))
+}
+
+func (self Tag) GetInDepMembersInOrder() []string {
+
+	var members []string
+
+	for _, inDep := range self.InnerDependencies {
+		for mapFrom, mapTo := range inDep {
+			mapFromTokens := strings.Split(mapFrom, ".")
+			mapToTokens := strings.Split(mapTo, ".")
+			if !helper.Contains(members, self.Members[mapFromTokens[0]]) {
+				members = append(members, self.Members[mapFromTokens[0]])
+			}
+			if !helper.Contains(members, self.Members[mapToTokens[0]]) {
+				members = append(members, self.Members[mapToTokens[0]])
+			}
+		}
+	}
+
+	return members
+}
+
+func (self Tag) GetInDepPairsInOrder() [][]string {
+
+	var members [][]string
+
+	for _, inDep := range self.InnerDependencies {
+		for mapFrom, mapTo := range inDep {
+			mapFromTokens := strings.Split(mapFrom, ".")
+			mapToTokens := strings.Split(mapTo, ".")
+
+			members = append(members, []string{self.Members[mapFromTokens[0]], self.Members[mapToTokens[0]]})
+
+		}
+	}
+
+	return members
 }
 
 func (self Tag) CreateInDepMapSA2() map[string]map[string][]string {

@@ -20,6 +20,7 @@ import (
 )
 
 func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTxn *transaction.Log_txn, mtype string, arg string, mappings *config.MappedApp) MigrationWorker {
+	fmt.Printf("@CreateMigrationWorker.Args | UID: '%v'\n", uid)
 	srcAppConfig, err := config.CreateAppConfig(srcApp, srcAppID)
 	if err != nil {
 		log.Fatal(err)
@@ -44,8 +45,9 @@ func CreateMigrationWorker(uid, srcApp, srcAppID, dstApp, dstAppID string, logTx
 		Size:         0,
 		visitedNodes: make(map[string]map[string]bool)}
 	if err := mWorker.FetchRoot(); err != nil {
-		log.Fatal(err)
+		log.Fatal("@CreateMigrationWorker.CreateMigrationWorker: ", err)
 	}
+	// log.Fatal("@CreateMigrationWorker.CreateMigrationWorker: No error!")
 
 	return mWorker
 }
@@ -215,19 +217,19 @@ func (self *MigrationWorker) FetchRoot() error {
 		rootTable, rootCol := self.SrcAppConfig.GetItemsFromKey(root, "root_id")
 		qs.AddWhereWithValue(rootTable+"."+rootCol, "=", self.uid)
 		sql := qs.GenSQLWithSize()
+		// fmt.Println(sql)
 		if data, err := db.DataCall1(self.DBConn, sql); err == nil && len(data) > 0 {
 			rootNode := new(DependencyNode)
 			rootNode.Tag = root
 			rootNode.SQL = sql
 			rootNode.Data = data
 			self.root = rootNode
-			// log.Fatal(self.root.Data)
 			return nil
 		} else {
 			if err == nil {
 				err = errors.New("no data returned for root node, doesn't exist?")
 			}
-			// fmt.Println(sql)
+			fmt.Println(sql)
 			return err
 		}
 	} else {
