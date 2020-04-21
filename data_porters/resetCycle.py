@@ -41,5 +41,6 @@ def runQueries(dbname):
 
 if __name__ == "__main__":
     
-    dbName  = "stencil_test"
-    runQueries(dbName)
+    dbNames = ["stencil_test2"]
+    for dbName in dbNames:
+        runQueries(dbName)

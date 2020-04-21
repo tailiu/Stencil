@@ -21,7 +21,7 @@ func checkIfFuzool(table string) bool {
 func main() {
 	limit := int64(1000)
 	appName, appID := "diaspora", "1"
-	appDB, stencilDB := db.GetDBConn(appName+"_test"), db.GetDBConn("stencil")
+	appDB, stencilDB := db.GetDBConn(appName), db.GetDBConn("stencil")
 	tables := db.GetTablesOfDB(appDB, appName)
 	fmt.Println(tables)
 	for _, table := range tables {
