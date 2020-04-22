@@ -165,6 +165,8 @@ func (rr *RefResolution) getToReferences(attrRow map[string]string) []map[string
 		attrRow["from_attr"], attrRow["from_val"],
 	)
 
+	log.Println(query)
+	
 	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)

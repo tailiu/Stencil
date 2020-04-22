@@ -8,7 +8,7 @@ func main() {
 
 	// SA2_db_populating.TruncateSA2Tables()
 
-	SA2_db_populating.GetTotalRowCountsOfDB()
+	// SA2_db_populating.GetTotalRowCountsOfDB()
 
 	// SA2_db_populating.ListRowCountsOfDB()
 
@@ -20,7 +20,7 @@ func main() {
 
 	// SA2_db_populating.DropPartitionedTable()
 
-	// SA2_db_populating.PopulateSA2Tables()
+	// SA2_db_populating.PopulateRangeOfOneTable()
 
 	// SA2_db_populating.AddPrimaryKeysToParitions()
 
@@ -42,7 +42,7 @@ func main() {
 
 	// SA2_db_populating.CheckpointTruncate()
 
-	// SA2_db_populating.PupulatingController()
+	// SA2_db_populating.PupulatingControllerForOneTable()
 
 	// SA2_db_populating.CreateConstraintsIndexesOnPartitions()
 
@@ -61,5 +61,7 @@ func main() {
 	// SA2_db_populating.AddPrimaryKeysToBaseSupTables()
 
 	// SA2_db_populating.PupulatingControllerForAllTables()
+
+	SA2_db_populating.PupulatingControllerForAllTablesHandlingPKs("diaspora_100000", "stencil_sa2_100k")
 
 }

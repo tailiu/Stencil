@@ -10,7 +10,7 @@ import (
 )
 
 // Note that [dataSeqStart, dataSeqEnd)
-func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB, 
+func PopulateRangeOfOneTable(stencilDBConn, appDBConn *sql.DB, 
 	dataSeqStart, dataSeqEnd, limit int64, wg *sync.WaitGroup,
 	appName, appID, table string) {
 
@@ -25,12 +25,9 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 	offset := dataSeqStart
 
 	for {
-
 		if offset + limit > dataSeqEnd {
-
 			// if offset (start) is equal to dataSeqEnd, there is no need to populate
 			if offset != dataSeqEnd {
-
 				apis.Port(
 					appName, appID, table, 
 					dataSeqEnd - offset, offset,
@@ -38,60 +35,20 @@ func PopulateSA2Tables(stencilDBConn, appDBConn *sql.DB,
 				)
 
 			}
-
 			break
-
 		} else {
-
 			apis.Port(
 				appName, appID, table, 
 				limit, offset,
 				appDBConn, stencilDBConn,
-			)
-			
+			)	
 		}
-
 		offset += limit
 	}
 
 }
 
-// First population (stencil_exp_sa2):
-// My machine: people(finished), users(finished), likes, comments
-// VM: profiles(finished), notifications, posts
-// Blade server: conversations(done), conversation_visibilities(done),
-//				notification_actors, aspect_visibilities				
-
-// Second population (stencil_exp_sa2_1):
-// My machine: 
-// Blade server: photos
-
-// Third population (stencil_exp_sa2_2):
-// Blade server: remaining comments
-// My machine:
-
-// Forth population (stencil_exp_sa2_4):
-// Blade server: remaining likes
-// My machine:
-
-// Fifth population (stencil_exp_sa2_5)
-// Blade server: remaining notifications
-// My machine:
-
-// sixth population (stencil_exp_sa2_6)
-// Blade server: remaining notification_actors
-// My machine:
-
-// seventh population (stencil_exp_sa2_7)
-// Blade server: conversations(done and deleted), 
-// 				conversation_visibilities(done and deleted),
-// 				posts
-// My machine:
-
-// eighth population (stencil_exp_sa2_8)
-// Blade server: messages
-// My machine:
-func PupulatingController(tableName string, end int64) {
+func PupulatingControllerForOneTable(fromApp string, toStencilDB string, tableName string, end int64) {
 
 	var limit, startPoint, endPoint int64
 
@@ -104,9 +61,11 @@ func PupulatingController(tableName string, end int64) {
 	startPoint = 0
 	endPoint = end
 
-	db.STENCIL_DB = "stencil_exp_sa2_10k"
-	
-	appName := "diaspora_10000_sa2"
+	// db.STENCIL_DB = "stencil_sa2_100k"
+	db.STENCIL_DB = toStencilDB
+
+	// appName := "diaspora_100000"
+	appName := fromApp
 	appID := "1"
 
 	limit = 1000
@@ -147,27 +106,20 @@ func PupulatingController(tableName string, end int64) {
 	dataSeqStep = (rowCount - startPoint) / int64(threadNum)
 
 	for i := 0; i < threadNum; i++ {
-		
 		if i != threadNum - 1 {
-
-			go PopulateSA2Tables(
+			go PopulateRangeOfOneTable(
 				stencilDBConn, appDBConn, 
 				dataSeqStart, dataSeqStart + dataSeqStep, limit, &wg,
 				appName, appID, table,
 			)
-
 		} else {
-
-			go PopulateSA2Tables(
+			go PopulateRangeOfOneTable(
 				stencilDBConn, appDBConn, 
 				dataSeqStart, rowCount, limit, &wg,
 				appName, appID, table,
 			)
-
 		}
-
 		dataSeqStart += dataSeqStep
-
 	}
 
 	wg.Wait()
@@ -179,39 +131,42 @@ func PupulatingController(tableName string, end int64) {
 
 }
 
-func PupulatingControllerForAllTables() {
-	
-	startTime := time.Now()
+func PupulatingControllerForAllTables(fromApp string, toStencilDB string) {
 
-	appName := "diaspora_10000_sa2"
+	startTime := time.Now()
 	
-	appDBConn := db.GetDBConn(appName)
+	appDBConn := db.GetDBConn(fromApp)
 	defer appDBConn.Close()
 
 	rowCounts := listRowCountsOfDB(appDBConn)
 
 	for table, rowCount := range rowCounts {
-
 		if rowCount != 0 {
 
 			log.Println("==============================")
 			log.Println("Start Populating Table:", table)
 			log.Println("==============================")
 			
-			PupulatingController(table, rowCount)
+			PupulatingControllerForOneTable(fromApp, toStencilDB, table, rowCount)
 		
 		} else {
 
 			log.Println("Skip table:", table, "since its row count is 0")
 
 		}
-
 	}
 
 	endTime := time.Now()
 
 	log.Println("Populating DB is Done!")
 	log.Println("Time used:", endTime.Sub(startTime))
+}
+
+func PupulatingControllerForAllTablesHandlingPKs(fromApp string, toStencilDB string) {
+
+	DropPrimaryKeysOfSA2TablesWithoutPartitions(toStencilDB)
+
+	PupulatingControllerForAllTables(fromApp, toStencilDB)
 
 }
 
@@ -223,7 +178,7 @@ func startPopulatingThreads(stencilDBConn, appDBConn *sql.DB,
 				
 		if i != threadNum - 1 {
 
-			go PopulateSA2Tables(
+			go PopulateRangeOfOneTable(
 				stencilDBConn, appDBConn, 
 				dataSeqStart, dataSeqStart + dataSeqStep, limit, wg,
 				appName, appID, table,
@@ -231,7 +186,7 @@ func startPopulatingThreads(stencilDBConn, appDBConn *sql.DB,
 
 		} else {
 
-			go PopulateSA2Tables(
+			go PopulateRangeOfOneTable(
 				stencilDBConn, appDBConn, 
 				dataSeqStart, dataSeqEnd, limit, wg,
 				appName, appID, table,

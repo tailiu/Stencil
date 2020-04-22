@@ -726,9 +726,10 @@ func CheckpointTruncate() {
 
 }
 
-func DropPrimaryKeysOfSA2TablesWithoutPartitions() {
+func DropPrimaryKeysOfSA2TablesWithoutPartitions(stencilDB string) {
 
-	db.STENCIL_DB = "stencil_exp_sa2_10k"
+	// db.STENCIL_DB = "stencil_exp_sa2_10k"
+	db.STENCIL_DB = stencilDB
 
 	dbConn := db.GetDBConn(db.STENCIL_DB)
 

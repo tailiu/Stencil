@@ -718,7 +718,6 @@ func dropPrimaryKeysOfSA2TablesWithoutPartitions(dbConn *sql.DB) {
 		table := t["tablename"]
 
 		if isBaseOrSupTable(table) {
-
 			query := fmt.Sprintf(
 				`ALTER TABLE %s DROP CONSTRAINT %s_pkey`,
 				table, table,
@@ -730,9 +729,7 @@ func dropPrimaryKeysOfSA2TablesWithoutPartitions(dbConn *sql.DB) {
 			if err != nil {
 				log.Fatal(err)
 			}
-
-		} else if isMigrationTable(table) {
-			
+		} else if isMigrationTable(table) {	
 			query := fmt.Sprintf(
 				`ALTER TABLE %s DROP CONSTRAINT %s_pk`,
 				table, table,
@@ -744,9 +741,6 @@ func dropPrimaryKeysOfSA2TablesWithoutPartitions(dbConn *sql.DB) {
 			if err != nil {
 				log.Fatal(err)
 			}
-
 		}
-
 	}
-
 }
