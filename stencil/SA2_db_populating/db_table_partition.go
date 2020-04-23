@@ -605,7 +605,7 @@ func CreateIndexesConstraintsOnBaseSupTables() {
 
 }
 
-func DeleteRowsByDuplicateColumnsInMigrationTables() {
+func DeleteRowsByDuplicateColumnsInMigrationTablesInTablePartitioning() {
 
 	db.STENCIL_DB = "stencil_exp_sa2_100k"
 
@@ -617,39 +617,7 @@ func DeleteRowsByDuplicateColumnsInMigrationTables() {
 	
 	defer dbConn.Close()
 
-	deleteRowsByDuplicateColumnsInMigrationTables(dbConn, uniqueCols)
-
-}
-
-func DeleteRowsByDuplicateColumnsInMigrationTable() {
-
-	db.STENCIL_DB = "stencil_exp_sa2_10k"
-
-	uniqueCols := []string {
-		"app_id", "table_id", "group_id", "row_id", "mark_as_delete",
-	}
-	
-	dbConn := db.GetDBConn(db.STENCIL_DB)
-	
-	defer dbConn.Close()
-
-	deleteRowsByDuplicateColumnsInMigrationTable(dbConn, uniqueCols)
-
-}
-
-func DeleteRowsByDuplicateColumnsInBaseSupTables() {
-
-	db.STENCIL_DB = "stencil_exp_sa2_10k"
-
-	uniqueCols := []string {
-		"pk",
-	}
-	
-	dbConn := db.GetDBConn(db.STENCIL_DB)
-	
-	defer dbConn.Close()
-
-	deleteRowsByDuplicateColumnsInBaseSupTables(dbConn, uniqueCols)
+	deleteRowsByDuplicateColumnsInMigrationTablesInTablePartitioning(dbConn, uniqueCols)
 
 }
 
@@ -726,80 +694,3 @@ func CheckpointTruncate() {
 
 }
 
-func DropPrimaryKeysOfSA2TablesWithoutPartitions(stencilDB string) {
-
-	// db.STENCIL_DB = "stencil_exp_sa2_10k"
-	db.STENCIL_DB = stencilDB
-
-	dbConn := db.GetDBConn(db.STENCIL_DB)
-
-	defer dbConn.Close()
-
-	dropPrimaryKeysOfSA2TablesWithoutPartitions(dbConn)
-
-}
-
-func AddPrimaryKeysToSA2TablesWithoutPartitions() {
-
-	db.STENCIL_DB = "stencil_exp_sa2_10k"
-
-	dbConn := db.GetDBConn(db.STENCIL_DB)
-	defer dbConn.Close()
-	
-	tables := getAllTablesInDB(dbConn)
-
-	for _, t := range tables {
-		
-		table := t["tablename"]
-
-		if isMigrationTable(table) {
-
-			query := fmt.Sprintf(
-				`ALTER TABLE %s ADD CONSTRAINT %s_pk 
-				PRIMARY KEY (app_id, table_id, group_id, row_id, mark_as_delete);`,
-				table, table,
-			)
-
-			log.Println(query)
-
-			err := db.TxnExecute1(dbConn, query)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-		}
-
-	} 
-}
-
-func AddPrimaryKeysToBaseSupTables() {
-
-	db.STENCIL_DB = "stencil_exp_sa2_10k"
-
-	dbConn := db.GetDBConn(db.STENCIL_DB)
-	defer dbConn.Close()
-	
-	tables := getAllTablesInDB(dbConn)
-
-	for _, t := range tables {
-		
-		table := t["tablename"]
-
-		if isBaseOrSupTable(table) {
-
-			query := fmt.Sprintf(
-				`ALTER TABLE %s ADD CONSTRAINT %s_pk PRIMARY KEY (pk);`,
-				table, table,
-			)
-
-			log.Println(query)
-
-			err := db.TxnExecute1(dbConn, query)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-		}
-
-	} 
-}

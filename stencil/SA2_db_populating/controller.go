@@ -164,9 +164,13 @@ func PupulatingControllerForAllTables(fromApp string, toStencilDB string) {
 
 func PupulatingControllerForAllTablesHandlingPKs(fromApp string, toStencilDB string) {
 
-	DropPrimaryKeysOfSA2TablesWithoutPartitions(toStencilDB)
+	DropPrimaryKeys(toStencilDB)
 
 	PupulatingControllerForAllTables(fromApp, toStencilDB)
+
+	DeleteDuplicateColumns(toStencilDB)
+
+	AddPrimaryKeys(toStencilDB)
 
 }
 

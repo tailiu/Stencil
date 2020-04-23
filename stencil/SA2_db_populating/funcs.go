@@ -573,12 +573,10 @@ func checkpointTruncate(srcDB, dstDB, migrationTable string) {
 
 }
 
-func deleteRowsByDuplicateColumnsInATable(dbConn *sql.DB,
-	uniqueCols []string, table string) {
+func deleteRowsByDuplicateColumnsInATable(dbConn *sql.DB, uniqueCols []string, table string) {
 
 	query := fmt.Sprintf(
-		`DELETE FROM %s t1 USING %s t2 
-		WHERE t1.ctid < t2.ctid and `,
+		`DELETE FROM %s t1 USING %s t2 WHERE t1.ctid < t2.ctid and `,
 		table, table,
 	)		
 
@@ -587,8 +585,7 @@ func deleteRowsByDuplicateColumnsInATable(dbConn *sql.DB,
 		var condition string
 		
 		condition = fmt.Sprintf(
-			`t1.%s = t2.%s`,
-			uCol, uCol,
+			`t1.%s = t2.%s`, uCol, uCol,
 		)
 
 		if j != len(uniqueCols) - 1 {
@@ -608,7 +605,7 @@ func deleteRowsByDuplicateColumnsInATable(dbConn *sql.DB,
 
 }
 
-func deleteRowsByDuplicateColumnsInMigrationTables(dbConn *sql.DB, uniqueCols []string) {
+func deleteRowsByDuplicateColumnsInMigrationTablesInTablePartitioning(dbConn *sql.DB, uniqueCols []string) {
 
 	tables := getAllTablesInDB(dbConn)
 
@@ -621,9 +618,7 @@ func deleteRowsByDuplicateColumnsInMigrationTables(dbConn *sql.DB, uniqueCols []
 		}
 
 		deleteRowsByDuplicateColumnsInATable(dbConn, uniqueCols, table)
-
 	}
-
 }
 
 func deleteRowsByDuplicateColumnsInMigrationTable(dbConn *sql.DB, uniqueCols []string) {
@@ -639,9 +634,7 @@ func deleteRowsByDuplicateColumnsInMigrationTable(dbConn *sql.DB, uniqueCols []s
 		}
 
 		deleteRowsByDuplicateColumnsInATable(dbConn, uniqueCols, table)
-
 	}
-
 }
 
 func deleteRowsByDuplicateColumnsInBaseSupTables(dbConn *sql.DB, uniqueCols []string) {
@@ -743,4 +736,36 @@ func dropPrimaryKeysOfSA2TablesWithoutPartitions(dbConn *sql.DB) {
 			}
 		}
 	}
+}
+
+func addPrimaryKeysToBaseSupTables(stencilDB string) {
+
+	db.STENCIL_DB = stencilDB
+
+	dbConn := db.GetDBConn(db.STENCIL_DB)
+	defer dbConn.Close()
+	
+	tables := getAllTablesInDB(dbConn)
+
+	for _, t := range tables {
+		
+		table := t["tablename"]
+
+		if isBaseOrSupTable(table) {
+
+			query := fmt.Sprintf(
+				`ALTER TABLE %s ADD CONSTRAINT %s_pk PRIMARY KEY (pk);`,
+				table, table,
+			)
+
+			log.Println(query)
+
+			err := db.TxnExecute1(dbConn, query)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+		}
+
+	} 
 }

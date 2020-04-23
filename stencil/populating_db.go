@@ -46,7 +46,7 @@ func main() {
 
 	// SA2_db_populating.CreateConstraintsIndexesOnPartitions()
 
-	// SA2_db_populating.DeleteRowsByDuplicateColumnsInMigrationTables()
+	// SA2_db_populating.DeleteRowsByDuplicateColumnsInMigrationTablesInTablePartitioning()
 
 	// SA2_db_populating.DeleteRowsByDuplicateColumnsInBaseSupTables()
 
@@ -56,12 +56,8 @@ func main() {
 
 	// SA2_db_populating.DeleteRowsByDuplicateColumnsInMigrationTable()
 
-	// SA2_db_populating.AddPrimaryKeysToSA2TablesWithoutPartitions()
-
-	// SA2_db_populating.AddPrimaryKeysToBaseSupTables()
-
 	// SA2_db_populating.PupulatingControllerForAllTables()
 
-	SA2_db_populating.PupulatingControllerForAllTablesHandlingPKs("diaspora_100000", "stencil_sa2_100k")
+	SA2_db_populating.PupulatingControllerForAllTablesHandlingPKs("diaspora_1000000", "stencil_sa2_1m")
 
 }
