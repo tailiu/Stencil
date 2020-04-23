@@ -3,7 +3,6 @@ package SA2_display
 import (
 	"log"
 	"errors"
-	"stencil/common_funcs"
 	"stencil/config"
 	"stencil/db"
 	"strconv"
@@ -19,8 +18,7 @@ type HintStruct struct {
 	Tag			string
 }
 
-func TransformRowToHint(display *display, 
-	data map[string]string) *HintStruct {
+func TransformRowToHint(display *display, data map[string]string) *HintStruct {
 
 	var rowIDs []int
 	var err2 error
@@ -53,8 +51,7 @@ func TransformRowToHint(display *display,
 }
 
 // NOTE: We assume that primary key is only one integer value!!!
-func TransformRowToHint1(display *display, 
-	data map[string]interface{}) *HintStruct {
+func TransformRowToHint1(display *display, data map[string]interface{}) *HintStruct {
 	
 	hint := HintStruct{}
 
@@ -69,12 +66,17 @@ func TransformRowToHint1(display *display,
 	hint.RowIDs = GetRowIDsFromData(data)
 	hint.TableID = display.dstAppConfig.tableNameIDPairs[hint.TableName]
 
+	var err1 error
+	hint.Tag, err1 = GetTagName(display, hint.TableName)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
 	return &hint
 
 }
 
-func GetTagName(display *display, 
-	table string) (string, error) {
+func GetTagName(display *display, table string) (string, error) {
 
 	for _, tag := range display.dstAppConfig.dag.Tags {
 
@@ -93,8 +95,7 @@ func GetTagName(display *display,
 
 }
 
-func (hint *HintStruct) GetTagDisplaySetting(
-	display *display) (string, error) {
+func (hint *HintStruct) GetTagDisplaySetting(display *display) (string, error) {
 	
 	for _, tag := range display.dstAppConfig.dag.Tags {
 

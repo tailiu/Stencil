@@ -216,8 +216,7 @@ func (display *display) GetUndisplayedMigratedData() []*HintStruct {
 
 	for _, data1 := range data {
 
-		displayHints = append(displayHints,
-			TransformDisplayFlagDataToHint(display, data1))
+		displayHints = append(displayHints, TransformDisplayFlagDataToHint(display, data1))
 
 	}
 	// fmt.Println(displayHints)

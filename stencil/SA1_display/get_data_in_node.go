@@ -388,7 +388,7 @@ func (display *display) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]
 		return data, nil
 
 	}
-
+		
 	panic("Should never happen")
 
 }

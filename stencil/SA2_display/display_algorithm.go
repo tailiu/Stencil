@@ -31,7 +31,6 @@ func (display *display) DisplayThread() {
 			}
 
 			time.Sleep(CHECK_INTERVAL)
-
 		}
 	}
 
@@ -39,7 +38,7 @@ func (display *display) DisplayThread() {
 
 	secondRound = true
 
-	secondRoundMigratedData := GetUndisplayedMigratedData(display)
+	secondRoundMigratedData := display.GetUndisplayedMigratedData()
 
 	for _, oneSecondRoundMigratedData := range secondRoundMigratedData {
 		display.checkDisplayOneMigratedData(oneSecondRoundMigratedData, secondRound)
@@ -63,8 +62,10 @@ func (display *display) DisplayThread() {
 
 func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct, secondRound bool) error {
 
+	log.Println("==================== Check Data ====================")
+
 	// CheckAndGetTableNameAndID(stencilDBConn, &oneMigratedData, appConfig.AppID)
-	log.Println("Check Data ", *oneMigratedData)
+	log.Println(*oneMigratedData)
 	
 	log.Println("==================== Check Intra-node dependencies ====================")
 

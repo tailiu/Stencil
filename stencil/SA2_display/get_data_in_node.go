@@ -283,7 +283,6 @@ func (display *display) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]
 		// The setting "default_display_setting" means only display a node when the node is complete.
 		// Therefore, return nil and error message when node is not complete.
 		if displaySetting == "default_display_setting" {
-
 			return nil, err
 			
 		// The setting "display_based_on_inner_dependencies" means display as much data in a node as possible
@@ -298,6 +297,9 @@ func (display *display) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]
 	} else {
 		return data, nil
 	}
+
+	log.Println("hint:", hint)
+	log.Println("display setting:", displaySetting)
 
 	panic("Should never happen")
 

@@ -28,9 +28,9 @@ func CreateDisplayConfig(migrationID int, displayInFirstPhase bool) *display {
 	srcAppName := common_funcs.GetAppNameByAppID(stencilDBConn, srcAppID)
 	dstAppName := common_funcs.GetAppNameByAppID(stencilDBConn, dstAppID)
 
-	dstDAG, err4 := common_funcs.LoadDAG(dstAppName)
-	if err4 != nil {
-		log.Fatal(err4)
+	dstDAG, err1 := common_funcs.LoadDAG(dstAppName)
+	if err1 != nil {
+		log.Fatal(err1)
 	}
 
 	dstDBConn := db.GetDBConn(dstAppName)
@@ -41,11 +41,8 @@ func CreateDisplayConfig(migrationID int, displayInFirstPhase bool) *display {
 	dstRes := common_funcs.GetTableIDNamePairsInApp(stencilDBConn, dstAppID)
 
 	for _, dstRes1 := range dstRes {
-		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] = 
-			fmt.Sprint(dstRes1["table_name"])
-
-		dstAppTableNameIDPairs[fmt.Sprint(dstRes1["table_name"])] = 
-			fmt.Sprint(dstRes1["pk"])
+		dstAppTableIDNamePairs[fmt.Sprint(dstRes1["pk"])] = fmt.Sprint(dstRes1["table_name"])
+		dstAppTableNameIDPairs[fmt.Sprint(dstRes1["table_name"])] = fmt.Sprint(dstRes1["pk"])
 	}
 
 	srcAppTableNameIDPairs := make(map[string]string)
@@ -53,9 +50,7 @@ func CreateDisplayConfig(migrationID int, displayInFirstPhase bool) *display {
 	srcRes := common_funcs.GetTableIDNamePairsInApp(stencilDBConn, srcAppID)
 
 	for _, srcRes1 := range srcRes {
-		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = 
-			fmt.Sprint(srcRes1["pk"])
-
+		srcAppTableNameIDPairs[fmt.Sprint(srcRes1["table_name"])] = fmt.Sprint(srcRes1["pk"])
 	}
 
 	appIDNamePairs := common_funcs.GetAppIDNamePairs(stencilDBConn)
@@ -87,12 +82,10 @@ func CreateDisplayConfig(migrationID int, displayInFirstPhase bool) *display {
 }
 
 func closeDBConn(conn *sql.DB) {
-
 	err := conn.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func (display *display) closeDBConns() {
@@ -101,7 +94,6 @@ func (display *display) closeDBConns() {
 
 	closeDBConn(display.stencilDBConn)
 	closeDBConn(display.dstAppConfig.DBConn)
-
 }
 
 func RandomNonnegativeInt() int {
@@ -151,8 +143,10 @@ func (display *display) GetUndisplayedMigratedData() []*HintStruct {
 	
 	var displayHints []*HintStruct
 	
-	// This is important that table id / group id should also be used to get results in the new design
-	// For example, in the one-to-multiple mapping, the same row id has different group ids / table ids
+	// This is important that table id / group id should also be used to 
+	// get results in the new design
+	// For example, in the one-to-multiple mapping, 
+	// the same row id has different group ids / table ids
 	// Those rows could be displayed differently
 	query := fmt.Sprintf(
 		`SELECT table_id, array_agg(row_id) as row_ids 
@@ -165,8 +159,10 @@ func (display *display) GetUndisplayedMigratedData() []*HintStruct {
 	data := db.GetAllColsOfRows(display.stencilDBConn, query)
 	// log.Println(data)
 
-	// If we don't use physical schema, both table_name and id are necessary to identify a piece of migratd data.
-	// Actually, in our physical schema, row_id itself is enough to identify a piece of migrated data.
+	// If we don't use physical schema, both table_name and id are necessary to 
+	// identify a piece of migratd data.
+	// Actually, in our physical schema, row_id itself is enough to 
+	// identify a piece of migrated data.
 	// We use table_name to optimize performance
 	for _, data1 := range data {
 		displayHints = append(displayHints, TransformRowToHint(display, data1))
@@ -267,7 +263,7 @@ func (display *display) Display(dataInNode []*HintStruct) error {
 
 		// This is an optimization to prevent possible path conflict
 		// We only need to test one rowID in a data hint
-		if CheckDisplay(display, dataHint) {
+		if display.CheckDisplay(dataHint) {
 
 			return PathConflictsWhenDisplayingData
 
@@ -320,7 +316,8 @@ func (display *display) Display(dataInNode []*HintStruct) error {
 
 }
 
-func (display *display) checkDisplayConditionsInNode(dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
+func (display *display) checkDisplayConditionsInNode(
+	dataInNode []*HintStruct) ([]*HintStruct, []*HintStruct) {
 
 	var displayedData, notDisplayedData []*HintStruct
 

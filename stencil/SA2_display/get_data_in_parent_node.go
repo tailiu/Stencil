@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (display *display) getHintInParentNode( hints []*HintStruct,
+func (display *display) getHintInParentNode(hints []*HintStruct,
 	conditions []string, pTag string) (*HintStruct, error) {
 	
 	// log.Println(".....Second check......")

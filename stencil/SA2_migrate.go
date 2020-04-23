@@ -15,12 +15,12 @@ func main() {
 
 	// apis.StartMigrationSA2(uid, srcApp, srcAppID, dstApp, dstAppID, migrationType, enableBags)
 
-	db.STENCIL_DB = "stencil_exp_sa2_1k_exp"
+	db.STENCIL_DB = "stencil_sa2_1k"
 
 	uid, srcApp, srcAppID, dstApp, dstAppID, migrationType, threadNum :=
-		"44", "diaspora", "1", "mastodon", "2", "d", 1
+		"35", "diaspora", "1", "mastodon", "2", "d", 1
 
-	enableDisplay, displayInFirstPhase, enableBags := true, true, true
+	enableDisplay, displayInFirstPhase, enableBags := true, false, true
 
 	SA2_migrate.Controller(
 		uid, srcApp, srcAppID, dstApp, dstAppID, 
