@@ -61,7 +61,7 @@ func main() {
 	
 	// evaluation.Exp8SA1()
 
-	// evaluation.Exp8SA2()
+	evaluation.Exp8SA2()
 
 	// evaluation.Exp2LoadUserIDsToAddIndepFromLog()
 
@@ -73,6 +73,6 @@ func main() {
 
 	// evaluation.Exp7v3()
 
-	evaluation.Exp7Test()
+	// evaluation.Exp7Test()
 
 }

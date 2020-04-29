@@ -4,7 +4,7 @@ import (
 	"stencil/SA1_migrate"
 	"stencil/apis"
 	"stencil/db"
-	// "database/sql"
+	"database/sql"
 	"log"
 	"fmt"
 	"encoding/json"
@@ -1470,9 +1470,9 @@ func Exp4LoadCounterResToTable() {
 	// counterFile := "diaspora1MCounter"
 	// counterTable := "dag_counter"
 
-	stencilDB = "stencil_exp6_3"
-	counterFile := "diaspora100KCounter"
-	counterTable := "dag_counter"
+	stencilDB = "stencil_sa2_100k_exp0"
+	counterFile := "diaspora1MCounter"
+	counterTable := "dag_counter_1M"
 
 	evalConfig := InitializeEvalConfig()
 
@@ -1497,9 +1497,7 @@ func Exp4LoadCounterResToTable() {
 		
 		insertDataIntoCounterTableIfNotExist(evalConfig,
 			counterTable, counter1)
-
 	}
-	
 }
 
 // diaspora_100000: count edges and nodes every 10 users
@@ -2784,62 +2782,63 @@ func Exp8SA1() {
 	}
 }
 
-// func Exp8SA2() {
+func Exp8SA2() {
 
-// 	log.Println("===================================")
-// 	log.Println("Starting Exp8 for SA2: Dataset Test")
-// 	log.Println("===================================")
+	log.Println("===================================")
+	log.Println("Starting Exp8 for SA2: Dataset Test")
+	log.Println("===================================")
 
-// 	seq := 0
+	seq := 0
 
-// 	migrationNum := 5
+	migrationNum := 5
 
-// 	exp8LogFile := "diaspora_100K_dataset_sa2_" + strconv.Itoa(seq)
+	exp8LogFile := "diaspora_100K_dataset_sa2_" + strconv.Itoa(seq)
 
-// 	db.STENCIL_DB = "stencil_exp_sa2_100k_exp" + strconv.Itoa(seq)
+	db.STENCIL_DB = "stencil_sa2_100k_exp" + strconv.Itoa(seq)
 
-// 	var stencilDBConn *sql.DB
+	var stencilDBConn *sql.DB
 
-// 	stencilDBConn = db.GetDBConn(db.STENCIL_DB)
+	stencilDBConn = db.GetDBConn(db.STENCIL_DB)
 
-// 	userIDsWithCounters := getUserIDsWithSameNodesAcrossDatasets(stencilDBConn, db.STENCIL_DB)
+	userIDsWithCounters := getUserIDsWithSameNodesAcrossDatasets(stencilDBConn, db.STENCIL_DB)
 
-// 	log.Println("SEQUENCE NUM:", seq)
+	log.Println("SEQUENCE NUM:", seq)
 
-// 	log.Println(userIDsWithCounters)
+	log.Println(userIDsWithCounters)
 
-// 	for i := migrationNum * seq; i < migrationNum * seq + migrationNum; i++ {
+	for i := migrationNum * seq; i < migrationNum * seq + migrationNum; i++ {
 
-// 		userID := userIDsWithCounters[i]["person_id"]
+		userID := userIDsWithCounters[i]["person_id"]
 
-// 		srcApp, srcAppID, dstApp, dstAppID, migrationType, enableBags :=
-// 			"diaspora", "1", "mastodon", "2", "d", true
+		srcApp, srcAppID, dstApp, dstAppID, migrationType, enableBags :=
+			"diaspora", "1", "mastodon", "2", "d", true
 
-// 		apis.StartMigrationSA2(userID, srcApp, srcAppID, dstApp, dstAppID, migrationType, enableBags)
+		apis.StartMigrationSA2(
+			userID, srcApp, srcAppID, dstApp, dstAppID, migrationType, enableBags,
+		)
 
-// 		log.Println("************ Calculate the Migration Time ************")
+		log.Println("************ Calculate the Migration Time ************")
 
-// 		stencilDBConn.Close()
-// 		stencilDBConn = db.GetDBConn(db.STENCIL_DB)
+		stencilDBConn.Close()
+		stencilDBConn = db.GetDBConn(db.STENCIL_DB)
 
-// 		logData := make(map[string]string)
+		logData := make(map[string]string)
 
-// 		migrationID := getMigrationIDBySrcUserID1(stencilDBConn, userID)
+		migrationID := getMigrationIDBySrcUserID1(stencilDBConn, userID)
 
-// 		migrationIDInt, err := strconv.Atoi(migrationID)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
+		migrationIDInt, err := strconv.Atoi(migrationID)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-// 		time := GetMigrationTime(stencilDBConn, migrationIDInt)
+		time := GetMigrationTime(stencilDBConn, migrationIDInt)
 
-// 		logData["time"] = ConvertSingleDurationToString(time)	
-// 		logData["userID"] = userID
+		logData["time"] = ConvertSingleDurationToString(time)	
+		logData["userID"] = userID
 
-// 		WriteStrToLog(
-// 			exp8LogFile,
-// 			ConvertMapStringToJSONString(logData),
-// 		)
-
-// 	}
-// }
+		WriteStrToLog(
+			exp8LogFile,
+			ConvertMapStringToJSONString(logData),
+		)
+	}
+}

@@ -246,23 +246,35 @@ func insertDataIntoCounterTableIfNotExist(evalConfig *EvalConfig,
 }
 
 func is1KDatasetForSA2(table string) bool {
-
-	if strings.Contains(table, "stencil_exp_sa2_1k_") {
+	if strings.Contains(table, "sa2") && strings.Contains(table, "1k") {
 		return true
 	} else {
 		return false
 	}
-
 }
 
 func is10KDatasetForSA2(table string) bool {
-
-	if strings.Contains(table, "stencil_exp_sa2_10k_") {
+	if strings.Contains(table, "sa2") && strings.Contains(table, "10k") {
 		return true
 	} else {
 		return false
 	}
+}
 
+func is100KDatasetForSA2(table string) bool {
+	if strings.Contains(table, "sa2") && strings.Contains(table, "100k") {
+		return true
+	} else {
+		return false
+	}
+}
+
+func is1MDatasetForSA2(table string) bool {
+	if strings.Contains(table, "sa2") && strings.Contains(table, "1m") {
+		return true
+	} else {
+		return false
+	}
 }
 
 func getUserIDsWithSameNodesAcrossDatasets(dbConn *sql.DB, 
@@ -281,6 +293,10 @@ func getUserIDsWithSameNodesAcrossDatasets(dbConn *sql.DB,
 			tableAlias = "a"
 		} else if is10KDatasetForSA2(databaseName) {
 			tableAlias = "b"
+		} else if is100KDatasetForSA2(databaseName) {
+			tableAlias = "c"
+		} else if is1MDatasetForSA2(databaseName) {
+			tableAlias = "d"
 		} else {
 			log.Fatal("Cannot get data by the provided database name:", databaseName)
 		}

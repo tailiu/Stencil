@@ -140,7 +140,7 @@ func test10() {
 
 func test11() {
 
-	dbName := "stencil_exp_sa2_100k_backup"
+	dbName := "stencil_sa2_100k_exp0"
 
 	isBladeServer := false
 
@@ -195,7 +195,7 @@ func test14() {
 
 func main() {
 
-	test1()
+	// test1()
 	
 	// test2()
 
@@ -215,7 +215,7 @@ func main() {
 
 	// test10()
 
-	// test11()
+	test11()
 
 	// test12()
 	
