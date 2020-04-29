@@ -58,6 +58,15 @@ func main() {
 
 	// SA2_db_populating.PupulatingControllerForAllTables()
 
-	SA2_db_populating.PupulatingControllerForAllTablesHandlingPKs("diaspora_1000000", "stencil_sa2_1m")
+	// SA2_db_populating.PupulatingControllerForAllTablesHandlingPKs(
+	// 	"diaspora_1000000", "stencil_sa2_1m",
+	// )
 
+	// SA2_db_populating.PupulatingControllerWithCheckpointAndTruncate(
+	// 	"diaspora_1000000", "stencil_sa2_1m_inter", "stencil_sa2_1m", "people",
+	// )
+
+	SA2_db_populating.PupulatingControllerWithCheckpointAndTruncateForAllTablesHandlingPKs(
+		"diaspora_1000000_sa2_1", "stencil_sa2_1m_inter", "stencil_sa2_1m",
+	)
 }

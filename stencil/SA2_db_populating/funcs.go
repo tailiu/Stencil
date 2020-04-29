@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"strconv"
 	"strings"
+	"os"
 	"fmt"
 	"log"
 	SSHClient "github.com/helloyi/go-sshclient"
@@ -448,11 +449,9 @@ func SSHMachineExeCommands(host, port, usersname, password string, cmds []string
 
 }
 
-func dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB, 
-	migrationTable string) []string {
+func dumpAllBaseSupTablesToAnotherDBWithTablePartition(srcDB, dstDB, migrationTable string) []string {
 
 	log.Println("Src DB:", srcDB)
-	
 	log.Println("Dst DB:", dstDB)
 
 	var queries []string
@@ -507,6 +506,34 @@ func dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB,
 
 }
 
+func dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB string) []string {
+
+	log.Println("Src DB:", srcDB)
+	log.Println("Dst DB:", dstDB)
+
+	var queries []string
+
+	query1 := fmt.Sprintf(
+		`pg_dump -U cow -a -t supplementary_* --exclude-table-data='supplementary_tables'  %s | psql -U cow %s`,
+		srcDB, dstDB,
+	)
+	
+	query2 := fmt.Sprintf(
+		`pg_dump -U cow -a -t base_* %s | psql -U cow %s`,
+		srcDB, dstDB,
+	)
+	
+	query3 := fmt.Sprintf(
+		`pg_dump -U cow -a -t migration_table %s | psql -U cow %s`,
+		srcDB, dstDB,
+	)
+
+	queries = append(queries, query1, query2, query3)
+
+	return queries
+
+}
+
 func truncateSA2Tables(dbName string) {
 
 	db.STENCIL_DB = dbName
@@ -555,12 +582,28 @@ func truncateSA2Tables(dbName string) {
 
 }
 
-func checkpointTruncate(srcDB, dstDB, migrationTable string) {
+func checkpointTruncateWithTablePartition(srcDB, dstDB, migrationTable string) {
 
-	host, port, usersname, password := 
-		db.DB_ADDR, db.SSH_PROT, db.SSH_USERNAME, db.SSH_PASSWORD
+	host, port, usersname, password := db.DB_ADDR, db.SSH_PROT, db.SSH_USERNAME, db.SSH_PASSWORD
 	
-	cmds := dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB, migrationTable)
+	cmds := dumpAllBaseSupTablesToAnotherDBWithTablePartition(srcDB, dstDB, migrationTable)
+
+	log.Println("All Commands:")
+	for _, cmd := range cmds {
+		log.Println(cmd)
+	}
+
+	SSHMachineExeCommands(host, port, usersname, password, cmds)
+
+	truncateSA2Tables(srcDB)
+
+}
+
+func checkpointTruncate(srcDB, dstDB string) {
+
+	host, port, usersname, password := db.DB_ADDR, db.SSH_PROT, db.SSH_USERNAME, db.SSH_PASSWORD
+	
+	cmds := dumpAllBaseSupTablesToAnotherDB(srcDB, dstDB)
 
 	log.Println("All Commands:")
 	for _, cmd := range cmds {
@@ -768,4 +811,22 @@ func addPrimaryKeysToBaseSupTables(stencilDB string) {
 		}
 
 	} 
+}
+
+func logProgress(table, seq string) {
+
+	logDir := "./evaluation/logs/"
+	file := "populationProgress"
+
+	f, err := os.OpenFile(logDir + file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer f.Close()
+
+	progress := fmt.Sprintf("%s: %s is done\n", table, seq)
+	if _, err := f.WriteString(progress); err != nil {
+		log.Println(err)
+	}
+
 }

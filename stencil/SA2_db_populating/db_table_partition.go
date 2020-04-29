@@ -682,7 +682,7 @@ func DumpAllBaseSupTablesToAnotherDB() {
 
 }
 
-func CheckpointTruncate() {
+func CheckpointTruncateWithTablePartition() {
 
 	srcDB := "stencil_exp_sa2_10"
 
@@ -690,7 +690,7 @@ func CheckpointTruncate() {
 
 	dstDB := "stencil_exp_sa2_100k" 
 
-	checkpointTruncate(srcDB, dstDB, migrationTable)
+	checkpointTruncateWithTablePartition(srcDB, dstDB, migrationTable)
 
 }
 
