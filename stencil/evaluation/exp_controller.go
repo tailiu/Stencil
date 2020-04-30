@@ -1780,7 +1780,7 @@ func Exp7() {
 	logFile1 := "dataBagsNotEnabled_" + seqStr
 
 	// edgeCounterRangeStart := 300
-	edgeCounterRangeStart := 510
+	edgeCounterRangeStart := 300
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -1923,6 +1923,9 @@ func Exp7Test() {
 		// "diaspora", "mastodon", "gnusocial", 
 	}
 
+	migrationNum := 1
+	log.Println("Migration number:",migrationNum)
+
 	seq := 3
 	seqStr := strconv.Itoa(seq)
 	
@@ -1932,7 +1935,24 @@ func Exp7Test() {
 	mastodon = "mastodon_exp6_" + seqStr
 	twitter = "twitter_exp6_" + seqStr
 	gnusocial = "gnusocial_exp6_" + seqStr
-	logFile := "dataBagsEnabled_test_" + + seqStr
+	logFile := "dataBagsEnabled_test_" + seqStr
+
+	evalConfig := InitializeEvalConfig(false)
+	defer closeDBConns(evalConfig)
+	
+	// edgeCounterRangeStart := 300
+	edgeCounterRangeStart := 300
+	edgeCounterRangeEnd := 1200
+	getCounterNum := 100
+	
+	edgeCounter := getEdgesCounterByRange(
+		evalConfig,
+		edgeCounterRangeStart, 
+		edgeCounterRangeEnd, 
+		getCounterNum,
+	)
+
+	log.Println(edgeCounter)
 
 	for j := seq * migrationNum; j < (seq + 1) * migrationNum; j++ {
 
