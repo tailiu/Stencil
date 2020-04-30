@@ -67,7 +67,7 @@
                                     "conditions":{},
                                     "mapping": {
                                         "id":"accounts.id",
-                                        "owner_id":"#REF(users.id,users.id)",
+                                        "owner_id":"#REF(users.id,users.id,users)",
                                         "serialized_public_key":"accounts.public_key",
                                         "diaspora_handle":"accounts.display_name",
                                         "created_at":"accounts.created_at",

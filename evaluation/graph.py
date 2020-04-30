@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 28})
+plt.rcParams.update({'font.size': 19})
 
 colors = ['g', 'r', 'b', 'm', 'k', 'w', 'c', 'y']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']

@@ -41,7 +41,8 @@ func test3() {
 	}
 
 	// attr, attrTable, attrToUpdate, attrToUpdateTable := "id", "people", "author_id", "posts"
-	attr, attrTable, attrToUpdate, attrToUpdateTable := "id", "users", "user_id", "aspects"
+	// attr, attrTable, attrToUpdate, attrToUpdateTable := "id", "users", "user_id", "aspects"
+	attr, attrTable, attrToUpdate, attrToUpdateTable := "id", "profiles", "owner_id", "people"
 
 	log.Println(dag.ReferenceExists(attr, attrTable, attrToUpdate, attrToUpdateTable))
 

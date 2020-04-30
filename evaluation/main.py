@@ -882,17 +882,20 @@ def randomWalk2(apps, labels):
     print len(data1)
     print len(data2)
 
-    totalObjs1 = getDataByKey(data1, "totalObjs")
+    appObjs1 = getDataByKey(data1, "totalObjs")
     danglingObjs1 = getDataByKey(data1, "danglingObjs")
 
-    totalObjs2 = getDataByKey(data2, "totalObjs")
+    appObjs2 = getDataByKey(data2, "totalObjs")
     danglingObjs2 = getDataByKey(data2, "danglingObjs")
 
-    totalObjsGrouped1 = groupData(totalObjs1, group)
-    totalObjsGrouped2 = groupData(totalObjs2, group)
+    appObjsGrouped1 = groupData(appObjs1, group)
+    appObjsGrouped2 = groupData(appObjs2, group)
 
     danglingObjsGrouped1 = groupData(danglingObjs1, group)
     danglingObjsGrouped2 = groupData(danglingObjs2, group)
+
+    totalObjsGrouped1 = [appObjsGrouped1[i] + danglingObjsGrouped1[i] for i in range(len(appObjsGrouped1))]
+    totalObjsGrouped2 = [appObjsGrouped2[i] + danglingObjsGrouped2[i] for i in range(len(appObjsGrouped2))]
 
     percentages1 = getPercentagesOfData(danglingObjsGrouped1, totalObjsGrouped1)
     percentages2 = getPercentagesOfData(danglingObjsGrouped2, totalObjsGrouped2)
@@ -951,5 +954,5 @@ def randomWalk2(apps, labels):
 #     ["SA1 deletion", "SA1 deletion without \n display", "SA1 independent", "Naive system"])
 # randomWalk1(["diaspora", "mastodon", "diaspora"],
 #             ["Stencil with data bags", "Stencil without data bags"])
-# randomWalk2(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"],
-#             ["Stencil enabling data bags", "Stencil not enabling data bags"])
+randomWalk2(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"],
+            ["Stencil enabling data bags", "Stencil not enabling data bags"])

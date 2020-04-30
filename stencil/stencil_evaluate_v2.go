@@ -67,7 +67,9 @@ func main() {
 
 	// evaluation.Exp6AddIndepLoadFromLog()
 
-	evaluation.Exp7()
+	// evaluation.Exp7()
+
+	evaluation.Exp7ExcludeOthersDanglingData()
 
 	// evaluation.Exp7Test()
 

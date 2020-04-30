@@ -103,9 +103,11 @@ func test7() {
 		log.Fatal(err1)
 	}
 
-	// app, attr, attrTable, attrToUpdate, attrToUpdateTable := "mastodon", "id", "accounts", "account_id", "statuses"
+	// app, attr, attrTable, attrToUpdate, attrToUpdateTable := 
+		// "mastodon", "id", "accounts", "account_id", "statuses"
 
-	app, attr, attrTable, attrToUpdate, attrToUpdateTable := "mastodon", "id", "statuses", "conversation_id", "statuses"
+	app, attr, attrTable, attrToUpdate, attrToUpdateTable := 
+		"diaspora", "id", "profiles", "owner_id", "people"
 
 	log.Println(app, attr, attrTable, attrToUpdate, attrToUpdateTable)
 

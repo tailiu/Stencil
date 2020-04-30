@@ -40,6 +40,30 @@ func getDanglingDataSizeOfMigration(evalConfig *EvalConfig,
 
 }
 
+func (evalConfig *EvalConfig) getOthersDanglingData(stencilDBConnName, userID string) int64 {
+
+	stencilDBConn := getDBConnByName(evalConfig, stencilDBConnName)
+
+	query := fmt.Sprintf(`
+		SELECT count(*) as num FROM data_bags WHERE
+		user_id != %s and app = 1`, userID,
+	)
+
+	// log.Println(query)
+
+	res, err := db.DataCall1(stencilDBConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if res["num"] == nil {
+		return 0
+	} else {
+		return res["num"].(int64)
+	}
+
+}
+
 func getDanglingDataSizeOfApp(evalConfig *EvalConfig,
 	appID string) int64 {
 
@@ -66,10 +90,7 @@ func getDanglingDataSizeOfApp(evalConfig *EvalConfig,
 
 func getAllMediaSize(dbConn *sql.DB, table, appID string) int64 {
 
-	query := fmt.Sprintf(
-		`SELECT id FROM %s`,
-		table,
-	)
+	query := fmt.Sprintf(`SELECT id FROM %s`, table)
 	
 	result, err := db.DataCall(dbConn, query)
 	if err != nil {
@@ -696,7 +717,8 @@ func calculateDanglingAndTotalObjectsInExp7v2(
 }
 
 func calculateDanglingAndTotalObjectsInExp7v3(
-	evalConfig *EvalConfig, enableBags bool, totalRemainingObjsInOriginalApp int64,
+	evalConfig *EvalConfig, enableBags bool, 
+	totalRemainingObjsInOriginalApp int64,
 	toApp string, seqNum int, migrationSeq []string) (int64, int64) {
 
 	var stencilDBConn *sql.DB
@@ -708,6 +730,38 @@ func calculateDanglingAndTotalObjectsInExp7v3(
 	}
 	
 	danglingObjs := getDanglingObjectsInSystem(stencilDBConn)
+	
+	totalObjs := getTotalObjsNotIncludingMediaOfAppInExp7V2(evalConfig, toApp, enableBags)
+
+	seqLen := len(migrationSeq)
+
+	// Only when the final application is Diaspora do we need to do this
+	if seqNum == seqLen - 2 && toApp == "diaspora" {
+
+		log.Println("total objects before deletion:", totalObjs)
+		log.Println("total Remaining Objs:", totalRemainingObjsInOriginalApp)
+
+		totalObjs -= totalRemainingObjsInOriginalApp
+
+	}
+
+	return danglingObjs, totalObjs
+}
+
+func calculateDanglingAndTotalObjectsNoOthersDanglingData(
+	evalConfig *EvalConfig, enableBags bool, 
+	totalRemainingObjsInOriginalApp, othersDanglingData int64,
+	toApp string, seqNum int, migrationSeq []string) (int64, int64) {
+
+	var stencilDBConn *sql.DB
+
+	if enableBags {
+		stencilDBConn = evalConfig.StencilDBConn
+	} else {
+		stencilDBConn = evalConfig.StencilDBConn1
+	}
+	
+	danglingObjs := getDanglingObjectsInSystem(stencilDBConn) - othersDanglingData
 	
 	totalObjs := getTotalObjsNotIncludingMediaOfAppInExp7V2(evalConfig, toApp, enableBags)
 
