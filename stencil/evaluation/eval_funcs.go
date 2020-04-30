@@ -1336,8 +1336,7 @@ func CreateFourDagCounterTables(dbConn *sql.DB) {
 func getSrcUserIDByMigrationID(dbConn *sql.DB, migrationID string) string {
 
 	query := fmt.Sprintf(
-		`SELECT user_id from migration_registration 
-		WHERE migration_id = %s`,
+		`SELECT user_id FROM migration_registration WHERE migration_id = %s`,
 		migrationID,
 	)
 
@@ -1372,7 +1371,7 @@ func (eval *EvalConfig) getRootMembersOfApps() map[string]string {
 	return rootMembers
 }
 
-func (eval *EvalConfig) getNextUserID(migrationID string) string {
+func (eval *EvalConfig) getNextUserID(stencilDBConn *sql.DB, migrationID string) string {
 
 	appRootMembers := eval.getRootMembersOfApps()
 
@@ -1383,10 +1382,12 @@ func (eval *EvalConfig) getNextUserID(migrationID string) string {
 
 	log.Println(query)
 
-	data, err := db.DataCall1(eval.StencilDBConn, query)
+	data, err := db.DataCall1(stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println(data)
 
 	userID := fmt.Sprint(data["user_id"])
 	srcApp := fmt.Sprint(data["src_app"])
@@ -1408,7 +1409,7 @@ func (eval *EvalConfig) getNextUserID(migrationID string) string {
 
 	log.Println(query1)
 
-	data1, err1 := db.DataCall1(eval.StencilDBConn, query1)
+	data1, err1 := db.DataCall1(stencilDBConn, query1)
 	if err1 != nil {
 		log.Fatal(err1)
 	}

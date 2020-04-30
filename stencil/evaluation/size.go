@@ -362,11 +362,9 @@ func getTotalRowCountsOfDB(dbConn *sql.DB) int64 {
 		// log.Println(res)
 
 		totalRows += res["num"].(int64)
-		
 	}
 
 	return totalRows
-
 }
 
 func getMediaCountsOfApp(dbConn *sql.DB, appName string) int64 {
@@ -495,6 +493,25 @@ func getTotalRowCountsOfTable(dbConn *sql.DB, tableName string) int64 {
 	} else {
 		return res["num"].(int64)
 	} 
+
+}
+
+func getDanglingObjectsInSystem(dbConn *sql.DB) int64 {
+
+	query := fmt.Sprintf(`select count(*) as num from data_bags`)
+
+	// log.Println(query)
+
+	res, err := db.DataCall1(dbConn, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if res["num"] == nil {
+		return 0
+	} else {
+		return res["num"].(int64)
+	}
 
 }
 
@@ -676,7 +693,37 @@ func calculateDanglingAndTotalObjectsInExp7v2(
 	}
 
 	return danglingObjs, totalObjs
+}
 
+func calculateDanglingAndTotalObjectsInExp7v3(
+	evalConfig *EvalConfig, enableBags bool, totalRemainingObjsInOriginalApp int64,
+	toApp string, seqNum int, migrationSeq []string) (int64, int64) {
+
+	var stencilDBConn *sql.DB
+
+	if enableBags {
+		stencilDBConn = evalConfig.StencilDBConn
+	} else {
+		stencilDBConn = evalConfig.StencilDBConn1
+	}
+	
+	danglingObjs := getDanglingObjectsInSystem(stencilDBConn)
+	
+	totalObjs := getTotalObjsNotIncludingMediaOfAppInExp7V2(evalConfig, toApp, enableBags)
+
+	seqLen := len(migrationSeq)
+
+	// Only when the final application is Diaspora do we need to do this
+	if seqNum == seqLen - 2 && toApp == "diaspora" {
+
+		log.Println("total objects before deletion:", totalObjs)
+		log.Println("total Remaining Objs:", totalRemainingObjsInOriginalApp)
+
+		totalObjs -= totalRemainingObjsInOriginalApp
+
+	}
+
+	return danglingObjs, totalObjs
 }
 
 func removeMigratedDanglingObjsFromDataBags(
