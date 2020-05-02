@@ -8,6 +8,8 @@ import (
 	"stencil/apis"
 	"stencil/db"
 	"sync"
+
+	"github.com/gookit/color"
 )
 
 func getUID(appID string) string {
@@ -92,8 +94,10 @@ func main() {
 		wg.Wait()
 
 		// print spaces before new migration
-		for j := 1; j < 50; j++ {
-			fmt.Println()
-		}
+		fmt.Println()
+		color.LightCyan.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+		color.LightYellow.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+		color.LightGreen.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+		fmt.Println()
 	}
 }

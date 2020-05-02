@@ -9,6 +9,8 @@ import (
 	"stencil/transaction"
 	"strings"
 	"time"
+
+	"github.com/gookit/color"
 )
 
 // Init : Initializes the thread controller
@@ -336,6 +338,7 @@ func (mThread *MigrationThreadController) Stop() {
 	if finished := db.FinishMigration(mThread.stencilDB, mThread.txnID, mThread.size); !finished {
 		mThread.Logger.Fatal("DB error in FinishMigration")
 	}
+	color.Info.Println("MigrationThreadController: Closing DB connection for stencil db")
 	mThread.stencilDB.Close()
 
 	mThread.Logger.Info("Migration Finished!")

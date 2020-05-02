@@ -957,11 +957,14 @@ func (mWorker *MigrationWorker) CloseDBConns() {
 
 	mWorker.SrcAppConfig.CloseDBConns()
 	mWorker.DstAppConfig.CloseDBConns()
+	mWorker.logTxn.DBconn.Close()
+	color.Info.Println("v2.mWorker.CloseDBConns: Closing DB connection for stencil in logTxn")
 }
 
 func (mWorker *MigrationWorker) RenewDBConn(isBlade ...bool) {
 	mWorker.CloseDBConns()
 	mWorker.logTxn.DBconn.Close()
+	color.Info.Println("v2.mWorker.RenewDBConn: Closing DB connection for stencil in logTxn")
 	mWorker.logTxn.DBconn = db.GetDBConn(db.STENCIL_DB)
 	mWorker.SrcAppConfig.DBConn = db.GetDBConn(mWorker.SrcAppConfig.AppName)
 	mWorker.SrcAppConfig.DBConn = db.GetDBConn(mWorker.DstAppConfig.AppName, isBlade...)

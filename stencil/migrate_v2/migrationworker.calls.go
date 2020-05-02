@@ -119,7 +119,9 @@ func (mWorker *MigrationWorker) CallBagsMigration(userID, bagAppID string, threa
 	} else if len(bagRows) > 0 {
 		fmt.Println("\n\n========================================================================")
 		mWorker.Logger.Infof("%s | User: '%s' | App: '%s' | Bags Count: '%v' \n", color.LightMagenta.Render("Starting Bag Migration"), userID, bagAppID, len(bagRows))
+
 		bagWorker := mWorker.mThread.CreateBagWorker(userID, bagAppID, mWorker.DstAppConfig.AppID, threadID)
+		defer bagWorker.CloseDBConns()
 
 		for _, bagRow := range bagRows {
 
@@ -161,7 +163,7 @@ func (mWorker *MigrationWorker) CallBagsMigration(userID, bagAppID string, threa
 				bagWorker.Logger.Fatal(fmt.Sprintf("UNABLE TO CREATE bag struct | bagMemberID:%s  bagRowID:%s | %s", bagRow["member"], bagRow["id"], err))
 			}
 		}
-		bagWorker.CloseDBConns()
+
 	} else {
 		mWorker.Logger.Infof("%s | User: '%s' | App: '%s' \n", color.LightMagenta.Render("No Bags Found"), userID, bagAppID)
 	}

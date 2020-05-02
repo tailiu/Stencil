@@ -14,6 +14,8 @@ import (
 	"stencil/qr"
 	"strings"
 	"time"
+
+	"github.com/gookit/color"
 )
 
 var SchemaMappingsObj *SchemaMappings
@@ -156,7 +158,10 @@ func LoadSchemaMappings() (*SchemaMappings, error) {
 		json.Unmarshal(jsonAsBytes, SchemaMappingsObj)
 
 		dbConn := db.GetDBConn(db.STENCIL_DB)
-		defer dbConn.Close()
+		defer func(dbConn *sql.DB) {
+			color.Info.Println("LoadSchemaMappings: Closing DB connection")
+			dbConn.Close()
+		}(dbConn)
 
 		for i, mapping := range SchemaMappingsObj.AllMappings {
 			for j, toApp := range mapping.ToApps {

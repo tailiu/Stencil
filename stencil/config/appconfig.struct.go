@@ -9,11 +9,13 @@ import (
 	"strings"
 
 	"github.com/drgrib/maps"
+	"github.com/gookit/color"
 )
 
 func (self *AppConfig) CloseDBConn() {
 
 	// db.CloseDBConn(self.AppName)
+	color.Info.Printf("AppConfig.CloseDBConn: Closing DB connection for app: \"%s\"\n", self.AppName)
 	self.DBConn.Close()
 }
 
@@ -384,6 +386,8 @@ func (self *AppConfig) __defunct__GetTagQS(tag Tag, params map[string]string) *q
 }
 
 func (self *AppConfig) CloseDBConns() {
+	color.Info.Printf("AppConfig.CloseDBConns: Closing DB connection for app: \"%s\"\n", self.AppName)
 	self.DBConn.Close()
+	color.Info.Printf("AppConfig.CloseDBConns: Closing DB connection for stencil in app: \"%s\"\n", self.AppName)
 	self.QR.StencilDB.Close()
 }
