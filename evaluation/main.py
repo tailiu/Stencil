@@ -323,32 +323,6 @@ def convertBytesToMB(data):
     
     return data
 
-def randomWalk():
-    
-    data = readFile3(logDir + dataBags)
-
-    # size = 0
-    # bags = [size]
-    # for i, data1 in enumerate(data):
-    #     if i % (len(apps) - 1) == 0 and i != 0:        
-    #         size = 0
-    #         bags.append(size)
-    #     size = size + data1["srcDataBagSize"]
-    #     bags.append(size)
-    
-    data2 = [0] * (len(apps) - 1)
-
-    for i, data1 in enumerate(data):
-        data2[i % (len(apps) - 1)] += data1["dataBagSize"]
-
-    # print data2
-    for i, data3 in enumerate(data2):
-        data2[i] = float(data3) / float(len(data)/4)
-    
-    data2.insert(0, 0.0)
-    
-    g.dataBag(data2, apps, "Data bag size (bytes)")
-
 def danglingDataSystemCombined():
     
     srcData = readFile3(logDir + srcSystemDanglingData)
@@ -872,8 +846,8 @@ def groupData(data, group):
 
     return res
 
-def randomWalk2(apps, labels):
-    
+def randomWalk(apps):
+
     group = len(apps) - 1
 
     data1 = readFile3(logDir + dataBagsEnabledFile)
@@ -882,10 +856,10 @@ def randomWalk2(apps, labels):
     print len(data1)
     print len(data2)
 
-    appObjs1 = getDataByKey(data1, "totalObjs")
+    appObjs1 = getDataByKey(data1, "appObjs")
     danglingObjs1 = getDataByKey(data1, "danglingObjs")
 
-    appObjs2 = getDataByKey(data2, "totalObjs")
+    appObjs2 = getDataByKey(data2, "appObjs")
     danglingObjs2 = getDataByKey(data2, "danglingObjs")
 
     appObjsGrouped1 = groupData(appObjs1, group)
@@ -902,14 +876,24 @@ def randomWalk2(apps, labels):
 
     percentages1.insert(0, 0.0)
     percentages2.insert(0, 0.0)
-
-    ylabel = 'Percentage of dangling objects to total objects'
     
     percentages = [percentages1, percentages2]
 
+    return percentages
+
+def randomWalkBar(apps, ylabel, labels):
+
+    percentages = randomWalk(apps)
+
+    g.dataBagBar(percentages, labels, apps, ylabel)
+
+def randomWalkLine(apps, ylabel, labels):
+
+    percentages = randomWalk(apps)
+
     print percentages
 
-    g.dataBag1(percentages, labels, apps, ylabel)
+    g.dataBagLine(apps, percentages, labels, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -933,10 +917,10 @@ def randomWalk2(apps, labels):
 # migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
 # dataDownTime()
-# dataDownTimeIsnPercentages(["SA1 deletion", "Naive system+"])
+# dataDownTimeInPercentages(["Stencil", "Naive system+"])
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-# scalability(["SA1 deletion", "SA1 independent", "SA1 display"])
+scalability(["Deletion", "Independent", "Display"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
 #     "logs_100K/", 
@@ -951,8 +935,12 @@ def randomWalk2(apps, labels):
 # danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
 # migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
 #     ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
-#     ["SA1 deletion", "SA1 deletion without \n display", "SA1 independent", "Naive system"])
+#     ["Deletion", "Deletion without \n display", "Independent", "Naive system"])
 # randomWalk1(["diaspora", "mastodon", "diaspora"],
 #             ["Stencil with data bags", "Stencil without data bags"])
-randomWalk2(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"],
-            ["Stencil enabling data bags", "Stencil not enabling data bags"])
+# randomWalkBar(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"],
+#             'Percentage of dangling objects to total objects',
+#             ["Stencil with data bags", "Stencil without data bags"])
+# randomWalkLine(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"], 
+#             'Percentage of dangling objects to total objects',
+#             ["Stencil with \n data bags", "Stencil without \n data bags"])

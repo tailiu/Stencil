@@ -1923,8 +1923,8 @@ func Exp7ExcludeOthersDanglingData() {
 	seqStr := strconv.Itoa(seq)
 	log.Println("Sequence:", seq)
 
-	migrationNum := 10
-	log.Println("Migration number:",migrationNum)
+	migrationNum := 100
+	log.Println("Migration number:", migrationNum)
 	
 	// Database setup for migrations enabled databags
 	stencilDB = "stencil_exp8_" + seqStr
@@ -1943,7 +1943,7 @@ func Exp7ExcludeOthersDanglingData() {
 	logFile1 := "dataBagsNotEnabled_" + seqStr
 
 	// edgeCounterRangeStart := 300
-	edgeCounterRangeStart := 270
+	edgeCounterRangeStart := 600
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -2045,7 +2045,7 @@ func Exp7ExcludeOthersDanglingData() {
 
 			enableBags = true
 
-			totalDanglingObjs, totalObjs := calculateDanglingAndTotalObjectsNoOthersDanglingData(
+			totalDanglingObjs, appObjs := calculateDanglingAndTotalObjectsNoOthersDanglingData(
 				evalConfig, enableBags, 
 				totalRemainingObjsInOriginalApp, othersDanglingData,
 				toApp, i, migrationSeq,
@@ -2053,7 +2053,7 @@ func Exp7ExcludeOthersDanglingData() {
 
 			enableBags = false
 
-			totalDanglingObjs1, totalObjs1 := calculateDanglingAndTotalObjectsNoOthersDanglingData(
+			totalDanglingObjs1, appObjs1 := calculateDanglingAndTotalObjectsNoOthersDanglingData(
 				evalConfig, enableBags, 
 				totalRemainingObjsInOriginalApp1, othersDanglingData1,
 				toApp, i, migrationSeq,
@@ -2063,11 +2063,11 @@ func Exp7ExcludeOthersDanglingData() {
 			objs1 := make(map[string]int64)
 
 			objs["danglingObjs"] = totalDanglingObjs
-			objs["totalObjs"] = totalObjs
+			objs["appObjs"] = appObjs
 			objs["userID"] = ConvertStringtoInt64(userID)
 
 			objs1["danglingObjs"] = totalDanglingObjs1
-			objs1["totalObjs"] = totalObjs1
+			objs1["appObjs"] = appObjs1
 			objs1["userID"] = ConvertStringtoInt64(userID1)
 
 			WriteStrToLog(
@@ -2317,7 +2317,7 @@ func Exp8SA2() {
 	log.Println("Starting Exp8 for SA2: Dataset Test")
 	log.Println("===================================")
 
-	seq := 0
+	seq := 1
 
 	migrationNum := 5
 

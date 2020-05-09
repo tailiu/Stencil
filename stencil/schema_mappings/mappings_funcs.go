@@ -233,11 +233,11 @@ func ReferenceExists(allMappings *config.SchemaMappings,
 																	// log.Println(thirdArg)
 																	// log.Println(toTable1.Table)
 																	if thirdArg == toTable1.Table {
-																		log.Println(fromAttr, fromTable1)
+																		// log.Println(fromAttr, fromTable1)
 																		return true
 																	}
 																} else {
-																	log.Println(fromAttr, fromTable1)
+																	// log.Println(fromAttr, fromTable1)
 																	return true
 																}
 															}

@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 19})
+plt.rcParams.update({'font.size': 30})
 
 colors = ['g', 'r', 'b', 'm', 'k', 'w', 'c', 'y']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
@@ -175,7 +175,7 @@ def mulPoints(x, y, labels, xlabel, ylabel):
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[2], fontsize=25, numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=28, numpoints=1)
     
     plt.show()
 
@@ -300,22 +300,26 @@ def mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, st
 
     plt.show()
 
-def dataBag(data, apps, ylabel):
+def dataBagLine(apps, data, labels, ylabel):
+
     fig, ax = plt.subplots()
 
     x = np.arange(0, len(apps))
 
-    for i in range(len(data)/len(apps)):
-        ax.plot(x, data[i:i+len(apps)], colors[0] + "-.")
+    for i in range(len(data)):
+        ax.plot(x, data[i], color=colors[i], label=labels[i], linestyle=lineStyles[i], lw=4)
     
     ax.set_xticks(x)
-    ax.set_xticklabels(apps, fontsize=18)
+    ax.set_xticklabels(apps, fontsize=27)
     ax.grid(True)
-    ax.set_ylabel(ylabel)
+    ax.set_ylabel(ylabel, fontsize=27)
+
+    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[3], numpoints=1)
 
     plt.show()
 
-def dataBag1(data, labels, apps, ylabel):
+def dataBagBar(data, labels, apps, ylabel):
+
     fig, ax = plt.subplots()
 
     # the label locations

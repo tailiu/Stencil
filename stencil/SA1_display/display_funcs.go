@@ -152,12 +152,10 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 }
 
 func closeDBConn(conn *sql.DB) {
-
 	err := conn.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func (display *display) closeDBConns() {
@@ -222,7 +220,6 @@ func (display *display) GetUndisplayedMigratedData() []*HintStruct {
 	// fmt.Println(displayHints)
 
 	return displayHints
-
 }
 
 func (display *display) CheckMigrationComplete() bool {
