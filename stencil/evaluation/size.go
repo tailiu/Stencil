@@ -492,7 +492,6 @@ func getTotalObjsNotIncludingMediaOfAppInExp7V2(evalConfig *EvalConfig,
 	}
 
 	return totalObjs
-
 }
 
 func getTotalRowCountsOfTable(dbConn *sql.DB, tableName string) int64 {

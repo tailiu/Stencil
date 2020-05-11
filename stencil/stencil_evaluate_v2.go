@@ -69,8 +69,9 @@ func main() {
 
 	// evaluation.Exp7()
 
-	evaluation.Exp7ExcludeOthersDanglingData()
+	// evaluation.Exp7ExcludeOthersDanglingData()
 
 	// evaluation.Exp7Test()
 
+	evaluation.Exp7v2Reintegration()
 }

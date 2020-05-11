@@ -1353,6 +1353,19 @@ func getSrcUserIDByMigrationID(dbConn *sql.DB, migrationID string) string {
 
 }
 
+func logExp7Res(logFile, userID string, appObjs int64) {
+
+	objs := make(map[string]int64)
+	objs["appObjs"] = appObjs
+	objs["userID"] = ConvertStringtoInt64(userID)
+
+	WriteStrToLog(
+		logFile,
+		ConvertMapInt64ToJSONString(objs),
+	)
+
+}
+
 func (eval *EvalConfig) getRootMembersOfApps() map[string]string {
 
 	query := `SELECT app_id, root_member_id from app_root_member`
