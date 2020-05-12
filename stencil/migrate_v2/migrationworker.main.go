@@ -1056,9 +1056,9 @@ func (mWorker *MigrationWorker) GetTagQLForBag(tag config.Tag) string {
 					if len(joinStr) > 0 {
 						joinStr += fmt.Sprintf(" FULL JOIN ")
 					}
-					joinStr += fmt.Sprintf("data_bags %s", fromTable)
-					idCols += fmt.Sprintf("%s.pk,", fromTable)
-					cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", fromTable)
+					joinStr += fmt.Sprintf("data_bags \"%s\"", fromTable)
+					idCols += fmt.Sprintf("\"%s\".pk,", fromTable)
+					cols += fmt.Sprintf(" coalesce(\"%s\".\"data\"::jsonb, '{}'::jsonb)  ||", fromTable)
 				}
 				for toTable, conditions := range toTablesMap {
 					if conditions != nil {
@@ -1067,11 +1067,11 @@ func (mWorker *MigrationWorker) GetTagQLForBag(tag config.Tag) string {
 							joinMap[toTable][fromTable] = nil
 						}
 						if _, ok := seenMap[toTable]; !ok {
-							joinStr += fmt.Sprintf(" FULL JOIN data_bags %s ", toTable)
+							joinStr += fmt.Sprintf(" FULL JOIN data_bags \"%s\" ", toTable)
 						}
-						joinStr += fmt.Sprintf(" ON %s.member = %s AND %s.member = %s AND %s ", fromTable, tableIDs[fromTable], toTable, tableIDs[toTable], strings.Join(conditions, " AND "))
-						cols += fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ||", toTable)
-						idCols += fmt.Sprintf("%s.pk,", toTable)
+						joinStr += fmt.Sprintf(" ON \"%s\".member = %s AND \"%s\".member = %s AND %s ", fromTable, tableIDs[fromTable], toTable, tableIDs[toTable], strings.Join(conditions, " AND "))
+						cols += fmt.Sprintf(" coalesce(\"%s\".\"data\"::jsonb, '{}'::jsonb)  ||", toTable)
+						idCols += fmt.Sprintf("\"%s\".pk,", toTable)
 						seenMap[toTable] = true
 					}
 				}
@@ -1080,9 +1080,9 @@ func (mWorker *MigrationWorker) GetTagQLForBag(tag config.Tag) string {
 			sql = fmt.Sprintf(sql, strings.Trim(idCols, ","), strings.Trim(cols, ",|"), joinStr)
 		} else {
 			table := tag.Members["member1"]
-			joinStr := fmt.Sprintf("data_bags %s", table)
-			idCols := fmt.Sprintf("%s.pk", table)
-			cols := fmt.Sprintf(" coalesce(%s.\"data\"::jsonb, '{}'::jsonb)  ", table)
+			joinStr := fmt.Sprintf("data_bags \"%s\"", table)
+			idCols := fmt.Sprintf("\"%s\".pk", table)
+			cols := fmt.Sprintf(" coalesce(\"%s\".\"data\"::jsonb, '{}'::jsonb)  ", table)
 			sql = fmt.Sprintf(sql, idCols, cols, joinStr)
 		}
 

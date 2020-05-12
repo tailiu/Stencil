@@ -20,7 +20,7 @@ func (mWorker *MigrationWorker) ConstructBagNode(bagMember, bagMemberID, bagRowI
 	}
 
 	if ql := mWorker.GetTagQLForBag(*bagTag); len(ql) > 0 {
-		where := fmt.Sprintf(" WHERE %s.member = %s AND %s.id = %s", bagMember, bagMemberID, bagMember, bagRowID)
+		where := fmt.Sprintf(" WHERE \"%s\".member = %s AND \"%s\".id = %s", bagMember, bagMemberID, bagMember, bagRowID)
 		sql := ql + where
 		if data, err := db.DataCall1(mWorker.logTxn.DBconn, sql); err == nil && len(data) > 0 {
 			bagData := make(map[string]interface{})
