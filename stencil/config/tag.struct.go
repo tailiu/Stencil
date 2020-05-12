@@ -133,7 +133,7 @@ func (self Tag) CreateInDepMap(isBag ...bool) map[string]map[string][]string {
 			var condition string
 
 			if bag {
-				condition = fmt.Sprintf("%s.\"data\"->>'%s.%s'=%s.\"data\"->>'%s.%s'", mapFromTable, mapFromTable, mapFromCol, mapToTable, mapToTable, mapToCol)
+				condition = fmt.Sprintf("\"%s\".\"data\"->>'%s.%s'=\"%s\".\"data\"->>'%s.%s'", mapFromTable, mapFromTable, mapFromCol, mapToTable, mapToTable, mapToCol)
 			} else {
 				condition = fmt.Sprintf("\"%s\".\"%s\"=\"%s\".\"%s\"", mapFromTable, mapFromCol, mapToTable, mapToCol)
 			}
