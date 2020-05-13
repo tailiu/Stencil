@@ -40,13 +40,15 @@ func getDanglingDataSizeOfMigration(evalConfig *EvalConfig,
 
 }
 
-func (evalConfig *EvalConfig) getOthersDanglingData(stencilDBConnName, userID string) int64 {
+func (evalConfig *EvalConfig) getOthersDanglingData(stencilDBConnName,
+	userID, appID, migrationID string) int64 {
 
 	stencilDBConn := getDBConnByName(evalConfig, stencilDBConnName)
 
 	query := fmt.Sprintf(`
-		SELECT count(*) as num FROM data_bags WHERE
-		user_id != %s and app = 1`, userID,
+		SELECT count(*) as num FROM data_bags WHERE 
+		user_id != %s and app = %s and migration_id = %s`, 
+		userID, appID, migrationID,
 	)
 
 	// log.Println(query)
