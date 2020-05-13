@@ -1781,7 +1781,7 @@ func Exp7ReintegrationDataBags() {
 	logFile1 := "dataBagsNotEnabled_" + seqStr
 
 	// edgeCounterRangeStart := 300
-	edgeCounterRangeStart := 815
+	edgeCounterRangeStart := 825
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
