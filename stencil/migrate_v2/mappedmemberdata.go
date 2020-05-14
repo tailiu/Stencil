@@ -109,12 +109,27 @@ func (mmd MappedMemberData) GetSourceAppsAndTables() map[string][]string {
 	return apptabMap
 }
 
-func (mmd MappedMemberData) GetDataMap() DataMap {
+func (mmd MappedMemberData) GetDstDataMap() DataMap {
 
 	data := make(DataMap)
 
 	for col, mmv := range mmd.Data {
 		data[mmd.ToMember+"."+col] = mmv.Value
+	}
+
+	return data
+}
+
+func (mmd MappedMemberData) GetSrcDataMap() DataMap {
+
+	data := make(DataMap)
+
+	for toAttr, mmv := range mmd.Data {
+		if strings.EqualFold(toAttr, "id") {
+			data[mmv.FromMember+"."+mmv.FromAttr] = mmv.FromID
+		} else {
+			data[mmv.FromMember+"."+mmv.FromAttr] = mmv.Value
+		}
 	}
 
 	return data
@@ -423,4 +438,16 @@ func (mmd *MappedMemberData) CreateSelfReferences(bagAppConfig config.AppConfig,
 	}
 
 	return bagRefs, nil
+}
+
+func (mmd *MappedMemberData) FindMMV(appID, fromID, fromMemberID, fromAttrID string) (string, *MappedMemberValue) {
+	for toAttr, mmv := range mmd.Data {
+		if mmv.AppID == appID &&
+			mmv.FromMemberID == fromMemberID &&
+			mmv.FromID == fromID &&
+			mmv.FromAttrID == fromAttrID {
+			return toAttr, &mmv
+		}
+	}
+	return "", nil
 }
