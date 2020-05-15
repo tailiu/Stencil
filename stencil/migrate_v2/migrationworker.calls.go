@@ -58,7 +58,7 @@ func (mWorker *MigrationWorker) CallMigration(node *DependencyNode, threadID int
 			log.Println(fmt.Sprintf("COMMITTED node { %s } ", node.Tag.Name))
 		}
 	} else {
-		log.Println(fmt.Sprintf("VISITED  node { %s } | root [%s] : owner [%s]", node.Tag.Name, mWorker.uid, ownerID))
+		log.Println(fmt.Sprintf("VISITED  node { %s } | root [%s] : owner [%s] | root: %v", node.Tag.Name, mWorker.uid, ownerID, isRoot))
 		mWorker.visitedNodes.MarkAsVisited(node)
 	}
 	fmt.Println("------------------------------------------------------------------------")
