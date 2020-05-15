@@ -1858,7 +1858,7 @@ func Exp7ReintegrationDataBags() {
 			db.TWITTER_DB = twitter
 			db.GNUSOCIAL_DB = gnusocial
 
-			migrationID, userID = migrateUsersInExp7(
+			migrationID, userID = migrateUsersInSeqOfApps(
 				evalConfig, stencilDB,
 				i, fromApp, toApp, fromAppID, toAppID,
 				migrationID, userID, 
@@ -1873,7 +1873,7 @@ func Exp7ReintegrationDataBags() {
 			db.TWITTER_DB = twitter1
 			db.GNUSOCIAL_DB = gnusocial1
 			
-			migrationID1, userID1 = migrateUsersInExp7(
+			migrationID1, userID1 = migrateUsersInSeqOfApps(
 				evalConfig, stencilDB1,
 				i, fromApp, toApp, fromAppID, toAppID,
 				migrationID1, userID1,
@@ -2100,5 +2100,182 @@ func Exp8SA2() {
 			exp8LogFile,
 			ConvertMapStringToJSONString(logData),
 		)
+	}
+}
+
+func Exp9PreserveDataLinks() {
+
+	log.Println("============================================")
+	log.Println("Starting Exp9: Preserve Data Relationships")
+	log.Println("============================================")
+
+	migrationSeq := []string {
+		"diaspora", "mastodon", "gnusocial", "twitter", 
+		"diaspora", "mastodon", "gnusocial", "twitter",
+	}
+	log.Println("Migration sequence:", migrationSeq)
+
+	seq := 0
+	seqStr := strconv.Itoa(seq)
+	// log.Println("Sequence:", seq)
+
+	migrationNum := 100
+	log.Println("Migration number:", migrationNum)
+	
+	// Database setup for migrations enabled databags
+	stencilDB = "stencil_exp6_" + seqStr
+	diaspora = "diaspora_1m_exp6_" + seqStr
+	mastodon = "mastodon_exp6_" + seqStr
+	twitter = "twitter_exp6_" + seqStr
+	gnusocial = "gnusocial_exp6_" + seqStr
+	logFile := "resolveRefsEnabled_" + seqStr
+
+	// Database setup for migrations not enabled databags
+	stencilDB1 = "stencil_exp7_" + seqStr
+	diaspora1 = "diaspora_1m_exp7_" + seqStr
+	mastodon1 = "mastodon_exp7_" + seqStr
+	twitter1 = "twitter_exp7_" + seqStr
+	gnusocial1 = "gnusocial_exp7_" + seqStr
+	logFile1 := "resolveRefsNotEnabled_" + seqStr
+
+	// edgeCounterRangeStart := 300
+	edgeCounterRangeStart := 700
+	edgeCounterRangeEnd := 1200
+	getCounterNum := 100
+
+	evalConfig := InitializeEvalConfig(false)
+	defer closeDBConns(evalConfig)
+
+	preExp7(evalConfig)
+	
+	edgeCounter := getEdgesCounterByRange(
+		evalConfig,
+		edgeCounterRangeStart, 
+		edgeCounterRangeEnd, 
+		getCounterNum,
+	)
+
+	log.Println(edgeCounter)
+
+	for j := seq * migrationNum; j < (seq + 1) * migrationNum; j++ {
+
+		userID := edgeCounter[j]["person_id"]
+		userID1 := userID
+
+		log.Println("Next User:", userID)
+
+		preExp7(evalConfig)
+
+		var beforeMigObjsInApp int64
+		var beforeMigObjsInApp1 int64
+
+		var afterMigObjsInApp int64
+		var afterMigObjsInApp1 int64
+
+		var migObjsInSrc int64
+		var migObjsInSrc1 int64
+
+		var beforeLastMigObjsInLastApp int64
+		var beforeLastMigObjsInLastApp1 int64
+
+		var afterLastMigObjsInLastApp int64
+		var afterLastMigObjsInLastApp1 int64
+
+		var migrationID string
+		var migrationID1 string
+
+		for i := 0; i < len(migrationSeq) - 1; i++ {
+
+			fromApp := migrationSeq[i]
+			toApp := migrationSeq[i+1]
+			
+			fromAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, fromApp)
+			toAppID := db.GetAppIDByAppName(evalConfig.StencilDBConn, toApp)
+
+			beforeMigObjsInApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+				evalConfig, fromApp, true)
+				
+			beforeMigObjsInApp1 = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+				evalConfig, fromApp, false)
+
+			if i == len(migrationSeq) - 2 {
+				beforeLastMigObjsInLastApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+					evalConfig, toApp, true)
+				beforeLastMigObjsInLastApp1 = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+					evalConfig, toApp, false)
+			}
+
+			enableBags := true
+			resolveRefs := true
+
+			db.STENCIL_DB = stencilDB
+			db.DIASPORA_DB = diaspora
+			db.MASTODON_DB = mastodon
+			db.TWITTER_DB = twitter
+			db.GNUSOCIAL_DB = gnusocial
+
+			migrationID, userID = migrateUsersInSeqOfApps(
+				evalConfig, stencilDB,
+				i, fromApp, toApp, fromAppID, toAppID,
+				migrationID, userID, 
+				enableBags, resolveRefs,
+			)
+
+			resolveRefs = false
+
+			db.STENCIL_DB = stencilDB1
+			db.DIASPORA_DB = diaspora1
+			db.MASTODON_DB = mastodon1
+			db.TWITTER_DB = twitter1
+			db.GNUSOCIAL_DB = gnusocial1
+			
+			migrationID1, userID1 = migrateUsersInSeqOfApps(
+				evalConfig, stencilDB1,
+				i, fromApp, toApp, fromAppID, toAppID,
+				migrationID1, userID1,
+				enableBags, resolveRefs,
+			)
+
+			afterMigObjsInApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+				evalConfig, fromApp, true)
+			
+			afterMigObjsInApp1 = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+				evalConfig, fromApp, false)
+			
+			migObjsInSrc = beforeMigObjsInApp - afterMigObjsInApp
+			migObjsInSrc1 = beforeMigObjsInApp1 - afterMigObjsInApp1
+
+			// Exclude others' dangling data
+			if i == 0 {
+				migObjsInSrc -= evalConfig.getOthersDanglingData(
+					stencilDB, userID, fromAppID, migrationID)
+				migObjsInSrc1 -= evalConfig.getOthersDanglingData(
+					stencilDB1, userID1, fromAppID, migrationID1)
+			} 
+
+			// Only calculate how much data has been migrated out, so even though some data
+			// is left in the app, such as conversations, it will not be counted
+			logExp7Res(logFile, userID, migObjsInSrc)
+			logExp7Res(logFile1, userID1, migObjsInSrc1)
+			
+			if i == len(migrationSeq) - 2 {
+				afterLastMigObjsInLastApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+					evalConfig, toApp, true)
+				afterLastMigObjsInLastApp1 = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+					evalConfig, toApp, false)
+
+				lastUserID := evalConfig.getNextUserID(evalConfig.StencilDBConn, migrationID)
+				lastUserID1 := evalConfig.getNextUserID(evalConfig.StencilDBConn1, migrationID1)
+
+				logExp7Res(
+					logFile, lastUserID, 
+					afterLastMigObjsInLastApp - beforeLastMigObjsInLastApp,
+				)
+				logExp7Res(
+					logFile1, lastUserID1, 
+					afterLastMigObjsInLastApp1 - beforeLastMigObjsInLastApp1,
+				)
+			}
+		}
 	}
 }

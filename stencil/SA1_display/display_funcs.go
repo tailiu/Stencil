@@ -110,11 +110,14 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 
 	appTableNameTableIDPairs := getAppTableNameTableIDPairs(stencilDBConn, appIDNamePairs)
 
-	refResolution := reference_resolution_v2.InitializeReferenceResolution(
-		migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
-		dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
-		attrIDNamePairs, dstAppColNameIDPairs, allMappings, dstDAG,
-	)
+	if resolveReference {
+		refResolution := reference_resolution_v2.InitializeReferenceResolution(
+			migrationID, dstAppID, dstAppName, dstDBConn, stencilDBConn,
+			dstAppTableNameIDPairs, appIDNamePairs, tableIDNamePairs,
+			attrIDNamePairs, dstAppColNameIDPairs, allMappings, dstDAG,
+		)
+		display.rr = refResolution
+	}
 
 	srcAppConfig.appID = srcAppID
 	srcAppConfig.appName = srcAppName
@@ -140,7 +143,6 @@ func CreateDisplayConfig(migrationID int, resolveReference, useBladeServerAsDst,
 	display.resolveReference = resolveReference
 	display.srcAppConfig = &srcAppConfig
 	display.dstAppConfig = &dstAppConfig
-	display.rr = refResolution
 	display.displayInFirstPhase = displayInFirstPhase
 	display.markAsDelete = markAsDelete
 	display.mappingsFromSrcToDst = mappingsFromSrcToDst

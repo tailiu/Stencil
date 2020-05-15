@@ -469,7 +469,7 @@ func RecreateDiaspora1MDB() {
 // 			db.TWITTER_DB = twitter
 // 			db.GNUSOCIAL_DB = gnusocial
 
-// 			migrationIDs = migrateUsersInExp7(
+// 			migrationIDs = migrateUsersInSeqOfApps(
 // 				evalConfig, stencilDB,
 // 				i, fromApp, toApp, fromAppID, toAppID,
 // 				migrationIDs, userIDs, 
@@ -484,7 +484,7 @@ func RecreateDiaspora1MDB() {
 // 			db.TWITTER_DB = twitter1
 // 			db.GNUSOCIAL_DB = gnusocial1
 
-// 			migrationIDs1 = migrateUsersInExp7(
+// 			migrationIDs1 = migrateUsersInSeqOfApps(
 // 				evalConfig, stencilDB1,
 // 				i, fromApp, toApp, fromAppID, toAppID,
 // 				migrationIDs1, userIDs,

@@ -15,12 +15,9 @@ const CHECK_MIGRATION_COMPLETE_INTERVAL1 = time.Second
 const CHECK_MIGRATION_COMPLETE_INTERVAL2 = 500 * time.Millisecond
 
 func displayController(migrationID, threadNum int, wg *sync.WaitGroup, 
-	displayInFirstPhase, markAsDelete, useBladeServerAsDst bool) {
+	displayInFirstPhase, markAsDelete, useBladeServerAsDst, resolveRefs bool) {
 
-	// If the display controller needs to resolve references, resolveReference is true
-	resolveReference := true
-
-	dConfig := CreateDisplayConfig(migrationID, resolveReference, 
+	dConfig := CreateDisplayConfig(migrationID, resolveRefs, 
 		useBladeServerAsDst, displayInFirstPhase, markAsDelete)
 	
 	if !displayInFirstPhase {
@@ -99,10 +96,10 @@ func waitForMigrationComplete(migrationID int, wg *sync.WaitGroup) {
 
 }
 
-func handlArgs(args []bool) (bool, bool, bool, bool) {
+func handlArgs(args []bool) (bool, bool, bool, bool, bool) {
 
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst :=
-		true, true, false, true
+	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, resolveRefs :=
+		true, true, false, true, true
 	
 	for i, arg := range args {
 		switch i {
@@ -114,13 +111,14 @@ func handlArgs(args []bool) (bool, bool, bool, bool) {
 			markAsDelete = arg
 		case 3:
 			useBladeServerAsDst = arg
+		case 4:
+			resolveRefs = arg
 		default:
-			log.Fatal(`The input args of the display controller 
-				do not satisfy requirements!`)
+			log.Fatal(`The input args of the display controller do not satisfy requirements!`)
 		}
 	}
 
-	return enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst
+	return enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, resolveRefs
 
 }
 
@@ -131,12 +129,12 @@ func StartDisplay(uid, srcAppID, dstAppID, migrationType string,
 
 	log.Println("Migration ID Found by Display:", migrationID)
 
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst := handlArgs(args)
+	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, resolveRefs := handlArgs(args)
 
 	if enableDisplay {
 		displayController(
 			migrationID, threadNum, wg, 
-			displayInFirstPhase, markAsDelete, useBladeServerAsDst,
+			displayInFirstPhase, markAsDelete, useBladeServerAsDst, resolveRefs,
 		)
 	} else {
 		waitForMigrationComplete(migrationID, wg)

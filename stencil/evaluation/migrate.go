@@ -91,10 +91,24 @@ func migrateUserFromDiasporaToMastodon1(
 	)
 }
 
-func migrateUsersInExp7(evalConfig *EvalConfig, stencilDBConnName string, 
+func migrateUsersInSeqOfApps(evalConfig *EvalConfig, stencilDBConnName string, 
 	seqNum int, fromApp, toApp, fromAppID, toAppID string,
-	migrationID, userID string, enableBagsOption, enableDisplayOption bool) (string, string) {
+	migrationID, userID string, args ...bool) (string, string) {
 
+	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags, enableFTP, resolveRefs := 
+		true, true, false, false, true, true, true
+	
+	for i, arg := range args {
+		switch i {
+		case 0:
+			enableBags = arg
+		case 1:
+			resolveRefs = arg
+		default:
+			log.Fatal(`The input args do not satisfy requirements!`)
+		}
+	}
+	
 	var stencilDBConn *sql.DB
 		
 	if seqNum != 0 {
@@ -108,13 +122,11 @@ func migrateUsersInExp7(evalConfig *EvalConfig, stencilDBConnName string,
 
 	uid, migrationType, threadNum := userID, "d", 1
 
-	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags := 
-		enableDisplayOption, true, false, false, enableBagsOption
-
 	SA1_migrate.Controller(uid, fromApp, fromAppID, 
 		toApp, toAppID, migrationType, threadNum,
 		enableDisplay, displayInFirstPhase, 
 		markAsDelete, useBladeServerAsDst, enableBags,
+		enableFTP, resolveRefs,
 	)
 
 	refreshEvalConfigDBConnections(evalConfig, false)

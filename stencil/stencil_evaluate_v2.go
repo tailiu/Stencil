@@ -73,5 +73,7 @@ func main() {
 
 	// evaluation.Exp7Test()
 
-	evaluation.Exp7ReintegrationDataBags()
+	// evaluation.Exp7ReintegrationDataBags()
+
+	evaluation.Exp9PreserveDataLinks()
 }
