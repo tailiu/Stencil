@@ -22,31 +22,30 @@ func (mWorker *MigrationWorker) CreateBagManager() *BagManager {
 	return &bagManager
 }
 
-func (mWorker *MigrationWorker) FetchRoot(threadID int) error {
-	tagName := "root"
-	if root, err := mWorker.SrcAppConfig.GetTag(tagName); err == nil {
-		rootTable, rootCol := mWorker.SrcAppConfig.GetItemsFromKey(root, "root_id")
-		where := fmt.Sprintf("\"%s\".\"%s\" = '%s'", rootTable, rootCol, mWorker.uid)
+func (mWorker *MigrationWorker) FetchUserNode(rootKey, rootVal string) (*DependencyNode, error) {
+
+	if root, err := mWorker.SrcAppConfig.GetTag("root"); err == nil {
+		rootTable, rootCol := mWorker.SrcAppConfig.GetItemsFromKey(root, rootKey)
+		where := fmt.Sprintf("\"%s\".\"%s\" = '%s'", rootTable, rootCol, rootVal)
 		ql := mWorker.GetTagQL(root)
 		sql := fmt.Sprintf("%s WHERE %s ", ql, where)
 		sql += root.ResolveRestrictions()
 		// mWorker.Logger.Debug(sql)
 		if data, err := db.DataCall1(mWorker.SrcAppConfig.DBConn, sql); err == nil {
 			if len(data) > 0 {
-				mWorker.Root = &DependencyNode{Tag: root, SQL: sql, Data: data}
+				return &DependencyNode{Tag: root, SQL: sql, Data: data}, nil
 			} else {
 				mWorker.Logger.Trace(sql)
-				return errors.New("Can't fetch Root node. Check if it exists. UID: " + mWorker.uid)
+				return nil, fmt.Errorf("Can't fetch Root node. rootKey: '%s' | rootVal: '%s' | rootTable: '%s' | rootCol: '%s'", rootKey, rootVal, rootTable, rootCol)
 			}
 		} else {
 			mWorker.Logger.Debug(sql)
-			return err
+			return nil, err
 		}
 	} else {
-		mWorker.Logger.Fatalf("Can't fetch root tag '%s' | App => %s, %s | err: %v", tagName, mWorker.SrcAppConfig.AppID, mWorker.SrcAppConfig.AppName, err)
-		return err
+		mWorker.Logger.Fatalf("Can't fetch root tag | App => %s, %s | err: %v", mWorker.SrcAppConfig.AppID, mWorker.SrcAppConfig.AppName, err)
+		return nil, err
 	}
-	return nil
 }
 
 func (mWorker *MigrationWorker) GetAllNextNodes(node *DependencyNode) ([]*DependencyNode, error) {
@@ -221,26 +220,46 @@ func (mWorker *MigrationWorker) GetNodeOwner(node *DependencyNode) (string, bool
 		for _, condition := range ownership.Conditions {
 			tagAttr, err := node.Tag.ResolveTagAttr(condition.TagAttr)
 			if err != nil {
-				mWorker.Logger.Fatal("@GetNodeOwner: Resolving TagAttr", err, node.Tag.Name, condition.TagAttr)
-				break
+				mWorker.Logger.Fatal("@GetNodeOwner > ResolveTagAttr: Resolving TagAttr |", err, node.Tag.Name, condition.TagAttr)
 			}
 			depOnAttr, err := mWorker.Root.Tag.ResolveTagAttr(condition.DependsOnAttr)
 			if err != nil {
-				mWorker.Logger.Fatal("@GetNodeOwner: Resolving depOnAttr", err, node.Tag.Name, condition.DependsOnAttr)
+				mWorker.Logger.Fatal("@GetNodeOwner > ResolveTagAttr: Resolving depOnAttr | ", err, condition.DependsOnAttr)
 				break
 			}
+			rootAttr, err := mWorker.Root.Tag.ResolveTagAttr("root_id")
+			if err != nil {
+				mWorker.Logger.Fatal("@GetNodeOwner > ResolveTagAttr: Resolving rootAttr | ", err)
+			}
 			if nodeVal, err := node.GetValueForKey(tagAttr); err == nil {
-				if rootVal, err := mWorker.Root.GetValueForKey(depOnAttr); err == nil {
-					if !strings.EqualFold(nodeVal, rootVal) {
-						// fmt.Println(fmt.Sprintf("root:%s:%s; user:%s:%s", depOnAttr, rootVal, tagAttr, nodeVal))
-						return nodeVal, false
+				if strings.EqualFold(rootAttr, depOnAttr) {
+					if rootVal, err := mWorker.Root.GetValueForKey(depOnAttr); err == nil {
+						isRoot := false
+						if strings.EqualFold(nodeVal, rootVal) {
+							isRoot = true
+						}
+						return nodeVal, isRoot
 					} else {
-						return nodeVal, true
+						fmt.Println("@GetNodeOwner: Ownership Condition Key in Root Data:", depOnAttr, "doesn't exist!")
+						fmt.Println("@GetNodeOwner: root data:", mWorker.Root.Data)
+						mWorker.Logger.Fatal("@GetNodeOwner: stop here and check ownership conditions wrt root")
 					}
 				} else {
-					fmt.Println("@GetNodeOwner: Ownership Condition Key in Root Data:", depOnAttr, "doesn't exist!")
-					fmt.Println("@GetNodeOwner: root data:", mWorker.Root.Data)
-					mWorker.Logger.Fatal("@GetNodeOwner: stop here and check ownership conditions wrt root")
+					if userNode, err := mWorker.FetchUserNode(condition.DependsOnAttr, nodeVal); err != nil {
+						mWorker.Logger.Fatal(err)
+					} else if userNode == nil {
+						mWorker.Logger.Fatalf("User node not found | nodeVal: '%s' | dependsOnAttr: '%s'  ", nodeVal, condition.DependsOnAttr)
+					} else {
+						if rootVal, ok := userNode.Data[rootAttr]; ok {
+							isRoot := false
+							if strings.EqualFold(mWorker.uid, fmt.Sprint(rootVal)) {
+								isRoot = true
+							}
+							return fmt.Sprint(rootVal), isRoot
+						}
+						fmt.Println(userNode.Data)
+						mWorker.Logger.Fatalf("@GetNodeOwner: Can't find rootVal in userNode.Data[%s]", rootAttr)
+					}
 				}
 			} else {
 				fmt.Println("@GetNodeOwner: Ownership Condition Key", tagAttr, "doesn't exist!")
@@ -249,11 +268,13 @@ func (mWorker *MigrationWorker) GetNodeOwner(node *DependencyNode) (string, bool
 				mWorker.Logger.Fatal("@GetNodeOwner: stop here and check ownership conditions")
 			}
 		}
+		mWorker.Logger.Fatal("@GetNodeOwner: Owner not found")
+		return "", false
 	} else {
 		mWorker.Logger.Debug(mWorker.SrcAppConfig.Ownerships)
 		mWorker.Logger.Fatal("@GetNodeOwner: Ownership not found:", node.Tag.Name)
+		return "", false
 	}
-	return "", false
 }
 
 func (mWorker *MigrationWorker) ValidateMappingConditions(conditions map[string]string, data DataMap) bool {

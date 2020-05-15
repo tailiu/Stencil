@@ -140,8 +140,12 @@ func (mThread *MigrationThreadController) CreateMigrationWorker(threadID int) Mi
 
 	mWorker.visitedNodes.Init()
 
-	if err := mWorker.FetchRoot(threadID); err != nil {
+	if rootNode, err := mWorker.FetchUserNode("root_id", mWorker.uid); err != nil {
 		mWorker.Logger.Fatal(err)
+	} else if rootNode == nil {
+		mWorker.Logger.Fatal("Root node not returned!")
+	} else {
+		mWorker.Root = rootNode
 	}
 
 	if mWorker.FTPFlag {
