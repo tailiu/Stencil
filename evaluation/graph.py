@@ -318,6 +318,27 @@ def dataBagLine(apps, data, labels, ylabel):
 
     plt.show()
 
+def dataBagLine(apps, data, labels, ylabel):
+
+    fig, ax = plt.subplots()
+
+    x = np.arange(0, len(apps))
+
+    for i in range(len(data)):
+        ax.plot(x, data[i], color=colors[i], label=labels[i], linestyle=lineStyles[i], lw=4)
+    
+    ax.set_xticks(x)
+    ax.set_xticklabels(apps, fontsize=27)
+    ax.grid(True)
+    ax.set_ylabel(ylabel, fontsize=27)
+
+    # I want to change location by coordinates
+    # bbox_to_anchor = (x0, y0, width, height) 
+    # (x0,y0) are the lower left corner coordinates of the bounding box.
+    legend = ax.legend(bbox_to_anchor=(0, 0.89), loc=legendLoc[2])
+
+    plt.show()
+
 def dataBagBar(data, labels, apps, ylabel):
 
     fig, ax = plt.subplots()

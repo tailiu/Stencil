@@ -895,6 +895,49 @@ def randomWalkLine(apps, ylabel, labels):
 
     g.dataBagLine(apps, percentages, labels, ylabel)
 
+def addData(data, start, step):
+    total = 0
+    for i in range(start, len(data), step):
+        total += data[i]
+    return total
+
+def randomWalk1(apps):
+
+    group1 = len(apps)
+    group2 = len(apps) * 2
+
+    data1 = readFile3(logDir + dataBagsEnabledFile)
+    data2 = readFile3(logDir + dataBagsNotEnabledFile)
+
+    print len(data1)
+    print len(data2)
+
+    appObjs1 = getDataByKey(data1, "appObjs")
+    appObjs2 = getDataByKey(data2, "appObjs")
+
+    appObjsGrouped1 = []
+    appObjsGrouped2 = []
+    for i in range(group2):
+        appObjsGrouped1.append(addData(appObjs1, i, group2))
+        appObjsGrouped2.append(addData(appObjs2, i, group2))
+    
+    percentages1 = []
+    percentages2 = []
+    for i in range(group1):
+        percentages1.append(float(appObjsGrouped1[i + group1])/float(appObjsGrouped1[i]) * 100.0)
+        percentages2.append(float(appObjsGrouped2[i + group1])/float(appObjsGrouped2[i]) * 100.0)
+
+    percentages = [percentages1, percentages2]
+    return percentages
+
+def randomWalkLine1(apps, ylabel, labels):
+
+    percentages = randomWalk1(apps)
+
+    print percentages
+
+    g.dataBagLine(apps, percentages, labels, ylabel)
+
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
@@ -920,7 +963,7 @@ def randomWalkLine(apps, ylabel, labels):
 # dataDownTimeInPercentages(["Stencil", "Naive system+"])
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-scalability(["Deletion", "Independent", "Display"])
+# scalability(["Deletion", "Independent", "Display"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
 #     "logs_100K/", 
@@ -944,3 +987,6 @@ scalability(["Deletion", "Independent", "Display"])
 # randomWalkLine(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"], 
 #             'Percentage of dangling objects to total objects',
 #             ["Stencil with \n data bags", "Stencil without \n data bags"])
+randomWalkLine1(["Diaspora", "Mastodon", "Gnusocial", "Twitter"],
+                'Percentage of application objects',
+                ["Stencil with data bags", "Stencil without data bags"])

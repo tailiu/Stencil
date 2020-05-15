@@ -1753,15 +1753,15 @@ func Exp7ReintegrationDataBags() {
 
 	migrationSeq := []string {
 		"diaspora", "mastodon", "gnusocial", "twitter", 
-		"diaspora", 
-		// "mastodon", "gnusocial", "twitter",
+		"diaspora", "mastodon", "gnusocial", "twitter",
 	}
-	
+	log.Println("Migration sequence:", migrationSeq)
+
 	seq := 0
 	seqStr := strconv.Itoa(seq)
-	log.Println("Sequence:", seq)
+	// log.Println("Sequence:", seq)
 
-	migrationNum := 1
+	migrationNum := 100
 	log.Println("Migration number:", migrationNum)
 	
 	// Database setup for migrations enabled databags
@@ -1781,7 +1781,7 @@ func Exp7ReintegrationDataBags() {
 	logFile1 := "dataBagsNotEnabled_" + seqStr
 
 	// edgeCounterRangeStart := 300
-	edgeCounterRangeStart := 825
+	edgeCounterRangeStart := 705
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -1799,10 +1799,9 @@ func Exp7ReintegrationDataBags() {
 
 	log.Println(edgeCounter)
 
-	// for j := 0; j < len(edgeCounter); j++ {
-
 	for j := seq * migrationNum; j < (seq + 1) * migrationNum; j++ {
 
+		// userID := "789801"
 		userID := edgeCounter[j]["person_id"]
 		userID1 := userID
 
