@@ -3,7 +3,6 @@ package data_generator
 import (
 	"math"
 	"math/rand"
-	"diaspora/db"
 	"time"
 	// "log"
 	"sort"
@@ -55,7 +54,7 @@ func shuffleSlices(s []float64) []float64 {
 func Initialize(app string) *GenConfig {
 
 	genConfig := new(GenConfig)
-	genConfig.DBConn = db.GetDBConn(app)
+	genConfig.DBConn = GetDBConn(app)
 
 	return genConfig
 
