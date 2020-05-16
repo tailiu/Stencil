@@ -53,8 +53,7 @@ const IMAGE_NUM = 3693
 // const IMAGE_NUM = 3693432
 
 
-func genUsers(genConfig *data_generator.GenConfig, num int, 
-	wg *sync.WaitGroup, res chan<- []data_generator.User) {
+func genUsers(genConfig *data_generator.GenConfig, num int, wg *sync.WaitGroup, res chan<- []data_generator.User) {
 
 	defer wg.Done()
 
@@ -69,20 +68,15 @@ func genUsers(genConfig *data_generator.GenConfig, num int,
 		user.User_ID, user.Person_ID, user.Aspects, err = datagen.NewUser(genConfig.DBConn)
 
 		if err != nil {
-
 			// log.Println(err)
-
 		} else {
-			
 			users = append(users, user)
-			
 		}
 	}
 
 	// log.Println("Total number of users:", len(users))
 
 	res <- users
-	
 }
 
 // Function genUsersController() tries to create USER_NUM users, but it cannot guarantee
@@ -97,9 +91,7 @@ func genUsersController(genConfig *data_generator.GenConfig) []data_generator.Us
 	wg.Add(THREAD_NUM)
 
 	for i := 0; i < THREAD_NUM; i++ {
-		
 		go genUsers(genConfig, USER_NUM / THREAD_NUM, &wg, channel)
-		 
 	}
 
 	wg.Wait()
@@ -107,15 +99,12 @@ func genUsersController(genConfig *data_generator.GenConfig) []data_generator.Us
 	close(channel)
 
 	for res := range channel {
-
 		users = append(users, res...)
-
 	}
 
 	log.Println("Total number of users:", len(users))
 
 	return users
-
 }
 
 func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 

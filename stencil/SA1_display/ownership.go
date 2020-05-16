@@ -60,24 +60,20 @@ func (display *display) getADataInOwner(hints []*HintStruct, ownership *config.O
 			return nil, CannotFindDataInOwnership
 		}
 
-		if display.resolveReference {
-			depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(table, attr, attrVal, id)
-			
-			// no matter whether this attribute has been resolved before
-			// we need to refresh the cached data because this attribute might be
-			// resolved by other thread checking other data
-			display.refreshCachedDataHints(hints)
+		depVal, err0 = display.checkResolveReferenceInGetDataInParentNode(table, attr, attrVal, id)
+		
+		// no matter whether this attribute has been resolved before
+		// we need to refresh the cached data because this attribute might be
+		// resolved by other thread checking other data
+		display.refreshCachedDataHints(hints)
 
-			if err0 != nil {
-				log.Println(err0)
-				if err0 != NoReferenceToResolve {
-					return nil, err0
-				} else {
-					depVal = fmt.Sprint(hint.Data[attr])
-				}
+		if err0 != nil {
+			log.Println(err0)
+			if err0 != NoReferenceToResolve {
+				return nil, err0
+			} else {
+				depVal = fmt.Sprint(hint.Data[attr])
 			}
-		} else {
-			depVal = fmt.Sprint(hint.Data[attr])
 		}
 	}
 

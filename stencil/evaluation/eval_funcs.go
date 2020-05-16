@@ -1353,7 +1353,7 @@ func getSrcUserIDByMigrationID(dbConn *sql.DB, migrationID string) string {
 
 }
 
-func logExp7Res(logFile, userID string, appObjs int64) {
+func logSeqMigsRes(logFile, userID string, appObjs int64) {
 
 	objs := make(map[string]int64)
 	objs["appObjs"] = appObjs

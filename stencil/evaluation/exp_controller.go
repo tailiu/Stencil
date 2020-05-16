@@ -1753,7 +1753,8 @@ func Exp7ReintegrationDataBags() {
 
 	migrationSeq := []string {
 		"diaspora", "mastodon", "gnusocial", "twitter", 
-		"diaspora", "mastodon", "gnusocial", "twitter",
+		"diaspora", 
+		// "mastodon", "gnusocial", "twitter",
 	}
 	log.Println("Migration sequence:", migrationSeq)
 
@@ -1761,7 +1762,7 @@ func Exp7ReintegrationDataBags() {
 	seqStr := strconv.Itoa(seq)
 	// log.Println("Sequence:", seq)
 
-	migrationNum := 100
+	migrationNum := 1
 	log.Println("Migration number:", migrationNum)
 	
 	// Database setup for migrations enabled databags
@@ -1781,7 +1782,7 @@ func Exp7ReintegrationDataBags() {
 	logFile1 := "dataBagsNotEnabled_" + seqStr
 
 	// edgeCounterRangeStart := 300
-	edgeCounterRangeStart := 705
+	edgeCounterRangeStart := 500
 	edgeCounterRangeEnd := 1200
 	getCounterNum := 100
 
@@ -1899,8 +1900,8 @@ func Exp7ReintegrationDataBags() {
 
 			// Only calculate how much data has been migrated out, so even though some data
 			// is left in the app, such as conversations, it will not be counted
-			logExp7Res(logFile, userID, migObjsInSrc)
-			logExp7Res(logFile1, userID1, migObjsInSrc1)
+			logSeqMigsRes(logFile, userID, migObjsInSrc)
+			logSeqMigsRes(logFile1, userID1, migObjsInSrc1)
 			
 			if i == len(migrationSeq) - 2 {
 				afterLastMigObjsInLastApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
@@ -1911,11 +1912,11 @@ func Exp7ReintegrationDataBags() {
 				lastUserID := evalConfig.getNextUserID(evalConfig.StencilDBConn, migrationID)
 				lastUserID1 := evalConfig.getNextUserID(evalConfig.StencilDBConn1, migrationID1)
 
-				logExp7Res(
+				logSeqMigsRes(
 					logFile, lastUserID, 
 					afterLastMigObjsInLastApp - beforeLastMigObjsInLastApp,
 				)
-				logExp7Res(
+				logSeqMigsRes(
 					logFile1, lastUserID1, 
 					afterLastMigObjsInLastApp1 - beforeLastMigObjsInLastApp1,
 				)
@@ -2255,8 +2256,8 @@ func Exp9PreserveDataLinks() {
 
 			// Only calculate how much data has been migrated out, so even though some data
 			// is left in the app, such as conversations, it will not be counted
-			logExp7Res(logFile, userID, migObjsInSrc)
-			logExp7Res(logFile1, userID1, migObjsInSrc1)
+			logSeqMigsRes(logFile, userID, migObjsInSrc)
+			logSeqMigsRes(logFile1, userID1, migObjsInSrc1)
 			
 			if i == len(migrationSeq) - 2 {
 				afterLastMigObjsInLastApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
@@ -2267,11 +2268,11 @@ func Exp9PreserveDataLinks() {
 				lastUserID := evalConfig.getNextUserID(evalConfig.StencilDBConn, migrationID)
 				lastUserID1 := evalConfig.getNextUserID(evalConfig.StencilDBConn1, migrationID1)
 
-				logExp7Res(
+				logSeqMigsRes(
 					logFile, lastUserID, 
 					afterLastMigObjsInLastApp - beforeLastMigObjsInLastApp,
 				)
-				logExp7Res(
+				logSeqMigsRes(
 					logFile1, lastUserID1, 
 					afterLastMigObjsInLastApp1 - beforeLastMigObjsInLastApp1,
 				)
