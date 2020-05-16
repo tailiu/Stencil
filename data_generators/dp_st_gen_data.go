@@ -1,12 +1,16 @@
 package main
 
 import (
-	"diaspora/datagen"
-	"diaspora/data_generator"
-	"diaspora/helper"
+	"data_generators/diaspora/datagen"
+	"data_generators/diaspora/helper"
+	"data_generators/data_generator"
 	"time"
 	"log"
 )
+
+/**
+ * This is to generate data for Diaspora with single thread
+*/
 
 const APP = "diaspora_1000_st" 
 const USER_NUM = 1000

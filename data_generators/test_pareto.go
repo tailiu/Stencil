@@ -1,7 +1,7 @@
 package main
 
 import (
-	"diaspora/data_generator"
+	"data_generators/data_generator"
 	"log"
 )
 
