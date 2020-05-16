@@ -54,7 +54,7 @@ const IMAGE_NUM = 3693
 
 
 // Function genUsers() tries to create USER_NUM users, but it cannot guarantee
-func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
+func genUsers(dataGen *data_generator.DataGen) []data_generator.User {
 
 	var users []data_generator.User
 
@@ -64,7 +64,7 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 
 		var err error
 		
-		user.User_ID, user.Person_ID, user.Aspects, err = datagen.NewUser(genConfig.DBConn)
+		user.User_ID, user.Person_ID, user.Aspects, err = datagen.NewUser(dataGen.DBConn)
 
 		if err != nil {
 
@@ -88,10 +88,10 @@ func genUsers(genConfig *data_generator.GenConfig) []data_generator.User {
 // Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
 // this user can follow this percentage of followers,
 // because maybe most of those users have already fully followed by other users.
-func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User) {
+func genFollows(dataGen *data_generator.DataGen, users []data_generator.User) {
 
 	followedAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserPopularityScores, FOLLOW_NUM)
+		dataGen.UserPopularityScores, FOLLOW_NUM)
 	
 	log.Println("Followed assignment to users:", followedAssignment)
 	log.Println("Total followed:", data_generator.GetSumOfIntSlice(followedAssignment))
@@ -102,7 +102,7 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 
 		ableToBeFollowed := true
 		personID1 := user1.Person_ID
-		alreadyFollowedByPersons := datagen.GetFollowedUsers(genConfig.DBConn, personID1)
+		alreadyFollowedByPersons := datagen.GetFollowedUsers(dataGen.DBConn, personID1)
 
 		toBeFollowed := followedAssignment[seq1] - len(alreadyFollowedByPersons)
 		toBeFollowedByPersons = append(toBeFollowedByPersons, 
@@ -145,14 +145,14 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 				}
 				personID2 := users[seq2].Person_ID
 
-				if datagen.CheckFollowed(genConfig.DBConn, personID1, personID2) {
+				if datagen.CheckFollowed(dataGen.DBConn, personID1, personID2) {
 
 					haveTried[seq2] = true
 
 				} else {
 
 					aspect_idx := helper.RandomNumber(0, len(user1.Aspects) - 1)
-					datagen.FollowUser(genConfig.DBConn, 
+					datagen.FollowUser(dataGen.DBConn, 
 						personID2, personID1, user1.Aspects[aspect_idx])
 					toBeFollowedByPersons = append(toBeFollowedByPersons, seq2)
 
@@ -184,7 +184,7 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 				break
 			}
 
-			if datagen.CheckFollowed(genConfig.DBConn, personID3, personID1) {
+			if datagen.CheckFollowed(dataGen.DBConn, personID3, personID1) {
 				
 				currentlyFollowNum += 1
 
@@ -192,14 +192,14 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 
 			} else {
 
-				if datagen.GetFollowedNum(genConfig.DBConn, personID3) >= followedAssignment[seq3] {
+				if datagen.GetFollowedNum(dataGen.DBConn, personID3) >= followedAssignment[seq3] {
 					
 					continue
 
 				} else {
 
 					aspect_idx := helper.RandomNumber(0, len(users[seq3].Aspects) - 1)
-					datagen.FollowUser(genConfig.DBConn, personID1, personID3, user1.Aspects[aspect_idx])
+					datagen.FollowUser(dataGen.DBConn, personID1, personID3, user1.Aspects[aspect_idx])
 					
 					currentlyFollowNum += 1
 
@@ -218,9 +218,9 @@ func genFollows(genConfig *data_generator.GenConfig, users []data_generator.User
 // We also randomly assign images to the posts proportionally to the popularity of posts.
 // The scores assigned to posts are in pareto distributiuon.
 // so it is more likely that popular users will have popular posts because they have more posts
-func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) map[int]float64 {
+func genPosts(dataGen *data_generator.DataGen, users []data_generator.User) map[int]float64 {
 
-	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
+	postAssignment := data_generator.AssignDataToUsersByUserScores(dataGen.UserPopularityScores, POST_NUM)
 	totalPosts := data_generator.GetSumOfIntSlice(postAssignment)
 	
 	log.Println("Posts assignments to users:", postAssignment)
@@ -242,12 +242,12 @@ func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) 
 			imageNum := imageNumsOfSeq[postSeq]
 			if imageNum == 0 {
 
-				postID = datagen.NewPost(genConfig.DBConn, 
+				postID = datagen.NewPost(dataGen.DBConn, 
 					user.User_ID, user.Person_ID, user.Aspects)
 
 			} else {
 
-				postID = datagen.NewPhotoPost(genConfig.DBConn, 
+				postID = datagen.NewPhotoPost(dataGen.DBConn, 
 					user.User_ID, user.Person_ID, user.Aspects, imageNum)
 
 			}
@@ -266,10 +266,10 @@ func genPosts(genConfig *data_generator.GenConfig, users []data_generator.User) 
 }
 
 // Only for test
-func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, map[int]float64){
+func prepareTest(dataGen *data_generator.DataGen) ([]data_generator.User, map[int]float64){
 
 	var users []data_generator.User
-	users1 := datagen.GetAllUsersWithAspectsOrderByID(genConfig.DBConn)
+	users1 := datagen.GetAllUsersWithAspectsOrderByID(dataGen.DBConn)
 
 	for _, user1 := range users1 {
 
@@ -280,17 +280,17 @@ func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, ma
 	}
 
 	return users, data_generator.AssignParetoDistributionScoresToData(
-		datagen.GetAllPostIDs(genConfig.DBConn))
+		datagen.GetAllPostIDs(dataGen.DBConn))
 
 }
 
 // We randomly assign comments to posts proportionally to the popularity of posts of friends, 
 // including posts by the commenter.
-func genComments(genConfig *data_generator.GenConfig, 
+func genComments(dataGen *data_generator.DataGen, 
 	users []data_generator.User, postScores map[int]float64) {
 
 	commentAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserCommentScores, COMMENT_NUM)
+		dataGen.UserCommentScores, COMMENT_NUM)
 
 	log.Println("Comments assignments to users:", commentAssignment)
 	log.Println("Total comments:", data_generator.GetSumOfIntSlice(commentAssignment))
@@ -306,7 +306,7 @@ func genComments(genConfig *data_generator.GenConfig,
 		// log.Println("Comment number:", commentNum)
 		
 		personID := user1.Person_ID
-		totalUsers := datagen.GetFollowingUsers(genConfig.DBConn, personID)
+		totalUsers := datagen.GetFollowingUsers(dataGen.DBConn, personID)
 
 		// log.Println(user1)
 		// log.Println(totalUsers)
@@ -315,7 +315,7 @@ func genComments(genConfig *data_generator.GenConfig,
 
 		for _, user2 := range totalUsers {
 
-			posts1 := datagen.GetPostsForUser(genConfig.DBConn, user2)
+			posts1 := datagen.GetPostsForUser(dataGen.DBConn, user2)
 
 			for _, post1 := range posts1 {
 
@@ -336,7 +336,7 @@ func genComments(genConfig *data_generator.GenConfig,
 
 			for i := 0; i < commentNumsOfPosts[seq2]; i++ {
 
-				datagen.NewComment(genConfig.DBConn, post.ID, personID, post.Author)
+				datagen.NewComment(dataGen.DBConn, post.ID, personID, post.Author)
 			}
 		}
 	}
@@ -346,11 +346,11 @@ func genComments(genConfig *data_generator.GenConfig,
 // including posts by the liker.
 // The difference between generating comments and likes is that
 // a user make several comments on the same post, but can only like once on that post.
-func genLikes(genConfig *data_generator.GenConfig, 
+func genLikes(dataGen *data_generator.DataGen, 
 	users []data_generator.User, postScores map[int]float64) {
 
 	likeAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserLikeScores, LIKE_NUM)
+		dataGen.UserLikeScores, LIKE_NUM)
 
 	log.Println("Likes assignments to users:", likeAssignment)
 	log.Println("Total likes based on assignments:", data_generator.GetSumOfIntSlice(likeAssignment))
@@ -368,7 +368,7 @@ func genLikes(genConfig *data_generator.GenConfig,
 		// log.Println("Like number:", likeNum)
 		
 		personID := user1.Person_ID
-		totalUsers := datagen.GetFollowingUsers(genConfig.DBConn, personID)
+		totalUsers := datagen.GetFollowingUsers(dataGen.DBConn, personID)
 	
 		// log.Println(user1)
 		// log.Println(totalUsers)
@@ -377,7 +377,7 @@ func genLikes(genConfig *data_generator.GenConfig,
 
 		for _, user2 := range totalUsers {
 			
-			posts1 := datagen.GetPostsForUser(genConfig.DBConn, user2)
+			posts1 := datagen.GetPostsForUser(dataGen.DBConn, user2)
 			
 			for _, post1 := range posts1 {
 
@@ -399,7 +399,7 @@ func genLikes(genConfig *data_generator.GenConfig,
 
 			if _, ok := likeNumsOfPosts[seq2]; ok {
 
-				datagen.NewLike(genConfig.DBConn, post.ID, personID, post.Author)
+				datagen.NewLike(dataGen.DBConn, post.ID, personID, post.Author)
 				totalLikeNum += 1
 			}
 		}
@@ -414,10 +414,10 @@ func genLikes(genConfig *data_generator.GenConfig,
 // We randomly assign messages to users (or conversations) proportionally 
 // to the closeness indexes.
 // Two users talk with each other sharing the same conversation.
-func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []data_generator.User) {
+func genConversationsAndMessages(dataGen *data_generator.DataGen, users []data_generator.User) {
 
 	messageAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserMessageScores, MESSAGE_NUM)
+		dataGen.UserMessageScores, MESSAGE_NUM)
 
 	log.Println("Messages assignments to users:", messageAssignment)
 	log.Println("Total messages:", data_generator.GetSumOfIntSlice(messageAssignment))
@@ -430,7 +430,7 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 		
 		personID := user1.Person_ID
 		messageNum := messageAssignment[seq1]
-		friends := datagen.GetRealFriendsOfUser(genConfig.DBConn, personID)
+		friends := datagen.GetRealFriendsOfUser(dataGen.DBConn, personID)
 		friendCI := data_generator.AssignParetoDistributionScoresToDataReturnSlice(len(friends))
 		
 		// log.Println(friends)
@@ -442,20 +442,20 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 
 		for seq2, messageNum := range messageNumsOfConversations {
 
-			exists, conv_id := datagen.CheckConversationBetweenTwoUsers(genConfig.DBConn, 
+			exists, conv_id := datagen.CheckConversationBetweenTwoUsers(dataGen.DBConn, 
 				personID, friends[seq2])
 			
 			if exists {
 
 				for i := 0; i < messageNum; i++ {
 
-					datagen.NewMessage(genConfig.DBConn, personID, conv_id)
+					datagen.NewMessage(dataGen.DBConn, personID, conv_id)
 
 				}
 
 			} else {
 
-				new_conv, _ := datagen.NewConversation(genConfig.DBConn, 
+				new_conv, _ := datagen.NewConversation(dataGen.DBConn, 
 					personID, friends[seq2])
 				
 				conversationNum += 1
@@ -464,7 +464,7 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, users []da
 				
 				for i := 0; i < messageNum; i++ {
 
-					datagen.NewMessage(genConfig.DBConn, personID, new_conv)
+					datagen.NewMessage(dataGen.DBConn, personID, new_conv)
 
 				}
 			}
@@ -483,23 +483,23 @@ func main() {
 
 	log.Println("--------- Start of Data Generation ---------")
 
-	// users, postScores := prepareTest(genConfig)
+	// users, postScores := prepareTest(dataGen)
 
-	genConfig := data_generator.Initialize(APP)
+	dataGen := data_generator.Initialize(APP)
 
-	users := genUsers(genConfig)
+	users := genUsers(dataGen)
 
-	data_generator.InitializeWithUserNum(genConfig, len(users))
+	data_generator.InitializeWithUserNum(dataGen, len(users))
 	
-	postScores := genPosts(genConfig, users)
+	postScores := genPosts(dataGen, users)
 	
-	genFollows(genConfig, users)
+	genFollows(dataGen, users)
 	
-	genComments(genConfig, users, postScores)
+	genComments(dataGen, users, postScores)
 	
-	genLikes(genConfig, users, postScores)
+	genLikes(dataGen, users, postScores)
 	
-	genConversationsAndMessages(genConfig, users)
+	genConversationsAndMessages(dataGen, users)
 
 	log.Println("--------- End of Data Generation ---------")
 

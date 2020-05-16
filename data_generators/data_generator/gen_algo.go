@@ -1,63 +1,19 @@
-package main
+package data_generator
 
 import (
 	"data_generators/diaspora/datagen"
 	"data_generators/diaspora/helper"
-	"data_generators/data_generator"
 	"time"
 	"log"
 	"sync"
 )
 
 /**
- * This is to generate data for Diaspora with multiple threads
+ * This is to generate data for Mastodon with multiple threads
 */
 
-// Note that THREAD_NUM must be larger than 0
-const THREAD_NUM = 100
-
-const APP = "diaspora_1000_0" 
-const USER_NUM = 1000
-const FOLLOW_NUM = 20660
-const POST_NUM = 8029
-const COMMENT_NUM = 13971
-const LIKE_NUM = 85672
-const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-const MESSAGE_NUM = 40146
-const IMAGE_NUM = 3693
-
-// const APP = "diaspora" 
-// const USER_NUM = 10000
-// const FOLLOW_NUM = 206600
-// const POST_NUM = 80292
-// const COMMENT_NUM = 139708
-// const LIKE_NUM = 856715
-// const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-// const MESSAGE_NUM = 40146
-// const IMAGE_NUM = 36934
-
-// const APP = "diaspora_100000" 
-// const USER_NUM = 100500
-// const FOLLOW_NUM = 323000
-// const POST_NUM = 802920
-// const COMMENT_NUM = 1397080
-// const LIKE_NUM = 8567156
-// const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-// const MESSAGE_NUM = 4014600 
-// const IMAGE_NUM = 369343
-
-// const APP = "diaspora_1000000" 
-// const USER_NUM = 1010000
-// const FOLLOW_NUM = 3230000
-// const POST_NUM = 8029200
-// const COMMENT_NUM = 13970800
-// const LIKE_NUM = 85671564
-// const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-// const MESSAGE_NUM = 40146000
-// const IMAGE_NUM = 3693432
-
-
-func genUsers(genConfig *data_generator.GenConfig, num int, wg *sync.WaitGroup, res chan<- []data_generator.User) {
+func (dataGen *DataGen) genUsers(num int, wg *sync.WaitGroup, 
+	res chan<- []data_generator.User) {
 
 	defer wg.Done()
 
@@ -69,7 +25,7 @@ func genUsers(genConfig *data_generator.GenConfig, num int, wg *sync.WaitGroup, 
 
 		var err error
 		
-		user.User_ID, user.Person_ID, user.Aspects, err = datagen.NewUser(genConfig.DBConn)
+		user.User_ID, user.Person_ID, user.Aspects, err = datagen.NewUser(dataGen.DBConn)
 
 		if err != nil {
 			// log.Println(err)
@@ -84,7 +40,7 @@ func genUsers(genConfig *data_generator.GenConfig, num int, wg *sync.WaitGroup, 
 }
 
 // Function genUsersController() tries to create USER_NUM users, but it cannot guarantee
-func genUsersController(genConfig *data_generator.GenConfig) []data_generator.User {
+func (dataGen *DataGen) genUsersController() []data_generator.User {
 	
 	var users []data_generator.User
 
@@ -95,7 +51,7 @@ func genUsersController(genConfig *data_generator.GenConfig) []data_generator.Us
 	wg.Add(THREAD_NUM)
 
 	for i := 0; i < THREAD_NUM; i++ {
-		go genUsers(genConfig, USER_NUM / THREAD_NUM, &wg, channel)
+		go genUsers(dataGen, USER_NUM / THREAD_NUM, &wg, channel)
 	}
 
 	wg.Wait()
@@ -111,7 +67,7 @@ func genUsersController(genConfig *data_generator.GenConfig) []data_generator.Us
 	return users
 }
 
-func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+func genFollows(dataGen *data_generator.DataGen, wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, followedAssignment []int, users []data_generator.User) {
 	
 	defer wg.Done()
@@ -126,7 +82,7 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 		
 		personID1 := user1.Person_ID
 
-		alreadyFollowedByPersons := datagen.GetFollowedUsers(genConfig.DBConn, personID1)
+		alreadyFollowedByPersons := datagen.GetFollowedUsers(dataGen.DBConn, personID1)
 
 		toBeFollowed := followedAssignment[seq1] - len(alreadyFollowedByPersons)
 
@@ -179,7 +135,7 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 				personID2 := users[seq2].Person_ID
 
-				if datagen.CheckFollowed(genConfig.DBConn, personID1, personID2) {
+				if datagen.CheckFollowed(dataGen.DBConn, personID1, personID2) {
 
 					haveTried[seq2] = true
 
@@ -189,7 +145,7 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 					// person1 could be followed by person2 twice
 					aspect_idx := helper.RandomNumber(0, len(user1.Aspects) - 1)
 
-					datagen.FollowUser(genConfig.DBConn, 
+					datagen.FollowUser(dataGen.DBConn, 
 						personID2, personID1, user1.Aspects[aspect_idx])
 
 					toBeFollowedByPersons = append(toBeFollowedByPersons, seq2)
@@ -222,7 +178,7 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 				break
 			}
 
-			if datagen.CheckFollowed(genConfig.DBConn, personID3, personID1) {
+			if datagen.CheckFollowed(dataGen.DBConn, personID3, personID1) {
 				
 				currentlyFollowNum += 1
 
@@ -230,14 +186,14 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 			} else {
 
-				if datagen.GetFollowedNum(genConfig.DBConn, personID3) >= followedAssignment[seq3] {
+				if datagen.GetFollowedNum(dataGen.DBConn, personID3) >= followedAssignment[seq3] {
 					
 					continue
 
 				} else {
 
 					aspect_idx := helper.RandomNumber(0, len(users[seq3].Aspects) - 1)
-					datagen.FollowUser(genConfig.DBConn, personID1, personID3, user1.Aspects[aspect_idx])
+					datagen.FollowUser(dataGen.DBConn, personID1, personID3, user1.Aspects[aspect_idx])
 					
 					currentlyFollowNum += 1
 
@@ -248,7 +204,6 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 		// if currentlyFollowNum < toFollowNum {
 			// log.Println("Fail to follow enough followers!!")
 		// }
-
 	}
 }
 
@@ -264,10 +219,10 @@ func genFollows(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // The exact number could be more than FOLLOW_NUM 
 // because a user could be followed by the same other user twice
 // due to multiple-thread data generation.
-func genFollowsController(genConfig *data_generator.GenConfig, users []data_generator.User) {
+func genFollowsController(dataGen *data_generator.DataGen, users []data_generator.User) {
 
 	followedAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserPopularityScores, FOLLOW_NUM)
+		dataGen.UserPopularityScores, FOLLOW_NUM)
 	
 	log.Println("Followed assignment to users:", followedAssignment)
 	log.Println("Total followed:", data_generator.GetSumOfIntSlice(followedAssignment))
@@ -285,13 +240,13 @@ func genFollowsController(genConfig *data_generator.GenConfig, users []data_gene
 		if i != THREAD_NUM - 1 {
 
 			// Start included, end (start + step) not included
-			go genFollows(genConfig, &wg, userSeqStart, userSeqStart + userSeqStep, 
+			go genFollows(dataGen, &wg, userSeqStart, userSeqStart + userSeqStep, 
 				followedAssignment, users)
 
 		} else {
 
 			// Start included, end (start + step) not included
-			go genFollows(genConfig, &wg, userSeqStart, len(users), 
+			go genFollows(dataGen, &wg, userSeqStart, len(users), 
 				followedAssignment, users)
 		
 		}
@@ -303,7 +258,7 @@ func genFollowsController(genConfig *data_generator.GenConfig, users []data_gene
 
 }
 
-func genPosts(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+func genPosts(dataGen *data_generator.DataGen, wg *sync.WaitGroup, 
 	res1 chan<- map[int]float64, res2 chan<- int, 
 	userSeqStart, userSeqEnd, postSeqStart int,
 	users []data_generator.User, postAssignment []int, 
@@ -329,12 +284,12 @@ func genPosts(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 			if imageNum == 0 {
 
-				postID = datagen.NewPost(genConfig.DBConn, 
+				postID = datagen.NewPost(dataGen.DBConn, 
 					user.User_ID, user.Person_ID, user.Aspects)
 
 			} else {
 
-				postID = datagen.NewPhotoPost(genConfig.DBConn, 
+				postID = datagen.NewPhotoPost(dataGen.DBConn, 
 					user.User_ID, user.Person_ID, user.Aspects, imageNum)
 
 			}
@@ -357,10 +312,10 @@ func genPosts(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // We also randomly assign images to the posts proportionally to the popularity of posts.
 // The scores assigned to posts are in pareto distributiuon.
 // so it is more likely that popular users will have popular posts because they have more posts
-func genPostsController(genConfig *data_generator.GenConfig, 
+func genPostsController(dataGen *data_generator.DataGen, 
 	users []data_generator.User) map[int]float64 {
 
-	postAssignment := data_generator.AssignDataToUsersByUserScores(genConfig.UserPopularityScores, POST_NUM)
+	postAssignment := data_generator.AssignDataToUsersByUserScores(dataGen.UserPopularityScores, POST_NUM)
 	totalPosts := data_generator.GetSumOfIntSlice(postAssignment)
 	
 	log.Println("Posts assignments to users:", postAssignment)
@@ -393,14 +348,14 @@ func genPostsController(genConfig *data_generator.GenConfig,
 		if i != THREAD_NUM - 1 {
 
 			// Start included, end (start + step) not included
-			go genPosts(genConfig, &wg, channel1, channel2, 
+			go genPosts(dataGen, &wg, channel1, channel2, 
 				userSeqStart, userSeqStart + userSeqStep, 
 				postSeqStart, users, postAssignment, imageNumsOfSeq, seqScores)
 
 		} else {
 
 			// Start included, end (start + step) not included
-			go genPosts(genConfig, &wg, channel1, channel2, 
+			go genPosts(dataGen, &wg, channel1, channel2, 
 				userSeqStart, len(users), 
 				postSeqStart, users, postAssignment, imageNumsOfSeq, seqScores)
 		
@@ -437,10 +392,10 @@ func genPostsController(genConfig *data_generator.GenConfig,
 }
 
 // Only for test
-func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, map[int]float64) {
+func prepareTest(dataGen *data_generator.DataGen) ([]data_generator.User, map[int]float64) {
 
 	var users []data_generator.User
-	users1 := datagen.GetAllUsersWithAspectsOrderByID(genConfig.DBConn)
+	users1 := datagen.GetAllUsersWithAspectsOrderByID(dataGen.DBConn)
 
 	for _, user1 := range users1 {
 
@@ -451,11 +406,11 @@ func prepareTest(genConfig *data_generator.GenConfig) ([]data_generator.User, ma
 	}
 
 	return users, data_generator.AssignParetoDistributionScoresToData(
-		datagen.GetAllPostIDs(genConfig.DBConn))
+		datagen.GetAllPostIDs(dataGen.DBConn))
 
 }
 
-func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+func genComments(dataGen *data_generator.DataGen, wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, commentAssignment []int, 
 	users []data_generator.User, postScores map[int]float64) {
 	
@@ -478,7 +433,7 @@ func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 		// Even if a user is followed by the same user (U1) twice, it does not influcence much
 		// This can result in the posts of U1 being added twice, so the posts of U1 will be
 		// commented twice more than expected.
-		totalUsers := datagen.GetFollowingUsers(genConfig.DBConn, personID)
+		totalUsers := datagen.GetFollowingUsers(dataGen.DBConn, personID)
 
 		// log.Println(user1)
 		// log.Println(totalUsers)
@@ -487,7 +442,7 @@ func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 		for _, user2 := range totalUsers {
 
-			posts1 := datagen.GetPostsForUser(genConfig.DBConn, user2)
+			posts1 := datagen.GetPostsForUser(dataGen.DBConn, user2)
 
 			for _, post1 := range posts1 {
 
@@ -508,7 +463,7 @@ func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 			for i := 0; i < commentNumsOfPosts[seq2]; i++ {
 
-				datagen.NewComment(genConfig.DBConn, post.ID, personID, post.Author)
+				datagen.NewComment(dataGen.DBConn, post.ID, personID, post.Author)
 			}
 		}
 	}
@@ -517,11 +472,11 @@ func genComments(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // We randomly assign comments to posts proportionally to the popularity of posts of friends, 
 // including posts by the commenter.
 // Mutiple threads do not cause much influence to comments generation
-func genCommentsController(genConfig *data_generator.GenConfig, 
+func genCommentsController(dataGen *data_generator.DataGen, 
 	users []data_generator.User, postScores map[int]float64) {
 	
 	commentAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserCommentScores, COMMENT_NUM)
+		dataGen.UserCommentScores, COMMENT_NUM)
 
 	log.Println("Comments assignments to users:", commentAssignment)
 	log.Println("Total comments:", data_generator.GetSumOfIntSlice(commentAssignment))
@@ -539,13 +494,13 @@ func genCommentsController(genConfig *data_generator.GenConfig,
 		if i != THREAD_NUM - 1 {
 
 			// Start included, end (start + step) not included
-			go genComments(genConfig, &wg, userSeqStart, userSeqStart + userSeqStep, 
+			go genComments(dataGen, &wg, userSeqStart, userSeqStart + userSeqStep, 
 				commentAssignment, users, postScores)
 
 		} else {
 
 			// Start included, end (start + step) not included
-			go genComments(genConfig, &wg, userSeqStart, len(users), 
+			go genComments(dataGen, &wg, userSeqStart, len(users), 
 				commentAssignment, users, postScores)
 		
 		}
@@ -557,7 +512,7 @@ func genCommentsController(genConfig *data_generator.GenConfig,
 		
 }
 
-func genLikes(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+func genLikes(dataGen *data_generator.DataGen, wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, likeAssignment []int, 
 	users []data_generator.User, postScores map[int]float64, res chan<- int) {
 		
@@ -578,7 +533,7 @@ func genLikes(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 		// log.Println("Like number:", likeNum)
 		
 		personID := user1.Person_ID
-		totalUsers := datagen.GetFollowingUsers(genConfig.DBConn, personID)
+		totalUsers := datagen.GetFollowingUsers(dataGen.DBConn, personID)
 	
 		// log.Println(user1)
 		// log.Println(totalUsers)
@@ -587,7 +542,7 @@ func genLikes(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 		for _, user2 := range totalUsers {
 			
-			posts1 := datagen.GetPostsForUser(genConfig.DBConn, user2)
+			posts1 := datagen.GetPostsForUser(dataGen.DBConn, user2)
 			
 			for _, post1 := range posts1 {
 
@@ -609,7 +564,7 @@ func genLikes(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 
 			if _, ok := likeNumsOfPosts[seq2]; ok {
 
-				datagen.NewLike(genConfig.DBConn, post.ID, personID, post.Author)
+				datagen.NewLike(dataGen.DBConn, post.ID, personID, post.Author)
 				totalLikeNum += 1
 			}
 		}
@@ -624,11 +579,11 @@ func genLikes(genConfig *data_generator.GenConfig, wg *sync.WaitGroup,
 // The difference between generating comments and likes is that
 // a user make several comments on the same post, but can only like once on that post.
 // Mutiple threads do not cause much influence to likes generation
-func genLikesController(genConfig *data_generator.GenConfig, 
+func genLikesController(dataGen *data_generator.DataGen, 
 	users []data_generator.User, postScores map[int]float64) {
 
 	likeAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserLikeScores, LIKE_NUM)
+		dataGen.UserLikeScores, LIKE_NUM)
 
 	log.Println("Likes assignments to users:", likeAssignment)
 	log.Println("Total likes based on assignments:", data_generator.GetSumOfIntSlice(likeAssignment))
@@ -650,13 +605,13 @@ func genLikesController(genConfig *data_generator.GenConfig,
 		if i != THREAD_NUM - 1 {
 
 			// Start included, end (start + step) not included
-			go genLikes(genConfig, &wg, userSeqStart, userSeqStart + userSeqStep, 
+			go genLikes(dataGen, &wg, userSeqStart, userSeqStart + userSeqStep, 
 				likeAssignment, users, postScores, channel)
 
 		} else {
 
 			// Start included, end (start + step) not included
-			go genLikes(genConfig, &wg, userSeqStart, len(users), 
+			go genLikes(dataGen, &wg, userSeqStart, len(users), 
 				likeAssignment, users, postScores, channel)
 		
 		}
@@ -678,7 +633,7 @@ func genLikesController(genConfig *data_generator.GenConfig,
 
 }
 
-func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.WaitGroup, 
+func genConversationsAndMessages(dataGen *data_generator.DataGen, wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, messageAssignment []int, 
 	users []data_generator.User, res chan<- int) {
 		
@@ -696,7 +651,7 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 		messageNum := messageAssignment[seq1]
 
 		// There could be cases in which the user has no friend
-		friends := datagen.GetRealFriendsOfUser(genConfig.DBConn, personID)
+		friends := datagen.GetRealFriendsOfUser(dataGen.DBConn, personID)
 		friendCloseIndex := data_generator.AssignParetoDistributionScoresToDataReturnSlice(len(friends))
 		
 		// log.Println(friends)
@@ -708,14 +663,14 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 
 		for seq2, messageNum := range messageNumsOfConversations {
 
-			exists, conv_id := datagen.CheckConversationBetweenTwoUsers(genConfig.DBConn, 
+			exists, conv_id := datagen.CheckConversationBetweenTwoUsers(dataGen.DBConn, 
 				personID, friends[seq2])
 			
 			if exists {
 
 				for i := 0; i < messageNum; i++ {
 
-					datagen.NewMessage(genConfig.DBConn, personID, conv_id)
+					datagen.NewMessage(dataGen.DBConn, personID, conv_id)
 
 				}
 
@@ -723,7 +678,7 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 				
 				// Given the multiple-thread data generator, there could be 
 				// two conversations between two same users
-				new_conv, _ := datagen.NewConversation(genConfig.DBConn, 
+				new_conv, _ := datagen.NewConversation(dataGen.DBConn, 
 					personID, friends[seq2])
 				
 				conversationNum += 1
@@ -732,7 +687,7 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 				
 				for i := 0; i < messageNum; i++ {
 
-					datagen.NewMessage(genConfig.DBConn, personID, new_conv)
+					datagen.NewMessage(dataGen.DBConn, personID, new_conv)
 
 				}
 			}
@@ -755,11 +710,11 @@ func genConversationsAndMessages(genConfig *data_generator.GenConfig, wg *sync.W
 // in which a user has no friend, so the messages allocated to this user cannot be sent.
 // Therefore the actual message number is lower than the calculated total number 
 // according to the messageAssignment
-func genConversationsAndMessagesController(genConfig *data_generator.GenConfig, 
+func genConversationsAndMessagesController(dataGen *data_generator.DataGen, 
 	users []data_generator.User) {
 
 	messageAssignment := data_generator.AssignDataToUsersByUserScores(
-		genConfig.UserMessageScores, MESSAGE_NUM)
+		dataGen.UserMessageScores, MESSAGE_NUM)
 
 	log.Println("Messages assignments to users:", messageAssignment)
 	log.Println("Total messages:", data_generator.GetSumOfIntSlice(messageAssignment))
@@ -781,13 +736,13 @@ func genConversationsAndMessagesController(genConfig *data_generator.GenConfig,
 		if i != THREAD_NUM - 1 {
 
 			// Start included, end (start + step) not included
-			go genConversationsAndMessages(genConfig, &wg, userSeqStart, userSeqStart + userSeqStep, 
+			go genConversationsAndMessages(dataGen, &wg, userSeqStart, userSeqStart + userSeqStep, 
 				messageAssignment, users, channel)
 
 		} else {
 
 			// Start included, end (start + step) not included
-			go genConversationsAndMessages(genConfig, &wg, userSeqStart, len(users), 
+			go genConversationsAndMessages(dataGen, &wg, userSeqStart, len(users), 
 				messageAssignment, users, channel)
 		
 		}
@@ -810,31 +765,29 @@ func genConversationsAndMessagesController(genConfig *data_generator.GenConfig,
 }
 
 
-func main() {
+func (dataGen *DataGen) genData() {
 	
 	startTime := time.Now()
 
 	log.Println("--------- Start of Data Generation ---------")
 
-	genConfig := data_generator.Initialize(APP)
+	// users, postScores := prepareTest(dataGen)
 
-	// users, postScores := prepareTest(genConfig)
-
-	users := genUsersController(genConfig)
+	users := dataGen.genUsersController()
 
 	// After getting the exact user number, the data generator needs
 	// to initialize UserPopularityScores, UserCommentScores, etc.
-	data_generator.InitializeWithUserNum(genConfig, len(users))
+	data_generator.InitializeWithUserNum(dataGen, len(users))
 
-	postScores := genPostsController(genConfig, users)
+	postScores := genPostsController(dataGen, users)
 
-	genFollowsController(genConfig, users)
+	genFollowsController(dataGen, users)
 
-	genCommentsController(genConfig, users, postScores)
+	genCommentsController(dataGen, users, postScores)
 
-	genLikesController(genConfig, users, postScores)
+	genLikesController(dataGen, users, postScores)
 	
-	genConversationsAndMessagesController(genConfig, users)
+	genConversationsAndMessagesController(dataGen, users)
 
 	log.Println("--------- End of Data Generation ---------")
 

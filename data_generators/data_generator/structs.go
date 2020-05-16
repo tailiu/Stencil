@@ -12,18 +12,23 @@ import (
 const ALPHA = 2.0
 const XM = 0.2
 
-type User struct {
-	User_ID       		int
-	Person_ID     		int
-	Aspects       		[]int
-}
+//********* Generator Structs *********//
 
-type GenConfig struct {
+type DataGen struct {
+	App						string
 	DBConn					*sql.DB
 	UserPopularityScores	[]float64
 	UserCommentScores		[]float64
 	UserLikeScores			[]float64
 	UserMessageScores		[]float64
+}
+
+//********* Diaspora Structs *********//
+
+type User struct {
+	User_ID       		int
+	Person_ID     		int
+	Aspects       		[]int
 }
 
 type Post struct {
