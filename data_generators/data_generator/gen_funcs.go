@@ -51,17 +51,16 @@ func shuffleSlices(s []float64) []float64 {
 
 }
 
-func Initialize(app string) *DataGen {
+func Initialize(db string) *DataGen {
 
 	dataGen := new(DataGen)
-	dataGen.DBConn = GetDBConn(app)
-	dataGen.App = app
+	dataGen.DBConn = GetDBConn(db)
 
 	return dataGen
 
 }
 
-func InitializeWithUserNum(dataGen *DataGen, userNum int) {
+func (dataGen *DataGen) InitializeWithUserNum(userNum int) {
 
 	dataGen.UserPopularityScores = ParetoScores(ALPHA, XM, userNum)
 	dataGen.UserCommentScores = shuffleSlices(ParetoScores(ALPHA, XM, userNum))
@@ -177,7 +176,7 @@ func AssignParetoDistributionScoresToDataReturnSlice(dataLen int) []float64 {
 
 }
 
-func GetSeqsByPersonIDs(users []User, personIDs []int) []int {
+func GetSeqsByPersonIDs(users []DUser, personIDs []int) []int {
 
 	var seq []int
 

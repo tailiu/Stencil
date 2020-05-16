@@ -5,7 +5,7 @@
 package main
 
 import (
-	"mastodon/functions"
+	"mastodon/mtDataGen"
 	"mastodon/database"
 	"mastodon/auxiliary"
     "fmt"
@@ -65,11 +65,11 @@ func getAllPostIDs(dbConn *sql.DB) *[]int {
 
 func createUsers(dbConn *sql.DB, num int, c chan int) {
 	for i := 0; i < num; i++ {
-		newUser := functions.User{
+		newUser := mtDataGen.User{
 			auxiliary.RandStrSeq(4) + "@" + auxiliary.RandStrSeq(5),
 			auxiliary.RandStrSeq(10),
 			auxiliary.RandStrSeq(25)}
-		functions.Signup(dbConn, &newUser)
+		mtDataGen.Signup(dbConn, &newUser)
 
 		newUserLog := fmt.Sprintf("Create %d users with username='%s', email='%s', password='%s'",
 			i + 1, newUser.Username, newUser.Email, newUser.Password)
@@ -95,7 +95,7 @@ func createPostsThread(dbConn *sql.DB, slicedAccountIDs []int) {
 				haveMedia = false
 			}
 			var mentionedAccounts []int
-			functions.PublishStatus(dbConn, accountID, auxiliary.RandStrSeq(50), haveMedia, 0, mentionedAccounts)
+			mtDataGen.PublishStatus(dbConn, accountID, auxiliary.RandStrSeq(50), haveMedia, 0, mentionedAccounts)
 			newStatusLog := fmt.Sprintf("User %d creates a post with Media %t",
 				accountID, haveMedia)
 			fmt.Println(newStatusLog)
@@ -127,7 +127,7 @@ func followFriendsThread(dbConn *sql.DB, slicedAccountIDs []int, accountIDs *[]i
 		numOfFriends := auxiliary.RandomNonnegativeIntWithUpperBound(240)
 		for j := 0; j < numOfFriends; j++ {
 			targetAccountID = (*accountIDs)[auxiliary.RandomNonnegativeIntWithUpperBound(len(*accountIDs))]
-			functions.Follow(dbConn, accountID, targetAccountID)
+			mtDataGen.Follow(dbConn, accountID, targetAccountID)
 			newFriendLog := fmt.Sprintf("User %d follows user %d",
 				accountID, targetAccountID)
 			fmt.Println(newFriendLog)
@@ -164,7 +164,7 @@ func createOneDirectMessage(dbConn *sql.DB, accountID int, accountIDs *[]int) ([
 		mentionedAccounts = append(mentionedAccounts, 
 			(*accountIDs)[auxiliary.RandomNonnegativeIntWithUpperBound(len(*accountIDs))])
 	}
-	messageID := functions.PublishStatus(dbConn, accountID, auxiliary.RandStrSeq(50), haveMedia, 3, mentionedAccounts)
+	messageID := mtDataGen.PublishStatus(dbConn, accountID, auxiliary.RandStrSeq(50), haveMedia, 3, mentionedAccounts)
 	if messageID != -1 {
 		newMessageGroupLog := fmt.Sprintf("User %d creates a message group with %d users",
 			accountID, len(mentionedAccounts) + 1)
@@ -181,7 +181,7 @@ func createOneReplyUsingMentionedAccount(dbConn *sql.DB, replyToStatusID int, ne
 			break
 		}
 	}
-	result := functions.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID, visibility, allAccounts)
+	result := mtDataGen.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID, visibility, allAccounts)
 	if result != -1 {
 		newReply := fmt.Sprintf("Create a message %d as a reply to a message %d with visibility %d", result, replyToStatusID, visibility)
 		fmt.Println(newReply)
@@ -253,7 +253,7 @@ func createDirectMessagesController(dbConn *sql.DB, accountIDs *[]int) {
 
 func createOneReply(dbConn *sql.DB, replyToStatusID int, newLayer *[]int, accountIDs *[]int, visibility int, mentionedAccounts []int) {
 	accountID := (*accountIDs)[auxiliary.RandomNonnegativeIntWithUpperBound(len(*accountIDs))]
-	result := functions.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID, 0, mentionedAccounts)
+	result := mtDataGen.ReplyToStatus(dbConn, accountID, auxiliary.RandStrSeq(50), replyToStatusID, 0, mentionedAccounts)
 	if result != -1 {
 		newReply := fmt.Sprintf("Create a new reply to %d", replyToStatusID)
 		fmt.Println(newReply)
@@ -328,7 +328,7 @@ func main() {
 
 	// var mentionedAccounts []int
 	// mentionedAccounts = append(mentionedAccounts, 3243277, 3258353)
-	// functions.PublishStatus(dbConn, 925840864, "five media COOOOL", true, 0, mentionedAccounts)
+	// mtDataGen.PublishStatus(dbConn, 925840864, "five media COOOOL", true, 0, mentionedAccounts)
 
 	// favourite(dbConn, 925840864, 1389362391)
 

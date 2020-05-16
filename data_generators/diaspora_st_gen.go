@@ -54,13 +54,13 @@ const IMAGE_NUM = 3693
 
 
 // Function genUsers() tries to create USER_NUM users, but it cannot guarantee
-func genUsers(dataGen *data_generator.DataGen) []data_generator.User {
+func genUsers(dataGen *data_generator.DataGen) []data_generator.DUser {
 
-	var users []data_generator.User
+	var users []data_generator.DUser
 
 	for i := 0; i < USER_NUM; i++ {
 
-		var user data_generator.User
+		var user data_generator.DUser
 
 		var err error
 		
@@ -88,7 +88,7 @@ func genUsers(dataGen *data_generator.DataGen) []data_generator.User {
 // Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
 // this user can follow this percentage of followers,
 // because maybe most of those users have already fully followed by other users.
-func genFollows(dataGen *data_generator.DataGen, users []data_generator.User) {
+func genFollows(dataGen *data_generator.DataGen, users []data_generator.DUser) {
 
 	followedAssignment := data_generator.AssignDataToUsersByUserScores(
 		dataGen.UserPopularityScores, FOLLOW_NUM)
@@ -218,7 +218,7 @@ func genFollows(dataGen *data_generator.DataGen, users []data_generator.User) {
 // We also randomly assign images to the posts proportionally to the popularity of posts.
 // The scores assigned to posts are in pareto distributiuon.
 // so it is more likely that popular users will have popular posts because they have more posts
-func genPosts(dataGen *data_generator.DataGen, users []data_generator.User) map[int]float64 {
+func genPosts(dataGen *data_generator.DataGen, users []data_generator.DUser) map[int]float64 {
 
 	postAssignment := data_generator.AssignDataToUsersByUserScores(dataGen.UserPopularityScores, POST_NUM)
 	totalPosts := data_generator.GetSumOfIntSlice(postAssignment)
@@ -266,14 +266,14 @@ func genPosts(dataGen *data_generator.DataGen, users []data_generator.User) map[
 }
 
 // Only for test
-func prepareTest(dataGen *data_generator.DataGen) ([]data_generator.User, map[int]float64){
+func prepareTest(dataGen *data_generator.DataGen) ([]data_generator.DUser, map[int]float64){
 
-	var users []data_generator.User
+	var users []data_generator.DUser
 	users1 := datagen.GetAllUsersWithAspectsOrderByID(dataGen.DBConn)
 
 	for _, user1 := range users1 {
 
-		var user data_generator.User
+		var user data_generator.DUser
 		user.User_ID, user.Person_ID, user.Aspects = user1.User_ID, user1.Person_ID, user1.Aspects
 		users = append(users, user)
 
@@ -287,7 +287,7 @@ func prepareTest(dataGen *data_generator.DataGen) ([]data_generator.User, map[in
 // We randomly assign comments to posts proportionally to the popularity of posts of friends, 
 // including posts by the commenter.
 func genComments(dataGen *data_generator.DataGen, 
-	users []data_generator.User, postScores map[int]float64) {
+	users []data_generator.DUser, postScores map[int]float64) {
 
 	commentAssignment := data_generator.AssignDataToUsersByUserScores(
 		dataGen.UserCommentScores, COMMENT_NUM)
@@ -347,7 +347,7 @@ func genComments(dataGen *data_generator.DataGen,
 // The difference between generating comments and likes is that
 // a user make several comments on the same post, but can only like once on that post.
 func genLikes(dataGen *data_generator.DataGen, 
-	users []data_generator.User, postScores map[int]float64) {
+	users []data_generator.DUser, postScores map[int]float64) {
 
 	likeAssignment := data_generator.AssignDataToUsersByUserScores(
 		dataGen.UserLikeScores, LIKE_NUM)
@@ -414,7 +414,7 @@ func genLikes(dataGen *data_generator.DataGen,
 // We randomly assign messages to users (or conversations) proportionally 
 // to the closeness indexes.
 // Two users talk with each other sharing the same conversation.
-func genConversationsAndMessages(dataGen *data_generator.DataGen, users []data_generator.User) {
+func genConversationsAndMessages(dataGen *data_generator.DataGen, users []data_generator.DUser) {
 
 	messageAssignment := data_generator.AssignDataToUsersByUserScores(
 		dataGen.UserMessageScores, MESSAGE_NUM)

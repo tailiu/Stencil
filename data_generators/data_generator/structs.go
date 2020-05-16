@@ -15,7 +15,6 @@ const XM = 0.2
 //********* Generator Structs *********//
 
 type DataGen struct {
-	App						string
 	DBConn					*sql.DB
 	UserPopularityScores	[]float64
 	UserCommentScores		[]float64
@@ -25,7 +24,7 @@ type DataGen struct {
 
 //********* Diaspora Structs *********//
 
-type User struct {
+type DUser struct {
 	User_ID       		int
 	Person_ID     		int
 	Aspects       		[]int

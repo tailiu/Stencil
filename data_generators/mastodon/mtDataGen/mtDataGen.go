@@ -2,7 +2,7 @@
  * Basic Functions for Mastodon
  */
 
-package functions
+package mtDataGen
 
 import (
 	"database/sql"

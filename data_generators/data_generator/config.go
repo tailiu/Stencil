@@ -19,3 +19,8 @@ const LIKE_NUM = 85672
 const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
 const MESSAGE_NUM = 40146
 const IMAGE_NUM = 3693
+
+const MASTODON = "mastodon"
+const DIASPORA = "diaspora"
+const GNUSOCIAL = "gnusocial"
+const TWITTER = "twitter"
