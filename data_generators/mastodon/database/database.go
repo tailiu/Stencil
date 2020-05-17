@@ -53,3 +53,35 @@ func CheckExists(tx *sql.Tx, query string) int {
 	}
 	return exists
 }
+
+func DataCall(dbConn *sql.DB, sql string, args ...interface{}) []map[string]string {
+
+	var result []map[string]string
+
+	rows, err := dbConn.Query(sql, args...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cols, err := rows.Columns()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for rows.Next() {
+		data := make(map[string]string)
+		columns := make([]string, len(cols))
+		columnPointers := make([]interface{}, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+
+		rows.Scan(columnPointers...)
+
+		for i, col := range cols {
+			data[col] = columns[i]
+		}
+		result = append(result, data)
+	}
+	rows.Close()
+	return result
+}

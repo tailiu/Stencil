@@ -2,7 +2,6 @@ package data_generator
 
 import (
 	"data_generators/diaspora/datagen"
-	"data_generators/diaspora/helper"
 	"data_generators/mastodon/mtDataGen"
 	"time"
 	"log"
@@ -62,27 +61,23 @@ func (dataGen *DataGen) genUsersController1() []int {
 	return users
 }
 
-func (dataGen *DataGen) genFollows1(wg *sync.WaitGroup, 
-	userSeqStart, userSeqEnd int, followedAssignment []int, users []DUser) {
+func (dataGen *DataGen) genFollows1(wg *sync.WaitGroup, userSeqStart, userSeqEnd int, 
+	followedAssignment []int, users []int) {
 	
 	defer wg.Done()
 
 	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
-		user1 := users[seq1]
+		personID1 := users[seq1]
 
 		var toBeFollowedByPersons []int
 
 		// ableToBeFollowed := true
-		
-		personID1 := user1.Person_ID
 
-		alreadyFollowedByPersons := datagen.GetFollowedUsers(dataGen.DBConn, personID1)
-
+		alreadyFollowedByPersons := mtDataGen.GetFollowedUsers(dataGen.DBConn, personID1)
 		toBeFollowed := followedAssignment[seq1] - len(alreadyFollowedByPersons)
-
 		toBeFollowedByPersons = append(toBeFollowedByPersons, 
-			GetSeqsByPersonIDs(users, alreadyFollowedByPersons)...)
+			GetSeqsByPersonIDs1(users, alreadyFollowedByPersons)...)
 
 		// log.Println("Check user:", seq1)
 		// log.Println("Total users to follow this user:", followedAssignment[seq1])
@@ -96,15 +91,11 @@ func (dataGen *DataGen) genFollows1(wg *sync.WaitGroup,
 		haveTried := make(map[int]bool)
 
 		for _, alreadyFollowedByPersonsID := range alreadyFollowedByPersons {
-			
 			haveTried[alreadyFollowedByPersonsID] = true
-
 		}
 
 		for n := 0; n < toBeFollowed; n++ {
-
 			for {
-
 				if len(haveTried) >= len(users) - 1 {
 
 					log.Println("Cannot find more users to follow this user!!")
@@ -115,7 +106,6 @@ func (dataGen *DataGen) genFollows1(wg *sync.WaitGroup,
 					
 					log.Fatal("cannot happend2!!!!")
 					break
-
 				}
 
 				seq2 := RandomNonnegativeIntWithUpperBound(len(users))
@@ -128,29 +118,16 @@ func (dataGen *DataGen) genFollows1(wg *sync.WaitGroup,
 					continue
 				}
 
-				personID2 := users[seq2].Person_ID
+				personID2 := users[seq2]
 
-				if datagen.CheckFollowed(dataGen.DBConn, personID1, personID2) {
-
+				if mtDataGen.CheckFollowed(dataGen.DBConn, personID1, personID2) {
 					haveTried[seq2] = true
-
 				} else {
-
-					// Note: in the multiple-thread data generation, 
-					// person1 could be followed by person2 twice
-					aspect_idx := helper.RandomNumber(0, len(user1.Aspects) - 1)
-
-					datagen.FollowUser(dataGen.DBConn, 
-						personID2, personID1, user1.Aspects[aspect_idx])
-
+					mtDataGen.Follow(dataGen.DBConn, personID2, personID1)
 					toBeFollowedByPersons = append(toBeFollowedByPersons, seq2)
-					
 					haveTried[seq2] = true
-
 					break
-
 				}
-
 			}
 
 			// if !ableToBeFollowed {
@@ -167,31 +144,21 @@ func (dataGen *DataGen) genFollows1(wg *sync.WaitGroup,
 
 		for _, seq3 := range toBeFollowedByPersons {
 
-			personID3 := users[seq3].Person_ID
+			personID3 := users[seq3]
 			
 			if currentlyFollowNum == toFollowNum {
 				break
 			}
 
-			if datagen.CheckFollowed(dataGen.DBConn, personID3, personID1) {
-				
+			if mtDataGen.CheckFollowed(dataGen.DBConn, personID3, personID1) {
 				currentlyFollowNum += 1
-
 				continue
-
 			} else {
-
-				if datagen.GetFollowedNum(dataGen.DBConn, personID3) >= followedAssignment[seq3] {
-					
+				if mtDataGen.GetFollowedNum(dataGen.DBConn, personID3) >= followedAssignment[seq3] {
 					continue
-
 				} else {
-
-					aspect_idx := helper.RandomNumber(0, len(users[seq3].Aspects) - 1)
-					datagen.FollowUser(dataGen.DBConn, personID1, personID3, user1.Aspects[aspect_idx])
-					
+					mtDataGen.Follow(dataGen.DBConn, personID1, personID3)					
 					currentlyFollowNum += 1
-
 				}
 			}
 		}
@@ -214,43 +181,33 @@ func (dataGen *DataGen) genFollows1(wg *sync.WaitGroup,
 // The exact number could be more than FOLLOW_NUM 
 // because a user could be followed by the same other user twice
 // due to multiple-thread data generation.
-func (dataGen *DataGen) genFollowsController1(users []DUser) {
+func (dataGen *DataGen) genFollowsController1(users []int) {
 
-	followedAssignment := AssignDataToUsersByUserScores(
-		dataGen.UserPopularityScores, FOLLOW_NUM)
+	followedAssignment := AssignDataToUsersByUserScores(dataGen.UserPopularityScores, FOLLOW_NUM)
 	
 	log.Println("Followed assignment to users:", followedAssignment)
 	log.Println("Total followed:", GetSumOfIntSlice(followedAssignment))
 	
 	var wg sync.WaitGroup
-
 	wg.Add(THREAD_NUM)
 
 	userSeqStart := 0
-	
 	userSeqStep := len(users) / THREAD_NUM
 
 	for i := 0; i < THREAD_NUM; i++ {
-		
 		if i != THREAD_NUM - 1 {
-
 			// Start included, end (start + step) not included
 			go dataGen.genFollows1(&wg, userSeqStart, userSeqStart + userSeqStep, 
 				followedAssignment, users)
-
 		} else {
-
 			// Start included, end (start + step) not included
 			go dataGen.genFollows1(&wg, userSeqStart, len(users), 
 				followedAssignment, users)
-		
 		}
-
 		userSeqStart += userSeqStep
 	}
 
 	wg.Wait()
-
 }
 
 func (dataGen *DataGen) genPosts1(wg *sync.WaitGroup, 
@@ -391,13 +348,13 @@ func (dataGen *DataGen) prepareTest1() ([]DUser, map[int]float64) {
 
 func (dataGen *DataGen) genComments1(wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, commentAssignment []int, 
-	users []DUser, postScores map[int]float64) {
+	users []int, postScores map[int]float64) {
 	
 	defer wg.Done()
 
 	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
-		user1 := users[seq1]
+		personID := users[seq1]
 
 		// log.Println("Check user:", seq1)
 		
@@ -406,13 +363,11 @@ func (dataGen *DataGen) genComments1(wg *sync.WaitGroup,
 		commentNum := commentAssignment[seq1]
 
 		// log.Println("Comment number:", commentNum)
-		
-		personID := user1.Person_ID
-		
+				
 		// Even if a user is followed by the same user (U1) twice, it does not influcence much
 		// This can result in the posts of U1 being added twice, so the posts of U1 will be
 		// commented twice more than expected.
-		totalUsers := datagen.GetFollowingUsers(dataGen.DBConn, personID)
+		totalUsers := mtDataGen.GetFollowingUsers(dataGen.DBConn, personID)
 
 		// log.Println(user1)
 		// log.Println(totalUsers)
@@ -421,7 +376,7 @@ func (dataGen *DataGen) genComments1(wg *sync.WaitGroup,
 
 		for _, user2 := range totalUsers {
 
-			posts1 := datagen.GetPostsForUser(dataGen.DBConn, user2)
+			posts1 := mtDataGen.GetPostsForUser(dataGen.DBConn, user2)
 
 			for _, post1 := range posts1 {
 
@@ -439,10 +394,8 @@ func (dataGen *DataGen) genComments1(wg *sync.WaitGroup,
 		commentNumsOfPosts := RandomNumWithProbGenerator(scores, commentNum)
 
 		for seq2, post := range posts {
-
 			for i := 0; i < commentNumsOfPosts[seq2]; i++ {
-
-				datagen.NewComment(dataGen.DBConn, post.ID, personID, post.Author)
+				mtDataGen.ReplyToStatus(dataGen.DBConn, post.ID, personID, 0)
 			}
 		}
 	}
@@ -451,43 +404,34 @@ func (dataGen *DataGen) genComments1(wg *sync.WaitGroup,
 // We randomly assign comments to posts proportionally to the popularity of posts of friends, 
 // including posts by the commenter.
 // Mutiple threads do not cause much influence to comments generation
-func (dataGen *DataGen) genCommentsController1(users []DUser, postScores map[int]float64) {
+func (dataGen *DataGen) genCommentsController1(users []int, postScores map[int]float64) {
 	
-	commentAssignment := AssignDataToUsersByUserScores(
-		dataGen.UserCommentScores, COMMENT_NUM)
+	commentAssignment := AssignDataToUsersByUserScores(dataGen.UserCommentScores, COMMENT_NUM)
 
 	log.Println("Comments assignments to users:", commentAssignment)
 	log.Println("Total comments:", GetSumOfIntSlice(commentAssignment))
 
 	var wg sync.WaitGroup
-
 	wg.Add(THREAD_NUM)
 
 	userSeqStart := 0
-	
 	userSeqStep := len(users) / THREAD_NUM
 
 	for i := 0; i < THREAD_NUM; i++ {
 		
 		if i != THREAD_NUM - 1 {
-
 			// Start included, end (start + step) not included
 			go dataGen.genComments1(&wg, userSeqStart, userSeqStart + userSeqStep, 
 				commentAssignment, users, postScores)
-
 		} else {
-
 			// Start included, end (start + step) not included
 			go dataGen.genComments1(&wg, userSeqStart, len(users), 
 				commentAssignment, users, postScores)
-		
 		}
-
 		userSeqStart += userSeqStep
 	}
 
 	wg.Wait()
-		
 }
 
 func (dataGen *DataGen) genLikes1(wg *sync.WaitGroup, 
@@ -753,13 +697,11 @@ func (dataGen *DataGen) GenDataMastodon() {
 	// to initialize UserPopularityScores, UserCommentScores, etc.
 	dataGen.InitializeWithUserNum(len(users))
 
-	dataGen.genPostsController1(users)
+	postScores := dataGen.genPostsController1(users)
 
-	// postScores := dataGen.genPostsController1(users)
+	dataGen.genFollowsController1(users)
 
-	// dataGen.genFollowsController1(users)
-
-	// dataGen.genCommentsController1(users, postScores)
+	dataGen.genCommentsController1(users, postScores)
 
 	// dataGen.genLikesController1(users, postScores)
 	

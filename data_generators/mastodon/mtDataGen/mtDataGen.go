@@ -24,6 +24,11 @@ type FileMeta struct {
 	Aspect int	
 }
 
+type Post struct {
+	ID     int
+	Author int
+}
+
 func updateAccountStats(dbConn *sql.DB, accountID int, updateType string, difference int) {
 	var statusNum int
 	var	sqls []string 
@@ -40,10 +45,9 @@ func updateAccountStats(dbConn *sql.DB, accountID int, updateType string, differ
 			log.Fatal(err)
 		}
 	}
-	t1 := time.Now().Format(time.RFC3339)
 	sql2 := fmt.Sprintf(
-		"UPDATE account_stats SET %s = %d, last_status_at = '%s', updated_at = '%s' WHERE account_stats.account_id = %d;",
-		updateType, statusNum + difference, t1, t1, accountID) // These last_status_at and updated_at are generated randomly
+		"UPDATE account_stats SET %s = %d, last_status_at = now(), updated_at = now() WHERE account_stats.account_id = %d;",
+		updateType, statusNum + difference, accountID) // These last_status_at and updated_at are generated randomly
 
 	sqls = append(sqls, sql2)
 	database.Execute(tx, sqls)
@@ -165,6 +169,27 @@ func NewStatus(dbConn *sql.DB, accountID int, haveMedia bool, visibility int) (i
 	}
 }
 
+func GetPostsForUser(dbConn *sql.DB, accountID int) []*Post {
+
+	var posts []*Post
+
+	sql := `SELECT id, account_id FROM statuses WHERE account_id = $1 and reply = false 
+			ORDER by random()`
+
+	for _, row := range database.DataCall(dbConn, sql, accountID) {
+		if pid, err := strconv.Atoi(row["id"]); err == nil {
+			if uid, err := strconv.Atoi(row["account_id"]); err == nil {
+				post := new(Post)
+				post.Author = uid
+				post.ID = pid
+				posts = append(posts, post)
+			}
+		}
+	}
+
+	return posts
+}
+
 func Favourite(dbConn *sql.DB, accountID int, statusID int) {
 	tx := database.BeginTx(dbConn)
 
@@ -257,25 +282,91 @@ func NewUser(dbConn *sql.DB) (int, error) {
 	}
 }
 
+func CheckFollowed(dbConn *sql.DB, accountID1, accountID2 int) bool {
+
+	query1 := fmt.Sprintf(
+		"select id from follows where account_id = %d and target_account_id = %d",
+		accountID2, accountID1,
+	)
+
+	res1 := database.DataCall(dbConn, query1)
+	if len(res1) > 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func GetFollowedUsers(dbConn *sql.DB, accountID int) []int {
+
+	var users []int
+
+	sql := fmt.Sprintf("SELECT account_id FROM follows WHERE target_account_id = %d;", accountID)
+
+	res1 := database.DataCall(dbConn, sql)
+	for _, row := range res1 {
+		userID, _ := strconv.Atoi(row["account_id"])
+		users = append(users, userID)
+	}
+
+	return users
+}
+
+func GetFollowedNum(dbConn *sql.DB, accountID int) int {
+
+	query1 := fmt.Sprintf("select count(*) from follows where target_account_id = %d", accountID)
+
+	res1 := database.DataCall(dbConn, query1)
+	num1, err1 := strconv.Atoi(res1[0]["count"])
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+	return num1
+
+}
+
+// Get the users that accountID follows
+func GetFollowingUsers(dbConn *sql.DB, accountID int) []int {
+
+	var users []int
+	
+	query1 := fmt.Sprintf(
+		"select target_account_id from follows where account_id = %d", 
+		accountID,
+	)
+	res1 := database.DataCall(dbConn, query1)
+	for _, row := range res1 {
+		pID, _ := strconv.Atoi(row["target_account_id"])
+		users = append(users, pID)
+	}
+
+	return users
+}
+
 func Follow(dbConn *sql.DB, accountID int, targetAccountID int) {
+
 	if accountID == targetAccountID {
 		return 
 	}
 
 	tx := database.BeginTx(dbConn)
 
-	sql1 := fmt.Sprintf("SELECT 1 AS one FROM follows WHERE follows.account_id = %d AND follows.target_account_id = %d LIMIT %d;",
-	accountID, targetAccountID, 1)
+	sql1 := fmt.Sprintf(
+		"SELECT 1 AS one FROM follows WHERE account_id = %d AND target_account_id = %d LIMIT %d;",
+		accountID, targetAccountID, 1,
+	)
 	if exists := database.CheckExists(tx, sql1); exists == 1 {
 		tx.Commit()
 		return 
 	}
 
-	t := time.Now().Format(time.RFC3339)
 	uri := "http://localhost:3000/" + auxiliary.RandStrSeq(32)
 	var sqls1 []string
-	sql4 := fmt.Sprintf("INSERT INTO FOLLOWS (created_at, updated_at, account_id, target_account_id, uri) VALUES ('%s', '%s', %d, %d, '%s');",  
-	t, t, accountID, targetAccountID, uri)
+	sql4 := fmt.Sprintf(
+		`INSERT INTO FOLLOWS (created_at, updated_at, account_id, target_account_id, uri) 
+		VALUES (now(), now(), %d, %d, '%s');`,  
+		accountID, targetAccountID, uri,
+	)
 	sqls1 = append(sqls1, sql4)
 	result := database.Execute(tx, sqls1)
 	if result {
@@ -315,18 +406,22 @@ func Unfollow(dbConn *sql.DB, accountID int, targetAccountID int) {
 	}
 }
 
-func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusID int, visibility int, mentionedAccounts []int) int {
-	t := time.Now().Format(time.RFC3339)
-	statusID := auxiliary.RandomNonnegativeInt()
-	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(statusID)
+func ReplyToStatus(dbConn *sql.DB, replyToStatusID, accountID int, visibility int) int {
+	
 	var conversationID int
 	var replyToAccountID int
 	var sqls1 []string
+
+	statusID := auxiliary.RandomNonnegativeInt()
+	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(statusID)
 	hidden := false
+	content := auxiliary.RandStrSeq(50)
 
 	tx := database.BeginTx(dbConn)
-	sql1 := fmt.Sprintf("SELECT conversation_id, account_id FROM statuses WHERE statuses.id = %d LIMIT %d;",
-	replyToStatusID, 1)
+	sql1 := fmt.Sprintf(`
+		SELECT conversation_id, account_id FROM statuses WHERE statuses.id = %d LIMIT %d;`,
+		replyToStatusID, 1,
+	)
 	rows, err := tx.Query(sql1)
 	if err != nil {
 		log.Fatal(err)
@@ -337,19 +432,11 @@ func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusI
 		}
 	}
 	sql2 := fmt.Sprintf(
-		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, in_reply_to_id, reply, in_reply_to_account_id, visibility) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s', %d, %t, %d, %d);",  
-		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID, visibility)
+		`INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, in_reply_to_id, reply, in_reply_to_account_id, visibility) 
+		VALUES (%d, '%s', now(), now(), '%s', %d, %t, %d, %d, '%s', %d, %t, %d, %d);`,  
+		statusID, content, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID, visibility)
 	sql3 := insertIntoStreamEntries(statusID, accountID, hidden)
 	sqls1 = append(sqls1, sql2, sql3)
-
-	if len(mentionedAccounts) != 0 {
-		var sql4 string
-		for _, mentionedAccount := range mentionedAccounts {
-			sql4 = fmt.Sprintf("INSERT INTO mentions (status_id, created_at, updated_at, account_id) VALUES (%d, '%s', '%s', %d);",
-				statusID, t, t, mentionedAccount)
-			sqls1 = append(sqls1, sql4)
-		}
-	}
 
 	result := database.Execute(tx, sqls1)
 
