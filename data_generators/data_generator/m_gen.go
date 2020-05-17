@@ -1,7 +1,6 @@
 package data_generator
 
 import (
-	"data_generators/diaspora/datagen"
 	"data_generators/mastodon/mtDataGen"
 	"time"
 	"log"
@@ -9,8 +8,7 @@ import (
 )
 
 /**
- * This is a general algorithm to generate data
- * for the four test apps with multiple threads
+ * This is the multi-thread data generator for Mastodon
 **/
 func (dataGen *DataGen) genUsers1(num int, wg *sync.WaitGroup, res chan<- []int) {
 
@@ -174,10 +172,6 @@ func (dataGen *DataGen) genFollows1(wg *sync.WaitGroup, userSeqStart, userSeqEnd
 // Note: RECIPROCAL_FOLLOW_PERCENTAGE cannot guarantee that
 // this user can follow this percentage of followers,
 // because maybe most of those users have already fully followed by other users.
-// Use the query: "select count(*) from contacts where sharing = true;" 
-// to get the total number of follows
-// Use the query: "select count(*) from contacts where sharing = true and receiving = true;" 
-// to get the a number and divide this number by 2 to get the total pairs of friends
 // The exact number could be more than FOLLOW_NUM 
 // because a user could be followed by the same other user twice
 // due to multiple-thread data generation.
@@ -237,9 +231,10 @@ func (dataGen *DataGen) genPosts1(wg *sync.WaitGroup,
 
 			// A Mastodon status can only have one image
 			if imageNum == 0 {
-				postID, err = mtDataGen.NewStatus(dataGen.DBConn, user, false, 0)
+				postID, err = mtDataGen.NewStatus(dataGen.DBConn, user, false, 0, nil)
 			} else {
-				postID, err = mtDataGen.NewStatus(dataGen.DBConn, user, true, 0)
+				postID, err = mtDataGen.NewStatus(dataGen.DBConn, user, true, 0, nil)
+				imageNums += 1
 			}
 
 			if err != nil {
@@ -248,7 +243,6 @@ func (dataGen *DataGen) genPosts1(wg *sync.WaitGroup,
 			postScores[postID] = seqScores[postSeq]
 			postSeq += 1
 			// imageNums += imageNum
-			imageNums += 1
 		}
 	}
 	
@@ -327,25 +321,6 @@ func (dataGen *DataGen) genPostsController1(users []int) map[int]float64 {
 	return postScores
 }
 
-// Only for test
-func (dataGen *DataGen) prepareTest1() ([]DUser, map[int]float64) {
-
-	var users []DUser
-	users1 := datagen.GetAllUsersWithAspectsOrderByID(dataGen.DBConn)
-
-	for _, user1 := range users1 {
-
-		var user DUser
-		user.User_ID, user.Person_ID, user.Aspects = user1.User_ID, user1.Person_ID, user1.Aspects
-		users = append(users, user)
-
-	}
-
-	return users, AssignParetoDistributionScoresToData(
-		datagen.GetAllPostIDs(dataGen.DBConn))
-
-}
-
 func (dataGen *DataGen) genComments1(wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, commentAssignment []int, 
 	users []int, postScores map[int]float64) {
@@ -395,7 +370,7 @@ func (dataGen *DataGen) genComments1(wg *sync.WaitGroup,
 
 		for seq2, post := range posts {
 			for i := 0; i < commentNumsOfPosts[seq2]; i++ {
-				mtDataGen.ReplyToStatus(dataGen.DBConn, post.ID, personID, 0)
+				mtDataGen.ReplyToStatus(dataGen.DBConn, post.ID, personID, 0, nil)
 			}
 		}
 	}
@@ -436,7 +411,7 @@ func (dataGen *DataGen) genCommentsController1(users []int, postScores map[int]f
 
 func (dataGen *DataGen) genLikes1(wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, likeAssignment []int, 
-	users []DUser, postScores map[int]float64, res chan<- int) {
+	users []int, postScores map[int]float64, res chan<- int) {
 		
 	defer wg.Done()
 
@@ -444,7 +419,7 @@ func (dataGen *DataGen) genLikes1(wg *sync.WaitGroup,
 
 	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
-		user1 := users[seq1]
+		personID := users[seq1]
 
 		// log.Println("Check user:", seq1)
 		
@@ -454,8 +429,7 @@ func (dataGen *DataGen) genLikes1(wg *sync.WaitGroup,
 		likeNum := likeAssignment[seq1]
 		// log.Println("Like number:", likeNum)
 		
-		personID := user1.Person_ID
-		totalUsers := datagen.GetFollowingUsers(dataGen.DBConn, personID)
+		totalUsers := mtDataGen.GetFollowingUsers(dataGen.DBConn, personID)
 	
 		// log.Println(user1)
 		// log.Println(totalUsers)
@@ -464,7 +438,7 @@ func (dataGen *DataGen) genLikes1(wg *sync.WaitGroup,
 
 		for _, user2 := range totalUsers {
 			
-			posts1 := datagen.GetPostsForUser(dataGen.DBConn, user2)
+			posts1 := mtDataGen.GetPostsForUser(dataGen.DBConn, user2)
 			
 			for _, post1 := range posts1 {
 
@@ -483,17 +457,14 @@ func (dataGen *DataGen) genLikes1(wg *sync.WaitGroup,
 		// log.Println(likeNumsOfPosts)
 		
 		for seq2, post := range posts {
-
 			if _, ok := likeNumsOfPosts[seq2]; ok {
-
-				datagen.NewLike(dataGen.DBConn, post.ID, personID, post.Author)
+				mtDataGen.Favourite(dataGen.DBConn, post.ID, personID)
 				totalLikeNum += 1
 			}
 		}
 	}
 
 	res <- totalLikeNum
-
 }
 
 // We randomly assign likes to posts proportionally to the popularity of posts of friends, 
@@ -501,10 +472,9 @@ func (dataGen *DataGen) genLikes1(wg *sync.WaitGroup,
 // The difference between generating comments and likes is that
 // a user make several comments on the same post, but can only like once on that post.
 // Mutiple threads do not cause much influence to likes generation
-func (dataGen *DataGen) genLikesController1(users []DUser, postScores map[int]float64) {
+func (dataGen *DataGen) genLikesController1(users []int, postScores map[int]float64) {
 
-	likeAssignment := AssignDataToUsersByUserScores(
-		dataGen.UserLikeScores, LIKE_NUM)
+	likeAssignment := AssignDataToUsersByUserScores(dataGen.UserLikeScores, LIKE_NUM)
 
 	log.Println("Likes assignments to users:", likeAssignment)
 	log.Println("Total likes based on assignments:", GetSumOfIntSlice(likeAssignment))
@@ -514,29 +484,21 @@ func (dataGen *DataGen) genLikesController1(users []DUser, postScores map[int]fl
 	totalLikeNum := 0
 
 	var wg sync.WaitGroup
-
 	wg.Add(THREAD_NUM)
 
 	userSeqStart := 0
-	
 	userSeqStep := len(users) / THREAD_NUM
 
 	for i := 0; i < THREAD_NUM; i++ {
-		
 		if i != THREAD_NUM - 1 {
-
 			// Start included, end (start + step) not included
 			go dataGen.genLikes1(&wg, userSeqStart, userSeqStart + userSeqStep, 
 				likeAssignment, users, postScores, channel)
-
 		} else {
-
 			// Start included, end (start + step) not included
 			go dataGen.genLikes1(&wg, userSeqStart, len(users), 
 				likeAssignment, users, postScores, channel)
-		
 		}
-
 		userSeqStart += userSeqStep
 	}
 
@@ -545,18 +507,14 @@ func (dataGen *DataGen) genLikesController1(users []DUser, postScores map[int]fl
 	close(channel)
 
 	for res := range channel {
-
 		totalLikeNum += res
-
 	}
 
 	log.Println("In reality, the num of total likes is:", totalLikeNum)
-
 }
 
 func (dataGen *DataGen) genConversationsAndMessages1(wg *sync.WaitGroup, 
-	userSeqStart, userSeqEnd int, messageAssignment []int, 
-	users []DUser, res chan<- int) {
+	userSeqStart, userSeqEnd int, messageAssignment []int, users []int, res chan<- int) {
 		
 	defer wg.Done()
 
@@ -564,15 +522,14 @@ func (dataGen *DataGen) genConversationsAndMessages1(wg *sync.WaitGroup,
 
 	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
-		user1 := users[seq1]
+		personID := users[seq1]
 
 		// oneUserConversationNum := 0
 		
-		personID := user1.Person_ID
 		messageNum := messageAssignment[seq1]
 
 		// There could be cases in which the user has no friend
-		friends := datagen.GetRealFriendsOfUser(dataGen.DBConn, personID)
+		friends := mtDataGen.GetRealFriendsOfUser(dataGen.DBConn, personID)
 		friendCloseIndex := AssignParetoDistributionScoresToDataReturnSlice(len(friends))
 		
 		// log.Println(friends)
@@ -584,41 +541,31 @@ func (dataGen *DataGen) genConversationsAndMessages1(wg *sync.WaitGroup,
 
 		for seq2, messageNum := range messageNumsOfConversations {
 
-			exists, conv_id := datagen.CheckConversationBetweenTwoUsers(dataGen.DBConn, 
-				personID, friends[seq2])
+			friendID := friends[seq2]
+
+			exists, status_id := mtDataGen.CheckConversationBetweenTwoUsers(dataGen.DBConn, 
+				personID, friendID)
 			
 			if exists {
-
 				for i := 0; i < messageNum; i++ {
-
-					datagen.NewMessage(dataGen.DBConn, personID, conv_id)
-
+					mtDataGen.ReplyToStatus(dataGen.DBConn, status_id, personID, 3, []int{friendID})
 				}
-
 			} else {
-				
-				// Given the multiple-thread data generator, there could be 
-				// two conversations between two same users
-				new_conv, _ := datagen.NewConversation(dataGen.DBConn, 
-					personID, friends[seq2])
-				
+
+				// In Mastodon, generating a new conversation is equal to 
+				// creating a new status (message) and mentioning a friend
+				new_status_id, _ := mtDataGen.NewStatus(dataGen.DBConn, personID, false, 3, []int{friendID})
+
 				conversationNum += 1
 				
-				// oneUserConversationNum += 1
-				
 				for i := 0; i < messageNum; i++ {
-
-					datagen.NewMessage(dataGen.DBConn, personID, new_conv)
-
+					mtDataGen.ReplyToStatus(dataGen.DBConn, new_status_id, personID, 3, []int{friendID})
 				}
 			}
 		}
-
-		// log.Println(oneUserConversationNum)
 	}
 
 	res <- conversationNum
-
 }
 
 // Pareto-distributed message scores determine the number of messages each user should have.
@@ -629,12 +576,13 @@ func (dataGen *DataGen) genConversationsAndMessages1(wg *sync.WaitGroup,
 // talk with each other sharing the same conversation.
 // Also note that with number of users generated increasing, there could be cases
 // in which a user has no friend, so the messages allocated to this user cannot be sent.
-// Therefore the actual message number is lower than the calculated total number 
+// Therefore the message number could be lower than the calculated total number 
 // according to the messageAssignment
-func (dataGen *DataGen) genConversationsAndMessagesController1(users []DUser) {
+// However, since creating a conversation is equivalent to creating a new status (message),
+// the actual number of messages = conversation number + message number
+func (dataGen *DataGen) genConversationsAndMessagesController1(users []int) {
 
-	messageAssignment := AssignDataToUsersByUserScores(
-		dataGen.UserMessageScores, MESSAGE_NUM)
+	messageAssignment := AssignDataToUsersByUserScores(dataGen.UserMessageScores, MESSAGE_NUM)
 
 	log.Println("Messages assignments to users:", messageAssignment)
 	log.Println("Total messages:", GetSumOfIntSlice(messageAssignment))
@@ -644,29 +592,21 @@ func (dataGen *DataGen) genConversationsAndMessagesController1(users []DUser) {
 	conversationNum := 0
 
 	var wg sync.WaitGroup
-
 	wg.Add(THREAD_NUM)
 
 	userSeqStart := 0
-	
 	userSeqStep := len(users) / THREAD_NUM
 
 	for i := 0; i < THREAD_NUM; i++ {
-		
 		if i != THREAD_NUM - 1 {
-
 			// Start included, end (start + step) not included
 			go dataGen.genConversationsAndMessages1(&wg, userSeqStart, userSeqStart + userSeqStep, 
 				messageAssignment, users, channel)
-
 		} else {
-
 			// Start included, end (start + step) not included
 			go dataGen.genConversationsAndMessages1(&wg, userSeqStart, len(users), 
 				messageAssignment, users, channel)
-		
 		}
-
 		userSeqStart += userSeqStep
 	}
 
@@ -679,17 +619,13 @@ func (dataGen *DataGen) genConversationsAndMessagesController1(users []DUser) {
 	}
 
 	log.Println("Total conversations:", conversationNum)
-
 }
-
 
 func (dataGen *DataGen) GenDataMastodon() {
 	
 	startTime := time.Now()
 
 	log.Println("--------- Start of Data Generation ---------")
-
-	// users, postScores := dataGen.prepareTest1()
 
 	users := dataGen.genUsersController1()
 
@@ -703,9 +639,9 @@ func (dataGen *DataGen) GenDataMastodon() {
 
 	dataGen.genCommentsController1(users, postScores)
 
-	// dataGen.genLikesController1(users, postScores)
+	dataGen.genLikesController1(users, postScores)
 	
-	// dataGen.genConversationsAndMessagesController1(users)
+	dataGen.genConversationsAndMessagesController1(users)
 
 	log.Println("--------- End of Data Generation ---------")
 

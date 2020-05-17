@@ -99,7 +99,7 @@ func insertIntoStreamEntries(activityID int, accountID int, hidden bool) string 
  * 0: Public Statuses
  * 3: Direct Messages
  */
-func NewStatus(dbConn *sql.DB, accountID int, haveMedia bool, visibility int) (int, error) {
+func NewStatus(dbConn *sql.DB, accountID int, haveMedia bool, visibility int, mentionedAccounts []int) (int, error) {
 	
 	var sqls1 []string
 	var hidden bool
@@ -147,16 +147,16 @@ func NewStatus(dbConn *sql.DB, accountID int, haveMedia bool, visibility int) (i
 		sqls1 = append(sqls1, sql4)
 	}
 
-	// if len(mentionedAccounts) != 0 {
-	// 	var sql5 string
-	// 	for _, mentionedAccount := range mentionedAccounts {
-	// 		sql5 = fmt.Sprintf(
-	// 			`INSERT INTO mentions (status_id, created_at, updated_at, account_id) 
-	// 			VALUES (%d, now(), now(), %d);`,
-	// 			statusID, mentionedAccount)
-	// 		sqls1 = append(sqls1, sql5)
-	// 	}
-	// }
+	if len(mentionedAccounts) != 0 {
+		var sql5 string
+		for _, mentionedAccount := range mentionedAccounts {
+			sql5 = fmt.Sprintf(
+				`INSERT INTO mentions (status_id, created_at, updated_at, account_id) 
+				VALUES (%d, now(), now(), %d);`,
+				statusID, mentionedAccount)
+			sqls1 = append(sqls1, sql5)
+		}
+	}
 
 	result := database.Execute(tx, sqls1)
 	if result {
@@ -167,6 +167,27 @@ func NewStatus(dbConn *sql.DB, accountID int, haveMedia bool, visibility int) (i
 		tx.Rollback()
 		return -1, errors.New("Fail to create a new status")
 	}
+}
+
+func CheckConversationBetweenTwoUsers(dbConn *sql.DB, accountID1, accountID2 int) (bool, int){
+
+	sql1 := fmt.Sprintf(
+		`SELECT s.id FROM mentions m JOIN statuses s ON m.status_id = s.id 
+		WHERE s.visibility= 3 and m.account_id = %d and s.account_id = %d`,
+		accountID1, accountID2,
+	)
+
+	data := database.DataCall1(dbConn, sql1)
+	if len(data) != 0 {
+		id, err := strconv.Atoi(data[0]["id"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		return true, id
+	} else {
+		return false, -1
+	}
+
 }
 
 func GetPostsForUser(dbConn *sql.DB, accountID int) []*Post {
@@ -190,24 +211,27 @@ func GetPostsForUser(dbConn *sql.DB, accountID int) []*Post {
 	return posts
 }
 
-func Favourite(dbConn *sql.DB, accountID int, statusID int) {
+func Favourite(dbConn *sql.DB, statusID, accountID int) {
+
 	tx := database.BeginTx(dbConn)
 
 	var sqls []string
 
 	sql1 := fmt.Sprintf(
-		"SELECT 1 AS one FROM favourites WHERE favourites.status_id = %d AND favourites.account_id = %d LIMIT %d;",
-		statusID, accountID, 1)
+		"SELECT 1 AS one FROM favourites WHERE status_id = %d AND account_id = %d LIMIT %d;",
+		statusID, accountID, 1,
+	)
 	if exists := database.CheckExists(tx, sql1); exists == 1 {
 		tx.Commit()
 		return 
 	}
 
-	t := time.Now().Format(time.RFC3339)
 	sql3 := fmt.Sprintf(
-		"INSERT INTO favourites (created_at, updated_at, account_id, status_id) VALUES ('%s', '%s', %d, %d);",
-		t, t, accountID, statusID)
+		`INSERT INTO favourites (created_at, updated_at, account_id, status_id) 
+		VALUES (now(), now(), %d, %d);`, accountID, statusID,
+	)
 	sqls = append(sqls, sql3)
+	
 	result := database.Execute(tx, sqls)
 	if result {
 		tx.Commit()
@@ -280,6 +304,25 @@ func NewUser(dbConn *sql.DB) (int, error) {
 		tx.Rollback()
 		return -1, errors.New("Fail to create a new user")
 	}
+}
+
+// Get the users following and followed by this accountID 
+func GetRealFriendsOfUser(dbConn *sql.DB, accountID int) []int {
+
+	var friends []int
+	
+	query := fmt.Sprintf(
+		`SELECT DISTINCT f1.target_account_id FROM follows f1 JOIN follows f2 ON 
+		f1.target_account_id = f2.account_id AND f1.account_id = f2.target_account_id 
+		WHERE f1.account_id = %d;`, accountID,
+	)
+	res := database.DataCall(dbConn, query)
+	for _, row := range res {
+		pID, _ := strconv.Atoi(row["target_account_id"])
+		friends = append(friends, pID)
+	}
+
+	return friends
 }
 
 func CheckFollowed(dbConn *sql.DB, accountID1, accountID2 int) bool {
@@ -406,7 +449,7 @@ func Unfollow(dbConn *sql.DB, accountID int, targetAccountID int) {
 	}
 }
 
-func ReplyToStatus(dbConn *sql.DB, replyToStatusID, accountID int, visibility int) int {
+func ReplyToStatus(dbConn *sql.DB, replyToStatusID, accountID, visibility int, mentionedAccounts []int) int {
 	
 	var conversationID int
 	var replyToAccountID int
@@ -434,9 +477,22 @@ func ReplyToStatus(dbConn *sql.DB, replyToStatusID, accountID int, visibility in
 	sql2 := fmt.Sprintf(
 		`INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, in_reply_to_id, reply, in_reply_to_account_id, visibility) 
 		VALUES (%d, '%s', now(), now(), '%s', %d, %t, %d, %d, '%s', %d, %t, %d, %d);`,  
-		statusID, content, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID, visibility)
+		statusID, content, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID, visibility,
+	)
 	sql3 := insertIntoStreamEntries(statusID, accountID, hidden)
 	sqls1 = append(sqls1, sql2, sql3)
+
+	if len(mentionedAccounts) != 0 {
+		var sql4 string
+		for _, mentionedAccount := range mentionedAccounts {
+			sql4 = fmt.Sprintf(
+				`INSERT INTO mentions (status_id, created_at, updated_at, account_id) 
+				VALUES (%d, now(), now(), %d);`,
+				statusID, mentionedAccount,
+			)
+			sqls1 = append(sqls1, sql4)
+		}
+	}
 
 	result := database.Execute(tx, sqls1)
 

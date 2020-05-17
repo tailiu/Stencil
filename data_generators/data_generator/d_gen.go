@@ -9,8 +9,7 @@ import (
 )
 
 /**
- * This is a general algorithm to generate data
- * for the four test apps with multiple threads
+ * This is the multi-thread data generator for Diaspora
 **/
 func (dataGen *DataGen) genUsers(num int, wg *sync.WaitGroup, res chan<- []DUser) {
 
