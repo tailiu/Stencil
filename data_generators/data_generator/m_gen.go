@@ -1,6 +1,8 @@
 package data_generator
 
 import (
+	"data_generators/diaspora/datagen"
+	"data_generators/diaspora/helper"
 	"data_generators/mastodon/mtDataGen"
 	"time"
 	"log"
@@ -11,24 +13,19 @@ import (
  * This is a general algorithm to generate data
  * for the four test apps with multiple threads
 **/
-func (dataGen *DataGen) genUsers1(num int, wg *sync.WaitGroup, res chan<- []DUser) {
+func (dataGen *DataGen) genUsers1(num int, wg *sync.WaitGroup, res chan<- []int) {
 
 	defer wg.Done()
 
-	var users []DUser
+	var users []int
 
 	for i := 0; i < num; i++ {
-
-		var user DUser
-
-		var err error
 		
-		user.User_ID, user.Person_ID, user.Aspects, err = datagen.NewUser(dataGen.DBConn)
-
+		userID, err := mtDataGen.NewUser(dataGen.DBConn)
 		if err != nil {
-			// log.Println(err)
+			log.Println(err)
 		} else {
-			users = append(users, user)
+			users = append(users, userID)
 		}
 	}
 
@@ -38,11 +35,11 @@ func (dataGen *DataGen) genUsers1(num int, wg *sync.WaitGroup, res chan<- []DUse
 }
 
 // Function genUsersController1() tries to create USER_NUM users, but it cannot guarantee
-func (dataGen *DataGen) genUsersController1() []DUser {
+func (dataGen *DataGen) genUsersController1() []int {
 	
-	var users []DUser
+	var users []int
 
-	channel := make(chan []DUser, THREAD_NUM)
+	channel := make(chan []int, THREAD_NUM)
 
 	var wg sync.WaitGroup
 
@@ -259,7 +256,7 @@ func (dataGen *DataGen) genFollowsController1(users []DUser) {
 func (dataGen *DataGen) genPosts1(wg *sync.WaitGroup, 
 	res1 chan<- map[int]float64, res2 chan<- int, 
 	userSeqStart, userSeqEnd, postSeqStart int,
-	users []DUser, postAssignment []int, 
+	users []int, postAssignment []int, 
 	imageNumsOfSeq map[int]int, seqScores []float64) {
 
 	defer wg.Done()
@@ -277,40 +274,36 @@ func (dataGen *DataGen) genPosts1(wg *sync.WaitGroup,
 		for n := 0; n < postAssignment[i]; n++ {
 
 			var postID int
+			var err error
 			
 			imageNum := imageNumsOfSeq[postSeq]
 
+			// A Mastodon status can only have one image
 			if imageNum == 0 {
-
-				postID = datagen.NewPost(dataGen.DBConn, 
-					user.User_ID, user.Person_ID, user.Aspects)
-
+				postID, err = mtDataGen.NewStatus(dataGen.DBConn, user, false, 0)
 			} else {
-
-				postID = datagen.NewPhotoPost(dataGen.DBConn, 
-					user.User_ID, user.Person_ID, user.Aspects, imageNum)
-
+				postID, err = mtDataGen.NewStatus(dataGen.DBConn, user, true, 0)
 			}
 
+			if err != nil {
+				panic("Create a new post error")
+			}
 			postScores[postID] = seqScores[postSeq]
 			postSeq += 1
-			imageNums += imageNum
-
+			// imageNums += imageNum
+			imageNums += 1
 		}
-
 	}
 	
 	res1 <- postScores
-
 	res2 <- imageNums
-
 }
 
 // The number of posts of users is proportional to the popularity of users.
 // We also randomly assign images to the posts proportionally to the popularity of posts.
 // The scores assigned to posts are in pareto distributiuon.
 // so it is more likely that popular users will have popular posts because they have more posts
-func (dataGen *DataGen) genPostsController1(users []DUser) map[int]float64 {
+func (dataGen *DataGen) genPostsController1(users []int) map[int]float64 {
 
 	postAssignment := AssignDataToUsersByUserScores(dataGen.UserPopularityScores, POST_NUM)
 	totalPosts := GetSumOfIntSlice(postAssignment)
@@ -322,22 +315,16 @@ func (dataGen *DataGen) genPostsController1(users []DUser) map[int]float64 {
 	seqScores := AssignParetoDistributionScoresToDataReturnSlice(len(seqNum))
 	imageNumsOfSeq := RandomNumWithProbGenerator(seqScores, IMAGE_NUM)
 	
-	imageNums := 0
-	
 	postScores := make(map[int]float64)
 	
 	channel1 := make(chan map[int]float64, THREAD_NUM)
-
 	channel2 := make(chan int, THREAD_NUM)
 
 	var wg sync.WaitGroup
-
 	wg.Add(THREAD_NUM)
 
 	userSeqStart := 0
-	
 	userSeqStep := len(users) / THREAD_NUM
-
 	postSeqStart := 0
 
 	for i := 0; i < THREAD_NUM; i++ {
@@ -359,7 +346,8 @@ func (dataGen *DataGen) genPostsController1(users []DUser) map[int]float64 {
 		}
 
 		postSeqStart = CalculateNextPostSeqStart(
-			postSeqStart, userSeqStart, userSeqStart + userSeqStep, postAssignment)
+			postSeqStart, userSeqStart, userSeqStart + userSeqStep, postAssignment,
+		)
 
 		userSeqStart += userSeqStep
 	}
@@ -367,25 +355,19 @@ func (dataGen *DataGen) genPostsController1(users []DUser) map[int]float64 {
 	wg.Wait()
 
 	close(channel1)
-
 	close(channel2)
 
 	for res1 := range channel1 {
-
 		postScores = MergeTwoMaps(postScores, res1) 
-
 	}
 
+	imageNums := 0
 	for res2 := range channel2 {
-
 		imageNums += res2
-
 	}
-
 	log.Println("Total images:", imageNums)
 
 	return postScores
-
 }
 
 // Only for test
@@ -749,9 +731,7 @@ func (dataGen *DataGen) genConversationsAndMessagesController1(users []DUser) {
 	close(channel)
 
 	for res := range channel {
-
 		conversationNum += res
-
 	}
 
 	log.Println("Total conversations:", conversationNum)
@@ -771,7 +751,9 @@ func (dataGen *DataGen) GenDataMastodon() {
 
 	// After getting the exact user number, the data generator needs
 	// to initialize UserPopularityScores, UserCommentScores, etc.
-	// dataGen.InitializeWithUserNum(len(users))
+	dataGen.InitializeWithUserNum(len(users))
+
+	dataGen.genPostsController1(users)
 
 	// postScores := dataGen.genPostsController1(users)
 

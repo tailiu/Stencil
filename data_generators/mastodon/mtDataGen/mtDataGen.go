@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"encoding/json"
 	"mastodon/auxiliary"
+	"errors"
 	_ "github.com/lib/pq"
 )
 
@@ -21,12 +22,6 @@ type FileMeta struct {
 	Height int
 	Size int
 	Aspect int	
-}
-
-type User struct {
-	Email string
-	Username string
-	Password string
 }
 
 func updateAccountStats(dbConn *sql.DB, accountID int, updateType string, difference int) {
@@ -87,10 +82,12 @@ func updateStatusStats(dbConn *sql.DB, accountID int, statusID int, updateType s
 	tx.Commit()
 }
 
-func insertIntoStreamEntries(activityID int, t string, accountID int, hidden bool) string {
+func insertIntoStreamEntries(activityID int, accountID int, hidden bool) string {
 	return fmt.Sprintf(
-		"INSERT INTO stream_entries (activity_id, activity_type, created_at, updated_at, account_id, hidden) VALUES (%d, '%s', '%s', '%s', %d, %t);",
-		activityID, "Status", t, t, accountID, hidden)
+		`INSERT INTO stream_entries (activity_id, activity_type, created_at, updated_at, account_id, hidden) 
+		VALUES (%d, '%s', now(), now(), %d, %t);`,
+		activityID, "Status", accountID, hidden,
+	)
 }
 
 /*
@@ -98,13 +95,15 @@ func insertIntoStreamEntries(activityID int, t string, accountID int, hidden boo
  * 0: Public Statuses
  * 3: Direct Messages
  */
-func PublishStatus(dbConn *sql.DB, accountID int, content string, haveMedia bool, visibility int, mentionedAccounts []int) int {
-	t := time.Now().Format(time.RFC3339)
-	conversationID := auxiliary.RandomNonnegativeInt()
-	statusID := auxiliary.RandomNonnegativeInt()
-	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(statusID)
+func NewStatus(dbConn *sql.DB, accountID int, haveMedia bool, visibility int) (int, error) {
+	
 	var sqls1 []string
 	var hidden bool
+
+	conversationID := auxiliary.RandomNonnegativeInt()
+	statusID := auxiliary.RandomNonnegativeInt()
+	content := auxiliary.RandStrSeq(50)
+	uri := "http://localhost:3000/users/admin/statuses/" + strconv.Itoa(statusID)
 
 	if visibility == 0 {
 		hidden = false
@@ -113,17 +112,22 @@ func PublishStatus(dbConn *sql.DB, accountID int, content string, haveMedia bool
 	}
 
 	tx := database.BeginTx(dbConn)
-	sql1 := fmt.Sprintf(
-		"INSERT INTO conversations (id, created_at, updated_at) VALUES (%d, '%s', '%s');", 
-		conversationID, t, t)
+	sql1 := fmt.Sprintf("INSERT INTO conversations (id, created_at, updated_at) VALUES (%d, now(), now());", conversationID)
 	sql2 := fmt.Sprintf(
-		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, visibility) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s', %d);",  
-		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri, visibility)
-	sql3 := insertIntoStreamEntries(statusID, t, accountID, hidden)
+		`INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, visibility) 
+		VALUES (%d, '%s', now(), now(), '%s', %d, %t, %d, %d, '%s', %d);`,  
+		statusID, content, "en", conversationID, true, accountID, 1, uri, visibility)
+	sql3 := insertIntoStreamEntries(statusID, accountID, hidden)
 	sqls1 = append(sqls1, sql1, sql2, sql3)
 	
 	if haveMedia {
-		file_file_name := auxiliary.RandStrSeq(20) + "jpeg"
+
+		// Photo Params
+		photo_path := "/home/zain/project/resources/"
+		photo_id := auxiliary.RandomNumber(1, 5)
+		photo_name := fmt.Sprintf("%d.jpg", photo_id)
+		file_file_name := photo_path + photo_name
+
 		file_content_type := "image/jpeg"
 		file_file_size := auxiliary.RandomNonnegativeInt()
 		shortCode := auxiliary.RandStrSeq(20)
@@ -132,28 +136,32 @@ func PublishStatus(dbConn *sql.DB, accountID int, content string, haveMedia bool
 			log.Fatal(err)
 		}
 
-		sql4 := fmt.Sprintf("INSERT INTO media_attachments (status_id, file_file_name, file_content_type, file_file_size, file_updated_at, created_at, updated_at, shortcode, file_meta, account_id) VALUES (%d, '%s', '%s', %d, '%s', '%s', '%s', '%s', '%s', %d);",
-		statusID, file_file_name, file_content_type, file_file_size, t, t, t, shortCode, file_meta, accountID)
+		sql4 := fmt.Sprintf(
+			`INSERT INTO media_attachments (status_id, file_file_name, file_content_type, file_file_size, file_updated_at, created_at, updated_at, shortcode, file_meta, account_id) 
+			VALUES (%d, '%s', '%s', %d, now(), now(), now(), '%s', '%s', %d);`,
+		statusID, file_file_name, file_content_type, file_file_size, shortCode, file_meta, accountID)
 		sqls1 = append(sqls1, sql4)
 	}
 
-	if len(mentionedAccounts) != 0 {
-		var sql5 string
-		for _, mentionedAccount := range mentionedAccounts {
-			sql5 = fmt.Sprintf("INSERT INTO mentions (status_id, created_at, updated_at, account_id) VALUES (%d, '%s', '%s', %d);",
-				statusID, t, t, mentionedAccount)
-			sqls1 = append(sqls1, sql5)
-		}
-	}
+	// if len(mentionedAccounts) != 0 {
+	// 	var sql5 string
+	// 	for _, mentionedAccount := range mentionedAccounts {
+	// 		sql5 = fmt.Sprintf(
+	// 			`INSERT INTO mentions (status_id, created_at, updated_at, account_id) 
+	// 			VALUES (%d, now(), now(), %d);`,
+	// 			statusID, mentionedAccount)
+	// 		sqls1 = append(sqls1, sql5)
+	// 	}
+	// }
 
 	result := database.Execute(tx, sqls1)
 	if result {
 		tx.Commit()
 		updateAccountStats(dbConn, accountID, "statuses_count", 1)
-		return statusID
+		return statusID, nil
 	} else {
 		tx.Rollback()
-		return -1
+		return -1, errors.New("Fail to create a new status")
 	}
 }
 
@@ -212,31 +220,40 @@ func Unfavourite(dbConn *sql.DB, accountID int, statusID int) {
 	
 }
 
-func Signup(dbConn *sql.DB, user *User) {
+func NewUser(dbConn *sql.DB) (int, error) {
+
 	tx := database.BeginTx(dbConn)
 
-	t := time.Now().Format(time.RFC3339)
 	accountID := auxiliary.RandomNonnegativeInt()
 	privateKey := auxiliary.RandStrSeq(32)
 	publicKey := auxiliary.RandStrSeq(32)
+	email := auxiliary.RandStrSeq(4) + "@" + auxiliary.RandStrSeq(5)
+	username := auxiliary.RandStrSeq(10)
+	password := auxiliary.RandStrSeq(25)
+	
 	var sqls []string
 
 	sql1 := fmt.Sprintf(
-		"INSERT INTO ACCOUNTS (id, username, private_key, public_key, created_at, updated_at, silenced, suspended, locked, protocol, memorial) VALUES (%d, '%s', '%s', '%s', '%s', '%s', %t, %t, %t, %d, %t);",
-		accountID, user.Username, privateKey, publicKey, t, t, false, false, false, 0, false)
+		`INSERT INTO ACCOUNTS (id, username, private_key, public_key, created_at, updated_at, silenced, suspended, locked, protocol, memorial) 
+		VALUES (%d, '%s', '%s', '%s', now(), now(), %t, %t, %t, %d, %t);`,
+		accountID, username, privateKey, publicKey, false, false, false, 0, false)
 	sql2 := fmt.Sprintf(
-		"INSERT INTO USERS (email, created_at, updated_at, encrypted_password, remember_created_at, current_sign_in_ip, last_sign_in_ip, admin, account_id, disabled, moderator) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', %t, %d, %t, %t);",
-		user.Email, t, t, user.Password, t, "127.0.0.1", "127.0.0.1", false, accountID, false, false)
+		`INSERT INTO USERS (email, created_at, updated_at, encrypted_password, remember_created_at, current_sign_in_ip, last_sign_in_ip, admin, account_id, disabled, moderator) 
+		VALUES ('%s', now(), now(), '%s', now(), '%s', '%s', %t, %d, %t, %t);`,
+		email, password, "127.0.0.1", "127.0.0.1", false, accountID, false, false)
 	sql3 := fmt.Sprintf(
-		"INSERT INTO ACCOUNT_STATS (account_id, statuses_count, following_count, followers_count, created_at, updated_at) VALUES (%d, %d, %d, %d, '%s', '%s');",
-		accountID, 0, 0, 0, t, t)
+		`INSERT INTO ACCOUNT_STATS (account_id, statuses_count, following_count, followers_count, created_at, updated_at) 
+		VALUES (%d, %d, %d, %d, now(), now());`,
+		accountID, 0, 0, 0)
 	sqls = append(sqls, sql1, sql2, sql3)
 	result := database.Execute(tx, sqls)
 
 	if result {
 		tx.Commit()
+		return accountID, nil
 	} else {
 		tx.Rollback()
+		return -1, errors.New("Fail to create a new user")
 	}
 }
 
@@ -322,7 +339,7 @@ func ReplyToStatus(dbConn *sql.DB, accountID int, content string, replyToStatusI
 	sql2 := fmt.Sprintf(
 		"INSERT INTO statuses (id, text, created_at, updated_at, language, conversation_id, local, account_id, application_id, uri, in_reply_to_id, reply, in_reply_to_account_id, visibility) VALUES (%d, '%s', '%s', '%s', '%s', %d, %t, %d, %d, '%s', %d, %t, %d, %d);",  
 		statusID, content, t, t, "en", conversationID, true, accountID, 1, uri, replyToStatusID, true, replyToAccountID, visibility)
-	sql3 := insertIntoStreamEntries(statusID, t, accountID, hidden)
+	sql3 := insertIntoStreamEntries(statusID, accountID, hidden)
 	sqls1 = append(sqls1, sql2, sql3)
 
 	if len(mentionedAccounts) != 0 {
@@ -370,7 +387,7 @@ func Reblog(dbConn *sql.DB, accountID int, reblogStatusID int) int {
 	sql3 := fmt.Sprintf(
 		"INSERT INTO statuses (id, created_at, updated_at, reblog_of_id, conversation_id, local, account_id, uri) VALUES (%d, '%s', '%s', %d, %d, %t, %d, '%s');",
 		statusID, t, t, reblogStatusID, conversationID, true, accountID, uri)
-	sql4 := insertIntoStreamEntries(statusID, t, accountID, hidden)
+	sql4 := insertIntoStreamEntries(statusID, accountID, hidden)
 	sqls = append(sqls, sql2, sql3, sql4)
 	result := database.Execute(tx, sqls)
 	if result {
