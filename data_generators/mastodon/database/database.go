@@ -53,3 +53,72 @@ func CheckExists(tx *sql.Tx, query string) int {
 	}
 	return exists
 }
+
+func DataCall(dbConn *sql.DB, sql string, args ...interface{}) []map[string]string {
+
+	var result []map[string]string
+
+	rows, err := dbConn.Query(sql, args...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cols, err := rows.Columns()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for rows.Next() {
+		data := make(map[string]string)
+		columns := make([]string, len(cols))
+		columnPointers := make([]interface{}, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+
+		rows.Scan(columnPointers...)
+
+		for i, col := range cols {
+			data[col] = columns[i]
+		}
+		result = append(result, data)
+	}
+	rows.Close()
+	return result
+}
+
+func DataCall1(dbConn *sql.DB, sql string, args ...interface{}) []map[string]string {
+
+	var result []map[string]string
+
+	rows, err := dbConn.Query(sql+" LIMIT 1", args...)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	cols, err := rows.Columns()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if rows.Next() {
+		// log.Println("DataCall1: in rows.next()")
+		data := make(map[string]string)
+		columns := make([]string, len(cols))
+		columnPointers := make([]interface{}, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+		// log.Println("DataCall1: scan pointers")
+		rows.Scan(columnPointers...)
+		// log.Println("DataCall1: pointers scanned")
+		for i, col := range cols {
+			data[col] = columns[i]
+		}
+		// log.Println("DataCall1: appending result")
+		result = append(result, data)
+	}
+	// log.Println("DataCall1: rows.close")
+	rows.Close()
+	// log.Println("DataCall1: return")
+	return result
+}

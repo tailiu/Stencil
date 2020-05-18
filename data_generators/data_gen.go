@@ -6,8 +6,8 @@ import (
 
 func main() {
 
-	app := "diaspora"
-	db := "diaspora_1000_0"
+	app := "mastodon"
+	db := "mastodon_1000"
 
 	dataGen := data_generator.Initialize(db)
 
@@ -16,6 +16,8 @@ func main() {
 		dataGen.GenDataDiaspora()
 	case data_generator.MASTODON:
 		dataGen.GenDataMastodon()
+	default:
+        panic("Unrecognized application!")
 	}
 	
 }

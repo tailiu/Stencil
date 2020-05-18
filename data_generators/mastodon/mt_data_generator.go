@@ -63,20 +63,20 @@ func getAllPostIDs(dbConn *sql.DB) *[]int {
 
 /************************************** Create Users ***********************************************************/
 
-func createUsers(dbConn *sql.DB, num int, c chan int) {
-	for i := 0; i < num; i++ {
-		newUser := mtDataGen.User{
-			auxiliary.RandStrSeq(4) + "@" + auxiliary.RandStrSeq(5),
-			auxiliary.RandStrSeq(10),
-			auxiliary.RandStrSeq(25)}
-		mtDataGen.Signup(dbConn, &newUser)
+// func createUsers(dbConn *sql.DB, num int, c chan int) {
+// 	for i := 0; i < num; i++ {
+// 		newUser := mtDataGen.User{
+// 			auxiliary.RandStrSeq(4) + "@" + auxiliary.RandStrSeq(5),
+// 			auxiliary.RandStrSeq(10),
+// 			auxiliary.RandStrSeq(25)}
+// 		mtDataGen.NewUser(dbConn, &newUser)
 
-		newUserLog := fmt.Sprintf("Create %d users with username='%s', email='%s', password='%s'",
-			i + 1, newUser.Username, newUser.Email, newUser.Password)
-		fmt.Println(newUserLog)
-	}
-	c <- num
-}
+// 		newUserLog := fmt.Sprintf("Create %d users with username='%s', email='%s', password='%s'",
+// 			i + 1, newUser.Username, newUser.Email, newUser.Password)
+// 		fmt.Println(newUserLog)
+// 	}
+// 	c <- num
+// }
 
 /*************************************************************************************************/
 
@@ -94,8 +94,7 @@ func createPostsThread(dbConn *sql.DB, slicedAccountIDs []int) {
 			} else {
 				haveMedia = false
 			}
-			var mentionedAccounts []int
-			mtDataGen.PublishStatus(dbConn, accountID, auxiliary.RandStrSeq(50), haveMedia, 0, mentionedAccounts)
+			mtDataGen.NewStatus(dbConn, accountID, haveMedia, 0)
 			newStatusLog := fmt.Sprintf("User %d creates a post with Media %t",
 				accountID, haveMedia)
 			fmt.Println(newStatusLog)
@@ -164,7 +163,7 @@ func createOneDirectMessage(dbConn *sql.DB, accountID int, accountIDs *[]int) ([
 		mentionedAccounts = append(mentionedAccounts, 
 			(*accountIDs)[auxiliary.RandomNonnegativeIntWithUpperBound(len(*accountIDs))])
 	}
-	messageID := mtDataGen.PublishStatus(dbConn, accountID, auxiliary.RandStrSeq(50), haveMedia, 3, mentionedAccounts)
+	messageID := mtDataGen.NewStatus(dbConn, accountID, haveMedia, 3)
 	if messageID != -1 {
 		newMessageGroupLog := fmt.Sprintf("User %d creates a message group with %d users",
 			accountID, len(mentionedAccounts) + 1)
@@ -328,7 +327,7 @@ func main() {
 
 	// var mentionedAccounts []int
 	// mentionedAccounts = append(mentionedAccounts, 3243277, 3258353)
-	// mtDataGen.PublishStatus(dbConn, 925840864, "five media COOOOL", true, 0, mentionedAccounts)
+	// mtDataGen.NewStatus(dbConn, 925840864, "five media COOOOL", true, 0, mentionedAccounts)
 
 	// favourite(dbConn, 925840864, 1389362391)
 
