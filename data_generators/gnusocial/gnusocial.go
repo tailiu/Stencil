@@ -8,7 +8,6 @@ import (
 	"gnusocial/db"
 	"log"
 	"os"
-	"stencil/helper"
 )
 
 func createNewUsers(dbConn *sql.DB, num int) {
@@ -79,7 +78,6 @@ func main() {
 		log.Fatal("Enter cmd args.")
 	}
 
-	helper.Init()
 	dbConn := db.GetDBConn(config.DB_NAME)
 
 	arg := os.Args[1]
