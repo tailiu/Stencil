@@ -273,35 +273,31 @@ func (dataGen *DataGen) genPosts(wg *sync.WaitGroup,
 	for i := userSeqStart; i < userSeqEnd; i++ {
 		
 		user := users[i]
-		
-		for n := 0; n < postAssignment[i]; n++ {
 
+		for n := 0; n < postAssignment[i]; n++ {
 			var postID int
 			
 			imageNum := imageNumsOfSeq[postSeq]
 
 			if imageNum == 0 {
-
 				postID = datagen.NewPost(dataGen.DBConn, 
 					user.User_ID, user.Person_ID, user.Aspects)
-
 			} else {
-
 				postID = datagen.NewPhotoPost(dataGen.DBConn, 
 					user.User_ID, user.Person_ID, user.Aspects, imageNum)
-
 			}
 
+			if postID == -1 {
+				n--
+				continue
+			}
 			postScores[postID] = seqScores[postSeq]
 			postSeq += 1
 			imageNums += imageNum
-
 		}
-
 	}
 	
 	res1 <- postScores
-
 	res2 <- imageNums
 
 }
@@ -327,17 +323,13 @@ func (dataGen *DataGen) genPostsController(users []DUser) map[int]float64 {
 	postScores := make(map[int]float64)
 	
 	channel1 := make(chan map[int]float64, THREAD_NUM)
-
 	channel2 := make(chan int, THREAD_NUM)
 
 	var wg sync.WaitGroup
-
 	wg.Add(THREAD_NUM)
 
 	userSeqStart := 0
-	
 	userSeqStep := len(users) / THREAD_NUM
-
 	postSeqStart := 0
 
 	for i := 0; i < THREAD_NUM; i++ {

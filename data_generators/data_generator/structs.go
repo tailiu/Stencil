@@ -30,6 +30,8 @@ type DUser struct {
 	Aspects       		[]int
 }
 
+//********* Application Structs *********//
+
 type Post struct {
 	ID 						int
 	Author					int

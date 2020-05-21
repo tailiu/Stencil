@@ -20,7 +20,7 @@ func (dataGen *DataGen) genUsers1(num int, wg *sync.WaitGroup, res chan<- []int)
 		
 		userID, err := mtDataGen.NewUser(dataGen.DBConn)
 		if err != nil {
-			log.Println(err)
+			// log.Println(err)
 		} else {
 			users = append(users, userID)
 		}
@@ -234,15 +234,18 @@ func (dataGen *DataGen) genPosts1(wg *sync.WaitGroup,
 				postID, err = mtDataGen.NewStatus(dataGen.DBConn, user, false, 0, nil)
 			} else {
 				postID, err = mtDataGen.NewStatus(dataGen.DBConn, user, true, 0, nil)
-				imageNums += 1
 			}
 
 			if err != nil {
-				panic("Create a new post error")
-			}
+				n--
+				continue
+			} 
 			postScores[postID] = seqScores[postSeq]
 			postSeq += 1
 			// imageNums += imageNum
+			if imageNum != 0 {
+				imageNums += 1
+			}
 		}
 	}
 	
@@ -579,7 +582,7 @@ func (dataGen *DataGen) genConversationsAndMessages1(wg *sync.WaitGroup,
 // Therefore the message number could be lower than the calculated total number 
 // according to the messageAssignment
 // However, since creating a conversation is equivalent to creating a new status (message),
-// the actual number of messages = conversation number + message number
+// the actual number of messages <= conversation number + message number
 func (dataGen *DataGen) genConversationsAndMessagesController1(users []int) {
 
 	messageAssignment := AssignDataToUsersByUserScores(dataGen.UserMessageScores, MESSAGE_NUM)

@@ -7,7 +7,7 @@ import (
 func main() {
 
 	app := "mastodon"
-	db := "mastodon_1000"
+	// db := "mastodon_100000"
 
 	dataGen := data_generator.Initialize(db)
 

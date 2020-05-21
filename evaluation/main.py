@@ -309,7 +309,7 @@ def dataDownTimeInPercentages(labels):
     data[0] = mul100(data[0])
     data[1] = mul100(data[1])
 
-    xlabel = "Percentage of data downtime"
+    xlabel = "Percentage of time when data is unavailable"
     ylabel = "Cumulative probability"
 
     # print data
@@ -803,8 +803,8 @@ def danglingObjsCumSum2(labels):
     y = [srcDanglingObjsCumSumPercentage, dstDanglingObjsCumSumPercentage]
 
     xlabel = 'Percentage of users migrated'
-    # ylabel = 'Percentage of dangling objects'
-    ylabel = 'Percentage of dangling objects to total objects'
+    ylabel = 'Percentage of dangling objects'
+    # ylabel = 'Percentage of dangling objects to total objects'
     
     g.mulLines(x, y, labels, xlabel, ylabel)
 
@@ -936,7 +936,7 @@ def randomWalkLine1(apps, ylabel, labels):
 
     print percentages
 
-    g.dataBagLine(apps, percentages, labels, ylabel)
+    g.dataBagLine1(apps, percentages, labels, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -960,10 +960,9 @@ def randomWalkLine1(apps, ylabel, labels):
 # migrationRate1(["SA1", "Naive system"])
 # migrationRateDatasetsFig(["logs_1M/", "logs_100K/", "logs_10K/"], ["1M", "100K", "10K"])
 # dataDownTime()
-# dataDownTimeInPercentages(["Stencil", "Naive system+"])
+# danglingDataSizesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
 # scalabilityEdge("SA1")
 # scalabilityNode("SA1")
-# scalability(["Deletion", "Independent", "Display"])
 # counter("")
 # migrationRateDatasetsTab(["logs_1M/", 
 #     "logs_100K/", 
@@ -974,11 +973,6 @@ def randomWalkLine1(apps, ylabel, labels):
 #     "diaspora_100K_dataset", "diaspora_1M_dataset"])
 # migrationRateDatasetsTab2("diaspora_10K_dataset_sa2_")
 # compareTwoMigratedSizes(["Source", "Destination"])
-# danglingDataSizesCumSum1(["Diaspora (source)", "Mastodon (destination)"])
-# danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
-# migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
-#     ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
-#     ["Deletion", "Deletion without \n display", "Independent", "Naive system"])
 # randomWalk1(["diaspora", "mastodon", "diaspora"],
 #             ["Stencil with data bags", "Stencil without data bags"])
 # randomWalkBar(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"],
@@ -987,6 +981,15 @@ def randomWalkLine1(apps, ylabel, labels):
 # randomWalkLine(["Diaspora", "Mastodon", "Gnusocial", "Twitter", "Diaspora"], 
 #             'Percentage of dangling objects to total objects',
 #             ["Stencil with \n data bags", "Stencil without \n data bags"])
-randomWalkLine1(["Diaspora", "Mastodon", "Gnusocial", "Twitter"],
-                'Percentage of application objects',
-                ["Stencil with data bags", "Stencil without data bags"])
+# randomWalkLine1(["Diaspora", "Mastodon", "Gnusocial", "Twitter"],
+#                 'Percentage of application objects',
+#                 ["Stencil with data bags", "Stencil without data bags"])
+
+
+
+# danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
+migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
+    ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
+    ["Deletion", "Deletion w/o validation", "Independent", "Naive"])
+# scalability(["Deletion", "Independent", "Validation"])
+# dataDownTimeInPercentages(["Stencil", "Naive+"])

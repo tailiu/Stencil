@@ -3,12 +3,15 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 30})
+plt.rcParams.update({'font.size': 32})
+# everything is bold
+# plt.rcParams["font.weight"] = "bold"
+# plt.rcParams["axes.labelweight"] = "bold"
 
-colors = ['g', 'r', 'b', 'm', 'k', 'w', 'c', 'y']
+colors = ['r', 'b', 'm', 'g', 'y', 'c', 'k']
 legendFontSize = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
 legendLoc = ['best', 'upper right', 'upper left', 'upper center', 'center right']
-markers = ["o", "v", "s",  "<", "*", "+"]
+markers = ["1", "2", '.', "x", "o", "v", "p", "*", "s",  "<", "*", "+"]
 lineStyles = ["solid", "dashed", "dotted", ""]
 
 def line(x, y, xlabel, ylabel, title):
@@ -119,7 +122,7 @@ def cumulativeGraph(dataArr, labels, xlabel, ylabel):
 
     fig, ax = plt.subplots()
     for i, y1 in enumerate(y):
-        ax.plot(x[i], y1, color=colors[i], linestyle=lineStyles[i], lw=4, label=labels[i])
+        ax.plot(x[i], y1, color=colors[i], linestyle=lineStyles[i], lw=7, label=labels[i])
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -131,7 +134,7 @@ def cumulativeGraph(dataArr, labels, xlabel, ylabel):
     # I want to change location by coordinates
     # bbox_to_anchor = (x0, y0, width, height) 
     # (x0,y0) are the lower left corner coordinates of the bounding box.
-    legend = ax.legend(bbox_to_anchor=(1, 0.95), loc=legendLoc[1], fontsize=32)
+    legend = ax.legend(bbox_to_anchor=(1, 0.95), loc=legendLoc[1], fontsize=44)
 
     plt.show()
 
@@ -168,8 +171,16 @@ def mulPoints(x, y, labels, xlabel, ylabel):
 
     fig, ax = plt.subplots()
     
+    markers = ["+", "2", '.', "x"]
+
     for i in range(len(x)):
-        ax.plot(x[i], y[i], color=colors[i], label=labels[i], markersize=11, marker=markers[i], linestyle=lineStyles[-1])
+        marker = markers[i]
+        markerEdgeWidth = 0
+        markerSize = 27
+        if marker == "+" or  marker == "2" or marker == "x":
+            markerEdgeWidth = 2
+            markerSize = 23
+        ax.plot(x[i], y[i], color=colors[i], mew = markerEdgeWidth, label=labels[i], markersize=markerSize, marker=marker, linestyle=lineStyles[-1])
 
     ax.grid(True)
     ax.set_xlabel(xlabel)
@@ -220,6 +231,8 @@ def mulPoints3(x, y, labels, xlabels, ylabels):
 
     fig, axs = plt.subplots(nrows=1, ncols=figNum)
 
+    markers = ["1", "2", '.', "x"]
+
     for i, ax in enumerate(axs):
         
         x1 = x[i]
@@ -233,14 +246,18 @@ def mulPoints3(x, y, labels, xlabels, ylabels):
             y12 = np.array(y11)
             b, m = polyfit(x12, y12, 1)
 
-            ax.plot(x12, y12, marker=markers[j], color=colors[j], markersize=11, label=labels[j], linestyle=lineStyles[-1])
-            ax.plot(x12, m * x12 + b, linestyle=lineStyles[j], color=colors[j], linewidth=4)
+            markerEdgeWidth = 0
+            marker = markers[j]
+            if marker == "+" or marker == "x" or marker == "1" or marker == "2":
+                markerEdgeWidth = 1.5
+            ax.plot(x12, y12, marker=marker, color=colors[j], mew=markerEdgeWidth, markersize=28, label=labels[j], linestyle=lineStyles[-1])
+            ax.plot(x12, m * x12 + b, linestyle=lineStyles[j], color=colors[j], linewidth=7)
 
         ax.grid(True)
         ax.set_xlabel(xlabels[i])
         ax.set_ylabel(ylabels[i])
 
-        legend = ax.legend(loc=legendLoc[3], fontsize=legendFontSize[3], numpoints=1)
+        legend = ax.legend(loc=legendLoc[3], fontsize=35, numpoints=1)
     
     plt.show()
 
@@ -249,13 +266,13 @@ def mulLines(x, y, labels, xlabel, ylabel):
     fig, ax = plt.subplots()
 
     for i in range(len(y)):
-        ax.plot(x, y[i], color=colors[i], label=labels[i], linewidth=3.3, linestyle=lineStyles[i])
+        ax.plot(x, y[i], color=colors[i], label=labels[i], linewidth=7, linestyle=lineStyles[i])
     
     ax.grid(True)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[4], numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=36, numpoints=1)
 
     plt.show()
 
@@ -300,7 +317,7 @@ def mulLinesAnomalies(x, favBeforeStatusesCS, statusesBeforeParentStatusesCS, st
 
     plt.show()
 
-def dataBagLine(apps, data, labels, ylabel):
+def dataBagLine1(apps, data, labels, ylabel):
 
     fig, ax = plt.subplots()
 
