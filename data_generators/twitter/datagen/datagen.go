@@ -8,7 +8,13 @@ import (
 	"time"
 	"twitter/db"
 	"twitter/helper"
+	"strconv"
 )
+
+type Post struct {
+	ID     int
+	Author int
+}
 
 func CreateNewUser(dbConn *sql.DB) string {
 
@@ -267,6 +273,116 @@ func CreateNewMessageWithPhoto(dbConn *sql.DB, userID, conversationID string) st
 	tx.Commit()
 
 	return id
+}
+
+func GetPostsForUser(dbConn *sql.DB, userID int) []*Post {
+
+	q := fmt.Sprintf(`SELECT id, user_id FROM tweets WHERE user_id = %d`, userID)
+
+	v := db.DataCall(dbConn, q)
+	
+	var posts []*Post
+	for _, v1 := range v {
+		pid, err := strconv.Atoi(v1["id"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		uid, err1 := strconv.Atoi(v1["user_id"])
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+		post := new(Post)
+		post.Author = uid
+		post.ID = pid
+		posts = append(posts, post)
+	} 
+
+	return posts
+
+}
+
+func GetFollowingUsers(dbConn *sql.DB, fromUserID int) []int {
+
+	q := fmt.Sprintf(
+		`SELECT to_user_id FROM user_actions 
+		WHERE from_user_id = %d and action_type = 'follows'`, fromUserID,
+	)
+
+	v := db.DataCall(dbConn, q)
+	
+	var result []int 
+	for _, v1 := range v {
+		res1, err := strconv.Atoi(v1["to_user_id"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, res1)
+	} 
+
+	return result
+
+}
+
+func GetFollowedNum(dbConn *sql.DB, toUserID int) int {
+
+	q := fmt.Sprintf(
+		`SELECT COUNT(*) FROM user_actions 
+		WHERE to_user_id = %d and action_type = 'follows'`, toUserID,
+	)
+
+	v, err := db.DataCall1(dbConn, q)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	count, err1 := strconv.Atoi(fmt.Sprint(v["count"]))
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+	return count
+
+}
+
+func CheckFollowed(dbConn *sql.DB, toUserID, fromUserID int) bool {
+
+	q := fmt.Sprintf(
+		`SELECT id FROM user_actions 
+		WHERE to_user_id = %d and from_user_id = %d and action_type = 'follows'`, 
+		toUserID, fromUserID,
+	)
+
+	v, err := db.DataCall1(dbConn, q)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(v) > 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func GetFollowedUsers(dbConn *sql.DB, toUserID int) []int {
+
+	q := fmt.Sprintf(
+		`SELECT from_user_id FROM user_actions 
+		WHERE to_user_id = %d and action_type = 'follows'`, toUserID,
+	)
+
+	v := db.DataCall(dbConn, q)
+	
+	var result []int 
+	for _, v1 := range v {
+		res1, err := strconv.Atoi(v1["from_user_id"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, res1)
+	} 
+
+	return result
+
 }
 
 func CreateNewFollow(dbConn *sql.DB, fromUserID, toUserID string) string {
