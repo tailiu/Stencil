@@ -49,35 +49,6 @@ func CreateNewUser(dbConn *sql.DB) string {
 	return id
 }
 
-func CreateNewConversation(dbConn *sql.DB, userID string) string {
-
-	tx, err := dbConn.Begin()
-	if err != nil {
-		log.Println(err)
-		log.Fatal("@CreateNewConversation: Tx error:", err)
-	}
-
-	id := db.GetNewRowIDForTable(dbConn, "conversations")
-	role := "creator"
-
-	sql := "INSERT INTO conversations (id, created_at, updated_at) VALUES ($1, $2, $3)"
-	txErr := db.RunTxWQnArgs(tx, sql, id, time.Now(), time.Now())
-	if txErr != nil {
-		log.Fatal("Error while creating new conversation: ", txErr)
-	}
-
-	cpid := db.GetNewRowIDForTable(dbConn, "conversation_participants")
-	sql = "INSERT INTO conversation_participants (id, conversation_id, user_id, created_at, updated_at, role, saw_new_messages, saw_messages_until) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
-	txErr = db.RunTxWQnArgs(tx, sql, cpid, id, userID, time.Now(), time.Now(), role, true, time.Now())
-	if txErr != nil {
-		log.Fatal("Error while creating new conversation_participants: ", txErr)
-	}
-
-	tx.Commit()
-
-	return id
-}
-
 func CreateNewPost(dbConn *sql.DB, userID string) string {
 
 	tx, err := dbConn.Begin()
@@ -220,12 +191,71 @@ func CreateNewLike(dbConn *sql.DB, postID, userID string) string {
 	return id
 }
 
+func conversationParticipantsExists(dbConn *sql.DB, userID, conversationID string) bool {
+
+	q := fmt.Sprintf(
+		`SELECT id FROM conversation_participants c1 
+		WHERE c1.user_id = %s and c1.conversation_id = %s`, 
+		userID, conversationID,
+	)
+
+	v, err := db.DataCall1(dbConn, q)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(v) > 0 {
+		return true
+	} else {
+		return false
+	}
+
+}
+
+func CreateNewConversation(dbConn *sql.DB, userID string) string {
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		log.Println(err)
+		log.Fatal("@CreateNewConversation: Tx error:", err)
+	}
+
+	id := db.GetNewRowIDForTable(dbConn, "conversations")
+	role := "creator"
+
+	sql := "INSERT INTO conversations (id, created_at, updated_at) VALUES ($1, $2, $3)"
+	txErr := db.RunTxWQnArgs(tx, sql, id, time.Now(), time.Now())
+	if txErr != nil {
+		log.Fatal("Error while creating new conversation: ", txErr)
+	}
+
+	cpid := db.GetNewRowIDForTable(dbConn, "conversation_participants")
+	sql = "INSERT INTO conversation_participants (id, conversation_id, user_id, created_at, updated_at, role, saw_new_messages, saw_messages_until) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+	txErr = db.RunTxWQnArgs(tx, sql, cpid, id, userID, time.Now(), time.Now(), role, true, time.Now())
+	if txErr != nil {
+		log.Fatal("Error while creating new conversation_participants: ", txErr)
+	}
+
+	tx.Commit()
+
+	return id
+}
+
 func CreateNewMessage(dbConn *sql.DB, userID, conversationID string) string {
 
 	tx, err := dbConn.Begin()
 	if err != nil {
 		log.Println(err)
 		log.Fatal("@CreateNewMessage: Tx error:", err)
+	}
+
+	if !conversationParticipantsExists(dbConn, userID, conversationID) {
+		cpid := db.GetNewRowIDForTable(dbConn, "conversation_participants")
+		sql0 := "INSERT INTO conversation_participants (id, conversation_id, user_id, created_at, updated_at, role, saw_new_messages, saw_messages_until) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+		txErr0 := db.RunTxWQnArgs(tx, sql0, cpid, conversationID, userID, time.Now(), time.Now(), "participant", true, time.Now())
+		if txErr0 != nil {
+			log.Fatal("Error while creating new conversation_participants: ", txErr0)
+		}
 	}
 
 	id := db.GetNewRowIDForTable(dbConn, "messages")
@@ -361,6 +391,55 @@ func CheckFollowed(dbConn *sql.DB, toUserID, fromUserID int) bool {
 	} else {
 		return false
 	}
+}
+
+func CheckConversationBetweenTwoUsers(dbConn *sql.DB, userID1, userID2 int) (bool, int) {
+
+	q := fmt.Sprintf(
+		`SELECT c1.conversation_id FROM conversation_participants c1 JOIN conversation_participants c2 ON 
+		c1.conversation_id = c2.conversation_id WHERE c1.user_id = %d and c2.user_id = %d`, 
+		userID1, userID2,
+	)
+
+	v, err := db.DataCall1(dbConn, q)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(v) > 0 {
+		cIDStr := fmt.Sprint(v["conversation_id"])
+		cID, err1 := strconv.Atoi(cIDStr)
+		if err1 != nil {
+			log.Fatal(err1)
+		} 
+		return true, cID
+	} else {
+		return false, -1
+	}
+
+}
+
+func GetRealFriendsOfUser(dbConn *sql.DB, fromUserID int) []int {
+
+	q := fmt.Sprintf(
+		`SELECT DISTINCT a1.to_user_id FROM user_actions a1 JOIN user_actions a2 ON 
+		a1.from_user_id = a2.to_user_id AND a1.to_user_id = a2.from_user_id
+		WHERE a1.from_user_id = %d`, fromUserID,
+	)
+
+	v := db.DataCall(dbConn, q)
+	
+	var result []int 
+	for _, v1 := range v {
+		res1, err := strconv.Atoi(v1["to_user_id"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, res1)
+	} 
+
+	return result
+
 }
 
 func GetFollowedUsers(dbConn *sql.DB, toUserID int) []int {

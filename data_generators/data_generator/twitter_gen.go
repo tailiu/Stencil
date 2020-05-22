@@ -1,7 +1,6 @@
 package data_generator
 
 import (
-	"data_generators/mastodon/mtDataGen"
 	"data_generators/twitter/datagen"
 	"time"
 	"log"
@@ -433,7 +432,7 @@ func (dataGen *DataGen) genLikes2(wg *sync.WaitGroup,
 		likeNum := likeAssignment[seq1]
 		// log.Println("Like number:", likeNum)
 		
-		totalUsers := mtDataGen.GetFollowingUsers(dataGen.DBConn, personID)
+		totalUsers := datagen.GetFollowingUsers(dataGen.DBConn, personID)
 	
 		// log.Println(user1)
 		// log.Println(totalUsers)
@@ -442,7 +441,7 @@ func (dataGen *DataGen) genLikes2(wg *sync.WaitGroup,
 
 		for _, user2 := range totalUsers {
 			
-			posts1 := mtDataGen.GetPostsForUser(dataGen.DBConn, user2)
+			posts1 := datagen.GetPostsForUser(dataGen.DBConn, user2)
 			
 			for _, post1 := range posts1 {
 
@@ -462,7 +461,7 @@ func (dataGen *DataGen) genLikes2(wg *sync.WaitGroup,
 		
 		for seq2, post := range posts {
 			if _, ok := likeNumsOfPosts[seq2]; ok {
-				mtDataGen.Favourite(dataGen.DBConn, post.ID, personID)
+				datagen.CreateNewLike(dataGen.DBConn, strconv.Itoa(post.ID), strconv.Itoa(personID))
 				totalLikeNum += 1
 			}
 		}
@@ -533,7 +532,7 @@ func (dataGen *DataGen) genConversationsAndMessages2(wg *sync.WaitGroup,
 		messageNum := messageAssignment[seq1]
 
 		// There could be cases in which the user has no friend
-		friends := mtDataGen.GetRealFriendsOfUser(dataGen.DBConn, personID)
+		friends := datagen.GetRealFriendsOfUser(dataGen.DBConn, personID)
 		friendCloseIndex := AssignParetoDistributionScoresToDataReturnSlice(len(friends))
 		
 		// log.Println(friends)
@@ -547,23 +546,21 @@ func (dataGen *DataGen) genConversationsAndMessages2(wg *sync.WaitGroup,
 
 			friendID := friends[seq2]
 
-			exists, status_id := mtDataGen.CheckConversationBetweenTwoUsers(dataGen.DBConn, 
+			exists, cID := datagen.CheckConversationBetweenTwoUsers(dataGen.DBConn, 
 				personID, friendID)
 			
 			if exists {
 				for i := 0; i < messageNum; i++ {
-					mtDataGen.ReplyToStatus(dataGen.DBConn, status_id, personID, 3, []int{friendID})
+					datagen.CreateNewMessage(dataGen.DBConn, strconv.Itoa(personID), strconv.Itoa(cID))
 				}
 			} else {
-
-				// In Mastodon, generating a new conversation is equal to 
-				// creating a new status (message) and mentioning a friend
-				new_status_id, _ := mtDataGen.NewStatus(dataGen.DBConn, personID, false, 3, []int{friendID})
+				
+				newCID := datagen.CreateNewConversation(dataGen.DBConn, strconv.Itoa(personID))
 
 				conversationNum += 1
 				
 				for i := 0; i < messageNum; i++ {
-					mtDataGen.ReplyToStatus(dataGen.DBConn, new_status_id, personID, 3, []int{friendID})
+					datagen.CreateNewMessage(dataGen.DBConn,  strconv.Itoa(personID), newCID)
 				}
 			}
 		}
@@ -643,9 +640,9 @@ func (dataGen *DataGen) GenDataTwitter() {
 
 	dataGen.genCommentsController2(users, postScores)
 
-	// dataGen.genLikesController2(users, postScores)
+	dataGen.genLikesController2(users, postScores)
 	
-	// dataGen.genConversationsAndMessagesController1(users)
+	dataGen.genConversationsAndMessagesController2(users)
 
 	log.Println("--------- End of Data Generation ---------")
 
