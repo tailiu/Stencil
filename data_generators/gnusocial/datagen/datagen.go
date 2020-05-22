@@ -7,7 +7,13 @@ import (
 	"gnusocial/helper"
 	"log"
 	"time"
+	"strconv"
 )
+
+type Post struct {
+	ID     int
+	Author int
+}
 
 func CreateNewUser(dbConn *sql.DB) string {
 
@@ -245,4 +251,138 @@ func CreateNewSubscription(dbConn *sql.DB, fromProfileID, toProfileID string) st
 	tx.Commit()
 
 	return id
+}
+
+func GetFollowedUsers(dbConn *sql.DB, toUserID int) []int {
+
+	q := fmt.Sprintf(`SELECT subscriber FROM subscription WHERE subscribed = %d`, toUserID)
+
+	v := db.DataCall(dbConn, q)
+	
+	var result []int 
+	for _, v1 := range v {
+		res1, err := strconv.Atoi(v1["subscriber"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, res1)
+	} 
+
+	return result
+}
+
+func CheckFollowed(dbConn *sql.DB, toUserID, fromUserID int) bool {
+
+	q := fmt.Sprintf(
+		`SELECT id FROM subscription WHERE subscribed = %d and subscriber = %d`, 
+		toUserID, fromUserID,
+	)
+
+	v, err := db.DataCall1(dbConn, q)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(v) > 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func GetFollowedNum(dbConn *sql.DB, toUserID int) int {
+
+	q := fmt.Sprintf(`SELECT COUNT(*) FROM subscription WHERE subscribed = %d`, toUserID)
+
+	v, err := db.DataCall1(dbConn, q)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	count, err1 := strconv.Atoi(fmt.Sprint(v["count"]))
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+	return count
+
+}
+
+func GetFollowingUsers(dbConn *sql.DB, fromUserID int) []int {
+
+	q := fmt.Sprintf(`SELECT subscribed FROM subscription WHERE subscriber = %d`, fromUserID)
+
+	v := db.DataCall(dbConn, q)
+	
+	var result []int 
+	for _, v1 := range v {
+		res1, err := strconv.Atoi(v1["subscribed"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, res1)
+	} 
+
+	return result
+}
+
+func GetPostsForUser(dbConn *sql.DB, userID int) []*Post {
+
+	q := fmt.Sprintf(`SELECT id FROM notice WHERE profile_id = %d`, userID)
+
+	v := db.DataCall(dbConn, q)
+	
+	var posts []*Post
+	for _, v1 := range v {
+		pid, err := strconv.Atoi(v1["id"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		post := new(Post)
+		post.Author = userID
+		post.ID = pid
+		posts = append(posts, post)
+	} 
+
+	return posts
+
+}
+
+func GetConversationIDOfPost(dbConn *sql.DB, pid int) string {
+
+	q := fmt.Sprintf(`SELECT conversation FROM notice WHERE id = %d`, pid)
+
+	v, err := db.DataCall1(dbConn, q)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(v) == 0 {
+		log.Fatal("Fail to find the conversation id of a notice")
+	}
+	
+	return fmt.Sprint(v["conversation"])
+
+}
+
+func GetRealFriendsOfUser(dbConn *sql.DB, fromUserID int) []int {
+
+	q := fmt.Sprintf(
+		`SELECT DISTINCT a1.subscribed FROM subscription a1 JOIN subscription a2 ON 
+		a1.subscriber = a2.subscribed AND a1.subscribed = a2.subscriber
+		WHERE a1.subscriber = %d`, fromUserID,
+	)
+
+	v := db.DataCall(dbConn, q)
+	
+	var result []int 
+	for _, v1 := range v {
+		res1, err := strconv.Atoi(v1["subscribed"])
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, res1)
+	} 
+
+	return result
+
 }

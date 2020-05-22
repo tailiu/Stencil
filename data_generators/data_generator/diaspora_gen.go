@@ -751,7 +751,7 @@ func (dataGen *DataGen) genConversationsAndMessagesController(users []DUser) {
 }
 
 
-func (dataGen *DataGen) GenDataDiaspora() {
+func (dataGen *DataGen) DiasporaGenData() {
 	
 	startTime := time.Now()
 

@@ -624,7 +624,7 @@ func (dataGen *DataGen) genConversationsAndMessagesController1(users []int) {
 	log.Println("Total conversations:", conversationNum)
 }
 
-func (dataGen *DataGen) GenDataMastodon() {
+func (dataGen *DataGen) MastodonGenData() {
 	
 	startTime := time.Now()
 

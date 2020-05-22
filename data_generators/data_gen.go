@@ -6,18 +6,20 @@ import (
 
 func main() {
 
-	app := "twitter"
-	db := "twitter_1000"
+	app := "gnusocial"
+	db := "gnusocial_1000"
 
 	dataGen := data_generator.Initialize(db)
 
 	switch app {
 	case data_generator.DIASPORA:
-		dataGen.GenDataDiaspora()
+		dataGen.DiasporaGenData()
 	case data_generator.MASTODON:
-		dataGen.GenDataMastodon()
+		dataGen.MastodonGenData()
 	case data_generator.TWITTER:
-		dataGen.GenDataTwitter()
+		dataGen.TwitterGenData()
+	case data_generator.GNUSOCIAL:
+		dataGen.GnusocialGenData()
 	default:
         panic("Unrecognized application!")
 	}

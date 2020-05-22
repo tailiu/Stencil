@@ -307,7 +307,7 @@ func CreateNewMessageWithPhoto(dbConn *sql.DB, userID, conversationID string) st
 
 func GetPostsForUser(dbConn *sql.DB, userID int) []*Post {
 
-	q := fmt.Sprintf(`SELECT id, user_id FROM tweets WHERE user_id = %d`, userID)
+	q := fmt.Sprintf(`SELECT id FROM tweets WHERE user_id = %d`, userID)
 
 	v := db.DataCall(dbConn, q)
 	
@@ -317,12 +317,8 @@ func GetPostsForUser(dbConn *sql.DB, userID int) []*Post {
 		if err != nil {
 			log.Fatal(err)
 		}
-		uid, err1 := strconv.Atoi(v1["user_id"])
-		if err1 != nil {
-			log.Fatal(err1)
-		}
 		post := new(Post)
-		post.Author = uid
+		post.Author = userID
 		post.ID = pid
 		posts = append(posts, post)
 	} 

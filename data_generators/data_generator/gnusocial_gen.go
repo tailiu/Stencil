@@ -1,7 +1,8 @@
 package data_generator
 
 import (
-	"data_generators/twitter/datagen"
+	// "data_generators/twitter/datagen"
+	"data_generators/gnusocial/datagen"
 	"time"
 	"log"
 	"sync"
@@ -11,7 +12,7 @@ import (
 /**
  * This is the multi-thread data generator for Mastodon
 **/
-func (dataGen *DataGen) genUsers2(num int, wg *sync.WaitGroup, res chan<- []int) {
+func (dataGen *DataGen) genUsers3(num int, wg *sync.WaitGroup, res chan<- []int) {
 
 	defer wg.Done()
 
@@ -31,8 +32,8 @@ func (dataGen *DataGen) genUsers2(num int, wg *sync.WaitGroup, res chan<- []int)
 	res <- users
 }
 
-// Function genUsersController2() tries to create USER_NUM users, but it cannot guarantee
-func (dataGen *DataGen) genUsersController2() []int {
+// Function genUsersController3() tries to create USER_NUM users, but it cannot guarantee
+func (dataGen *DataGen) genUsersController3() []int {
 	
 	var users []int
 
@@ -43,7 +44,7 @@ func (dataGen *DataGen) genUsersController2() []int {
 	wg.Add(THREAD_NUM)
 
 	for i := 0; i < THREAD_NUM; i++ {
-		go dataGen.genUsers2(USER_NUM / THREAD_NUM, &wg, channel)
+		go dataGen.genUsers3(USER_NUM / THREAD_NUM, &wg, channel)
 	}
 
 	wg.Wait()
@@ -59,7 +60,7 @@ func (dataGen *DataGen) genUsersController2() []int {
 	return users
 }
 
-func (dataGen *DataGen) genFollows2(wg *sync.WaitGroup, userSeqStart, userSeqEnd int, 
+func (dataGen *DataGen) genFollows3(wg *sync.WaitGroup, userSeqStart, userSeqEnd int, 
 	followedAssignment []int, users []int) {
 	
 	defer wg.Done()
@@ -121,7 +122,7 @@ func (dataGen *DataGen) genFollows2(wg *sync.WaitGroup, userSeqStart, userSeqEnd
 				if datagen.CheckFollowed(dataGen.DBConn, personID1, personID2) {
 					haveTried[seq2] = true
 				} else {
-					datagen.CreateNewFollow(dataGen.DBConn, strconv.Itoa(personID2), strconv.Itoa(personID1))
+					datagen.CreateNewSubscription(dataGen.DBConn, strconv.Itoa(personID2), strconv.Itoa(personID1))
 					toBeFollowedByPersons = append(toBeFollowedByPersons, seq2)
 					haveTried[seq2] = true
 					break
@@ -155,7 +156,7 @@ func (dataGen *DataGen) genFollows2(wg *sync.WaitGroup, userSeqStart, userSeqEnd
 				if datagen.GetFollowedNum(dataGen.DBConn, personID3) >= followedAssignment[seq3] {
 					continue
 				} else {
-					datagen.CreateNewFollow(dataGen.DBConn, strconv.Itoa(personID1), strconv.Itoa(personID3))					
+					datagen.CreateNewSubscription(dataGen.DBConn, strconv.Itoa(personID1), strconv.Itoa(personID3))					
 					currentlyFollowNum += 1
 				}
 			}
@@ -175,7 +176,7 @@ func (dataGen *DataGen) genFollows2(wg *sync.WaitGroup, userSeqStart, userSeqEnd
 // The exact number could be more than FOLLOW_NUM 
 // because a user could be followed by the same other user twice
 // due to multiple-thread data generation.
-func (dataGen *DataGen) genFollowsController2(users []int) {
+func (dataGen *DataGen) genFollowsController3(users []int) {
 
 	followedAssignment := AssignDataToUsersByUserScores(dataGen.UserPopularityScores, FOLLOW_NUM)
 	
@@ -191,11 +192,11 @@ func (dataGen *DataGen) genFollowsController2(users []int) {
 	for i := 0; i < THREAD_NUM; i++ {
 		if i != THREAD_NUM - 1 {
 			// Start included, end (start + step) not included
-			go dataGen.genFollows2(&wg, userSeqStart, userSeqStart + userSeqStep, 
+			go dataGen.genFollows3(&wg, userSeqStart, userSeqStart + userSeqStep, 
 				followedAssignment, users)
 		} else {
 			// Start included, end (start + step) not included
-			go dataGen.genFollows2(&wg, userSeqStart, len(users), 
+			go dataGen.genFollows3(&wg, userSeqStart, len(users), 
 				followedAssignment, users)
 		}
 		userSeqStart += userSeqStep
@@ -204,7 +205,7 @@ func (dataGen *DataGen) genFollowsController2(users []int) {
 	wg.Wait()
 }
 
-func (dataGen *DataGen) genPosts2(wg *sync.WaitGroup, 
+func (dataGen *DataGen) genPosts3(wg *sync.WaitGroup, 
 	res1 chan<- map[int]float64, res2 chan<- int, 
 	userSeqStart, userSeqEnd, postSeqStart int,
 	users []int, postAssignment []int, 
@@ -229,11 +230,11 @@ func (dataGen *DataGen) genPosts2(wg *sync.WaitGroup,
 			
 			imageNum := imageNumsOfSeq[postSeq]
 
-			// A Twitter tweet can only have one image
-			if imageNum == 0 {
-				postIDStr = datagen.CreateNewPost(dataGen.DBConn, strconv.Itoa(user))
-			} else {
-				postIDStr = datagen.CreateTweetWithPhoto(dataGen.DBConn, strconv.Itoa(user))
+			cID := datagen.CreateNewConversation(dataGen.DBConn)
+			postIDStr = datagen.CreateNewPost(dataGen.DBConn, cID, strconv.Itoa(user))
+
+			for i := 0; i < imageNum; i++ {
+				postIDStr = datagen.CreateMediaForPost(dataGen.DBConn, postIDStr, strconv.Itoa(user))
 			}
 
 			postID, err := strconv.Atoi(postIDStr)
@@ -242,10 +243,7 @@ func (dataGen *DataGen) genPosts2(wg *sync.WaitGroup,
 			}
 			postScores[postID] = seqScores[postSeq]
 			postSeq += 1
-			// imageNums += imageNum
-			if imageNum != 0 {
-				imageNums += 1
-			}
+			imageNums += imageNum
 		}
 	}
 	
@@ -257,7 +255,7 @@ func (dataGen *DataGen) genPosts2(wg *sync.WaitGroup,
 // We also randomly assign images to the posts proportionally to the popularity of posts.
 // The scores assigned to posts are in pareto distributiuon.
 // so it is more likely that popular users will have popular posts because they have more posts
-func (dataGen *DataGen) genPostsController2(users []int) map[int]float64 {
+func (dataGen *DataGen) genPostsController3(users []int) map[int]float64 {
 
 	postAssignment := AssignDataToUsersByUserScores(dataGen.UserPopularityScores, POST_NUM)
 	totalPosts := GetSumOfIntSlice(postAssignment)
@@ -286,14 +284,14 @@ func (dataGen *DataGen) genPostsController2(users []int) map[int]float64 {
 		if i != THREAD_NUM - 1 {
 
 			// Start included, end (start + step) not included
-			go dataGen.genPosts2(&wg, channel1, channel2, 
+			go dataGen.genPosts3(&wg, channel1, channel2, 
 				userSeqStart, userSeqStart + userSeqStep, 
 				postSeqStart, users, postAssignment, imageNumsOfSeq, seqScores)
 
 		} else {
 
 			// Start included, end (start + step) not included
-			go dataGen.genPosts2(&wg, channel1, channel2, 
+			go dataGen.genPosts3(&wg, channel1, channel2, 
 				userSeqStart, len(users), 
 				postSeqStart, users, postAssignment, imageNumsOfSeq, seqScores)
 		
@@ -324,7 +322,7 @@ func (dataGen *DataGen) genPostsController2(users []int) map[int]float64 {
 	return postScores
 }
 
-func (dataGen *DataGen) genComments2(wg *sync.WaitGroup, 
+func (dataGen *DataGen) genComments3(wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, commentAssignment []int, 
 	users []int, postScores map[int]float64) {
 	
@@ -362,7 +360,6 @@ func (dataGen *DataGen) genComments2(wg *sync.WaitGroup,
 				post.ID = post1.ID
 				post.Author = post1.Author
 				post.Score = postScores[post1.ID]
-
 				posts = append(posts, post)
 				scores = append(scores, post.Score)
 
@@ -373,7 +370,8 @@ func (dataGen *DataGen) genComments2(wg *sync.WaitGroup,
 
 		for seq2, post := range posts {
 			for i := 0; i < commentNumsOfPosts[seq2]; i++ {
-				datagen.CreateNewComment(dataGen.DBConn, strconv.Itoa(personID), strconv.Itoa(post.ID))
+				cID := datagen.GetConversationIDOfPost(dataGen.DBConn, post.ID)
+				datagen.CreateNewComment(dataGen.DBConn, cID, strconv.Itoa(personID), strconv.Itoa(post.ID))
 			}
 		}
 	}
@@ -382,7 +380,7 @@ func (dataGen *DataGen) genComments2(wg *sync.WaitGroup,
 // We randomly assign comments to posts proportionally to the popularity of posts of friends, 
 // including posts by the commenter.
 // Mutiple threads do not cause much influence to comments generation
-func (dataGen *DataGen) genCommentsController2(users []int, postScores map[int]float64) {
+func (dataGen *DataGen) genCommentsController3(users []int, postScores map[int]float64) {
 	
 	commentAssignment := AssignDataToUsersByUserScores(dataGen.UserCommentScores, COMMENT_NUM)
 
@@ -399,11 +397,11 @@ func (dataGen *DataGen) genCommentsController2(users []int, postScores map[int]f
 		
 		if i != THREAD_NUM - 1 {
 			// Start included, end (start + step) not included
-			go dataGen.genComments2(&wg, userSeqStart, userSeqStart + userSeqStep, 
+			go dataGen.genComments3(&wg, userSeqStart, userSeqStart + userSeqStep, 
 				commentAssignment, users, postScores)
 		} else {
 			// Start included, end (start + step) not included
-			go dataGen.genComments2(&wg, userSeqStart, len(users), 
+			go dataGen.genComments3(&wg, userSeqStart, len(users), 
 				commentAssignment, users, postScores)
 		}
 		userSeqStart += userSeqStep
@@ -412,7 +410,7 @@ func (dataGen *DataGen) genCommentsController2(users []int, postScores map[int]f
 	wg.Wait()
 }
 
-func (dataGen *DataGen) genLikes2(wg *sync.WaitGroup, 
+func (dataGen *DataGen) genLikes3(wg *sync.WaitGroup, 
 	userSeqStart, userSeqEnd int, likeAssignment []int, 
 	users []int, postScores map[int]float64, res chan<- int) {
 		
@@ -475,7 +473,7 @@ func (dataGen *DataGen) genLikes2(wg *sync.WaitGroup,
 // The difference between generating comments and likes is that
 // a user make several comments on the same post, but can only like once on that post.
 // Mutiple threads do not cause much influence to likes generation
-func (dataGen *DataGen) genLikesController2(users []int, postScores map[int]float64) {
+func (dataGen *DataGen) genLikesController3(users []int, postScores map[int]float64) {
 
 	likeAssignment := AssignDataToUsersByUserScores(dataGen.UserLikeScores, LIKE_NUM)
 
@@ -495,11 +493,11 @@ func (dataGen *DataGen) genLikesController2(users []int, postScores map[int]floa
 	for i := 0; i < THREAD_NUM; i++ {
 		if i != THREAD_NUM - 1 {
 			// Start included, end (start + step) not included
-			go dataGen.genLikes2(&wg, userSeqStart, userSeqStart + userSeqStep, 
+			go dataGen.genLikes3(&wg, userSeqStart, userSeqStart + userSeqStep, 
 				likeAssignment, users, postScores, channel)
 		} else {
 			// Start included, end (start + step) not included
-			go dataGen.genLikes2(&wg, userSeqStart, len(users), 
+			go dataGen.genLikes3(&wg, userSeqStart, len(users), 
 				likeAssignment, users, postScores, channel)
 		}
 		userSeqStart += userSeqStep
@@ -516,12 +514,10 @@ func (dataGen *DataGen) genLikesController2(users []int, postScores map[int]floa
 	log.Println("In reality, the num of total likes is:", totalLikeNum)
 }
 
-func (dataGen *DataGen) genConversationsAndMessages2(wg *sync.WaitGroup, 
-	userSeqStart, userSeqEnd int, messageAssignment []int, users []int, res chan<- int) {
+func (dataGen *DataGen) genConversationsAndMessages3(wg *sync.WaitGroup, 
+	userSeqStart, userSeqEnd int, messageAssignment []int, users []int) {
 		
 	defer wg.Done()
-
-	conversationNum := 0
 
 	for seq1 := userSeqStart; seq1 < userSeqEnd; seq1++ {
 
@@ -542,31 +538,17 @@ func (dataGen *DataGen) genConversationsAndMessages2(wg *sync.WaitGroup,
 		messageNumsOfConversations := RandomNumWithProbGenerator(friendCloseIndex, messageNum)
 		// log.Println(messageNumsOfConversations)
 
+		// In Gnusocial, there is no conversation and users directly send messages to each other
 		for seq2, messageNum := range messageNumsOfConversations {
 
 			friendID := friends[seq2]
-
-			exists, cID := datagen.CheckConversationBetweenTwoUsers(dataGen.DBConn, 
-				personID, friendID)
-			
-			if exists {
-				for i := 0; i < messageNum; i++ {
-					datagen.CreateNewMessage(dataGen.DBConn, strconv.Itoa(personID), strconv.Itoa(cID))
-				}
-			} else {
 				
-				newCID := datagen.CreateNewConversation(dataGen.DBConn, strconv.Itoa(personID))
-
-				conversationNum += 1
-				
-				for i := 0; i < messageNum; i++ {
-					datagen.CreateNewMessage(dataGen.DBConn,  strconv.Itoa(personID), newCID)
-				}
+			for i := 0; i < messageNum; i++ {
+				datagen.CreateNewMessage(dataGen.DBConn, strconv.Itoa(personID), strconv.Itoa(friendID))
 			}
 		}
 	}
 
-	res <- conversationNum
 }
 
 // Pareto-distributed message scores determine the number of messages each user should have.
@@ -581,16 +563,12 @@ func (dataGen *DataGen) genConversationsAndMessages2(wg *sync.WaitGroup,
 // according to the messageAssignment
 // However, since creating a conversation is equivalent to creating a new status (message),
 // the actual number of messages <= conversation number + message number
-func (dataGen *DataGen) genConversationsAndMessagesController2(users []int) {
+func (dataGen *DataGen) genConversationsAndMessagesController3(users []int) {
 
 	messageAssignment := AssignDataToUsersByUserScores(dataGen.UserMessageScores, MESSAGE_NUM)
 
 	log.Println("Messages assignments to users:", messageAssignment)
 	log.Println("Total messages:", GetSumOfIntSlice(messageAssignment))
-
-	channel := make(chan int, THREAD_NUM)
-
-	conversationNum := 0
 
 	var wg sync.WaitGroup
 	wg.Add(THREAD_NUM)
@@ -601,48 +579,40 @@ func (dataGen *DataGen) genConversationsAndMessagesController2(users []int) {
 	for i := 0; i < THREAD_NUM; i++ {
 		if i != THREAD_NUM - 1 {
 			// Start included, end (start + step) not included
-			go dataGen.genConversationsAndMessages2(&wg, userSeqStart, userSeqStart + userSeqStep, 
-				messageAssignment, users, channel)
+			go dataGen.genConversationsAndMessages3(&wg, userSeqStart, userSeqStart + userSeqStep, 
+				messageAssignment, users)
 		} else {
 			// Start included, end (start + step) not included
-			go dataGen.genConversationsAndMessages2(&wg, userSeqStart, len(users), 
-				messageAssignment, users, channel)
+			go dataGen.genConversationsAndMessages3(&wg, userSeqStart, len(users), 
+				messageAssignment, users)
 		}
 		userSeqStart += userSeqStep
 	}
 
 	wg.Wait()
-
-	close(channel)
-
-	for res := range channel {
-		conversationNum += res
-	}
-
-	log.Println("Total conversations:", conversationNum)
 }
 
-func (dataGen *DataGen) TwitterGenData() {
+func (dataGen *DataGen) GnusocialGenData() {
 	
 	startTime := time.Now()
 
 	log.Println("--------- Start of Data Generation ---------")
 
-	users := dataGen.genUsersController2()
+	users := dataGen.genUsersController3()
 
 	// After getting the exact user number, the data generator needs
 	// to initialize UserPopularityScores, UserCommentScores, etc.
 	dataGen.InitializeWithUserNum(len(users))
 
-	postScores := dataGen.genPostsController2(users)
+	postScores := dataGen.genPostsController3(users)
 
-	dataGen.genFollowsController2(users)
+	dataGen.genFollowsController3(users)
 
-	dataGen.genCommentsController2(users, postScores)
+	dataGen.genCommentsController3(users, postScores)
 
-	dataGen.genLikesController2(users, postScores)
+	dataGen.genLikesController3(users, postScores)
 	
-	dataGen.genConversationsAndMessagesController2(users)
+	dataGen.genConversationsAndMessagesController3(users)
 
 	log.Println("--------- End of Data Generation ---------")
 
