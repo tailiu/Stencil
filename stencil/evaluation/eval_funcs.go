@@ -492,8 +492,7 @@ func ConvertInt64ArrToStringArr(data []int64) []string {
 
 }
 
-func ReadStrLinesFromLog(fileName string, 
-	changeDefaultDir ...bool) []string {
+func ReadStrLinesFromLog(fileName string, changeDefaultDir ...bool) []string {
 
 	dir := logDir
 
@@ -949,8 +948,7 @@ func refreshEvalConfigDBConnections(evalConfig *EvalConfig,
 
 }
 
-func getDBConnByName(evalConfig *EvalConfig, 
-	dbName string) *sql.DB {
+func getDBConnByName(evalConfig *EvalConfig, dbName string) *sql.DB {
 
 	var connection *sql.DB
 
@@ -1433,4 +1431,83 @@ func (eval *EvalConfig) getNextUserID(stencilDBConn *sql.DB, migrationID string)
 
 	return fmt.Sprint(data1["to_id"])
 
+}
+
+func (eval *EvalConfig) getRootUserIDsRandomly(app string, num int) []string {
+
+	var query string
+	var err error
+	var data []map[string]interface{}
+
+	switch app {
+	case "diaspora":
+		query = fmt.Sprintf("SELECT id from people ORDER BY random() LIMIT %d", num)
+		data, err = db.DataCall(eval.DiasporaDBConn, query)
+	case "mastodon":
+		query = fmt.Sprintf("SELECT id from accounts ORDER BY random() LIMIT %d", num)
+		data, err = db.DataCall(eval.MastodonDBConn, query)
+	case "twitter":
+		query = fmt.Sprintf("SELECT id from users ORDER BY random() LIMIT %d", num)
+		data, err = db.DataCall(eval.TwitterDBConn, query)
+	case "gnusocial":
+		query = fmt.Sprintf("SELECT id from profile ORDER BY random() LIMIT %d", num)
+		data, err = db.DataCall(eval.GnusocialDBConn, query)
+	default:
+		log.Fatal("Unrecognized application!")
+	}
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var res []string
+	for _, data1 := range data {
+		res = append(res, fmt.Sprint(data1["id"]))
+	}
+
+	return res
+}
+
+func setDatabasesLogFilesForExp7(startApp, size string) (string, string) {
+
+	var logFile, logFile1 string
+
+	stencilDB = "stencil_exp7_0"
+	diaspora = "diaspora_exp7_0"
+	mastodon = "mastodon_exp7_0"
+	twitter = "twitter_exp7_0"
+	gnusocial = "gnusocial_exp7_0"
+
+	stencilDB1 = "stencil_exp7_1"
+	diaspora1 = "diaspora_exp7_1"
+	mastodon1 = "mastodon_exp7_1"
+	twitter1 = "twitter_exp7_1"
+	gnusocial1 = "gnusocial_exp7_1"
+
+	switch startApp {
+	case "diaspora":
+		diaspora = "diaspora_exp7_0_" + size
+		diaspora1 = "diaspora_exp7_1_" + size
+		logFile = "dataBagsEnabled_diaspora_0"
+		logFile1 = "dataBagsNotEnabled_diaspora_0"
+	case "mastodon":
+		mastodon = "mastodon_exp7_0_" + size
+		mastodon1 = "mastodon_exp7_1_" + size
+		logFile = "dataBagsEnabled_mastodon_0"
+		logFile1 = "dataBagsNotEnabled_mastodon_0"
+	case "twitter":
+		twitter = "twitter_exp7_0_" + size
+		twitter1 = "twitter_exp7_1_" + size
+		logFile = "dataBagsEnabled_twitter_0"
+		logFile1 = "dataBagsNotEnabled_twitter_0"
+	case "gnusocial":
+		gnusocial = "gnusocial_exp7_0_" + size
+		gnusocial1 = "gnusocial_exp7_1_" + size
+		logFile = "dataBagsEnabled_gnusocial_0"
+		logFile1 = "dataBagsNotEnabled_gnusocial_0"
+	default:
+		log.Fatal("Unrecognized application!")
+	}
+	
+	return logFile, logFile1
 }

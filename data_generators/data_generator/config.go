@@ -19,24 +19,24 @@ const TWITTER = "twitter"
 const THREAD_NUM = 20
 
 // For 1K
-const USER_NUM = 1000
-const FOLLOW_NUM = 20660
-const POST_NUM = 8029
-const COMMENT_NUM = 13971
-const LIKE_NUM = 85672
-const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
-const MESSAGE_NUM = 40146
-const IMAGE_NUM = 3693
-
-// For 10K
-// const USER_NUM = 10000
-// const FOLLOW_NUM = 206600
-// const POST_NUM = 80292
-// const COMMENT_NUM = 139708
-// const LIKE_NUM = 856715
+// const USER_NUM = 1000
+// const FOLLOW_NUM = 20660
+// const POST_NUM = 8029
+// const COMMENT_NUM = 13971
+// const LIKE_NUM = 85672
 // const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
 // const MESSAGE_NUM = 40146
-// const IMAGE_NUM = 36934
+// const IMAGE_NUM = 3693
+
+// For 10K
+const USER_NUM = 10000
+const FOLLOW_NUM = 206600
+const POST_NUM = 80292
+const COMMENT_NUM = 139708
+const LIKE_NUM = 856715
+const RECIPROCAL_FOLLOW_PERCENTAGE = 0.3
+const MESSAGE_NUM = 40146
+const IMAGE_NUM = 36934
 
 // For 100K
 // const USER_NUM = 100500

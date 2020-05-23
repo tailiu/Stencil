@@ -7,7 +7,7 @@ import (
 func main() {
 
 	app := "gnusocial"
-	db := "gnusocial_1000"
+	db := "gnusocial_10000"
 
 	dataGen := data_generator.Initialize(db)
 

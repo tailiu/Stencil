@@ -109,7 +109,78 @@ func PreExp() {
 
 }
 
-func preExp7(evalConfig *EvalConfig) {
+func preExp7(evalConfig *EvalConfig, startApp string) {
+
+	query1 := `TRUNCATE identity_table, migration_registration, 
+		reference_table, resolved_references, txn_logs, id_changes,
+		evaluation, data_bags, display_flags, display_registration,
+		attribute_changes, reference_table_v2`
+
+	query2 := "SELECT truncate_tables('cow')"
+
+	query3 := `TRUNCATE TABLE account_migrations, account_deletions, 
+		ar_internal_metadata, blocks, chat_offline_messages, like_signatures, 
+		locations, invitation_codes, o_embed_caches, open_graph_caches, 
+		o_auth_access_tokens, comments, poll_participation_signatures, 
+		polls, ppid, poll_answers, schema_migrations, "references", 
+		roles, services, reports, signature_orders, tags, simple_captcha_data, 
+		user_preferences, conversation_visibilities, share_visibilities, tag_followings, 
+		posts, chat_fragments, chat_contacts, poll_participations, aspect_memberships, 
+		taggings, aspects, notification_actors, likes, notifications, contacts, pods, 
+		comment_signatures, people, authorizations, messages, aspect_visibilities, 
+		conversations, mentions, profiles, o_auth_applications, 
+		participations, users, photos CASCADE`
+
+	if err1 := db.TxnExecute1(evalConfig.StencilDBConn, query1); err1 != nil {
+		log.Fatal(err1)	
+	} else {
+		if err2 := db.TxnExecute1(evalConfig.StencilDBConn1, query1); err2 != nil {
+			log.Fatal(err2)
+		} 
+	}
+
+	if startApp != "diaspora" {
+		if err3 := db.TxnExecute1(evalConfig.DiasporaDBConn, query3); err3 != nil {
+			log.Fatal(err3)
+		} else {
+			if err4 := db.TxnExecute1(evalConfig.DiasporaDBConn1, query3); err4 != nil {
+				log.Fatal(err4)
+			}
+		}
+	}
+
+	if startApp != "mastodon" {
+		if err5 := db.TxnExecute1(evalConfig.MastodonDBConn, query2); err5 != nil {
+			log.Fatal(err5)
+		} else {
+			if err6 := db.TxnExecute1(evalConfig.MastodonDBConn1, query2); err6 != nil {
+				log.Fatal(err6)
+			}
+		}
+	}
+
+	if startApp != "twitter" {
+		if err7 := db.TxnExecute1(evalConfig.TwitterDBConn, query2); err7 != nil {
+			log.Fatal(err7)
+		} else {
+			if err8 := db.TxnExecute1(evalConfig.TwitterDBConn1, query2); err8 != nil {
+				log.Fatal(err8)
+			} 
+		}
+	}
+
+	if startApp != "gnusocial" {
+		if err9 := db.TxnExecute1(evalConfig.GnusocialDBConn, query2); err9 != nil {
+			log.Fatal(err9)
+		} else {
+			if err10 := db.TxnExecute1(evalConfig.GnusocialDBConn1, query2); err10 != nil {
+				log.Fatal(err10)
+			} 
+		}
+	}
+}
+
+func preExp9(evalConfig *EvalConfig) {
 
 	query1 := `TRUNCATE identity_table, migration_registration, 
 		reference_table, resolved_references, txn_logs, id_changes,
@@ -1747,68 +1818,52 @@ func Exp6AddIndepLoadFromLog() {
 
 func Exp7ReintegrationDataBags() {
 
-	log.Println("============================================")
+	log.Println("===========================================")
 	log.Println("Starting Exp7: Dangling Data Reintegration")
-	log.Println("============================================")
+	log.Println("===========================================")
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "gnusocial", "twitter", 
-		"diaspora", 
-		// "mastodon", "gnusocial", "twitter",
+		"diaspora", "mastodon", "gnusocial", "twitter", "diaspora", 
 	}
 	log.Println("Migration sequence:", migrationSeq)
 
-	seq := 0
-	seqStr := strconv.Itoa(seq)
-	// log.Println("Sequence:", seq)
-
 	migrationNum := 1
 	log.Println("Migration number:", migrationNum)
-	
-	// Database setup for migrations enabled databags
-	stencilDB = "stencil_exp8_" + seqStr
-	diaspora = "diaspora_1m_exp8_" + seqStr
-	mastodon = "mastodon_exp8_" + seqStr
-	twitter = "twitter_exp8_" + seqStr
-	gnusocial = "gnusocial_exp8_" + seqStr
-	logFile := "dataBagsEnabled_" + seqStr
 
-	// Database setup for migrations not enabled databags
-	stencilDB1 = "stencil_exp9_" + seqStr
-	diaspora1 = "diaspora_1m_exp9_" + seqStr
-	mastodon1 = "mastodon_exp9_" + seqStr
-	twitter1 = "twitter_exp9_" + seqStr
-	gnusocial1 = "gnusocial_exp9_" + seqStr
-	logFile1 := "dataBagsNotEnabled_" + seqStr
-
-	// edgeCounterRangeStart := 300
-	edgeCounterRangeStart := 500
-	edgeCounterRangeEnd := 1200
-	getCounterNum := 100
+	size := "1k"
+	logFile, logFile1 := setDatabasesLogFilesForExp7(migrationSeq[0], size)
 
 	evalConfig := InitializeEvalConfig(false)
 	defer closeDBConns(evalConfig)
 
-	preExp7(evalConfig)
+	preExp7(evalConfig, migrationSeq[0])
 	
-	edgeCounter := getEdgesCounterByRange(
-		evalConfig,
-		edgeCounterRangeStart, 
-		edgeCounterRangeEnd, 
-		getCounterNum,
-	)
+	userIDs := evalConfig.getRootUserIDsRandomly(migrationSeq[0], migrationNum)
 
-	log.Println(edgeCounter)
+	// // edgeCounterRangeStart := 300
+	// edgeCounterRangeStart := 500
+	// edgeCounterRangeEnd := 1200
+	// getCounterNum := 100
 
-	for j := seq * migrationNum; j < (seq + 1) * migrationNum; j++ {
+	// edgeCounter := getEdgesCounterByRange(
+	// 	evalConfig,
+	// 	edgeCounterRangeStart, 
+	// 	edgeCounterRangeEnd, 
+	// 	getCounterNum,
+	// )
+
+	// log.Println(edgeCounter)
+
+	for j := 0; j < migrationNum; j++ {
 
 		// userID := "789801"
-		userID := edgeCounter[j]["person_id"]
+		// userID := edgeCounter[j]["person_id"]
+		userID := userIDs[j]
 		userID1 := userID
 
 		log.Println("Next User:", userID)
 
-		preExp7(evalConfig)
+		preExp7(evalConfig, migrationSeq[0])
 
 		var beforeMigObjsInApp int64
 		var beforeMigObjsInApp1 int64
@@ -2147,7 +2202,7 @@ func Exp9PreserveDataLinks() {
 	evalConfig := InitializeEvalConfig(false)
 	defer closeDBConns(evalConfig)
 
-	preExp7(evalConfig)
+	preExp9(evalConfig)
 	
 	edgeCounter := getEdgesCounterByRange(
 		evalConfig,
@@ -2165,7 +2220,7 @@ func Exp9PreserveDataLinks() {
 
 		log.Println("Next User:", userID)
 
-		preExp7(evalConfig)
+		preExp9(evalConfig)
 
 		var beforeMigObjsInApp int64
 		var beforeMigObjsInApp1 int64
