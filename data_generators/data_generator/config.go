@@ -16,7 +16,7 @@ const TWITTER = "twitter"
 
 //******** Generator Config ********
 
-const THREAD_NUM = 20
+const THREAD_NUM = 10
 
 // For 1K
 // const USER_NUM = 1000

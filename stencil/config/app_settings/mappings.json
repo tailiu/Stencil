@@ -508,7 +508,6 @@
                                         "profile_id": "#REF(statuses.account_id,accounts.id)",
                                         "created": "statuses.created_at",
                                         "modified":"statuses.updated_at",
-                                        "is_local":"statuses.local",
                                         "reply_to":"#REF(statuses.in_reply_to_id,statuses.id)",
                                         "conversation":"#REF(statuses.conversation_id,conversations.id)",
                                         "repeat_of":"#REF(statuses.reblog_of_id,statuses.id)"
@@ -1824,7 +1823,6 @@
                                         "account_id": "#REF(notice.profile_id,profile.id)",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
-                                        "local":"notice.is_local",
                                         "in_reply_to_id":"#REF(notice.reply_to,notice.id,statuses)",
                                         "conversation_id":"#REF(notice.conversation,conversation.id)",
                                         "reblog_of_id":"#REF(notice.repeat_of,notice.id,statuses)",
@@ -1843,7 +1841,6 @@
                                         "account_id": "#REF(notice.profile_id,profile.id)",
                                         "created_at": "notice.created",
                                         "updated_at":"notice.modified",
-                                        "local":"notice.is_local",
                                         "in_reply_to_id":"#REF(notice.reply_to,notice.id,statuses)",
                                         "conversation_id":"#REF(notice.conversation,conversation.id)",
                                         "reblog_of_id":"#REF(notice.repeat_of,notice.id,statuses)",

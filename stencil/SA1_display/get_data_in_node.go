@@ -70,13 +70,9 @@ func (display *display) getRowsBasedOnDependency(table, col, value string) ([]ma
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-
 		return nil, common_funcs.CannotFindRemainingData
-
 	} else {
-
 		return data, nil
-
 	}
 }
 

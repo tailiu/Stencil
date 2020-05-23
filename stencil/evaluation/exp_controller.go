@@ -1823,7 +1823,8 @@ func Exp7ReintegrationDataBags() {
 	log.Println("===========================================")
 
 	migrationSeq := []string {
-		"diaspora", "mastodon", "gnusocial", "twitter", "diaspora", 
+		// "diaspora", "mastodon", "gnusocial", "twitter", "diaspora", 
+		"mastodon", "gnusocial", "twitter", "diaspora", "mastodon",
 	}
 	log.Println("Migration sequence:", migrationSeq)
 

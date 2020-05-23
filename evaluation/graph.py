@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 32})
+plt.rcParams.update({'font.size': 28})
 # everything is bold
 # plt.rcParams["font.weight"] = "bold"
 # plt.rcParams["axes.labelweight"] = "bold"
@@ -231,7 +231,8 @@ def mulPoints3(x, y, labels, xlabels, ylabels):
 
     fig, axs = plt.subplots(nrows=1, ncols=figNum)
 
-    markers = ["1", "2", '.', "x"]
+    markers = ["x", "+", '.']
+    colors = ['r', 'b', 'g']
 
     for i, ax in enumerate(axs):
         
@@ -272,7 +273,7 @@ def mulLines(x, y, labels, xlabel, ylabel):
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[2], fontsize=36, numpoints=1)
+    legend = ax.legend(loc=legendLoc[2], fontsize=35, numpoints=1)
 
     plt.show()
 

@@ -97,7 +97,7 @@ func getTagName(display *display, table string) (string, error) {
 
 	}
 
-	return "", errors.New("No Corresponding Tag Found!")
+	return "", fmt.Errorf("No corresponding tag found For the table %s!", table)
 }
 
 func (hint *HintStruct) GetMemberID(display *display) (string, error) {
@@ -117,7 +117,7 @@ func (hint *HintStruct) GetMemberID(display *display) (string, error) {
 		}
 	}
 	
-	return "", errors.New("No Corresponding Tag Found!")
+	return "", fmt.Errorf("No corresponding member id found for the table %s!", hint.Table)
 
 }
 

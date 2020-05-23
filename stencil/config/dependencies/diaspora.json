@@ -104,6 +104,17 @@
           }
        },
        {
+         "name":"mention",
+         "members":{
+            "member1":"mentions"
+         },
+         "keys":{
+            "id":"member1.id",
+            "author_id":"member1.person_id",
+            "post_id":"member1.mentions_container_id"
+         }
+      },
+       {
           "name":"notification",
           "members":{
              "member1":"notifications",
@@ -192,6 +203,21 @@
                   {
                      "tag_attr":"post_guid",
                      "depends_on_attr":"guid"
+                  }
+               ],
+               "display_setting": "parent_node_partially_displays"
+            }
+         ]
+       },
+       {
+         "tag":"mention",
+         "depends_on":[
+            {
+               "tag":"post",
+               "conditions":[
+                  {
+                     "tag_attr":"post_id",
+                     "depends_on_attr":"id"
                   }
                ],
                "display_setting": "parent_node_partially_displays"
@@ -339,6 +365,16 @@
              }
           ]
        },
+       {
+         "tag":"mention",
+         "owned_by":"root",
+         "conditions":[
+            {
+               "tag_attr":"author_id",
+               "depends_on_attr":"person_id"
+            }
+         ]
+      },
        {
           "tag":"post",
           "owned_by":"root",

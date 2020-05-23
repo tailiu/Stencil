@@ -938,6 +938,11 @@ def randomWalkLine1(apps, ylabel, labels):
 
     g.dataBagLine1(apps, percentages, labels, ylabel)
 
+# def dataBags():
+
+    
+
+
 # leftoverCDF()
 # danglingData()
 # interruptionTimeCDF()
@@ -986,10 +991,10 @@ def randomWalkLine1(apps, ylabel, labels):
 #                 ["Stencil with data bags", "Stencil without data bags"])
 
 
-
 # danglingObjsCumSum2(["Diaspora (source)", "Mastodon (destination)"])
-migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
-    ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
-    ["Deletion", "Deletion w/o validation", "Independent", "Naive"])
-# scalability(["Deletion", "Independent", "Validation"])
+# migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
+#     ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
+#     ["Deletion", "Deletion w/o validation", "Independent", "Naive"])
+scalability(["Deletion", "Independent", "Validation"])
 # dataDownTimeInPercentages(["Stencil", "Naive+"])
+# dataBags()
