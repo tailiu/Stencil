@@ -133,12 +133,14 @@ func (mThread *MigrationThreadController) CreateMigrationWorker(threadID int) Mi
 		logTxn:         &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
 		mtype:          mThread.MType,
 		visitedNodes:   VisitedNodes{},
+		visitedBags:    &VisitedBags{},
 		mThread:        mThread,
 		FTPFlag:        mThread.FTPFlag,
 		DeleteRootFlag: mThread.DeleteRootFlag,
 		Logger:         helper.CreateLogger(mThread.LoggerDebugFlag)}
 
 	mWorker.visitedNodes.Init()
+	mWorker.visitedBags.Init(mWorker.logTxn.DBconn)
 
 	if rootNode, err := mWorker.FetchUserNode("root_id", mWorker.uid); err != nil {
 		mWorker.Logger.Fatal(err)
@@ -159,9 +161,9 @@ func (mThread *MigrationThreadController) CreateMigrationWorker(threadID int) Mi
 }
 
 // CreateBagWorker : Creates and returns a new migration worker for data bags
-func (mThread *MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppID string, threadID int) MigrationWorker {
+func (mThread *MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppID string, parentWorker *MigrationWorker) MigrationWorker {
 
-	mThread.Logger.Infof("Creating a new bag worker for thread: %d | uid: %s, srcApp: %s, dstApp: %s \n", threadID, uid, srcAppID, dstAppID)
+	mThread.Logger.Infof("Creating a new bag worker for thread: %d | uid: %s, srcApp: %s, dstApp: %s \n", parentWorker.threadID, uid, srcAppID, dstAppID)
 
 	srcApp, err := db.GetAppNameByAppID(mThread.stencilDB, srcAppID)
 	if err != nil {
@@ -196,27 +198,28 @@ func (mThread *MigrationThreadController) CreateBagWorker(uid, srcAppID, dstAppI
 		}
 	}
 
-	mWorker := MigrationWorker{
-		uid:           uid,
-		SrcAppConfig:  srcAppConfig,
-		DstAppConfig:  dstAppConfig,
-		mappings:      *mappings,
-		logTxn:        &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
-		mtype:         BAGS,
-		processedBags: ProcessedBags{},
-		FTPFlag:       mThread.FTPFlag,
-		Logger:        helper.CreateLogger(mThread.LoggerDebugFlag)}
+	bagWorker := MigrationWorker{
+		uid:          uid,
+		SrcAppConfig: srcAppConfig,
+		DstAppConfig: dstAppConfig,
+		mappings:     *mappings,
+		logTxn:       &transaction.Log_txn{DBconn: db.GetDBConn(db.STENCIL_DB), Txn_id: mThread.txnID},
+		mtype:        BAGS,
+		visitedBags:  parentWorker.visitedBags,
+		FTPFlag:      mThread.FTPFlag,
+		Logger:       helper.CreateLogger(mThread.LoggerDebugFlag),
+		parentWorker: parentWorker}
 
-	mWorker.processedBags.Init()
+	bagWorker.visitedBags.InitPKs()
 
-	if mWorker.FTPFlag {
-		mWorker.FTPClient = GetFTPClient()
+	if bagWorker.FTPFlag {
+		bagWorker.FTPClient = GetFTPClient()
 	}
 
-	mThread.Logger.Infof("Bag worker created for thread: %d | uid: %s, srcApp: %s, dstApp: %s \n", threadID, uid, srcAppID, dstAppID)
+	mThread.Logger.Infof("Bag worker created for thread: %d | uid: %s, srcApp: %s, dstApp: %s \n", parentWorker.threadID, uid, srcAppID, dstAppID)
 	fmt.Print("========================================================================\n\n")
 
-	return mWorker
+	return bagWorker
 }
 
 // NewMigrationThread : Creates new migration thread

@@ -27,9 +27,13 @@ func getUID(appID string) string {
 		{
 			query = "SELECT to_id as id FROM attribute_changes it where to_app = 3 and to_member = 119 "
 		}
+	case "1":
+		{
+			query = "SELECT to_id as id FROM attribute_changes it where to_app = 1 and to_member = 19 "
+		}
 	default:
 		{
-			log.Fatal("Unknown app ", appID)
+			log.Fatal("FATAL | Unknown app: ", appID)
 		}
 	}
 	dbConn := db.GetDBConn("stencil", false)
@@ -64,12 +68,13 @@ func main() {
 
 	flag.Parse()
 
-	apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}}
+	apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}}
+	// apps := [][]string{{"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}, {"mastodon", "2"}}
 	// apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}}
 
 	totalApps := len(apps)
 
-	for i := 0; i < totalApps; i++ {
+	for i := 0; i < totalApps-1; i++ {
 
 		uid := *uidInput
 
@@ -78,13 +83,12 @@ func main() {
 		}
 
 		srcAppName, srcAppID := apps[i][0], apps[i][1]
-
-		var dstAppID, dstAppName string
-		if i == totalApps-1 {
-			dstAppName, dstAppID = apps[0][0], apps[0][1]
-		} else {
-			dstAppName, dstAppID = apps[i+1][0], apps[i+1][1]
-		}
+		dstAppName, dstAppID := apps[i+1][0], apps[i+1][1]
+		// if i == totalApps-1 {
+		// 	dstAppName, dstAppID = apps[0][0], apps[0][1]
+		// } else {``
+		// 	dstAppName, dstAppID = apps[i+1][0], apps[i+1][1]
+		// }
 
 		wg.Add(1)
 
