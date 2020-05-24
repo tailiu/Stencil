@@ -3,7 +3,10 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 28})
+plt.rcParams.update({'font.size': 35})
+
+# plt.rcParams.update({'figure.autolayout': True})
+
 # everything is bold
 # plt.rcParams["font.weight"] = "bold"
 # plt.rcParams["axes.labelweight"] = "bold"
@@ -136,6 +139,8 @@ def cumulativeGraph(dataArr, labels, xlabel, ylabel):
     # (x0,y0) are the lower left corner coordinates of the bounding box.
     legend = ax.legend(bbox_to_anchor=(1, 0.95), loc=legendLoc[1], fontsize=44)
 
+    plt.gcf().subplots_adjust(bottom=0.14)
+
     plt.show()
 
 def barGraph(x, y, xlabel, ylabel, step):
@@ -188,6 +193,8 @@ def mulPoints(x, y, labels, xlabel, ylabel):
 
     legend = ax.legend(loc=legendLoc[2], fontsize=28, numpoints=1)
     
+    plt.gcf().subplots_adjust(bottom=0.12)
+
     plt.show()
 
 def mulPoints1(x, y, labels, xlabel, ylabel):
@@ -230,7 +237,7 @@ def mulPoints3(x, y, labels, xlabels, ylabels):
     figNum = len(y)
 
     fig, axs = plt.subplots(nrows=1, ncols=figNum)
-
+    
     markers = ["x", "+", '.']
     colors = ['r', 'b', 'g']
 
@@ -258,8 +265,16 @@ def mulPoints3(x, y, labels, xlabels, ylabels):
         ax.set_xlabel(xlabels[i])
         ax.set_ylabel(ylabels[i])
 
+        chartBox = ax.get_position() 
+        if i == 0:
+            ax.set_position([chartBox.x0 * 0.72, chartBox.y0 * 1.15, chartBox.width * 1.115, chartBox.height]) 
+        if i == 1:
+            ax.set_position([chartBox.x0 * 1.05, chartBox.y0 * 1.15, chartBox.width * 1.115, chartBox.height]) 
+
         legend = ax.legend(loc=legendLoc[3], fontsize=35, numpoints=1)
     
+    # plt.gcf().subplots_adjust(bottom=0.12)
+
     plt.show()
 
 def mulLines(x, y, labels, xlabel, ylabel):
@@ -274,6 +289,8 @@ def mulLines(x, y, labels, xlabel, ylabel):
     ax.set_ylabel(ylabel)
 
     legend = ax.legend(loc=legendLoc[2], fontsize=35, numpoints=1)
+
+    plt.gcf().subplots_adjust(bottom=0.12)
 
     plt.show()
 
