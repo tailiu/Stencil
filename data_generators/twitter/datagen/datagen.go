@@ -2,13 +2,12 @@ package datagen
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 	"twitter/db"
 	"twitter/helper"
-	"strconv"
 )
 
 type Post struct {
@@ -144,16 +143,16 @@ func CreateTweetWithPhoto(dbConn *sql.DB, userID string) string {
 	photoID := helper.RandomNumber(1, 5)
 	photoName := fmt.Sprintf("%d.jpg", photoID)
 	photoPath := path + photoName
-	jsonMedia, err := json.Marshal(photoPath)
-	if err != nil {
-		fmt.Println("path: ", photoPath)
-		log.Fatal("Error while converting path to json: ", err)
-	}
+	// jsonMedia, err := json.Marshal(photoPath)
+	// if err != nil {
+	// 	fmt.Println("path: ", photoPath)
+	// 	log.Fatal("Error while converting path to json: ", err)
+	// }
 	mediaType := "photo"
 
 	sql := "INSERT INTO tweets (id, created_at, updated_at, content, user_id, tweet_media, media_type) VALUES ($1, $2, $3, $4, $5, $6, $7)"
 
-	txErr := db.RunTxWQnArgs(tx, sql, id, time.Now(), time.Now(), content, userID, jsonMedia, mediaType)
+	txErr := db.RunTxWQnArgs(tx, sql, id, time.Now(), time.Now(), content, userID, photoPath, mediaType)
 	if txErr != nil {
 		log.Fatal("Error while creating new tweets with photo: ", txErr)
 	}
@@ -195,7 +194,7 @@ func conversationParticipantsExists(dbConn *sql.DB, userID, conversationID strin
 
 	q := fmt.Sprintf(
 		`SELECT id FROM conversation_participants c1 
-		WHERE c1.user_id = %s and c1.conversation_id = %s`, 
+		WHERE c1.user_id = %s and c1.conversation_id = %s`,
 		userID, conversationID,
 	)
 
@@ -287,15 +286,15 @@ func CreateNewMessageWithPhoto(dbConn *sql.DB, userID, conversationID string) st
 	photoID := helper.RandomNumber(1, 5)
 	photoName := fmt.Sprintf("%d.jpg", photoID)
 	photoPath := path + photoName
-	jsonMedia, err := json.Marshal(photoPath)
-	if err != nil {
-		fmt.Println("path: ", photoPath)
-		log.Fatal("Error while converting path to json: ", err)
-	}
+	// jsonMedia, err := json.Marshal(photoPath)
+	// if err != nil {
+	// 	fmt.Println("path: ", photoPath)
+	// 	log.Fatal("Error while converting path to json: ", err)
+	// }
 	mediaType := "photo"
 
 	sql := "INSERT INTO messages (id, created_at, updated_at, content, conversation_id, user_id, message_media, media_type) VALUES ($1, $2, $3, $4, $5, $6)"
-	txErr := db.RunTxWQnArgs(tx, sql, id, time.Now(), time.Now(), content, conversationID, userID, jsonMedia, mediaType)
+	txErr := db.RunTxWQnArgs(tx, sql, id, time.Now(), time.Now(), content, conversationID, userID, photoPath, mediaType)
 	if txErr != nil {
 		log.Fatal("Error while creating new message: ", txErr)
 	}
@@ -310,7 +309,7 @@ func GetPostsForUser(dbConn *sql.DB, userID int) []*Post {
 	q := fmt.Sprintf(`SELECT id FROM tweets WHERE user_id = %d`, userID)
 
 	v := db.DataCall(dbConn, q)
-	
+
 	var posts []*Post
 	for _, v1 := range v {
 		pid, err := strconv.Atoi(v1["id"])
@@ -321,7 +320,7 @@ func GetPostsForUser(dbConn *sql.DB, userID int) []*Post {
 		post.Author = userID
 		post.ID = pid
 		posts = append(posts, post)
-	} 
+	}
 
 	return posts
 
@@ -335,15 +334,15 @@ func GetFollowingUsers(dbConn *sql.DB, fromUserID int) []int {
 	)
 
 	v := db.DataCall(dbConn, q)
-	
-	var result []int 
+
+	var result []int
 	for _, v1 := range v {
 		res1, err := strconv.Atoi(v1["to_user_id"])
 		if err != nil {
 			log.Fatal(err)
 		}
 		result = append(result, res1)
-	} 
+	}
 
 	return result
 
@@ -373,7 +372,7 @@ func CheckFollowed(dbConn *sql.DB, toUserID, fromUserID int) bool {
 
 	q := fmt.Sprintf(
 		`SELECT id FROM user_actions 
-		WHERE to_user_id = %d and from_user_id = %d and action_type = 'follows'`, 
+		WHERE to_user_id = %d and from_user_id = %d and action_type = 'follows'`,
 		toUserID, fromUserID,
 	)
 
@@ -393,7 +392,7 @@ func CheckConversationBetweenTwoUsers(dbConn *sql.DB, userID1, userID2 int) (boo
 
 	q := fmt.Sprintf(
 		`SELECT c1.conversation_id FROM conversation_participants c1 JOIN conversation_participants c2 ON 
-		c1.conversation_id = c2.conversation_id WHERE c1.user_id = %d and c2.user_id = %d`, 
+		c1.conversation_id = c2.conversation_id WHERE c1.user_id = %d and c2.user_id = %d`,
 		userID1, userID2,
 	)
 
@@ -407,7 +406,7 @@ func CheckConversationBetweenTwoUsers(dbConn *sql.DB, userID1, userID2 int) (boo
 		cID, err1 := strconv.Atoi(cIDStr)
 		if err1 != nil {
 			log.Fatal(err1)
-		} 
+		}
 		return true, cID
 	} else {
 		return false, -1
@@ -424,15 +423,15 @@ func GetRealFriendsOfUser(dbConn *sql.DB, fromUserID int) []int {
 	)
 
 	v := db.DataCall(dbConn, q)
-	
-	var result []int 
+
+	var result []int
 	for _, v1 := range v {
 		res1, err := strconv.Atoi(v1["to_user_id"])
 		if err != nil {
 			log.Fatal(err)
 		}
 		result = append(result, res1)
-	} 
+	}
 
 	return result
 
@@ -446,15 +445,15 @@ func GetFollowedUsers(dbConn *sql.DB, toUserID int) []int {
 	)
 
 	v := db.DataCall(dbConn, q)
-	
-	var result []int 
+
+	var result []int
 	for _, v1 := range v {
 		res1, err := strconv.Atoi(v1["from_user_id"])
 		if err != nil {
 			log.Fatal(err)
 		}
 		result = append(result, res1)
-	} 
+	}
 
 	return result
 
