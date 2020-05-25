@@ -20,17 +20,14 @@ func NeedToResolveReference(refResolutionConfig *RefResolution,
 			// When migrating from Diaspora to Mastodon:
 			// there is no mapping to stream_entries.activity_id.
 			log.Println(err)
-	
 		} else {
 			if exists {
 				return true
 			}
 		}
-
 	}
 
 	return false
-	
 }
 
 func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolution, 
@@ -46,7 +43,6 @@ func NeedToResolveReferenceOnlyBasedOnSrc(refResolutionConfig *RefResolution,
 		log.Println(err)
 
 		return false
-
 	} else {
 		if exists {
 			return true
@@ -79,23 +75,19 @@ func ReferenceResolvedConsideringMigrationID(refResolutionConfig *RefResolution,
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-
 		return ""
-
 	} else {
-
 		return fmt.Sprint(data["value"])
-
 	}
 }
 
 func ReferenceResolved(refResolutionConfig *RefResolution, 
 	member, reference, id string) string {
 
-	query := fmt.Sprintf(`select value from resolved_references where app = %s 
+	query := fmt.Sprintf(
+		`select value from resolved_references where app = %s 
 		and member = %s and reference = '%s' and id = %s`,
-		refResolutionConfig.appID, 
-		member, reference, id,
+		refResolutionConfig.appID, member, reference, id,
 	)
 	
 	log.Println(query)
@@ -107,13 +99,9 @@ func ReferenceResolved(refResolutionConfig *RefResolution,
 
 	// fmt.Println(data)
 	if len(data) == 0 {
-
 		return ""
-
 	} else {
-
 		return fmt.Sprint(data["value"])
-
 	}
 }
 
@@ -143,7 +131,6 @@ func GetUpdatedAttributes(refResolutionConfig *RefResolution,
 	}
 
 	return updatedAttrs
-	
 }
 
 func getUpdateIDInDisplayFlagsQuery(refResolutionConfig *RefResolution, 
@@ -159,5 +146,4 @@ func getUpdateIDInDisplayFlagsQuery(refResolutionConfig *RefResolution,
 	)
 
 	return query
-
 }

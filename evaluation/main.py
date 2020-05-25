@@ -35,7 +35,6 @@ dataBagsNotEnabledFile = "dataBagsNotEnabled"
 # dataBagsEnabledFile = "dataBagsEnabled1"
 # dataBagsNotEnabledFile = "dataBagsNotEnabled1"
 
-dataBags = "dataBags"
 cumNum = 1000
 apps = ['Diaspora','Mastodon', 'Twitter', 'GNU Social', 'Diaspora']
 
@@ -61,7 +60,9 @@ def readFile2(filePath):
 def readFile3(filePath):
     data = []
     with open(filePath) as f1:
-        for _, line in enumerate(f1):
+        for i, line in enumerate(f1):
+            # if i >= 30:
+            #     break
             if line == "\n":
                 continue
             obj = pd.convertToJSON(line.rstrip())
@@ -938,10 +939,46 @@ def randomWalkLine1(apps, ylabel, labels):
 
     g.dataBagLine1(apps, percentages, labels, ylabel)
 
-# def dataBags():
+def dataBags(apps, ylabel, labels):
 
+    data1 = []
+    data2 = []
+    for app in apps:
+        data1.append(readFile3(logDir + dataBagsEnabledFile + "_" + app.lower()))
+        data2.append(readFile3(logDir + dataBagsNotEnabledFile + "_" + app.lower()))
+
+    appObjs1 = []
+    appObjs2 = []
+    for data in data1:
+        appObjs1.append(getDataByKey(data, "appObjs"))
+    for data in data2:
+        appObjs2.append(getDataByKey(data, "appObjs"))
     
+    appObjsEnabledBefore = []
+    appObjsEnabledAfter = []
+    for data in appObjs1:
+        appObjsEnabledBefore.append(addData(data, 0, 5))
+    for data in appObjs1:
+        appObjsEnabledAfter.append(addData(data, 4, 5))
+    
+    appObjsUnenabledBefore = []
+    appObjsUnenabledAfter = []
+    for data in appObjs2:
+        appObjsUnenabledBefore.append(addData(data, 0, 5))
+    for data in appObjs2:
+        appObjsUnenabledAfter.append(addData(data, 4, 5))
 
+    enabledPercentages = []
+    unenabledPercentages = []
+    for i in range(len(apps)):
+        enabledPercentages.append(float(appObjsEnabledAfter[i])/float(appObjsEnabledBefore[i]) * 100.0)
+        unenabledPercentages.append(float(appObjsUnenabledAfter[i])/float(appObjsUnenabledBefore[i]) * 100.0)
+    
+    print enabledPercentages
+    print unenabledPercentages
+
+    percentages = [enabledPercentages, unenabledPercentages]
+    g.dataBagBar(percentages, labels, apps, ylabel)
 
 # leftoverCDF()
 # danglingData()
@@ -995,6 +1032,8 @@ def randomWalkLine1(apps, ylabel, labels):
 # migrationRate2(["SA1Size", "SA1WDSize", "SA1IndepSize", "naiveSize"], 
 #     ["SA1Time", "SA1WDTime", "SA1IndepTime", "naiveTime"], 
 #     ["Deletion", "Deletion w/o validation", "Independent", "Naive"])
-scalability(["Deletion", "Independent", "Validation"])
+# scalability(["Deletion", "Independent", "Validation"])
 # dataDownTimeInPercentages(["Stencil", "Naive+"])
-# dataBags()
+dataBags(["Diaspora", "Mastodon", "Gnusocial", "Twitter"],
+        'Percentage of objects back',
+        ["Data bags", "Without data bags"])
