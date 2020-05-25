@@ -35,7 +35,9 @@
                 "reblog":"member1.reblog_of_id",
                 "account":"member1.account_id",
                 "conversation_id":"member1.conversation_id",
-                "activity_id": "member4.activity_id"
+                "mention_account":"member3.account_id",
+                "activity_id": "member4.activity_id",
+                "stream_account":"member4.account_id"
             },
             "inner_dependencies":[
                 {
@@ -139,9 +141,31 @@
                     ],
                     "display_existence": "reply",
                     "display_setting": "parent_node_not_displays_with_check"
+                },
+                {
+                    "tag": "root",
+                    "as": "r1",
+                    "conditions": [
+                        {   
+                            "tag_attr": "stream_account",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
+                },
+                {
+                    "tag": "root",
+                    "as": "r2",
+                    "conditions": [
+                        {   
+                            "tag_attr": "mention_account",
+                            "depends_on_attr": "id"
+                        }
+                    ],
+                    "display_setting": "parent_node_partially_displays"
                 }
             ],
-            "combined_display_setting":"conversations and S1 and S2"
+            "combined_display_setting":"conversations and S1 and S2 or r1 or r2"
         },
         {
             "tag": "media_attachments",
