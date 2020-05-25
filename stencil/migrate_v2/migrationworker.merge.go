@@ -40,6 +40,7 @@ func (mWorker *MigrationWorker) FetchDataFromBags(bagManager *BagManager, mmd *M
 				if mapping, found := mWorker.FetchMappingsForBag(attrRow.FromAppName, attrRow.FromAppID, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, attrRow.FromMember, dstMemberName); found {
 					mWorker.Logger.Tracef("Mapping found | %s(%s) : %s -> %s(%s) : %s \n", attrRow.FromAppName, attrRow.FromAppID, attrRow.FromMember, mWorker.DstAppConfig.AppName, mWorker.DstAppConfig.AppID, dstMemberName)
 					mWorker.visitedBags.MarkAsVisited(bag)
+					mWorker.Logger.Tracef("MarkAsVisited Bag | ID: %v | PK: %v | App: %v | Member: %v\nBag Data | %v\n", bag.ID, bag.PK, bag.AppID, bag.MemberID, bag.Data)
 					for _, toTable := range mapping.ToTables {
 						if !strings.EqualFold(toTable.Table, mmd.ToMember) {
 							continue

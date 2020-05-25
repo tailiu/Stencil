@@ -45,6 +45,34 @@ func (vBags *VisitedBags) IsVisited(bag *DBBag) bool {
 	return true
 }
 
+func (vBags *VisitedBags) IsAnyMemberVisited(bagNode *DependencyNode, appID string) bool {
+	if _, ok := vBags.Bags[appID]; !ok {
+		return false
+	}
+	if memberIDs, err := bagNode.Tag.MemberIDs(vBags.DBConn, appID); err == nil {
+		for memberName, memberID := range memberIDs {
+			fmt.Println("@vBags.IsAnyMemberVisited | Checking | ", memberName, memberID)
+			if _, ok := vBags.Bags[appID][memberID]; ok {
+				idCol := fmt.Sprintf("%s.id", memberName)
+				if _, ok := bagNode.Data[idCol]; ok {
+					srcID := fmt.Sprint(bagNode.Data[idCol])
+					if _, ok := vBags.Bags[appID][memberID][srcID]; ok {
+						log.Printf("Bag visited previously | App: %s - Member: %s (%s) - ID: %s \n", appID, memberName, memberID, srcID)
+						return true
+					}
+				} else {
+					log.Println("@vBags.IsAnyMemberVisited | ", idCol, " NOT PRESENT IN NODE DATA")
+					log.Println(bagNode.Data)
+				}
+			}
+			fmt.Println("@vBags.IsAnyMemberVisited | Not visited | ", memberName, memberID)
+		}
+	} else {
+		log.Fatal("@vBags.IsAnyMemberVisited: ", err)
+	}
+	return false
+}
+
 func (vBags *VisitedBags) MarkAsVisited(bag *DBBag) {
 
 	if _, ok := vBags.Bags[bag.AppID]; !ok {

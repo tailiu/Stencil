@@ -68,8 +68,8 @@ func main() {
 
 	flag.Parse()
 
-	// apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}}
-	apps := [][]string{{"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}, {"mastodon", "2"}}
+	apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}}
+	// apps := [][]string{{"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}, {"mastodon", "2"}}
 	// apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}}
 
 	totalApps := len(apps)
@@ -84,11 +84,6 @@ func main() {
 
 		srcAppName, srcAppID := apps[i][0], apps[i][1]
 		dstAppName, dstAppID := apps[i+1][0], apps[i+1][1]
-		// if i == totalApps-1 {
-		// 	dstAppName, dstAppID = apps[0][0], apps[0][1]
-		// } else {``
-		// 	dstAppName, dstAppID = apps[i+1][0], apps[i+1][1]
-		// }
 
 		wg.Add(1)
 

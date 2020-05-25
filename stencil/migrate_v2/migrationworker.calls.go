@@ -149,6 +149,11 @@ func (mWorker *MigrationWorker) CallBagsMigration(userID, bagAppID string, threa
 
 				bagWorker.Logger.Infof("Processing Bag | %s | ID: %v | PK: %v \n Data | %v \n", bagStruct.Node.Tag.Name, bagStruct.ID, bagStruct.PK, bagStruct.Node.Data)
 
+				if bagWorker.visitedBags.IsAnyMemberVisited(bagStruct.Node, bagStruct.AppID) {
+					bagWorker.Logger.Infof("Bag already visited!")
+					continue
+				}
+
 				if err := bagWorker.InitTransactions(); err != nil {
 					return err
 				}
