@@ -68,7 +68,8 @@ func main() {
 
 	flag.Parse()
 
-	apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}}
+	apps := [][]string{{"twitter", "3"}, {"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}}
+	// apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}}
 	// apps := [][]string{{"mastodon", "2"}, {"gnusocial", "4"}, {"twitter", "3"}, {"diaspora", "1"}, {"mastodon", "2"}}
 	// apps := [][]string{{"diaspora", "1"}, {"mastodon", "2"}}
 

@@ -128,34 +128,31 @@ func (mWorker *MigrationWorker) SendMemberToBag(node *DependencyNode, member, ow
 		bagData := mWorker.GetMemberDataFromNode(member, node.Data)
 		if len(bagData) > 0 {
 			if srcID, ok := node.Data[member+".id"]; ok && srcID != nil {
-				if jsonData, err := json.Marshal(bagData); err == nil {
-					if err := db.CreateNewBag(mWorker.tx.StencilTx, mWorker.SrcAppConfig.AppID, memberID, srcID, ownerID, fmt.Sprint(mWorker.logTxn.Txn_id), jsonData); err != nil {
-						fmt.Println(mWorker.SrcAppConfig.AppName, member, srcID, ownerID)
-						fmt.Println(bagData)
-						mWorker.Logger.Fatal("@SendMemberToBag: error in creating bag! ", err)
-						return err
-					} else {
-						mWorker.Logger.Infof("Bag Created for Member '%s' with ID '%v' \nData | %v", member, srcID, bagData)
-					}
-					if mWorker.mtype == BAGS {
-
-					} else {
-						if derr := db.ReallyDeleteRowFromAppDB(mWorker.tx.SrcTx, member, srcID); derr != nil {
-							fmt.Println("@SendMemberToBag > DeleteRowFromAppDB")
-							mWorker.Logger.Fatal(derr)
-							return derr
+				if !bagData.IsEmptyExcept() {
+					if jsonData, err := json.Marshal(bagData); err == nil {
+						if err := db.CreateNewBag(mWorker.tx.StencilTx, mWorker.SrcAppConfig.AppID, memberID, srcID, ownerID, fmt.Sprint(mWorker.logTxn.Txn_id), jsonData); err != nil {
+							fmt.Println(mWorker.SrcAppConfig.AppName, member, srcID, ownerID)
+							fmt.Println(bagData)
+							mWorker.Logger.Fatal("@SendMemberToBag: error in creating bag! ", err)
+							return err
+						} else {
+							mWorker.Logger.Infof("Bag Created for Member '%s' with ID '%v' \nData | %v", member, srcID, bagData)
 						}
+					} else {
+						fmt.Println(bagData)
+						mWorker.Logger.Fatal("@SendMemberToBag: unable to convert bag data to JSON ", err)
+						return err
 					}
-				} else {
-					fmt.Println(bagData)
-					mWorker.Logger.Fatal("@SendMemberToBag: unable to convert bag data to JSON ", err)
-					return err
+				}
+				if mWorker.mtype != BAGS {
+					if derr := db.ReallyDeleteRowFromAppDB(mWorker.tx.SrcTx, member, srcID); derr != nil {
+						fmt.Println("@SendMemberToBag > DeleteRowFromAppDB")
+						mWorker.Logger.Fatal(derr)
+						return derr
+					}
 				}
 			} else {
-				// fmt.Println(node.Data)
-				// fmt.Println(node.SQL)
 				mWorker.Logger.Warn("@SendMemberToBag: '", member, "' doesn't contain id! ", srcID)
-				// return err
 			}
 		}
 	}
