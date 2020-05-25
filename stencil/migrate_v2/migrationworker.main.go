@@ -1023,7 +1023,7 @@ func (mWorker *MigrationWorker) GetMemberDataFromNode(member string, nodeData Da
 		colMember := colTokens[0]
 		// colAttr := colTokens[1]
 		if !strings.Contains(col, ".display_flag") && strings.Contains(colMember, member) && val != nil {
-			memberData[col] = val
+			memberData[col] = helper.ConvertIntFloatToString(val)
 		}
 	}
 	return memberData

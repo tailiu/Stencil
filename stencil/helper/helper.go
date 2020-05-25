@@ -191,6 +191,16 @@ func ConvertScientificNotationToString(val interface{}) string {
 	return fmt.Sprint(val)
 }
 
+func ConvertIntFloatToString(val interface{}) interface{} {
+	if valInt, ok := val.(int64); ok {
+		return fmt.Sprint(valInt)
+	} else if valFloat, ok := val.(float64); ok {
+		valInt := int64(math.Ceil(valFloat))
+		return fmt.Sprint(valInt)
+	}
+	return val
+}
+
 func CreateLogger(debug bool) *logg.Logger {
 	logger := logg.New(os.Stderr)
 

@@ -11,22 +11,22 @@ def runQueries(dbname):
 
     query_set = {
         "mastodon": [
-            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('mastodon_test', 'mastodon_template') and pid <> pg_backend_pid();",
+            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('mastodon_test', 'mastodon_1000') and pid <> pg_backend_pid();",
             "drop database mastodon_test;",
-            "create database mastodon_test template mastodon_template owner cow;",],
+            "create database mastodon_test template mastodon_1000 owner cow;",],
         "twitter":[
-            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('twitter_template', 'twitter_test') and pid <> pg_backend_pid();",
+            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('twitter_1000', 'twitter_test') and pid <> pg_backend_pid();",
             "drop database twitter_test;",
-            "create database twitter_test with template twitter_template owner cow;",],
+            "create database twitter_test with template twitter_1000 owner cow;",],
         "gnusocial":[
-            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('gnusocial_test', 'gnusocial_template') and pid <> pg_backend_pid();",
+            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('gnusocial_test', 'gnusocial_1000') and pid <> pg_backend_pid();",
             "drop database gnusocial_test;",
-            "create database gnusocial_test with template gnusocial_template owner cow;",],
+            "create database gnusocial_test with template gnusocial_1000 owner cow;",],
         "diaspora":[
             "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('diaspora_test') and pid <> pg_backend_pid(); ",
             "drop database diaspora_test; ",
-            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('diaspora_100000') and pid <> pg_backend_pid();",
-            "create database diaspora_test with template diaspora_100000 owner cow;"],
+            "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname in ('diaspora_1000') and pid <> pg_backend_pid();",
+            "create database diaspora_test with template diaspora_1000 owner cow;"],
         "stencil": [
             "truncate table data_bags CASCADE; truncate table date_test CASCADE; truncate table deletion_hold CASCADE; truncate table display_flags CASCADE; truncate table display_registration CASCADE; truncate table error_log CASCADE; truncate table evaluation CASCADE; truncate table identity_table CASCADE; truncate table attribute_changes CASCADE; truncate table migration_registration CASCADE; truncate table reference_table CASCADE; truncate table reference_table_v2 CASCADE; truncate table resolved_references CASCADE; truncate table txn_logs CASCADE; truncate table user_table CASCADE;"]
     }
