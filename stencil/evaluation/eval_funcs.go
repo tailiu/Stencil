@@ -1232,9 +1232,7 @@ func AlterTableColumnsAddIDInt8IfNotExists(dbConn *sql.DB) {
 		}
 
 		log.Println("Finish Checking:", table)
-
 	}
-
 }
 
 func GetTablesContainingCol(dbConn *sql.DB, col string) {
@@ -1294,9 +1292,28 @@ func DropForeignKeyConstraints(dbConn *sql.DB) {
 		if err2 != nil {
 			log.Fatal(err2)
 		}
-
 	}
+}
 
+func DropNotNullConstraints(dbConn *sql.DB) {
+
+	tables := getAllTablesOfDB(dbConn)
+
+	for _, table := range tables {
+
+		if table == "user" || table == "references" ||
+		   table == "signature_orders" || table == "chat_offline_messages" {
+			continue
+		}
+
+		query := fmt.Sprintf(`SELECT dropNull('%s')`, table)
+		log.Println(query)
+
+		err := db.TxnExecute1(dbConn, query)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func CreateDagCounter(dbConn *sql.DB, tableName string) {
@@ -1488,26 +1505,27 @@ func setDatabasesLogFilesForExp7(startApp, size string) (string, string) {
 	case "diaspora":
 		diaspora = "diaspora_exp7_0_" + size
 		diaspora1 = "diaspora_exp7_1_" + size
-		logFile = "dataBagsEnabled_diaspora_0"
-		logFile1 = "dataBagsNotEnabled_diaspora_0"
+		logFile = "dataBagsEnabled_diaspora"
+		logFile1 = "dataBagsNotEnabled_diaspora"
 	case "mastodon":
 		mastodon = "mastodon_exp7_0_" + size
 		mastodon1 = "mastodon_exp7_1_" + size
-		logFile = "dataBagsEnabled_mastodon_0"
-		logFile1 = "dataBagsNotEnabled_mastodon_0"
+		logFile = "dataBagsEnabled_mastodon"
+		logFile1 = "dataBagsNotEnabled_mastodon"
 	case "twitter":
 		twitter = "twitter_exp7_0_" + size
 		twitter1 = "twitter_exp7_1_" + size
-		logFile = "dataBagsEnabled_twitter_0"
-		logFile1 = "dataBagsNotEnabled_twitter_0"
+		logFile = "dataBagsEnabled_twitter"
+		logFile1 = "dataBagsNotEnabled_twitter"
 	case "gnusocial":
 		gnusocial = "gnusocial_exp7_0_" + size
 		gnusocial1 = "gnusocial_exp7_1_" + size
-		logFile = "dataBagsEnabled_gnusocial_0"
-		logFile1 = "dataBagsNotEnabled_gnusocial_0"
+		logFile = "dataBagsEnabled_gnusocial"
+		logFile1 = "dataBagsNotEnabled_gnusocial"
 	default:
 		log.Fatal("Unrecognized application!")
 	}
 	
 	return logFile, logFile1
 }
+

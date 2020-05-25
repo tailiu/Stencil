@@ -392,7 +392,7 @@ def dataBagBar(data, labels, apps, ylabel):
     ax.grid(True)
     ax.set_ylabel(ylabel)
 
-    legend = ax.legend(loc=legendLoc[2], fontsize=legendFontSize[3], numpoints=1)
+    legend = ax.legend(loc=legendLoc[1], fontsize=28, numpoints=1)
 
     plt.show()
 

@@ -14,7 +14,7 @@ func (display *display) checkReferenceIndeedResolved(table, col,
 	// Note that if we first assume that it has not been resolved and get data using 
 	// prevID, then we could get wrong results
 	data, err := display.getRowsBasedOnDependency(table, col, value)
-	
+
 	// This could happen when table1 and col1 have been resolved
 	if err == nil {
 
@@ -22,6 +22,9 @@ func (display *display) checkReferenceIndeedResolved(table, col,
 		
 		// Now we have not encountered data1 with more than one piece of data
 		for _, data1 := range data {
+
+			log.Println("Check one data resolved or not")
+			log.Println(data1)
 
 			resolvedVal := display.rr.ReferenceResolved(tableID, colID, fmt.Sprint(data1["id"]))
 			

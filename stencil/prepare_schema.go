@@ -193,6 +193,28 @@ func test14() {
 
 }
 
+func test15() {
+
+	dbs := []string{
+		"diaspora_1000", "diaspora_10000", "diaspora_100000", "diaspora_1000000",
+		"diaspora_exp7_0", "diaspora_exp7_1", "diaspora_exp7_0_1k", "diaspora_exp7_1_1k",
+		"gnusocial_1000", "gnusocial_10000", 
+		"gnusocial_exp7_0", "gnusocial_exp7_1", "gnusocial_exp7_0_1k", "gnusocial_exp7_1_1k",
+		"mastodon_1000", "mastodon_10000", 
+		"mastodon_exp7_0", "mastodon_exp7_1", "mastodon_exp7_0_1k", "mastodon_exp7_1_1k",
+		"twitter_1000", "twitter_10000", 
+		"twitter_exp7_0", "twitter_exp7_1", "twitter_exp7_0_1k", "twitter_exp7_1_1k",
+	}
+
+	isBladeServer := false
+
+	for _, db1 := range dbs {
+		dbConn := db.GetDBConn(db1, isBladeServer)
+		defer dbConn.Close()
+		evaluation.DropNotNullConstraints(dbConn)
+	}
+}
+
 func main() {
 
 	// test1()
@@ -215,11 +237,14 @@ func main() {
 
 	// test10()
 
-	test11()
+	// test11()
 
 	// test12()
 	
 	// test13()
 
 	// test14()
+
+	test15()
+
 }

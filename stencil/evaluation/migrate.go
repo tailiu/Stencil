@@ -103,6 +103,8 @@ func migrateUsersInSeqOfApps(evalConfig *EvalConfig, stencilDBConnName string,
 		case 0:
 			enableBags = arg
 		case 1:
+			enableDisplay = arg
+		case 2:
 			resolveRefs = arg
 		default:
 			log.Fatal(`The input args do not satisfy requirements!`)

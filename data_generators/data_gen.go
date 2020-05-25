@@ -6,8 +6,8 @@ import (
 
 func main() {
 
-	app := "twitter"
-	db := "twitter_10000"
+	app := "mastodon"
+	db := "mastodon_10000"
 
 	dataGen := data_generator.Initialize(db)
 
