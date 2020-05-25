@@ -1823,20 +1823,21 @@ func Exp7ReintegrationDataBags() {
 	log.Println("===========================================")
 
 	migrationSeqs := [][]string {
-		[]string{"diaspora", "mastodon", "gnusocial", "twitter", "diaspora"}, 
+		// []string{"diaspora", "mastodon", "gnusocial", "twitter", "diaspora"}, 
 		[]string{"mastodon", "gnusocial", "twitter", "diaspora", "mastodon"},
-		[]string{"twitter", "diaspora", "mastodon", "gnusocial", "twitter"},
-		[]string{"gnusocial", "twitter", "diaspora", "mastodon", "gnusocial"},
+		// []string{"twitter", "diaspora", "mastodon", "gnusocial", "twitter"},
+		// []string{"gnusocial", "twitter", "diaspora", "mastodon", "gnusocial"},
 	}
 
-	migrationNum := 30
+	migrationNum := 1
 	
 	size := "1k"
 
 	for k, migrationSeq := range migrationSeqs {
 
+		progress := fmt.Sprintf("%d/%d", k + 1, len(migrationSeqs))
 		log.Println("***************************")
-		log.Println(k, "- Migration sequence:", migrationSeq)
+		log.Println(progress, "- Current migration sequence:", migrationSeq)
 		log.Println("Migration number:", migrationNum)
 		log.Println("***************************")
 

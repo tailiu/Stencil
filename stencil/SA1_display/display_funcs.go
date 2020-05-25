@@ -314,7 +314,7 @@ func getAppTableNameTableIDPairs(stencilDBConn *sql.DB,
 
 }
 
-func (display *display) isDataMigratedAndAlreadyDisplayed(dataHint *HintStruct) bool {
+func (display *display) isMigratedDataValidated(dataHint *HintStruct) bool {
 
 	query := fmt.Sprintf(
 		`SELECT * FROM display_flags WHERE

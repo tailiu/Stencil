@@ -84,8 +84,8 @@ func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct,
 	// This is an optimization to avoid checking alreday checked and displayed data
 	// since this is the only the first call, there is no need to proceed to check the 
 	// completeness of a node
-	if display.isDataMigratedAndAlreadyDisplayed(oneMigratedData) && firstCall {
-		log.Println("This data has already been checked and displayed and it is also the first call in a recursion")
+	if display.isMigratedDataValidated(oneMigratedData) && firstCall {
+		log.Println("This data has already been validated (displayed or put in bags), and it is also the first call in a recursion")
 		return common_funcs.DataAlreadyDisplayed
 	}
 
@@ -186,22 +186,17 @@ func (display *display) checkDisplayOneMigratedData(oneMigratedData *HintStruct,
 						dataInOwnerNode)
 					
 					if len(displayedDataInOwnerNode) != 0 {
-
 						err6 := display.Display(notDisplayedDataInOwnerNode)
 						if err6 != nil {
 							log.Fatal(err6)
 						}
-
 					}
-
 				}
 
 				// If based on the ownership display settings this node is allowed to be displayed,
 				// then continue to check dependencies.
 				// Otherwise, no data in the node can be displayed.
-				if displayResultBasedOnOwnership := common_funcs.CheckOwnershipCondition(
-					dataOwnershipSpec.Display_setting, err13); 
-					!displayResultBasedOnOwnership {
+				if displayResultBasedOnOwnership := common_funcs.CheckOwnershipCondition(dataOwnershipSpec.Display_setting, err13); !displayResultBasedOnOwnership {
 
 					log.Println(`Ownership display settings are not satisfied, 
 						so this node cannot be displayed`)

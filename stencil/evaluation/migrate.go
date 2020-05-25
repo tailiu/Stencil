@@ -96,7 +96,7 @@ func migrateUsersInSeqOfApps(evalConfig *EvalConfig, stencilDBConnName string,
 	migrationID, userID string, args ...bool) (string, string) {
 
 	enableDisplay, displayInFirstPhase, markAsDelete, useBladeServerAsDst, enableBags, enableFTP, resolveRefs := 
-		true, true, false, false, true, false, true
+		true, false, false, false, true, false, true
 	
 	for i, arg := range args {
 		switch i {

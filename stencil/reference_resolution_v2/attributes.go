@@ -153,6 +153,8 @@ func (rr *RefResolution) getRowsFromAttrChangesTableByFromUsingID(attr *Attribut
 		attr.app, attr.member, attr.attrName, attr.id,
 	)
 
+	// log.Println(query)
+
 	data, err := db.DataCall(rr.stencilDBConn, query)
 	if err != nil {
 		log.Fatal(err)
@@ -174,7 +176,7 @@ func (rr *RefResolution) forwardTraverseAttrChangesTable(attr, orgAttr *Attribut
 		attrRows = rr.getRowsFromAttrChangesTableByFromByAttrVal(attr)
 	}
 	
-	// log.Println(IDRows)
+	// log.Println(attrRows)
 
 	for _, attrRow := range attrRows {
 

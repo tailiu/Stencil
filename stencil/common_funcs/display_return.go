@@ -42,17 +42,11 @@ func CheckOwnershipCondition(displaySettingInOwnership string, err error) bool {
 	// 2. parent_node_partially_displays means that data can be displayed 
 	//		when the ownership node is partially displayed.
 	// err is nil, meaning that the ownership node is complete
-	if (displaySettingInOwnership == "" && err == nil) || 
-		(displaySettingInOwnership == "parent_node_partially_displays" &&
-		 err == NodeIncomplete) {
-
+	if err == nil || (displaySettingInOwnership == "parent_node_partially_displays" && err == NodeIncomplete) {
 		return true
-
 	} else {
-
 		return false
 	}
-
 }
 
 func ReturnDisplayConditionWhenCannotGetDataFromParentNode(displaySetting string, 
