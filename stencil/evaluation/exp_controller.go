@@ -1824,8 +1824,8 @@ func Exp7ReintegrationDataBags() {
 
 	migrationSeqs := [][]string {
 		// []string{"diaspora", "mastodon", "gnusocial", "twitter", "diaspora"}, 
-		[]string{"mastodon", "gnusocial", "twitter", "diaspora", "mastodon"},
-		// []string{"twitter", "diaspora", "mastodon", "gnusocial", "twitter"},
+		// []string{"mastodon", "gnusocial", "twitter", "diaspora", "mastodon"},
+		[]string{"twitter", "diaspora", "mastodon", "gnusocial", "twitter"},
 		// []string{"gnusocial", "twitter", "diaspora", "mastodon", "gnusocial"},
 	}
 
