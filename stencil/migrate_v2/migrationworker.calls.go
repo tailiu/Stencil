@@ -120,20 +120,32 @@ func (mWorker *MigrationWorker) CallBagsMigration(userID, bagAppID string, threa
 		fmt.Println("\n\n========================================================================")
 		mWorker.Logger.Infof("%s | User: '%s' | App: '%s' | Bags Count: '%v' \n", color.LightMagenta.Render("Starting Bag Migration"), userID, bagAppID, len(bagRows))
 
-		bagWorker := mWorker.mThread.CreateBagWorker(userID, bagAppID, mWorker.DstAppConfig.AppID, threadID)
+		bagWorker := mWorker.mThread.CreateBagWorker(userID, bagAppID, mWorker.DstAppConfig.AppID, mWorker)
 		defer bagWorker.CloseDBConns()
 
 		for _, bagRow := range bagRows {
 
+			dbBag := &DBBag{
+				PK:       fmt.Sprint(bagRow["pk"]),
+				ID:       fmt.Sprint(bagRow["id"]),
+				UID:      fmt.Sprint(bagRow["user_id"]),
+				AppID:    fmt.Sprint(bagRow["app"]),
+				MemberID: fmt.Sprint(bagRow["member"]),
+				TxnID:    fmt.Sprint(bagRow["migration_id"]),
+			}
+
 			fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-			if bagWorker.processedBags.Exists(fmt.Sprint(bagRow["pk"])) {
-				mWorker.Logger.Infof("Bag Already Processed | ID: %v | PK: %v \n", bagRow["id"], bagRow["pk"])
+			if bagWorker.visitedBags.PKExists(dbBag.PK) {
+				mWorker.Logger.Infof("@CallBagsMigration: Bag Already Processed | ID: %v | PK: %v \n", dbBag.ID, dbBag.PK)
+				continue
+			} else if bagWorker.visitedBags.IsVisited(dbBag) {
+				mWorker.Logger.Infof("@CallBagsMigration: Bag already visited | ID: %v | PK: %v | App: %v | Member: %v\nBag Data | %v\n", dbBag.ID, dbBag.PK, dbBag.AppID, dbBag.MemberID, dbBag.Data)
 				continue
 			}
 
 			if bagStruct, err := bagWorker.CreateBagStruct(bagRow); err == nil {
 
-				bagWorker.processedBags.Update(bagStruct.Node)
+				bagWorker.visitedBags.UpdatePKs(bagStruct.Node)
 
 				bagWorker.Logger.Infof("Processing Bag | %s | ID: %v | PK: %v \n Data | %v \n", bagStruct.Node.Tag.Name, bagStruct.ID, bagStruct.PK, bagStruct.Node.Data)
 

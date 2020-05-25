@@ -157,11 +157,12 @@ type MappedMemberValue struct {
 }
 
 type MigrationWorker struct {
-	uid            string
-	mtype          string
-	threadID       int
-	visitedNodes   VisitedNodes
-	processedBags  ProcessedBags
+	uid          string
+	mtype        string
+	threadID     int
+	visitedNodes VisitedNodes
+	visitedBags  *VisitedBags
+	// processedBags  ProcessedBags
 	refCreator     ReferenceCreator
 	SrcAppConfig   config.AppConfig
 	DstAppConfig   config.AppConfig
@@ -173,6 +174,7 @@ type MigrationWorker struct {
 	Logger         *logg.Logger
 	Size           int
 	mThread        *MigrationThreadController
+	parentWorker   *MigrationWorker
 	FTPFlag        bool
 	DeleteRootFlag bool
 }
@@ -181,9 +183,15 @@ type VisitedNodes struct {
 	Nodes map[string]map[string]bool
 }
 
-type ProcessedBags struct {
-	Bags map[string]bool
+type VisitedBags struct {
+	Bags   map[string]map[string]map[string]bool
+	BagPKs map[string]bool
+	DBConn *sql.DB
 }
+
+// type ProcessedBags struct {
+// 	Bags map[string]bool
+// }
 
 type BagManager struct {
 	Bags        map[string]*DBBag
