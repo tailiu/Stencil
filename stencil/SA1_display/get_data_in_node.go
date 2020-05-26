@@ -372,19 +372,19 @@ func (display *display) GetDataInNodeBasedOnDisplaySetting(hint *HintStruct) ([]
 		// Note: if a piece of data in a node depends on some data not existing in the node,
 		// it needs to be deleted from the data set and cannot be displayed.
 		} else if displaySetting == "display_based_on_inner_dependencies" {
-
-			// fmt.Println(data)
 			return display.trimDataBasedOnInnerDependencies(data), err
-
+		
+		// The setting "display_based_on_inner_dependencies" means 
+		// display the data in a node regardless of inner dependencies.
+		} else if displaySetting == "display_always" {
+			return data, err
 		}
 	
 		// If a node is complete, return all the data in the node regardless of the setting.
 	} else {
-
 		return data, nil
-
 	}
 		
 	panic("Should never happen")
-
+	
 }
