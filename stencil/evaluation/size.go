@@ -462,7 +462,7 @@ func getTotalObjsIncludingMediaOfAppInExp7(evalConfig *EvalConfig,
 }
 
 func getTotalObjsNotIncludingMediaOfAppInExp7V2(evalConfig *EvalConfig, 
-	appName string, enableBags bool) int64 {
+	appName string, enableBags bool, handleExceptions ...string) int64 {
 
 	var totalObjs int64
 
@@ -491,6 +491,42 @@ func getTotalObjsNotIncludingMediaOfAppInExp7V2(evalConfig *EvalConfig,
 		totalObjs = getTotalRowCountsOfDB(gDBConn)
 	default:
 		log.Fatal("Cannot find a connection for the app:", appName)
+	}
+
+	if len(handleExceptions) != 0 {
+		lastApp := handleExceptions[0]
+		lastUserID := handleExceptions[1]
+		totalObjs = handleExceptionsInEval(mDBConn, totalObjs, lastApp, lastUserID)
+	}
+
+	return totalObjs
+}
+
+func handleExceptionsInEval(mDBConn *sql.DB, totalObjs int64, lastApp, lastUserID string) int64 {
+
+	if lastApp == "mastodon" {
+
+		q1 := fmt.Sprintf("SELECT count(*) from statuses WHERE account_id = %s", lastUserID)
+
+		q2 := fmt.Sprintf(
+			`SELECT count(*) from statuses WHERE account_id = %s and 
+			visibility = 0 and reply = false`, lastUserID,
+		)
+
+		res1, err1 := db.DataCall1(mDBConn, q1)
+		if err1 != nil {
+			log.Fatal(err1)
+		}
+		statusesCount := res1["count"].(int64) // For exculding newly generated status_stats
+
+		res2, err2 := db.DataCall1(mDBConn, q2)
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+		postsCount := res2["count"].(int64) // For excluding newly generated conversations
+
+		totalObjs = totalObjs - statusesCount - postsCount
+
 	}
 
 	return totalObjs

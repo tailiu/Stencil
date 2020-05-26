@@ -1823,13 +1823,13 @@ func Exp7ReintegrationDataBags() {
 	log.Println("===========================================")
 
 	migrationSeqs := [][]string {
-		// []string{"diaspora", "mastodon", "gnusocial", "twitter", "diaspora"}, 
-		// []string{"mastodon", "gnusocial", "twitter", "diaspora", "mastodon"},
+		[]string{"diaspora", "mastodon", "gnusocial", "twitter", "diaspora"}, 
+		[]string{"mastodon", "gnusocial", "twitter", "diaspora", "mastodon"},
 		[]string{"twitter", "diaspora", "mastodon", "gnusocial", "twitter"},
-		// []string{"gnusocial", "twitter", "diaspora", "mastodon", "gnusocial"},
+		[]string{"gnusocial", "twitter", "diaspora", "mastodon", "gnusocial"},
 	}
 
-	migrationNum := 1
+	migrationNum := 10
 	
 	size := "1k"
 
@@ -1958,7 +1958,7 @@ func Exp7ReintegrationDataBags() {
 				migObjsInSrc = beforeMigObjsInApp - afterMigObjsInApp
 				migObjsInSrc1 = beforeMigObjsInApp1 - afterMigObjsInApp1
 
-				// Exclude others' dangling data
+				// Exclude others' dangling data in the first app
 				if i == 0 {
 					migObjsInSrc -= evalConfig.getOthersDanglingData(
 						stencilDB, userID, fromAppID, migrationID)
@@ -1972,13 +1972,19 @@ func Exp7ReintegrationDataBags() {
 				logSeqMigsRes(logFile1, userID1, migObjsInSrc1)
 				
 				if i == len(migrationSeq) - 2 {
-					afterLastMigObjsInLastApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
-						evalConfig, toApp, true)
-					afterLastMigObjsInLastApp1 = getTotalObjsNotIncludingMediaOfAppInExp7V2(
-						evalConfig, toApp, false)
 
 					lastUserID := evalConfig.getNextUserID(evalConfig.StencilDBConn, migrationID)
 					lastUserID1 := evalConfig.getNextUserID(evalConfig.StencilDBConn1, migrationID1)
+
+					// Handle newly generated data in Mastodon if the last app is Mastodon
+					afterLastMigObjsInLastApp = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+						evalConfig, toApp, true,
+						migrationSeq[len(migrationSeq) - 1], lastUserID,
+					)
+					afterLastMigObjsInLastApp1 = getTotalObjsNotIncludingMediaOfAppInExp7V2(
+						evalConfig, toApp, false, 
+						migrationSeq[len(migrationSeq) - 1], lastUserID1,
+					)
 
 					logSeqMigsRes(
 						logFile, lastUserID, 
