@@ -254,28 +254,21 @@ func (hint *HintStruct) GetCombinedDisplaySettings(display *display) (string, er
 	}
 
 	return "", errors.New("No combined display settings found!")
-
 }
 
 func (hint *HintStruct) GetTagDisplaySetting(display *display) (string, error) {
 	
 	for _, tag := range display.dstAppConfig.dag.Tags {
-
 		if tag.Name == hint.Tag {
-
 			if tag.Display_setting != "" {
-
 				return tag.Display_setting, nil
-
 			} else {
-
 				return "default_display_setting", nil
 			}
 		}
 	}
 
 	return "", errors.New("Error: No Tag Found For the Provided TagName")
-
 }
 
 func (hint *HintStruct) GetDisplaySettingInDependencies(display *display, pTag string) (string, error) {
@@ -287,43 +280,30 @@ func (hint *HintStruct) GetDisplaySettingInDependencies(display *display, pTag s
 	}
 
 	if setting == "" {
-
 		return "parent_node_complete_displays", nil
-
 	} else {
-
 		return setting, nil
-
 	}
-	
 }
 
 func (hint *HintStruct) GetDisplaySettingInOwnership(display *display) (string, error) {
 
 	for _, ownership := range display.dstAppConfig.dag.Ownerships {
-
 		if ownership.Tag == hint.Tag {
-
 			return ownership.Display_setting, nil
 		}
-
 	}
 
 	return "", errors.New("Error: No Tag Found For the Provided TagName")
-
 }
 
 func (hint *HintStruct) GetOwnershipSpec(display *display) (*config.Ownership, error) {
 
 	for _, ownership := range display.dstAppConfig.dag.Ownerships {
-
 		if ownership.Tag == hint.Tag {
-
 			return &ownership, nil
 		}
-
 	}
 
 	return nil, errors.New("Error: No Ownership Tag Found For the Provided Data")
-
 }

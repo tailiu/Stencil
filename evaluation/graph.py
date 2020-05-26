@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
 # caption font size
-plt.rcParams.update({'font.size': 35})
+plt.rcParams.update({'font.size': 40})
 
 # plt.rcParams.update({'figure.autolayout': True})
 
@@ -384,7 +384,7 @@ def dataBagBar(data, labels, apps, ylabel):
     # the width of the bar
     barWidth = 0.3
 
-    ax.bar(x - barWidth/2, data[0], width=barWidth, align="center", label=labels[0], color=colors[0], hatch="//")
+    ax.bar(x - barWidth/2, data[0], width=barWidth, align="center", label=labels[0], color=colors[0], hatch="/")
     ax.bar(x + barWidth/2, data[1], width=barWidth, align="center", label=labels[1], color=colors[1])
     
     ax.set_xticks(x)
@@ -393,6 +393,8 @@ def dataBagBar(data, labels, apps, ylabel):
     ax.set_ylabel(ylabel)
 
     legend = ax.legend(loc=legendLoc[1], fontsize=28, numpoints=1)
+
+    plt.gcf().subplots_adjust(bottom=0.06)
 
     plt.show()
 

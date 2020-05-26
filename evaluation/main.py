@@ -944,6 +944,8 @@ def dataBags(apps, ylabel, labels):
     data1 = []
     data2 = []
     for app in apps:
+        if app == "GNU Social":
+            app = "gnusocial"
         data1.append(readFile3(logDir + dataBagsEnabledFile + "_" + app.lower()))
         data2.append(readFile3(logDir + dataBagsNotEnabledFile + "_" + app.lower()))
 
@@ -1034,6 +1036,6 @@ def dataBags(apps, ylabel, labels):
 #     ["Deletion", "Deletion w/o validation", "Independent", "Naive"])
 # scalability(["Deletion", "Independent", "Validation"])
 # dataDownTimeInPercentages(["Stencil", "Naive+"])
-dataBags(["Diaspora", "Mastodon", "Gnusocial", "Twitter"],
-        'Percentage of objects back',
-        ["Data bags", "Without data bags"])
+dataBags(["Diaspora", "Mastodon", "GNU Social", "Twitter"],
+        'Percentage of data returned',
+        ["With data bags", "Without data bags"])

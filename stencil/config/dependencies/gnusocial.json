@@ -30,10 +30,10 @@
             },
             "inner_dependencies" : [
                 {
-                    "member1.conversation": "member2.id"
+                    "member2.id": "member1.conversation"
                 }
             ],
-            "display_setting": "display_based_on_inner_dependencies"
+            "display_setting": "display_always"
         },
         {
             "name": "files",
