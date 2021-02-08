@@ -57,4 +57,4 @@ gem 'react-rails'
 
 gem 'webpacker'
 
-gem 'carrierwave', '~> 1.0'
+gem 'carrierwave', '~> 1.3'
